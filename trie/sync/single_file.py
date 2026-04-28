@@ -41,12 +41,18 @@ def sync_single_file(
     project_root: Path,
     config: Config,
     client: ModelClient,
+    dest_doc_path: Path | None = None,
 ) -> FileSyncResult:
     """Generate or refresh the doc file for a single Python source file.
 
     Existing hand-written prose between trie:section sentinels is preserved. Sections for
     public symbols are upserted; sections for symbols no longer in the source are removed.
     Private symbols (leading underscore) are not generated in v0.1.
+
+    If `dest_doc_path` is provided, the rendered doc is written there instead of the
+    canonical `<docs.root>/<source>.md` path. The existing canonical doc is still used as
+    the load source so human prose between sentinels is preserved. This is how `trie diff`
+    writes previews to `.trie/preview/` without clobbering the live tree.
     """
     source_path = source_path.resolve()
     project_root = project_root.resolve()
@@ -62,8 +68,13 @@ def sync_single_file(
     symbols = extract_symbols(source_path, source_root=src_root)
     public_symbols = [s for s in symbols if s.is_public]
 
-    doc_path = _doc_path_for(source_path, project_root, config)
-    doc = DocFile.parse(doc_path.read_text()) if doc_path.exists() else DocFile.empty()
+    canonical_doc_path = _doc_path_for(source_path, project_root, config)
+    write_path = dest_doc_path if dest_doc_path is not None else canonical_doc_path
+    doc = (
+        DocFile.parse(canonical_doc_path.read_text())
+        if canonical_doc_path.exists()
+        else DocFile.empty()
+    )
 
     file_ctx = FileGenerationContext(file_path=rel_path, source_text=source_text)
 
@@ -93,12 +104,12 @@ def sync_single_file(
         "file_fingerprint": file_fp,
     }
 
-    doc_path.parent.mkdir(parents=True, exist_ok=True)
-    doc_path.write_text(doc.render())
+    write_path.parent.mkdir(parents=True, exist_ok=True)
+    write_path.write_text(doc.render())
 
     return FileSyncResult(
         source_path=source_path,
-        doc_path=doc_path,
+        doc_path=write_path,
         symbols_generated=len(public_symbols),
         sections_removed=sections_removed,
         input_tokens=totals["in"],
