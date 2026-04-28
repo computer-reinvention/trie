@@ -75,6 +75,17 @@ class FileStats:
     public_symbols: int
 
 
+@dataclass(frozen=True)
+class SymbolHit:
+    qualified_name: str
+    name: str
+    kind: str
+    file_path: str
+    start_line: int
+    signature: str | None
+    is_public: bool
+
+
 class Store:
     """SQLite-backed persistence for trie's symbol graph and file fingerprints.
 
@@ -261,6 +272,35 @@ class Store:
             (file_path,),
         ).fetchall()
         return [row[0] for row in rows]
+
+    def search_symbols(self, name_pattern: str, *, limit: int = 50) -> list[SymbolHit]:
+        """Find symbols whose `name` (the local part, not qname) contains `name_pattern`.
+
+        Case-insensitive substring match. Use this for "find_symbol" style queries from
+        agents — they typically search by local name, not qualified name.
+        """
+        rows = self._conn.execute(
+            """
+            SELECT qualified_name, name, kind, file_path, start_line, signature, is_public
+            FROM symbols
+            WHERE name LIKE ?
+            ORDER BY is_public DESC, qualified_name
+            LIMIT ?
+            """,
+            (f"%{name_pattern}%", limit),
+        ).fetchall()
+        return [
+            SymbolHit(
+                qualified_name=row[0],
+                name=row[1],
+                kind=row[2],
+                file_path=row[3],
+                start_line=row[4],
+                signature=row[5],
+                is_public=bool(row[6]),
+            )
+            for row in rows
+        ]
 
     def references_out(self, qualified_name: str) -> list[tuple[str, str]]:
         """Return (target_qname, confidence) for every reference originating from `qualified_name`."""

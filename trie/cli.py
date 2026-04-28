@@ -12,6 +12,7 @@ from trie.cost import get_pricing
 from trie.diff_cmd import diff_project
 from trie.graph.store import Store
 from trie.init import InitError, init_project
+from trie.mcp_server import run_stdio as run_mcp_stdio
 from trie.models import make_client
 from trie.scan import scan_project
 from trie.sync.bootstrap import build_plan, run_bootstrap
@@ -406,6 +407,26 @@ def diff_cmd(
         f"actual cost ${result.actual_cost_usd:.4f} · "
         f"skipped {result.files_skipped_no_budget} due to budget/limit"
     )
+
+
+@app.command("mcp")
+def mcp_cmd() -> None:
+    """Start the trie MCP server over stdio.
+
+    Designed to be spawned by an agent harness (Claude Code, Codex, etc.) as a subprocess.
+    The server is read-only — it queries the existing graph DB and doc tree but never
+    modifies them. Run `trie scan && trie sync` first to populate state worth querying.
+    """
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        # Don't print to stdout — that would corrupt the MCP protocol.
+        import sys
+
+        print(f"trie mcp: {exc}", file=sys.stderr)
+        raise typer.Exit(code=1) from exc
+    _ = config  # Config validated; the actual loading happens inside run_mcp_stdio.
+    run_mcp_stdio(project_root)
 
 
 if __name__ == "__main__":
