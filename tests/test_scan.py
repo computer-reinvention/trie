@@ -112,6 +112,84 @@ def test_removed_file_is_cleaned_up(project: Path):
         s2.close()
 
 
+def test_scan_populates_cross_file_edges(tmp_path: Path):
+    (tmp_path / "trie.toml").write_text(
+        '[trie]\nversion = "0.1.0"\n'
+        '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
+        '[docs]\nroot = "docs"\nsource_root = "."\n'
+        '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
+        'cascade = "anthropic/claude-sonnet-4-6"\n'
+        "[cascade]\ndefault_depth = 1\nhub_symbol_threshold = 20\n"
+    )
+    (tmp_path / "lib.py").write_text("def helper():\n    return 1\n")
+    (tmp_path / "app.py").write_text(
+        "from lib import helper\n\n\ndef run():\n    return helper()\n"
+    )
+
+    s, result = _scan(tmp_path)
+    try:
+        assert result.edges_total >= 1
+        # app:run -> lib:helper edge present
+        out = s.references_out("app:run")
+        assert ("lib:helper", "tree_sitter_import") in out
+        # Inverse view also works
+        ins = s.references_in("lib:helper")
+        assert ("app:run", "tree_sitter_import") in ins
+    finally:
+        s.close()
+
+
+def test_scan_populates_intra_file_edges(tmp_path: Path):
+    (tmp_path / "trie.toml").write_text(
+        '[trie]\nversion = "0.1.0"\n'
+        '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
+        '[docs]\nroot = "docs"\nsource_root = "."\n'
+        '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
+        'cascade = "anthropic/claude-sonnet-4-6"\n'
+        "[cascade]\ndefault_depth = 1\nhub_symbol_threshold = 20\n"
+    )
+    (tmp_path / "mod.py").write_text(
+        "def util():\n    return 1\n\n\ndef caller():\n    return util() + util()\n"
+    )
+
+    s, _ = _scan(tmp_path)
+    try:
+        out = s.references_out("mod:caller")
+        assert ("mod:util", "name_match") in out
+    finally:
+        s.close()
+
+
+def test_edges_rebuilt_when_file_changes(tmp_path: Path):
+    (tmp_path / "trie.toml").write_text(
+        '[trie]\nversion = "0.1.0"\n'
+        '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
+        '[docs]\nroot = "docs"\nsource_root = "."\n'
+        '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
+        'cascade = "anthropic/claude-sonnet-4-6"\n'
+        "[cascade]\ndefault_depth = 1\nhub_symbol_threshold = 20\n"
+    )
+    (tmp_path / "lib.py").write_text("def helper():\n    return 1\n")
+    (tmp_path / "app.py").write_text(
+        "from lib import helper\n\n\ndef run():\n    return helper()\n"
+    )
+
+    s1, _ = _scan(tmp_path)
+    edges_v1 = s1.count_edges()
+    s1.close()
+
+    # Replace app.py with code that no longer references helper
+    (tmp_path / "app.py").write_text("def run():\n    return 42\n")
+
+    s2, _ = _scan(tmp_path)
+    try:
+        out = s2.references_out("app:run")
+        assert out == []
+        assert s2.count_edges() < edges_v1
+    finally:
+        s2.close()
+
+
 def test_excluded_file_treated_as_removed(project: Path):
     s1, _ = _scan(project)
     s1.close()
