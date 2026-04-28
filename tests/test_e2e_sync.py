@@ -213,11 +213,18 @@ def test_first_call_creates_cache_subsequent_calls_read(project: Path):
     assert result.cache_read_input_tokens == 400
 
 
-def test_cli_sync_requires_file(project: Path):
+def test_cli_sync_runs_incremental_when_no_flags(project: Path, monkeypatch):
+    """Bare `trie sync` runs incremental cascade. Without a config it errors; the test
+    here just confirms the command isn't rejected outright."""
+    monkeypatch.chdir(project)
+
+    monkeypatch.setattr("trie.cli.make_client", lambda model_id: FakeClient(model_id=model_id))
+
     runner = CliRunner()
     result = runner.invoke(app, ["sync"])
-    assert result.exit_code == 1
-    assert "--file" in result.output
+    # Project has no docs yet → all files are stale → incremental should sync them.
+    assert result.exit_code == 0
+    assert "synced" in result.output or "coherent" in result.output
 
 
 def test_cli_sync_errors_on_missing_file(project: Path):

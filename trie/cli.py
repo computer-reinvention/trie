@@ -15,6 +15,7 @@ from trie.init import InitError, init_project
 from trie.models import make_client
 from trie.scan import scan_project
 from trie.sync.bootstrap import build_plan, run_bootstrap
+from trie.sync.incremental import run_incremental
 from trie.sync.single_file import sync_single_file
 
 app = typer.Typer(
@@ -96,7 +97,8 @@ def scan_cmd() -> None:
     breakdown = ", ".join(parts) if parts else "no files in scope"
     console.print(f"[green]✓[/green] scanned {result.files_total} files: {breakdown}")
     console.print(
-        f"  {result.symbols_total} symbols in graph at {db_path.relative_to(project_root)}"
+        f"  {result.symbols_total} symbols, {result.edges_total} edges in "
+        f"{db_path.relative_to(project_root)}"
     )
 
 
@@ -190,15 +192,17 @@ def sync_cmd(
     if file is not None and bootstrap:
         console.print("[red]error:[/red] --file and --bootstrap are mutually exclusive")
         raise typer.Exit(code=1)
-    if file is None and not bootstrap:
-        console.print("[red]error:[/red] specify --file <path> or --bootstrap")
-        raise typer.Exit(code=1)
 
     if file is not None:
         _run_single_file_sync(file, model)
         return
 
-    _run_bootstrap_sync(model=model, budget=budget, limit=limit, dry_run=dry_run)
+    if bootstrap:
+        _run_bootstrap_sync(model=model, budget=budget, limit=limit, dry_run=dry_run)
+        return
+
+    # Default: incremental cascade mode.
+    _run_incremental_sync(model=model, budget=budget, limit=limit)
 
 
 def _run_single_file_sync(file: Path, model: str | None) -> None:
@@ -293,6 +297,53 @@ def _run_bootstrap_sync(
     console.print(
         f"  estimated ${result.estimated_cost_usd:.4f} · actual ${result.actual_cost_usd:.4f}"
     )
+
+
+def _run_incremental_sync(*, model: str | None, budget: float | None, limit: int | None) -> None:
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        console.print(f"[red]error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    model_id = model or config.models.cascade
+    pricing = get_pricing(model_id)
+    client = make_client(model_id)
+
+    db_path = project_root / ".trie" / "graph.db"
+    with Store(db_path) as store, console.status("running cascade…"):
+        result = run_incremental(
+            project_root=project_root,
+            config=config,
+            store=store,
+            client=client,
+            pricing=pricing,
+            budget_usd=budget,
+            limit=limit,
+        )
+
+    if result.orphan_docs_removed:
+        for doc in result.orphan_docs_removed:
+            console.print(f"[red]✗[/red] removed orphan doc {doc.relative_to(project_root)}")
+
+    if result.files_synced == 0 and result.directly_stale_count == 0:
+        if result.orphan_docs_removed:
+            console.print(
+                f"[green]✓[/green] cleaned up {len(result.orphan_docs_removed)} orphan(s); "
+                "doc tree is otherwise coherent"
+            )
+        else:
+            console.print("[green]✓[/green] doc tree is coherent — nothing to sync")
+        return
+
+    console.print(
+        f"[green]✓[/green] synced {result.files_synced} file(s) "
+        f"({result.directly_stale_count} directly stale, "
+        f"{result.cascaded_count} pulled in by the cascade)"
+    )
+    if result.files_skipped_no_budget:
+        console.print(f"  skipped {result.files_skipped_no_budget} due to budget/limit")
+    console.print(f"  actual cost: ${result.actual_cost_usd:.4f}")
 
 
 @app.command("diff")

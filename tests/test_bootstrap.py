@@ -195,9 +195,11 @@ def test_cli_sync_rejects_file_and_bootstrap_together(
     assert "mutually exclusive" in result.output
 
 
-def test_cli_sync_rejects_neither_mode(project: Path, monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.chdir(project)
+def test_cli_sync_with_no_config_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Bare `trie sync` without a project errors clearly. (Inside a project it runs
+    incremental cascade — see test_incremental.py.)"""
+    monkeypatch.chdir(tmp_path)
     runner = CliRunner()
     result = runner.invoke(app, ["sync"])
     assert result.exit_code == 1
-    assert "--file" in result.output
+    assert "trie.toml" in result.output

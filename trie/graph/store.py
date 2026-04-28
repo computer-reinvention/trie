@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from trie.parse.python import Symbol
+from trie.parse.references import Reference
 
 SCHEMA_VERSION = 1
 
@@ -189,6 +190,105 @@ class Store:
         if clauses:
             sql += " WHERE " + " AND ".join(clauses)
         return int(self._conn.execute(sql, params).fetchone()[0])
+
+    # --- edge ops ---
+
+    def replace_all_edges(self, references_by_file: dict[str, list[Reference]]) -> int:
+        """Wipe the edges table, resolve references against current symbols, insert edges.
+
+        References whose src or dst qualified_name is not present in the symbols table are
+        silently dropped (likely an external import or a name the heuristic over-matched).
+        Returns the number of edges actually inserted.
+        """
+        qname_to_id: dict[str, int] = {}
+        for row in self._conn.execute("SELECT id, qualified_name FROM symbols"):
+            qname_to_id[row[1]] = row[0]
+
+        rows: list[tuple[int, int, str]] = []
+        seen_pairs: set[tuple[int, int]] = set()
+        for refs in references_by_file.values():
+            for ref in refs:
+                src_id = qname_to_id.get(ref.src_qname)
+                dst_id = qname_to_id.get(ref.target_qname)
+                if src_id is None or dst_id is None or src_id == dst_id:
+                    continue
+                pair = (src_id, dst_id)
+                if pair in seen_pairs:
+                    continue
+                seen_pairs.add(pair)
+                rows.append((src_id, dst_id, ref.confidence))
+
+        with self.transaction() as conn:
+            conn.execute("DELETE FROM edges")
+            conn.executemany(
+                "INSERT INTO edges (src_symbol_id, dst_symbol_id, confidence) VALUES (?, ?, ?)",
+                rows,
+            )
+        return len(rows)
+
+    def references_in(self, qualified_name: str) -> list[tuple[str, str]]:
+        """Return (src_qname, confidence) for every symbol that references `qualified_name`."""
+        rows = self._conn.execute(
+            """
+            SELECT s_src.qualified_name, e.confidence
+            FROM edges e
+            JOIN symbols s_src ON s_src.id = e.src_symbol_id
+            JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
+            WHERE s_dst.qualified_name = ?
+            """,
+            (qualified_name,),
+        ).fetchall()
+        return [(row[0], row[1]) for row in rows]
+
+    def references_in_with_files(self, qualified_name: str) -> list[tuple[str, str, str]]:
+        """Return (src_qname, src_file_path, confidence) for every inbound reference."""
+        rows = self._conn.execute(
+            """
+            SELECT s_src.qualified_name, s_src.file_path, e.confidence
+            FROM edges e
+            JOIN symbols s_src ON s_src.id = e.src_symbol_id
+            JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
+            WHERE s_dst.qualified_name = ?
+            """,
+            (qualified_name,),
+        ).fetchall()
+        return [(row[0], row[1], row[2]) for row in rows]
+
+    def qnames_in_file(self, file_path: str) -> list[str]:
+        """Return qualified_names of all symbols defined in `file_path`."""
+        rows = self._conn.execute(
+            "SELECT qualified_name FROM symbols WHERE file_path = ? ORDER BY start_line",
+            (file_path,),
+        ).fetchall()
+        return [row[0] for row in rows]
+
+    def references_out(self, qualified_name: str) -> list[tuple[str, str]]:
+        """Return (target_qname, confidence) for every reference originating from `qualified_name`."""
+        rows = self._conn.execute(
+            """
+            SELECT s_dst.qualified_name, e.confidence
+            FROM edges e
+            JOIN symbols s_src ON s_src.id = e.src_symbol_id
+            JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
+            WHERE s_src.qualified_name = ?
+            """,
+            (qualified_name,),
+        ).fetchall()
+        return [(row[0], row[1]) for row in rows]
+
+    def count_edges(self) -> int:
+        return int(self._conn.execute("SELECT COUNT(*) FROM edges").fetchone()[0])
+
+    def inbound_count_per_symbol(self) -> dict[str, int]:
+        """qualified_name -> number of inbound edges. Used to detect hub symbols."""
+        rows = self._conn.execute(
+            """
+            SELECT s.qualified_name, COUNT(*) FROM edges e
+            JOIN symbols s ON s.id = e.dst_symbol_id
+            GROUP BY s.qualified_name
+            """
+        ).fetchall()
+        return {row[0]: int(row[1]) for row in rows}
 
     def file_stats(self) -> list[FileStats]:
         """Per-file counts joined from files + symbols, used by the bootstrap ranker."""
