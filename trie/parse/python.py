@@ -96,6 +96,7 @@ def _build_symbol(
     rel_file: str,
     parent: str | None,
     kind: str,
+    parent_is_private: bool = False,
 ) -> Symbol:
     name_node = node.child_by_field_name("name")
     name = _node_text(name_node, source) if name_node else "<anon>"
@@ -105,6 +106,7 @@ def _build_symbol(
     body_text = _node_text(body_node, source) if body_node else ""
     normalized = _normalize_body_tokens(body_node, source)
     dotted = f"{parent}.{name}" if parent else name
+    is_public = not name.startswith("_") and not parent_is_private
     return Symbol(
         qualified_name=f"{module_key}:{dotted}",
         kind=kind,
@@ -117,7 +119,7 @@ def _build_symbol(
         signature_hash=_hash(signature),
         start_line=node.start_point[0] + 1,
         end_line=node.end_point[0] + 1,
-        is_public=not name.startswith("_"),
+        is_public=is_public,
     )
 
 
@@ -131,9 +133,14 @@ def _undecorate(node: Node) -> Node:
 
 
 def _walk_class(class_node: Node, source: bytes, *, module_key: str, rel_file: str) -> list[Symbol]:
-    """Emit the class symbol plus method symbols (one level deep)."""
+    """Emit the class symbol plus method symbols (one level deep).
+
+    Methods of a private class (`_Foo`) inherit the private flag — they are implementation
+    detail of an internal type and should not be documented in v0.1.
+    """
     name_node = class_node.child_by_field_name("name")
     class_name = _node_text(name_node, source) if name_node else "?"
+    class_is_private = class_name.startswith("_")
     syms = [
         _build_symbol(
             class_node,
@@ -158,6 +165,7 @@ def _walk_class(class_node: Node, source: bytes, *, module_key: str, rel_file: s
                     rel_file=rel_file,
                     parent=class_name,
                     kind="method",
+                    parent_is_private=class_is_private,
                 )
             )
     return syms

@@ -101,6 +101,23 @@ def test_decorated_class_and_methods(sample_file: Path):
     assert syms["sample:Decorated.thing"].kind == "method"
 
 
+def test_methods_of_private_class_inherit_privacy(tmp_path: Path):
+    f = tmp_path / "x.py"
+    f.write_text(
+        "class _Internal:\n"
+        "    def helper(self):\n        return 1\n"
+        "    def _double_private(self):\n        return 2\n\n\n"
+        "class Public:\n"
+        "    def visible(self):\n        return 1\n"
+    )
+    syms = _by_qname(extract_symbols(f))
+    assert syms["x:_Internal"].is_public is False
+    assert syms["x:_Internal.helper"].is_public is False  # parent private → private
+    assert syms["x:_Internal._double_private"].is_public is False
+    assert syms["x:Public"].is_public is True
+    assert syms["x:Public.visible"].is_public is True
+
+
 def test_module_docstring_is_not_a_symbol(sample_file: Path):
     syms = extract_symbols(sample_file)
     qnames = {s.qualified_name for s in syms}
