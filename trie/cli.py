@@ -7,8 +7,12 @@ from rich.console import Console
 
 from trie import __version__
 from trie.config import Config, ConfigNotFoundError
+from trie.cost import get_pricing
+from trie.graph.store import Store
 from trie.init import InitError, init_project
 from trie.models import make_client
+from trie.scan import scan_project
+from trie.sync.bootstrap import build_plan, run_bootstrap
 from trie.sync.single_file import sync_single_file
 
 app = typer.Typer(
@@ -65,13 +69,62 @@ def init_cmd(
     console.print("Next: try [cyan]trie sync --file <path/to/some.py>[/cyan]")
 
 
+@app.command("scan")
+def scan_cmd() -> None:
+    """Walk the project, parse changed files, refresh the symbol graph."""
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        console.print(f"[red]error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    db_path = project_root / ".trie" / "graph.db"
+    with console.status("scanning project…"), Store(db_path) as store:
+        result = scan_project(project_root=project_root, config=config, store=store)
+
+    parts = []
+    if result.files_new:
+        parts.append(f"[green]{result.files_new} new[/green]")
+    if result.files_updated:
+        parts.append(f"[yellow]{result.files_updated} updated[/yellow]")
+    if result.files_unchanged:
+        parts.append(f"{result.files_unchanged} unchanged")
+    if result.files_removed:
+        parts.append(f"[red]{result.files_removed} removed[/red]")
+    breakdown = ", ".join(parts) if parts else "no files in scope"
+    console.print(f"[green]✓[/green] scanned {result.files_total} files: {breakdown}")
+    console.print(
+        f"  {result.symbols_total} symbols in graph at {db_path.relative_to(project_root)}"
+    )
+
+
 @app.command("sync")
 def sync_cmd(
     file: Path | None = typer.Option(
         None,
         "--file",
         "-f",
-        help="Sync a single source file. Other modes (--bootstrap, incremental cascade) are deferred to M2/M4.",
+        help="Sync a single source file (M1 mode).",
+    ),
+    bootstrap: bool = typer.Option(
+        False,
+        "--bootstrap",
+        help="Run bootstrap mode: rank scope files and generate docs up to --budget or --limit.",
+    ),
+    budget: float | None = typer.Option(
+        None,
+        "--budget",
+        help="USD budget for bootstrap mode. Stops once cumulative actual cost reaches this.",
+    ),
+    limit: int | None = typer.Option(
+        None,
+        "--limit",
+        help="Maximum files to sync in bootstrap mode.",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="In bootstrap mode, print the plan and estimated cost without making API calls.",
     ),
     model: str | None = typer.Option(
         None,
@@ -80,10 +133,21 @@ def sync_cmd(
     ),
 ) -> None:
     """Generate or refresh trie documentation."""
-    if file is None:
-        console.print("[red]error:[/red] --file <path> is required in v0.1 (M1).")
+    if file is not None and bootstrap:
+        console.print("[red]error:[/red] --file and --bootstrap are mutually exclusive")
+        raise typer.Exit(code=1)
+    if file is None and not bootstrap:
+        console.print("[red]error:[/red] specify --file <path> or --bootstrap")
         raise typer.Exit(code=1)
 
+    if file is not None:
+        _run_single_file_sync(file, model)
+        return
+
+    _run_bootstrap_sync(model=model, budget=budget, limit=limit, dry_run=dry_run)
+
+
+def _run_single_file_sync(file: Path, model: str | None) -> None:
     if not file.exists():
         console.print(f"[red]error:[/red] {file} does not exist")
         raise typer.Exit(code=1)
@@ -108,6 +172,72 @@ def sync_cmd(
     console.print(
         f"  tokens: {result.input_tokens} in / {result.output_tokens} out · "
         f"cache: {result.cache_creation_input_tokens} write / {result.cache_read_input_tokens} read"
+    )
+
+
+def _run_bootstrap_sync(
+    *, model: str | None, budget: float | None, limit: int | None, dry_run: bool
+) -> None:
+    if not dry_run and budget is None and limit is None:
+        console.print(
+            "[red]error:[/red] --bootstrap requires at least one of --budget USD or --limit N "
+            "(or pass --dry-run to preview without API calls)"
+        )
+        raise typer.Exit(code=1)
+
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        console.print(f"[red]error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    model_id = model or config.models.bootstrap
+    pricing = get_pricing(model_id)
+
+    db_path = project_root / ".trie" / "graph.db"
+    with Store(db_path) as store:
+        with console.status("scanning project…"):
+            scan_project(project_root=project_root, config=config, store=store)
+        plan = build_plan(project_root=project_root, store=store, model_id=model_id)
+
+        if not plan.items:
+            console.print("[yellow]no files in scope to bootstrap[/yellow]")
+            return
+
+        console.print(
+            f"plan for [cyan]{model_id}[/cyan] — {len(plan.items)} files, "
+            f"~${plan.total_estimated_cost:.4f} estimated"
+        )
+        for it in plan.items[:10]:
+            console.print(
+                f"  • [bold]{it.file_path}[/bold] "
+                f"({it.public_symbols} symbols, score {it.score:.0f}, ~${it.estimated.cost_usd:.4f})"
+            )
+        if len(plan.items) > 10:
+            console.print(f"  … and {len(plan.items) - 10} more")
+
+        if dry_run:
+            console.print("\n[yellow]dry-run: no API calls made[/yellow]")
+            return
+
+        client = make_client(model_id)
+        with console.status("generating docs…"):
+            result = run_bootstrap(
+                plan=plan,
+                project_root=project_root,
+                config=config,
+                client=client,
+                pricing=pricing,
+                budget_usd=budget,
+                limit=limit,
+            )
+
+    console.print(
+        f"[green]✓[/green] synced {result.files_synced} files "
+        f"(skipped {result.files_skipped_no_budget} due to budget/limit)"
+    )
+    console.print(
+        f"  estimated ${result.estimated_cost_usd:.4f} · actual ${result.actual_cost_usd:.4f}"
     )
 
 
