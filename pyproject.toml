@@ -1,0 +1,64 @@
+[project]
+name = "trie"
+version = "0.1.0"
+description = "Documentation tree as coding harness anchor — LSP/SCIP-aware cascade keeps a Markdown doc tree coherent with code."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Pankaj Garkoti" }]
+requires-python = ">=3.11"
+keywords = ["documentation", "code-intelligence", "scip", "lsp", "ai-agents", "mcp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Documentation",
+]
+dependencies = [
+    "typer>=0.12",
+    "rich>=13.7",
+    "anthropic>=0.40",
+    "tree-sitter>=0.23",
+    "tree-sitter-python>=0.23",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-mock>=3.12",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+trie = "trie.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/pankajgarkoti/trie"
+Repository = "https://github.com/pankajgarkoti/trie"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["trie"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "RUF", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["B011"]
+"trie/cli.py" = ["B008"]  # typer.Argument / typer.Option in defaults is the canonical typer pattern
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
