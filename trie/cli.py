@@ -103,6 +103,20 @@ def scan_cmd() -> None:
     )
 
 
+@app.command("plan")
+def plan_cmd(
+    model: str | None = typer.Option(
+        None, "--model", help="Override the configured model for cost estimation."
+    ),
+) -> None:
+    """Show the bootstrap worklist + estimated cost without making API calls.
+
+    Equivalent to `trie sync --bootstrap --dry-run`, but as a top-level command since
+    "preview the work and the bill" is a distinct mental step from "run a sync."
+    """
+    _run_bootstrap_sync(model=model, budget=None, limit=None, dry_run=True)
+
+
 @app.command("check")
 def check_cmd(
     quiet: bool = typer.Option(

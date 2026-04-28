@@ -64,6 +64,57 @@ repos:
 
 `trie check` is fast and offline — it compares fingerprints embedded in your doc files' section sentinels against fingerprints derived from the current source. It exits non-zero if any source file's symbol doesn't match its documented section.
 
+## Golden example
+
+Source file (`src/slugify.py`):
+
+```python
+"""Pure-function library."""
+
+import re
+
+_NON_WORD = re.compile(r"\W+")
+
+
+def slugify(text: str, max_len: int = 60) -> str:
+    """Lowercase, strip non-word chars, collapse whitespace, truncate to max_len."""
+    cleaned = _NON_WORD.sub("-", text.lower()).strip("-")
+    return cleaned[:max_len]
+```
+
+After `trie sync --file src/slugify.py`, `docs/src/slugify.md`:
+
+```markdown
+---
+trie_version: 0.1.0
+source: src/slugify.py
+file_fingerprint: 9d4f374adc9a843c…
+---
+<!-- trie:section symbol=src/slugify:slugify fingerprint=693808c2… -->
+## `slugify(text: str, max_len: int = 60) -> str`
+
+Generates a URL-safe slug from arbitrary text. Lowercases the input, replaces
+runs of non-word characters with single hyphens, trims leading/trailing
+hyphens, and truncates to `max_len` characters.
+
+- **`text`**: The string to slugify.
+- **`max_len`**: Maximum character count of the returned slug; defaults to 60.
+- **Returns**: The slugified string, no longer than `max_len`.
+<!-- trie:end -->
+```
+
+Now suppose another file imports it:
+
+```python
+# src/posts.py
+from slugify import slugify
+
+def make_url(title: str) -> str:
+    return "/posts/" + slugify(title)
+```
+
+Edit `slugify`'s body — say, change the regex to also handle Unicode — and run `trie sync`. The cascade pulls in `docs/src/posts.md` automatically because `posts:make_url` references `slugify:slugify`. Both docs regenerate to stay coherent.
+
 ## How it works
 
 A trie-managed Markdown doc looks like this:
@@ -119,6 +170,17 @@ For Claude Code, add to your `~/.claude/mcp_servers.json` (or per-project `.mcp.
 ```
 
 The server is read-only. Agents can query the graph; only `trie sync` (run by you, in your shell) modifies the doc tree.
+
+## Reducing PR noise from generated docs
+
+Generated Markdown can drown human review in PR diffs. On GitHub, mark the doc tree as `linguist-generated` so the diff is collapsed by default:
+
+```
+# .gitattributes
+docs/** linguist-generated=true
+```
+
+Hand-written prose between sentinels is still indexed by GitHub's search; only the side-by-side diff renders is collapsed.
 
 ## Roadmap
 
