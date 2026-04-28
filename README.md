@@ -95,14 +95,40 @@ This prose lives between sentinels and is preserved across regeneration.
 - `trie sync` regenerates only the sections whose fingerprint has drifted; everything between sentinels is preserved byte-for-byte.
 - `trie check` compares stored fingerprints to current source — fast, deterministic, no LLM in the loop.
 
+## Agent integration (MCP)
+
+Trie ships an MCP server so coding agents can consult the doc tree as a separate context layer from their own conversation memory. Run-time and exposed tools:
+
+| Tool | What it returns |
+|---|---|
+| `get_doc(source_path)` | Markdown doc for a source file |
+| `find_symbol(name)` | Substring search over symbol names + signatures |
+| `references_to(qualified_name)` | Symbols that reference the given one (callers) |
+| `references_from(qualified_name)` | Symbols the given one references (callees) |
+
+For Claude Code, add to your `~/.claude/mcp_servers.json` (or per-project `.mcp.json`):
+
+```json
+{
+  "trie": {
+    "command": "trie",
+    "args": ["mcp"],
+    "cwd": "/path/to/your/project"
+  }
+}
+```
+
+The server is read-only. Agents can query the graph; only `trie sync` (run by you, in your shell) modifies the doc tree.
+
 ## Roadmap
 
 - **M1** ✓ — `trie sync --file <path>` with section-sentinel writer
 - **M2** ✓ — `trie scan`, `trie sync --bootstrap` with budget/limit and dry-run
 - **M3** ✓ — `trie check`, `trie diff`, pre-commit hook
-- **M4** — SCIP integration + cascade *(the wedge)*
-- **M5** — MCP server for agent integration
+- **M4** ✓ — heuristic cascade (tree-sitter imports + same-module name matching) *(the wedge)*
+- **M5** ✓ — MCP server (`trie mcp`) with `get_doc`, `find_symbol`, `references_to/from`
 - **M6** — polish, README golden example, packaging
+- **v0.2** — SCIP precision (replace tree-sitter heuristic with `scip-python` for type-aware references), TypeScript support, vector-over-docs retrieval, watch mode
 
 ## License
 
