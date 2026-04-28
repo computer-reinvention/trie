@@ -1,0 +1,8 @@
+- id: trie-check
+  name: trie check
+  description: Verify the trie doc tree is coherent with the source code.
+  entry: trie check --quiet
+  language: python
+  pass_filenames: false
+  always_run: true
+  stages: [pre-commit]

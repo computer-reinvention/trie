@@ -6,8 +6,10 @@ import typer
 from rich.console import Console
 
 from trie import __version__
+from trie.check import StaleReason, check_project
 from trie.config import Config, ConfigNotFoundError
 from trie.cost import get_pricing
+from trie.diff_cmd import diff_project
 from trie.graph.store import Store
 from trie.init import InitError, init_project
 from trie.models import make_client
@@ -96,6 +98,58 @@ def scan_cmd() -> None:
     console.print(
         f"  {result.symbols_total} symbols in graph at {db_path.relative_to(project_root)}"
     )
+
+
+@app.command("check")
+def check_cmd(
+    quiet: bool = typer.Option(
+        False,
+        "--quiet",
+        "-q",
+        help="Print only a summary line.",
+    ),
+) -> None:
+    """Verify the doc tree is coherent with the source. Exits non-zero if stale.
+
+    Designed for pre-commit: fast, no API calls, no DB writes. Compares each in-scope
+    source file's symbol fingerprints against the fingerprints embedded in the matching
+    doc file's section sentinels.
+    """
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        console.print(f"[red]error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    result = check_project(project_root=project_root, config=config)
+
+    if result.is_clean:
+        console.print("[green]✓[/green] doc tree is coherent")
+        return
+
+    grouped: dict[str, list] = {}
+    for it in result.items:
+        grouped.setdefault(it.doc_path, []).append(it)
+
+    if not quiet:
+        for doc_path, items in sorted(grouped.items()):
+            console.print(f"[red]✗[/red] {doc_path}")
+            for it in items:
+                if it.reason == StaleReason.MISSING_DOC:
+                    console.print(f"    [yellow]missing doc[/yellow] for {it.source_path}")
+                elif it.reason == StaleReason.MISSING_SECTION:
+                    console.print(f"    [yellow]missing section[/yellow] for {it.qualified_name}")
+                elif it.reason == StaleReason.STALE_SECTION:
+                    console.print(f"    [yellow]stale[/yellow] {it.qualified_name}")
+                elif it.reason == StaleReason.ORPHAN_SECTION:
+                    console.print(f"    [yellow]orphan[/yellow] {it.qualified_name}")
+        console.print()
+
+    console.print(
+        f"[red]✗ {len(result.items)} issue(s) across {len(grouped)} doc file(s)[/red] — "
+        f"run [cyan]trie sync[/cyan] to refresh"
+    )
+    raise typer.Exit(code=1)
 
 
 @app.command("sync")
@@ -238,6 +292,68 @@ def _run_bootstrap_sync(
     )
     console.print(
         f"  estimated ${result.estimated_cost_usd:.4f} · actual ${result.actual_cost_usd:.4f}"
+    )
+
+
+@app.command("diff")
+def diff_cmd(
+    budget: float | None = typer.Option(
+        None,
+        "--budget",
+        help="USD budget cap. Stops once cumulative actual cost reaches this.",
+    ),
+    limit: int | None = typer.Option(
+        None,
+        "--limit",
+        help="Maximum stale files to preview.",
+    ),
+    model: str | None = typer.Option(
+        None,
+        "--model",
+        help="Override the configured model.",
+    ),
+) -> None:
+    """Preview what `trie sync` would change. Writes regenerated docs to .trie/preview/.
+
+    Identifies stale source files via the same logic as `trie check`, regenerates their
+    docs to `.trie/preview/<path>.md`, and prints a unified diff against the live tree.
+    Makes API calls — pass --budget USD or --limit N to cap.
+    """
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        console.print(f"[red]error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    model_id = model or config.models.bootstrap
+    pricing = get_pricing(model_id)
+    client = make_client(model_id)
+
+    with console.status("computing diffs…"):
+        result = diff_project(
+            project_root=project_root,
+            config=config,
+            client=client,
+            pricing=pricing,
+            budget_usd=budget,
+            limit=limit,
+        )
+
+    if not result.diffs:
+        console.print("[green]✓[/green] no stale docs — nothing to preview")
+        return
+
+    for fd in result.diffs:
+        console.print(f"\n[bold cyan]{fd.canonical_doc_path.relative_to(project_root)}[/bold cyan]")
+        if fd.unified_diff:
+            console.print(fd.unified_diff, end="")
+        else:
+            console.print("  (no textual diff — possibly only fingerprint changes)")
+
+    console.print(
+        f"\n[green]✓[/green] previewed {len(result.diffs)} file(s); "
+        f"actual cost ${result.actual_cost_usd:.4f} · "
+        f"skipped {result.files_skipped_no_budget} due to budget/limit"
     )
 
 
