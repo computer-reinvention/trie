@@ -8,7 +8,7 @@ Pre-alpha. v0.1 in active development. Not ready for general use.
 
 ## The wedge
 
-When you edit a symbol, trie's reference graph determines which *other* doc files also need regenerating — not just the doc for the file you edited. That cascade, plus a pre-commit check that the doc tree is coherent at every commit, is what trie does that nothing else does.
+When you edit a symbol, trie's reference graph determines which _other_ doc files also need regenerating — not just the doc for the file you edited. That cascade, plus a pre-commit check that the doc tree is coherent at every commit, is what trie does that nothing else does.
 
 ## Quick start
 
@@ -90,7 +90,9 @@ trie_version: 0.1.0
 source: src/slugify.py
 file_fingerprint: 9d4f374adc9a843c…
 ---
+
 <!-- trie:section symbol=src/slugify:slugify fingerprint=693808c2… -->
+
 ## `slugify(text: str, max_len: int = 60) -> str`
 
 Generates a URL-safe slug from arbitrary text. Lowercases the input, replaces
@@ -127,9 +129,11 @@ file_fingerprint: 0830b9bb…
 ---
 
 <!-- trie:section symbol=src/foo:bar fingerprint=1d10d565… -->
+
 ## `bar(s: str) -> str`
 
 Generated description.
+
 <!-- trie:end -->
 
 ## Hand-written notes
@@ -137,8 +141,11 @@ Generated description.
 This prose lives between sentinels and is preserved across regeneration.
 
 <!-- trie:section symbol=src/foo:baz fingerprint=f351c011… -->
+
 ## `baz()`
+
 …
+
 <!-- trie:end -->
 ```
 
@@ -150,12 +157,12 @@ This prose lives between sentinels and is preserved across regeneration.
 
 Trie ships an MCP server so coding agents can consult the doc tree as a separate context layer from their own conversation memory. Run-time and exposed tools:
 
-| Tool | What it returns |
-|---|---|
-| `get_doc(source_path)` | Markdown doc for a source file |
-| `find_symbol(name)` | Substring search over symbol names + signatures |
-| `references_to(qualified_name)` | Symbols that reference the given one (callers) |
-| `references_from(qualified_name)` | Symbols the given one references (callees) |
+| Tool                              | What it returns                                 |
+| --------------------------------- | ----------------------------------------------- |
+| `get_doc(source_path)`            | Markdown doc for a source file                  |
+| `find_symbol(name)`               | Substring search over symbol names + signatures |
+| `references_to(qualified_name)`   | Symbols that reference the given one (callers)  |
+| `references_from(qualified_name)` | Symbols the given one references (callees)      |
 
 For Claude Code, add to your `~/.claude/mcp_servers.json` (or per-project `.mcp.json`):
 
@@ -187,7 +194,7 @@ Hand-written prose between sentinels is still indexed by GitHub's search; only t
 - **M1** ✓ — `trie sync --file <path>` with section-sentinel writer
 - **M2** ✓ — `trie scan`, `trie sync --bootstrap` with budget/limit and dry-run
 - **M3** ✓ — `trie check`, `trie diff`, pre-commit hook
-- **M4** ✓ — heuristic cascade (tree-sitter imports + same-module name matching) *(the wedge)*
+- **M4** ✓ — heuristic cascade (tree-sitter imports + same-module name matching) _(the wedge)_
 - **M5** ✓ — MCP server (`trie mcp`) with `get_doc`, `find_symbol`, `references_to/from`
 - **M6** — polish, README golden example, packaging
 - **v0.2** — SCIP precision (replace tree-sitter heuristic with `scip-python` for type-aware references), TypeScript support, vector-over-docs retrieval, watch mode
