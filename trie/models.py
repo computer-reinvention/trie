@@ -31,24 +31,25 @@ class ModelClient(Protocol):
 
     def generate(self, req: GenerationRequest) -> GenerationResponse: ...
 
+    def count_tokens(self, req: GenerationRequest) -> int: ...
+
 
 class AnthropicClient:
     def __init__(self, model_id: str, *, client: Anthropic | None = None) -> None:
         self.model_id = model_id
         self._client = client or Anthropic()
 
-    def generate(self, req: GenerationRequest) -> GenerationResponse:
-        resp = self._client.messages.create(
-            model=self.model_id,
-            max_tokens=req.max_tokens,
-            system=[
+    def _payload(self, req: GenerationRequest) -> dict:
+        return {
+            "model": self.model_id,
+            "system": [
                 {
                     "type": "text",
                     "text": req.system_prompt,
                     "cache_control": {"type": "ephemeral"},
                 },
             ],
-            messages=[
+            "messages": [
                 {
                     "role": "user",
                     "content": [
@@ -61,7 +62,10 @@ class AnthropicClient:
                     ],
                 }
             ],
-        )
+        }
+
+    def generate(self, req: GenerationRequest) -> GenerationResponse:
+        resp = self._client.messages.create(max_tokens=req.max_tokens, **self._payload(req))
         text = "".join(block.text for block in resp.content if block.type == "text")
         usage = resp.usage
         return GenerationResponse(
@@ -71,6 +75,16 @@ class AnthropicClient:
             cache_creation_input_tokens=getattr(usage, "cache_creation_input_tokens", 0) or 0,
             cache_read_input_tokens=getattr(usage, "cache_read_input_tokens", 0) or 0,
         )
+
+    def count_tokens(self, req: GenerationRequest) -> int:
+        """Return the number of input tokens for `req` per the Anthropic count_tokens API.
+
+        Free, but rate-limited separately from message creation. Counts the same payload
+        the generator would actually send (system + cached context + per-symbol request),
+        so the result reflects real prompt size rather than a char-count heuristic.
+        """
+        resp = self._client.messages.count_tokens(**self._payload(req))
+        return resp.input_tokens
 
 
 def make_client(model_id: str) -> ModelClient:

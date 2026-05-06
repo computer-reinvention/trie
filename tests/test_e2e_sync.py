@@ -46,6 +46,9 @@ class FakeClient:
             cache_read_input_tokens=0 if self.calls == 1 else 100,
         )
 
+    def count_tokens(self, _req: GenerationRequest) -> int:
+        return 100
+
 
 @pytest.fixture
 def project(tmp_path: Path) -> Path:
