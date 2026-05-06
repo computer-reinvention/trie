@@ -39,7 +39,7 @@ def project(tmp_path: Path) -> Path:
     (tmp_path / "trie.toml").write_text(
         '[trie]\nversion = "0.1.0"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
-        '[docs]\nroot = "docs"\nsource_root = "."\n'
+        '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
         'cascade = "anthropic/claude-sonnet-4-6"\n'
         "[cascade]\ndefault_depth = 1\nhub_symbol_threshold = 20\n"
@@ -87,23 +87,23 @@ def tools(populated_project: Path):
     t.close()
 
 
-# --- get_doc ---
+# --- get_triefact ---
 
 
-def test_get_doc_returns_markdown_for_source_path(tools: TrieTools):
-    doc = tools.get_doc("lib.py")
-    assert "lib doc" in doc
-    assert "slugify body" in doc
+def test_get_triefact_returns_markdown_for_source_path(tools: TrieTools):
+    triefact = tools.get_triefact("lib.py")
+    assert "lib doc" in triefact
+    assert "slugify body" in triefact
 
 
-def test_get_doc_accepts_md_path(tools: TrieTools):
-    doc = tools.get_doc("lib.md")
-    assert "lib doc" in doc
+def test_get_triefact_accepts_md_path(tools: TrieTools):
+    triefact = tools.get_triefact("lib.md")
+    assert "lib doc" in triefact
 
 
-def test_get_doc_returns_notice_when_missing(tools: TrieTools):
-    msg = tools.get_doc("nonexistent.py")
-    assert "No trie doc" in msg
+def test_get_triefact_returns_notice_when_missing(tools: TrieTools):
+    msg = tools.get_triefact("nonexistent.py")
+    assert "No trie triefact" in msg
     assert "trie sync" in msg
 
 
@@ -184,6 +184,6 @@ def test_build_server_registers_tools(populated_project: Path):
         # FastMCP exposes tools via list_tools() — async, but we can introspect the
         # internal manager to assert registration without running an event loop.
         names = {tool.name for tool in server._tool_manager.list_tools()}
-        assert names == {"get_doc", "find_symbol", "references_to", "references_from"}
+        assert names == {"get_triefact", "find_symbol", "references_to", "references_from"}
     finally:
         tools.close()

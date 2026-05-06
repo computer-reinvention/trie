@@ -25,8 +25,8 @@ class Scope:
 
 
 @dataclass
-class Docs:
-    root: str = "docs"
+class Triefacts:
+    root: str = "triefacts"
     source_root: str = "."
 
 
@@ -46,7 +46,7 @@ class Cascade:
 class Config:
     trie: TrieMeta = field(default_factory=TrieMeta)
     scope: Scope = field(default_factory=Scope)
-    docs: Docs = field(default_factory=Docs)
+    triefacts: Triefacts = field(default_factory=Triefacts)
     models: Models = field(default_factory=Models)
     cascade: Cascade = field(default_factory=Cascade)
 
@@ -55,7 +55,7 @@ class Config:
         return cls(
             trie=TrieMeta(**data.get("trie", {})),
             scope=Scope(**data.get("scope", {})),
-            docs=Docs(**data.get("docs", {})),
+            triefacts=Triefacts(**data.get("triefacts", {})),
             models=Models(**data.get("models", {})),
             cascade=Cascade(**data.get("cascade", {})),
         )
@@ -71,7 +71,7 @@ class Config:
         """Walk up from `start` looking for trie.toml.
 
         Returns (config, config_dir) where config_dir is the directory containing trie.toml —
-        used as the project root for resolving relative paths in scope/docs.
+        used as the project root for resolving relative paths in scope/triefacts.
         """
         current = start.resolve()
         for d in (current, *current.parents):
@@ -104,14 +104,15 @@ exclude = [
     "**/dist/**",
 ]
 
-[docs]
-# Where the generated Markdown doc tree lives. Mirrors the source tree under this root.
-root = "docs"
+[triefacts]
+# Where the generated Markdown triefact tree lives. Mirrors the source tree under this root.
+# Named `triefacts` (not `docs`) to avoid colliding with existing project docs dirs.
+root = "triefacts"
 # Source tree root, relative to this file. "." means the project root.
 source_root = "."
 
 [models]
-# Default models for doc generation. Use "anthropic/<model>" or "openai/<model>" form.
+# Default models for triefact generation. Use "anthropic/<model>" or "openai/<model>" form.
 # Switch to a cheaper provider by changing these to e.g. "openai/deepseek-chat" with
 # DEEPSEEK_API_BASE / OPENAI_API_KEY env vars set, or use --model on the CLI.
 bootstrap = "anthropic/claude-sonnet-4-6"

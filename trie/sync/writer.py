@@ -37,12 +37,12 @@ Chunk = Section | Prose
 
 
 @dataclass
-class DocFile:
+class TriefactFile:
     front_matter: dict[str, Any] = field(default_factory=dict)
     chunks: list[Chunk] = field(default_factory=list)
 
     @classmethod
-    def parse(cls, text: str) -> DocFile:
+    def parse(cls, text: str) -> TriefactFile:
         fm: dict[str, Any] = {}
         rest = text
         m = FRONT_MATTER_RE.match(text)
@@ -84,7 +84,7 @@ class DocFile:
         return cls(front_matter=fm, chunks=chunks)
 
     @classmethod
-    def empty(cls) -> DocFile:
+    def empty(cls) -> TriefactFile:
         return cls()
 
     # --- queries ---

@@ -2,39 +2,39 @@ from __future__ import annotations
 
 import pytest
 
-from trie.sync.writer import DocFile, Prose, Section
+from trie.sync.writer import Prose, Section, TriefactFile
 
 # --- parsing ---
 
 
 def test_parse_empty():
-    doc = DocFile.parse("")
-    assert doc.front_matter == {}
-    assert doc.chunks == []
+    triefact = TriefactFile.parse("")
+    assert triefact.front_matter == {}
+    assert triefact.chunks == []
 
 
 def test_parse_only_prose():
-    doc = DocFile.parse("# hello\n\nplain markdown\n")
-    assert doc.front_matter == {}
-    assert len(doc.chunks) == 1
-    assert isinstance(doc.chunks[0], Prose)
-    assert doc.chunks[0].text == "# hello\n\nplain markdown\n"
+    triefact = TriefactFile.parse("# hello\n\nplain markdown\n")
+    assert triefact.front_matter == {}
+    assert len(triefact.chunks) == 1
+    assert isinstance(triefact.chunks[0], Prose)
+    assert triefact.chunks[0].text == "# hello\n\nplain markdown\n"
 
 
 def test_parse_front_matter_only():
     text = "---\nfoo: bar\nnested:\n  x: 1\n---\n"
-    doc = DocFile.parse(text)
-    assert doc.front_matter == {"foo": "bar", "nested": {"x": 1}}
-    assert doc.chunks == []
+    triefact = TriefactFile.parse(text)
+    assert triefact.front_matter == {"foo": "bar", "nested": {"x": 1}}
+    assert triefact.chunks == []
 
 
 def test_parse_front_matter_and_prose():
     text = "---\nkey: value\n---\n# heading\n\nbody\n"
-    doc = DocFile.parse(text)
-    assert doc.front_matter == {"key": "value"}
-    assert len(doc.chunks) == 1
-    assert isinstance(doc.chunks[0], Prose)
-    assert doc.chunks[0].text == "# heading\n\nbody\n"
+    triefact = TriefactFile.parse(text)
+    assert triefact.front_matter == {"key": "value"}
+    assert len(triefact.chunks) == 1
+    assert isinstance(triefact.chunks[0], Prose)
+    assert triefact.chunks[0].text == "# heading\n\nbody\n"
 
 
 def test_parse_single_section():
@@ -45,18 +45,18 @@ def test_parse_single_section():
         "Generated.\n"
         "<!-- trie:end -->\n"
     )
-    doc = DocFile.parse(text)
+    triefact = TriefactFile.parse(text)
     # Prose before, the section itself, and trailing newline prose after the close sentinel.
-    assert len(doc.chunks) == 3
-    assert isinstance(doc.chunks[0], Prose)
-    assert doc.chunks[0].text == "# heading\n\n"
-    sec = doc.chunks[1]
+    assert len(triefact.chunks) == 3
+    assert isinstance(triefact.chunks[0], Prose)
+    assert triefact.chunks[0].text == "# heading\n\n"
+    sec = triefact.chunks[1]
     assert isinstance(sec, Section)
     assert sec.qualified_name == "mod:foo"
     assert sec.fingerprint == "abc"
     assert sec.body == "## `foo`\nGenerated."
-    assert isinstance(doc.chunks[2], Prose)
-    assert doc.chunks[2].text == "\n"
+    assert isinstance(triefact.chunks[2], Prose)
+    assert triefact.chunks[2].text == "\n"
 
 
 def test_parse_multiple_sections_with_prose_between():
@@ -69,10 +69,10 @@ def test_parse_multiple_sections_with_prose_between():
         "beta\n"
         "<!-- trie:end -->\n"
     )
-    doc = DocFile.parse(text)
-    qnames = [c.qualified_name for c in doc.chunks if isinstance(c, Section)]
+    triefact = TriefactFile.parse(text)
+    qnames = [c.qualified_name for c in triefact.chunks if isinstance(c, Section)]
     assert qnames == ["mod:a", "mod:b"]
-    prose_chunks = [c for c in doc.chunks if isinstance(c, Prose)]
+    prose_chunks = [c for c in triefact.chunks if isinstance(c, Prose)]
     # One prose chunk between, one trailing newline chunk
     assert any("human prose between" in p.text for p in prose_chunks)
 
@@ -80,7 +80,7 @@ def test_parse_multiple_sections_with_prose_between():
 def test_parse_unterminated_section_raises():
     text = "<!-- trie:section symbol=mod:a fingerprint=1 -->\nbody never closes\n"
     with pytest.raises(ValueError, match="Unterminated"):
-        DocFile.parse(text)
+        TriefactFile.parse(text)
 
 
 # --- round-trip ---
@@ -88,7 +88,7 @@ def test_parse_unterminated_section_raises():
 
 def test_roundtrip_only_prose_is_byte_identical():
     text = "# hello\n\nsome text\n\nmore\n"
-    assert DocFile.parse(text).render() == text
+    assert TriefactFile.parse(text).render() == text
 
 
 def test_roundtrip_with_front_matter_and_section():
@@ -103,8 +103,8 @@ def test_roundtrip_with_front_matter_and_section():
         "Body of generated section.\n"
         "<!-- trie:end -->\n"
     )
-    doc = DocFile.parse(text)
-    assert doc.render() == text
+    triefact = TriefactFile.parse(text)
+    assert triefact.render() == text
 
 
 def test_roundtrip_multiple_sections_with_human_prose():
@@ -121,7 +121,7 @@ def test_roundtrip_multiple_sections_with_human_prose():
         "beta section content\n"
         "<!-- trie:end -->\n"
     )
-    rendered = DocFile.parse(text).render()
+    rendered = TriefactFile.parse(text).render()
     assert rendered == text
 
 
@@ -139,9 +139,9 @@ def test_upsert_replaces_existing_section_preserves_prose():
         "bar body\n"
         "<!-- trie:end -->\n"
     )
-    doc = DocFile.parse(text)
-    doc.upsert_section(qualified_name="mod:foo", fingerprint="new", body="new body")
-    out = doc.render()
+    triefact = TriefactFile.parse(text)
+    triefact.upsert_section(qualified_name="mod:foo", fingerprint="new", body="new body")
+    out = triefact.render()
     assert "fingerprint=new" in out
     assert "fingerprint=old" not in out
     assert "new body" in out
@@ -156,18 +156,18 @@ def test_upsert_replaces_existing_section_preserves_prose():
 
 def test_upsert_appends_new_section_at_end():
     text = "preamble\n"
-    doc = DocFile.parse(text)
-    doc.upsert_section(qualified_name="mod:new", fingerprint="aa", body="content")
-    out = doc.render()
+    triefact = TriefactFile.parse(text)
+    triefact.upsert_section(qualified_name="mod:new", fingerprint="aa", body="content")
+    out = triefact.render()
     assert "preamble" in out
     assert "<!-- trie:section symbol=mod:new fingerprint=aa -->" in out
     assert out.index("preamble") < out.index("trie:section")
 
 
-def test_upsert_into_empty_doc():
-    doc = DocFile.empty()
-    doc.upsert_section(qualified_name="mod:foo", fingerprint="abc", body="hello")
-    out = doc.render()
+def test_upsert_into_empty_triefact():
+    triefact = TriefactFile.empty()
+    triefact.upsert_section(qualified_name="mod:foo", fingerprint="abc", body="hello")
+    out = triefact.render()
     assert out == "<!-- trie:section symbol=mod:foo fingerprint=abc -->\nhello\n<!-- trie:end -->"
 
 
@@ -181,9 +181,9 @@ def test_remove_section():
         "bar body\n"
         "<!-- trie:end -->\n"
     )
-    doc = DocFile.parse(text)
-    assert doc.remove_section("mod:foo") is True
-    out = doc.render()
+    triefact = TriefactFile.parse(text)
+    assert triefact.remove_section("mod:foo") is True
+    out = triefact.render()
     assert "mod:foo" not in out
     assert "foo body" not in out
     assert "mod:bar" in out
@@ -192,8 +192,8 @@ def test_remove_section():
 
 
 def test_remove_missing_section_returns_false():
-    doc = DocFile.parse("plain\n")
-    assert doc.remove_section("mod:nope") is False
+    triefact = TriefactFile.parse("plain\n")
+    assert triefact.remove_section("mod:nope") is False
 
 
 def test_section_qnames_in_order():
@@ -202,8 +202,8 @@ def test_section_qnames_in_order():
         "<!-- trie:section symbol=mod:a fingerprint=2 -->\nA\n<!-- trie:end -->\n"
         "<!-- trie:section symbol=mod:b fingerprint=3 -->\nB\n<!-- trie:end -->\n"
     )
-    doc = DocFile.parse(text)
-    assert doc.section_qnames() == ["mod:c", "mod:a", "mod:b"]
+    triefact = TriefactFile.parse(text)
+    assert triefact.section_qnames() == ["mod:c", "mod:a", "mod:b"]
 
 
 # --- the critical guarantee: human edits between sentinels survive regen ---
@@ -222,14 +222,14 @@ def test_human_edit_between_sections_survives_regen():
         "Generated beta description.\n"
         "<!-- trie:end -->\n"
     )
-    doc = DocFile.parse(original)
+    triefact = TriefactFile.parse(original)
     # Simulate regen: replace alpha with new content + new fingerprint
-    doc.upsert_section(
+    triefact.upsert_section(
         qualified_name="mod:alpha",
         fingerprint="updated",
         body="Regenerated alpha description.",
     )
-    rendered = doc.render()
+    rendered = triefact.render()
     # Hand-written prose intact
     assert "## Why this module exists" in rendered
     assert "**hand-written** prose explaining design rationale" in rendered
@@ -245,8 +245,8 @@ def test_human_edit_between_sections_survives_regen():
 
 def test_front_matter_re_renders_in_insertion_order():
     text = "---\nsource: src/x.py\nfile_fingerprint: abc\n---\nbody\n"
-    doc = DocFile.parse(text)
-    out = doc.render()
+    triefact = TriefactFile.parse(text)
+    out = triefact.render()
     src_idx = out.index("source")
     fp_idx = out.index("file_fingerprint")
     assert src_idx < fp_idx

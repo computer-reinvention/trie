@@ -34,7 +34,7 @@ def scan_project(*, project_root: Path, config: Config, store: Store) -> ScanRes
     their symbols).
     """
     project_root = project_root.resolve()
-    src_root = (project_root / config.docs.source_root).resolve()
+    src_root = (project_root / config.triefacts.source_root).resolve()
     discovered = discover_files(project_root, config.scope)
 
     discovered_rel: dict[str, Path] = {}

@@ -36,7 +36,7 @@ def project(tmp_path: Path) -> Path:
     (tmp_path / "trie.toml").write_text(
         '[trie]\nversion = "0.1.0"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
-        '[docs]\nroot = "docs"\nsource_root = "."\n'
+        '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
         'cascade = "anthropic/claude-sonnet-4-6"\n'
         "[cascade]\ndefault_depth = 1\nhub_symbol_threshold = 20\n"

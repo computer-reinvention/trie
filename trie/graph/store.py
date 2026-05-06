@@ -12,8 +12,9 @@ from trie.parse.references import Reference
 
 SCHEMA_VERSION = 1
 
-# All schema is created if not present. edges and doc_sections are defined now so that
-# M4/M3 don't require a migration; they remain unpopulated until those milestones land.
+# All schema is created if not present. edges and triefact_sections are defined now so
+# that M4/M3 don't require a migration; they remain unpopulated until those milestones
+# land.
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (
     version INTEGER PRIMARY KEY
@@ -51,12 +52,12 @@ CREATE TABLE IF NOT EXISTS edges (
 );
 CREATE INDEX IF NOT EXISTS idx_edges_dst ON edges(dst_symbol_id);
 
-CREATE TABLE IF NOT EXISTS doc_sections (
-    doc_path TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS triefact_sections (
+    triefact_path TEXT NOT NULL,
     symbol_id INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
     section_fingerprint TEXT NOT NULL,
     last_generated_at INTEGER NOT NULL,
-    PRIMARY KEY (doc_path, symbol_id)
+    PRIMARY KEY (triefact_path, symbol_id)
 );
 """
 

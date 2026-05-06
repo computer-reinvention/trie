@@ -17,7 +17,7 @@ from trie.cli import app
 from trie.config import Config
 from trie.models import GenerationRequest, GenerationResponse
 from trie.sync.single_file import sync_single_file
-from trie.sync.writer import DocFile
+from trie.sync.writer import TriefactFile
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "tiny_repo"
 
@@ -56,7 +56,7 @@ def project(tmp_path: Path) -> Path:
     (root / "trie.toml").write_text(
         '[trie]\nversion = "0.1.0"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
-        '[docs]\nroot = "docs"\nsource_root = "."\n'
+        '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
         'cascade = "anthropic/claude-sonnet-4-6"\n'
         "[cascade]\ndefault_depth = 1\nhub_symbol_threshold = 20\n"
@@ -64,7 +64,7 @@ def project(tmp_path: Path) -> Path:
     return root
 
 
-def test_sync_single_file_writes_doc(project: Path):
+def test_sync_single_file_writes_triefact(project: Path):
     config, _ = Config.find_and_load(project)
     client = FakeClient()
 
@@ -77,17 +77,17 @@ def test_sync_single_file_writes_doc(project: Path):
 
     # Public symbols only: Calculator, Calculator.add, Calculator.multiply, Calculator.reset, add (5).
     assert result.symbols_generated == 5
-    assert result.doc_path == project / "docs" / "calculator.md"
-    assert result.doc_path.exists()
+    assert result.triefact_path == project / "triefacts" / "calculator.md"
+    assert result.triefact_path.exists()
 
-    rendered = result.doc_path.read_text()
+    rendered = result.triefact_path.read_text()
     # Front matter present
     assert "trie_version:" in rendered
     assert "source: calculator.py" in rendered
     assert "file_fingerprint:" in rendered
     # All public symbols got sections
-    doc = DocFile.parse(rendered)
-    qnames = doc.section_qnames()
+    triefact = TriefactFile.parse(rendered)
+    qnames = triefact.section_qnames()
     assert "calculator:add" in qnames
     assert "calculator:Calculator" in qnames
     assert "calculator:Calculator.add" in qnames
@@ -100,23 +100,23 @@ def test_sync_single_file_writes_doc(project: Path):
 def test_human_prose_between_sections_survives_resync(project: Path):
     config, _ = Config.find_and_load(project)
 
-    # First sync to create docs
+    # First sync to create triefacts
     sync_single_file(
         project / "strings.py",
         project_root=project,
         config=config,
         client=FakeClient(),
     )
-    doc_path = project / "docs" / "strings.md"
+    triefact_path = project / "triefacts" / "strings.md"
 
     # Human edits prose between sections
-    original = doc_path.read_text()
+    original = triefact_path.read_text()
     edited = original.replace(
         "<!-- trie:end -->",
         "<!-- trie:end -->\n\n## Why this module exists\n\nHand-written rationale.\n",
         1,  # only the first occurrence
     )
-    doc_path.write_text(edited)
+    triefact_path.write_text(edited)
 
     # Second sync (with new fake client → different generated bodies)
     sync_single_file(
@@ -126,13 +126,13 @@ def test_human_prose_between_sections_survives_resync(project: Path):
         client=FakeClient(),
     )
 
-    after = doc_path.read_text()
+    after = triefact_path.read_text()
     assert "Hand-written rationale." in after
     assert "## Why this module exists" in after
     # Sections still present
-    doc = DocFile.parse(after)
-    assert "strings:shout" in doc.section_qnames()
-    assert "strings:whisper" in doc.section_qnames()
+    triefact = TriefactFile.parse(after)
+    assert "strings:shout" in triefact.section_qnames()
+    assert "strings:whisper" in triefact.section_qnames()
 
 
 def test_resync_updates_section_when_source_changes(project: Path):
@@ -144,9 +144,9 @@ def test_resync_updates_section_when_source_changes(project: Path):
         config=config,
         client=FakeClient(),
     )
-    doc_path = project / "docs" / "strings.md"
-    doc_v1 = DocFile.parse(doc_path.read_text())
-    shout_v1 = doc_v1.get_section("strings:shout")
+    triefact_path = project / "triefacts" / "strings.md"
+    triefact_v1 = TriefactFile.parse(triefact_path.read_text())
+    shout_v1 = triefact_v1.get_section("strings:shout")
     assert shout_v1 is not None
 
     # Modify the source: add a parameter to shout
@@ -162,8 +162,8 @@ def test_resync_updates_section_when_source_changes(project: Path):
     )
 
     sync_single_file(src, project_root=project, config=config, client=FakeClient())
-    doc_v2 = DocFile.parse(doc_path.read_text())
-    shout_v2 = doc_v2.get_section("strings:shout")
+    triefact_v2 = TriefactFile.parse(triefact_path.read_text())
+    shout_v2 = triefact_v2.get_section("strings:shout")
     assert shout_v2 is not None
     # The fingerprint should have changed because the body was modified
     assert shout_v2.fingerprint != shout_v1.fingerprint
@@ -178,8 +178,8 @@ def test_resync_removes_section_when_symbol_deleted(project: Path):
         config=config,
         client=FakeClient(),
     )
-    doc_path = project / "docs" / "strings.md"
-    assert "strings:whisper" in DocFile.parse(doc_path.read_text()).section_qnames()
+    triefact_path = project / "triefacts" / "strings.md"
+    assert "strings:whisper" in TriefactFile.parse(triefact_path.read_text()).section_qnames()
 
     # Delete whisper from the source
     src = project / "strings.py"
@@ -192,7 +192,7 @@ def test_resync_removes_section_when_symbol_deleted(project: Path):
 
     result = sync_single_file(src, project_root=project, config=config, client=FakeClient())
     assert result.sections_removed == 1
-    after = DocFile.parse(doc_path.read_text())
+    after = TriefactFile.parse(triefact_path.read_text())
     assert "strings:whisper" not in after.section_qnames()
     assert "strings:shout" in after.section_qnames()
 
@@ -222,7 +222,7 @@ def test_cli_sync_runs_incremental_when_no_flags(project: Path, monkeypatch):
 
     runner = CliRunner()
     result = runner.invoke(app, ["sync"])
-    # Project has no docs yet → all files are stale → incremental should sync them.
+    # Project has no triefacts yet → all files are stale → incremental should sync them.
     assert result.exit_code == 0
     assert "synced" in result.output or "coherent" in result.output
 
