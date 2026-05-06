@@ -200,4 +200,12 @@ def extract_symbols(file_path: Path, source_root: Path | None = None) -> list[Sy
             )
         elif target.type == "class_definition":
             symbols.extend(_walk_class(target, source, module_key=module_key, rel_file=rel_file))
-    return symbols
+
+    # Deduplicate by qualified_name. typing.@overload creates multiple defs with the
+    # same name, and @property + @x.setter does too. Python requires the actual
+    # implementation/getter to come last in source order, so last-wins picks the
+    # symbol whose body is the one users actually call.
+    deduped: dict[str, Symbol] = {}
+    for sym in symbols:
+        deduped[sym.qualified_name] = sym
+    return list(deduped.values())
