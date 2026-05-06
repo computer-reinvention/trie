@@ -30,6 +30,9 @@ class FakeClient:
             cache_read_input_tokens=0 if self.calls == 1 else 500,
         )
 
+    def count_tokens(self, _req: GenerationRequest) -> int:
+        return 100
+
 
 @pytest.fixture
 def project(tmp_path: Path) -> Path:
@@ -60,7 +63,12 @@ def _scanned_store(project: Path) -> Store:
 
 def test_plan_ranks_higher_score_first(project: Path):
     with _scanned_store(project) as store:
-        plan = build_plan(project_root=project, store=store, model_id="anthropic/claude-sonnet-4-6")
+        plan = build_plan(
+            project_root=project,
+            store=store,
+            model_id="anthropic/claude-sonnet-4-6",
+            client=FakeClient(),
+        )
     paths = [it.file_path for it in plan.items]
     # large.py has 2 symbols * ~50 LOC; medium.py has 3 symbols * small LOC; small.py has 1 * 2 LOC.
     # large should come first (highest LOC*symbols product).
@@ -72,14 +80,24 @@ def test_plan_ranks_higher_score_first(project: Path):
 def test_plan_excludes_files_with_no_public_symbols(project: Path, tmp_path: Path):
     (project / "private.py").write_text("def _hidden():\n    pass\n")
     with _scanned_store(project) as store:
-        plan = build_plan(project_root=project, store=store, model_id="anthropic/claude-sonnet-4-6")
+        plan = build_plan(
+            project_root=project,
+            store=store,
+            model_id="anthropic/claude-sonnet-4-6",
+            client=FakeClient(),
+        )
     paths = [it.file_path for it in plan.items]
     assert "private.py" not in paths
 
 
 def test_plan_with_unknown_model_zero_cost(project: Path):
     with _scanned_store(project) as store:
-        plan = build_plan(project_root=project, store=store, model_id="openai/some-model")
+        plan = build_plan(
+            project_root=project,
+            store=store,
+            model_id="openai/some-model",
+            client=FakeClient(),  # never queried since pricing is unknown
+        )
     assert plan.pricing_known is False
     assert plan.total_estimated_cost == 0.0
 
@@ -89,7 +107,12 @@ def test_run_bootstrap_respects_limit(project: Path):
     pricing = get_pricing("anthropic/claude-sonnet-4-6")
     client = FakeClient()
     with _scanned_store(project) as store:
-        plan = build_plan(project_root=project, store=store, model_id="anthropic/claude-sonnet-4-6")
+        plan = build_plan(
+            project_root=project,
+            store=store,
+            model_id="anthropic/claude-sonnet-4-6",
+            client=FakeClient(),
+        )
     result = run_bootstrap(
         plan=plan,
         project_root=project,
@@ -108,7 +131,12 @@ def test_run_bootstrap_respects_budget(project: Path):
     pricing = get_pricing("anthropic/claude-sonnet-4-6")
     client = FakeClient()
     with _scanned_store(project) as store:
-        plan = build_plan(project_root=project, store=store, model_id="anthropic/claude-sonnet-4-6")
+        plan = build_plan(
+            project_root=project,
+            store=store,
+            model_id="anthropic/claude-sonnet-4-6",
+            client=FakeClient(),
+        )
     # Tiny budget should cap to ~1 file.
     result = run_bootstrap(
         plan=plan,
@@ -129,7 +157,12 @@ def test_run_bootstrap_unbounded_processes_all(project: Path):
     pricing = get_pricing("anthropic/claude-sonnet-4-6")
     client = FakeClient()
     with _scanned_store(project) as store:
-        plan = build_plan(project_root=project, store=store, model_id="anthropic/claude-sonnet-4-6")
+        plan = build_plan(
+            project_root=project,
+            store=store,
+            model_id="anthropic/claude-sonnet-4-6",
+            client=FakeClient(),
+        )
     result = run_bootstrap(
         plan=plan,
         project_root=project,
@@ -143,38 +176,38 @@ def test_run_bootstrap_unbounded_processes_all(project: Path):
     assert result.files_skipped_no_budget == 0
 
 
-def test_cli_bootstrap_dry_run_makes_no_api_calls(project: Path, monkeypatch: pytest.MonkeyPatch):
-    """--dry-run should print the plan without invoking the model."""
-    sentinel: dict[str, bool] = {"called": False}
-
-    def boom(*args, **kwargs):
-        sentinel["called"] = True
-        raise AssertionError("model should not be constructed in dry-run")
-
-    monkeypatch.setattr("trie.cli.make_client", boom)
-    runner = CliRunner()
-    runner.invoke(app, ["sync", "--bootstrap", "--dry-run"], catch_exceptions=False)
-    # CliRunner runs in-process; without monkeypatching cwd, find_and_load fails with
-    # ConfigNotFoundError before reaching make_client. The next test exercises the dry-run
-    # success path with cwd set; this one just guarantees that on failure, no model is built.
-    assert sentinel["called"] is False
-
-
-def test_cli_bootstrap_dry_run_in_project(project: Path, monkeypatch: pytest.MonkeyPatch):
+def test_cli_bootstrap_dry_run_makes_no_message_calls(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """--dry-run may call count_tokens (free) but must never call generate."""
     monkeypatch.chdir(project)
+    fake = FakeClient()
+    monkeypatch.setattr("trie.cli.make_client", lambda _model_id: fake)
+    runner = CliRunner()
+    result = runner.invoke(app, ["sync", "--bootstrap", "--dry-run"])
+    assert result.exit_code == 0, result.output
+    assert fake.calls == 0  # generate never invoked
+    assert "plan for" in result.output
+    assert "dry-run" in result.output
+
+
+def test_cli_bootstrap_dry_run_outside_project_errors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Without a trie.toml in the cwd or its parents, dry-run errors before constructing
+    a client."""
+    monkeypatch.chdir(tmp_path)
     sentinel: dict[str, bool] = {"called": False}
 
     def boom(*_args, **_kwargs):
         sentinel["called"] = True
-        raise AssertionError("model should not be constructed in dry-run")
+        raise AssertionError("client should not be constructed without config")
 
     monkeypatch.setattr("trie.cli.make_client", boom)
     runner = CliRunner()
     result = runner.invoke(app, ["sync", "--bootstrap", "--dry-run"])
-    assert result.exit_code == 0, result.output
+    assert result.exit_code == 1
     assert sentinel["called"] is False
-    assert "plan for" in result.output
-    assert "dry-run" in result.output
 
 
 def test_cli_bootstrap_requires_budget_or_limit(project: Path, monkeypatch: pytest.MonkeyPatch):

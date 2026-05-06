@@ -10,8 +10,8 @@ from trie.parse.python import extract_symbols
 from trie.sync.generator import (
     SYSTEM_PROMPT,
     FileGenerationContext,
-    _build_cached_context,
     _build_request,
+    build_cached_context,
     generate_section,
 )
 
@@ -37,7 +37,7 @@ class FakeClient:
 
 def test_cached_context_includes_source_and_filename():
     ctx = FileGenerationContext(file_path="src/foo.py", source_text="def foo():\n    pass\n")
-    out = _build_cached_context(ctx)
+    out = build_cached_context(ctx)
     assert "src/foo.py" in out
     assert "def foo()" in out
     assert "```python" in out

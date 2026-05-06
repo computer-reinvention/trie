@@ -35,7 +35,7 @@ class GeneratedSection:
     cache_read_input_tokens: int
 
 
-def _build_cached_context(ctx: FileGenerationContext) -> str:
+def build_cached_context(ctx: FileGenerationContext) -> str:
     return (
         f"You are documenting symbols in the file `{ctx.file_path}`. "
         f"Below is the complete source of that file.\n\n"
@@ -67,7 +67,7 @@ def generate_section(
     """
     req = GenerationRequest(
         system_prompt=SYSTEM_PROMPT,
-        cached_context=_build_cached_context(file_ctx),
+        cached_context=build_cached_context(file_ctx),
         request=_build_request(symbol),
         max_tokens=max_tokens,
     )

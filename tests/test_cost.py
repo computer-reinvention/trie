@@ -6,7 +6,6 @@ from trie.cost import (
     PRICING,
     estimate_actual_cost,
     estimate_file_cost,
-    estimate_tokens,
     get_pricing,
 )
 
@@ -22,19 +21,10 @@ def test_get_pricing_unknown():
     assert get_pricing("openai/some-future-model") is None
 
 
-def test_estimate_tokens_min_one():
-    assert estimate_tokens("") == 1
-    assert estimate_tokens("ab") == 1
-
-
-def test_estimate_tokens_scales():
-    assert estimate_tokens("x" * 4000) == 1000
-
-
 def test_zero_public_symbols_costs_nothing():
     p = PRICING["anthropic/claude-sonnet-4-6"]
     est = estimate_file_cost(
-        file_path="empty.py", source_text="# nothing\n", public_symbols=0, pricing=p
+        file_path="empty.py", cached_prefix_tokens=0, public_symbols=0, pricing=p
     )
     assert est.cost_usd == 0.0
     assert est.cache_create_tokens == 0
@@ -44,32 +34,36 @@ def test_single_symbol_only_pays_cache_create():
     p = PRICING["anthropic/claude-sonnet-4-6"]
     est = estimate_file_cost(
         file_path="x.py",
-        source_text="def x():\n    pass\n" * 50,  # ~1000 chars → ~250 tokens
+        cached_prefix_tokens=250,
         public_symbols=1,
         pricing=p,
     )
-    assert est.cache_create_tokens > 0
+    assert est.cache_create_tokens == 250
     assert est.cache_read_tokens == 0  # nothing to read on the first call
 
 
 def test_multiple_symbols_amortize_via_cache():
     """Two-symbol cost should be far less than 2x single-symbol cost thanks to cache reads."""
     p = PRICING["anthropic/claude-sonnet-4-6"]
-    src = "def x():\n    pass\n" * 200  # bigger file → caching savings more visible
-
-    one = estimate_file_cost(file_path="x.py", source_text=src, public_symbols=1, pricing=p)
-    two = estimate_file_cost(file_path="x.py", source_text=src, public_symbols=2, pricing=p)
-
+    one = estimate_file_cost(
+        file_path="x.py", cached_prefix_tokens=2000, public_symbols=1, pricing=p
+    )
+    two = estimate_file_cost(
+        file_path="x.py", cached_prefix_tokens=2000, public_symbols=2, pricing=p
+    )
     # Cache read at 0.1x input is cheap; second symbol should cost much less than the first.
     assert two.cost_usd < 1.5 * one.cost_usd
 
 
 def test_haiku_cheaper_than_sonnet():
-    src = "def x():\n    pass\n" * 100
     sonnet = PRICING["anthropic/claude-sonnet-4-6"]
     haiku = PRICING["anthropic/claude-haiku-4-5-20251001"]
-    s = estimate_file_cost(file_path="x.py", source_text=src, public_symbols=5, pricing=sonnet)
-    h = estimate_file_cost(file_path="x.py", source_text=src, public_symbols=5, pricing=haiku)
+    s = estimate_file_cost(
+        file_path="x.py", cached_prefix_tokens=1000, public_symbols=5, pricing=sonnet
+    )
+    h = estimate_file_cost(
+        file_path="x.py", cached_prefix_tokens=1000, public_symbols=5, pricing=haiku
+    )
     assert h.cost_usd < s.cost_usd
 
 

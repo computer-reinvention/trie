@@ -12,7 +12,8 @@ from trie.cost import (
     get_pricing,
 )
 from trie.graph.store import Store
-from trie.models import ModelClient
+from trie.models import GenerationRequest, ModelClient
+from trie.sync.generator import SYSTEM_PROMPT, FileGenerationContext, build_cached_context
 from trie.sync.single_file import FileSyncResult, sync_single_file
 
 
@@ -40,11 +41,15 @@ class BootstrapResult:
     sync_results: list[FileSyncResult]
 
 
-def build_plan(*, project_root: Path, store: Store, model_id: str) -> BootstrapPlan:
+def build_plan(
+    *, project_root: Path, store: Store, model_id: str, client: ModelClient
+) -> BootstrapPlan:
     """Rank files by `LOC * public_symbol_count` and produce per-file cost estimates.
 
     Files with no public symbols are excluded — there's nothing for the generator to do.
-    Files that disappeared between scan and now are skipped silently.
+    Files that disappeared between scan and now are skipped silently. The cached-prefix
+    token count for each file comes from the Anthropic `count_tokens` API (free, but
+    subject to its own RPM limit), giving accurate cost estimates instead of a heuristic.
     """
     pricing = get_pricing(model_id)
     items: list[PlanItem] = []
@@ -58,9 +63,16 @@ def build_plan(*, project_root: Path, store: Store, model_id: str) -> BootstrapP
         loc = max(1, text.count("\n"))
         score = float(loc * stats.public_symbols)
         if pricing is not None:
+            ctx = FileGenerationContext(file_path=stats.path, source_text=text)
+            count_req = GenerationRequest(
+                system_prompt=SYSTEM_PROMPT,
+                cached_context=build_cached_context(ctx),
+                request="",
+            )
+            cached_prefix_tokens = client.count_tokens(count_req)
             est = estimate_file_cost(
                 file_path=stats.path,
-                source_text=text,
+                cached_prefix_tokens=cached_prefix_tokens,
                 public_symbols=stats.public_symbols,
                 pricing=pricing,
             )

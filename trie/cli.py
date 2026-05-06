@@ -267,11 +267,15 @@ def _run_bootstrap_sync(
     model_id = model or config.models.bootstrap
     pricing = get_pricing(model_id)
 
+    client = make_client(model_id)
     db_path = project_root / ".trie" / "graph.db"
     with Store(db_path) as store:
         with console.status("scanning project…"):
             scan_project(project_root=project_root, config=config, store=store)
-        plan = build_plan(project_root=project_root, store=store, model_id=model_id)
+        with console.status("counting tokens…"):
+            plan = build_plan(
+                project_root=project_root, store=store, model_id=model_id, client=client
+            )
 
         if not plan.items:
             console.print("[yellow]no files in scope to bootstrap[/yellow]")
@@ -290,10 +294,9 @@ def _run_bootstrap_sync(
             console.print(f"  … and {len(plan.items) - 10} more")
 
         if dry_run:
-            console.print("\n[yellow]dry-run: no API calls made[/yellow]")
+            console.print("\n[yellow]dry-run: no message-creation calls made[/yellow]")
             return
 
-        client = make_client(model_id)
         with console.status("generating triefacts…"):
             result = run_bootstrap(
                 plan=plan,

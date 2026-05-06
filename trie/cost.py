@@ -55,30 +55,21 @@ def get_pricing(model_id: str) -> ModelPricing | None:
     return PRICING.get(model_id)
 
 
-def estimate_tokens(text: str) -> int:
-    """Rough token count: ~4 chars per token. Conservative for Python source.
-
-    Anthropic's tokenizer is closer to 3.5 chars per token for code; using 4 errs slightly
-    on the low side. The estimate is for plan/budget UX, not billing — actual cost is
-    reported after the fact from the API's usage counters.
-    """
-    return max(1, len(text) // 4)
-
-
 def estimate_file_cost(
     *,
     file_path: str,
-    source_text: str,
+    cached_prefix_tokens: int,
     public_symbols: int,
     pricing: ModelPricing,
-    system_prompt_tokens: int = 200,
     request_tokens_per_symbol: int = 80,
     output_tokens_per_symbol: int = 200,
 ) -> FileEstimate:
     """Estimate the cost of generating triefacts for one file.
 
-    Assumes the cached prefix (system prompt + full source file) is paid once on the first
-    symbol and reused via cache reads for the remaining symbols in the same file.
+    `cached_prefix_tokens` should come from the Anthropic `count_tokens` API for the actual
+    (system + cached context) payload — see `ModelClient.count_tokens`. The cached prefix
+    is paid once on the first symbol via cache_write and reused via cache_read for the
+    rest. Output tokens cannot be known ahead of time and are approximated by a constant.
     """
     if public_symbols == 0:
         return FileEstimate(
@@ -91,7 +82,6 @@ def estimate_file_cost(
             cost_usd=0.0,
         )
 
-    cached_prefix_tokens = estimate_tokens(source_text) + system_prompt_tokens
     cache_create = cached_prefix_tokens
     cache_read = cached_prefix_tokens * max(0, public_symbols - 1)
     request = request_tokens_per_symbol * public_symbols
