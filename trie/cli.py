@@ -113,7 +113,7 @@ def _root(
         False,
         "--verbose",
         "-v",
-        help="Chatty mode: include per-symbol detail and token breakdowns.",
+        help="Verbose mode: include per-symbol detail and token breakdowns.",
     ),
 ) -> None:
     if quiet and verbose:
@@ -123,7 +123,7 @@ def _root(
     if quiet:
         level = Verbosity.MUTE
     elif verbose:
-        level = Verbosity.CHATTY
+        level = Verbosity.VERBOSE
     else:
         level = Verbosity.MEDIUM
     ctx.obj = Reporter(verbosity=level, console=console)
