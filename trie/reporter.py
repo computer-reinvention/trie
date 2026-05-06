@@ -19,7 +19,7 @@ from rich.progress import (
 class Verbosity(IntEnum):
     MUTE = 0
     MEDIUM = 1
-    CHATTY = 2
+    VERBOSE = 2
 
 
 class Reporter:
@@ -39,7 +39,7 @@ class Reporter:
             self.console.print(msg)
 
     def detail(self, msg: str) -> None:
-        if self.verbosity >= Verbosity.CHATTY:
+        if self.verbosity >= Verbosity.VERBOSE:
             self.console.print(msg)
 
     def success(self, msg: str) -> None:
@@ -75,7 +75,7 @@ class _NullContext:
 class ProgressHandle:
     """Per-file progress reporter. MEDIUM+ shows a Rich progress bar with ETA;
     finished files print as `✓ rel_path · $cost` lines above the bar.
-    CHATTY adds a `→ rel_path` line when each file starts.
+    VERBOSE adds a `→ rel_path` line when each file starts.
     MUTE is a complete no-op.
     """
 
@@ -126,7 +126,7 @@ class ProgressHandle:
             self._progress.update(
                 self._task_id, description=f"{self.label} [cyan]{rel_path}[/cyan]"
             )
-        if self.reporter.verbosity >= Verbosity.CHATTY:
+        if self.reporter.verbosity >= Verbosity.VERBOSE:
             self._print(f"  [dim]→[/dim] {rel_path}")
 
     def finish_file(
@@ -154,7 +154,7 @@ class ProgressHandle:
         line = " · ".join(parts)
         self._print(line)
 
-        if self.reporter.verbosity >= Verbosity.CHATTY:
+        if self.reporter.verbosity >= Verbosity.VERBOSE:
             detail_bits: list[str] = []
             if tokens_in is not None or tokens_out is not None:
                 detail_bits.append(f"tok {tokens_in or 0}/{tokens_out or 0}")

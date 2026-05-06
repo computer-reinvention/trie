@@ -40,8 +40,8 @@ def test_medium_emits_info_and_success_but_not_detail():
     assert "noisy" not in out
 
 
-def test_chatty_emits_everything():
-    reporter, buf = _make_reporter(Verbosity.CHATTY)
+def test_verbose_emits_everything():
+    reporter, buf = _make_reporter(Verbosity.VERBOSE)
     reporter.info("hello")
     reporter.detail("noisy")
     out = buf.getvalue()
@@ -70,8 +70,8 @@ def test_progress_medium_prints_finish_lines():
     assert "3 sym" in out
 
 
-def test_progress_chatty_includes_token_detail():
-    reporter, buf = _make_reporter(Verbosity.CHATTY)
+def test_progress_verbose_includes_token_detail():
+    reporter, buf = _make_reporter(Verbosity.VERBOSE)
     with reporter.start_progress(total=1, label="syncing") as ph:
         ph.start_file("a.py")
         ph.finish_file("a.py", cost_usd=0.02, tokens_in=100, tokens_out=50)

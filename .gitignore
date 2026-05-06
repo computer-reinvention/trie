@@ -51,3 +51,6 @@ htmlcov/
 # env vars
 .env
 .env.local
+
+# scratch files
+subocommand_notes.md
