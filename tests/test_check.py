@@ -126,34 +126,43 @@ def test_clean_when_all_in_sync_with_human_prose(project: Path):
     assert result.is_clean
 
 
-def test_cli_check_exits_zero_when_clean(project: Path, monkeypatch: pytest.MonkeyPatch):
+def test_cli_sync_check_exits_zero_when_clean(project: Path, monkeypatch: pytest.MonkeyPatch):
     _sync_all(project)
     monkeypatch.chdir(project)
     runner = CliRunner()
-    result = runner.invoke(app, ["check"])
+    result = runner.invoke(app, ["sync", "--check"])
     assert result.exit_code == 0
     assert "coherent" in result.output
 
 
-def test_cli_check_exits_nonzero_when_stale(project: Path, monkeypatch: pytest.MonkeyPatch):
+def test_cli_sync_check_exits_nonzero_when_stale(project: Path, monkeypatch: pytest.MonkeyPatch):
     _sync_all(project)
     (project / "src" / "alpha.py").write_text("def alpha():\n    return 999\n")
     monkeypatch.chdir(project)
     runner = CliRunner()
-    result = runner.invoke(app, ["check"])
+    result = runner.invoke(app, ["sync", "--check"])
     assert result.exit_code == 1
     assert "stale" in result.output
     assert "src/alpha:alpha" in result.output
 
 
-def test_cli_check_quiet_mode(project: Path, monkeypatch: pytest.MonkeyPatch):
+def test_cli_sync_check_quiet_mode(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """Global --quiet/-q suppresses per-symbol detail; summary still emits via reporter.error."""
     _sync_all(project)
     (project / "src" / "alpha.py").write_text("def alpha():\n    return 999\n")
     monkeypatch.chdir(project)
     runner = CliRunner()
-    result = runner.invoke(app, ["check", "--quiet"])
+    result = runner.invoke(app, ["-q", "sync", "--check"])
     assert result.exit_code == 1
     # Per-symbol details suppressed in quiet mode
     assert "src/alpha:alpha" not in result.output
     # Summary still present
     assert "issue" in result.output
+
+
+def test_cli_sync_check_rejects_combined_flags(project: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["sync", "--check", "--all"])
+    assert result.exit_code == 1
+    assert "mutually exclusive" in result.output

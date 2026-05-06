@@ -250,3 +250,48 @@ def test_triefact_regenerated_only_for_affected_symbols_v01_limitation(project: 
     app_triefact = TriefactFile.parse(app_text)
     assert "lib:helper" in lib_triefact.section_qnames()
     assert "app:run" in app_triefact.section_qnames()
+
+
+def test_run_incremental_invokes_progress_callback(project: Path):
+    """Cascade-driven re-sync streams per-file events to the progress callback."""
+
+    config, _ = Config.find_and_load(project)
+    db_path = project / ".trie" / "graph.db"
+
+    # Bootstrap both files first so we have a non-empty triefacts tree.
+    with Store(db_path) as store:
+        from trie.scan import scan_project as _scan
+
+        _scan(project_root=project, config=config, store=store)
+    sync_single_file(project / "lib.py", project_root=project, config=config, client=FakeClient())
+    sync_single_file(project / "app.py", project_root=project, config=config, client=FakeClient())
+
+    # Mutate lib.py so the cascade kicks in.
+    (project / "lib.py").write_text("def helper():\n    return 'CHANGED'\n")
+
+    starts: list[tuple[str, int, int]] = []
+    dones: list[str] = []
+
+    class Recorder:
+        def on_start(self, rel_path, idx, total):
+            starts.append((rel_path, idx, total))
+
+        def on_done(self, rel_path, result, running_cost_usd):
+            dones.append(rel_path)
+
+        def on_skip(self, rel_path, reason):
+            pass
+
+    with Store(db_path) as store:
+        run_incremental(
+            project_root=project,
+            config=config,
+            store=store,
+            client=FakeClient(body="## v2\n\nbody."),
+            pricing=get_pricing("anthropic/claude-sonnet-4-6"),
+            progress=Recorder(),
+        )
+
+    # At least lib.py and app.py should have streamed through the callback.
+    assert {rel for rel, _, _ in starts} >= {"lib.py", "app.py"}
+    assert {rel for rel in dones} >= {"lib.py", "app.py"}

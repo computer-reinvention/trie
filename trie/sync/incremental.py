@@ -10,6 +10,7 @@ from trie.graph.store import Store
 from trie.models import ModelClient
 from trie.scan import scan_project
 from trie.sync.cascade import compute_cascade
+from trie.sync.progress import NULL_PROGRESS, ProgressCallback
 from trie.sync.reconcile import remove_orphan_triefacts
 from trie.sync.single_file import FileSyncResult, sync_single_file
 
@@ -35,6 +36,7 @@ def run_incremental(
     pricing: ModelPricing | None = None,
     budget_usd: float | None = None,
     limit: int | None = None,
+    progress: ProgressCallback | None = None,
 ) -> IncrementalResult:
     """Refresh triefacts that drifted from source, plus the cascade of files referencing them.
 
@@ -78,17 +80,21 @@ def run_incremental(
         hub_threshold=config.cascade.hub_symbol_threshold,
     )
 
+    cb: ProgressCallback = progress if progress is not None else NULL_PROGRESS
     sync_results: list[FileSyncResult] = []
     actual_cost = 0.0
     skipped_budget = 0
     skipped_no_symbols = 0
+    total = len(cascade.affected_files)
 
-    for rel in cascade.affected_files:
+    for idx, rel in enumerate(cascade.affected_files, start=1):
         if limit is not None and len(sync_results) >= limit:
             skipped_budget += 1
+            cb.on_skip(rel, "limit reached")
             continue
         if budget_usd is not None and actual_cost >= budget_usd:
             skipped_budget += 1
+            cb.on_skip(rel, "budget reached")
             continue
 
         abs_path = src_root / rel
@@ -96,19 +102,24 @@ def run_incremental(
             # Source removed since the cascade was computed; reconcile_deletions handles it.
             continue
 
+        cb.on_start(rel, idx, total)
         result = sync_single_file(abs_path, project_root=project_root, config=config, client=client)
         if result.symbols_generated == 0 and result.sections_removed == 0:
             skipped_no_symbols += 1
+            cb.on_skip(rel, "no public symbols")
             continue
         sync_results.append(result)
+        file_cost = 0.0
         if pricing is not None:
-            actual_cost += estimate_actual_cost(
+            file_cost = estimate_actual_cost(
                 cache_creation_input_tokens=result.cache_creation_input_tokens,
                 cache_read_input_tokens=result.cache_read_input_tokens,
                 input_tokens=result.input_tokens,
                 output_tokens=result.output_tokens,
                 pricing=pricing,
             )
+            actual_cost += file_cost
+        cb.on_done(rel, result, actual_cost)
 
     return IncrementalResult(
         files_synced=len(sync_results),

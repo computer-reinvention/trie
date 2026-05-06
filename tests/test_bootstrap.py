@@ -176,26 +176,20 @@ def test_run_bootstrap_unbounded_processes_all(project: Path):
     assert result.files_skipped_no_budget == 0
 
 
-def test_cli_bootstrap_dry_run_makes_no_message_calls(
-    project: Path, monkeypatch: pytest.MonkeyPatch
-):
-    """--dry-run may call count_tokens (free) but must never call generate."""
+def test_cli_plan_makes_no_message_calls(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """`trie plan` may call count_tokens (free) but must never call generate."""
     monkeypatch.chdir(project)
     fake = FakeClient()
     monkeypatch.setattr("trie.cli.make_client", lambda _model_id: fake)
     runner = CliRunner()
-    result = runner.invoke(app, ["sync", "--bootstrap", "--dry-run"])
+    result = runner.invoke(app, ["plan"])
     assert result.exit_code == 0, result.output
     assert fake.calls == 0  # generate never invoked
     assert "plan for" in result.output
-    assert "dry-run" in result.output
 
 
-def test_cli_bootstrap_dry_run_outside_project_errors(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-    """Without a trie.toml in the cwd or its parents, dry-run errors before constructing
-    a client."""
+def test_cli_plan_outside_project_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Without a trie.toml in the cwd or its parents, plan errors before constructing a client."""
     monkeypatch.chdir(tmp_path)
     sentinel: dict[str, bool] = {"called": False}
 
@@ -205,34 +199,110 @@ def test_cli_bootstrap_dry_run_outside_project_errors(
 
     monkeypatch.setattr("trie.cli.make_client", boom)
     runner = CliRunner()
-    result = runner.invoke(app, ["sync", "--bootstrap", "--dry-run"])
+    result = runner.invoke(app, ["plan"])
     assert result.exit_code == 1
     assert sentinel["called"] is False
 
 
-def test_cli_bootstrap_requires_budget_or_limit(project: Path, monkeypatch: pytest.MonkeyPatch):
+def test_cli_first_run_sync_requires_budget_or_limit_non_interactive(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """In a fresh project (no triefacts yet), `trie sync` without --budget/--limit must
+    refuse non-interactive runs to avoid surprise bills."""
     monkeypatch.chdir(project)
+    monkeypatch.setattr("trie.cli.make_client", lambda _model_id: FakeClient())
     runner = CliRunner()
-    result = runner.invoke(app, ["sync", "--bootstrap"])
+    result = runner.invoke(app, ["sync"])
     assert result.exit_code == 1
     assert "--budget" in result.output or "--limit" in result.output
 
 
-def test_cli_sync_rejects_file_and_bootstrap_together(
-    project: Path, monkeypatch: pytest.MonkeyPatch
-):
+def test_cli_first_run_sync_with_limit_succeeds(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """Auto-detected first-run bootstrap proceeds when a cap is set."""
+    monkeypatch.chdir(project)
+    monkeypatch.setattr("trie.cli.make_client", lambda _model_id: FakeClient())
+    runner = CliRunner()
+    result = runner.invoke(app, ["sync", "--limit", "1"])
+    assert result.exit_code == 0, result.output
+    assert "synced" in result.output
+
+
+def test_cli_sync_all_forces_full_pass(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """Even when triefacts already exist, --all should re-run the bootstrap path."""
+    # Pre-populate one triefact so the auto-detect would otherwise pick incremental.
+    triefacts = project / "triefacts"
+    triefacts.mkdir()
+    (triefacts / "small.md").write_text("# placeholder\n")
+    monkeypatch.chdir(project)
+    monkeypatch.setattr("trie.cli.make_client", lambda _model_id: FakeClient())
+    runner = CliRunner()
+    result = runner.invoke(app, ["sync", "--all", "--limit", "1"])
+    assert result.exit_code == 0, result.output
+    # The full-pass path prints the plan header.
+    assert "plan for" in result.output
+
+
+def test_cli_sync_rejects_file_and_all_together(project: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.chdir(project)
     runner = CliRunner()
-    result = runner.invoke(app, ["sync", "--file", str(project / "small.py"), "--bootstrap"])
+    result = runner.invoke(app, ["sync", "--file", str(project / "small.py"), "--all"])
     assert result.exit_code == 1
     assert "mutually exclusive" in result.output
 
 
 def test_cli_sync_with_no_config_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """Bare `trie sync` without a project errors clearly. (Inside a project it runs
-    incremental cascade — see test_incremental.py.)"""
+    """Bare `trie sync` without a project errors clearly."""
     monkeypatch.chdir(tmp_path)
     runner = CliRunner()
     result = runner.invoke(app, ["sync"])
     assert result.exit_code == 1
     assert "trie.toml" in result.output
+
+
+def test_run_bootstrap_invokes_progress_callback(project: Path):
+    """Each completed file fires on_start + on_done; skipped files fire on_skip."""
+
+    config, _ = Config.find_and_load(project)
+    pricing = get_pricing("anthropic/claude-sonnet-4-6")
+    client = FakeClient()
+    with _scanned_store(project) as store:
+        plan = build_plan(
+            project_root=project,
+            store=store,
+            model_id="anthropic/claude-sonnet-4-6",
+            client=FakeClient(),
+        )
+
+    starts: list[tuple[str, int, int]] = []
+    dones: list[tuple[str, float]] = []
+    skips: list[tuple[str, str]] = []
+
+    class Recorder:
+        def on_start(self, rel_path, idx, total):
+            starts.append((rel_path, idx, total))
+
+        def on_done(self, rel_path, result, running_cost_usd):
+            dones.append((rel_path, running_cost_usd))
+
+        def on_skip(self, rel_path, reason):
+            skips.append((rel_path, reason))
+
+    run_bootstrap(
+        plan=plan,
+        project_root=project,
+        config=config,
+        client=client,
+        pricing=pricing,
+        budget_usd=None,
+        limit=2,
+        progress=Recorder(),
+    )
+
+    assert len(starts) == 2
+    assert len(dones) == 2
+    # Total in each on_start matches the plan size.
+    total = len(plan.items)
+    assert all(t == total for _, _, t in starts)
+    # Skipped files are reported with a reason.
+    assert len(skips) == total - 2
+    assert all(reason == "limit reached" for _, reason in skips)

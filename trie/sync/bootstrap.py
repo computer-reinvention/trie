@@ -14,6 +14,7 @@ from trie.cost import (
 from trie.graph.store import Store
 from trie.models import GenerationRequest, ModelClient
 from trie.sync.generator import SYSTEM_PROMPT, FileGenerationContext, build_cached_context
+from trie.sync.progress import NULL_PROGRESS, ProgressCallback
 from trie.sync.single_file import FileSyncResult, sync_single_file
 
 
@@ -108,6 +109,7 @@ def run_bootstrap(
     pricing: ModelPricing | None,
     budget_usd: float | None,
     limit: int | None,
+    progress: ProgressCallback | None = None,
 ) -> BootstrapResult:
     """Execute the worklist. Stops when budget or limit is reached.
 
@@ -115,35 +117,44 @@ def run_bootstrap(
     most the cost of the final file. This trades a small overshoot risk for predictable
     "I asked for N files and got N files" semantics when --limit is set.
     """
+    cb: ProgressCallback = progress if progress is not None else NULL_PROGRESS
     sync_results: list[FileSyncResult] = []
     actual_cost = 0.0
     estimated_cost = 0.0
     skipped = 0
+    total = len(plan.items)
 
-    for item in plan.items:
+    for idx, item in enumerate(plan.items, start=1):
         if limit is not None and len(sync_results) >= limit:
             skipped += 1
+            cb.on_skip(item.file_path, "limit reached")
             continue
         if budget_usd is not None and actual_cost >= budget_usd:
             skipped += 1
+            cb.on_skip(item.file_path, "budget reached")
             continue
 
         abs_path = project_root / item.file_path
         if not abs_path.is_file():
             skipped += 1
+            cb.on_skip(item.file_path, "source missing")
             continue
 
+        cb.on_start(item.file_path, idx, total)
         result = sync_single_file(abs_path, project_root=project_root, config=config, client=client)
         sync_results.append(result)
         estimated_cost += item.estimated.cost_usd
+        file_cost = 0.0
         if pricing is not None:
-            actual_cost += estimate_actual_cost(
+            file_cost = estimate_actual_cost(
                 cache_creation_input_tokens=result.cache_creation_input_tokens,
                 cache_read_input_tokens=result.cache_read_input_tokens,
                 input_tokens=result.input_tokens,
                 output_tokens=result.output_tokens,
                 pricing=pricing,
             )
+            actual_cost += file_cost
+        cb.on_done(item.file_path, result, actual_cost)
 
     return BootstrapResult(
         files_synced=len(sync_results),
