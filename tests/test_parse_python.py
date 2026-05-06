@@ -192,3 +192,46 @@ def test_line_numbers_are_one_indexed(sample_file: Path):
     # Line 1 is the module docstring; public_fn starts at line 9 in SAMPLE.
     assert s.start_line >= 1
     assert s.end_line >= s.start_line
+
+
+def test_typing_overloads_dedupe_to_implementation(tmp_path: Path):
+    """typing.@overload creates multiple defs with the same qualified_name. Last
+    (the actual implementation, per Python's overload rules) must win — otherwise
+    the symbols table's UNIQUE constraint blows up on real codebases like httpx."""
+    f = tmp_path / "client.py"
+    f.write_text(
+        "from typing import overload\n\n\n"
+        "class Client:\n"
+        "    @overload\n"
+        "    def send(self, request: int) -> int: ...\n"
+        "    @overload\n"
+        "    def send(self, request: str) -> str: ...\n"
+        "    def send(self, request):\n"
+        "        return request\n"
+    )
+    syms = extract_symbols(f)
+    by_qname = _by_qname(syms)
+    # Exactly one entry for Client.send — the deduper kept the last one.
+    sends = [s for s in syms if s.qualified_name == "client:Client.send"]
+    assert len(sends) == 1
+    # The implementation body (no ellipsis) is what survived.
+    assert "..." not in sends[0].body_text
+    assert "client:Client.send" in by_qname
+
+
+def test_property_setter_pair_dedupes(tmp_path: Path):
+    """@property + @x.setter both produce a method named `x`. They should not
+    collide in the symbols table."""
+    f = tmp_path / "thing.py"
+    f.write_text(
+        "class Thing:\n"
+        "    @property\n"
+        "    def name(self) -> str:\n"
+        "        return self._name\n"
+        "    @name.setter\n"
+        "    def name(self, value: str) -> None:\n"
+        "        self._name = value\n"
+    )
+    syms = extract_symbols(f)
+    name_syms = [s for s in syms if s.qualified_name == "thing:Thing.name"]
+    assert len(name_syms) == 1

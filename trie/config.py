@@ -15,7 +15,6 @@ class Scope:
     include: list[str] = field(default_factory=lambda: ["**/*.py"])
     exclude: list[str] = field(
         default_factory=lambda: [
-            "**/tests/**",
             "**/__pycache__/**",
             "**/.venv/**",
             "**/build/**",
@@ -95,9 +94,10 @@ version = "0.1.0"
 
 [scope]
 # Glob patterns relative to the project root (the directory containing this file).
+# Tests are included by default — they encode behavioral spec worth documenting.
+# Add `"**/tests/**"` to `exclude` if you'd rather skip them to keep cost down.
 include = ["**/*.py"]
 exclude = [
-    "**/tests/**",
     "**/__pycache__/**",
     "**/.venv/**",
     "**/build/**",
