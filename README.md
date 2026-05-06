@@ -1,10 +1,26 @@
 # trie
 
-A documentation tree that mirrors your source tree, kept honest by a reference-graph cascade and gated by a pre-commit invariant. trie turns your codebase into a living self-description — prose at every node, graph between them — that humans can read at a glance and agents can reason over instead of reading code.
+> **Your codebase, in prose. Kept in sync with the code by a reference-graph cascade.**
 
-## Status
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](#status)
+[![Tests](https://img.shields.io/badge/tests-179%20passing-brightgreen.svg)](#)
 
-Pre-alpha. v0.1 in active development. Not ready for general use.
+trie generates a Markdown description of every source file in your project. The descriptions live in a tree that mirrors your source tree, joined by the same reference graph the code has. Edit a function and the cascade regenerates the descriptions of every caller too. Humans review English prose; agents read the same prose instead of grepping code under context pressure.
+
+```
+src/auth/middleware.py   ────►  triefacts/src/auth/middleware.md
+                                  ├─ § require_auth          (what it does, why, invariants)
+                                  ├─ § extract_token
+                                  └─ § <hand-written notes>  (preserved across regen)
+```
+
+A pre-commit gate (`trie check`) refuses to merge when the tree drifts. An MCP server (`trie mcp`) exposes the tree to coding agents — Claude Code, Codex, etc. — as a persistent, structured context layer.
+
+> **Status:** pre-alpha · v0.1 in active development · not ready for general use.
+
+---
 
 ## The idea
 
@@ -25,11 +41,11 @@ triefacts/src/auth/middleware.md  ────  prose, explanatory form
    └─ § <hand-written notes>  (preserved verbatim across regeneration)
 ```
 
-A **triefact** (`trie` + `artifact`) is the per-file prose description above — one Markdown file mirroring one source file, with a paragraph per public symbol. The whole tree of them lives under `triefacts/`. Hand-written prose between `<!-- trie:section -->` sentinels is preserved across regeneration — no agent ever overwrites human judgment. And the same reference graph the code has is made first-class: edges between symbols, traversable by humans and agents alike. # comment: adoption hurdle shall be opptional and not necessary for most common use cases, only niche topics where the system lacks domain knowledge
+A **triefact** (`trie` + `artifact`) is the per-file prose description above — one Markdown file mirroring one source file, with a paragraph per public symbol. The whole tree of them lives under `triefacts/`. Hand-written prose between `<!-- trie:section -->` sentinels is preserved across regeneration — no agent ever overwrites human judgment. And the same reference graph the code has is made first-class: edges between symbols, traversable by humans and agents alike.
 
 ## What a pass looks like
 
-The artifact a human reviews changes. Agents don't hand you a code diff and ask you to reconstruct intent. They change the regions of your codebase's self-description that are now different — and you read your system, with the touched parts highlighted. # comment: it should look and feel like obsidian's graph view + claude code's legitimate well loved child
+The artifact a human reviews changes. Agents don't hand you a code diff and ask you to reconstruct intent. They change the regions of your codebase's self-description that are now different — and you read your system, with the touched parts highlighted.
 
 ```
 your repo, after one agent pass:
@@ -117,7 +133,9 @@ The hub-symbol cap matters: a `utils.py` referenced everywhere can't invalidate 
 ## Quick start
 
 ```bash
-uv pip install -e /path/to/trie  # or `pipx install ./trie` once published
+# Install (pick one)
+uv tool install git+https://github.com/pankajgarkoti/trie    # persistent, on $PATH
+uvx --from git+https://github.com/pankajgarkoti/trie trie    # ephemeral, run-anywhere
 
 cd /path/to/your/project
 trie init
