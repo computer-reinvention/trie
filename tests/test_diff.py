@@ -4,7 +4,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner
 
+from trie.cli import app
 from trie.config import Config
 from trie.cost import get_pricing
 from trie.diff_cmd import diff_project
@@ -145,3 +147,49 @@ def test_diff_respects_budget(project: Path):
     )
     assert len(result.diffs) >= 1
     assert len(result.diffs) < 3
+
+
+def test_cli_sync_dry_run_routes_through_diff(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """`trie sync --dry-run` (no --bootstrap) prints unified diffs instead of writing."""
+    config, _ = Config.find_and_load(project)
+    sync_single_file(
+        project / "src" / "alpha.py",
+        project_root=project,
+        config=config,
+        client=StableClient(body="## v1\n\nv1 body."),
+    )
+    (project / "src" / "alpha.py").write_text("def alpha():\n    return 999\n")
+
+    monkeypatch.chdir(project)
+    monkeypatch.setattr(
+        "trie.cli.make_client",
+        lambda model_id: StableClient(body="## v2\n\nv2 body.", model_id=model_id),
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["sync", "--dry-run"])
+    assert result.exit_code == 0, result.output
+    assert "previewed" in result.output
+    # Live triefact must remain v1.
+    canonical = (project / "triefacts" / "src" / "alpha.md").read_text()
+    assert "v1 body." in canonical
+    assert "v2 body." not in canonical
+
+
+def test_cli_sync_dry_run_no_stale(project: Path, monkeypatch: pytest.MonkeyPatch):
+    config, _ = Config.find_and_load(project)
+    sync_single_file(
+        project / "src" / "alpha.py",
+        project_root=project,
+        config=config,
+        client=StableClient(body="## v1\n\nv1 body."),
+    )
+    monkeypatch.chdir(project)
+    monkeypatch.setattr(
+        "trie.cli.make_client",
+        lambda model_id: StableClient(model_id=model_id),
+    )
+    runner = CliRunner()
+    result = runner.invoke(app, ["sync", "--dry-run"])
+    assert result.exit_code == 0, result.output
+    assert "no stale triefacts" in result.output

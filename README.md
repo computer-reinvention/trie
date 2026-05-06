@@ -16,7 +16,7 @@ src/auth/middleware.py   ────►  triefacts/src/auth/middleware.md
                                   └─ § <hand-written notes>  (preserved across regen)
 ```
 
-A pre-commit gate (`trie check`) refuses to merge when the tree drifts. An MCP server (`trie mcp`) exposes the tree to coding agents — Claude Code, Codex, etc. — as a persistent, structured context layer.
+A pre-commit gate (`trie sync --check`) refuses to merge when the tree drifts. An MCP server (`trie mcp serve`, registered into your agent via `trie mcp install`) exposes the tree to coding agents — Claude Code, Cursor, Codex, etc. — as a persistent, structured context layer.
 
 > **Status:** pre-alpha · v0.1 in active development · not ready for general use.
 
@@ -126,7 +126,7 @@ regen plan:
   triefacts/src/feeds.md     (cascade)
 ```
 
-A pre-commit gate (`trie check`) refuses to merge when fingerprints don't match. Drift is a build break, not a TODO. The check is fast and offline — it compares fingerprints embedded in the triefact files' section sentinels against fingerprints derived from the current source, no LLM involved.
+A pre-commit gate (`trie sync --check`) refuses to merge when fingerprints don't match. Drift is a build break, not a TODO. The check is fast and offline — it compares fingerprints embedded in the triefact files' section sentinels against fingerprints derived from the current source, no LLM involved.
 
 The hub-symbol cap matters: a `utils.py` referenced everywhere can't invalidate the world on every edit. trie skips cascade through symbols with more than ~20 inbound references by default, configurable per project.
 
@@ -138,22 +138,26 @@ uv tool install git+https://github.com/pankajgarkoti/trie    # persistent, on $P
 uvx --from git+https://github.com/pankajgarkoti/trie trie    # ephemeral, run-anywhere
 
 cd /path/to/your/project
-trie init
+trie init                                # writes trie.toml, scans, prompts for pre-commit hook
 
 # generate triefacts for one file
 trie sync --file src/some_module.py
 
-# bootstrap the whole project (capped by budget or file count)
-trie scan
-trie sync --bootstrap --dry-run        # preview the plan + cost
-trie sync --bootstrap --limit 10        # generate triefacts for the top 10 files
-trie sync --bootstrap --budget 5.00     # spend at most $5
+# preview the plan + cost (free count_tokens calls, no generation)
+trie plan
 
-# verify coherence (fast, no API calls — designed for pre-commit)
-trie check
+# generate (auto-detects first-run bootstrap; cap with --budget or --limit)
+trie sync --limit 10                    # top 10 ranked files
+trie sync --budget 5.00                 # spend at most $5
+
+# day-to-day: incremental cascade refresh
+trie sync                               # re-syncs whatever's stale + cascades
 
 # preview what `sync` would change (makes API calls; honors --budget/--limit)
-trie diff
+trie sync --dry-run
+
+# verify coherence (fast, no API calls — designed for pre-commit)
+trie sync --check
 ```
 
 ## Golden example
@@ -243,7 +247,7 @@ This prose lives between sentinels and is preserved across regeneration.
 
 - The fingerprint is a SHA-256 of the symbol's body with whitespace and comments normalized away — formatting churn doesn't trip staleness, but real changes do.
 - `trie sync` regenerates only the sections whose fingerprint has drifted; everything between sentinels is preserved byte-for-byte.
-- `trie check` compares stored fingerprints to current source — fast, deterministic, no LLM in the loop.
+- `trie sync --check` compares stored fingerprints to current source — fast, deterministic, no LLM in the loop.
 
 ## Pre-commit hook
 
@@ -265,13 +269,13 @@ repos:
     hooks:
       - id: trie-check
         name: trie check
-        entry: trie check --quiet
+        entry: trie sync --check --quiet
         language: system
         pass_filenames: false
         always_run: true
 ```
 
-`trie check` exits non-zero if any source file's symbol doesn't match its documented section. Failures point at the specific symbol, so you know exactly what regenerated and why.
+`trie sync --check` exits non-zero if any source file's symbol doesn't match its documented section. Failures point at the specific symbol, so you know exactly what regenerated and why.
 
 ## Agent integration (MCP)
 
@@ -284,14 +288,26 @@ trie ships an MCP server so coding agents read your codebase's prose self-descri
 | `references_to(qualified_name)`   | Symbols that reference the given one (callers)  |
 | `references_from(qualified_name)` | Symbols the given one references (callees)      |
 
-For Claude Code, add to your `~/.claude/mcp_servers.json` (or per-project `.mcp.json`):
+Register trie with your agent in one command:
+
+```bash
+trie mcp install --target claude-code     # writes <project>/.mcp.json
+trie mcp install --target cursor          # writes <project>/.cursor/mcp.json
+trie mcp install --all --print-only       # preview snippets for every supported target
+```
+
+Supported targets: `claude-code`, `claude-desktop`, `cursor`, `windsurf`, `vscode`, `codex`. Without a `--target`, the installer auto-detects which agents are present.
+
+The snippet `install` writes is the standard MCP server form:
 
 ```json
 {
-  "trie": {
-    "command": "trie",
-    "args": ["mcp"],
-    "cwd": "/path/to/your/project"
+  "mcpServers": {
+    "trie": {
+      "command": "trie",
+      "args": ["mcp", "serve"],
+      "cwd": "/path/to/your/project"
+    }
   }
 }
 ```
@@ -312,11 +328,12 @@ Hand-written prose between sentinels is still indexed by GitHub's search; only t
 ## Roadmap
 
 - **M1** ✓ — `trie sync --file <path>` with section-sentinel writer
-- **M2** ✓ — `trie scan`, `trie sync --bootstrap` with budget/limit and dry-run
-- **M3** ✓ — `trie check`, `trie diff`, pre-commit hook
+- **M2** ✓ — symbol-graph scan, first-run bootstrap with budget/limit
+- **M3** ✓ — drift check (`trie sync --check`), preview (`trie sync --dry-run`), pre-commit hook
 - **M4** ✓ — heuristic cascade (tree-sitter imports + same-module name matching) _(the wedge)_
-- **M5** ✓ — MCP server (`trie mcp`) with `get_triefact`, `find_symbol`, `references_to/from`
-- **M6** ✓ — README golden example, packaging, `trie plan` alias, `.gitattributes` recipe
+- **M5** ✓ — MCP server (`trie mcp serve`) with `get_triefact`, `find_symbol`, `references_to/from`
+- **M6** ✓ — README golden example, packaging, `trie plan`, `.gitattributes` recipe
+- **M7** ✓ — CLI redesign: auto-detect bootstrap, streaming progress + ETA, three-level verbosity, `trie mcp install` for six agents/IDEs
 - **v0.2** — SCIP precision (replace tree-sitter heuristic with `scip-python` for type-aware references), TypeScript support, vector-over-triefacts retrieval, `trie watch` daemon, rename detection in reconcile
 
 ## License

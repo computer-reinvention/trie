@@ -2,10 +2,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 from trie.config import DEFAULT_CONFIG_TOML
 
 GITIGNORE_LINE = ".trie/"
+
+PreCommitStrategy = Literal["git_hook", "framework", "none", "skipped"]
+
+PRE_COMMIT_HOOK_MARKER = "# trie-check (added by `trie init`)"
+PRE_COMMIT_HOOK_END_MARKER = "# end trie-check"
+PRE_COMMIT_HOOK_BLOCK = (
+    f"{PRE_COMMIT_HOOK_MARKER}\n"
+    "if command -v trie >/dev/null 2>&1; then\n"
+    "    trie sync --check --quiet || exit $?\n"
+    "fi\n"
+    f"{PRE_COMMIT_HOOK_END_MARKER}\n"
+)
 
 
 @dataclass
@@ -14,6 +27,12 @@ class InitResult:
     config_written: bool
     gitignore_updated: bool
     detected_markers: list[str]
+    scan_files_total: int = 0
+    scan_symbols_total: int = 0
+    scan_ran: bool = False
+    pre_commit_installed: bool = False
+    pre_commit_strategy: PreCommitStrategy = "skipped"
+    pre_commit_path: Path | None = None
 
 
 class InitError(Exception):
@@ -54,8 +73,47 @@ def _ensure_gitignore_entry(gitignore: Path, line: str) -> bool:
     return True
 
 
-def init_project(root: Path, *, force: bool = False) -> InitResult:
-    """Initialise trie in `root`. Writes trie.toml and updates .gitignore.
+def install_pre_commit_hook(project_root: Path) -> tuple[bool, PreCommitStrategy, Path | None]:
+    """Install a pre-commit hook that runs `trie sync --check --quiet`.
+
+    Strategies:
+      - "framework": project already uses the pre-commit framework
+        (`.pre-commit-config.yaml` present). We don't touch user-owned YAML; the
+        caller should print a manual snippet. Returns (False, "framework", None).
+      - "git_hook": write/append a marker-fenced block to `.git/hooks/pre-commit`,
+        idempotent. Returns (True, "git_hook", hook_path) on first install,
+        (False, "git_hook", hook_path) when the marker is already present.
+      - "none": no `.git` directory; nothing to do. Returns (False, "none", None).
+    """
+    if (project_root / ".pre-commit-config.yaml").exists():
+        return False, "framework", None
+    git_dir = project_root / ".git"
+    if not git_dir.is_dir():
+        return False, "none", None
+    hooks_dir = git_dir / "hooks"
+    hooks_dir.mkdir(exist_ok=True)
+    hook_path = hooks_dir / "pre-commit"
+    if hook_path.exists():
+        existing = hook_path.read_text()
+        if PRE_COMMIT_HOOK_MARKER in existing:
+            return False, "git_hook", hook_path
+        new_text = existing.rstrip() + "\n\n" + PRE_COMMIT_HOOK_BLOCK
+        hook_path.write_text(new_text)
+    else:
+        hook_path.write_text("#!/bin/sh\n" + PRE_COMMIT_HOOK_BLOCK)
+    hook_path.chmod(0o755)
+    return True, "git_hook", hook_path
+
+
+def init_project(
+    root: Path,
+    *,
+    force: bool = False,
+    install_hooks: bool = False,
+    run_scan: bool = True,
+) -> InitResult:
+    """Initialise trie in `root`. Writes trie.toml, updates .gitignore, and (by
+    default) runs the initial scan so the symbol graph is ready for `trie sync`.
 
     Raises InitError if `root` is not a Python project (override with `force=True`)
     or if trie.toml already exists (override with `force=True`).
@@ -80,9 +138,31 @@ def init_project(root: Path, *, force: bool = False) -> InitResult:
     gitignore = root / ".gitignore"
     gitignore_updated = _ensure_gitignore_entry(gitignore, GITIGNORE_LINE)
 
-    return InitResult(
+    result = InitResult(
         project_root=root,
         config_written=True,
         gitignore_updated=gitignore_updated,
         detected_markers=markers or ["(forced — no markers detected)"],
     )
+
+    if run_scan:
+        # Imported here to avoid pulling tree-sitter into the import graph for callers
+        # that only need the dataclasses (e.g. tests that don't need a real scan).
+        from trie.config import Config
+        from trie.graph.store import Store
+        from trie.scan import scan_project
+
+        config, _ = Config.find_and_load(root)
+        with Store(root / ".trie" / "graph.db") as store:
+            scan_result = scan_project(project_root=root, config=config, store=store)
+        result.scan_ran = True
+        result.scan_files_total = scan_result.files_total
+        result.scan_symbols_total = scan_result.symbols_total
+
+    if install_hooks:
+        installed, strategy, hook_path = install_pre_commit_hook(root)
+        result.pre_commit_installed = installed
+        result.pre_commit_strategy = strategy
+        result.pre_commit_path = hook_path
+
+    return result

@@ -8,6 +8,7 @@ from trie.check import check_project
 from trie.config import Config
 from trie.cost import ModelPricing, estimate_actual_cost
 from trie.models import ModelClient
+from trie.sync.progress import NULL_PROGRESS, ProgressCallback
 from trie.sync.single_file import FileSyncResult, sync_single_file
 
 
@@ -35,6 +36,7 @@ def diff_project(
     pricing: ModelPricing | None = None,
     budget_usd: float | None = None,
     limit: int | None = None,
+    progress: ProgressCallback | None = None,
 ) -> DiffResult:
     """Regenerate stale triefacts into `.trie/preview/` and produce unified diffs.
 
@@ -50,16 +52,20 @@ def diff_project(
     check = check_project(project_root=project_root, config=config)
     stale_sources = sorted({it.source_path for it in check.items if it.source_path})
 
+    cb: ProgressCallback = progress if progress is not None else NULL_PROGRESS
     diffs: list[FileDiff] = []
     skipped = 0
     actual_cost = 0.0
+    total = len(stale_sources)
 
-    for rel_source in stale_sources:
+    for idx, rel_source in enumerate(stale_sources, start=1):
         if limit is not None and len(diffs) >= limit:
             skipped += 1
+            cb.on_skip(rel_source, "limit reached")
             continue
         if budget_usd is not None and actual_cost >= budget_usd:
             skipped += 1
+            cb.on_skip(rel_source, "budget reached")
             continue
 
         abs_source = src_root / rel_source
@@ -67,11 +73,13 @@ def diff_project(
             # Source was deleted entirely; trie sync's reconcile will handle this.
             # Diff has nothing useful to show for orphaned-source cases in v0.1.
             skipped += 1
+            cb.on_skip(rel_source, "source missing")
             continue
 
         canonical = (triefacts_root / Path(rel_source).with_suffix(".md")).resolve()
         preview = (preview_root / Path(rel_source).with_suffix(".md")).resolve()
 
+        cb.on_start(rel_source, idx, total)
         result = sync_single_file(
             abs_source,
             project_root=project_root,
@@ -112,5 +120,6 @@ def diff_project(
                 output_tokens=result.output_tokens,
                 pricing=pricing,
             )
+        cb.on_done(rel_source, result, actual_cost)
 
     return DiffResult(diffs=diffs, files_skipped_no_budget=skipped, actual_cost_usd=actual_cost)

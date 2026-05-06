@@ -8,10 +8,12 @@ from typer.testing import CliRunner
 from trie.cli import app
 from trie.init import (
     GITIGNORE_LINE,
+    PRE_COMMIT_HOOK_MARKER,
     InitError,
     _detect_python_project,
     _ensure_gitignore_entry,
     init_project,
+    install_pre_commit_hook,
 )
 
 
@@ -148,3 +150,142 @@ def test_cli_init_force_succeeds(python_project: Path):
     runner = CliRunner()
     result = runner.invoke(app, ["init", str(python_project), "--force"])
     assert result.exit_code == 0
+
+
+# --- scan-after-init ---
+
+
+def test_init_runs_scan_by_default(python_project: Path):
+    (python_project / "thing.py").write_text("def hello():\n    return 1\n")
+    result = init_project(python_project)
+    assert result.scan_ran is True
+    assert result.scan_files_total == 1
+    assert result.scan_symbols_total >= 1
+    assert (python_project / ".trie" / "graph.db").exists()
+
+
+def test_init_no_scan_skips_graph_db(python_project: Path):
+    (python_project / "thing.py").write_text("def hello():\n    return 1\n")
+    result = init_project(python_project, run_scan=False)
+    assert result.scan_ran is False
+    assert not (python_project / ".trie" / "graph.db").exists()
+
+
+# --- pre-commit hook installer ---
+
+
+def test_install_hook_writes_new_pre_commit_when_git_repo(python_project: Path):
+    (python_project / ".git").mkdir()
+    installed, strategy, hook_path = install_pre_commit_hook(python_project)
+    assert installed is True
+    assert strategy == "git_hook"
+    assert hook_path is not None
+    text = hook_path.read_text()
+    assert PRE_COMMIT_HOOK_MARKER in text
+    assert "trie sync --check --quiet" in text
+    # Must be executable.
+    import stat
+
+    assert hook_path.stat().st_mode & stat.S_IXUSR
+
+
+def test_install_hook_appends_to_existing_pre_commit(python_project: Path):
+    (python_project / ".git").mkdir()
+    hooks = python_project / ".git" / "hooks"
+    hooks.mkdir()
+    existing = hooks / "pre-commit"
+    existing.write_text("#!/bin/sh\necho running existing\n")
+    installed, strategy, hook_path = install_pre_commit_hook(python_project)
+    assert installed is True
+    assert strategy == "git_hook"
+    text = hook_path.read_text()
+    assert "echo running existing" in text  # preserved
+    assert PRE_COMMIT_HOOK_MARKER in text  # appended
+
+
+def test_install_hook_idempotent(python_project: Path):
+    (python_project / ".git").mkdir()
+    install_pre_commit_hook(python_project)
+    installed, strategy, _ = install_pre_commit_hook(python_project)
+    assert installed is False
+    assert strategy == "git_hook"
+
+
+def test_install_hook_skips_when_pre_commit_framework_present(python_project: Path):
+    (python_project / ".git").mkdir()
+    (python_project / ".pre-commit-config.yaml").write_text("repos: []\n")
+    installed, strategy, hook_path = install_pre_commit_hook(python_project)
+    assert installed is False
+    assert strategy == "framework"
+    assert hook_path is None
+
+
+def test_install_hook_skips_when_not_a_git_repo(python_project: Path):
+    installed, strategy, hook_path = install_pre_commit_hook(python_project)
+    assert installed is False
+    assert strategy == "none"
+    assert hook_path is None
+
+
+# --- init_project hook integration ---
+
+
+def test_init_project_install_hooks_in_git_repo(python_project: Path):
+    (python_project / ".git").mkdir()
+    result = init_project(python_project, install_hooks=True)
+    assert result.pre_commit_installed is True
+    assert result.pre_commit_strategy == "git_hook"
+    assert (python_project / ".git" / "hooks" / "pre-commit").exists()
+
+
+def test_init_project_default_does_not_install_hooks(python_project: Path):
+    (python_project / ".git").mkdir()
+    result = init_project(python_project)
+    assert result.pre_commit_installed is False
+    assert result.pre_commit_strategy == "skipped"
+
+
+# --- CLI --install-hooks plumbing ---
+
+
+def test_cli_init_install_hooks_flag_in_git_repo(python_project: Path):
+    (python_project / ".git").mkdir()
+    runner = CliRunner()
+    result = runner.invoke(app, ["init", str(python_project), "--install-hooks"])
+    assert result.exit_code == 0, result.output
+    assert "installed pre-commit hook" in result.output
+    assert (python_project / ".git" / "hooks" / "pre-commit").exists()
+
+
+def test_cli_init_no_install_hooks_flag_skips(python_project: Path):
+    (python_project / ".git").mkdir()
+    runner = CliRunner()
+    result = runner.invoke(app, ["init", str(python_project), "--no-install-hooks"])
+    assert result.exit_code == 0, result.output
+    assert not (python_project / ".git" / "hooks" / "pre-commit").exists()
+
+
+def test_cli_init_framework_path_prints_snippet(python_project: Path):
+    (python_project / ".git").mkdir()
+    (python_project / ".pre-commit-config.yaml").write_text("repos: []\n")
+    runner = CliRunner()
+    result = runner.invoke(app, ["init", str(python_project), "--install-hooks"])
+    assert result.exit_code == 0, result.output
+    assert "trie-check" in result.output
+    assert ".pre-commit-config.yaml" in result.output
+
+
+def test_cli_init_non_interactive_skips_prompt(python_project: Path):
+    """CliRunner is non-interactive; without --install-hooks the prompt must not block."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["init", str(python_project)])
+    assert result.exit_code == 0, result.output
+
+
+def test_cli_init_prints_scan_summary(python_project: Path):
+    (python_project / "thing.py").write_text("def hello():\n    return 1\n")
+    runner = CliRunner()
+    result = runner.invoke(app, ["init", str(python_project)])
+    assert result.exit_code == 0, result.output
+    assert "scanned" in result.output
+    assert "symbols" in result.output
