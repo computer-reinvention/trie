@@ -10,7 +10,7 @@ from trie.graph.store import Store
 from trie.models import ModelClient
 from trie.scan import scan_project
 from trie.sync.cascade import compute_cascade
-from trie.sync.reconcile import remove_orphan_docs
+from trie.sync.reconcile import remove_orphan_triefacts
 from trie.sync.single_file import FileSyncResult, sync_single_file
 
 
@@ -22,7 +22,7 @@ class IncrementalResult:
     directly_stale_count: int
     cascaded_count: int
     actual_cost_usd: float
-    orphan_docs_removed: list[Path] = field(default_factory=list)
+    orphan_triefacts_removed: list[Path] = field(default_factory=list)
     sync_results: list[FileSyncResult] = field(default_factory=list)
 
 
@@ -36,11 +36,11 @@ def run_incremental(
     budget_usd: float | None = None,
     limit: int | None = None,
 ) -> IncrementalResult:
-    """Refresh docs that drifted from source, plus the cascade of files that reference them.
+    """Refresh triefacts that drifted from source, plus the cascade of files referencing them.
 
     The flow:
       1. Scan to refresh the symbol graph and edges.
-      2. Run `check_project` to find files whose docs are stale relative to source.
+      2. Run `check_project` to find files whose triefacts are stale relative to source.
       3. Compute the cascade: every file whose symbols (transitively) reference a stale
          symbol, capped by the configured depth and hub threshold.
       4. Sync each affected file with `sync_single_file`, honoring --budget / --limit.
@@ -48,13 +48,13 @@ def run_incremental(
     A file with no public symbols is skipped silently (nothing for the generator to do).
     """
     project_root = project_root.resolve()
-    src_root = (project_root / config.docs.source_root).resolve()
+    src_root = (project_root / config.triefacts.source_root).resolve()
 
     scan_project(project_root=project_root, config=config, store=store)
 
-    # Reconcile deletions before staleness check, so orphan doc files don't show up as
-    # stale (their sources are gone — they should just be removed).
-    orphan_docs = remove_orphan_docs(project_root=project_root, config=config)
+    # Reconcile deletions before staleness check, so orphan triefact files don't show up
+    # as stale (their sources are gone — they should just be removed).
+    orphan_triefacts = remove_orphan_triefacts(project_root=project_root, config=config)
 
     check = check_project(project_root=project_root, config=config)
     directly_stale = sorted({it.source_path for it in check.items if it.source_path})
@@ -67,7 +67,7 @@ def run_incremental(
             directly_stale_count=0,
             cascaded_count=0,
             actual_cost_usd=0.0,
-            orphan_docs_removed=orphan_docs,
+            orphan_triefacts_removed=orphan_triefacts,
             sync_results=[],
         )
 
@@ -117,6 +117,6 @@ def run_incremental(
         directly_stale_count=len(directly_stale),
         cascaded_count=len(cascade.cascaded_from_change),
         actual_cost_usd=actual_cost,
-        orphan_docs_removed=orphan_docs,
+        orphan_triefacts_removed=orphan_triefacts,
         sync_results=sync_results,
     )

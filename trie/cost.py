@@ -75,7 +75,7 @@ def estimate_file_cost(
     request_tokens_per_symbol: int = 80,
     output_tokens_per_symbol: int = 200,
 ) -> FileEstimate:
-    """Estimate the cost of generating docs for one file.
+    """Estimate the cost of generating triefacts for one file.
 
     Assumes the cached prefix (system prompt + full source file) is paid once on the first
     symbol and reused via cache reads for the remaining symbols in the same file.

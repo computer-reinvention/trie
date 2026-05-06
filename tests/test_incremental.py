@@ -13,7 +13,7 @@ from trie.graph.store import Store
 from trie.models import GenerationRequest, GenerationResponse
 from trie.sync.incremental import run_incremental
 from trie.sync.single_file import sync_single_file
-from trie.sync.writer import DocFile
+from trie.sync.writer import TriefactFile
 
 
 @dataclass
@@ -38,7 +38,7 @@ def project(tmp_path: Path) -> Path:
     (tmp_path / "trie.toml").write_text(
         '[trie]\nversion = "0.1.0"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
-        '[docs]\nroot = "docs"\nsource_root = "."\n'
+        '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
         'cascade = "anthropic/claude-sonnet-4-6"\n'
         "[cascade]\ndefault_depth = 1\nhub_symbol_threshold = 20\n"
@@ -85,7 +85,7 @@ def test_incremental_no_op_when_clean(project: Path):
 
 def test_incremental_resyncs_directly_changed_file(project: Path):
     _initial_sync(project)
-    # Modify lib.py — its doc becomes stale
+    # Modify lib.py — its triefact becomes stale
     (project / "lib.py").write_text("def helper():\n    return 999\n")
 
     config, _ = Config.find_and_load(project)
@@ -105,7 +105,7 @@ def test_incremental_resyncs_directly_changed_file(project: Path):
 
 
 def test_incremental_cascades_to_callers(project: Path):
-    """Editing lib.py should cause app.py's doc to regenerate too (because app.run uses lib.helper)."""
+    """Editing lib.py should cause app.py's triefact to regenerate too (because app.run uses lib.helper)."""
     _initial_sync(project)
     (project / "lib.py").write_text("def helper():\n    return 999\n")
 
@@ -168,11 +168,11 @@ def test_incremental_dispatched_via_cli(project: Path, monkeypatch: pytest.Monke
     assert cli_result.exit_code == 0, cli_result.output
     assert "synced" in cli_result.output
     assert "cascade" in cli_result.output
-    # Verify the lib.py and app.py docs got regenerated with the v2 body
-    lib_doc = (project / "docs" / "lib.md").read_text()
-    app_doc = (project / "docs" / "app.md").read_text()
-    assert "via_cli" in lib_doc
-    assert "via_cli" in app_doc
+    # Verify the lib.py and app.py triefacts got regenerated with the v2 body
+    lib_triefact = (project / "triefacts" / "lib.md").read_text()
+    app_triefact = (project / "triefacts" / "app.md").read_text()
+    assert "via_cli" in lib_triefact
+    assert "via_cli" in app_triefact
 
 
 def test_incremental_clean_via_cli(project: Path, monkeypatch: pytest.MonkeyPatch):
@@ -186,7 +186,7 @@ def test_incremental_clean_via_cli(project: Path, monkeypatch: pytest.MonkeyPatc
 
 
 def test_incremental_with_no_changes_yields_empty(project: Path):
-    """If no files changed and docs already exist, incremental should be a no-op."""
+    """If no files changed and triefacts already exist, incremental should be a no-op."""
     _initial_sync(project)
     config, _ = Config.find_and_load(project)
     with Store(project / ".trie" / "graph.db") as store:
@@ -202,8 +202,8 @@ def test_incremental_with_no_changes_yields_empty(project: Path):
     assert result.files_synced == 0
 
 
-def test_incremental_handles_missing_doc(project: Path):
-    """No docs at all → directly_stale should include all files with public symbols, cascade adds none beyond."""
+def test_incremental_handles_missing_triefact(project: Path):
+    """No triefacts at all → directly_stale should include all files with public symbols, cascade adds none beyond."""
     config, _ = Config.find_and_load(project)
     pricing = get_pricing("anthropic/claude-sonnet-4-6")
     with Store(project / ".trie" / "graph.db") as store:
@@ -216,11 +216,11 @@ def test_incremental_handles_missing_doc(project: Path):
         )
     synced_files = {sr.source_path.name for sr in result.sync_results}
     assert {"lib.py", "app.py"}.issubset(synced_files)
-    # Both files were directly stale (no doc); cascade should NOT additionally count them.
+    # Both files were directly stale (no triefact); cascade should NOT additionally count them.
     assert result.directly_stale_count == 2
 
 
-def test_doc_regenerated_only_for_affected_symbols_v01_limitation(project: Path):
+def test_triefact_regenerated_only_for_affected_symbols_v01_limitation(project: Path):
     """v0.1 regenerates the WHOLE file's symbols, not just stale sections — document this.
 
     M4 cascade refines this in spirit (only affected files regenerate), but per-symbol
@@ -241,9 +241,9 @@ def test_doc_regenerated_only_for_affected_symbols_v01_limitation(project: Path)
         )
 
     # Both lib.md and app.md should have been touched (cascade brought app.py in).
-    lib_text = (project / "docs" / "lib.md").read_text()
-    app_text = (project / "docs" / "app.md").read_text()
-    lib_doc = DocFile.parse(lib_text)
-    app_doc = DocFile.parse(app_text)
-    assert "lib:helper" in lib_doc.section_qnames()
-    assert "app:run" in app_doc.section_qnames()
+    lib_text = (project / "triefacts" / "lib.md").read_text()
+    app_text = (project / "triefacts" / "app.md").read_text()
+    lib_triefact = TriefactFile.parse(lib_text)
+    app_triefact = TriefactFile.parse(app_text)
+    assert "lib:helper" in lib_triefact.section_qnames()
+    assert "app:run" in app_triefact.section_qnames()

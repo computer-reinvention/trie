@@ -21,7 +21,7 @@ from trie.sync.single_file import sync_single_file
 
 app = typer.Typer(
     name="trie",
-    help="Documentation tree that mirrors your source tree, kept coherent by an LSP-aware cascade.",
+    help="Triefact tree that mirrors your source tree, kept coherent by an LSP-aware cascade.",
 )
 console = Console()
 
@@ -126,11 +126,11 @@ def check_cmd(
         help="Print only a summary line.",
     ),
 ) -> None:
-    """Verify the doc tree is coherent with the source. Exits non-zero if stale.
+    """Verify the triefact tree is coherent with the source. Exits non-zero if stale.
 
     Designed for pre-commit: fast, no API calls, no DB writes. Compares each in-scope
     source file's symbol fingerprints against the fingerprints embedded in the matching
-    doc file's section sentinels.
+    triefact file's section sentinels.
     """
     try:
         config, project_root = Config.find_and_load(Path.cwd())
@@ -141,19 +141,19 @@ def check_cmd(
     result = check_project(project_root=project_root, config=config)
 
     if result.is_clean:
-        console.print("[green]✓[/green] doc tree is coherent")
+        console.print("[green]✓[/green] triefact tree is coherent")
         return
 
     grouped: dict[str, list] = {}
     for it in result.items:
-        grouped.setdefault(it.doc_path, []).append(it)
+        grouped.setdefault(it.triefact_path, []).append(it)
 
     if not quiet:
-        for doc_path, items in sorted(grouped.items()):
-            console.print(f"[red]✗[/red] {doc_path}")
+        for triefact_path, items in sorted(grouped.items()):
+            console.print(f"[red]✗[/red] {triefact_path}")
             for it in items:
-                if it.reason == StaleReason.MISSING_DOC:
-                    console.print(f"    [yellow]missing doc[/yellow] for {it.source_path}")
+                if it.reason == StaleReason.MISSING_TRIEFACT:
+                    console.print(f"    [yellow]missing triefact[/yellow] for {it.source_path}")
                 elif it.reason == StaleReason.MISSING_SECTION:
                     console.print(f"    [yellow]missing section[/yellow] for {it.qualified_name}")
                 elif it.reason == StaleReason.STALE_SECTION:
@@ -163,7 +163,7 @@ def check_cmd(
         console.print()
 
     console.print(
-        f"[red]✗ {len(result.items)} issue(s) across {len(grouped)} doc file(s)[/red] — "
+        f"[red]✗ {len(result.items)} issue(s) across {len(grouped)} triefact file(s)[/red] — "
         f"run [cyan]trie sync[/cyan] to refresh"
     )
     raise typer.Exit(code=1)
@@ -180,7 +180,7 @@ def sync_cmd(
     bootstrap: bool = typer.Option(
         False,
         "--bootstrap",
-        help="Run bootstrap mode: rank scope files and generate docs up to --budget or --limit.",
+        help="Run bootstrap mode: rank scope files and generate triefacts up to --budget or --limit.",
     ),
     budget: float | None = typer.Option(
         None,
@@ -203,7 +203,7 @@ def sync_cmd(
         help="Override the configured model, e.g. 'anthropic/claude-sonnet-4-6'.",
     ),
 ) -> None:
-    """Generate or refresh trie documentation."""
+    """Generate or refresh trie triefacts."""
     if file is not None and bootstrap:
         console.print("[red]error:[/red] --file and --bootstrap are mutually exclusive")
         raise typer.Exit(code=1)
@@ -234,10 +234,10 @@ def _run_single_file_sync(file: Path, model: str | None) -> None:
     model_id = model or config.models.bootstrap
     client = make_client(model_id)
 
-    with console.status(f"generating docs for [cyan]{file}[/cyan]…"):
+    with console.status(f"generating triefact for [cyan]{file}[/cyan]…"):
         result = sync_single_file(file, project_root=project_root, config=config, client=client)
 
-    console.print(f"[green]✓[/green] wrote {result.doc_path}")
+    console.print(f"[green]✓[/green] wrote {result.triefact_path}")
     console.print(
         f"  {result.symbols_generated} symbols generated"
         + (f", {result.sections_removed} stale sections removed" if result.sections_removed else "")
@@ -294,7 +294,7 @@ def _run_bootstrap_sync(
             return
 
         client = make_client(model_id)
-        with console.status("generating docs…"):
+        with console.status("generating triefacts…"):
             result = run_bootstrap(
                 plan=plan,
                 project_root=project_root,
@@ -337,18 +337,20 @@ def _run_incremental_sync(*, model: str | None, budget: float | None, limit: int
             limit=limit,
         )
 
-    if result.orphan_docs_removed:
-        for doc in result.orphan_docs_removed:
-            console.print(f"[red]✗[/red] removed orphan doc {doc.relative_to(project_root)}")
+    if result.orphan_triefacts_removed:
+        for triefact in result.orphan_triefacts_removed:
+            console.print(
+                f"[red]✗[/red] removed orphan triefact {triefact.relative_to(project_root)}"
+            )
 
     if result.files_synced == 0 and result.directly_stale_count == 0:
-        if result.orphan_docs_removed:
+        if result.orphan_triefacts_removed:
             console.print(
-                f"[green]✓[/green] cleaned up {len(result.orphan_docs_removed)} orphan(s); "
-                "doc tree is otherwise coherent"
+                f"[green]✓[/green] cleaned up {len(result.orphan_triefacts_removed)} orphan(s); "
+                "triefact tree is otherwise coherent"
             )
         else:
-            console.print("[green]✓[/green] doc tree is coherent — nothing to sync")
+            console.print("[green]✓[/green] triefact tree is coherent — nothing to sync")
         return
 
     console.print(
@@ -379,11 +381,11 @@ def diff_cmd(
         help="Override the configured model.",
     ),
 ) -> None:
-    """Preview what `trie sync` would change. Writes regenerated docs to .trie/preview/.
+    """Preview what `trie sync` would change. Writes regenerated triefacts to .trie/preview/.
 
     Identifies stale source files via the same logic as `trie check`, regenerates their
-    docs to `.trie/preview/<path>.md`, and prints a unified diff against the live tree.
-    Makes API calls — pass --budget USD or --limit N to cap.
+    triefacts to `.trie/preview/<path>.md`, and prints a unified diff against the live
+    tree. Makes API calls — pass --budget USD or --limit N to cap.
     """
     try:
         config, project_root = Config.find_and_load(Path.cwd())
@@ -406,11 +408,13 @@ def diff_cmd(
         )
 
     if not result.diffs:
-        console.print("[green]✓[/green] no stale docs — nothing to preview")
+        console.print("[green]✓[/green] no stale triefacts — nothing to preview")
         return
 
     for fd in result.diffs:
-        console.print(f"\n[bold cyan]{fd.canonical_doc_path.relative_to(project_root)}[/bold cyan]")
+        console.print(
+            f"\n[bold cyan]{fd.canonical_triefact_path.relative_to(project_root)}[/bold cyan]"
+        )
         if fd.unified_diff:
             console.print(fd.unified_diff, end="")
         else:
@@ -428,7 +432,7 @@ def mcp_cmd() -> None:
     """Start the trie MCP server over stdio.
 
     Designed to be spawned by an agent harness (Claude Code, Codex, etc.) as a subprocess.
-    The server is read-only — it queries the existing graph DB and doc tree but never
+    The server is read-only — it queries the existing graph DB and triefact tree but never
     modifies them. Run `trie scan && trie sync` first to populate state worth querying.
     """
     try:

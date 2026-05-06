@@ -1,12 +1,12 @@
-"""MCP server exposing the trie doc tree + symbol graph to coding agents.
+"""MCP server exposing the trie triefact tree + symbol graph to coding agents.
 
 Read-only. Speaks MCP over stdio so an agent harness (Claude Code, Codex, etc.) can spawn
-it as a subprocess and consult the doc tree as context separate from its own conversation
-memory.
+it as a subprocess and consult the triefact tree as context separate from its own
+conversation memory.
 
 Tools exposed:
 
-- `get_doc(source_path)` — return the Markdown doc for a source file.
+- `get_triefact(source_path)` — return the Markdown triefact for a source file.
 - `find_symbol(name)` — substring search over symbol names.
 - `references_to(qualified_name)` — list inbound references (callers).
 - `references_from(qualified_name)` — list outbound references (callees).
@@ -42,32 +42,32 @@ class TrieTools:
 
     def __init__(self, project_root: Path) -> None:
         self.config, self.root = Config.find_and_load(project_root)
-        self.docs_root = self.root / self.config.docs.root
-        self.src_root = (self.root / self.config.docs.source_root).resolve()
+        self.triefacts_root = self.root / self.config.triefacts.root
+        self.src_root = (self.root / self.config.triefacts.source_root).resolve()
         self.store = Store(self.root / ".trie" / "graph.db")
 
     def close(self) -> None:
         self.store.close()
 
-    def get_doc(self, source_path: str) -> str:
-        """Return the Markdown documentation for a source file.
+    def get_triefact(self, source_path: str) -> str:
+        """Return the Markdown triefact for a source file.
 
         `source_path` should be source-root-relative (e.g. `src/foo.py`). If the agent
-        passed a `.md` path, it's used as-is. If no doc exists, returns a notice the agent
-        can use as a fallback signal.
+        passed a `.md` path, it's used as-is. If no triefact exists, returns a notice the
+        agent can use as a fallback signal.
         """
         rel = Path(source_path)
-        doc_rel = rel if rel.suffix == ".md" else rel.with_suffix(".md")
-        doc_path = self.docs_root / doc_rel
-        if not doc_path.exists():
-            return f"No trie doc for {source_path}. Run `trie sync` to generate one."
-        return doc_path.read_text()
+        triefact_rel = rel if rel.suffix == ".md" else rel.with_suffix(".md")
+        triefact_path = self.triefacts_root / triefact_rel
+        if not triefact_path.exists():
+            return f"No trie triefact for {source_path}. Run `trie sync` to generate one."
+        return triefact_path.read_text()
 
     def find_symbol(self, name: str, limit: int = 50) -> list[dict[str, Any]]:
         """Substring search over symbol names (the local part, not qname).
 
-        Public symbols come first. Use to narrow before calling `get_doc` when the agent
-        has a name but not a file.
+        Public symbols come first. Use to narrow before calling `get_triefact` when the
+        agent has a name but not a file.
         """
         hits = self.store.search_symbols(name, limit=limit)
         return [asdict(h) for h in hits]
@@ -96,7 +96,7 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     """
     tools = TrieTools(project_root)
     server = FastMCP("trie")
-    server.tool()(tools.get_doc)
+    server.tool()(tools.get_triefact)
     server.tool()(tools.find_symbol)
     server.tool()(tools.references_to)
     server.tool()(tools.references_from)

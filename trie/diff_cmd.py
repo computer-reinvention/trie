@@ -14,8 +14,8 @@ from trie.sync.single_file import FileSyncResult, sync_single_file
 @dataclass(frozen=True)
 class FileDiff:
     source_path: str
-    canonical_doc_path: Path
-    preview_doc_path: Path
+    canonical_triefact_path: Path
+    preview_triefact_path: Path
     unified_diff: str
     sync_result: FileSyncResult
 
@@ -36,15 +36,15 @@ def diff_project(
     budget_usd: float | None = None,
     limit: int | None = None,
 ) -> DiffResult:
-    """Regenerate stale docs into `.trie/preview/` and produce unified diffs.
+    """Regenerate stale triefacts into `.trie/preview/` and produce unified diffs.
 
     The set of stale files is computed via `check_project`. Files with only orphan-section
     issues are still regenerated (the writer drops the orphan section). Files that don't
     have any stale items are skipped — `trie diff` is not a "show me everything" command.
     """
     project_root = project_root.resolve()
-    src_root = (project_root / config.docs.source_root).resolve()
-    docs_root = project_root / config.docs.root
+    src_root = (project_root / config.triefacts.source_root).resolve()
+    triefacts_root = project_root / config.triefacts.root
     preview_root = project_root / ".trie" / "preview"
 
     check = check_project(project_root=project_root, config=config)
@@ -69,7 +69,7 @@ def diff_project(
             skipped += 1
             continue
 
-        canonical = (docs_root / Path(rel_source).with_suffix(".md")).resolve()
+        canonical = (triefacts_root / Path(rel_source).with_suffix(".md")).resolve()
         preview = (preview_root / Path(rel_source).with_suffix(".md")).resolve()
 
         result = sync_single_file(
@@ -77,7 +77,7 @@ def diff_project(
             project_root=project_root,
             config=config,
             client=client,
-            dest_doc_path=preview,
+            dest_triefact_path=preview,
         )
 
         original = canonical.read_text() if canonical.exists() else ""
@@ -98,8 +98,8 @@ def diff_project(
         diffs.append(
             FileDiff(
                 source_path=rel_source,
-                canonical_doc_path=canonical,
-                preview_doc_path=preview,
+                canonical_triefact_path=canonical,
+                preview_triefact_path=preview,
                 unified_diff=unified,
                 sync_result=result,
             )

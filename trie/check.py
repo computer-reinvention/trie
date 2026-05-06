@@ -7,11 +7,11 @@ from pathlib import Path
 from trie.config import Config
 from trie.parse.python import extract_symbols
 from trie.scope import discover_files
-from trie.sync.writer import DocFile, Section
+from trie.sync.writer import Section, TriefactFile
 
 
 class StaleReason(StrEnum):
-    MISSING_DOC = "missing_doc"  # source has public symbols but no doc file
+    MISSING_TRIEFACT = "missing_triefact"  # source has public symbols but no triefact file
     MISSING_SECTION = "missing_section"  # public symbol present, no section for it
     STALE_SECTION = "stale_section"  # section fingerprint != current source hash
     ORPHAN_SECTION = "orphan_section"  # section exists but symbol is gone
@@ -20,9 +20,9 @@ class StaleReason(StrEnum):
 @dataclass(frozen=True)
 class StaleItem:
     source_path: str  # source-root-relative
-    doc_path: str  # source-root-relative
+    triefact_path: str  # source-root-relative
     reason: StaleReason
-    qualified_name: str | None  # set for symbol-level reasons; None for missing_doc
+    qualified_name: str | None  # set for symbol-level reasons; None for missing_triefact
 
 
 @dataclass(frozen=True)
@@ -34,21 +34,21 @@ class CheckResult:
         return not self.items
 
 
-def _doc_path_for(rel_source: str, config: Config) -> str:
-    """Mirror src/foo.py -> {docs.root}/src/foo.md as a source-root-relative path."""
+def _triefact_path_for(rel_source: str, config: Config) -> str:
+    """Mirror src/foo.py -> {triefacts.root}/src/foo.md as a source-root-relative path."""
     p = Path(rel_source)
-    return str(Path(config.docs.root) / p.with_suffix(".md"))
+    return str(Path(config.triefacts.root) / p.with_suffix(".md"))
 
 
 def check_project(*, project_root: Path, config: Config) -> CheckResult:
-    """Compute stale items by comparing each in-scope source file's symbols to its doc file.
+    """Compute stale items by comparing each in-scope source file's symbols to its triefact.
 
-    No DB access — the source is the source of truth, and the doc file's sentinels carry
+    No DB access — the source is the source of truth, and the triefact's sentinels carry
     the fingerprints used to detect drift. Designed to be fast: a few thousand files run
     in well under a second on a modern machine.
     """
     project_root = project_root.resolve()
-    src_root = (project_root / config.docs.source_root).resolve()
+    src_root = (project_root / config.triefacts.source_root).resolve()
     discovered = discover_files(project_root, config.scope)
 
     items: list[StaleItem] = []
@@ -60,30 +60,30 @@ def check_project(*, project_root: Path, config: Config) -> CheckResult:
 
         symbols = extract_symbols(abs_source, source_root=src_root)
         public = [s for s in symbols if s.is_public]
-        rel_doc = _doc_path_for(rel_source, config)
-        abs_doc = project_root / rel_doc
-        doc_exists = abs_doc.exists()
+        rel_triefact = _triefact_path_for(rel_source, config)
+        abs_triefact = project_root / rel_triefact
+        triefact_exists = abs_triefact.exists()
 
-        if not public and not doc_exists:
+        if not public and not triefact_exists:
             # Nothing to document, nothing to check.
             continue
 
-        if public and not doc_exists:
+        if public and not triefact_exists:
             items.append(
                 StaleItem(
                     source_path=rel_source,
-                    doc_path=rel_doc,
-                    reason=StaleReason.MISSING_DOC,
+                    triefact_path=rel_triefact,
+                    reason=StaleReason.MISSING_TRIEFACT,
                     qualified_name=None,
                 )
             )
             continue
 
-        # doc_exists is True at this point — check section-level staleness regardless of
-        # whether `public` is empty. An empty public set means every existing section is
+        # triefact_exists is True at this point — check section-level staleness regardless
+        # of whether `public` is empty. An empty public set means every existing section is
         # orphaned (the symbol it documents was renamed, made private, or removed).
-        doc = DocFile.parse(abs_doc.read_text())
-        existing_sections = {c.qualified_name: c for c in doc.chunks if isinstance(c, Section)}
+        triefact = TriefactFile.parse(abs_triefact.read_text())
+        existing_sections = {c.qualified_name: c for c in triefact.chunks if isinstance(c, Section)}
         symbol_index = {sym.qualified_name: sym for sym in public}
 
         for qname, sym in symbol_index.items():
@@ -92,7 +92,7 @@ def check_project(*, project_root: Path, config: Config) -> CheckResult:
                 items.append(
                     StaleItem(
                         source_path=rel_source,
-                        doc_path=rel_doc,
+                        triefact_path=rel_triefact,
                         reason=StaleReason.MISSING_SECTION,
                         qualified_name=qname,
                     )
@@ -102,7 +102,7 @@ def check_project(*, project_root: Path, config: Config) -> CheckResult:
                 items.append(
                     StaleItem(
                         source_path=rel_source,
-                        doc_path=rel_doc,
+                        triefact_path=rel_triefact,
                         reason=StaleReason.STALE_SECTION,
                         qualified_name=qname,
                     )
@@ -113,7 +113,7 @@ def check_project(*, project_root: Path, config: Config) -> CheckResult:
                 items.append(
                     StaleItem(
                         source_path=rel_source,
-                        doc_path=rel_doc,
+                        triefact_path=rel_triefact,
                         reason=StaleReason.ORPHAN_SECTION,
                         qualified_name=qname,
                     )

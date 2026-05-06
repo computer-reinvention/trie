@@ -19,13 +19,13 @@ src/auth/middleware.py   ────  source, executable form
          ▲
          │  trie keeps these in sync,
          ▼  cascade-aware, sentinel-preserving
-docs/src/auth/middleware.md  ────  prose, explanatory form
+triefacts/src/auth/middleware.md  ────  prose, explanatory form
    ├─ § require_auth          (what it does, why, invariants)
    ├─ § extract_token
    └─ § <hand-written notes>  (preserved verbatim across regeneration)
 ```
 
-Every file has a doc. Every symbol has a paragraph. Hand-written prose between `<!-- trie:section -->` sentinels is preserved across regeneration — no agent ever overwrites human judgment. And the same reference graph the code has is made first-class: edges between symbols, traversable by humans and agents alike. # comment: adoption hurdle shall be opptional and not necessary for most common use cases, only niche topics where the system lacks domain knowledge
+A **triefact** (`trie` + `artifact`) is the per-file prose description above — one Markdown file mirroring one source file, with a paragraph per public symbol. The whole tree of them lives under `triefacts/`. Hand-written prose between `<!-- trie:section -->` sentinels is preserved across regeneration — no agent ever overwrites human judgment. And the same reference graph the code has is made first-class: edges between symbols, traversable by humans and agents alike. # comment: adoption hurdle shall be opptional and not necessary for most common use cases, only niche topics where the system lacks domain knowledge
 
 ## What a pass looks like
 
@@ -34,7 +34,7 @@ The artifact a human reviews changes. Agents don't hand you a code diff and ask 
 ```
 your repo, after one agent pass:
 
-docs/
+triefacts/
 ├── src/
 │   ├── auth/
 │   │   ├── middleware.md   [*]  edited this pass
@@ -64,18 +64,18 @@ question: "what happens when an unauthenticated request hits /admin?"
   ├── find_symbol("admin")
   │     → api.handler:admin_route
   │
-  ├── get_doc("src/api/handler.md") § admin_route
+  ├── get_triefact("src/api/handler.md") § admin_route
   │     "Routes admin endpoints. Wrapped by require_auth before any
   │      handler body runs. Returns 401 if auth fails…"
   │
   ├── references_from("api.handler:admin_route")
   │     → auth.middleware:require_auth
   │
-  ├── get_doc("src/auth/middleware.md") § require_auth
+  ├── get_triefact("src/auth/middleware.md") § require_auth
   │     "Validates the session cookie via session.validate(). On any
   │      ValidationError, raises HTTPUnauthorized — never returns None…"
   │
-  └── get_doc("src/auth/session.md") § validate
+  └── get_triefact("src/auth/session.md") § validate
         "Loads the session record, checks expiry, rotates the refresh
          token if within 5 minutes of expiry…"
 
@@ -90,9 +90,9 @@ Where meaning is written, the agent reads it. Where meaning isn't written, the _
 
 ## The cascade — what keeps it honest
 
-A self-describing codebase only works if the description stays true. The naive "doc per file" approach rots the moment you refactor — one edit invalidates docs in places you didn't touch, nobody notices, drift compounds, docs become lies, everyone stops trusting them.
+A self-describing codebase only works if the description stays true. The naive "triefact per file" approach rots the moment you refactor — one edit invalidates triefacts in places you didn't touch, nobody notices, drift compounds, triefacts become lies, everyone stops trusting them.
 
-trie's cascade is the load-bearing wall against that. When a symbol changes, the reference graph determines which _other_ doc files also need regenerating — not just the doc for the file you edited.
+trie's cascade is the load-bearing wall against that. When a symbol changes, the reference graph determines which _other_ triefact files also need regenerating — not just the triefact for the file you edited.
 
 ```
 edit slugify() in src/slugify.py
@@ -100,17 +100,17 @@ edit slugify() in src/slugify.py
          ▼
 graph query: who references slugify?
          │
-         ├─ src/posts.py:make_url      → docs/src/posts.md must regen
-         ├─ src/feeds.py:item_url      → docs/src/feeds.md must regen
+         ├─ src/posts.py:make_url      → triefacts/src/posts.md must regen
+         ├─ src/feeds.py:item_url      → triefacts/src/feeds.md must regen
          └─ utils.py:_canonicalize     → hub symbol (>20 inbound), capped
 
 regen plan:
-  docs/src/slugify.md   (the change itself)
-  docs/src/posts.md     (cascade)
-  docs/src/feeds.md     (cascade)
+  triefacts/src/slugify.md   (the change itself)
+  triefacts/src/posts.md     (cascade)
+  triefacts/src/feeds.md     (cascade)
 ```
 
-A pre-commit gate (`trie check`) refuses to merge when fingerprints don't match. Drift is a build break, not a TODO. The check is fast and offline — it compares fingerprints embedded in the doc files' section sentinels against fingerprints derived from the current source, no LLM involved.
+A pre-commit gate (`trie check`) refuses to merge when fingerprints don't match. Drift is a build break, not a TODO. The check is fast and offline — it compares fingerprints embedded in the triefact files' section sentinels against fingerprints derived from the current source, no LLM involved.
 
 The hub-symbol cap matters: a `utils.py` referenced everywhere can't invalidate the world on every edit. trie skips cascade through symbols with more than ~20 inbound references by default, configurable per project.
 
@@ -122,13 +122,13 @@ uv pip install -e /path/to/trie  # or `pipx install ./trie` once published
 cd /path/to/your/project
 trie init
 
-# generate docs for one file
+# generate triefacts for one file
 trie sync --file src/some_module.py
 
 # bootstrap the whole project (capped by budget or file count)
 trie scan
 trie sync --bootstrap --dry-run        # preview the plan + cost
-trie sync --bootstrap --limit 10        # generate docs for the top 10 files
+trie sync --bootstrap --limit 10        # generate triefacts for the top 10 files
 trie sync --bootstrap --budget 5.00     # spend at most $5
 
 # verify coherence (fast, no API calls — designed for pre-commit)
@@ -156,7 +156,7 @@ def slugify(text: str, max_len: int = 60) -> str:
     return cleaned[:max_len]
 ```
 
-After `trie sync --file src/slugify.py`, `docs/src/slugify.md`:
+After `trie sync --file src/slugify.py`, `triefacts/src/slugify.md`:
 
 ```markdown
 ---
@@ -189,11 +189,11 @@ def make_url(title: str) -> str:
     return "/posts/" + slugify(title)
 ```
 
-Edit `slugify`'s body — say, change the regex to also handle Unicode — and run `trie sync`. The cascade pulls in `docs/src/posts.md` automatically because `posts:make_url` references `slugify:slugify`. Both docs regenerate to stay coherent.
+Edit `slugify`'s body — say, change the regex to also handle Unicode — and run `trie sync`. The cascade pulls in `triefacts/src/posts.md` automatically because `posts:make_url` references `slugify:slugify`. Both triefacts regenerate to stay coherent.
 
-## How it works (anatomy of a trie doc)
+## How it works (anatomy of a trie triefact)
 
-A trie-managed Markdown doc looks like this:
+A trie-managed Markdown triefact looks like this:
 
 ```markdown
 ---
@@ -261,7 +261,7 @@ trie ships an MCP server so coding agents read your codebase's prose self-descri
 
 | Tool                              | What it returns                                 |
 | --------------------------------- | ----------------------------------------------- |
-| `get_doc(source_path)`            | Markdown doc for a source file                  |
+| `get_triefact(source_path)`            | Markdown triefact for a source file             |
 | `find_symbol(name)`               | Substring search over symbol names + signatures |
 | `references_to(qualified_name)`   | Symbols that reference the given one (callers)  |
 | `references_from(qualified_name)` | Symbols the given one references (callees)      |
@@ -278,15 +278,15 @@ For Claude Code, add to your `~/.claude/mcp_servers.json` (or per-project `.mcp.
 }
 ```
 
-The server is read-only. Agents can query the graph and join paragraphs; only `trie sync` (run by you, in your shell) modifies the doc tree. Humans gate writes. Agents read freely.
+The server is read-only. Agents can query the graph and join paragraphs; only `trie sync` (run by you, in your shell) modifies the triefact tree. Humans gate writes. Agents read freely.
 
-## Reducing PR noise from generated docs
+## Reducing PR noise from generated triefacts
 
-Generated Markdown can drown human review in PR diffs. On GitHub, mark the doc tree as `linguist-generated` so the diff is collapsed by default:
+Generated Markdown can drown human review in PR diffs. On GitHub, mark the triefact tree as `linguist-generated` so the diff is collapsed by default:
 
 ```
 # .gitattributes
-docs/** linguist-generated=true
+triefacts/** linguist-generated=true
 ```
 
 Hand-written prose between sentinels is still indexed by GitHub's search; only the side-by-side diff renders are collapsed.
@@ -297,9 +297,9 @@ Hand-written prose between sentinels is still indexed by GitHub's search; only t
 - **M2** ✓ — `trie scan`, `trie sync --bootstrap` with budget/limit and dry-run
 - **M3** ✓ — `trie check`, `trie diff`, pre-commit hook
 - **M4** ✓ — heuristic cascade (tree-sitter imports + same-module name matching) _(the wedge)_
-- **M5** ✓ — MCP server (`trie mcp`) with `get_doc`, `find_symbol`, `references_to/from`
+- **M5** ✓ — MCP server (`trie mcp`) with `get_triefact`, `find_symbol`, `references_to/from`
 - **M6** ✓ — README golden example, packaging, `trie plan` alias, `.gitattributes` recipe
-- **v0.2** — SCIP precision (replace tree-sitter heuristic with `scip-python` for type-aware references), TypeScript support, vector-over-docs retrieval, `trie watch` daemon, rename detection in reconcile
+- **v0.2** — SCIP precision (replace tree-sitter heuristic with `scip-python` for type-aware references), TypeScript support, vector-over-triefacts retrieval, `trie watch` daemon, rename detection in reconcile
 
 ## License
 

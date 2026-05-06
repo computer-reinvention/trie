@@ -36,7 +36,7 @@ def project(tmp_path: Path) -> Path:
     (tmp_path / "trie.toml").write_text(
         '[trie]\nversion = "0.1.0"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
-        '[docs]\nroot = "docs"\nsource_root = "."\n'
+        '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
         'cascade = "anthropic/claude-sonnet-4-6"\n'
         "[cascade]\ndefault_depth = 1\nhub_symbol_threshold = 20\n"
@@ -84,9 +84,9 @@ def test_diff_shows_regenerated_content(project: Path):
     assert "v1 body." in fd.unified_diff or "v1" in fd.unified_diff
     assert "v2 body." in fd.unified_diff
     # Preview file actually written
-    assert fd.preview_doc_path.exists()
+    assert fd.preview_triefact_path.exists()
     # Live file unchanged
-    canonical_text = fd.canonical_doc_path.read_text()
+    canonical_text = fd.canonical_triefact_path.read_text()
     assert "v1 body." in canonical_text
     assert "v2 body." not in canonical_text
 
@@ -95,7 +95,7 @@ def test_diff_writes_to_preview_dir(project: Path):
     config, _ = Config.find_and_load(project)
     pricing = get_pricing("anthropic/claude-sonnet-4-6")
 
-    # Stale: missing doc
+    # Stale: missing triefact
     result = diff_project(
         project_root=project,
         config=config,
@@ -103,11 +103,11 @@ def test_diff_writes_to_preview_dir(project: Path):
         pricing=pricing,
     )
     assert len(result.diffs) == 1
-    preview_path = result.diffs[0].preview_doc_path
+    preview_path = result.diffs[0].preview_triefact_path
     assert ".trie/preview" in str(preview_path).replace("\\", "/")
     assert preview_path.exists()
     # Live tree unchanged
-    canonical = result.diffs[0].canonical_doc_path
+    canonical = result.diffs[0].canonical_triefact_path
     assert not canonical.exists()
 
 

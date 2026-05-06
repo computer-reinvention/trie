@@ -34,7 +34,7 @@ def project(tmp_path: Path) -> Path:
     (tmp_path / "trie.toml").write_text(
         '[trie]\nversion = "0.1.0"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
-        '[docs]\nroot = "docs"\nsource_root = "."\n'
+        '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
         'cascade = "anthropic/claude-sonnet-4-6"\n'
         "[cascade]\ndefault_depth = 1\nhub_symbol_threshold = 20\n"
@@ -58,12 +58,12 @@ def test_clean_after_fresh_sync(project: Path):
     assert result.is_clean
 
 
-def test_missing_doc_detected(project: Path):
-    # No docs generated at all
+def test_missing_triefact_detected(project: Path):
+    # No triefacts generated at all
     config, _ = Config.find_and_load(project)
     result = check_project(project_root=project, config=config)
     reasons = {it.reason for it in result.items}
-    assert StaleReason.MISSING_DOC in reasons
+    assert StaleReason.MISSING_TRIEFACT in reasons
     assert not result.is_clean
 
 
@@ -92,15 +92,17 @@ def test_missing_section_detected(project: Path):
 def test_orphan_section_detected(project: Path):
     _sync_all(project)
     # Remove alpha's symbol
-    (project / "src" / "alpha.py").write_text("# alpha was deleted; doc still has its section\n")
+    (project / "src" / "alpha.py").write_text(
+        "# alpha was deleted; triefact still has its section\n"
+    )
     config, _ = Config.find_and_load(project)
     result = check_project(project_root=project, config=config)
     orphan = [it for it in result.items if it.reason == StaleReason.ORPHAN_SECTION]
     assert any(it.qualified_name == "src/alpha:alpha" for it in orphan)
 
 
-def test_no_public_symbols_no_doc_required(project: Path):
-    """A file with only private symbols doesn't need a doc — don't flag missing_doc."""
+def test_no_public_symbols_no_triefact_required(project: Path):
+    """A file with only private symbols doesn't need a triefact — don't flag missing_triefact."""
     (project / "src" / "private_only.py").write_text(
         "def _hidden():\n    pass\n\n\ndef _also_hidden():\n    pass\n"
     )
@@ -113,9 +115,9 @@ def test_no_public_symbols_no_doc_required(project: Path):
 def test_clean_when_all_in_sync_with_human_prose(project: Path):
     _sync_all(project)
     # Add hand-written prose between/after sections — must not trip the check
-    doc = project / "docs" / "src" / "alpha.md"
-    text = doc.read_text()
-    doc.write_text(text + "\n\n## Author notes\n\nHand-written.\n")
+    triefact = project / "triefacts" / "src" / "alpha.md"
+    text = triefact.read_text()
+    triefact.write_text(text + "\n\n## Author notes\n\nHand-written.\n")
     config, _ = Config.find_and_load(project)
     result = check_project(project_root=project, config=config)
     assert result.is_clean
