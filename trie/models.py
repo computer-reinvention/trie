@@ -40,6 +40,18 @@ class AnthropicClient:
         self._client = client or Anthropic()
 
     def _payload(self, req: GenerationRequest) -> dict:
+        content: list[dict] = [
+            {
+                "type": "text",
+                "text": req.cached_context,
+                "cache_control": {"type": "ephemeral"},
+            },
+        ]
+        # Anthropic rejects empty text content blocks. `build_plan` calls count_tokens
+        # with `request=""` to get just the cached-prefix size, so skip the block when
+        # it's empty rather than sending an invalid payload.
+        if req.request:
+            content.append({"type": "text", "text": req.request})
         return {
             "model": self.model_id,
             "system": [
@@ -49,19 +61,7 @@ class AnthropicClient:
                     "cache_control": {"type": "ephemeral"},
                 },
             ],
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": req.cached_context,
-                            "cache_control": {"type": "ephemeral"},
-                        },
-                        {"type": "text", "text": req.request},
-                    ],
-                }
-            ],
+            "messages": [{"role": "user", "content": content}],
         }
 
     def generate(self, req: GenerationRequest) -> GenerationResponse:
