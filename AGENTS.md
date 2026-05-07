@@ -4,7 +4,7 @@ This file provides guidance to OpenCode when working with code in this repositor
 
 ## What trie is
 
-trie generates a Markdown "triefact" file per source file, kept in a tree (`triefacts/`) that mirrors the source tree. A reference-graph cascade regenerates dependent triefacts when a referenced symbol changes; a fingerprint-based `trie sync --check` runs as a pre-commit gate to refuse merges when the tree drifts. An MCP server (`trie mcp serve`, registered via `trie mcp install`) exposes the tree to coding agents.
+trie generates a Markdown "triefact" file per source file, kept in a tree (`triefacts/`) that mirrors the source tree. A reference-graph cascade regenerates dependent triefacts when a referenced symbol changes; a fingerprint-based `trie verify` runs as a pre-commit gate to refuse merges when the tree drifts (in either direction — Code → Triefact or Triefact → Code). An MCP server (`trie mcp serve`, registered via `trie mcp install`) exposes the tree to coding agents.
 
 The README and QUICKSTART describe the user-facing model in detail; read them when the task is about behavior or UX. This file covers what's not derivable from those.
 
@@ -35,7 +35,7 @@ trie sync --file path/to/some.py        # cheapest smoke test of the LLM path
 trie sync --limit 10                    # auto-detected first-run bootstrap, capped
 trie sync                               # day-to-day incremental cascade
 trie sync --dry-run                     # preview unified diff before paying
-trie sync --check                       # fingerprint-only drift gate; pre-commit entry
+trie verify                             # fingerprint-only drift gate; pre-commit entry
 trie mcp install --target claude-code   # register the stdio server with an agent
 trie mcp serve                          # the server itself; agents spawn this
 ```
@@ -48,7 +48,7 @@ The pipeline has three layers. Understanding which layer a task belongs to is th
 
 **1. Parse + graph (offline, no LLM)** — `trie/parse/`, `trie/graph/store.py`, `trie/scan.py`
 
-`parse/python.py` extracts `Symbol`s from a source file via tree-sitter. Each symbol carries a `body_normalized_hash` (whitespace/comment-stripped SHA-256) — that hash is the *fingerprint* the rest of the system pivots on. `parse/references.py` produces edges with a `confidence` field (`tree_sitter_import` | `name_match`). The confidence field exists so SCIP-precision edges can land in v0.2 alongside heuristics without breaking the cascade contract — preserve it.
+`parse/python.py` extracts `Symbol`s from a source file via tree-sitter. Each symbol carries a `body_normalized_hash` (whitespace/comment-stripped SHA-256) — that hash is the _fingerprint_ the rest of the system pivots on. `parse/references.py` produces edges with a `confidence` field (`tree_sitter_import` | `name_match`). The confidence field exists so SCIP-precision edges can land in v0.2 alongside heuristics without breaking the cascade contract — preserve it.
 
 `graph/store.py` is a SQLite-backed store (`<root>/.trie/graph.db`) with three live tables: `files`, `symbols`, `edges`, plus `triefact_sections` for fingerprint lookups. Schema is created on connect via `SCHEMA_SQL`. There's no migration tooling yet — bump `SCHEMA_VERSION` and add an idempotent `CREATE` rather than altering existing tables.
 
@@ -56,9 +56,10 @@ The pipeline has three layers. Understanding which layer a task belongs to is th
 
 **2. Generation (LLM-touching)** — `trie/sync/`, `trie/models.py`, `trie/cost.py`
 
-`sync/single_file.py` is the leaf: build prompt, call the model, write the triefact. `sync/writer.py` parses and reassembles a triefact's section sentinels (`<!-- trie:section symbol=... fingerprint=... -->` / `<!-- trie:end -->`) — anything *outside* sentinels is human prose and is preserved byte-for-byte. Don't refactor the writer without preserving that contract; it's the load-bearing promise to users.
+`sync/single_file.py` is the leaf: build prompt, call the model, write the triefact. `sync/writer.py` parses and reassembles a triefact's section sentinels (`<!-- trie:section symbol=... fingerprint=... body_fp=... -->` / `<!-- trie:end -->`) — anything _outside_ sentinels is human prose and is preserved byte-for-byte. The `fingerprint=` is a SHA-256 over the normalized source body; `body_fp=` is a SHA-256 over the section body itself, so `trie verify` catches drift in both directions. `body_fp=` is optional in the regex (legacy v0.1 sentinels lack it) but every render emits it; legacy sections are flagged as `LEGACY_SECTION` until re-synced. Don't refactor the writer without preserving that contract; it's the load-bearing promise to users.
 
 Three top-level sync modes wrap `sync_single_file`:
+
 - `sync/bootstrap.py` — rank scope by `LOC × public_symbol_count`, run under `--budget` / `--limit`
 - `sync/incremental.py` — default `trie sync`: scan → reconcile orphans → `check_project` for stale → `compute_cascade` → sync affected files
 - `sync/cascade.py` — pure graph traversal: walk inbound edges from changed symbols up to `cascade.default_depth`, skipping symbols with more than `cascade.hub_symbol_threshold` inbound refs (the hub guard against `utils.py` invalidating the world)

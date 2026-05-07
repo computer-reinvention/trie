@@ -2,30 +2,51 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from hashlib import sha256
 from typing import Any
 
 import yaml
 
 # A trie section is delimited by an open and close HTML comment. The open carries the
-# fully-qualified symbol name and a fingerprint over the source content used to generate it.
+# fully-qualified symbol name, a `fingerprint` over the *source* symbol body that the
+# section documents, and a `body_fp` over the *triefact* body itself. The two together
+# let the coherence check work both ways:
+#   - source changed but triefact wasn't regen'd  → fingerprint mismatch
+#   - triefact body manually tampered with        → body_fp mismatch
 # Anything outside open/close pairs is treated as human prose and preserved verbatim.
 #
-# Known limitation (v0.1): the parser does not skip code fences, so a literal
+# Backward compatibility: `body_fp` is optional in the regex. Sections written by
+# trie ≤ 0.1 don't carry it; check.py treats those as MISSING_BODY_FINGERPRINT and
+# nudges the user to re-sync. Once a project re-syncs, every section carries it.
+#
+# Known limitation: the parser does not skip code fences, so a literal
 # `<!-- trie:section ... -->` inside a fenced block will be interpreted as a real sentinel.
 # Avoid documenting trie's own sentinel format inside trie-managed Markdown for now.
 
 SECTION_OPEN_RE = re.compile(
-    r"<!--\s*trie:section\s+symbol=(?P<symbol>\S+)\s+fingerprint=(?P<fp>\S+)\s*-->"
+    r"<!--\s*trie:section\s+symbol=(?P<symbol>\S+)\s+fingerprint=(?P<fp>\S+)"
+    r"(?:\s+body_fp=(?P<body_fp>\S+))?\s*-->"
 )
 SECTION_CLOSE = "<!-- trie:end -->"
 FRONT_MATTER_RE = re.compile(r"\A---\s*\n(?P<yaml>.*?)\n---\s*\n", re.DOTALL)
 
 
+def hash_body(body: str) -> str:
+    """SHA-256 over the section body with leading/trailing whitespace stripped.
+
+    Whitespace is the only thing trie's renderer normalizes between parse and render
+    (a trailing newline is auto-inserted when missing), so stripping it before hashing
+    matches what the round-trip writes back.
+    """
+    return sha256(body.strip().encode("utf-8")).hexdigest()
+
+
 @dataclass(frozen=True)
 class Section:
     qualified_name: str
-    fingerprint: str
+    fingerprint: str  # SHA-256 over normalized source symbol body
     body: str  # text between sentinels, leading/trailing newlines stripped
+    body_fingerprint: str | None = None  # SHA-256 over `body`; None for legacy sections
 
 
 @dataclass(frozen=True)
@@ -76,6 +97,7 @@ class TriefactFile:
                     qualified_name=open_match.group("symbol"),
                     fingerprint=open_match.group("fp"),
                     body=body,
+                    body_fingerprint=open_match.group("body_fp"),
                 )
             )
             cursor = close_idx + len(SECTION_CLOSE)
@@ -101,12 +123,22 @@ class TriefactFile:
     # --- mutations ---
 
     def upsert_section(self, *, qualified_name: str, fingerprint: str, body: str) -> None:
-        """Replace an existing section by qualified_name, or append a new one at the end."""
+        """Replace an existing section by qualified_name, or append a new one at the end.
+
+        The body fingerprint is computed automatically from `body` so callers can't
+        forget to set it. Re-rendering will emit `body_fp=` in the open sentinel.
+        """
+        new = Section(
+            qualified_name=qualified_name,
+            fingerprint=fingerprint,
+            body=body,
+            body_fingerprint=hash_body(body),
+        )
         for i, c in enumerate(self.chunks):
             if isinstance(c, Section) and c.qualified_name == qualified_name:
-                self.chunks[i] = Section(qualified_name, fingerprint, body)
+                self.chunks[i] = new
                 return
-        self._append_section(Section(qualified_name, fingerprint, body))
+        self._append_section(new)
 
     def remove_section(self, qualified_name: str) -> bool:
         for i, c in enumerate(self.chunks):
@@ -141,8 +173,14 @@ class TriefactFile:
             if isinstance(c, Prose):
                 parts.append(c.text)
             else:
+                # Always emit body_fp on render. If a parsed legacy section is being
+                # rewritten unchanged, hash the current body so future checks can verify it.
+                body_fp = (
+                    c.body_fingerprint if c.body_fingerprint is not None else hash_body(c.body)
+                )
                 parts.append(
-                    f"<!-- trie:section symbol={c.qualified_name} fingerprint={c.fingerprint} -->\n"
+                    f"<!-- trie:section symbol={c.qualified_name} "
+                    f"fingerprint={c.fingerprint} body_fp={body_fp} -->\n"
                 )
                 parts.append(c.body)
                 if not c.body.endswith("\n"):

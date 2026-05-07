@@ -1,13 +1,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
 
 from trie import __version__
 from trie.config import Config
+from trie.graph.store import Store
 from trie.models import ModelClient
-from trie.parse.python import extract_symbols
+from trie.parse.python import (
+    Symbol,
+    extract_module_docstring,
+    extract_symbols,
+    strip_string_literal,
+)
 from trie.sync.generator import FileGenerationContext, generate_section
 from trie.sync.writer import TriefactFile
 
@@ -35,6 +42,40 @@ def _triefact_path_for(source_path: Path, project_root: Path, config: Config) ->
     return triefacts_root / rel.with_suffix(".md")
 
 
+def _file_description(source_path: Path) -> str | None:
+    """One-line description of the file derived from its module docstring, if any.
+
+    The first non-empty line of the docstring is returned, trimmed. None when the
+    file has no module docstring. This is the cheapest possible "what does this file
+    do" surface — no LLM call, no hand-curation.
+    """
+    raw = extract_module_docstring(source_path)
+    if raw is None:
+        return None
+    text = strip_string_literal(raw)
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped:
+            return stripped
+    return None
+
+
+def _build_defines(public_symbols: list[Symbol]) -> list[dict[str, object]]:
+    """List of `{kind, qualified_name, lines}` entries — one per public symbol.
+
+    Surfaces the symbol roster as an agent-navigable index without re-parsing the
+    triefact's section sentinels. Sorted by start_line so the order matches the source.
+    """
+    return [
+        {
+            "kind": s.kind,
+            "qualified_name": s.qualified_name,
+            "lines": f"{s.start_line}-{s.end_line}",
+        }
+        for s in sorted(public_symbols, key=lambda x: x.start_line)
+    ]
+
+
 def sync_single_file(
     source_path: Path,
     *,
@@ -42,6 +83,7 @@ def sync_single_file(
     config: Config,
     client: ModelClient,
     dest_triefact_path: Path | None = None,
+    store: Store | None = None,
 ) -> FileSyncResult:
     """Generate or refresh the triefact file for a single Python source file.
 
@@ -53,6 +95,11 @@ def sync_single_file(
     the canonical `<triefacts.root>/<source>.md` path. The existing canonical triefact is
     still used as the load source so human prose between sentinels is preserved. This is
     how `trie diff` writes previews to `.trie/preview/` without clobbering the live tree.
+
+    When `store` is provided, the front matter is enriched with cross-file reference
+    counts. When omitted, the agent-navigation metadata still lands (defines list,
+    description, timestamps), only the ref counts are skipped — useful for callers that
+    want to render a triefact without spinning up the SQLite store.
     """
     source_path = source_path.resolve()
     project_root = project_root.resolve()
@@ -98,11 +145,23 @@ def sync_single_file(
             triefact.remove_section(stale_qname)
             sections_removed += 1
 
-    triefact.front_matter = {
+    front_matter: dict[str, object] = {
         "trie_version": __version__,
         "source": rel_path,
         "file_fingerprint": file_fp,
+        "last_synced_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
+    description = _file_description(source_path)
+    if description is not None:
+        front_matter["description"] = description
+    if public_symbols:
+        front_matter["defines"] = _build_defines(public_symbols)
+    if store is not None:
+        inbound, outbound = store.file_ref_counts(rel_path)
+        front_matter["incoming_refs"] = inbound
+        front_matter["outgoing_refs"] = outbound
+
+    triefact.front_matter = front_matter
 
     write_path.parent.mkdir(parents=True, exist_ok=True)
     write_path.write_text(triefact.render())

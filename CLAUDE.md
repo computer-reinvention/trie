@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What trie is
 
-trie generates a Markdown "triefact" file per source file, kept in a tree (`triefacts/`) that mirrors the source tree. A reference-graph cascade regenerates dependent triefacts when a referenced symbol changes; a fingerprint-based `trie sync --check` runs as a pre-commit gate to refuse merges when the tree drifts. An MCP server (`trie mcp serve`, registered via `trie mcp install`) exposes the tree to coding agents.
+trie generates a Markdown "triefact" file per source file, kept in a tree (`triefacts/`) that mirrors the source tree. A reference-graph cascade regenerates dependent triefacts when a referenced symbol changes; a fingerprint-based `trie verify` runs as a pre-commit gate to refuse merges when the tree drifts (in either direction — Code → Triefact or Triefact → Code). An MCP server (`trie mcp serve`, registered via `trie mcp install`) exposes the tree to coding agents.
 
 The README and QUICKSTART describe the user-facing model in detail; read them when the task is about behavior or UX. This file covers what's not derivable from those.
 
@@ -35,7 +35,7 @@ trie sync --file path/to/some.py        # cheapest smoke test of the LLM path
 trie sync --limit 10                    # auto-detected first-run bootstrap, capped
 trie sync                               # day-to-day incremental cascade
 trie sync --dry-run                     # preview unified diff before paying
-trie sync --check                       # fingerprint-only drift gate; pre-commit entry
+trie verify                             # fingerprint-only drift gate; pre-commit entry
 trie mcp install --target claude-code   # register the stdio server with an agent
 trie mcp serve                          # the server itself; agents spawn this
 ```
@@ -56,7 +56,7 @@ The pipeline has three layers. Understanding which layer a task belongs to is th
 
 **2. Generation (LLM-touching)** — `trie/sync/`, `trie/models.py`, `trie/cost.py`
 
-`sync/single_file.py` is the leaf: build prompt, call the model, write the triefact. `sync/writer.py` parses and reassembles a triefact's section sentinels (`<!-- trie:section symbol=... fingerprint=... -->` / `<!-- trie:end -->`) — anything *outside* sentinels is human prose and is preserved byte-for-byte. Don't refactor the writer without preserving that contract; it's the load-bearing promise to users.
+`sync/single_file.py` is the leaf: build prompt, call the model, write the triefact. `sync/writer.py` parses and reassembles a triefact's section sentinels (`<!-- trie:section symbol=... fingerprint=... body_fp=... -->` / `<!-- trie:end -->`) — anything *outside* sentinels is human prose and is preserved byte-for-byte. The `fingerprint=` is a SHA-256 over the normalized source body; `body_fp=` is a SHA-256 over the section body itself, so `trie verify` catches drift in both directions. `body_fp=` is optional in the regex (legacy v0.1 sentinels lack it) but every render emits it; legacy sections are flagged as `LEGACY_SECTION` until re-synced. Don't refactor the writer without preserving that contract; it's the load-bearing promise to users.
 
 Three top-level sync modes wrap `sync_single_file`:
 - `sync/bootstrap.py` — rank scope by `LOC × public_symbol_count`, run under `--budget` / `--limit`

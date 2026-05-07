@@ -110,6 +110,7 @@ def run_bootstrap(
     budget_usd: float | None,
     limit: int | None,
     progress: ProgressCallback | None = None,
+    store: Store | None = None,
 ) -> BootstrapResult:
     """Execute the worklist. Stops when budget or limit is reached.
 
@@ -141,7 +142,13 @@ def run_bootstrap(
             continue
 
         cb.on_start(item.file_path, idx, total)
-        result = sync_single_file(abs_path, project_root=project_root, config=config, client=client)
+        result = sync_single_file(
+            abs_path,
+            project_root=project_root,
+            config=config,
+            client=client,
+            store=store,
+        )
         sync_results.append(result)
         estimated_cost += item.estimated.cost_usd
         file_cost = 0.0

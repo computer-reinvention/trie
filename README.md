@@ -16,7 +16,7 @@ src/auth/middleware.py   ────►  triefacts/src/auth/middleware.md
                                   └─ § <hand-written notes>  (preserved across regen)
 ```
 
-A pre-commit gate (`trie sync --check`) refuses to merge when the tree drifts. An MCP server (`trie mcp serve`, registered into your agent via `trie mcp install`) exposes the tree to coding agents — Claude Code, Cursor, Codex, etc. — as a persistent, structured context layer.
+A pre-commit gate (`trie verify`) refuses to merge when the tree drifts. The check is bidirectional — it catches both source changes that haven't propagated into triefacts and tampering with triefact bodies. An MCP server (`trie mcp serve`, registered into your agent via `trie mcp install`) exposes the tree to coding agents — Claude Code, Cursor, Codex, etc. — as a persistent, structured context layer.
 
 > **Status:** pre-alpha · v0.1 in active development · not ready for general use.
 
@@ -126,7 +126,7 @@ regen plan:
   triefacts/src/feeds.md     (cascade)
 ```
 
-A pre-commit gate (`trie sync --check`) refuses to merge when fingerprints don't match. Drift is a build break, not a TODO. The check is fast and offline — it compares fingerprints embedded in the triefact files' section sentinels against fingerprints derived from the current source, no LLM involved.
+A pre-commit gate (`trie verify`) refuses to merge when fingerprints don't match. Drift is a build break, not a TODO. The check is fast and offline — every section sentinel carries two SHA-256 hashes (over the source symbol and over the triefact body) so drift is detected in both directions: source changes that haven't been regenerated, and triefact bodies that were edited or corrupted between sentinels. No LLM in the loop.
 
 The hub-symbol cap matters: a `utils.py` referenced everywhere can't invalidate the world on every edit. trie skips cascade through symbols with more than ~20 inbound references by default, configurable per project.
 
@@ -157,7 +157,7 @@ trie sync                               # re-syncs whatever's stale + cascades
 trie sync --dry-run
 
 # verify coherence (fast, no API calls — designed for pre-commit)
-trie sync --check
+trie verify
 ```
 
 ## Golden example
@@ -182,22 +182,26 @@ After `trie sync --file src/slugify.py`, `triefacts/src/slugify.md`:
 
 ```markdown
 ---
-trie_version: 0.1.0
+trie_version: 0.2.0
 source: src/slugify.py
 file_fingerprint: 9d4f374adc9a843c…
+last_synced_at: '2026-05-08T14:21:09Z'
+description: Pure-function library.
+defines:
+  - kind: function
+    qualified_name: src/slugify:slugify
+    lines: 6-9
+incoming_refs: 1
+outgoing_refs: 0
 ---
 
-<!-- trie:section symbol=src/slugify:slugify fingerprint=693808c2… -->
+<!-- trie:section symbol=src/slugify:slugify fingerprint=693808c2… body_fp=4f1c2d8e… -->
 
 ## `slugify(text: str, max_len: int = 60) -> str`
 
-Generates a URL-safe slug from arbitrary text. Lowercases the input, replaces
-runs of non-word characters with single hyphens, trims leading/trailing
-hyphens, and truncates to `max_len` characters.
+Lowercase, replace non-word runs with hyphens, strip leading/trailing hyphens, truncate to `max_len`.
 
-- **`text`**: The string to slugify.
-- **`max_len`**: Maximum character count of the returned slug; defaults to 60.
-- **Returns**: The slugified string, no longer than `max_len`.
+- `max_len`: clamp on the returned length; defaults to 60.
 <!-- trie:end -->
 ```
 
@@ -219,12 +223,23 @@ A trie-managed Markdown triefact looks like this:
 
 ```markdown
 ---
-trie_version: 0.1.0
+trie_version: 0.2.0
 source: src/foo.py
 file_fingerprint: 0830b9bb…
+last_synced_at: '2026-05-08T14:21:09Z'
+description: One-line summary lifted from the module docstring.
+defines:
+  - kind: function
+    qualified_name: src/foo:bar
+    lines: 5-12
+  - kind: function
+    qualified_name: src/foo:baz
+    lines: 15-22
+incoming_refs: 4
+outgoing_refs: 2
 ---
 
-<!-- trie:section symbol=src/foo:bar fingerprint=1d10d565… -->
+<!-- trie:section symbol=src/foo:bar fingerprint=1d10d565… body_fp=4f1c2d8e… -->
 
 ## `bar(s: str) -> str`
 
@@ -236,7 +251,7 @@ Generated description.
 
 This prose lives between sentinels and is preserved across regeneration.
 
-<!-- trie:section symbol=src/foo:baz fingerprint=f351c011… -->
+<!-- trie:section symbol=src/foo:baz fingerprint=f351c011… body_fp=8c9b3a44… -->
 
 ## `baz()`
 
@@ -245,9 +260,11 @@ This prose lives between sentinels and is preserved across regeneration.
 <!-- trie:end -->
 ```
 
-- The fingerprint is a SHA-256 of the symbol's body with whitespace and comments normalized away — formatting churn doesn't trip staleness, but real changes do.
-- `trie sync` regenerates only the sections whose fingerprint has drifted; everything between sentinels is preserved byte-for-byte.
-- `trie sync --check` compares stored fingerprints to current source — fast, deterministic, no LLM in the loop.
+- The `fingerprint=` field is a SHA-256 of the symbol's body with whitespace and comments normalized away — formatting churn doesn't trip staleness, but real changes do.
+- The `body_fp=` field is a SHA-256 of the section body itself, so the check catches manual tampering with the Markdown between sentinels.
+- The front-matter `defines` list, ref counts, and description are agent-navigation metadata: they let an agent decide whether to open a triefact at all without parsing every section.
+- `trie sync` regenerates only the sections whose source fingerprint has drifted; everything between sentinels is preserved byte-for-byte.
+- `trie verify` compares stored fingerprints — fast, deterministic, no LLM in the loop, exits non-zero on drift.
 
 ## Pre-commit hook
 
@@ -256,9 +273,9 @@ Add to your `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/pankajgarkoti/trie
-    rev: v0.1.0
+    rev: v0.2.0
     hooks:
-      - id: trie-check
+      - id: trie-verify
 ```
 
 Or use a local hook if you'd rather pin trie via your own venv:
@@ -267,15 +284,15 @@ Or use a local hook if you'd rather pin trie via your own venv:
 repos:
   - repo: local
     hooks:
-      - id: trie-check
-        name: trie check
-        entry: trie sync --check --quiet
+      - id: trie-verify
+        name: trie verify
+        entry: trie -q verify
         language: system
         pass_filenames: false
         always_run: true
 ```
 
-`trie sync --check` exits non-zero if any source file's symbol doesn't match its documented section. Failures point at the specific symbol, so you know exactly what regenerated and why.
+`trie verify` exits non-zero on any of: a source symbol whose fingerprint no longer matches its section, a public symbol with no section, a section whose body was edited between sentinels (`tampered_body`), a section pointing at a deleted symbol (`orphan`), or a missing triefact file. Failures point at the specific symbol, so you know exactly what regenerated and why.
 
 ## Agent integration (MCP)
 
@@ -329,7 +346,7 @@ Hand-written prose between sentinels is still indexed by GitHub's search; only t
 
 - **M1** ✓ — `trie sync --file <path>` with section-sentinel writer
 - **M2** ✓ — symbol-graph scan, first-run bootstrap with budget/limit
-- **M3** ✓ — drift check (`trie sync --check`), preview (`trie sync --dry-run`), pre-commit hook
+- **M3** ✓ — drift check (`trie verify`), preview (`trie sync --dry-run`), pre-commit hook
 - **M4** ✓ — heuristic cascade (tree-sitter imports + same-module name matching) _(the wedge)_
 - **M5** ✓ — MCP server (`trie mcp serve`) with `get_triefact`, `find_symbol`, `references_to/from`
 - **M6** ✓ — README golden example, packaging, `trie plan`, `.gitattributes` recipe
