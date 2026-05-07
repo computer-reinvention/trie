@@ -331,6 +331,38 @@ class Store:
         ).fetchall()
         return {row[0]: int(row[1]) for row in rows}
 
+    def file_ref_counts(self, file_path: str) -> tuple[int, int]:
+        """Return (inbound, outbound) cross-file edge counts for `file_path`.
+
+        Inbound: edges whose dst is a symbol in this file and whose src is in another file.
+        Outbound: edges whose src is in this file and whose dst is in another file.
+        Intra-file edges are excluded — they aren't "callers from elsewhere" or "calls
+        out to elsewhere", which is what these counts surface in the triefact metadata.
+        """
+        inbound = int(
+            self._conn.execute(
+                """
+                SELECT COUNT(*) FROM edges e
+                JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
+                JOIN symbols s_src ON s_src.id = e.src_symbol_id
+                WHERE s_dst.file_path = ? AND s_src.file_path != ?
+                """,
+                (file_path, file_path),
+            ).fetchone()[0]
+        )
+        outbound = int(
+            self._conn.execute(
+                """
+                SELECT COUNT(*) FROM edges e
+                JOIN symbols s_src ON s_src.id = e.src_symbol_id
+                JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
+                WHERE s_src.file_path = ? AND s_dst.file_path != ?
+                """,
+                (file_path, file_path),
+            ).fetchone()[0]
+        )
+        return inbound, outbound
+
     def file_stats(self) -> list[FileStats]:
         """Per-file counts joined from files + symbols, used by the bootstrap ranker."""
         rows = self._conn.execute(

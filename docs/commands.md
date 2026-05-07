@@ -22,8 +22,9 @@ All commands except `trie init` resolve their config by walking up from the curr
 | Command | Networked? | What it does |
 | --- | --- | --- |
 | `trie init` | no | Set up trie in a Python project. Runs scan, optionally installs pre-commit hook. |
-| `trie plan` | yes (free) | Scan + cost preview. Uses `count_tokens`, never `messages.create`. |
+| `trie plan` | yes (free) | Drift check + scan + cost preview. Uses `count_tokens`, never `messages.create`. |
 | `trie sync` | yes (paid) | Generate or refresh triefacts. Auto-detects bootstrap vs incremental. |
+| `trie verify` | no | Offline drift gate. Exits 1 on any drift in either direction. Pre-commit entry. |
 | `trie mcp install` | no | Register the trie MCP server with one or more coding agents. |
 | `trie mcp serve` | no | Stdio MCP server. Hidden — agents spawn this via the snippet `install` writes. |
 
@@ -61,7 +62,7 @@ Exit codes: `0` on success, `1` on init error.
 
 ## `trie plan`
 
-Scan the project, then show the worklist and estimated cost.
+Surface drift, scan the project, and show the worklist + estimated cost.
 
 ```
 trie plan [--model MODEL]
@@ -71,9 +72,11 @@ trie plan [--model MODEL]
 | --- | --- | --- |
 | `--model` | `[models].bootstrap` | Override the model used for the cost estimate. |
 
-Networked but cheap: uses Anthropic's free `count_tokens` per file, never `messages.create`. Run before `trie sync` if you want to see the bill before paying it.
+Step 1 is the same offline drift check `trie verify` runs (same set of `StaleReason` outcomes; same bidirectional coverage). Drift is reported as a warning but does not abort — `plan` is informational, not a gate.
 
-Output: scan breakdown (new / updated / unchanged / removed), plan header (`N files, ~$X estimated`), top-10 ranked files with `(symbols, score, ~$cost)`, and a "… and N more" tail if the worklist is longer.
+Then: networked but cheap. Uses Anthropic's free `count_tokens` per file, never `messages.create`. Run before `trie sync` if you want to see the bill before paying it.
+
+Output: drift summary (or "coherent"), scan breakdown (new / updated / unchanged / removed), plan header (`N files, ~$X estimated`), top-10 ranked files with `(symbols, score, ~$cost)`, and a "… and N more" tail if the worklist is longer.
 
 ---
 
@@ -82,28 +85,28 @@ Output: scan breakdown (new / updated / unchanged / removed), plan header (`N fi
 Generate or refresh trie triefacts. Several modes; the default auto-detects.
 
 ```
-trie sync [--file PATH] [--check] [--all] [--dry-run]
+trie sync [--file PATH] [--all] [--dry-run]
           [--budget USD] [--limit N] [--model MODEL]
 ```
 
 | Option | Default | Description |
 | --- | --- | --- |
 | `--file PATH`, `-f` | — | Sync exactly one source file (smoke test of the LLM path). |
-| `--check`, `-c` | `false` | Offline drift check. Exits 1 if any triefact is stale. No LLM, no scan. **Replaces v0.1 `trie check`.** |
 | `--all` | `false` | Force a full re-pass over every file in scope, even when triefacts already exist. |
 | `--dry-run` | `false` | Regenerate stale triefacts into `.trie/preview/` and print a unified diff against the live tree. **Replaces v0.1 `trie diff`.** |
 | `--budget USD` | — | Cumulative actual-cost cap. Stops once reached (overshoots by at most one file). |
 | `--limit N` | — | Cap on the number of files synced. |
 | `--model MODEL` | bootstrap → `[models].bootstrap`; incremental → `[models].cascade` | Override the model. |
 
+For LLM-free, exit-coded drift detection (e.g. pre-commit, CI gate), use `trie verify` instead.
+
 ### Mode dispatch
 
 The flags select the mode in this priority order:
 
-1. **`--check`** → offline drift check; exits 1 on drift.
-2. **`--file`** → single-file sync.
-3. **`--dry-run`** → diff preview into `.trie/preview/`.
-4. Else **auto-detect**:
+1. **`--file`** → single-file sync.
+2. **`--dry-run`** → diff preview into `.trie/preview/`.
+3. Else **auto-detect**:
    - If `--all` or no `triefacts/` directory exists yet → **bootstrap** (full pass).
    - Otherwise → **incremental cascade**.
 
@@ -113,13 +116,36 @@ The flags select the mode in this priority order:
 
 **Bootstrap (auto-detected first run, or `--all`)**: scans, builds the plan, prints it, then either honours `--budget`/`--limit` or asks for explicit confirmation in a tty. Non-interactive runs without a cap exit 1 to prevent surprise bills. Streams per-file `[N/M] file ✓ $cost` lines with ETA.
 
-**Incremental (default after bootstrap)**: scans, reconciles orphans, runs `check_project`, computes the cascade (depth-1, hub-guarded), and re-syncs only affected files. Same per-file streaming output as bootstrap.
+**Incremental (default after bootstrap)**: scans, reconciles orphans, runs the same drift check that `verify` runs, computes the cascade (depth-1, hub-guarded), and re-syncs only affected files. Same per-file streaming output as bootstrap.
 
-**Dry-run (`--dry-run`)**: identifies stale files via the same logic as `--check`, regenerates them into `.trie/preview/`, and prints unified diffs. Makes API calls — cap with `--budget`/`--limit`.
+**Dry-run (`--dry-run`)**: identifies stale files via the drift check, regenerates them into `.trie/preview/`, and prints unified diffs. Makes API calls — cap with `--budget`/`--limit`.
 
-**Check (`--check`)**: re-fingerprints each in-scope source symbol and compares against the fingerprint stored in the matching triefact section sentinel. Reports `MISSING_TRIEFACT`, `MISSING_SECTION`, `STALE_SECTION`, `ORPHAN_SECTION`. This is the canonical pre-commit entry; `.pre-commit-hooks.yaml` calls `trie sync --check --quiet`.
+`--file` is mutually exclusive with `--all`.
 
-`--check` is mutually exclusive with `--file`, `--all`, and `--dry-run`. `--file` is mutually exclusive with `--all`.
+---
+
+## `trie verify`
+
+Offline drift check. Exits 1 if any triefact has drifted.
+
+```
+trie verify
+```
+
+No options. No LLM, no scan, no DB writes. Designed for pre-commit hooks and CI.
+
+Bidirectional coverage:
+
+| `StaleReason` | Direction | Trigger |
+| --- | --- | --- |
+| `MISSING_TRIEFACT` | Code → Triefact | Source has public symbols but no triefact file. |
+| `MISSING_SECTION` | Code → Triefact | Public symbol present but no section documents it. |
+| `STALE_SECTION` | Code → Triefact | Source body changed but the section wasn't regenerated (`fingerprint` mismatch). |
+| `ORPHAN_SECTION` | Triefact → Code | Section exists but its symbol has been renamed, made private, or deleted. |
+| `TAMPERED_BODY` | Triefact → Code | Section body was edited between sentinels (`body_fp` mismatch). |
+| `LEGACY_SECTION` | Triefact → Code | Section was written by trie ≤ 0.1 with no body fingerprint to verify — re-sync once to migrate. |
+
+The same check runs as the first step of `plan` and `sync`; `verify` exists so CI and hooks can fail loudly. `.pre-commit-hooks.yaml` calls `trie -q verify`.
 
 ---
 
@@ -185,16 +211,29 @@ No options. Read-only — exposes four tools: `get_triefact`, `find_symbol`, `re
 
 ```bash
 trie init                                # writes trie.toml, scans, prompts for hook install
-trie plan                                # scan + cost preview, networked
+trie mcp install --target claude-code    # plug into your agent (optional, can run anytime)
+trie plan                                # drift summary + scan + cost preview, networked but free
 trie sync --budget 2.00                  # first full pass, capped at $2
-trie sync --check                        # pre-commit gate, offline
+trie verify                              # smoke-test the pre-commit gate
 ```
 
 After that, day-to-day:
 
 ```bash
-trie sync                                # incremental cascade
+trie sync                                # incremental cascade — drift check then regenerate affected files
 trie sync --dry-run --limit 5            # preview before paying
-trie sync --check                        # pre-commit / CI gate
-trie mcp install --target claude-code    # plug into your agent
+trie verify                              # called automatically by the pre-commit hook
 ```
+
+### Per-subcommand role outside the first-run sequence
+
+| Command | When you reach for it day-to-day |
+| --- | --- |
+| `trie init` | One-shot. Re-run with `--force` only if `trie.toml` got corrupted. |
+| `trie plan` | "I haven't synced in a while — what's the bill if I do now?" Combines drift surface and cost estimate without spending a cent. |
+| `trie sync` | Daily driver. Run after a meaningful refactor or before a PR. The cascade only touches files that actually need it. |
+| `trie sync --file <path>` | Cheapest possible LLM smoke test after editing a single file. Useful for tuning prompts or checking a specific symbol. |
+| `trie sync --dry-run` | "Is this regen going to be ugly?" Reviews the diff before committing tokens to a full sync. |
+| `trie verify` | Pre-commit / CI / "is the tree coherent right now?". The pre-commit hook calls this — invoke it manually only when debugging the hook. |
+| `trie mcp install` | One-shot per agent / per machine. Re-run after switching agents or after a fresh OS install. |
+| `trie mcp serve` | Never run by hand — agents spawn it via the snippet `install` writes. |

@@ -103,7 +103,9 @@ def run_incremental(
             continue
 
         cb.on_start(rel, idx, total)
-        result = sync_single_file(abs_path, project_root=project_root, config=config, client=client)
+        result = sync_single_file(
+            abs_path, project_root=project_root, config=config, client=client, store=store
+        )
         if result.symbols_generated == 0 and result.sections_removed == 0:
             skipped_no_symbols += 1
             cb.on_skip(rel, "no public symbols")

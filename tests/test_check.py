@@ -126,33 +126,33 @@ def test_clean_when_all_in_sync_with_human_prose(project: Path):
     assert result.is_clean
 
 
-def test_cli_sync_check_exits_zero_when_clean(project: Path, monkeypatch: pytest.MonkeyPatch):
+def test_cli_verify_exits_zero_when_clean(project: Path, monkeypatch: pytest.MonkeyPatch):
     _sync_all(project)
     monkeypatch.chdir(project)
     runner = CliRunner()
-    result = runner.invoke(app, ["sync", "--check"])
+    result = runner.invoke(app, ["verify"])
     assert result.exit_code == 0
     assert "coherent" in result.output
 
 
-def test_cli_sync_check_exits_nonzero_when_stale(project: Path, monkeypatch: pytest.MonkeyPatch):
+def test_cli_verify_exits_nonzero_when_stale(project: Path, monkeypatch: pytest.MonkeyPatch):
     _sync_all(project)
     (project / "src" / "alpha.py").write_text("def alpha():\n    return 999\n")
     monkeypatch.chdir(project)
     runner = CliRunner()
-    result = runner.invoke(app, ["sync", "--check"])
+    result = runner.invoke(app, ["verify"])
     assert result.exit_code == 1
     assert "stale" in result.output
     assert "src/alpha:alpha" in result.output
 
 
-def test_cli_sync_check_quiet_mode(project: Path, monkeypatch: pytest.MonkeyPatch):
+def test_cli_verify_quiet_mode(project: Path, monkeypatch: pytest.MonkeyPatch):
     """Global --quiet/-q suppresses per-symbol detail; summary still emits via reporter.error."""
     _sync_all(project)
     (project / "src" / "alpha.py").write_text("def alpha():\n    return 999\n")
     monkeypatch.chdir(project)
     runner = CliRunner()
-    result = runner.invoke(app, ["-q", "sync", "--check"])
+    result = runner.invoke(app, ["-q", "verify"])
     assert result.exit_code == 1
     # Per-symbol details suppressed in quiet mode
     assert "src/alpha:alpha" not in result.output
@@ -160,9 +160,56 @@ def test_cli_sync_check_quiet_mode(project: Path, monkeypatch: pytest.MonkeyPatc
     assert "issue" in result.output
 
 
-def test_cli_sync_check_rejects_combined_flags(project: Path, monkeypatch: pytest.MonkeyPatch):
+def test_cli_verify_detects_tampered_body(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """Body inside section sentinels is hashed too: tampering trips TAMPERED_BODY."""
+    import re
+
+    _sync_all(project)
+    triefact = project / "triefacts" / "src" / "alpha.md"
+    text = triefact.read_text()
+    tampered = re.sub(r"## generated\n\nbody\.", "TAMPERED CONTENT", text)
+    triefact.write_text(tampered)
     monkeypatch.chdir(project)
     runner = CliRunner()
-    result = runner.invoke(app, ["sync", "--check", "--all"])
+    result = runner.invoke(app, ["verify"])
     assert result.exit_code == 1
-    assert "mutually exclusive" in result.output
+    assert "tampered" in result.output.lower()
+    assert "src/alpha:alpha" in result.output
+
+
+def test_check_project_detects_tampered_body(project: Path):
+    """Unit-level: hand-edits inside a section sentinel are caught via body fingerprint."""
+    import re
+
+    _sync_all(project)
+    triefact = project / "triefacts" / "src" / "beta.md"
+    text = triefact.read_text()
+    tampered = re.sub(r"## generated\n\nbody\.", "DIFFERENT TEXT", text)
+    triefact.write_text(tampered)
+    config, _ = Config.find_and_load(project)
+    result = check_project(project_root=project, config=config)
+    assert any(
+        it.reason == StaleReason.TAMPERED_BODY and it.qualified_name == "src/beta:beta"
+        for it in result.items
+    )
+
+
+def test_check_project_detects_legacy_section(project: Path):
+    """Sections without a body_fp= attribute (trie ≤ 0.1 output) flag LEGACY_SECTION."""
+    _sync_all(project)
+    triefact = project / "triefacts" / "src" / "alpha.md"
+    text = triefact.read_text()
+    # Strip the body_fp= attribute to simulate a legacy sentinel.
+    legacy = text.replace("<!-- trie:section symbol=src/alpha:alpha fingerprint=", "TMP", 1)
+    legacy = legacy.replace("TMP", "<!-- trie:section symbol=src/alpha:alpha fingerprint=")
+    # Replace the body_fp= attribute and trailing space with just the close.
+    import re
+
+    legacy = re.sub(r" body_fp=\S+ -->", " -->", legacy, count=1)
+    triefact.write_text(legacy)
+    config, _ = Config.find_and_load(project)
+    result = check_project(project_root=project, config=config)
+    assert any(
+        it.reason == StaleReason.LEGACY_SECTION and it.qualified_name == "src/alpha:alpha"
+        for it in result.items
+    )

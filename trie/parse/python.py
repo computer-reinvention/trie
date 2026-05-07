@@ -171,6 +171,48 @@ def _walk_class(class_node: Node, source: bytes, *, module_key: str, rel_file: s
     return syms
 
 
+def extract_module_docstring(file_path: Path) -> str | None:
+    """Return the module-level docstring (raw, as it appears in source), or None.
+
+    Tree-sitter exposes module-level statements as direct children of the root node;
+    a leading expression-statement whose first named child is a `string` is the
+    PEP 257 module docstring. The literal text (including quote marks) is returned —
+    callers strip surrounding quotes when surfacing it as plain text.
+    """
+    file_path = file_path.resolve()
+    source = file_path.read_bytes()
+    tree = _make_parser().parse(source)
+    for child in tree.root_node.named_children:
+        if child.type == "expression_statement" and child.named_child_count > 0:
+            first = child.named_children[0]
+            if first.type == "string":
+                return _node_text(first, source)
+        # Only the very first statement is the module docstring per PEP 257.
+        return None
+    return None
+
+
+def strip_string_literal(raw: str) -> str:
+    """Strip Python string-literal delimiters and a leading f/r/b prefix.
+
+    Used to convert a tree-sitter `string` node text into the docstring content.
+    Handles triple-quoted, single-quoted, and prefixed strings. Returns the raw
+    contents with surrounding whitespace stripped.
+    """
+    s = raw.lstrip()
+    # Strip a leading prefix like r, R, b, B, u, U, rb, Rb, etc.
+    i = 0
+    while i < len(s) and s[i] in "rRbBuUfF" and i < 2:
+        i += 1
+    s = s[i:]
+    for triple in ('"""', "'''"):
+        if s.startswith(triple) and s.endswith(triple):
+            return s[len(triple) : -len(triple)].strip()
+    if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
+        return s[1:-1].strip()
+    return s.strip()
+
+
 def extract_symbols(file_path: Path, source_root: Path | None = None) -> list[Symbol]:
     """Parse a Python file and return its top-level functions, classes, and class methods.
 

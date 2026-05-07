@@ -182,7 +182,7 @@ def test_install_hook_writes_new_pre_commit_when_git_repo(python_project: Path):
     assert hook_path is not None
     text = hook_path.read_text()
     assert PRE_COMMIT_HOOK_MARKER in text
-    assert "trie sync --check --quiet" in text
+    assert "trie -q verify" in text
     # Must be executable.
     import stat
 
@@ -271,7 +271,7 @@ def test_cli_init_framework_path_prints_snippet(python_project: Path):
     runner = CliRunner()
     result = runner.invoke(app, ["init", str(python_project), "--install-hooks"])
     assert result.exit_code == 0, result.output
-    assert "trie-check" in result.output
+    assert "trie-verify" in result.output
     assert ".pre-commit-config.yaml" in result.output
 
 

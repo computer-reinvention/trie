@@ -10,12 +10,12 @@ GITIGNORE_LINE = ".trie/"
 
 PreCommitStrategy = Literal["git_hook", "framework", "none", "skipped"]
 
-PRE_COMMIT_HOOK_MARKER = "# trie-check (added by `trie init`)"
-PRE_COMMIT_HOOK_END_MARKER = "# end trie-check"
+PRE_COMMIT_HOOK_MARKER = "# trie-verify (added by `trie init`)"
+PRE_COMMIT_HOOK_END_MARKER = "# end trie-verify"
 PRE_COMMIT_HOOK_BLOCK = (
     f"{PRE_COMMIT_HOOK_MARKER}\n"
     "if command -v trie >/dev/null 2>&1; then\n"
-    "    trie sync --check --quiet || exit $?\n"
+    "    trie -q verify || exit $?\n"
     "fi\n"
     f"{PRE_COMMIT_HOOK_END_MARKER}\n"
 )
@@ -74,7 +74,7 @@ def _ensure_gitignore_entry(gitignore: Path, line: str) -> bool:
 
 
 def install_pre_commit_hook(project_root: Path) -> tuple[bool, PreCommitStrategy, Path | None]:
-    """Install a pre-commit hook that runs `trie sync --check --quiet`.
+    """Install a pre-commit hook that runs `trie verify --quiet`.
 
     Strategies:
       - "framework": project already uses the pre-commit framework

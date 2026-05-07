@@ -14,7 +14,7 @@ Misses (deferred to v0.2 with proper SCIP):
 - shadowed names
 
 The point is to give the cascade enough edges to demonstrate value, not to be sound. Edges
-are labelled with `confidence` so downstream consumers (`trie check`) can apply coarser
+are labelled with `confidence` so downstream consumers (`trie verify`) can apply coarser
 fallback rules when precision is low.
 """
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from trie.sync.writer import Prose, Section, TriefactFile
+from trie.sync.writer import Prose, Section, TriefactFile, hash_body
 
 # --- parsing ---
 
@@ -91,16 +91,17 @@ def test_roundtrip_only_prose_is_byte_identical():
     assert TriefactFile.parse(text).render() == text
 
 
-def test_roundtrip_with_front_matter_and_section():
+def test_roundtrip_with_front_matter_and_section_carrying_body_fp():
+    body = "## `bar`\n\nBody of generated section."
+    bfp = hash_body(body)
     text = (
         "---\n"
         "trie_version: 0.1.0\n"
         "source: src/foo.py\n"
         "---\n"
         "# foo.py\n\n"
-        "<!-- trie:section symbol=src/foo:bar fingerprint=abc123 -->\n"
-        "## `bar`\n\n"
-        "Body of generated section.\n"
+        f"<!-- trie:section symbol=src/foo:bar fingerprint=abc123 body_fp={bfp} -->\n"
+        f"{body}\n"
         "<!-- trie:end -->\n"
     )
     triefact = TriefactFile.parse(text)
@@ -108,21 +109,38 @@ def test_roundtrip_with_front_matter_and_section():
 
 
 def test_roundtrip_multiple_sections_with_human_prose():
+    alpha_body = "alpha section content"
+    beta_body = "beta section content"
+    abp = hash_body(alpha_body)
+    bbp = hash_body(beta_body)
     text = (
         "---\n"
         "source: src/foo.py\n"
         "---\n"
         "# foo.py\n\n"
-        "<!-- trie:section symbol=src/foo:alpha fingerprint=1 -->\n"
-        "alpha section content\n"
+        f"<!-- trie:section symbol=src/foo:alpha fingerprint=1 body_fp={abp} -->\n"
+        f"{alpha_body}\n"
         "<!-- trie:end -->\n\n"
         "Some hand-written prose here that explains things.\n\n"
-        "<!-- trie:section symbol=src/foo:beta fingerprint=2 -->\n"
-        "beta section content\n"
+        f"<!-- trie:section symbol=src/foo:beta fingerprint=2 body_fp={bbp} -->\n"
+        f"{beta_body}\n"
         "<!-- trie:end -->\n"
     )
     rendered = TriefactFile.parse(text).render()
     assert rendered == text
+
+
+def test_legacy_section_without_body_fp_parses_and_promotes_on_render():
+    """Sections written by trie ≤ 0.1 lack `body_fp=`. They parse fine and the renderer
+    promotes them to the new format by hashing the current body."""
+    text = "<!-- trie:section symbol=mod:foo fingerprint=abc -->\nlegacy body\n<!-- trie:end -->"
+    triefact = TriefactFile.parse(text)
+    sec = triefact.chunks[0]
+    assert isinstance(sec, Section)
+    assert sec.body_fingerprint is None
+    rendered = triefact.render()
+    assert "body_fp=" in rendered
+    assert hash_body(sec.body) in rendered
 
 
 # --- mutations ---
@@ -160,7 +178,8 @@ def test_upsert_appends_new_section_at_end():
     triefact.upsert_section(qualified_name="mod:new", fingerprint="aa", body="content")
     out = triefact.render()
     assert "preamble" in out
-    assert "<!-- trie:section symbol=mod:new fingerprint=aa -->" in out
+    assert "<!-- trie:section symbol=mod:new fingerprint=aa" in out
+    assert f"body_fp={hash_body('content')}" in out
     assert out.index("preamble") < out.index("trie:section")
 
 
@@ -168,7 +187,11 @@ def test_upsert_into_empty_triefact():
     triefact = TriefactFile.empty()
     triefact.upsert_section(qualified_name="mod:foo", fingerprint="abc", body="hello")
     out = triefact.render()
-    assert out == "<!-- trie:section symbol=mod:foo fingerprint=abc -->\nhello\n<!-- trie:end -->"
+    expected = (
+        f"<!-- trie:section symbol=mod:foo fingerprint=abc body_fp={hash_body('hello')} -->\n"
+        "hello\n<!-- trie:end -->"
+    )
+    assert out == expected
 
 
 def test_remove_section():

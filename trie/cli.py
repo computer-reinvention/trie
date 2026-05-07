@@ -153,7 +153,7 @@ def init_cmd(
     install_hooks: bool | None = typer.Option(
         None,
         "--install-hooks/--no-install-hooks",
-        help="Install a pre-commit hook that runs `trie check`. Prompts when omitted in a tty.",
+        help="Install a pre-commit hook that runs `trie verify`. Prompts when omitted in a tty.",
     ),
     run_scan: bool = typer.Option(
         True,
@@ -211,7 +211,7 @@ def init_cmd(
                 "    - repo: https://github.com/pankajgarkoti/trie\n"
                 "      rev: main\n"
                 "      hooks:\n"
-                "        - id: trie-check"
+                "        - id: trie-verify"
             )
         elif result.pre_commit_strategy == "none":
             reporter.warn("not a git repository — skipped pre-commit hook install")
@@ -245,12 +245,17 @@ def plan_cmd(
         None, "--model", help="Override the configured model for cost estimation."
     ),
 ) -> None:
-    """Scan the project and show the worklist + estimated cost.
+    """Scan the project, surface drift, and show the worklist + estimated cost.
 
     Networked but cheap: uses Anthropic's free `count_tokens` endpoint per file, never
     `messages.create`. Run before `trie sync` if you want to see the bill before paying it.
+
+    Step 1 is an offline drift check (same as `trie verify`). Drift is reported as a
+    warning but does not abort — `plan` is informational, not a gate.
     """
     reporter = _get_reporter(ctx)
+    _verify_drift(reporter, exit_on_drift=False)
+
     try:
         config, project_root = Config.find_and_load(Path.cwd())
     except ConfigNotFoundError as exc:
@@ -273,6 +278,22 @@ def plan_cmd(
         reporter.warn("no files in scope")
         return
     _print_plan(reporter, plan, model_id)
+
+
+@app.command("verify")
+def verify_cmd(ctx: typer.Context) -> None:
+    """Offline drift check. Exits 1 if any triefact has drifted from its source.
+
+    Bidirectional: catches both Code → Triefact drift (source changed but section
+    wasn't regenerated, or a public symbol has no section) and Triefact → Code drift
+    (section body was tampered with, or section refers to a deleted symbol).
+
+    No LLM, no scan, no DB writes — designed for pre-commit hooks. The same drift
+    detection runs as the first step of `trie plan` and `trie sync`; `verify` exists
+    so CI / hooks can fail loudly when the tree drifts.
+    """
+    reporter = _get_reporter(ctx)
+    _verify_drift(reporter, exit_on_drift=True)
 
 
 def _print_scan_breakdown(
@@ -309,9 +330,37 @@ def _print_plan(reporter: Reporter, plan, model_id: str) -> None:
         reporter.info(f"  … and {len(plan.items) - 10} more")
 
 
-def _run_check(reporter: Reporter) -> None:
-    """Offline drift check. Exits 1 if drift detected. Used by `trie sync --check`,
-    which is the canonical pre-commit entry point."""
+_REASON_LABELS: dict[StaleReason, str] = {
+    StaleReason.MISSING_TRIEFACT: "missing triefact",
+    StaleReason.MISSING_SECTION: "missing section",
+    StaleReason.STALE_SECTION: "stale (source changed)",
+    StaleReason.ORPHAN_SECTION: "orphan (symbol gone)",
+    StaleReason.TAMPERED_BODY: "tampered body",
+    StaleReason.LEGACY_SECTION: "legacy (no body fingerprint)",
+}
+
+
+def _print_drift_detail(reporter: Reporter, items: list) -> None:
+    """Render per-file drift items in MEDIUM+ verbosity. Caller emits the summary line."""
+    grouped: dict[str, list] = {}
+    for it in items:
+        grouped.setdefault(it.triefact_path, []).append(it)
+    for triefact_path, group in sorted(grouped.items()):
+        reporter.console.print(f"[red]✗[/red] {triefact_path}")
+        for it in group:
+            label = _REASON_LABELS.get(it.reason, str(it.reason))
+            target = it.qualified_name or it.source_path
+            reporter.console.print(f"    [yellow]{label}[/yellow] {target}")
+    reporter.console.print()
+
+
+def _verify_drift(reporter: Reporter, *, exit_on_drift: bool) -> bool:
+    """Offline drift check. Returns True if clean, False if drift was reported.
+
+    When `exit_on_drift` is True, a non-empty result aborts via `typer.Exit(1)` —
+    that's the path `trie verify` and the pre-commit hook take. Plan and sync use
+    `exit_on_drift=False` so the check just surfaces drift before the main work.
+    """
     try:
         config, project_root = Config.find_and_load(Path.cwd())
     except ConfigNotFoundError as exc:
@@ -322,36 +371,21 @@ def _run_check(reporter: Reporter) -> None:
 
     if result.is_clean:
         reporter.success("triefact tree is coherent")
-        return
+        return True
 
-    grouped: dict[str, list] = {}
-    for it in result.items:
-        grouped.setdefault(it.triefact_path, []).append(it)
-
-    # Per-file detail is medium+ only; the summary line is unconditional (errors).
     if reporter.verbosity >= Verbosity.MEDIUM:
-        for triefact_path, items in sorted(grouped.items()):
-            reporter.console.print(f"[red]✗[/red] {triefact_path}")
-            for it in items:
-                if it.reason == StaleReason.MISSING_TRIEFACT:
-                    reporter.console.print(
-                        f"    [yellow]missing triefact[/yellow] for {it.source_path}"
-                    )
-                elif it.reason == StaleReason.MISSING_SECTION:
-                    reporter.console.print(
-                        f"    [yellow]missing section[/yellow] for {it.qualified_name}"
-                    )
-                elif it.reason == StaleReason.STALE_SECTION:
-                    reporter.console.print(f"    [yellow]stale[/yellow] {it.qualified_name}")
-                elif it.reason == StaleReason.ORPHAN_SECTION:
-                    reporter.console.print(f"    [yellow]orphan[/yellow] {it.qualified_name}")
-        reporter.console.print()
+        _print_drift_detail(reporter, result.items)
 
-    reporter.error(
-        f"{len(result.items)} issue(s) across {len(grouped)} triefact file(s) — "
+    grouped_count = len({it.triefact_path for it in result.items})
+    summary = (
+        f"{len(result.items)} issue(s) across {grouped_count} triefact file(s) — "
         "run `trie sync` to refresh"
     )
-    raise typer.Exit(code=1)
+    if exit_on_drift:
+        reporter.error(summary)
+        raise typer.Exit(code=1)
+    reporter.warn(summary)
+    return False
 
 
 @app.command("sync")
@@ -362,12 +396,6 @@ def sync_cmd(
         "--file",
         "-f",
         help="Sync exactly one source file. Useful as a smoke test of the LLM path.",
-    ),
-    check: bool = typer.Option(
-        False,
-        "--check",
-        "-c",
-        help="Offline drift check. Exits 1 if any triefact has drifted. No LLM, no scan.",
     ),
     all_: bool = typer.Option(
         False,
@@ -402,24 +430,19 @@ def sync_cmd(
     """Generate or refresh trie triefacts.
 
     Modes (auto-detected):
-      • --check  : offline drift check; exits 1 on drift.
       • --file   : sync one file.
       • --dry-run: preview unified diff against the live tree.
       • --all    : force full re-pass.
       • default  : if no triefacts exist yet → first-run bootstrap (with cost confirmation);
                    otherwise → incremental cascade.
+
+    Drift detection runs as the first step regardless. For an LLM-free, exit-coded
+    drift gate suitable for pre-commit hooks, use `trie verify`.
     """
     reporter = _get_reporter(ctx)
-    if check and (file is not None or all_ or dry_run):
-        reporter.error("--check is mutually exclusive with --file, --all, and --dry-run")
-        raise typer.Exit(code=1)
     if file is not None and all_:
         reporter.error("--file and --all are mutually exclusive")
         raise typer.Exit(code=1)
-
-    if check:
-        _run_check(reporter)
-        return
 
     if file is not None:
         _run_single_file_sync(reporter, file, model)
@@ -516,6 +539,7 @@ def _run_full_pass(
                 budget_usd=budget,
                 limit=limit,
                 progress=cb,
+                store=store,
             )
 
     reporter.success(
@@ -541,8 +565,9 @@ def _run_dry_run_diff(
     model_id = model or config.models.bootstrap
     pricing = get_pricing(model_id)
     client = make_client(model_id)
+    db_path = project_root / ".trie" / "graph.db"
 
-    with _progress_callback(reporter, label="diffing") as cb:
+    with Store(db_path) as store, _progress_callback(reporter, label="diffing") as cb:
         result = diff_project(
             project_root=project_root,
             config=config,
@@ -551,6 +576,7 @@ def _run_dry_run_diff(
             budget_usd=budget,
             limit=limit,
             progress=cb,
+            store=store,
         )
 
     if not result.diffs:
@@ -586,9 +612,12 @@ def _run_single_file_sync(reporter: Reporter, file: Path, model: str | None) -> 
 
     model_id = model or config.models.bootstrap
     client = make_client(model_id)
+    db_path = project_root / ".trie" / "graph.db"
 
-    with reporter.status(f"generating triefact for [cyan]{file}[/cyan]…"):
-        result = sync_single_file(file, project_root=project_root, config=config, client=client)
+    with Store(db_path) as store, reporter.status(f"generating triefact for [cyan]{file}[/cyan]…"):
+        result = sync_single_file(
+            file, project_root=project_root, config=config, client=client, store=store
+        )
 
     reporter.success(f"wrote {result.triefact_path}")
     reporter.info(

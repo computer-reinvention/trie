@@ -7,14 +7,16 @@ from pathlib import Path
 from trie.config import Config
 from trie.parse.python import extract_symbols
 from trie.scope import discover_files
-from trie.sync.writer import Section, TriefactFile
+from trie.sync.writer import Section, TriefactFile, hash_body
 
 
 class StaleReason(StrEnum):
     MISSING_TRIEFACT = "missing_triefact"  # source has public symbols but no triefact file
     MISSING_SECTION = "missing_section"  # public symbol present, no section for it
-    STALE_SECTION = "stale_section"  # section fingerprint != current source hash
-    ORPHAN_SECTION = "orphan_section"  # section exists but symbol is gone
+    STALE_SECTION = "stale_section"  # section fingerprint != current source hash (Code → Triefact)
+    ORPHAN_SECTION = "orphan_section"  # section exists but symbol is gone (Triefact → Code)
+    TAMPERED_BODY = "tampered_body"  # section body hash != recorded body_fp (Triefact → Code)
+    LEGACY_SECTION = "legacy_section"  # section was written by trie ≤ 0.1, has no body_fp
 
 
 @dataclass(frozen=True)
@@ -42,6 +44,15 @@ def _triefact_path_for(rel_source: str, config: Config) -> str:
 
 def check_project(*, project_root: Path, config: Config) -> CheckResult:
     """Compute stale items by comparing each in-scope source file's symbols to its triefact.
+
+    Bidirectional: covers both directions of drift.
+      - Code → Triefact: source symbol changed but the section wasn't regenerated
+        (`STALE_SECTION`); a public symbol exists with no matching section
+        (`MISSING_SECTION`); whole triefact file missing (`MISSING_TRIEFACT`).
+      - Triefact → Code: section exists for a symbol that's gone (`ORPHAN_SECTION`);
+        section body was hand-edited or corrupted between sentinels (`TAMPERED_BODY`);
+        section was written by trie ≤ 0.1 with no body fingerprint to verify
+        (`LEGACY_SECTION` — re-sync to gain integrity verification).
 
     No DB access — the source is the source of truth, and the triefact's sentinels carry
     the fingerprints used to detect drift. Designed to be fast: a few thousand files run
@@ -104,6 +115,26 @@ def check_project(*, project_root: Path, config: Config) -> CheckResult:
                         source_path=rel_source,
                         triefact_path=rel_triefact,
                         reason=StaleReason.STALE_SECTION,
+                        qualified_name=qname,
+                    )
+                )
+                continue
+            # Source matches; now verify the triefact body wasn't tampered with.
+            if sec.body_fingerprint is None:
+                items.append(
+                    StaleItem(
+                        source_path=rel_source,
+                        triefact_path=rel_triefact,
+                        reason=StaleReason.LEGACY_SECTION,
+                        qualified_name=qname,
+                    )
+                )
+            elif hash_body(sec.body) != sec.body_fingerprint:
+                items.append(
+                    StaleItem(
+                        source_path=rel_source,
+                        triefact_path=rel_triefact,
+                        reason=StaleReason.TAMPERED_BODY,
                         qualified_name=qname,
                     )
                 )

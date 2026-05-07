@@ -1,7 +1,7 @@
-- id: trie-check
-  name: trie check
+- id: trie-verify
+  name: trie verify
   description: Verify the trie doc tree is coherent with the source code.
-  entry: trie sync --check --quiet
+  entry: trie -q verify
   language: python
   pass_filenames: false
   always_run: true

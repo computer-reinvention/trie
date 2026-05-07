@@ -7,6 +7,7 @@ from pathlib import Path
 from trie.check import check_project
 from trie.config import Config
 from trie.cost import ModelPricing, estimate_actual_cost
+from trie.graph.store import Store
 from trie.models import ModelClient
 from trie.sync.progress import NULL_PROGRESS, ProgressCallback
 from trie.sync.single_file import FileSyncResult, sync_single_file
@@ -37,6 +38,7 @@ def diff_project(
     budget_usd: float | None = None,
     limit: int | None = None,
     progress: ProgressCallback | None = None,
+    store: Store | None = None,
 ) -> DiffResult:
     """Regenerate stale triefacts into `.trie/preview/` and produce unified diffs.
 
@@ -86,6 +88,7 @@ def diff_project(
             config=config,
             client=client,
             dest_triefact_path=preview,
+            store=store,
         )
 
         original = canonical.read_text() if canonical.exists() else ""

@@ -11,7 +11,7 @@ uv tool install --force ./dist/trie-0.1.0-py3-none-any.whl
 trie --version   # → trie 0.1.0
 ```
 
-`trie sync` and `trie plan` make Anthropic API calls, so you'll need `ANTHROPIC_API_KEY` in your environment. Everything else (`init`, `sync --check`, `mcp install`, `mcp serve`) runs entirely offline.
+`trie sync` and `trie plan` make Anthropic API calls, so you'll need `ANTHROPIC_API_KEY` in your environment. Everything else (`init`, `verify`, `mcp install`, `mcp serve`) runs entirely offline.
 
 ## 2. Initialise in your project
 
@@ -65,8 +65,10 @@ Two flavours of preview before committing:
 
 ```bash
 trie sync --dry-run              # regenerate to .trie/preview/, print unified diffs
-trie sync --check                # offline drift check, exits 1 on drift, no LLM
+trie verify                      # offline drift check, exits 1 on drift, no LLM
 ```
+
+Drift detection is bidirectional: `verify` catches both source changes that haven't been propagated into triefacts (Code → Triefact) and tampering with triefact bodies between sentinels (Triefact → Code).
 
 Verbosity is global:
 
@@ -84,15 +86,15 @@ If you let `trie init` install the hook, you're done. Otherwise add to your `.pr
 repos:
   - repo: local
     hooks:
-      - id: trie-check
-        name: trie check
-        entry: trie sync --check --quiet
+      - id: trie-verify
+        name: trie verify
+        entry: trie -q verify
         language: system
         pass_filenames: false
         always_run: true
 ```
 
-Then `pre-commit install`. Commits with stale triefacts will now fail until you re-run `trie sync`.
+Then `pre-commit install`. Commits with stale or tampered triefacts will now fail until you re-run `trie sync`.
 
 ## 6. Plug into your agent (optional)
 
@@ -112,6 +114,8 @@ Restart your agent. It can now call `get_triefact`, `find_symbol`, `references_t
 - **`trie sync` re-runs the whole file even when only one symbol changed**: known v0.1 limitation. The cascade picks the right _files_; per-section regen within a file lands in v0.2.
 - **The cascade missed a connection**: v0.1 uses tree-sitter + import detection, not SCIP. It catches `from foo import bar` and same-module name matches, but misses `import foo; foo.bar()` style and method dispatch. SCIP precision is v0.2.
 - **PR diffs are noisy**: add `triefacts/** linguist-generated=true` to `.gitattributes` — GitHub will collapse the triefact tree by default.
-- **`trie sync --check` fails after a manual hand-edit**: only edit _between_ `<!-- trie:section -->` and `<!-- trie:end -->` sentinels. Edits inside a section will be overwritten by the next `sync`.
+- **`trie verify` reports `tampered_body`**: someone (you, an editor plugin, an agent) edited inside a `<!-- trie:section -->` / `<!-- trie:end -->` block. Re-run `trie sync` to regenerate, or revert the edit.
+- **`trie verify` reports `legacy_section`**: the section was written by trie ≤ 0.1 and has no body fingerprint to verify. Re-run `trie sync` once to migrate.
+- **Edits inside a section sentinel get overwritten**: by design — those blocks are owned by the generator. Put hand-written prose _between_ sections (it's preserved verbatim across regen).
 
-That's the loop: `init → plan → sync → sync --check`. Everything else is variations.
+That's the loop: `init → plan → sync → verify`. Everything else is variations.
