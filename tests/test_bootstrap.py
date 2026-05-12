@@ -102,6 +102,34 @@ def test_plan_with_unknown_model_zero_cost(project: Path):
     assert plan.total_estimated_cost == 0.0
 
 
+def test_plan_only_files_restricts_worklist(project: Path):
+    """`only_files` is the seam `trie plan` uses on established projects to scope the
+    cost estimate to the incremental worklist instead of the whole tree."""
+    with _scanned_store(project) as store:
+        plan = build_plan(
+            project_root=project,
+            store=store,
+            model_id="anthropic/claude-sonnet-4-6",
+            client=FakeClient(),
+            only_files={"medium.py"},
+        )
+    paths = [it.file_path for it in plan.items]
+    assert paths == ["medium.py"]
+
+
+def test_plan_only_files_empty_yields_empty_plan(project: Path):
+    with _scanned_store(project) as store:
+        plan = build_plan(
+            project_root=project,
+            store=store,
+            model_id="anthropic/claude-sonnet-4-6",
+            client=FakeClient(),
+            only_files=set(),
+        )
+    assert plan.items == []
+    assert plan.total_estimated_cost == 0.0
+
+
 def test_run_bootstrap_respects_limit(project: Path):
     config, _ = Config.find_and_load(project)
     pricing = get_pricing("anthropic/claude-sonnet-4-6")

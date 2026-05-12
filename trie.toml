@@ -1,0 +1,37 @@
+# trie configuration — see https://github.com/pankajgarkoti/trie
+
+[trie]
+version = "0.1.0"
+
+[scope]
+# Glob patterns relative to the project root (the directory containing this file).
+# Tests are included by default — they encode behavioral spec worth documenting.
+# Add `"**/tests/**"` to `exclude` if you'd rather skip them to keep cost down.
+include = ["**/*.py"]
+exclude = [
+    "**/__pycache__/**",
+    "**/.venv/**",
+    "**/build/**",
+    "**/dist/**",
+]
+
+[triefacts]
+# Where the generated Markdown triefact tree lives. Mirrors the source tree under this root.
+# Named `triefacts` (not `docs`) to avoid colliding with existing project docs dirs.
+root = "triefacts"
+# Source tree root, relative to this file. "." means the project root.
+source_root = "."
+
+[models]
+# Default models for triefact generation. Use "anthropic/<model>" or "openai/<model>" form.
+# Switch to a cheaper provider by changing these to e.g. "openai/deepseek-chat" with
+# DEEPSEEK_API_BASE / OPENAI_API_KEY env vars set, or use --model on the CLI.
+bootstrap = "anthropic/claude-sonnet-4-6"
+cascade = "anthropic/claude-sonnet-4-6"
+
+[cascade]
+# Default reference-graph traversal depth on incremental sync.
+default_depth = 1
+# Symbols with more inbound references than this are treated as depth-0 only,
+# preventing utility hubs (utils.py, common types) from invalidating the world.
+hub_symbol_threshold = 20

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -43,7 +44,12 @@ class BootstrapResult:
 
 
 def build_plan(
-    *, project_root: Path, store: Store, model_id: str, client: ModelClient
+    *,
+    project_root: Path,
+    store: Store,
+    model_id: str,
+    client: ModelClient,
+    only_files: Iterable[str] | None = None,
 ) -> BootstrapPlan:
     """Rank files by `LOC * public_symbol_count` and produce per-file cost estimates.
 
@@ -51,10 +57,18 @@ def build_plan(
     Files that disappeared between scan and now are skipped silently. The cached-prefix
     token count for each file comes from the Anthropic `count_tokens` API (free, but
     subject to its own RPM limit), giving accurate cost estimates instead of a heuristic.
+
+    When `only_files` is provided, the plan is restricted to those source-relative paths
+    — used by `trie plan` on established projects so the cost estimate matches the
+    incremental worklist that `trie sync` would actually execute, not a hypothetical
+    full re-bootstrap.
     """
     pricing = get_pricing(model_id)
+    only_set = set(only_files) if only_files is not None else None
     items: list[PlanItem] = []
     for stats in store.file_stats():
+        if only_set is not None and stats.path not in only_set:
+            continue
         if stats.public_symbols == 0:
             continue
         abs_path = project_root / stats.path
