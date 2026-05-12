@@ -11,8 +11,24 @@ from trie.models import ModelClient
 from trie.scan import scan_project
 from trie.sync.cascade import compute_cascade
 from trie.sync.progress import NULL_PROGRESS, ProgressCallback
-from trie.sync.reconcile import remove_orphan_triefacts
+from trie.sync.reconcile import find_orphan_triefacts
 from trie.sync.single_file import FileSyncResult, sync_single_file
+
+
+@dataclass(frozen=True)
+class IncrementalWorklist:
+    """Read-only preview of what `run_incremental` would touch.
+
+    Produced by `compute_incremental_worklist`. Used by `trie plan` to show
+    "what would sync actually do?" on established projects, and reused inside
+    `run_incremental` so the prep pipeline (scan + check + cascade) lives in
+    one place instead of two.
+    """
+
+    affected_files: list[str]
+    directly_stale: list[str]
+    cascaded_files: list[str]
+    orphan_triefacts: list[Path]
 
 
 @dataclass(frozen=True)
@@ -25,6 +41,55 @@ class IncrementalResult:
     actual_cost_usd: float
     orphan_triefacts_removed: list[Path] = field(default_factory=list)
     sync_results: list[FileSyncResult] = field(default_factory=list)
+
+
+def compute_incremental_worklist(
+    *, project_root: Path, config: Config, store: Store
+) -> IncrementalWorklist:
+    """Run scan + check + cascade and return the file list `run_incremental` would touch.
+
+    Read-only: scans (which is idempotent and hash-driven), but does NOT delete orphan
+    triefacts or invoke the LLM. The orphan list is returned so callers can either
+    delete (sync) or just report (plan).
+
+    Filters out staleness items whose source file no longer exists — those triefacts
+    are orphans and would be removed by sync, not regenerated.
+    """
+    project_root = project_root.resolve()
+    src_root = (project_root / config.triefacts.source_root).resolve()
+
+    scan_project(project_root=project_root, config=config, store=store)
+    orphans = find_orphan_triefacts(project_root=project_root, config=config)
+
+    check = check_project(project_root=project_root, config=config)
+    directly_stale = sorted(
+        {
+            it.source_path
+            for it in check.items
+            if it.source_path and (src_root / it.source_path).is_file()
+        }
+    )
+
+    if not directly_stale:
+        return IncrementalWorklist(
+            affected_files=[],
+            directly_stale=[],
+            cascaded_files=[],
+            orphan_triefacts=orphans,
+        )
+
+    cascade = compute_cascade(
+        changed_files=directly_stale,
+        store=store,
+        depth=config.cascade.default_depth,
+        hub_threshold=config.cascade.hub_symbol_threshold,
+    )
+    return IncrementalWorklist(
+        affected_files=cascade.affected_files,
+        directly_stale=directly_stale,
+        cascaded_files=sorted(cascade.cascaded_from_change),
+        orphan_triefacts=orphans,
+    )
 
 
 def run_incremental(
@@ -52,16 +117,16 @@ def run_incremental(
     project_root = project_root.resolve()
     src_root = (project_root / config.triefacts.source_root).resolve()
 
-    scan_project(project_root=project_root, config=config, store=store)
+    # `compute_incremental_worklist` does the scan + check + cascade prep but does NOT
+    # delete orphans (it's the read-only variant used by `trie plan`). Sync follows up
+    # with the destructive removal here so the worklist + the actual run agree on what
+    # files are in play.
+    worklist = compute_incremental_worklist(project_root=project_root, config=config, store=store)
+    orphan_triefacts = list(worklist.orphan_triefacts)
+    for orphan in orphan_triefacts:
+        orphan.unlink()
 
-    # Reconcile deletions before staleness check, so orphan triefact files don't show up
-    # as stale (their sources are gone — they should just be removed).
-    orphan_triefacts = remove_orphan_triefacts(project_root=project_root, config=config)
-
-    check = check_project(project_root=project_root, config=config)
-    directly_stale = sorted({it.source_path for it in check.items if it.source_path})
-
-    if not directly_stale:
+    if not worklist.affected_files:
         return IncrementalResult(
             files_synced=0,
             files_skipped_no_budget=0,
@@ -73,21 +138,14 @@ def run_incremental(
             sync_results=[],
         )
 
-    cascade = compute_cascade(
-        changed_files=directly_stale,
-        store=store,
-        depth=config.cascade.default_depth,
-        hub_threshold=config.cascade.hub_symbol_threshold,
-    )
-
     cb: ProgressCallback = progress if progress is not None else NULL_PROGRESS
     sync_results: list[FileSyncResult] = []
     actual_cost = 0.0
     skipped_budget = 0
     skipped_no_symbols = 0
-    total = len(cascade.affected_files)
+    total = len(worklist.affected_files)
 
-    for idx, rel in enumerate(cascade.affected_files, start=1):
+    for idx, rel in enumerate(worklist.affected_files, start=1):
         if limit is not None and len(sync_results) >= limit:
             skipped_budget += 1
             cb.on_skip(rel, "limit reached")
@@ -127,8 +185,8 @@ def run_incremental(
         files_synced=len(sync_results),
         files_skipped_no_budget=skipped_budget,
         files_skipped_no_symbols=skipped_no_symbols,
-        directly_stale_count=len(directly_stale),
-        cascaded_count=len(cascade.cascaded_from_change),
+        directly_stale_count=len(worklist.directly_stale),
+        cascaded_count=len(worklist.cascaded_files),
         actual_cost_usd=actual_cost,
         orphan_triefacts_removed=orphan_triefacts,
         sync_results=sync_results,

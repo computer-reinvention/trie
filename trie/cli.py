@@ -21,8 +21,12 @@ from trie.mcp_server import run_stdio as run_mcp_stdio
 from trie.models import make_client
 from trie.reporter import ProgressHandle, Reporter, Verbosity
 from trie.scan import scan_project
-from trie.sync.bootstrap import build_plan, run_bootstrap
-from trie.sync.incremental import run_incremental
+from trie.sync.bootstrap import BootstrapPlan, build_plan, run_bootstrap
+from trie.sync.incremental import (
+    IncrementalWorklist,
+    compute_incremental_worklist,
+    run_incremental,
+)
 from trie.sync.progress import ProgressCallback
 from trie.sync.single_file import FileSyncResult, sync_single_file
 
@@ -217,7 +221,10 @@ def init_cmd(
             reporter.warn("not a git repository — skipped pre-commit hook install")
 
     reporter.info("")
-    reporter.info("Next: try [cyan]trie sync[/cyan]")
+    reporter.info("Next steps:")
+    reporter.info("  [cyan]trie plan[/cyan]     preview the worklist + estimated cost (free)")
+    reporter.info("  [cyan]trie sync[/cyan]     generate triefacts")
+    reporter.info("  [cyan]trie verify[/cyan]   check drift (also runs as pre-commit hook)")
 
 
 def _is_interactive() -> bool:
@@ -244,11 +251,27 @@ def plan_cmd(
     model: str | None = typer.Option(
         None, "--model", help="Override the configured model for cost estimation."
     ),
+    all_: bool = typer.Option(
+        False,
+        "--all",
+        help=(
+            "Show the cost of regenerating every in-scope file (full re-bootstrap), "
+            "not just the incremental worklist. Default on a fresh project; opt-in on "
+            "an established one."
+        ),
+    ),
 ) -> None:
     """Scan the project, surface drift, and show the worklist + estimated cost.
 
     Networked but cheap: uses Anthropic's free `count_tokens` endpoint per file, never
     `messages.create`. Run before `trie sync` if you want to see the bill before paying it.
+
+    Auto-detects the right mode:
+      • No triefacts yet → full bootstrap plan (every in-scope file).
+      • Triefacts exist  → incremental plan: only what `trie sync` would actually touch
+                           (directly stale files + their cascade), plus any orphan triefacts
+                           that would be removed.
+      • --all            → force the full re-bootstrap view on an established project.
 
     Step 1 is an offline drift check (same as `trie verify`). Drift is reported as a
     warning but does not abort — `plan` is informational, not a gate.
@@ -265,7 +288,36 @@ def plan_cmd(
     model_id = model or config.models.bootstrap
     client = make_client(model_id)
     db_path = project_root / ".trie" / "graph.db"
+    triefacts_root = project_root / config.triefacts.root
+    use_incremental = not all_ and _has_existing_triefacts(triefacts_root)
+
     with Store(db_path) as store:
+        if use_incremental:
+            with reporter.status("computing incremental worklist…"):
+                worklist = compute_incremental_worklist(
+                    project_root=project_root, config=config, store=store
+                )
+            if not worklist.affected_files:
+                if worklist.orphan_triefacts:
+                    reporter.success(
+                        f"no LLM work needed — {len(worklist.orphan_triefacts)} orphan "
+                        "triefact(s) would be removed by `trie sync`"
+                    )
+                else:
+                    reporter.success("triefact tree is coherent — `trie sync` would be a no-op")
+                return
+            with reporter.status("counting tokens…"):
+                plan = build_plan(
+                    project_root=project_root,
+                    store=store,
+                    model_id=model_id,
+                    client=client,
+                    only_files=worklist.affected_files,
+                )
+            _print_incremental_plan(reporter, plan, worklist, model_id)
+            return
+
+        # Full-bootstrap path: fresh project, or `--all` on an established one.
         with reporter.status("scanning project…"):
             scan_result = scan_project(project_root=project_root, config=config, store=store)
         _print_scan_breakdown(reporter, scan_result, db_path, project_root)
@@ -274,10 +326,14 @@ def plan_cmd(
                 project_root=project_root, store=store, model_id=model_id, client=client
             )
 
-    if not plan.items:
-        reporter.warn("no files in scope")
-        return
-    _print_plan(reporter, plan, model_id)
+        if not plan.items:
+            reporter.warn("no files in scope")
+            return
+        if all_ and _has_existing_triefacts(triefacts_root):
+            reporter.info(
+                "  [dim](showing full re-bootstrap cost; drop --all for incremental)[/dim]"
+            )
+        _print_plan(reporter, plan, model_id)
 
 
 @app.command("verify")
@@ -316,7 +372,7 @@ def _print_scan_breakdown(
     )
 
 
-def _print_plan(reporter: Reporter, plan, model_id: str) -> None:
+def _print_plan(reporter: Reporter, plan: BootstrapPlan, model_id: str) -> None:
     reporter.info(
         f"plan for [cyan]{model_id}[/cyan] — {len(plan.items)} files, "
         f"~${plan.total_estimated_cost:.4f} estimated"
@@ -328,6 +384,51 @@ def _print_plan(reporter: Reporter, plan, model_id: str) -> None:
         )
     if len(plan.items) > 10:
         reporter.info(f"  … and {len(plan.items) - 10} more")
+
+
+def _print_incremental_plan(
+    reporter: Reporter,
+    plan: BootstrapPlan,
+    worklist: IncrementalWorklist,
+    model_id: str,
+) -> None:
+    """Plan output tailored to incremental sync — emphasises 'what `trie sync` would
+    actually do' rather than full re-bootstrap cost."""
+    direct_n = len(worklist.directly_stale)
+    cascade_n = len(worklist.cascaded_files)
+    orphan_n = len(worklist.orphan_triefacts)
+
+    parts = [f"{direct_n} directly stale"]
+    if cascade_n:
+        parts.append(f"{cascade_n} cascaded")
+    if orphan_n:
+        parts.append(f"{orphan_n} orphan to remove")
+    breakdown = ", ".join(parts)
+    reporter.info(
+        f"incremental plan for [cyan]{model_id}[/cyan] — {len(plan.items)} file(s) "
+        f"({breakdown}), ~${plan.total_estimated_cost:.4f} estimated"
+    )
+
+    direct_set = set(worklist.directly_stale)
+    for it in plan.items[:10]:
+        tag = "stale" if it.file_path in direct_set else "cascade"
+        reporter.info(
+            f"  • [bold]{it.file_path}[/bold] [dim]({tag})[/dim] "
+            f"({it.public_symbols} symbols, ~${it.estimated.cost_usd:.4f})"
+        )
+    if len(plan.items) > 10:
+        reporter.info(f"  … and {len(plan.items) - 10} more")
+
+    if worklist.orphan_triefacts:
+        reporter.detail("orphan triefacts (would be deleted by `trie sync`):")
+        for path in worklist.orphan_triefacts[:10]:
+            try:
+                rel = path.relative_to(Path.cwd())
+            except ValueError:
+                rel = path
+            reporter.detail(f"  [red]✗[/red] {rel}")
+        if len(worklist.orphan_triefacts) > 10:
+            reporter.detail(f"  … and {len(worklist.orphan_triefacts) - 10} more")
 
 
 _REASON_LABELS: dict[StaleReason, str] = {

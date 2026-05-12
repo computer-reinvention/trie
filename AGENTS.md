@@ -29,7 +29,7 @@ uv run ruff format --check .
 uv build
 uv tool install --force ./dist/trie-0.1.0-py3-none-any.whl
 
-# End-to-end dogfood loop (in another project's directory)
+# End-to-end dogfood loop (in any project, including this one)
 trie init && trie plan                  # init runs scan; plan adds free count_tokens cost preview
 trie sync --file path/to/some.py        # cheapest smoke test of the LLM path
 trie sync --limit 10                    # auto-detected first-run bootstrap, capped
@@ -85,7 +85,7 @@ These were settled in the v0.1 design pass. Don't relitigate without a user prom
 - **MCP transport: stdio only** in v0.1.
 - **References: tree-sitter heuristic** (`tree_sitter_import` + same-module `name_match`), not SCIP. The `confidence` field on every edge is the seam SCIP will land through. SCIP precision is the top v0.2 priority.
 - **Cascade defaults: depth 1, hub threshold 20.** Configurable per-project in `trie.toml`.
-- **Dogfood target is an external small Python library**, NOT trie's own repo (avoids the recursion failure mode where breaking trie corrupts trie's own triefacts).
+- **Dogfood on trie's own repo is fine** — the v0.1 caution against self-dogfooding (recursion failure mode) is lifted now that `trie verify` catches corrupted triefacts before they're committed. A `trie.toml` at the repo root is expected.
 - **Tests are in scope by default** — they encode behavioral spec worth documenting.
 
 ## Conventions worth knowing

@@ -11,7 +11,7 @@ from trie.config import Config
 from trie.cost import get_pricing
 from trie.graph.store import Store
 from trie.models import GenerationRequest, GenerationResponse
-from trie.sync.incremental import run_incremental
+from trie.sync.incremental import compute_incremental_worklist, run_incremental
 from trie.sync.single_file import sync_single_file
 from trie.sync.writer import TriefactFile
 
@@ -295,3 +295,104 @@ def test_run_incremental_invokes_progress_callback(project: Path):
     # At least lib.py and app.py should have streamed through the callback.
     assert {rel for rel, _, _ in starts} >= {"lib.py", "app.py"}
     assert {rel for rel in dones} >= {"lib.py", "app.py"}
+
+
+def test_compute_incremental_worklist_empty_when_clean(project: Path):
+    """A coherent tree should produce an empty worklist (no LLM work needed)."""
+    _initial_sync(project)
+    config, _ = Config.find_and_load(project)
+    with Store(project / ".trie" / "graph.db") as store:
+        worklist = compute_incremental_worklist(project_root=project, config=config, store=store)
+    assert worklist.affected_files == []
+    assert worklist.directly_stale == []
+    assert worklist.cascaded_files == []
+    assert worklist.orphan_triefacts == []
+
+
+def test_compute_incremental_worklist_includes_cascade(project: Path):
+    """Editing lib.py should put both lib.py (direct) and app.py (cascade) in the worklist
+    without doing any LLM work or deleting anything."""
+    _initial_sync(project)
+    (project / "lib.py").write_text("def helper():\n    return 999\n")
+
+    config, _ = Config.find_and_load(project)
+    with Store(project / ".trie" / "graph.db") as store:
+        worklist = compute_incremental_worklist(project_root=project, config=config, store=store)
+    assert "lib.py" in worklist.directly_stale
+    assert "app.py" in worklist.cascaded_files
+    assert set(worklist.affected_files) >= {"lib.py", "app.py"}
+
+
+def test_compute_incremental_worklist_is_read_only(project: Path):
+    """The worklist must not mutate the triefacts dir — `trie plan` is read-only."""
+    _initial_sync(project)
+    triefacts_root = project / "triefacts"
+    before = {p.name: p.read_text() for p in triefacts_root.rglob("*.md")}
+
+    (project / "lib.py").write_text("def helper():\n    return 999\n")
+    config, _ = Config.find_and_load(project)
+    with Store(project / ".trie" / "graph.db") as store:
+        compute_incremental_worklist(project_root=project, config=config, store=store)
+
+    after = {p.name: p.read_text() for p in triefacts_root.rglob("*.md")}
+    assert before == after
+
+
+def test_compute_incremental_worklist_reports_orphans(project: Path):
+    """When source disappears, its triefact becomes an orphan — worklist surfaces it
+    without deleting (sync handles deletion)."""
+    _initial_sync(project)
+    (project / "lib.py").unlink()  # orphan lib.md
+
+    config, _ = Config.find_and_load(project)
+    with Store(project / ".trie" / "graph.db") as store:
+        worklist = compute_incremental_worklist(project_root=project, config=config, store=store)
+    orphan_names = {p.name for p in worklist.orphan_triefacts}
+    assert "lib.md" in orphan_names
+    # The orphan triefact file is still on disk — worklist did not delete it.
+    assert (project / "triefacts" / "lib.md").exists()
+
+
+def test_cli_plan_incremental_on_clean_tree_reports_noop(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """`trie plan` on a coherent established project should announce no-op, not list a
+    bogus full-bootstrap cost."""
+    _initial_sync(project)
+    monkeypatch.chdir(project)
+    monkeypatch.setattr("trie.cli.make_client", lambda _model_id: FakeClient())
+    runner = CliRunner()
+    result = runner.invoke(app, ["plan"])
+    assert result.exit_code == 0, result.output
+    assert "coherent" in result.output or "no-op" in result.output
+    # Critically: the full-bootstrap header must not appear.
+    assert "plan for" not in result.output
+
+
+def test_cli_plan_incremental_on_drift_lists_only_affected(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """On an established project with drift, `trie plan` shows the incremental cost,
+    not the cost of regenerating every in-scope file."""
+    _initial_sync(project)
+    (project / "lib.py").write_text("def helper():\n    return 999\n")
+    monkeypatch.chdir(project)
+    monkeypatch.setattr("trie.cli.make_client", lambda _model_id: FakeClient())
+    runner = CliRunner()
+    result = runner.invoke(app, ["plan"])
+    assert result.exit_code == 0, result.output
+    assert "incremental plan for" in result.output
+    assert "directly stale" in result.output
+
+
+def test_cli_plan_all_forces_full_bootstrap_view(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """`trie plan --all` opts into the legacy full-bootstrap view on an established
+    project — useful for 'what would re-bootstrapping cost?'"""
+    _initial_sync(project)
+    monkeypatch.chdir(project)
+    monkeypatch.setattr("trie.cli.make_client", lambda _model_id: FakeClient())
+    runner = CliRunner()
+    result = runner.invoke(app, ["plan", "--all"])
+    assert result.exit_code == 0, result.output
+    assert "plan for" in result.output
+    assert "incremental plan for" not in result.output
