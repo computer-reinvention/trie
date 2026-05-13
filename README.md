@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](#status)
-[![Tests](https://img.shields.io/badge/tests-179%20passing-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/tests-255%20passing-brightgreen.svg)](#)
 
 trie generates a Markdown description of every source file in your project. The descriptions live in a tree that mirrors your source tree, joined by the same reference graph the code has. Edit a function and the cascade regenerates the descriptions of every caller too. Humans review English prose; agents read the same prose instead of grepping code under context pressure.
 
@@ -133,32 +133,47 @@ The hub-symbol cap matters: a `utils.py` referenced everywhere can't invalidate 
 ## Quick start
 
 ```bash
-# Install (pick one)
+# 1. Install (pick one)
 uv tool install git+https://github.com/pankajgarkoti/trie    # persistent, on $PATH
 uvx --from git+https://github.com/pankajgarkoti/trie trie    # ephemeral, run-anywhere
 
+# 2. Initialise your project
 cd /path/to/your/project
+export ANTHROPIC_API_KEY=...             # default model is anthropic/claude-sonnet-4-6
 trie init                                # writes trie.toml, scans, prompts for pre-commit hook
 
-# generate triefacts for one file
+# 3. Smoke test the LLM path on a single file
 trie sync --file src/some_module.py
 
-# preview the plan + cost (free count_tokens calls, no generation)
+# 4. Preview the bootstrap plan + cost (free count_tokens calls, no generation)
 trie plan
 
-# generate (auto-detects first-run bootstrap; cap with --budget or --limit)
-trie sync --limit 10                    # top 10 ranked files
-trie sync --budget 5.00                 # spend at most $5
+# 5. Bootstrap with a guardrail — auto-detected on first run
+trie sync --limit 10                     # top-ranked 10 files
+trie sync --budget 5.00                  # OR spend at most $5
+trie sync                                # OR commit to the full plan
 
-# day-to-day: incremental cascade refresh
-trie sync                               # re-syncs whatever's stale + cascades
+# 6. Day-to-day: incremental cascade
+trie sync                                # re-syncs stale + cascade
+trie sync --dry-run                      # preview unified diffs (makes API calls)
 
-# preview what `sync` would change (makes API calls; honors --budget/--limit)
-trie sync --dry-run
-
-# verify coherence (fast, no API calls — designed for pre-commit)
+# 7. Drift gate — fast, offline, pre-commit-friendly
 trie verify
+
+# 8. Wire up your agent
+trie mcp install                         # auto-detects installed agents
 ```
+
+### Recommended workflow
+
+- **First run:** `trie init` → `trie plan` (see the bill) → `trie sync --limit 10` (sample
+  the quality) → review one or two triefacts → `trie sync` to complete the bootstrap.
+- **After every code change:** `trie sync` regenerates exactly the stale sections plus
+  their cascade. Run it before opening a PR so reviewers see the prose change too.
+- **In CI / pre-commit:** `trie verify` only — it's deterministic, offline, and
+  exits non-zero on drift. Never let CI call the LLM path.
+- **For agents:** `trie mcp install` once, then forget about it. The MCP server is
+  read-only; agents query the graph, you own writes via `trie sync`.
 
 ## Golden example
 
@@ -182,7 +197,7 @@ After `trie sync --file src/slugify.py`, `triefacts/src/slugify.md`:
 
 ```markdown
 ---
-trie_version: 0.2.0
+trie_version: 0.1.0
 source: src/slugify.py
 file_fingerprint: 9d4f374adc9a843c…
 last_synced_at: '2026-05-08T14:21:09Z'
@@ -223,7 +238,7 @@ A trie-managed Markdown triefact looks like this:
 
 ```markdown
 ---
-trie_version: 0.2.0
+trie_version: 0.1.0
 source: src/foo.py
 file_fingerprint: 0830b9bb…
 last_synced_at: '2026-05-08T14:21:09Z'
@@ -273,7 +288,7 @@ Add to your `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/pankajgarkoti/trie
-    rev: v0.2.0
+    rev: v0.1.0
     hooks:
       - id: trie-verify
 ```
