@@ -8,16 +8,24 @@ from typing import Any
 import yaml
 
 # A trie section is delimited by an open and close HTML comment. The open carries the
-# fully-qualified symbol name, a `fingerprint` over the *source* symbol body that the
-# section documents, and a `body_fp` over the *triefact* body itself. The two together
-# let the coherence check work both ways:
+# fully-qualified symbol name and several optional metadata fields:
+#   - `fingerprint`: SHA-256 over the *source* symbol body (always present)
+#   - `body_fp`:     SHA-256 over the *triefact* section body itself
+#   - `source_ref`:  git blob hash of the file whose source state this prose describes
+#
+# Together they let the coherence check work both ways:
 #   - source changed but triefact wasn't regen'd  → fingerprint mismatch
 #   - triefact body manually tampered with        → body_fp mismatch
-# Anything outside open/close pairs is treated as human prose and preserved verbatim.
+# And `source_ref` lets diff-aware regeneration retrieve "the previous source" without
+# guessing — we resolve the blob via git and parse it the same way we parse current
+# source. Anything outside open/close pairs is treated as human prose and preserved
+# verbatim.
 #
-# Backward compatibility: `body_fp` is optional in the regex. Sections written by
-# trie ≤ 0.1 don't carry it; check.py treats those as MISSING_BODY_FINGERPRINT and
-# nudges the user to re-sync. Once a project re-syncs, every section carries it.
+# Backward compatibility: every field after `fingerprint` is optional in the regex.
+# Sections written by trie ≤ 0.1 don't carry `body_fp`; check.py treats those as
+# LEGACY_SECTION and nudges the user to re-sync. Sections written before Level 1
+# don't carry `source_ref`; they take the cold-write regen path on next sync, which
+# stamps the new field. After one organic regen, every section carries everything.
 #
 # Structural rule: both sentinels must occupy their own line. The renderer always
 # emits them that way; the parser enforces the same. Anything that looks like a
@@ -26,10 +34,16 @@ import yaml
 # inside trie-managed Markdown without confusing the parser. The match anchors are
 # `(?m)^` for line start and `$` for line end (so trailing whitespace on the sentinel
 # line is allowed, but trailing text is not).
+#
+# Field-order rule: the renderer emits fields in a fixed order (symbol, fingerprint,
+# body_fp, source_ref) so two regenerations of the same section produce byte-identical
+# sentinels when nothing has changed. The parser accepts any order via named groups.
 
 SECTION_OPEN_RE = re.compile(
     r"(?m)^<!--\s*trie:section\s+symbol=(?P<symbol>\S+)\s+fingerprint=(?P<fp>\S+)"
-    r"(?:\s+body_fp=(?P<body_fp>\S+))?\s*-->[ \t]*$"
+    r"(?:\s+body_fp=(?P<body_fp>\S+))?"
+    r"(?:\s+source_ref=(?P<source_ref>\S+))?"
+    r"\s*-->[ \t]*$"
 )
 SECTION_CLOSE_RE = re.compile(r"(?m)^<!--\s*trie:end\s*-->[ \t]*$")
 SECTION_CLOSE = "<!-- trie:end -->"  # canonical form used by render()
@@ -90,6 +104,7 @@ class Section:
     fingerprint: str  # SHA-256 over normalized source symbol body
     body: str  # text between sentinels, leading/trailing newlines stripped
     body_fingerprint: str | None = None  # SHA-256 over `body`; None for legacy sections
+    source_ref: str | None = None  # git blob hash of the file at generation time
 
 
 @dataclass(frozen=True)
@@ -147,6 +162,7 @@ class TriefactFile:
                     fingerprint=open_match.group("fp"),
                     body=body,
                     body_fingerprint=open_match.group("body_fp"),
+                    source_ref=open_match.group("source_ref"),
                 )
             )
             cursor = close_match.end()
@@ -171,17 +187,28 @@ class TriefactFile:
 
     # --- mutations ---
 
-    def upsert_section(self, *, qualified_name: str, fingerprint: str, body: str) -> None:
+    def upsert_section(
+        self,
+        *,
+        qualified_name: str,
+        fingerprint: str,
+        body: str,
+        source_ref: str | None = None,
+    ) -> None:
         """Replace an existing section by qualified_name, or append a new one at the end.
 
         The body fingerprint is computed automatically from `body` so callers can't
-        forget to set it. Re-rendering will emit `body_fp=` in the open sentinel.
+        forget to set it. Re-rendering emits `body_fp=` in the open sentinel; if
+        `source_ref` is non-None, it's stamped too. Callers that don't have a git
+        blob hash available (no git repo, ad-hoc generation) can pass None and the
+        field is simply omitted from the rendered sentinel.
         """
         new = Section(
             qualified_name=qualified_name,
             fingerprint=fingerprint,
             body=body,
             body_fingerprint=hash_body(body),
+            source_ref=source_ref,
         )
         for i, c in enumerate(self.chunks):
             if isinstance(c, Section) and c.qualified_name == qualified_name:
@@ -227,10 +254,14 @@ class TriefactFile:
                 body_fp = (
                     c.body_fingerprint if c.body_fingerprint is not None else hash_body(c.body)
                 )
-                parts.append(
-                    f"<!-- trie:section symbol={c.qualified_name} "
-                    f"fingerprint={c.fingerprint} body_fp={body_fp} -->\n"
-                )
+                fields = [
+                    f"symbol={c.qualified_name}",
+                    f"fingerprint={c.fingerprint}",
+                    f"body_fp={body_fp}",
+                ]
+                if c.source_ref:
+                    fields.append(f"source_ref={c.source_ref}")
+                parts.append("<!-- trie:section " + " ".join(fields) + " -->\n")
                 parts.append(c.body)
                 if not c.body.endswith("\n"):
                     parts.append("\n")

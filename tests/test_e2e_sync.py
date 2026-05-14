@@ -243,3 +243,127 @@ def test_cli_sync_errors_when_no_config(tmp_path: Path):
     result = runner.invoke(app, ["sync", "--file", str(src)])
     assert result.exit_code == 1
     assert "trie.toml" in result.output
+
+
+# --- diff-aware regen (Level 1) ---
+
+
+def _init_git(repo: Path) -> None:
+    """Initialize a git repo in `repo` so compute_blob_hash / retrieve_blob work."""
+    import subprocess
+
+    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.email", "trie-test@example.com"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.name", "trie test"], cwd=repo, check=True)
+
+
+def test_first_sync_in_git_repo_stamps_source_ref(project: Path):
+    """First sync against a git-managed file stamps source_ref= in every section."""
+    _init_git(project)
+    config, _ = Config.find_and_load(project)
+    sync_single_file(
+        project / "strings.py",
+        project_root=project,
+        config=config,
+        client=FakeClient(),
+    )
+    triefact_path = project / "triefacts" / "strings.md"
+    rendered = triefact_path.read_text()
+    # Every section should carry source_ref now.
+    triefact = TriefactFile.parse(rendered)
+    for qn in triefact.section_qnames():
+        sec = triefact.get_section(qn)
+        assert sec is not None
+        assert sec.source_ref is not None, f"section {qn} missing source_ref"
+        assert len(sec.source_ref) == 40  # SHA-1 blob hash
+
+
+def test_sync_outside_git_repo_omits_source_ref(project: Path):
+    """Without git, source_ref is None — sections render without the field."""
+    # No git init for this project.
+    config, _ = Config.find_and_load(project)
+    sync_single_file(
+        project / "strings.py",
+        project_root=project,
+        config=config,
+        client=FakeClient(),
+    )
+    triefact_path = project / "triefacts" / "strings.md"
+    rendered = triefact_path.read_text()
+    assert "source_ref=" not in rendered
+
+
+def test_resync_with_committed_history_takes_diff_aware_path(project: Path):
+    """After commit, resync of a changed file passes previous source + previous prose
+    to the generator. Verified by inspecting the FakeClient's request payload."""
+    import subprocess
+
+    _init_git(project)
+    config, _ = Config.find_and_load(project)
+
+    src = project / "strings.py"
+    # First sync against the original file content.
+    sync_single_file(src, project_root=project, config=config, client=FakeClient())
+    # Commit both the source and the triefact so the blob is reachable.
+    subprocess.run(["git", "add", "-A"], cwd=project, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "first sync"], cwd=project, check=True)
+
+    # Modify the source.
+    src.write_text(
+        '"""String manipulation helpers."""\n\n\n'
+        "def shout(s: str, exclaim: int = 3) -> str:\n"
+        '    """Uppercase a string and append several exclamation marks."""\n'
+        '    return s.upper() + ("!" * exclaim)\n\n\n'
+        "def whisper(s: str) -> str:\n"
+        '    """Lowercase a string."""\n'
+        "    return s.lower()\n"
+    )
+
+    second_client = FakeClient()
+    sync_single_file(src, project_root=project, config=config, client=second_client)
+
+    # The shout section should have been regenerated in diff-aware mode.
+    # Inspect the requests the client received for evidence.
+    assert second_client.requests_seen is not None
+    shout_reqs = [r for r in second_client.requests_seen if "strings:shout" in r.request]
+    assert shout_reqs, "expected at least one request mentioning strings:shout"
+    shout_req = shout_reqs[0]
+    assert "<previous_source>" in shout_req.request
+    assert "<previous_prose>" in shout_req.request
+    assert "<current_source>" in shout_req.request
+    # Previous body referenced the old signature; current body has the new one.
+    assert "exclaim: int = 1" in shout_req.request or "return s.upper() +" in shout_req.request
+    assert "exclaim: int = 3" in shout_req.request
+
+
+def test_resync_after_uncommitted_change_falls_back_to_cold(project: Path):
+    """If the previous version's blob isn't in git's object store (file was modified
+    but never committed since the last sync), retrieval fails and we degrade to cold.
+
+    Note this also exercises the first-stamp-then-modify path: the first sync stamps
+    a source_ref against an uncommitted file, but git hash-object computes the hash
+    without writing. Modifying the file before any commit makes the original blob
+    unreachable.
+    """
+    _init_git(project)
+    config, _ = Config.find_and_load(project)
+    src = project / "strings.py"
+
+    sync_single_file(src, project_root=project, config=config, client=FakeClient())
+    # Modify without committing.
+    src.write_text(
+        '"""String manipulation helpers."""\n\n\n'
+        "def shout(s: str) -> str:\n"
+        '    """Different docstring."""\n'
+        "    return s.upper()\n\n\n"
+        "def whisper(s: str) -> str:\n"
+        '    """Lowercase a string."""\n'
+        "    return s.lower()\n"
+    )
+
+    second_client = FakeClient()
+    sync_single_file(src, project_root=project, config=config, client=second_client)
+    # No <previous_source> block — diff-aware path didn't activate.
+    assert second_client.requests_seen is not None
+    for req in second_client.requests_seen:
+        assert "<previous_source>" not in req.request
