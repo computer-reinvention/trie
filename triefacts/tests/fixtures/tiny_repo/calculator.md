@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/fixtures/tiny_repo/calculator.py
 file_fingerprint: d3b37289441711a16a1b150a6a1594f610ed72432d622215fdc582e2552d3f2c
-last_synced_at: '2026-05-12T18:34:54Z'
+last_synced_at: '2026-05-14T17:31:10Z'
 description: A pocket calculator with a tiny API surface.
 defines:
 - kind: class
@@ -23,12 +23,12 @@ defines:
 incoming_refs: 0
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=tests/fixtures/tiny_repo/calculator:Calculator fingerprint=74de98ffbf8ea1b6ea814eb2c7b4f292313d6260b4a177205449c9250c8b377b body_fp=546c4d0764a04372b5acb79870886a171114941f49e3f485f434a9f41de5eec6 -->
+<!-- trie:section symbol=tests/fixtures/tiny_repo/calculator:Calculator fingerprint=74de98ffbf8ea1b6ea814eb2c7b4f292313d6260b4a177205449c9250c8b377b body_fp=e7f9f924b8e66c52852a06e214dc4cf6313da9881167eb5e567b25fc40a727b5 -->
 ## `Calculator(value: float = 0.0)`
 
 Stateful dataclass that accumulates a running numeric value across chained operations.
 
-- **`value`**: running total, initialised to `0.0`.
+- **`value`**: current running total, initialised to `0.0`.
 <!-- trie:end -->
 
 <!-- trie:section symbol=tests/fixtures/tiny_repo/calculator:Calculator.add fingerprint=5d3a9c6d0ea1f1d91e57d2b99e95b60ff1990d437d4e2f4f5c1beaa78236b95c body_fp=6b7777cf1c532a1928175c5994cf67dc1b16e2bfca5a686f689188e33df56e44 -->
@@ -43,8 +43,8 @@ Add `x` to the running value and return `self` for method chaining.
 Multiply the running value by `x` and return `self` for chaining.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/fixtures/tiny_repo/calculator:Calculator.reset fingerprint=4d978f6c3094c34c2b88383d732679183bfa60c79a3c63a3b6b0989ae68d1b44 body_fp=9eb957d6d17c8c03275329a0cca46813cb3921da7d39696a2f4e4a5d38e59f5f -->
-## `reset() -> None`
+<!-- trie:section symbol=tests/fixtures/tiny_repo/calculator:Calculator.reset fingerprint=4d978f6c3094c34c2b88383d732679183bfa60c79a3c63a3b6b0989ae68d1b44 body_fp=d75f38f461a346cff7af13e78090d84ba3103b0f29fb863cd29e16a295035198 -->
+## `reset(self) -> None`
 
 Reset the running value to zero.
 <!-- trie:end -->

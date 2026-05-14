@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/init.py
 file_fingerprint: f3d1e4aaf968cb9aa30244b8adf95c075197fdc20c8ebf759dd18eee20d1ec2a
-last_synced_at: '2026-05-12T18:32:31Z'
+last_synced_at: '2026-05-14T17:29:03Z'
 defines:
 - kind: class
   qualified_name: trie/init:InitResult
@@ -19,40 +19,41 @@ defines:
 incoming_refs: 29
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=trie/init:InitResult fingerprint=6159e79af9587c2f4c2280d80e815af142855cae81912c12db1958bb33088be7 body_fp=9ffd677c95ae7a83fd92512d668aa81e673c4049e13a873477464ba2d12a65b8 -->
+<!-- trie:section symbol=trie/init:InitResult fingerprint=6159e79af9587c2f4c2280d80e815af142855cae81912c12db1958bb33088be7 body_fp=c2638a39d527c3da8891ef1f9ed301f714b48dd9324f3391a5ab16e793471039 -->
 ## `InitResult`
 
-Dataclass capturing the outcome of a `init_project` call.
+Dataclass capturing the outcome of a `trie init` run.
 
-- `config_written`: always `True` when set by `init_project`
+- `config_written`: always `True` after successful init
 - `pre_commit_strategy`: one of `"git_hook"`, `"framework"`, `"none"`, `"skipped"`
-- `pre_commit_path`: set only when strategy is `"git_hook"`
+- `scan_ran`: `False` if `run_scan=False` was passed to `init_project`
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/init:InitError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=9018d0fc1e916801b251d19dc2755e7241c3c0162832cbd10bb010e52afd0196 -->
+<!-- trie:section symbol=trie/init:InitError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=6ac93228090fa1ac2be2abf7a58af1ac2e2da7eeafdd624171eb25d4865f2f7c -->
 ## `class InitError(Exception)`
 
-Raised by `init_project` when project detection or configuration preconditions fail.
+Raised by `init_project` when initialisation preconditions fail.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/init:install_pre_commit_hook fingerprint=15a712a6e65acf0735cc39913a4311a1400df95b8e6582502023ebf3bb2fd821 body_fp=350fd22b812d77048bd519bd96b89d866e0c595a016b165e60e430156d26f13f -->
+<!-- trie:section symbol=trie/init:install_pre_commit_hook fingerprint=15a712a6e65acf0735cc39913a4311a1400df95b8e6582502023ebf3bb2fd821 body_fp=4f20944378ae44b778f1d14d41df287ebc93eaabd5b01ae255a6bc34b10929f6 -->
 ## `install_pre_commit_hook(project_root: Path) -> tuple[bool, PreCommitStrategy, Path | None]`
 
-Install a marker-fenced `trie verify` block into the git pre-commit hook, choosing a strategy based on project state.
+Install a marker-fenced `trie verify` block into the git pre-commit hook, choosing a strategy based on the project layout.
 
-- `"framework"`: `.pre-commit-config.yaml` exists; returns `(False, "framework", None)`.
-- `"git_hook"`: writes or appends to `.git/hooks/pre-commit`; idempotent via marker.
-- `"none"`: no `.git` directory present; returns `(False, "none", None)`.
-- First tuple element: `True` only when the hook block was newly written.
+- `project_root`: repo root; must contain `.git/` for hook installation.
+- Returns `(changed, strategy, hook_path)` where `changed` is `False` when already installed or strategy is not `git_hook`.
+- `"framework"`: `.pre-commit-config.yaml` detected; caller must add snippet manually.
+- `"none"`: no `.git/` directory found; nothing written.
+- `"git_hook"`: hook written or appended; idempotent on repeated calls.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/init:init_project fingerprint=96c40ec7a1db079af60e0e7a3b69c77d33eb36824cd1f0838888f69fb647c494 body_fp=92e0fbcaaa4448984118ffa86da26c90b975ed8ad4690418f078a869f174f05a -->
+<!-- trie:section symbol=trie/init:init_project fingerprint=96c40ec7a1db079af60e0e7a3b69c77d33eb36824cd1f0838888f69fb647c494 body_fp=fa3e08cd51298ff5823d6ea74d34a6e4276240feba19bf58a3a0b02e4940c579 -->
 ## `init_project(root: Path, *, force: bool = False, install_hooks: bool = False, run_scan: bool = True) -> InitResult`
 
-Initialise trie in `root`: write `trie.toml`, update `.gitignore`, and optionally scan symbols and install a pre-commit hook.
+Initialise trie in `root`: write `trie.toml`, update `.gitignore`, and optionally scan the project and install pre-commit hooks.
 
-- `force`: skip "already exists" and "not a Python project" guards.
-- `run_scan`: runs `scan_project` and populates `result.scan_*` fields.
-- `install_hooks`: calls `install_pre_commit_hook` and populates `result.pre_commit_*` fields.
-- Raises `InitError` if `root` is not a directory, not a Python project (without `force`), or `trie.toml` already exists (without `force`).
+- `force`: skip non-Python-project and existing-config guards.
+- `run_scan`: run initial symbol scan so the graph is ready for `trie sync`.
+- `install_hooks`: attempt pre-commit hook installation via `install_pre_commit_hook`.
+- Raises `InitError` if `root` is not a directory, not a Python project, or `trie.toml` exists (each suppressible with `force=True`).
 <!-- trie:end -->

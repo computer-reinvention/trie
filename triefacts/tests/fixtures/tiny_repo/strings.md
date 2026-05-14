@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/fixtures/tiny_repo/strings.py
 file_fingerprint: 0830b9bb0e7a6ca8e4f734e7f28e3ad7abf16f56e057f617a390052217e059fd
-last_synced_at: '2026-05-12T18:35:25Z'
+last_synced_at: '2026-05-14T17:31:42Z'
 description: String manipulation helpers.
 defines:
 - kind: function
@@ -20,8 +20,8 @@ outgoing_refs: 0
 Uppercase a string and append an exclamation mark.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/fixtures/tiny_repo/strings:whisper fingerprint=f351c011a0fdd6ad18e98a2adef4f29d680d8f31fe7c50ca721b49012c6f7d8e body_fp=3c94af0701bb26169a1c1e11bb62f4615b2f6d07d5d96dad0601e1ab3518143a -->
+<!-- trie:section symbol=tests/fixtures/tiny_repo/strings:whisper fingerprint=f351c011a0fdd6ad18e98a2adef4f29d680d8f31fe7c50ca721b49012c6f7d8e body_fp=acd56f050995c875e44c156e4057af9f3b2c6902e844b40f928ef717cf8ea2d6 -->
 ## `whisper(s: str) -> str`
 
-Return the lowercase version of `s`.
+Return the lowercase version of the input string.
 <!-- trie:end -->
