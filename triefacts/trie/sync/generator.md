@@ -1,49 +1,50 @@
 ---
 trie_version: 0.1.0
 source: trie/sync/generator.py
-file_fingerprint: 13f546d50e66cd8ef4ba3f573f2a567fa1fbb9466d7617db43d4e4bf4d304699
-last_synced_at: '2026-05-14T18:32:56Z'
+file_fingerprint: 6c1e05b2416c4eea05493d1f21246bc67e93bc98dc90c4e5c7fc34862fa01aff
+last_synced_at: '2026-05-14T19:39:17Z'
 defines:
 - kind: class
   qualified_name: trie/sync/generator:FileGenerationContext
-  lines: 30-32
+  lines: 58-60
 - kind: class
   qualified_name: trie/sync/generator:GeneratedSection
-  lines: 36-42
+  lines: 67-74
 - kind: function
   qualified_name: trie/sync/generator:build_cached_context
-  lines: 45-50
+  lines: 77-82
 - kind: function
   qualified_name: trie/sync/generator:generate_section
-  lines: 62-89
-incoming_refs: 11
+  lines: 138-191
+incoming_refs: 18
 outgoing_refs: 1
 ---
-<!-- trie:section symbol=trie/sync/generator:FileGenerationContext fingerprint=a1af16c6fabdf74c0ad9d8b4b7e134aaa5a35b72940340443be4ac8e2690cc4f body_fp=06718571b560b121ee570f9e7a3d89b3fb8feaa32abb21c5c48997ba6443b57c -->
+<!-- trie:section symbol=trie/sync/generator:FileGenerationContext fingerprint=a1af16c6fabdf74c0ad9d8b4b7e134aaa5a35b72940340443be4ac8e2690cc4f body_fp=c74c6bc4bd488ecf35317893d0fc0f1c328bee6d2c15d8b3bf489c02d8545ffe source_ref=2c58b1aa9ada95e7978956fc2d84138ee1f9a681 -->
 ## `FileGenerationContext(file_path: str, source_text: str)`
 
-Frozen dataclass carrying the file path and source text needed to build a cached prompt context.
-
-- `file_path`: source-root-relative path, used verbatim in the prompt.
+Frozen dataclass bundling a file's source-root-relative path and full source text for prompt construction.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/generator:GeneratedSection fingerprint=0ab9bfe3763274e340bdfc6f2419b51ca1b2697dc9a0e16ff239db3fa4a096be body_fp=f0e7905a0ec6104b71f0df61078000b1ebc0b6c502659bfd5b191c28f7963338 -->
-## `GeneratedSection(qualified_name, body, input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens)`
+<!-- trie:section symbol=trie/sync/generator:GeneratedSection fingerprint=f1027611aa488c7d14aa4b428365e6cce3f9aa74c5c38a708d26b45f09c449b8 body_fp=e02db865349cba91660e534663243f83840d1580dab19749cfb09d3ea924335c source_ref=2c58b1aa9ada95e7978956fc2d84138ee1f9a681 -->
+## `GeneratedSection`
 
-Frozen dataclass holding the generated Markdown body for one symbol alongside token usage counters.
+Frozen dataclass holding the generated Markdown body and token-usage metrics for one symbol.
+
+- `mode`: `"cold"` for fresh generation, `"diff_aware"` for rubric-guided update.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/generator:build_cached_context fingerprint=34a370dbfcfc18986700426fc5c4d20f78bf632efbbbb8fa306a9f6e2ac0df1f body_fp=3731bd19d300307a8b944762cd894039d66dfca1bd176cfe7d7b5f16d52f6bd5 -->
+<!-- trie:section symbol=trie/sync/generator:build_cached_context fingerprint=34a370dbfcfc18986700426fc5c4d20f78bf632efbbbb8fa306a9f6e2ac0df1f body_fp=51edf0b58251f176e080f38f80b531e910bbd7b6ba51f850d8a1d2d31569e71f source_ref=2c58b1aa9ada95e7978956fc2d84138ee1f9a681 -->
 ## `build_cached_context(ctx: FileGenerationContext) -> str`
 
-Build the prompt string containing the file path and full source text for cache-eligible context.
+Build the cacheable prompt block containing the file path and full source text.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/generator:generate_section fingerprint=b0745b3e90674fb0bbcb0916b950724105c9fbc21de2603b133d9dd9f65e43aa body_fp=e32a37961a8229fe6c118f12b33e9f1dfda9ff29b19c196136558b48fcf2a898 -->
-## `generate_section(*, symbol: Symbol, file_ctx: FileGenerationContext, client: ModelClient, max_tokens: int = 1024) -> GeneratedSection`
+<!-- trie:section symbol=trie/sync/generator:generate_section fingerprint=15aece61f894d2f21e7f19deda458eb6d940a6813eb85e35d6540e5f39ff908f body_fp=78574f7b1948e9adef58c6da52ea6a3fcbbc9b49cffb69fea97ed3703511e110 source_ref=2c58b1aa9ada95e7978956fc2d84138ee1f9a681 -->
+## `generate_section(*, symbol, file_ctx, client, max_tokens=1024, previous_source=None, previous_prose=None) -> GeneratedSection`
 
-Generate the Markdown documentation body for a single Python symbol via a model call.
+Generate the Markdown body for a single symbol via a model call, using cold or diff-aware mode.
 
-- `file_ctx`: provides file path and source text for the cached prompt context.
-- `cached_context`: shared across all symbols in the file to amortise prompt-cache costs.
+- `previous_source` + `previous_prose`: both must be provided to activate diff-aware mode; either `None` forces cold mode.
+- `file_ctx`: supplies the full source file as a cached prompt context, amortised across symbols in the same file.
+- `max_tokens`: caps the model's output length.
 <!-- trie:end -->
