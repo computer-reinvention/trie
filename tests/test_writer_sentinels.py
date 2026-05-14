@@ -143,6 +143,68 @@ def test_legacy_section_without_body_fp_parses_and_promotes_on_render():
     assert hash_body(sec.body) in rendered
 
 
+def test_section_round_trips_source_ref():
+    """source_ref= round-trips through parse → render unchanged."""
+    bfp = hash_body("body")
+    text = (
+        f"<!-- trie:section symbol=mod:foo fingerprint=fp1 body_fp={bfp} "
+        f"source_ref=deadbeef1234567890abcdef1234567890abcdef -->\n"
+        "body\n"
+        "<!-- trie:end -->"
+    )
+    triefact = TriefactFile.parse(text)
+    sec = triefact.chunks[0]
+    assert isinstance(sec, Section)
+    assert sec.source_ref == "deadbeef1234567890abcdef1234567890abcdef"
+    rendered = triefact.render()
+    assert "source_ref=deadbeef1234567890abcdef1234567890abcdef" in rendered
+
+
+def test_section_without_source_ref_renders_without_it():
+    """Cold-write path: section has no source_ref; renderer omits the field cleanly."""
+    triefact = TriefactFile.empty()
+    triefact.upsert_section(qualified_name="mod:foo", fingerprint="fp1", body="body")
+    out = triefact.render()
+    assert "source_ref=" not in out
+    assert "fingerprint=fp1" in out
+    assert "body_fp=" in out
+
+
+def test_section_with_source_ref_renders_field_in_stable_position():
+    """source_ref= appears after body_fp= so two renders of the same section
+    produce byte-identical sentinels."""
+    triefact = TriefactFile.empty()
+    triefact.upsert_section(
+        qualified_name="mod:foo",
+        fingerprint="fp1",
+        body="body",
+        source_ref="a" * 40,
+    )
+    out = triefact.render()
+    # Verify ordering: fingerprint comes before body_fp comes before source_ref.
+    fp_at = out.index("fingerprint=")
+    bfp_at = out.index("body_fp=")
+    sr_at = out.index("source_ref=")
+    assert fp_at < bfp_at < sr_at
+
+
+def test_section_legacy_format_with_source_ref_appended_parses():
+    """Forward compatibility: if a section happens to carry source_ref= but no
+    body_fp= (pathological hand-edit), parser still extracts both fields."""
+    text = (
+        "<!-- trie:section symbol=mod:foo fingerprint=fp1 "
+        "source_ref=deadbeef1234567890abcdef1234567890abcdef -->\n"
+        "body\n"
+        "<!-- trie:end -->"
+    )
+    triefact = TriefactFile.parse(text)
+    sec = triefact.chunks[0]
+    assert isinstance(sec, Section)
+    # Without body_fp= the section is still legacy-flagged; source_ref came through.
+    assert sec.body_fingerprint is None
+    assert sec.source_ref == "deadbeef1234567890abcdef1234567890abcdef"
+
+
 # --- mutations ---
 
 

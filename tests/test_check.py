@@ -196,16 +196,16 @@ def test_check_project_detects_tampered_body(project: Path):
 
 def test_check_project_detects_legacy_section(project: Path):
     """Sections without a body_fp= attribute (trie ≤ 0.1 output) flag LEGACY_SECTION."""
+    import re
+
     _sync_all(project)
     triefact = project / "triefacts" / "src" / "alpha.md"
     text = triefact.read_text()
-    # Strip the body_fp= attribute to simulate a legacy sentinel.
-    legacy = text.replace("<!-- trie:section symbol=src/alpha:alpha fingerprint=", "TMP", 1)
-    legacy = legacy.replace("TMP", "<!-- trie:section symbol=src/alpha:alpha fingerprint=")
-    # Replace the body_fp= attribute and trailing space with just the close.
-    import re
-
-    legacy = re.sub(r" body_fp=\S+ -->", " -->", legacy, count=1)
+    # Strip the body_fp= field to simulate a legacy sentinel. We tolerate either
+    # ordering of optional fields (body_fp= and source_ref= can appear in any order
+    # in current trie output), so the regex removes a body_fp= run anywhere between
+    # `fingerprint=...` and `-->`.
+    legacy = re.sub(r"\s+body_fp=\S+", "", text, count=1)
     triefact.write_text(legacy)
     config, _ = Config.find_and_load(project)
     result = check_project(project_root=project, config=config)

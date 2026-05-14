@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 from trie.models import GenerationRequest, ModelClient
 from trie.parse.python import Symbol
@@ -25,11 +26,41 @@ Hard rules:
 - Trivial accessors, dunder methods, and one-line forwards: a single sentence is sufficient. No bullets. No expanded prose. Brevity over completeness.
 """
 
+# Diff-aware regeneration rubric. Prepended to the user message when we have both
+# the previous source and the previous prose. The goal is to anchor the LLM toward
+# "preserve unless behaviour actually changed" so cosmetic edits (renames, formatting,
+# comment churn) don't trigger paraphrase drift in the prose.
+DIFF_AWARE_RUBRIC = """\
+A previous version of this symbol's prose already exists, written against a previous version of the source. Your job is to update the prose only if the *behaviour* of the symbol has changed. Cosmetic changes must not change the prose.
+
+Cosmetic changes (do NOT change the prose):
+- Renaming local variables, parameters, or private helpers
+- Whitespace, formatting, line breaks, comment edits
+- Reordering statements when the order doesn't affect behaviour
+- Replacing one local construct with a semantically equivalent one
+- Adding or refining type hints that don't change runtime semantics
+
+Behavioural changes (MUST be reflected in the prose):
+- New branches, new return paths, new raised exceptions
+- Changed return type or shape (not just hint, actual structure)
+- New or removed side effects (I/O, mutation, logging, telemetry)
+- New or removed external calls
+- Changed invariants, preconditions, or error handling
+- Changed parameters in number or meaning (renaming alone is cosmetic; semantic change is not)
+
+When uncertain whether a change is cosmetic or behavioural, prefer preserving the previous prose verbatim. Drift is worse than missing a subtle change — the next sync will catch genuine semantics if they materialise.
+
+If the source change is purely cosmetic, output PREVIOUS_PROSE verbatim. If behavioural, output prose that preserves unchanged information from PREVIOUS_PROSE and reflects the behavioural change. Either way, follow the same formatting rules as a fresh generation.
+"""
+
 
 @dataclass(frozen=True)
 class FileGenerationContext:
     file_path: str  # source-root-relative, used for the prompt
     source_text: str
+
+
+RegenMode = Literal["cold", "diff_aware"]
 
 
 @dataclass(frozen=True)
@@ -40,6 +71,7 @@ class GeneratedSection:
     output_tokens: int
     cache_creation_input_tokens: int
     cache_read_input_tokens: int
+    mode: RegenMode = "cold"
 
 
 def build_cached_context(ctx: FileGenerationContext) -> str:
@@ -59,23 +91,92 @@ def _build_request(symbol: Symbol) -> str:
     )
 
 
+def _build_diff_aware_request(
+    symbol: Symbol,
+    *,
+    previous_source: str,
+    previous_prose: str,
+    current_source: str,
+) -> str:
+    """Build the user message for diff-aware regen.
+
+    The three labelled blocks (PREVIOUS_SOURCE, PREVIOUS_PROSE, CURRENT_SOURCE) give the
+    LLM everything it needs to decide whether the source change is cosmetic or behavioural.
+    The rubric (DIFF_AWARE_RUBRIC) is concatenated above the blocks. The closing
+    instruction restates the format constraint so the model doesn't slip out of the
+    expected output shape.
+
+    Callers pass `previous_source` and `current_source` already containing both the
+    signature and the body (so the LLM can see signature-level changes like new
+    parameters); this function does not synthesise them from the Symbol object.
+    """
+    return (
+        f"{DIFF_AWARE_RUBRIC}\n"
+        f"Symbol: `{symbol.qualified_name}` "
+        f"(a {symbol.kind} named `{symbol.name}` defined at lines "
+        f"{symbol.start_line}-{symbol.end_line} in the current file).\n\n"
+        f"<previous_source>\n{previous_source}\n</previous_source>\n\n"
+        f"<previous_prose>\n{previous_prose}\n</previous_prose>\n\n"
+        f"<current_source>\n{current_source}\n</current_source>\n\n"
+        f"Output the updated Markdown body only — no front-matter, no sentinels, "
+        f"no surrounding commentary. If the change is cosmetic, output the previous "
+        f"prose verbatim."
+    )
+
+
+def _symbol_source(symbol: Symbol) -> str:
+    """Reconstruct `<signature>:\\n<body>` for a Symbol.
+
+    The Symbol's `body_text` excludes the signature. For diff-aware prompts we want
+    both so the LLM can see signature-level changes (new parameter, changed default,
+    new return type). Joining them with the same colon that Python source uses keeps
+    the block readable as Python.
+    """
+    return f"{symbol.signature}:\n{symbol.body_text}"
+
+
 def generate_section(
     *,
     symbol: Symbol,
     file_ctx: FileGenerationContext,
     client: ModelClient,
     max_tokens: int = 1024,
+    previous_source: str | None = None,
+    previous_prose: str | None = None,
 ) -> GeneratedSection:
     """Generate the Markdown body for a single symbol.
 
     The cached_context portion of the request (system prompt + full source file) is intended
     to be reused across all symbols in the same file via prompt caching, so the per-symbol
     cost is roughly `request_tokens + output_tokens` after the first symbol.
+
+    When both `previous_source` and `previous_prose` are provided, switches to
+    diff-aware mode: the request body includes the previous source body, the previous
+    prose, and the current source body, plus a rubric instructing the model to
+    preserve prose verbatim on cosmetic changes and only update on behavioural ones.
+    Cosmetic-vs-behavioural is judged by the model; the prompt anchors strongly toward
+    preservation under uncertainty.
+
+    When either previous-* argument is None, falls back to the original cold-write
+    prompt — same behaviour as pre-Level-1 trie.
     """
+    diff_aware = previous_source is not None and previous_prose is not None
+    if diff_aware:
+        request_text = _build_diff_aware_request(
+            symbol,
+            previous_source=previous_source,
+            previous_prose=previous_prose,
+            current_source=_symbol_source(symbol),
+        )
+        mode: RegenMode = "diff_aware"
+    else:
+        request_text = _build_request(symbol)
+        mode = "cold"
+
     req = GenerationRequest(
         system_prompt=SYSTEM_PROMPT,
         cached_context=build_cached_context(file_ctx),
-        request=_build_request(symbol),
+        request=request_text,
         max_tokens=max_tokens,
     )
     resp = client.generate(req)
@@ -86,4 +187,5 @@ def generate_section(
         output_tokens=resp.output_tokens,
         cache_creation_input_tokens=resp.cache_creation_input_tokens,
         cache_read_input_tokens=resp.cache_read_input_tokens,
+        mode=mode,
     )

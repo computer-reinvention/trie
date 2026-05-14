@@ -7,6 +7,7 @@ from pathlib import Path
 
 from trie import __version__, telemetry
 from trie.config import Config
+from trie.git_helpers import compute_blob_hash, retrieve_blob
 from trie.graph.store import Store
 from trie.models import ModelClient
 from trie.parse.python import (
@@ -16,7 +17,7 @@ from trie.parse.python import (
     strip_string_literal,
 )
 from trie.sync.generator import FileGenerationContext, generate_section
-from trie.sync.writer import TriefactFile, extract_one_liner
+from trie.sync.writer import Section, TriefactFile, extract_one_liner
 
 
 @dataclass(frozen=True)
@@ -76,6 +77,54 @@ def _build_defines(public_symbols: list[Symbol]) -> list[dict[str, object]]:
     ]
 
 
+def _resolve_previous_symbols(
+    *,
+    source_path: Path,
+    src_root: Path,
+    project_root: Path,
+    existing_section_refs: dict[str, str],
+) -> dict[str, Symbol]:
+    """Look up previous-version Symbols for each qname whose section has a source_ref.
+
+    For each (qname → blob_hash) entry, retrieve the blob from git and re-parse it.
+    Returns a dict mapping qname → the matching Symbol from the previous file content,
+    skipping qnames that can't be resolved (blob unreachable, file restructured so the
+    qname doesn't appear, parse error, etc).
+
+    Groups lookups by unique blob hash so a file with N symbols all stamped against the
+    same prior blob results in one git call and one parse, not N. In the common case
+    (whole file re-synced after a single edit) the per-symbol overhead collapses to a
+    single dict lookup.
+    """
+    if not existing_section_refs:
+        return {}
+    # Group qnames by blob_hash to dedupe git calls and parse passes.
+    qnames_by_blob: dict[str, list[str]] = {}
+    for qname, blob in existing_section_refs.items():
+        qnames_by_blob.setdefault(blob, []).append(qname)
+
+    out: dict[str, Symbol] = {}
+    for blob_hash, qnames in qnames_by_blob.items():
+        previous_text = retrieve_blob(project_root, blob_hash)
+        if previous_text is None:
+            continue
+        try:
+            previous_symbols = extract_symbols(
+                source_path, source_root=src_root, source_text=previous_text
+            )
+        except Exception:
+            # Tree-sitter can choke on truly malformed previous content (a file that
+            # used to be something other than Python, say). Degrade to cold for that
+            # blob; the other blobs in this file still have a chance.
+            continue
+        by_qname = {s.qualified_name: s for s in previous_symbols}
+        for q in qnames:
+            sym = by_qname.get(q)
+            if sym is not None:
+                out[q] = sym
+    return out
+
+
 def sync_single_file(
     source_path: Path,
     *,
@@ -128,14 +177,57 @@ def sync_single_file(
 
         file_ctx = FileGenerationContext(file_path=rel_path, source_text=source_text)
 
+        # Diff-aware regen wiring. The blob hash for the *current* file is stamped
+        # into every section we (re)generate so the next sync can retrieve "what
+        # this prose was written against." Existing sections whose `source_ref` is
+        # populated drive lookups for previous-source bodies via git.
+        current_blob = compute_blob_hash(source_path)
+        existing_sections: dict[str, Section] = {
+            qn: triefact.get_section(qn)  # type: ignore[misc]
+            for qn in triefact.section_qnames()
+            if triefact.get_section(qn) is not None
+        }
+        existing_refs = {
+            qn: sec.source_ref
+            for qn, sec in existing_sections.items()
+            if sec.source_ref is not None
+        }
+        previous_symbols = _resolve_previous_symbols(
+            source_path=source_path,
+            src_root=src_root,
+            project_root=project_root,
+            existing_section_refs=existing_refs,
+        )
+
         totals = {"in": 0, "out": 0, "cache_create": 0, "cache_read": 0}
+        mode_counts: dict[str, int] = {"cold": 0, "diff_aware": 0}
         triefact_rel_path = str(canonical_triefact_path.relative_to(project_root))
         for sym in public_symbols:
-            gen = generate_section(symbol=sym, file_ctx=file_ctx, client=client)
+            qn = sym.qualified_name
+            prev_sym = previous_symbols.get(qn)
+            prev_section = existing_sections.get(qn)
+            # Diff-aware path requires: previous symbol *source* (signature + body, from
+            # the git blob), and previous *prose* (from the existing section). Either
+            # missing → cold-write. We reconstruct signature+body the same way generator
+            # does for current_source so the two blocks are directly comparable.
+            prev_source = (
+                f"{prev_sym.signature}:\n{prev_sym.body_text}" if prev_sym is not None else None
+            )
+            prev_prose = prev_section.body if prev_section is not None else None
+
+            gen = generate_section(
+                symbol=sym,
+                file_ctx=file_ctx,
+                client=client,
+                previous_source=prev_source,
+                previous_prose=prev_prose,
+            )
+            mode_counts[gen.mode] += 1
             triefact.upsert_section(
-                qualified_name=sym.qualified_name,
+                qualified_name=qn,
                 fingerprint=sym.body_normalized_hash,
                 body=gen.body,
+                source_ref=current_blob,
             )
             totals["in"] += gen.input_tokens
             totals["out"] += gen.output_tokens
@@ -145,11 +237,11 @@ def sync_single_file(
             # The store may be omitted (e.g. tests that don't construct a graph), in which
             # case the agent surface degrades to empty one_liners — still functional.
             if store is not None:
-                section = triefact.get_section(sym.qualified_name)
+                section = triefact.get_section(qn)
                 if section is not None:
                     store.upsert_section_record(
                         triefact_path=triefact_rel_path,
-                        symbol_qname=sym.qualified_name,
+                        symbol_qname=qn,
                         section_fingerprint=sym.body_normalized_hash,
                         one_liner=extract_one_liner(section.body),
                     )
@@ -188,6 +280,9 @@ def sync_single_file(
         tele["output_tokens"] = totals["out"]
         tele["cache_creation_input_tokens"] = totals["cache_create"]
         tele["cache_read_input_tokens"] = totals["cache_read"]
+        tele["regen_mode_cold"] = mode_counts["cold"]
+        tele["regen_mode_diff_aware"] = mode_counts["diff_aware"]
+        tele["has_blob_ref"] = current_blob is not None
 
         return FileSyncResult(
             source_path=source_path,

@@ -213,15 +213,26 @@ def strip_string_literal(raw: str) -> str:
     return s.strip()
 
 
-def extract_symbols(file_path: Path, source_root: Path | None = None) -> list[Symbol]:
+def extract_symbols(
+    file_path: Path,
+    source_root: Path | None = None,
+    *,
+    source_text: str | None = None,
+) -> list[Symbol]:
     """Parse a Python file and return its top-level functions, classes, and class methods.
 
     `source_root` controls the qualified_name prefix and the stored file_path. If None,
     defaults to the file's parent directory.
+
+    `source_text`, when provided, overrides reading from disk. Used by diff-aware
+    regeneration to parse a previous version of the file (retrieved from a git blob)
+    while still attributing symbols to the current file path. The qualified names
+    therefore match what the current symbol table would produce, which is exactly
+    what we need to look up "previous body of this same symbol."
     """
     file_path = file_path.resolve()
     source_root = (source_root or file_path.parent).resolve()
-    source = file_path.read_bytes()
+    source = source_text.encode("utf-8") if source_text is not None else file_path.read_bytes()
     tree = _make_parser().parse(source)
     module_key = _module_key(file_path, source_root)
     rel_file = str(file_path.relative_to(source_root))

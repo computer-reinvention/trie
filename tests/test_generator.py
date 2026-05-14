@@ -8,8 +8,10 @@ import pytest
 from trie.models import GenerationRequest, GenerationResponse, make_client
 from trie.parse.python import extract_symbols
 from trie.sync.generator import (
+    DIFF_AWARE_RUBRIC,
     SYSTEM_PROMPT,
     FileGenerationContext,
+    _build_diff_aware_request,
     _build_request,
     build_cached_context,
     generate_section,
@@ -81,6 +83,96 @@ def test_generate_section_strips_surrounding_whitespace(tmp_path: Path):
 
     sec = generate_section(symbol=sym, file_ctx=ctx, client=client)
     assert sec.body == "## `foo()`\n\nstuff"
+
+
+# --- diff-aware mode ---
+
+
+def test_generate_section_defaults_to_cold_mode(tmp_path: Path):
+    """When neither previous_source nor previous_prose is supplied, mode == 'cold'."""
+    f = tmp_path / "foo.py"
+    f.write_text("def foo():\n    return 1\n")
+    sym = extract_symbols(f)[0]
+    ctx = FileGenerationContext(file_path="foo.py", source_text=f.read_text())
+    client = FakeClient()
+
+    sec = generate_section(symbol=sym, file_ctx=ctx, client=client)
+
+    assert sec.mode == "cold"
+    # Cold-write request does NOT contain the rubric or labelled blocks.
+    assert client.last_request is not None
+    assert DIFF_AWARE_RUBRIC not in client.last_request.request
+    assert "<previous_source>" not in client.last_request.request
+
+
+def test_generate_section_takes_diff_aware_when_both_previous_provided(tmp_path: Path):
+    """previous_source + previous_prose both non-None → diff-aware request shape."""
+    f = tmp_path / "foo.py"
+    f.write_text("def foo():\n    return 2\n")
+    sym = extract_symbols(f)[0]
+    ctx = FileGenerationContext(file_path="foo.py", source_text=f.read_text())
+    client = FakeClient()
+
+    sec = generate_section(
+        symbol=sym,
+        file_ctx=ctx,
+        client=client,
+        previous_source="def foo():\n    return 1\n",
+        previous_prose="## `foo()`\n\nReturn 1.",
+    )
+
+    assert sec.mode == "diff_aware"
+    assert client.last_request is not None
+    req = client.last_request.request
+    # Both labelled blocks appear, rubric is included, both previous strings are present.
+    assert "<previous_source>" in req
+    assert "<previous_prose>" in req
+    assert "<current_source>" in req
+    assert "return 1" in req
+    assert "return 2" in req
+    assert "Return 1." in req
+
+
+def test_generate_section_partial_previous_falls_back_to_cold(tmp_path: Path):
+    """Only one of previous_source / previous_prose → cold mode, both blocks suppressed."""
+    f = tmp_path / "foo.py"
+    f.write_text("def foo():\n    return 2\n")
+    sym = extract_symbols(f)[0]
+    ctx = FileGenerationContext(file_path="foo.py", source_text=f.read_text())
+
+    client1 = FakeClient()
+    sec1 = generate_section(
+        symbol=sym, file_ctx=ctx, client=client1, previous_source="def foo():\n    return 1\n"
+    )
+    assert sec1.mode == "cold"
+
+    client2 = FakeClient()
+    sec2 = generate_section(
+        symbol=sym, file_ctx=ctx, client=client2, previous_prose="## `foo()`\n\nReturn 1."
+    )
+    assert sec2.mode == "cold"
+
+
+def test_diff_aware_request_carries_cosmetic_preserve_instruction(tmp_path: Path):
+    """The rubric explicitly tells the model to preserve prose on cosmetic changes.
+
+    This is the load-bearing piece: without it, the LLM produces a paraphrase
+    even when the source change is trivial. We verify the relevant language is
+    in the rubric so a future prompt edit doesn't silently weaken the contract.
+    """
+    f = tmp_path / "foo.py"
+    f.write_text("def foo():\n    return 1\n")
+    sym = extract_symbols(f)[0]
+    req = _build_diff_aware_request(
+        sym,
+        previous_source="def foo():\n    return 1\n",
+        previous_prose="## `foo()`\n\nReturn 1.",
+        current_source="def foo():\n    return 1\n",
+    )
+    assert "Cosmetic changes" in req
+    assert "Behavioural changes" in req
+    assert "verbatim" in req.lower()
+    assert "prefer preserving" in req.lower()
 
 
 def test_make_client_rejects_unknown_provider():
