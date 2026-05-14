@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
 
-from trie import __version__
+from trie import __version__, telemetry
 from trie.config import Config
 from trie.graph.store import Store
 from trie.models import ModelClient
@@ -112,80 +112,90 @@ def sync_single_file(
     file_fp = _file_fingerprint(source_text)
     rel_path = str(source_path.relative_to(src_root))
 
-    symbols = extract_symbols(source_path, source_root=src_root)
-    public_symbols = [s for s in symbols if s.is_public]
+    with telemetry.timed("sync_file", path=rel_path, model=client.model_id) as tele:
+        symbols = extract_symbols(source_path, source_root=src_root)
+        public_symbols = [s for s in symbols if s.is_public]
 
-    canonical_triefact_path = _triefact_path_for(source_path, project_root, config)
-    write_path = dest_triefact_path if dest_triefact_path is not None else canonical_triefact_path
-    triefact = (
-        TriefactFile.parse(canonical_triefact_path.read_text())
-        if canonical_triefact_path.exists()
-        else TriefactFile.empty()
-    )
-
-    file_ctx = FileGenerationContext(file_path=rel_path, source_text=source_text)
-
-    totals = {"in": 0, "out": 0, "cache_create": 0, "cache_read": 0}
-    triefact_rel_path = str(canonical_triefact_path.relative_to(project_root))
-    for sym in public_symbols:
-        gen = generate_section(symbol=sym, file_ctx=file_ctx, client=client)
-        triefact.upsert_section(
-            qualified_name=sym.qualified_name,
-            fingerprint=sym.body_normalized_hash,
-            body=gen.body,
+        canonical_triefact_path = _triefact_path_for(source_path, project_root, config)
+        write_path = (
+            dest_triefact_path if dest_triefact_path is not None else canonical_triefact_path
         )
-        totals["in"] += gen.input_tokens
-        totals["out"] += gen.output_tokens
-        totals["cache_create"] += gen.cache_creation_input_tokens
-        totals["cache_read"] += gen.cache_read_input_tokens
-        # Record the section metadata for cheap MCP lookups (one_liner + fingerprint).
-        # The store may be omitted (e.g. tests that don't construct a graph), in which
-        # case the agent surface degrades to empty one_liners — still functional.
+        triefact = (
+            TriefactFile.parse(canonical_triefact_path.read_text())
+            if canonical_triefact_path.exists()
+            else TriefactFile.empty()
+        )
+
+        file_ctx = FileGenerationContext(file_path=rel_path, source_text=source_text)
+
+        totals = {"in": 0, "out": 0, "cache_create": 0, "cache_read": 0}
+        triefact_rel_path = str(canonical_triefact_path.relative_to(project_root))
+        for sym in public_symbols:
+            gen = generate_section(symbol=sym, file_ctx=file_ctx, client=client)
+            triefact.upsert_section(
+                qualified_name=sym.qualified_name,
+                fingerprint=sym.body_normalized_hash,
+                body=gen.body,
+            )
+            totals["in"] += gen.input_tokens
+            totals["out"] += gen.output_tokens
+            totals["cache_create"] += gen.cache_creation_input_tokens
+            totals["cache_read"] += gen.cache_read_input_tokens
+            # Record the section metadata for cheap MCP lookups (one_liner + fingerprint).
+            # The store may be omitted (e.g. tests that don't construct a graph), in which
+            # case the agent surface degrades to empty one_liners — still functional.
+            if store is not None:
+                section = triefact.get_section(sym.qualified_name)
+                if section is not None:
+                    store.upsert_section_record(
+                        triefact_path=triefact_rel_path,
+                        symbol_qname=sym.qualified_name,
+                        section_fingerprint=sym.body_normalized_hash,
+                        one_liner=extract_one_liner(section.body),
+                    )
+
+        current_qnames = {s.qualified_name for s in public_symbols}
+        sections_removed = 0
+        for stale_qname in list(triefact.section_qnames()):
+            if stale_qname not in current_qnames:
+                triefact.remove_section(stale_qname)
+                sections_removed += 1
+
+        front_matter: dict[str, object] = {
+            "trie_version": __version__,
+            "source": rel_path,
+            "file_fingerprint": file_fp,
+            "last_synced_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }
+        description = _file_description(source_path)
+        if description is not None:
+            front_matter["description"] = description
+        if public_symbols:
+            front_matter["defines"] = _build_defines(public_symbols)
         if store is not None:
-            section = triefact.get_section(sym.qualified_name)
-            if section is not None:
-                store.upsert_section_record(
-                    triefact_path=triefact_rel_path,
-                    symbol_qname=sym.qualified_name,
-                    section_fingerprint=sym.body_normalized_hash,
-                    one_liner=extract_one_liner(section.body),
-                )
+            inbound, outbound = store.file_ref_counts(rel_path)
+            front_matter["incoming_refs"] = inbound
+            front_matter["outgoing_refs"] = outbound
 
-    current_qnames = {s.qualified_name for s in public_symbols}
-    sections_removed = 0
-    for stale_qname in list(triefact.section_qnames()):
-        if stale_qname not in current_qnames:
-            triefact.remove_section(stale_qname)
-            sections_removed += 1
+        triefact.front_matter = front_matter
 
-    front_matter: dict[str, object] = {
-        "trie_version": __version__,
-        "source": rel_path,
-        "file_fingerprint": file_fp,
-        "last_synced_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    }
-    description = _file_description(source_path)
-    if description is not None:
-        front_matter["description"] = description
-    if public_symbols:
-        front_matter["defines"] = _build_defines(public_symbols)
-    if store is not None:
-        inbound, outbound = store.file_ref_counts(rel_path)
-        front_matter["incoming_refs"] = inbound
-        front_matter["outgoing_refs"] = outbound
+        write_path.parent.mkdir(parents=True, exist_ok=True)
+        write_path.write_text(triefact.render())
 
-    triefact.front_matter = front_matter
+        tele["symbols_generated"] = len(public_symbols)
+        tele["sections_removed"] = sections_removed
+        tele["input_tokens"] = totals["in"]
+        tele["output_tokens"] = totals["out"]
+        tele["cache_creation_input_tokens"] = totals["cache_create"]
+        tele["cache_read_input_tokens"] = totals["cache_read"]
 
-    write_path.parent.mkdir(parents=True, exist_ok=True)
-    write_path.write_text(triefact.render())
-
-    return FileSyncResult(
-        source_path=source_path,
-        triefact_path=write_path,
-        symbols_generated=len(public_symbols),
-        sections_removed=sections_removed,
-        input_tokens=totals["in"],
-        output_tokens=totals["out"],
-        cache_creation_input_tokens=totals["cache_create"],
-        cache_read_input_tokens=totals["cache_read"],
-    )
+        return FileSyncResult(
+            source_path=source_path,
+            triefact_path=write_path,
+            symbols_generated=len(public_symbols),
+            sections_removed=sections_removed,
+            input_tokens=totals["in"],
+            output_tokens=totals["out"],
+            cache_creation_input_tokens=totals["cache_create"],
+            cache_read_input_tokens=totals["cache_read"],
+        )

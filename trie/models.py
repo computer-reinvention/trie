@@ -5,6 +5,8 @@ from typing import Protocol
 
 from anthropic import Anthropic
 
+from trie import telemetry
+
 
 @dataclass(frozen=True)
 class GenerationRequest:
@@ -65,16 +67,23 @@ class AnthropicClient:
         }
 
     def generate(self, req: GenerationRequest) -> GenerationResponse:
-        resp = self._client.messages.create(max_tokens=req.max_tokens, **self._payload(req))
-        text = "".join(block.text for block in resp.content if block.type == "text")
-        usage = resp.usage
-        return GenerationResponse(
-            text=text,
-            input_tokens=usage.input_tokens,
-            output_tokens=usage.output_tokens,
-            cache_creation_input_tokens=getattr(usage, "cache_creation_input_tokens", 0) or 0,
-            cache_read_input_tokens=getattr(usage, "cache_read_input_tokens", 0) or 0,
-        )
+        with telemetry.timed("model_call", model=self.model_id, kind="generate") as tele:
+            resp = self._client.messages.create(max_tokens=req.max_tokens, **self._payload(req))
+            text = "".join(block.text for block in resp.content if block.type == "text")
+            usage = resp.usage
+            tele["input_tokens"] = usage.input_tokens
+            tele["output_tokens"] = usage.output_tokens
+            tele["cache_creation_input_tokens"] = (
+                getattr(usage, "cache_creation_input_tokens", 0) or 0
+            )
+            tele["cache_read_input_tokens"] = getattr(usage, "cache_read_input_tokens", 0) or 0
+            return GenerationResponse(
+                text=text,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                cache_creation_input_tokens=getattr(usage, "cache_creation_input_tokens", 0) or 0,
+                cache_read_input_tokens=getattr(usage, "cache_read_input_tokens", 0) or 0,
+            )
 
     def count_tokens(self, req: GenerationRequest) -> int:
         """Return the number of input tokens for `req` per the Anthropic count_tokens API.
@@ -83,8 +92,10 @@ class AnthropicClient:
         the generator would actually send (system + cached context + per-symbol request),
         so the result reflects real prompt size rather than a char-count heuristic.
         """
-        resp = self._client.messages.count_tokens(**self._payload(req))
-        return resp.input_tokens
+        with telemetry.timed("model_call", model=self.model_id, kind="count_tokens") as tele:
+            resp = self._client.messages.count_tokens(**self._payload(req))
+            tele["input_tokens"] = resp.input_tokens
+            return resp.input_tokens
 
 
 def make_client(model_id: str) -> ModelClient:

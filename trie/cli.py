@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -7,7 +8,7 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
-from trie import __version__
+from trie import __version__, telemetry
 from trie.check import StaleReason, check_project
 from trie.config import Config, ConfigNotFoundError
 from trie.cost import get_pricing
@@ -138,6 +139,26 @@ def _root(
     if ctx.invoked_subcommand is None:
         typer.echo(ctx.get_help())
         raise typer.Exit()
+
+    # Telemetry: record the command invocation. Config-driven enable lives
+    # behind a successful Config.find_and_load below; the env var TRIE_DEBUG
+    # works without a config thanks to the lazy resolver in trie.telemetry.
+    _telemetry_bootstrap(ctx.invoked_subcommand, sys.argv[1:])
+
+
+def _telemetry_bootstrap(subcommand: str | None, argv_tail: list[str]) -> None:
+    """Apply [debug] config (if a trie.toml exists) and emit the `cli` event.
+
+    Failure to find a config is fine — `trie init` runs before there is one,
+    and the env var is enough to enable telemetry in that case. We swallow
+    every error quietly; telemetry is best-effort and never blocks a command.
+    """
+    try:
+        cfg, root = Config.find_and_load(Path.cwd())
+        telemetry.configure(cfg.debug, root)
+    except (ConfigNotFoundError, Exception):
+        pass
+    telemetry.emit("cli", subcommand=subcommand or "(none)", argv=argv_tail)
 
 
 @app.command("init")

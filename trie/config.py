@@ -42,6 +42,29 @@ class Cascade:
 
 
 @dataclass
+class Debug:
+    """Telemetry knobs. Off by default; flipped on for validation runs and dev work.
+
+    The env var `TRIE_DEBUG` overrides `enabled`:
+      - `TRIE_DEBUG=1`/`true`/`on`      → force-enabled
+      - `TRIE_DEBUG=0`/`false`/`off`    → force-disabled
+      - `TRIE_DEBUG=/path/to/log.jsonl` → force-enabled and override `log_path`
+
+    Unset env var means "fall back to the config value." This lets a CI eval
+    harness flip telemetry on for a single command (`TRIE_DEBUG=run-7.jsonl trie sync`)
+    without editing trie.toml, while still letting a project commit
+    `enabled = true` in trie.toml for persistent local dev.
+    """
+
+    enabled: bool = False
+    log_path: str = "debug.jsonl"  # relative to project root, or absolute
+    log_to_stderr: bool = False  # mirror events to stderr; useful in dev, noisy in eval
+    capture_args: bool = True  # include MCP tool args in mcp_call events
+    capture_responses: bool = False  # include full response bodies (large; off by default)
+    redact_keys: list[str] = field(default_factory=list)
+
+
+@dataclass
 class Mcp:
     """Server-side knobs for the MCP agent surface (`locate` / `explain` / `walk`).
 
@@ -75,6 +98,7 @@ class Config:
     models: Models = field(default_factory=Models)
     cascade: Cascade = field(default_factory=Cascade)
     mcp: Mcp = field(default_factory=Mcp)
+    debug: Debug = field(default_factory=Debug)
 
     @classmethod
     def from_dict(cls, data: dict) -> Config:
@@ -85,6 +109,7 @@ class Config:
             models=Models(**data.get("models", {})),
             cascade=Cascade(**data.get("cascade", {})),
             mcp=Mcp(**data.get("mcp", {})),
+            debug=Debug(**data.get("debug", {})),
         )
 
     @classmethod
@@ -174,4 +199,15 @@ walk_hub_threshold = 20                        # mirrors cascade.hub_symbol_thre
 walk_max_nodes = 200
 walk_prose_at_depth = 0                        # 0 = no prose on walk
 walk_prose_budget = 10
+
+[debug]
+# Append-only JSONL telemetry for trie's own operations. Off by default; flip on
+# for validation runs and dev work. Overridable per-invocation via TRIE_DEBUG=1
+# or TRIE_DEBUG=/path/to/log.jsonl. See trie/telemetry.py for the event schema.
+enabled = false
+log_path = "debug.jsonl"                       # relative to project root, or absolute
+log_to_stderr = false                          # mirror events to stderr (dev only)
+capture_args = true                            # include MCP tool args in events
+capture_responses = false                      # include full response bodies (large)
+redact_keys = []                               # field paths to elide, e.g. ["args.predicate"]
 """
