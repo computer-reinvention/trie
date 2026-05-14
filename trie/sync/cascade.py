@@ -14,11 +14,18 @@ class CascadeResult:
     `changed_files` is the seed set (always included). `cascaded_from_change` is the subset
     of `affected_files` that came from following inbound edges, not direct changes —
     handy for telling the user "you edited 2 files, the cascade pulled in 5 more."
+
+    `hop_by_file` maps each file in `affected_files` to its minimum hop distance from any
+    seed file. Seed files themselves have hop 0. A file reached by a depth-1 reference
+    has hop 1, and so on. Consumers can sort cascade-pulled files by hop distance to
+    regenerate closest-to-the-change first — those are the sections whose prose is most
+    likely to need real updates rather than just paraphrase drift.
     """
 
     affected_files: list[str]
     changed_files: set[str]
     cascaded_from_change: set[str]
+    hop_by_file: dict[str, int]
 
 
 def compute_cascade(
@@ -52,10 +59,12 @@ def compute_cascade(
                 affected_files=[],
                 changed_files=set(),
                 cascaded_from_change=set(),
+                hop_by_file={},
             )
 
         inbound_counts = store.inbound_count_per_symbol()
         affected_files: set[str] = set(seed_files)
+        hop_by_file: dict[str, int] = dict.fromkeys(seed_files, 0)
 
         seed_qnames: set[str] = set()
         for f in seed_files:
@@ -65,7 +74,8 @@ def compute_cascade(
         frontier: list[str] = list(seed_qnames)
         hub_skips = 0
 
-        for _hop in range(max(0, depth)):
+        for hop_idx in range(max(0, depth)):
+            current_hop = hop_idx + 1  # files reached this iteration are 1 hop from frontier
             next_frontier: list[str] = []
             for qname in frontier:
                 if inbound_counts.get(qname, 0) > hub_threshold:
@@ -78,6 +88,14 @@ def compute_cascade(
                         continue
                     visited.add(src_qname)
                     affected_files.add(src_file)
+                    # Min-hop semantics: a file reachable via multiple paths keeps the
+                    # shallowest distance. BFS visits shallowest first, so dict.setdefault
+                    # would also work; explicit min is safer if the traversal order ever
+                    # changes (e.g. priority-queued by inbound weight in a future ranking).
+                    existing = hop_by_file.get(src_file)
+                    hop_by_file[src_file] = (
+                        current_hop if existing is None else min(existing, current_hop)
+                    )
                     next_frontier.append(src_qname)
             if not next_frontier:
                 break
@@ -87,8 +105,10 @@ def compute_cascade(
         tele["affected_files"] = len(affected_files)
         tele["cascaded_from_change"] = len(cascaded)
         tele["hub_skips"] = hub_skips
+        tele["max_hop"] = max(hop_by_file.values(), default=0)
         return CascadeResult(
             affected_files=sorted(affected_files),
             changed_files=seed_files,
             cascaded_from_change=cascaded,
+            hop_by_file=hop_by_file,
         )

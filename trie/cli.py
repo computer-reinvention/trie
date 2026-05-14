@@ -432,15 +432,23 @@ def _print_incremental_plan(
 
     # Display in execution order: stale files first (sync touches them first so
     # diff-aware regen can feed their fresh prose into cascade-pulled prompts),
-    # then cascade-pulled files. Within each group, preserve `plan.items` order
-    # (bootstrap rank: LOC * public_symbols descending) so the most expensive
-    # work is visible at the top of each group.
+    # then cascade-pulled files ranked by hop distance from the seed change.
+    # Within stale, preserve `plan.items` order (bootstrap rank). Within each
+    # cascade hop level, also preserve `plan.items` order so the most expensive
+    # work is visible at the top of each tier.
     direct_set = set(worklist.directly_stale)
     stale_items = [it for it in plan.items if it.file_path in direct_set]
-    cascade_items = [it for it in plan.items if it.file_path not in direct_set]
+    cascade_items = sorted(
+        (it for it in plan.items if it.file_path not in direct_set),
+        key=lambda it: worklist.hop_by_file.get(it.file_path, 0),
+    )
     ordered = stale_items + cascade_items
     for it in ordered[:10]:
-        tag = "stale" if it.file_path in direct_set else "cascade"
+        if it.file_path in direct_set:
+            tag = "stale"
+        else:
+            hop = worklist.hop_by_file.get(it.file_path, 0)
+            tag = f"cascade · hop {hop}" if hop else "cascade"
         reporter.info(
             f"  • [bold]{it.file_path}[/bold] [dim]({tag})[/dim] "
             f"({it.public_symbols} symbols, ~${it.estimated.cost_usd:.4f})"
