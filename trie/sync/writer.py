@@ -19,15 +19,20 @@ import yaml
 # trie ≤ 0.1 don't carry it; check.py treats those as MISSING_BODY_FINGERPRINT and
 # nudges the user to re-sync. Once a project re-syncs, every section carries it.
 #
-# Known limitation: the parser does not skip code fences, so a literal
-# `<!-- trie:section ... -->` inside a fenced block will be interpreted as a real sentinel.
-# Avoid documenting trie's own sentinel format inside trie-managed Markdown for now.
+# Structural rule: both sentinels must occupy their own line. The renderer always
+# emits them that way; the parser enforces the same. Anything that looks like a
+# sentinel but is inside backticks, a fenced block, or otherwise mid-line, is treated
+# as prose and ignored. This makes it safe to document trie's own sentinel syntax
+# inside trie-managed Markdown without confusing the parser. The match anchors are
+# `(?m)^` for line start and `$` for line end (so trailing whitespace on the sentinel
+# line is allowed, but trailing text is not).
 
 SECTION_OPEN_RE = re.compile(
-    r"<!--\s*trie:section\s+symbol=(?P<symbol>\S+)\s+fingerprint=(?P<fp>\S+)"
-    r"(?:\s+body_fp=(?P<body_fp>\S+))?\s*-->"
+    r"(?m)^<!--\s*trie:section\s+symbol=(?P<symbol>\S+)\s+fingerprint=(?P<fp>\S+)"
+    r"(?:\s+body_fp=(?P<body_fp>\S+))?\s*-->[ \t]*$"
 )
-SECTION_CLOSE = "<!-- trie:end -->"
+SECTION_CLOSE_RE = re.compile(r"(?m)^<!--\s*trie:end\s*-->[ \t]*$")
+SECTION_CLOSE = "<!-- trie:end -->"  # canonical form used by render()
 FRONT_MATTER_RE = re.compile(r"\A---\s*\n(?P<yaml>.*?)\n---\s*\n", re.DOTALL)
 
 
@@ -117,15 +122,21 @@ class TriefactFile:
         chunks: list[Chunk] = []
         cursor = 0
         for open_match in SECTION_OPEN_RE.finditer(rest):
+            # Skip open sentinels that fall inside an already-claimed range — the regex
+            # might match an open sentinel that lives inside a previous section's body
+            # if that body contains a stray line-anchored sentinel-like string. Cursor
+            # advances past every consumed section so this stays a forward-only scan.
+            if open_match.start() < cursor:
+                continue
             if open_match.start() > cursor:
                 chunks.append(Prose(rest[cursor : open_match.start()]))
-            close_idx = rest.find(SECTION_CLOSE, open_match.end())
-            if close_idx == -1:
+            close_match = SECTION_CLOSE_RE.search(rest, open_match.end())
+            if close_match is None:
                 raise ValueError(
                     f"Unterminated trie section opened at offset {open_match.start()} "
                     f"(symbol={open_match.group('symbol')})"
                 )
-            body = rest[open_match.end() : close_idx]
+            body = rest[open_match.end() : close_match.start()]
             if body.startswith("\n"):
                 body = body[1:]
             if body.endswith("\n"):
@@ -138,7 +149,7 @@ class TriefactFile:
                     body_fingerprint=open_match.group("body_fp"),
                 )
             )
-            cursor = close_idx + len(SECTION_CLOSE)
+            cursor = close_match.end()
         if cursor < len(rest):
             chunks.append(Prose(rest[cursor:]))
         return cls(front_matter=fm, chunks=chunks)
