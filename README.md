@@ -28,7 +28,7 @@ Coding agents today read **code**. Code is the executable form of intent, not th
 
 The human side has the mirror problem. Reviewing an agent's pass means reading a diff — syntax-level change with no semantic context. To know what a change _means_ you must already hold the system in your head. Which is exactly the population that needs agents the least. That's the adoption gap among hardcore devs.
 
-trie's bet: **the codebase should describe itself in prose, and that description should be the surface both humans and agents work against.**
+trie's claim: **the codebase should describe itself in prose, and that description should be the surface both humans and agents work against.**
 
 ```
 src/auth/middleware.py   ────  source, executable form
