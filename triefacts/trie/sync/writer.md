@@ -1,106 +1,100 @@
 ---
 trie_version: 0.1.0
 source: trie/sync/writer.py
-file_fingerprint: b8cd8fce625c54ece164fd84fda87eb570039e64550a7fa886889fc3d3f227dd
-last_synced_at: '2026-05-14T17:22:44Z'
+file_fingerprint: ef0d50aaeba69ca5dd066d04d02d2fbdb81aa8ee81598d628b3c7917576b5bc1
+last_synced_at: '2026-05-14T17:52:20Z'
 defines:
 - kind: function
   qualified_name: trie/sync/writer:hash_body
-  lines: 34-41
+  lines: 39-46
 - kind: function
   qualified_name: trie/sync/writer:extract_one_liner
-  lines: 48-79
+  lines: 53-84
 - kind: class
   qualified_name: trie/sync/writer:Section
-  lines: 83-87
+  lines: 88-92
 - kind: class
   qualified_name: trie/sync/writer:Prose
-  lines: 91-92
+  lines: 96-97
 - kind: class
   qualified_name: trie/sync/writer:TriefactFile
-  lines: 99-227
+  lines: 104-238
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.parse
-  lines: 104-144
+  lines: 109-155
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.empty
-  lines: 147-148
-- kind: method
-  qualified_name: trie/sync/writer:TriefactFile.get_section
-  lines: 152-156
-- kind: method
-  qualified_name: trie/sync/writer:TriefactFile.section_qnames
   lines: 158-159
 - kind: method
+  qualified_name: trie/sync/writer:TriefactFile.get_section
+  lines: 163-167
+- kind: method
+  qualified_name: trie/sync/writer:TriefactFile.section_qnames
+  lines: 169-170
+- kind: method
   qualified_name: trie/sync/writer:TriefactFile.upsert_section
-  lines: 163-179
+  lines: 174-190
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.remove_section
-  lines: 181-186
+  lines: 192-197
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.render
-  lines: 203-227
+  lines: 214-238
 incoming_refs: 42
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=trie/sync/writer:hash_body fingerprint=ab22edfb13d8ba9c75b86d2384923163f1c839f46c4a2ed06ca566491fc6f96d body_fp=ff4cc0d8d37a35d35446d795e12b6d335ea4491d8f9b3e64ac1d995839f65670 -->
+<!-- trie:section symbol=trie/sync/writer:hash_body fingerprint=ab22edfb13d8ba9c75b86d2384923163f1c839f46c4a2ed06ca566491fc6f96d body_fp=0de3381420da9676c033051fdc133810f7a1c28e8d85b6002595ede10e6fca9f -->
 ## `hash_body(body: str) -> str`
 
-Compute SHA-256 over a section body with leading/trailing whitespace stripped.
+Compute SHA-256 hex digest of `body` after stripping leading/trailing whitespace.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/writer:extract_one_liner fingerprint=fb87254713b9705aec49bf5aaed06df13d5765c8d66d19dd661b746b0045cd82 body_fp=fbe02250065df6f7d871cc24064a6213d4ab39fdc6fc1bee8820723590acf04b -->
+<!-- trie:section symbol=trie/sync/writer:extract_one_liner fingerprint=fb87254713b9705aec49bf5aaed06df13d5765c8d66d19dd661b746b0045cd82 body_fp=290fe67ce73d2d8429b001f953e89152d9e6beb0eedf927b563fc70e83f1ebc3 -->
 ## `extract_one_liner(body: str, *, max_chars: int = 200) -> str`
 
-Extract the first sentence from a section body, skipping any leading heading line.
+Pull the first sentence from a section body, skipping any leading heading line.
 
 - `body`: expected shape `## signature\n\n<prose...>`
 - Returns `""` if no usable text is found.
-- Truncates to `max_chars`, appending `…` if clipped.
+- Truncates to `max_chars`, appending `…` if trimmed.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/writer:Section fingerprint=f2f71e742865948a573388a17b2da7e5f769cf5cd515c61388c799173c8f9c42 body_fp=a71a255b8f244da91764d8396b6b478e5e564e330a94f2c0b991a7640997404b -->
+<!-- trie:section symbol=trie/sync/writer:Section fingerprint=f2f71e742865948a573388a17b2da7e5f769cf5cd515c61388c799173c8f9c42 body_fp=ca0ebc331da8eae8d193a081fe666cc0be5e41329ee3ca638e9711c93f8d1d73 -->
 ## `Section(qualified_name: str, fingerprint: str, body: str, body_fingerprint: str | None = None)`
 
-Frozen dataclass representing one trie-managed documentation section parsed from a triefact file.
+Frozen dataclass representing a parsed trie-managed documentation section.
 
-- `fingerprint`: SHA-256 of the source symbol body at sync time.
+- `fingerprint`: SHA-256 over the normalized source symbol body.
 - `body`: text between sentinels, leading/trailing newlines stripped.
-- `body_fingerprint`: SHA-256 of `body`; `None` for legacy sections written before trie 0.2.
+- `body_fingerprint`: SHA-256 over `body`; `None` for legacy sections written by trie ≤ 0.1.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/writer:Prose fingerprint=cf49910dc87437bc09897192fbd13b0a347f9433a85c94f1e599b18c7eceaf2b body_fp=627c075e9a38fbce5f6f638cd517e5092b277a7fd6fbc23042bad0c4eb735bd1 -->
+<!-- trie:section symbol=trie/sync/writer:Prose fingerprint=cf49910dc87437bc09897192fbd13b0a347f9433a85c94f1e599b18c7eceaf2b body_fp=09d5f56b09541d023bb4693ded2537daf14cb2f268ba7bb8c76e36d6c6c2668a -->
 ## `Prose(text: str)`
 
-Represent a verbatim human-prose chunk between (or outside) trie sections.
+Represent a verbatim human-prose chunk between (or outside) trie-managed sections.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/writer:TriefactFile fingerprint=5d30448fbf88903aef7acae2627a565e8a19ea1cd838a18ce1cf031d36133505 body_fp=ccdc43d8b00e1484b7c1b7ab66d8b49af836def458a30f3f8be119e6b463dfd7 -->
-## `TriefactFile(front_matter: dict[str, Any], chunks: list[Chunk])`
+<!-- trie:section symbol=trie/sync/writer:TriefactFile fingerprint=a3d8d2f852ee36118154f5b25442bc8c8803a4dab7494126ea6163cf3f4c904b body_fp=e0c3aeeca05d0b135b5e4fe81b4ed572d1559e128bdc36c4db751c623b350f25 -->
+## `TriefactFile(front_matter={}, chunks=[])`
 
 Parse, mutate, and render a trie-managed Markdown file containing prose and documented sections.
 
-- `front_matter`: YAML front matter preserved across round-trips.
-- `chunks`: ordered mix of `Prose` and `Section` objects.
-- `parse(text)`: deserialises a full Markdown string into a `TriefactFile`.
-- `empty()`: returns a blank instance with no front matter or chunks.
-- `get_section(qualified_name)`: returns matching `Section` or `None`.
-- `section_qnames()`: returns ordered list of all section qualified names.
-- `upsert_section(...)`: replaces or appends a section; auto-computes `body_fingerprint`.
-- `remove_section(qualified_name)`: removes section by name; returns `False` if absent.
-- `render()`: serialises back to a Markdown string with sentinels and front matter.
+- `front_matter`: YAML dict from the file's `---` block.
+- `chunks`: ordered list of `Section` and `Prose` segments.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/writer:TriefactFile.parse fingerprint=3be5e2c7a3017435762be997134f13559c76a6b92fc0bb7d33ac4fe0922a6781 body_fp=fc41ebecb95fab4f421d4091ad4d4064d8973f32e14e3135ca4eed76752b34a7 -->
+<!-- trie:section symbol=trie/sync/writer:TriefactFile.parse fingerprint=b1813f995532190754d866fe91682cf1e0252a576ca5f7bbde226e8190300d78 body_fp=91c64e2b03f2f25efb9c5ab27bcc1ba6c4dabe0910e2919904e25149601a9e86 -->
 ## `TriefactFile.parse(cls, text: str) -> TriefactFile`
 
-Parse a Markdown string into a `TriefactFile` with optional YAML front matter and a list of `Section`/`Prose` chunks.
+Parse a raw Markdown string into a `TriefactFile` with front-matter and ordered chunks.
 
-- Raises `ValueError` if a trie section open sentinel has no matching close sentinel.
+- `text`: full file contents including optional YAML front matter and trie sections
+- Raises `ValueError` if any `trie:section` open sentinel has no matching close sentinel
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/writer:TriefactFile.empty fingerprint=cc0676809bee8efb34856efbd9c950ae148db930ab90e76ebd3d17bd1eefbc7e body_fp=2b1e4bd6386ffd4e44c9e94752c2029a28abf29b14d2b90877f1727670e8c5c0 -->
-## `TriefactFile.empty() -> TriefactFile`
+<!-- trie:section symbol=trie/sync/writer:TriefactFile.empty fingerprint=cc0676809bee8efb34856efbd9c950ae148db930ab90e76ebd3d17bd1eefbc7e body_fp=2d7abfcc086c70f09b233627e294123f6a759a2dc9c4285d7e79057a0171859a -->
+## `empty(cls) -> TriefactFile`
 
 Return a new, empty `TriefactFile` with no front matter and no chunks.
 <!-- trie:end -->
@@ -111,32 +105,30 @@ Return a new, empty `TriefactFile` with no front matter and no chunks.
 Return the first `Section` chunk matching `qualified_name`, or `None` if absent.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/writer:TriefactFile.section_qnames fingerprint=b3198e06079669f9cdabe77cd2292e047d5fc68e79e8ecb7e0a9f7bff28f0f60 body_fp=b66f9e5134c9d610bf0cfee8cb8aeb5685a0911f6aa446b3d587dc1eeb3e41d6 -->
+<!-- trie:section symbol=trie/sync/writer:TriefactFile.section_qnames fingerprint=b3198e06079669f9cdabe77cd2292e047d5fc68e79e8ecb7e0a9f7bff28f0f60 body_fp=b3b9c109054c842ed01fe3225fd3ea67edafe9ff262442247a21787053010117 -->
 ## `section_qnames(self) -> list[str]`
 
-Return the qualified names of all `Section` chunks in order.
+Return qualified names of all `Section` chunks in order.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/writer:TriefactFile.upsert_section fingerprint=2bdb1c4090ef7afade75d9ea2851c9b36b91f9bad036102163b078da3f1e7d74 body_fp=d45d4e64a66b9182e02dc636c4938cb3a2285ad835c220f366875f35243e5630 -->
+<!-- trie:section symbol=trie/sync/writer:TriefactFile.upsert_section fingerprint=2bdb1c4090ef7afade75d9ea2851c9b36b91f9bad036102163b078da3f1e7d74 body_fp=4b0e865b978286c8fb7c8c24f61a6a0c64d5714b85ea097adc7430984e4388e0 -->
 ## `upsert_section(self, *, qualified_name: str, fingerprint: str, body: str) -> None`
 
-Replace an existing section by `qualified_name`, or append a new one at the end.
+Replace an existing section by qualified name, or append a new one at the end.
 
-- `body_fingerprint` is computed automatically via `hash_body`; callers need not supply it.
+- `body_fingerprint` is computed automatically via `hash_body`; callers must not supply it.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/writer:TriefactFile.remove_section fingerprint=d8dc7a57db15d5144ac0f1cb113b03fbe74d7608b5e9b23572384079c5ce8032 body_fp=3d88f9e248c66e2b63fe196fa06e60abc2d2f2cc8c6cf86cbc47509ef2af7351 -->
+<!-- trie:section symbol=trie/sync/writer:TriefactFile.remove_section fingerprint=d8dc7a57db15d5144ac0f1cb113b03fbe74d7608b5e9b23572384079c5ce8032 body_fp=ed06efe2861bff7fee3d30b23d4411a099b7b4381fdbeaf991f7c5a52d51abd8 -->
 ## `remove_section(self, qualified_name: str) -> bool`
 
-Remove the first section matching `qualified_name` from `chunks`.
-
-- Returns `True` if a section was found and removed, `False` otherwise.
+Remove the first section matching `qualified_name` from `chunks`; return `True` if found, `False` otherwise.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/writer:TriefactFile.render fingerprint=dea4d47b10b50a3354eee144920010c5bcb18792813b3e74516e76c8bf21b57c body_fp=6307c46e721eaa26124fdbad645984c1c56f703b06e9f3e36e451b17dc5fb6d3 -->
+<!-- trie:section symbol=trie/sync/writer:TriefactFile.render fingerprint=dea4d47b10b50a3354eee144920010c5bcb18792813b3e74516e76c8bf21b57c body_fp=6bdfc595614b20388322b7934dba7be2dbb09b23fdaec7716eec38b796cce5aa -->
 ## `render(self) -> str`
 
-Serialize the `TriefactFile` to a Markdown string, including front matter, prose chunks, and section sentinels with `body_fp`.
+Serialize the `TriefactFile` to a Markdown string with front matter and trie sentinel-delimited sections.
 
-- Legacy sections without `body_fingerprint` have it computed on the fly.
+- Always emits `body_fp=` on every section, hashing legacy sections on the fly.
 <!-- trie:end -->
