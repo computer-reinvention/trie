@@ -48,7 +48,7 @@ The pipeline has three layers. Understanding which layer a task belongs to is th
 
 **1. Parse + graph (offline, no LLM)** — `trie/parse/`, `trie/graph/store.py`, `trie/scan.py`
 
-`parse/python.py` extracts `Symbol`s from a source file via tree-sitter. Each symbol carries a `body_normalized_hash` (whitespace/comment-stripped SHA-256) — that hash is the _fingerprint_ the rest of the system pivots on. `parse/references.py` produces edges with a `confidence` field (`tree_sitter_import` | `name_match`). The confidence field exists so SCIP-precision edges can land in v0.2 alongside heuristics without breaking the cascade contract — preserve it.
+`parse/python.py` extracts `Symbol`s from a source file via tree-sitter. Each symbol carries a `body_normalized_hash` (whitespace/comment-stripped SHA-256) — that hash is the _fingerprint_ the rest of the system pivots on. `parse/references.py` produces edges between symbols. Resolution is precise-or-absent: edges either exist (the resolver could prove them) or they don't. There is no edge-level confidence — the agent surface treats every edge as authoritative. Today's resolver is tree-sitter heuristic; replacing it with SCIP/Pyright closes the known gaps (attribute access, relative imports, dynamic dispatch) without changing the downstream contract.
 
 `graph/store.py` is a SQLite-backed store (`<root>/.trie/graph.db`) with three live tables: `files`, `symbols`, `edges`, plus `triefact_sections` for fingerprint lookups. Schema is created on connect via `SCHEMA_SQL`. There's no migration tooling yet — bump `SCHEMA_VERSION` and add an idempotent `CREATE` rather than altering existing tables.
 
@@ -72,7 +72,7 @@ Three top-level sync modes wrap `sync_single_file`:
 
 `check.py` is the pre-commit invariant: deterministic, no LLM, no DB writes. It re-fingerprints each in-scope source symbol and compares against the fingerprint stored in the matching triefact section sentinel. Four `StaleReason` outcomes drive the CLI exit code — keep them exhaustive.
 
-`mcp_server.py` exposes four read-only tools over **stdio only** (HTTP transport deferred to v0.2 by deliberate decision — no auth/CORS surface): `get_triefact`, `find_symbol`, `references_to`, `references_from`. Read-only by design — only `trie sync` writes triefacts. Never log to stdout from the MCP path; it corrupts the JSON-RPC stream (`_run_mcp_serve` in cli.py routes errors to stderr for this reason).
+`mcp_server.py` exposes three read-only verbs over **stdio only** (HTTP transport deferred — no auth/CORS surface): `locate(predicate, rank_by?, limit=10)` (find symbols by predicate), `explain(qname)` (full prose + one-hop neighbour one-liners), `walk(from_qname, direction, depth=2)` (topology beyond one hop). Every response carries `one_liner` fields pulled from `triefact_sections` at sync time, so the agent can decide which symbol to open next without a follow-up call. Errors return `{error: {code, message, suggestion?}}`. Server knobs (max limits, hub threshold, prose caps) live under `[mcp]` in `trie.toml` and are not part of the agent contract. The full contract lives in `docs/agent_interface.md`. Read-only by design — only `trie sync` writes triefacts. Never log to stdout from the MCP path; it corrupts the JSON-RPC stream (`_run_mcp_serve` in cli.py routes errors to stderr for this reason).
 
 `cli.py` is a Typer app with a nested `mcp` sub-app (`mcp_app`). Each subcommand resolves config via `Config.find_and_load` (walks up to find `trie.toml`) — the directory containing `trie.toml` is the project root and the anchor for all relative paths.
 
@@ -83,7 +83,7 @@ These were settled in the v0.1 design pass. Don't relitigate without a user prom
 - **License: MIT** (not Apache-2.0).
 - **Default model: `anthropic/claude-sonnet-4-6`** for both bootstrap and cascade. Cost story works at Sonnet pricing. Cheaper providers swap via config (`[models].bootstrap = "openai/..."`); the OpenAI-compatible client itself lands in v0.2.
 - **MCP transport: stdio only** in v0.1.
-- **References: tree-sitter heuristic** (`tree_sitter_import` + same-module `name_match`), not SCIP. The `confidence` field on every edge is the seam SCIP will land through. SCIP precision is the top v0.2 priority.
+- **References: tree-sitter heuristic** (`tree_sitter_import` + same-module `name_match`), not SCIP. The resolver is an implementation detail of `parse/references.py` — the rest of the system treats every edge as authoritative. SCIP precision is the top v0.2 priority and lands as a drop-in replacement for the heuristic.
 - **Cascade defaults: depth 1, hub threshold 20.** Configurable per-project in `trie.toml`.
 - **Dogfood on trie's own repo is fine** — the v0.1 caution against self-dogfooding (recursion failure mode) is lifted now that `trie verify` catches corrupted triefacts before they're committed. A `trie.toml` at the repo root is expected.
 - **Tests are in scope by default** — they encode behavioral spec worth documenting.

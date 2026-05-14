@@ -42,9 +42,6 @@ def test_imports_create_cross_file_edges(tmp_path: Path):
     fd = extract_file_data(f)
     refs = _refs_by_src(fd)
     assert "helpers:helper" in refs.get("mod:run", [])
-    # Confidence label should mark this as an import-derived edge.
-    target = next(r for r in fd.references if r.target_qname == "helpers:helper")
-    assert target.confidence == "tree_sitter_import"
 
 
 def test_aliased_import_resolves_to_original(tmp_path: Path):
@@ -113,7 +110,7 @@ def test_extract_file_data_includes_symbols(tmp_path: Path):
     assert qnames == {"mod:alpha", "mod:beta"}
 
 
-def test_confidence_labels_are_distinguishable(tmp_path: Path):
+def test_both_import_and_intra_file_edges_resolve(tmp_path: Path):
     f = tmp_path / "mod.py"
     f.write_text(
         "from helpers import imp_fn\n\n\n"
@@ -121,6 +118,6 @@ def test_confidence_labels_are_distinguishable(tmp_path: Path):
         "def caller():\n    return imp_fn() + local_fn()\n"
     )
     fd = extract_file_data(f)
-    by_target = {r.target_qname: r.confidence for r in fd.references if r.src_qname == "mod:caller"}
-    assert by_target.get("helpers:imp_fn") == "tree_sitter_import"
-    assert by_target.get("mod:local_fn") == "name_match"
+    targets = {r.target_qname for r in fd.references if r.src_qname == "mod:caller"}
+    assert "helpers:imp_fn" in targets  # cross-file via import
+    assert "mod:local_fn" in targets  # intra-file via name match

@@ -10,11 +10,10 @@ from pathlib import Path
 from trie.parse.python import Symbol
 from trie.parse.references import Reference
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
-# All schema is created if not present. edges and triefact_sections are defined now so
-# that M4/M3 don't require a migration; they remain unpopulated until those milestones
-# land.
+# All schema is created if not present. The DB is a regenerable cache under .trie/;
+# bumping SCHEMA_VERSION blows it away and triggers a re-scan on next connect.
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (
     version INTEGER PRIMARY KEY
@@ -47,7 +46,6 @@ CREATE INDEX IF NOT EXISTS idx_symbols_qname ON symbols(qualified_name);
 CREATE TABLE IF NOT EXISTS edges (
     src_symbol_id INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
     dst_symbol_id INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
-    confidence TEXT NOT NULL,
     PRIMARY KEY (src_symbol_id, dst_symbol_id)
 );
 CREATE INDEX IF NOT EXISTS idx_edges_dst ON edges(dst_symbol_id);
@@ -56,9 +54,11 @@ CREATE TABLE IF NOT EXISTS triefact_sections (
     triefact_path TEXT NOT NULL,
     symbol_id INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
     section_fingerprint TEXT NOT NULL,
+    one_liner TEXT,
     last_generated_at INTEGER NOT NULL,
     PRIMARY KEY (triefact_path, symbol_id)
 );
+CREATE INDEX IF NOT EXISTS idx_sections_symbol ON triefact_sections(symbol_id);
 """
 
 
@@ -87,6 +87,48 @@ class SymbolHit:
     is_public: bool
 
 
+@dataclass(frozen=True)
+class SymbolDetail:
+    """Full per-symbol record with graph counts and the cached one-liner.
+
+    Used by the MCP tools (`locate` / `explain` / `walk`) so a single DB roundtrip
+    yields everything an agent response needs.
+    """
+
+    qualified_name: str
+    name: str
+    kind: str
+    file_path: str
+    start_line: int
+    end_line: int
+    signature: str | None
+    is_public: bool
+    inbound_count: int
+    outbound_count: int
+    one_liner: str  # "" when no triefact section exists
+
+
+@dataclass(frozen=True)
+class LocatePredicate:
+    """Server-side filter object for `Store.locate_symbols`.
+
+    Mirrors the agent-facing `locate.predicate` shape. Every field is optional;
+    omitted fields mean "don't filter on this." `scope_prefix` and `scope_exclude`
+    match against `file_path`. `inbound_count` / `outbound_count` accept
+    `(min, max)` tuples (either bound may be None).
+    """
+
+    name_contains: str | None = None
+    kind: str | None = None  # "function" | "class" | "method" | "any" | None
+    scope_prefix: str | None = None
+    scope_exclude: tuple[str, ...] = ()
+    public_only: bool = False
+    inbound_count_min: int | None = None
+    inbound_count_max: int | None = None
+    outbound_count_min: int | None = None
+    outbound_count_max: int | None = None
+
+
 class Store:
     """SQLite-backed persistence for trie's symbol graph and file fingerprints.
 
@@ -99,11 +141,28 @@ class Store:
     def __init__(self, db_path: Path) -> None:
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._open()
+
+    def _open(self) -> None:
         self._conn = sqlite3.connect(str(self.db_path))
         self._conn.execute("PRAGMA foreign_keys = ON")
+        # Detect a stale schema and nuke the DB before applying the current one. The DB is
+        # a regenerable cache under .trie/, so a bump triggers a clean rebuild on the next
+        # scan. Cheaper and less bug-prone than running migrations.
+        existing_version: int | None = None
+        try:
+            row = self._conn.execute("SELECT version FROM schema_version").fetchone()
+            existing_version = int(row[0]) if row else None
+        except sqlite3.OperationalError:
+            existing_version = None
+        if existing_version is not None and existing_version != SCHEMA_VERSION:
+            self._conn.close()
+            self.db_path.unlink(missing_ok=True)
+            self._conn = sqlite3.connect(str(self.db_path))
+            self._conn.execute("PRAGMA foreign_keys = ON")
+            existing_version = None
         self._conn.executescript(SCHEMA_SQL)
-        existing = self._conn.execute("SELECT version FROM schema_version").fetchone()
-        if existing is None:
+        if existing_version is None:
             self._conn.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
             self._conn.commit()
 
@@ -209,14 +268,14 @@ class Store:
         """Wipe the edges table, resolve references against current symbols, insert edges.
 
         References whose src or dst qualified_name is not present in the symbols table are
-        silently dropped (likely an external import or a name the heuristic over-matched).
+        silently dropped (likely an external import or a name the resolver over-matched).
         Returns the number of edges actually inserted.
         """
         qname_to_id: dict[str, int] = {}
         for row in self._conn.execute("SELECT id, qualified_name FROM symbols"):
             qname_to_id[row[1]] = row[0]
 
-        rows: list[tuple[int, int, str]] = []
+        rows: list[tuple[int, int]] = []
         seen_pairs: set[tuple[int, int]] = set()
         for refs in references_by_file.values():
             for ref in refs:
@@ -228,21 +287,35 @@ class Store:
                 if pair in seen_pairs:
                     continue
                 seen_pairs.add(pair)
-                rows.append((src_id, dst_id, ref.confidence))
+                rows.append((src_id, dst_id))
 
         with self.transaction() as conn:
             conn.execute("DELETE FROM edges")
             conn.executemany(
-                "INSERT INTO edges (src_symbol_id, dst_symbol_id, confidence) VALUES (?, ?, ?)",
+                "INSERT INTO edges (src_symbol_id, dst_symbol_id) VALUES (?, ?)",
                 rows,
             )
         return len(rows)
 
-    def references_in(self, qualified_name: str) -> list[tuple[str, str]]:
-        """Return (src_qname, confidence) for every symbol that references `qualified_name`."""
+    def references_in(self, qualified_name: str) -> list[str]:
+        """Return src_qnames for every symbol that references `qualified_name`."""
         rows = self._conn.execute(
             """
-            SELECT s_src.qualified_name, e.confidence
+            SELECT s_src.qualified_name
+            FROM edges e
+            JOIN symbols s_src ON s_src.id = e.src_symbol_id
+            JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
+            WHERE s_dst.qualified_name = ?
+            """,
+            (qualified_name,),
+        ).fetchall()
+        return [row[0] for row in rows]
+
+    def references_in_with_files(self, qualified_name: str) -> list[tuple[str, str]]:
+        """Return (src_qname, src_file_path) for every inbound reference."""
+        rows = self._conn.execute(
+            """
+            SELECT s_src.qualified_name, s_src.file_path
             FROM edges e
             JOIN symbols s_src ON s_src.id = e.src_symbol_id
             JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
@@ -251,20 +324,6 @@ class Store:
             (qualified_name,),
         ).fetchall()
         return [(row[0], row[1]) for row in rows]
-
-    def references_in_with_files(self, qualified_name: str) -> list[tuple[str, str, str]]:
-        """Return (src_qname, src_file_path, confidence) for every inbound reference."""
-        rows = self._conn.execute(
-            """
-            SELECT s_src.qualified_name, s_src.file_path, e.confidence
-            FROM edges e
-            JOIN symbols s_src ON s_src.id = e.src_symbol_id
-            JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
-            WHERE s_dst.qualified_name = ?
-            """,
-            (qualified_name,),
-        ).fetchall()
-        return [(row[0], row[1], row[2]) for row in rows]
 
     def qnames_in_file(self, file_path: str) -> list[str]:
         """Return qualified_names of all symbols defined in `file_path`."""
@@ -303,11 +362,11 @@ class Store:
             for row in rows
         ]
 
-    def references_out(self, qualified_name: str) -> list[tuple[str, str]]:
-        """Return (target_qname, confidence) for every reference originating from `qualified_name`."""
+    def references_out(self, qualified_name: str) -> list[str]:
+        """Return target_qnames for every reference originating from `qualified_name`."""
         rows = self._conn.execute(
             """
-            SELECT s_dst.qualified_name, e.confidence
+            SELECT s_dst.qualified_name
             FROM edges e
             JOIN symbols s_src ON s_src.id = e.src_symbol_id
             JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
@@ -315,7 +374,7 @@ class Store:
             """,
             (qualified_name,),
         ).fetchall()
-        return [(row[0], row[1]) for row in rows]
+        return [row[0] for row in rows]
 
     def count_edges(self) -> int:
         return int(self._conn.execute("SELECT COUNT(*) FROM edges").fetchone()[0])
@@ -381,3 +440,210 @@ class Store:
             FileStats(path=row[0], total_symbols=int(row[1]), public_symbols=int(row[2]))
             for row in rows
         ]
+
+    # --- triefact_sections ops ---
+
+    def upsert_section_record(
+        self,
+        *,
+        triefact_path: str,
+        symbol_qname: str,
+        section_fingerprint: str,
+        one_liner: str,
+        now: int | None = None,
+    ) -> None:
+        """Record (or refresh) the metadata trie keeps in lockstep with a generated section.
+
+        Looks up the symbol's current id from `symbols`. If the symbol no longer exists
+        (e.g. renamed/deleted between scan and sync), the row is silently skipped — the
+        next scan + sync will clean things up.
+        """
+        ts = now if now is not None else int(time.time())
+        row = self._conn.execute(
+            "SELECT id FROM symbols WHERE qualified_name = ? LIMIT 1",
+            (symbol_qname,),
+        ).fetchone()
+        if row is None:
+            return
+        symbol_id = int(row[0])
+        self._conn.execute(
+            """
+            INSERT INTO triefact_sections
+                (triefact_path, symbol_id, section_fingerprint, one_liner, last_generated_at)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(triefact_path, symbol_id) DO UPDATE SET
+                section_fingerprint = excluded.section_fingerprint,
+                one_liner = excluded.one_liner,
+                last_generated_at = excluded.last_generated_at
+            """,
+            (triefact_path, symbol_id, section_fingerprint, one_liner, ts),
+        )
+        self._conn.commit()
+
+    def one_liner_for(self, qualified_name: str) -> str:
+        """Return the cached one-liner for a symbol, or '' if no section exists yet."""
+        row = self._conn.execute(
+            """
+            SELECT ts.one_liner FROM triefact_sections ts
+            JOIN symbols s ON s.id = ts.symbol_id
+            WHERE s.qualified_name = ?
+            LIMIT 1
+            """,
+            (qualified_name,),
+        ).fetchone()
+        if row is None or row[0] is None:
+            return ""
+        return str(row[0])
+
+    def one_liners_for(self, qnames: list[str]) -> dict[str, str]:
+        """Batch one-liner lookup. Returns {qname: one_liner} for found entries only."""
+        if not qnames:
+            return {}
+        placeholders = ",".join("?" for _ in qnames)
+        rows = self._conn.execute(
+            f"""
+            SELECT s.qualified_name, ts.one_liner FROM triefact_sections ts
+            JOIN symbols s ON s.id = ts.symbol_id
+            WHERE s.qualified_name IN ({placeholders})
+            """,
+            qnames,
+        ).fetchall()
+        return {row[0]: (row[1] or "") for row in rows}
+
+    # --- symbol detail / locate ---
+
+    def get_symbol_detail(self, qualified_name: str) -> SymbolDetail | None:
+        """Return everything the agent surface needs about one symbol in a single query."""
+        row = self._conn.execute(
+            """
+            SELECT
+                s.qualified_name, s.name, s.kind, s.file_path,
+                s.start_line, s.end_line, s.signature, s.is_public,
+                (SELECT COUNT(*) FROM edges WHERE dst_symbol_id = s.id) AS in_count,
+                (SELECT COUNT(*) FROM edges WHERE src_symbol_id = s.id) AS out_count,
+                COALESCE(
+                    (SELECT one_liner FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
+                    ''
+                ) AS one_liner
+            FROM symbols s
+            WHERE s.qualified_name = ?
+            LIMIT 1
+            """,
+            (qualified_name,),
+        ).fetchone()
+        if row is None:
+            return None
+        return SymbolDetail(
+            qualified_name=row[0],
+            name=row[1],
+            kind=row[2],
+            file_path=row[3],
+            start_line=int(row[4]),
+            end_line=int(row[5]),
+            signature=row[6],
+            is_public=bool(row[7]),
+            inbound_count=int(row[8]),
+            outbound_count=int(row[9]),
+            one_liner=row[10] or "",
+        )
+
+    def locate_symbols(
+        self,
+        predicate: LocatePredicate,
+        *,
+        rank_by: str = "public_first",
+        limit: int = 10,
+    ) -> list[SymbolDetail]:
+        """Predicate-driven symbol search. Returns SymbolDetails sorted per `rank_by`.
+
+        `rank_by` accepted values: `"public_first"`, `"inbound_count"`, `"alphabetical"`.
+        Any other value falls back to `"public_first"`.
+        """
+        clauses: list[str] = []
+        params: list[object] = []
+
+        if predicate.name_contains:
+            clauses.append("LOWER(s.name) LIKE LOWER(?)")
+            params.append(f"%{predicate.name_contains}%")
+        if predicate.kind and predicate.kind != "any":
+            clauses.append("s.kind = ?")
+            params.append(predicate.kind)
+        if predicate.scope_prefix:
+            clauses.append("s.file_path LIKE ?")
+            params.append(f"{predicate.scope_prefix}%")
+        for exc in predicate.scope_exclude:
+            clauses.append("s.file_path NOT LIKE ?")
+            params.append(f"{exc}%")
+        if predicate.public_only:
+            clauses.append("s.is_public = 1")
+
+        # Edge-count predicates: evaluate via scalar subqueries inside the WHERE clause.
+        # We can't use the SELECT aliases (in_count / out_count) here — SQLite resolves
+        # WHERE before the SELECT list — so we repeat the subquery. The optimizer is
+        # fine with this for the query volumes the agent surface drives.
+        in_subq = "(SELECT COUNT(*) FROM edges WHERE dst_symbol_id = s.id)"
+        out_subq = "(SELECT COUNT(*) FROM edges WHERE src_symbol_id = s.id)"
+        if predicate.inbound_count_min is not None:
+            clauses.append(f"{in_subq} >= ?")
+            params.append(predicate.inbound_count_min)
+        if predicate.inbound_count_max is not None:
+            clauses.append(f"{in_subq} <= ?")
+            params.append(predicate.inbound_count_max)
+        if predicate.outbound_count_min is not None:
+            clauses.append(f"{out_subq} >= ?")
+            params.append(predicate.outbound_count_min)
+        if predicate.outbound_count_max is not None:
+            clauses.append(f"{out_subq} <= ?")
+            params.append(predicate.outbound_count_max)
+
+        if rank_by == "inbound_count":
+            order = "in_count DESC, s.is_public DESC, s.qualified_name"
+        elif rank_by == "alphabetical":
+            order = "s.qualified_name"
+        else:  # public_first or unknown
+            order = "s.is_public DESC, s.qualified_name"
+
+        where_sql = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+        sql = f"""
+            SELECT
+                s.qualified_name, s.name, s.kind, s.file_path,
+                s.start_line, s.end_line, s.signature, s.is_public,
+                {in_subq} AS in_count,
+                {out_subq} AS out_count,
+                COALESCE(
+                    (SELECT one_liner FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
+                    ''
+                ) AS one_liner
+            FROM symbols s
+            {where_sql}
+            ORDER BY {order}
+            LIMIT ?
+        """
+        params.append(limit)
+        rows = self._conn.execute(sql, params).fetchall()
+        return [
+            SymbolDetail(
+                qualified_name=row[0],
+                name=row[1],
+                kind=row[2],
+                file_path=row[3],
+                start_line=int(row[4]),
+                end_line=int(row[5]),
+                signature=row[6],
+                is_public=bool(row[7]),
+                inbound_count=int(row[8]),
+                outbound_count=int(row[9]),
+                one_liner=row[10] or "",
+            )
+            for row in rows
+        ]
+
+    def all_symbol_names(self) -> list[str]:
+        """All local symbol names. Used to build fuzzy-match suggestions on not-found."""
+        rows = self._conn.execute("SELECT DISTINCT name FROM symbols").fetchall()
+        return [row[0] for row in rows]
+
+    def all_qualified_names(self) -> list[str]:
+        """All qualified names. Used to suggest near-misses on explain/walk not-found."""
+        rows = self._conn.execute("SELECT qualified_name FROM symbols").fetchall()
+        return [row[0] for row in rows]

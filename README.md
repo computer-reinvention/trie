@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](#status)
-[![Tests](https://img.shields.io/badge/tests-255%20passing-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/tests-267%20passing-brightgreen.svg)](#)
 
 trie generates a Markdown description of every source file in your project. The descriptions live in a tree that mirrors your source tree, joined by the same reference graph the code has. Edit a function and the cascade regenerates the descriptions of every caller too. Humans review English prose; agents read the same prose instead of grepping code under context pressure.
 
@@ -77,25 +77,23 @@ When an agent answers a question or plans a change, it doesn't grep code and rec
 ```
 question: "what happens when an unauthenticated request hits /admin?"
 
-  ├── find_symbol("admin")
-  │     → api.handler:admin_route
+  ├── locate({ name_contains: "admin", kind: "function" })
+  │     → api.handler:admin_route   (one-liner: "Routes admin endpoints…")
   │
-  ├── get_triefact("src/api/handler.md") § admin_route
-  │     "Routes admin endpoints. Wrapped by require_auth before any
-  │      handler body runs. Returns 401 if auth fails…"
+  ├── explain("api.handler:admin_route")
+  │     prose: "Routes admin endpoints. Wrapped by require_auth before any
+  │             handler body runs. Returns 401 if auth fails…"
+  │     callees: [{ auth.middleware:require_auth, one_liner: "Validates the
+  │             session cookie via session.validate()…" }]
   │
-  ├── references_from("api.handler:admin_route")
-  │     → auth.middleware:require_auth
-  │
-  ├── get_triefact("src/auth/middleware.md") § require_auth
-  │     "Validates the session cookie via session.validate(). On any
-  │      ValidationError, raises HTTPUnauthorized — never returns None…"
-  │
-  └── get_triefact("src/auth/session.md") § validate
-        "Loads the session record, checks expiry, rotates the refresh
-         token if within 5 minutes of expiry…"
+  └── explain("auth.middleware:require_auth")
+        prose: "Validates the session cookie via session.validate(). On any
+                ValidationError, raises HTTPUnauthorized — never returns None…"
+        callees: [{ auth.session:validate, one_liner: "Loads the session
+                record, checks expiry, rotates the refresh token…" }]
 
-  → a coherent narrative, in your team's words, that explains the flow.
+  → a coherent narrative, in your team's words, that explains the flow,
+    assembled in 3 round-trips instead of 5+.
 ```
 
 Tokens carry meaning instead of boilerplate. Invariants and _why_ travel with the node, written into the human sentinel sections. The agent reasons over the right abstraction — narrative — instead of inferring narrative from syntax under pressure.
@@ -311,14 +309,15 @@ repos:
 
 ## Agent integration (MCP)
 
-trie ships an MCP server so coding agents read your codebase's prose self-description as a separate, durable context layer — not chat memory, not retrieved chunks, but a structured tree they can navigate. Four tools, exposed over stdio:
+trie ships an MCP server so coding agents read your codebase's prose self-description as a separate, durable context layer — not chat memory, not retrieved chunks, but a structured tree they can navigate. Three verbs, exposed over stdio, that match how agents reason about a codebase: _find it_, _understand it_, _trace it_.
 
-| Tool                              | What it returns                                 |
-| --------------------------------- | ----------------------------------------------- |
-| `get_triefact(source_path)`            | Markdown triefact for a source file             |
-| `find_symbol(name)`               | Substring search over symbol names + signatures |
-| `references_to(qualified_name)`   | Symbols that reference the given one (callers)  |
-| `references_from(qualified_name)` | Symbols the given one references (callees)      |
+| Tool                                          | What it returns                                                                       |
+| --------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `locate(predicate, rank_by?, limit=10)`       | Symbols matching a predicate (name, kind, scope, edge counts), with a one-line summary on each hit so the agent can pick without re-reading |
+| `explain(qname)`                              | A symbol's prose plus one-liners for every immediate caller and callee                |
+| `walk(from_qname, direction, depth=2)`        | Topology beyond one hop — signatures + one-liners across a depth-bounded graph slice  |
+
+Every response carries `one_liner` fields pulled from the section body at sync time, so an agent walking the graph never has to open a triefact just to decide whether to open it. Errors return `{error: {code, message, suggestion?}}` — fuzzy-matched suggestions on `not_found` mean recovery is one round-trip, not three. The full contract lives in [`docs/agent_interface.md`](docs/agent_interface.md).
 
 Register trie with your agent in one command:
 
@@ -363,7 +362,7 @@ Hand-written prose between sentinels is still indexed by GitHub's search; only t
 - **M2** ✓ — symbol-graph scan, first-run bootstrap with budget/limit
 - **M3** ✓ — drift check (`trie verify`), preview (`trie sync --dry-run`), pre-commit hook
 - **M4** ✓ — heuristic cascade (tree-sitter imports + same-module name matching) _(the wedge)_
-- **M5** ✓ — MCP server (`trie mcp serve`) with `get_triefact`, `find_symbol`, `references_to/from`
+- **M5** ✓ — MCP server (`trie mcp serve`) with three verbs: `locate`, `explain`, `walk`
 - **M6** ✓ — README golden example, packaging, `trie plan`, `.gitattributes` recipe
 - **M7** ✓ — CLI redesign: auto-detect bootstrap, streaming progress + ETA, three-level verbosity, `trie mcp install` for six agents/IDEs
 - **v0.2** — SCIP precision (replace tree-sitter heuristic with `scip-python` for type-aware references), TypeScript support, vector-over-triefacts retrieval, `trie watch` daemon, rename detection in reconcile

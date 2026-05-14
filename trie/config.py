@@ -42,12 +42,39 @@ class Cascade:
 
 
 @dataclass
+class Mcp:
+    """Server-side knobs for the MCP agent surface (`locate` / `explain` / `walk`).
+
+    Every field here is implementation detail the agent never sees. They exist so we can
+    flip behaviour based on observed agent usage without changing the public contract.
+    """
+
+    # locate
+    locate_max_limit: int = 50
+    locate_one_liner_max_chars: int = 200
+    locate_default_rank_by: str = "public_first"
+
+    # explain
+    explain_neighbour_one_liner_max_chars: int = 120
+    explain_max_neighbours_per_direction: int = 0  # 0 = unlimited
+    explain_prose_max_chars: int = 0  # 0 = unlimited
+
+    # walk
+    walk_max_depth: int = 5
+    walk_hub_threshold: int = 20  # mirrors Cascade.hub_symbol_threshold
+    walk_max_nodes: int = 200
+    walk_prose_at_depth: int = 0  # 0 = no prose on walk
+    walk_prose_budget: int = 10
+
+
+@dataclass
 class Config:
     trie: TrieMeta = field(default_factory=TrieMeta)
     scope: Scope = field(default_factory=Scope)
     triefacts: Triefacts = field(default_factory=Triefacts)
     models: Models = field(default_factory=Models)
     cascade: Cascade = field(default_factory=Cascade)
+    mcp: Mcp = field(default_factory=Mcp)
 
     @classmethod
     def from_dict(cls, data: dict) -> Config:
@@ -57,6 +84,7 @@ class Config:
             triefacts=Triefacts(**data.get("triefacts", {})),
             models=Models(**data.get("models", {})),
             cascade=Cascade(**data.get("cascade", {})),
+            mcp=Mcp(**data.get("mcp", {})),
         )
 
     @classmethod
@@ -124,4 +152,26 @@ default_depth = 1
 # Symbols with more inbound references than this are treated as depth-0 only,
 # preventing utility hubs (utils.py, common types) from invalidating the world.
 hub_symbol_threshold = 20
+
+[mcp]
+# Server-side knobs for the agent surface (`locate` / `explain` / `walk`). These are
+# implementation detail — the agent never sees them. Tune to flip behaviour without
+# changing the public tool contract.
+
+# locate
+locate_max_limit = 50
+locate_one_liner_max_chars = 200
+locate_default_rank_by = "public_first"        # or "inbound_count" / "alphabetical"
+
+# explain
+explain_neighbour_one_liner_max_chars = 120
+explain_max_neighbours_per_direction = 0       # 0 = unlimited
+explain_prose_max_chars = 0                    # 0 = unlimited
+
+# walk
+walk_max_depth = 5
+walk_hub_threshold = 20                        # mirrors cascade.hub_symbol_threshold
+walk_max_nodes = 200
+walk_prose_at_depth = 0                        # 0 = no prose on walk
+walk_prose_budget = 10
 """

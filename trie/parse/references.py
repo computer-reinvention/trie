@@ -1,21 +1,24 @@
-"""Heuristic reference extraction via tree-sitter.
+"""Reference extraction via tree-sitter.
 
-v0.1 covers the cases that catch the most cascade signal with the least machinery:
+This is an implementation detail of trie's graph. Today it's a tree-sitter heuristic;
+tomorrow it'll be SCIP/Pyright. The downstream contract — the `Reference` dataclass and
+the store's `replace_all_edges` — does not change when the resolver changes. There is no
+edge-level confidence field exposed to the rest of the system: an edge either exists
+(precise enough to act on) or it doesn't.
 
-- `from foo import bar` → bind name `bar` to qualified target `foo:bar`
+Today's coverage:
+
+- `from foo import bar` → bind `bar` to qualified target `foo:bar`
 - `from foo.baz import qux` → bind `qux` to `foo/baz:qux`
 - intra-file usage: a top-level symbol's body referencing another top-level symbol's name
   in the same module produces an edge to that symbol
 
-Misses (deferred to v0.2 with proper SCIP):
+Today's misses (closed when the resolver gets replaced):
+
 - `import foo` followed by `foo.bar()` (attribute access on imported module)
 - relative imports (`from . import sib`)
 - method calls / dynamic dispatch
 - shadowed names
-
-The point is to give the cascade enough edges to demonstrate value, not to be sound. Edges
-are labelled with `confidence` so downstream consumers (`trie verify`) can apply coarser
-fallback rules when precision is low.
 """
 
 from __future__ import annotations
@@ -44,7 +47,6 @@ class Reference:
 
     src_qname: str
     target_qname: str
-    confidence: str  # "tree_sitter_import" | "name_match"
 
 
 @dataclass(frozen=True)
@@ -172,13 +174,7 @@ def extract_file_data(file_path: Path, source_root: Path | None = None) -> FileD
                 key = (sym.qualified_name, target)
                 if key not in seen:
                     seen.add(key)
-                    references.append(
-                        Reference(
-                            src_qname=sym.qualified_name,
-                            target_qname=target,
-                            confidence="tree_sitter_import",
-                        )
-                    )
+                    references.append(Reference(src_qname=sym.qualified_name, target_qname=target))
             elif name in own_top_level:
                 target = own_top_level[name]
                 if target == sym.qualified_name:
@@ -186,13 +182,7 @@ def extract_file_data(file_path: Path, source_root: Path | None = None) -> FileD
                 key = (sym.qualified_name, target)
                 if key not in seen:
                     seen.add(key)
-                    references.append(
-                        Reference(
-                            src_qname=sym.qualified_name,
-                            target_qname=target,
-                            confidence="name_match",
-                        )
-                    )
+                    references.append(Reference(src_qname=sym.qualified_name, target_qname=target))
 
     return FileData(symbols=symbols, references=references)
 
