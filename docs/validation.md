@@ -12,9 +12,9 @@ are meaningful.
 
 ---
 
-## The four claims trie makes
+## The three claims trie makes
 
-trie is doing four things, and each needs its own kill criterion. A metric that
+trie is doing three things, and each needs its own kill criterion. A metric that
 proves one tells you nothing about the others.
 
 | # | Claim | Side it serves |
@@ -22,13 +22,19 @@ proves one tells you nothing about the others.
 | 1 | Agents do better work when reading triefacts than when reading code. | agent |
 | 2 | Humans review faster / catch more when reviewing prose diffs than code diffs. | human |
 | 3 | The cascade actually keeps prose in sync; drift stays bounded. | integrity |
-| 4 | The maintenance cost of triefacts is less than the value they return. | economics |
 
 Most likely failure mode if we don't pick these apart: cascade works, `trie
 verify` holds the line, every offline number looks great — and **no agent gets
 measurably better, no human reviews faster**. That's a very correct system
-nobody needs. Claims 1 and 2 are load-bearing. 3 and 4 are necessary but not
+nobody needs. Claims 1 and 2 are load-bearing. Claim 3 is necessary but not
 sufficient.
+
+**Economics is not on this list.** trie's pitch is artifact superiority, not
+cost reduction. If reading triefacts makes agents more capable and humans
+more accurate, the increased token spend is the price of capability, not a
+problem to optimize against. We track sync cost for operational sanity (we
+don't want to discover a 100x regression in production), but no shelf
+criterion in this document is tied to a dollar number.
 
 ---
 
@@ -162,7 +168,9 @@ Primary metrics:
   its keep.
 
 **Kill criterion:** < 15% lift on success rate at > 5% confidence over 50
-tasks, **or** token cost goes up with no quality gain.
+tasks. Token cost is not a kill criterion — even a 2× spend with the
+quality gain intact is a successful outcome; only failure-to-improve is
+disqualifying.
 
 **Strong-form test (do this if the weak form passes):** compare not against
 "naked grep" but against a credible baseline — Serena MCP, Cursor with
@@ -205,29 +213,24 @@ here — a green dashboard on (3) is not permission to skip (1) and (2).
 - **Hub-skip damage.** How often does the 20-inbound-ref cap silently miss
   a real propagation? Pick 20 cascade events through hub symbols, audit
   which dropped downstream triefacts genuinely should have regenerated.
+- **Sentinel preservation correctness.** Zero tolerance. Any case where regen
+  clobbers human prose is a catastrophic bug, not a metric. Track incidents
+  and treat as P0.
+- **Triefact-prose half-life.** How often does a generated section get
+  hand-edited within a week? High edit rate means the LLM scaffold isn't
+  trustworthy enough — humans are rewriting it from scratch, and the value
+  lives entirely in the human edit. This is a quality signal for the
+  generator, not a cost signal.
 - **Time-to-resync on a typical PR.** Median seconds for `trie sync` on a
   5-file change. If it's > 2 minutes, friction kills adoption regardless
-  of value.
+  of artifact quality. Parallelization, watching daemons, and async CI
+  sync are the levers; pick whichever clears the bar.
 - **Verify wall time.** Has to be < 5s on a 100 kloc repo, or it can't be
   a pre-commit hook in practice.
 
 **Kill criterion:** cascade precision < 80% _or_ recall < 90% on real-world
-edits (not synthetic). The asymmetry is intentional: false positives waste
-tokens; false negatives erode trust, which is fatal.
-
-### Claim 4 — Economics
-
-- **$ per kloc to bootstrap** at current Sonnet pricing on real repos.
-  Intuition: under $20 for a 50 kloc Python repo, or this is dead.
-- **$ per sync on an average PR.** Day-two cost. Must round to "lunch money"
-  or developers won't run it.
-- **Triefact-prose half-life.** How often does a generated section get
-  hand-edited within a week? High edit rate means the LLM output isn't
-  trusted, and the real value is the human edit — at which point why
-  bother with the LLM step?
-- **Sentinel preservation correctness.** Zero tolerance. Any case where regen
-  clobbers human prose is a catastrophic bug. Track incidents; treat as
-  P0 if any occur in production use.
+edits (not synthetic). The asymmetry is intentional: false positives are
+recoverable friction, false negatives erode trust, which is fatal.
 
 ### Cross-cutting / leading indicators
 
@@ -272,8 +275,7 @@ In order of risk:
    reviewers). Rough signal on claim 2. If defects-caught looks flat,
    shelf or pivot before investing further in the human-review pitch.
 
-Skip the economics deep-dive until 1 and 4 are positive. Cost only matters
-if value is established.
+There is no economics phase. Cost is not a kill criterion; quality is.
 
 **Phase 3 — Decide.**
 Greenlight = both (1) and (2) show positive lift against a credible
@@ -288,8 +290,11 @@ needs.
 We commit to shelving if any of these hold after we have real data:
 
 **The prose is too generated.** If 50% of generated sections get
-hand-rewritten within a week, the LLM is adding friction, not value.
-The half-life of generated prose is the real test of whether this works.
+hand-rewritten within a week, the LLM scaffold isn't trustworthy.
+Humans are rewriting it from scratch, the artifact's voice belongs
+entirely to the human edits, and the generator is adding nothing
+the human couldn't have written faster. The half-life of generated
+prose is the real test of whether this works.
 
 **Drift compounds despite the cascade.** If `trie verify` fires
 constantly on real refactors, or worse, misses real drift and the tree
