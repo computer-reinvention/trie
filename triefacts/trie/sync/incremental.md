@@ -1,62 +1,62 @@
 ---
 trie_version: 0.1.0
 source: trie/sync/incremental.py
-file_fingerprint: 4a2fb47825d1a2c965cb8b7891fb5c7e4777a239d2062c7918114b303d594c70
-last_synced_at: '2026-05-14T18:55:31Z'
+file_fingerprint: cf1bee01a114f9189beefb28dcd62d1a00006d9f59a1d63c333ccde5cc483664
+last_synced_at: '2026-05-14T19:39:33Z'
 defines:
 - kind: class
   qualified_name: trie/sync/incremental:IncrementalWorklist
-  lines: 19-31
+  lines: 19-36
 - kind: class
   qualified_name: trie/sync/incremental:IncrementalResult
-  lines: 35-43
+  lines: 40-48
 - kind: function
   qualified_name: trie/sync/incremental:compute_incremental_worklist
-  lines: 46-92
+  lines: 51-99
 - kind: function
   qualified_name: trie/sync/incremental:run_incremental
-  lines: 95-203
+  lines: 102-216
 incoming_refs: 14
 outgoing_refs: 9
 ---
-<!-- trie:section symbol=trie/sync/incremental:IncrementalWorklist fingerprint=612b09824da967027fa1ef2e5eecde2e7f8e7f1e16a554538c49f86b588aa911 body_fp=2a0f89003fea4aa2dd85e91858e80dda752ac23ab1a350f0c34b5dd6205379b0 -->
+<!-- trie:section symbol=trie/sync/incremental:IncrementalWorklist fingerprint=7826c19b1675dc11b7b99441f08cfd1c34dc9313071f237073b5192dc6021f55 body_fp=d2957bc5358efadeafd7fa77b03f9c5c01478290b97ad1295a5b9d934ffa80be source_ref=3d33f6931189bf5186ab59a9a7c0eaf8728c4797 -->
 ## `IncrementalWorklist`
 
-Frozen dataclass previewing which files and orphans `run_incremental` would touch, without making changes.
+Read-only preview of files `run_incremental` would touch, produced by `compute_incremental_worklist`.
 
-- **`affected_files`**: union of directly stale and cascaded files
-- **`directly_stale`**: files whose triefacts are outdated relative to source
-- **`cascaded_files`**: files pulled in transitively via the symbol graph
-- **`orphan_triefacts`**: triefact paths with no corresponding source file
+- `hop_by_file`: cascade hop distance per file; stale files map to 0; used to rank cascade files closest-to-change first.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/incremental:IncrementalResult fingerprint=44d8d13db810a81ea27f75709b870895913876f1c8dbdc95aa93ed09cc9916cf body_fp=4019202d14a6c4248b4e058c755061cbad02e8c84a44771671da2166f3217384 -->
+<!-- trie:section symbol=trie/sync/incremental:IncrementalResult fingerprint=44d8d13db810a81ea27f75709b870895913876f1c8dbdc95aa93ed09cc9916cf body_fp=e3dc3304e84e6612872b6348d91fdf60ffce9a2ebdf7c41741052a2be27170a0 source_ref=3d33f6931189bf5186ab59a9a7c0eaf8728c4797 -->
 ## `IncrementalResult`
 
-Frozen dataclass summarising the outcome of a `run_incremental` call.
+Frozen dataclass holding counts and cost totals returned by `run_incremental`.
 
-- `files_skipped_no_budget`: count of files skipped due to budget or limit exhaustion.
-- `files_skipped_no_symbols`: count of files skipped because they had no public symbols.
-- `orphan_triefacts_removed`: paths of deleted triefacts with no matching source file.
-- `sync_results`: per-file `FileSyncResult` for each successfully processed file.
+- `files_skipped_no_budget`: files skipped due to `--limit` or `--budget` exhaustion.
+- `files_skipped_no_symbols`: files skipped because they export no public symbols.
+- `orphan_triefacts_removed`: paths of deleted stale triefacts with no source file.
+- `sync_results`: one `FileSyncResult` per successfully processed file.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/incremental:compute_incremental_worklist fingerprint=b08baa6ed9200186afbab7173f99dbd4dc9915aca4e1de8b8900728330e16a92 body_fp=d238b74ae0b94acba7502713463a0afd7adbad5cbdc762cd3ca3d213124cfff5 -->
+<!-- trie:section symbol=trie/sync/incremental:compute_incremental_worklist fingerprint=e9fd2aa851cc9e5d4c1bf62d54211ae81d1a6f9a9d59f384e3be2668de57abad body_fp=e534a3d83eccc306724ef0e8340405acad09b7a6a350986c35157c87f4c27330 source_ref=3d33f6931189bf5186ab59a9a7c0eaf8728c4797 -->
 ## `compute_incremental_worklist(*, project_root: Path, config: Config, store: Store) -> IncrementalWorklist`
 
 Scan, check, and cascade to produce a read-only preview of files `run_incremental` would touch.
 
-- `orphan_triefacts`: listed but not deleted; caller decides whether to remove them.
-- Stale items whose source file no longer exists are excluded and treated as orphans.
+- Does not delete orphan triefacts or invoke the LLM.
+- Excludes stale entries whose source file no longer exists (treated as orphans).
+- `orphan_triefacts` in result: caller decides whether to delete or just report.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/incremental:run_incremental fingerprint=e18cb6747206cd56bea10f70f101430eb3af51714fbf0b2705ec7a4ebc2b81ec body_fp=a43ef448899853eb5ba0c726398456de54bfb8ec24f26b6e37e8dc2cf464d834 -->
+<!-- trie:section symbol=trie/sync/incremental:run_incremental fingerprint=cfe28cafc29ba473924756f0d5c3e6b6e6b4e0980f6aab68c6d1d243db28d1fa body_fp=8b816fdbcab95470ca72d25e82cf98005a81e1dc42add6a99625bad285120e62 source_ref=3d33f6931189bf5186ab59a9a7c0eaf8728c4797 -->
 ## `run_incremental(*, project_root: Path, config: Config, store: Store, client: ModelClient, pricing: ModelPricing | None = None, budget_usd: float | None = None, limit: int | None = None, progress: ProgressCallback | None = None) -> IncrementalResult`
 
-Refresh stale triefacts and their cascade of dependent files, then remove orphan triefacts.
+Refresh triefacts for stale source files and their cascade of dependents, then remove orphan triefacts.
 
-- `budget_usd`: stops queuing new files once cumulative cost meets or exceeds this value.
-- `limit`: stops queuing new files once this many have been successfully synced.
-- `pricing`: if `None`, cost tracking is skipped and `actual_cost_usd` stays `0.0`.
-- `progress`: if `None`, a no-op callback is used.
+- `budget_usd`: stop syncing new files once cumulative cost meets or exceeds this value.
+- `limit`: stop after this many files have been successfully synced.
+- `pricing`: if `None`, cost tracking is disabled and `actual_cost_usd` is 0.
+- `progress`: defaults to `NULL_PROGRESS` (no-op) when omitted.
+- Files with no public symbols and no removed sections are counted in `files_skipped_no_symbols`, not `files_synced`.
+- Directly-stale files are synced before cascade-pulled files; cascade files are ordered by hop distance ascending.
 <!-- trie:end -->
