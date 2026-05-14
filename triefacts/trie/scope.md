@@ -10,7 +10,7 @@ defines:
 incoming_refs: 10
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=trie/scope:discover_files fingerprint=dcf6cef5f7f1965b7f70313f806c1e1e0168f483eaa0b6ac4448e2d1990c8edd body_fp=e763e815959dc5c04a73ddbe611d9f29496cae6a52eb4f763a2aa984524001be -->
+<!-- trie:section symbol=trie/scope:discover_files fingerprint=dcf6cef5f7f1965b7f70313f806c1e1e0168f483eaa0b6ac4448e2d1990c8edd body_fp=e763e815959dc5c04a73ddbe611d9f29496cae6a52eb4f763a2aa984524001be source_ref=f8a23f982fb02a3a1ba2e235a94683e1984a2cd4 -->
 ## `discover_files(project_root: Path, scope: Scope) -> list[Path]`
 
 Return sorted absolute paths of files under `project_root` matching `scope.include` glob patterns minus any matched by `scope.exclude`.

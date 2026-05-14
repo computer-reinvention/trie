@@ -13,7 +13,7 @@ defines:
 incoming_refs: 7
 outgoing_refs: 2
 ---
-<!-- trie:section symbol=trie/sync/reconcile:find_orphan_triefacts fingerprint=1686ac04fded14fddb1a9d3afda81e606cd9888e30673c180ed639f49c233d10 body_fp=390f75c084a5cc5913a7b7c737b8906051a07a484037bff4bb7c67f5eff8e039 -->
+<!-- trie:section symbol=trie/sync/reconcile:find_orphan_triefacts fingerprint=1686ac04fded14fddb1a9d3afda81e606cd9888e30673c180ed639f49c233d10 body_fp=390f75c084a5cc5913a7b7c737b8906051a07a484037bff4bb7c67f5eff8e039 source_ref=9e576c94de69bc9bed35694ec4c6df87791394e6 -->
 ## `find_orphan_triefacts(*, project_root: Path, config: Config) -> list[Path]`
 
 Return absolute paths of trie-owned triefact `.md` files whose corresponding source file no longer exists in scope.
@@ -22,7 +22,7 @@ Return absolute paths of trie-owned triefact `.md` files whose corresponding sou
 - **orphan**: triefact path mirrors source tree, so `triefacts/foo/bar.md` expects `foo/bar.py` in scope.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/reconcile:remove_orphan_triefacts fingerprint=18e45ead56f4ba24689540a1a7fcc01268f5f8417dad5cc26c04bae3232493fe body_fp=d133c979b6e394725235d8a77bcc02866c38e5cf37e2e0e03bd0f68490c747cb -->
+<!-- trie:section symbol=trie/sync/reconcile:remove_orphan_triefacts fingerprint=18e45ead56f4ba24689540a1a7fcc01268f5f8417dad5cc26c04bae3232493fe body_fp=d133c979b6e394725235d8a77bcc02866c38e5cf37e2e0e03bd0f68490c747cb source_ref=9e576c94de69bc9bed35694ec4c6df87791394e6 -->
 ## `remove_orphan_triefacts(*, project_root: Path, config: Config) -> list[Path]`
 
 Delete trie-owned triefact files whose source no longer exists; return deleted paths.
