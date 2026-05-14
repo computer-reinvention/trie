@@ -34,12 +34,14 @@ Example agent wiring (Claude Code's mcp_servers config):
 from __future__ import annotations
 
 import difflib
+import json
 from collections import deque
 from pathlib import Path
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from trie import telemetry
 from trie.config import Config, Mcp
 from trie.graph.store import LocatePredicate, Store, SymbolDetail
 
@@ -94,6 +96,12 @@ class TrieTools:
     def __init__(self, project_root: Path) -> None:
         self.config, self.root = Config.find_and_load(project_root)
         self.mcp_cfg: Mcp = self.config.mcp
+        # Telemetry: configure from the project's [debug] block. Agents spawn the
+        # MCP server directly (not via `trie ...`), so this is the only place we
+        # can wire it from config for the stdio path. The env var TRIE_DEBUG
+        # still wins if set.
+        telemetry.configure(self.config.debug, self.root)
+        telemetry.emit("mcp_server_start", project_root=str(self.root))
         self.triefacts_root = self.root / self.config.triefacts.root
         self.src_root = (self.root / self.config.triefacts.source_root).resolve()
         self.store = Store(self.root / ".trie" / "graph.db")
@@ -126,28 +134,42 @@ class TrieTools:
         Provide only the fields you need — most queries use just `name_contains` or
         `scope_prefix`.
         """
-        pred_obj, err = self._parse_predicate(predicate)
-        if err is not None:
-            return err
+        tele_args = (
+            {"predicate": predicate, "rank_by": rank_by, "limit": limit}
+            if telemetry.capture_args()
+            else {}
+        )
+        with telemetry.timed("mcp_call", tool="locate", args=tele_args) as tele_ctx:
+            pred_obj, err = self._parse_predicate(predicate)
+            if err is not None:
+                tele_ctx["result_kind"] = "error"
+                tele_ctx["error_code"] = err["error"]["code"]
+                return err
 
-        rank = rank_by or self.mcp_cfg.locate_default_rank_by
-        capped_limit = min(max(1, limit), self.mcp_cfg.locate_max_limit)
+            rank = rank_by or self.mcp_cfg.locate_default_rank_by
+            capped_limit = min(max(1, limit), self.mcp_cfg.locate_max_limit)
 
-        hits = self.store.locate_symbols(pred_obj, rank_by=rank, limit=capped_limit)
-        one_liner_cap = self.mcp_cfg.locate_one_liner_max_chars
-        return [
-            {
-                "qname": h.qualified_name,
-                "signature": h.signature or "",
-                "file_pointer": f"{h.file_path}:{h.start_line}",
-                "one_liner": _truncate(h.one_liner, one_liner_cap),
-                "is_public": h.is_public,
-                "kind": h.kind,
-                "inbound_count": h.inbound_count,
-                "outbound_count": h.outbound_count,
-            }
-            for h in hits
-        ]
+            hits = self.store.locate_symbols(pred_obj, rank_by=rank, limit=capped_limit)
+            one_liner_cap = self.mcp_cfg.locate_one_liner_max_chars
+            result = [
+                {
+                    "qname": h.qualified_name,
+                    "signature": h.signature or "",
+                    "file_pointer": f"{h.file_path}:{h.start_line}",
+                    "one_liner": _truncate(h.one_liner, one_liner_cap),
+                    "is_public": h.is_public,
+                    "kind": h.kind,
+                    "inbound_count": h.inbound_count,
+                    "outbound_count": h.outbound_count,
+                }
+                for h in hits
+            ]
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["result_count"] = len(result)
+            tele_ctx["response_bytes"] = len(json.dumps(result, default=str))
+            if telemetry.capture_responses():
+                tele_ctx["response"] = result
+            return result
 
     def _parse_predicate(
         self, predicate: dict[str, Any] | None
@@ -231,45 +253,58 @@ class TrieTools:
         Use after `locate` once you know which symbol you want to understand. If you
         need depth > 1, use `walk` and follow up with `explain` on the nodes that matter.
         """
-        detail = self.store.get_symbol_detail(qname)
-        if detail is None:
-            return _error(
-                "not_found",
-                f"No symbol with qualified name {qname!r}.",
-                self._suggest_for_qname(qname),
-            )
+        tele_args = {"qname": qname} if telemetry.capture_args() else {}
+        with telemetry.timed("mcp_call", tool="explain", args=tele_args) as tele_ctx:
+            detail = self.store.get_symbol_detail(qname)
+            if detail is None:
+                err = _error(
+                    "not_found",
+                    f"No symbol with qualified name {qname!r}.",
+                    self._suggest_for_qname(qname),
+                )
+                tele_ctx["result_kind"] = "error"
+                tele_ctx["error_code"] = err["error"]["code"]
+                return err
 
-        prose, prose_notes = self._prose_for(detail)
+            prose, prose_notes = self._prose_for(detail)
 
-        callers_raw = self.store.references_in(qname)
-        callees_raw = self.store.references_out(qname)
+            callers_raw = self.store.references_in(qname)
+            callees_raw = self.store.references_out(qname)
 
-        callers, caller_truncated_note = self._neighbour_summaries(callers_raw)
-        callees, callee_truncated_note = self._neighbour_summaries(callees_raw)
+            callers, caller_truncated_note = self._neighbour_summaries(callers_raw)
+            callees, callee_truncated_note = self._neighbour_summaries(callees_raw)
 
-        notes: list[str] = []
-        notes.extend(prose_notes)
-        if caller_truncated_note:
-            notes.append(caller_truncated_note)
-        if callee_truncated_note:
-            notes.append(callee_truncated_note)
-        if detail.inbound_count > self.mcp_cfg.walk_hub_threshold:
-            notes.append(
-                f"this symbol has {detail.inbound_count} inbound edges and is treated "
-                "as a hub; cascade expansion stops here."
-            )
+            notes: list[str] = []
+            notes.extend(prose_notes)
+            if caller_truncated_note:
+                notes.append(caller_truncated_note)
+            if callee_truncated_note:
+                notes.append(callee_truncated_note)
+            if detail.inbound_count > self.mcp_cfg.walk_hub_threshold:
+                notes.append(
+                    f"this symbol has {detail.inbound_count} inbound edges and is treated "
+                    "as a hub; cascade expansion stops here."
+                )
 
-        out: dict[str, Any] = {
-            "qname": detail.qualified_name,
-            "signature": detail.signature or "",
-            "prose": prose,
-            "source_pointer": f"{detail.file_path}:{detail.start_line}-{detail.end_line}",
-            "callers": callers,
-            "callees": callees,
-        }
-        if notes:
-            out["notes"] = notes
-        return out
+            out: dict[str, Any] = {
+                "qname": detail.qualified_name,
+                "signature": detail.signature or "",
+                "prose": prose,
+                "source_pointer": f"{detail.file_path}:{detail.start_line}-{detail.end_line}",
+                "callers": callers,
+                "callees": callees,
+            }
+            if notes:
+                out["notes"] = notes
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["callers_count"] = len(callers)
+            tele_ctx["callees_count"] = len(callees)
+            tele_ctx["prose_chars"] = len(prose)
+            tele_ctx["notes_count"] = len(notes)
+            tele_ctx["response_bytes"] = len(json.dumps(out, default=str))
+            if telemetry.capture_responses():
+                tele_ctx["response"] = out
+            return out
 
     def _prose_for(self, detail: SymbolDetail) -> tuple[str, list[str]]:
         """Pull the section body verbatim from the triefact tree.
@@ -355,115 +390,138 @@ class TrieTools:
         Returns signatures and one-liners only — for prose, follow up with `explain`
         on a specific node.
         """
-        if direction not in ("callers", "callees", "both"):
-            return _error(
-                "invalid_argument",
-                f"`direction` must be one of callers/callees/both, got {direction!r}.",
-            )
-        root_detail = self.store.get_symbol_detail(from_qname)
-        if root_detail is None:
-            return _error(
-                "not_found",
-                f"No symbol with qualified name {from_qname!r}.",
-                self._suggest_for_qname(from_qname),
-            )
-
-        notes: list[str] = []
-        requested_depth = depth
-        depth = max(0, min(depth, self.mcp_cfg.walk_max_depth))
-        if depth != requested_depth:
-            notes.append(f"depth was clamped from {requested_depth} to {depth} (server max).")
-
-        nodes: dict[str, dict[str, Any]] = {}
-        edges: list[dict[str, str]] = []
-        truncated_at: list[str] = []
-        max_nodes = self.mcp_cfg.walk_max_nodes
-        hub_threshold = self.mcp_cfg.walk_hub_threshold
-        one_liner_cap = self.mcp_cfg.explain_neighbour_one_liner_max_chars
-
-        def add_node(detail: SymbolDetail) -> bool:
-            """Register a node if it fits under max_nodes. Returns False if capacity hit."""
-            if detail.qualified_name in nodes:
-                return True
-            if len(nodes) >= max_nodes:
-                return False
-            nodes[detail.qualified_name] = {
-                "signature": detail.signature or "",
-                "one_liner": _truncate(detail.one_liner, one_liner_cap),
-            }
-            return True
-
-        add_node(root_detail)
-
-        # BFS frontier carries (qname, current_hop) so we know when to stop expanding.
-        queue: deque[tuple[str, int]] = deque([(root_detail.qualified_name, 0)])
-        visited: set[str] = {root_detail.qualified_name}
-        capacity_hit = False
-
-        while queue:
-            qname, hop = queue.popleft()
-            if hop >= depth:
-                continue
-            detail = self.store.get_symbol_detail(qname)
-            if detail is None:
-                continue
-            # Hub guard: skip outward expansion *through* a hub. The hub itself is
-            # already a node; we just don't pull its neighbours into the result.
-            if qname != root_detail.qualified_name and detail.inbound_count > hub_threshold:
-                if qname not in truncated_at:
-                    truncated_at.append(qname)
-                continue
-
-            outbound_qnames: list[tuple[str, str]] = []  # (neighbour_qname, edge_direction)
-            if direction in ("callers", "both"):
-                for src in self.store.references_in(qname):
-                    outbound_qnames.append((src, "in"))
-            if direction in ("callees", "both"):
-                for dst in self.store.references_out(qname):
-                    outbound_qnames.append((dst, "out"))
-
-            for neighbour, edge_dir in outbound_qnames:
-                # Edge: oriented relative to root. "in" = neighbour calls qname, etc.
-                edge = (
-                    {"from": neighbour, "to": qname}
-                    if edge_dir == "in"
-                    else {
-                        "from": qname,
-                        "to": neighbour,
-                    }
+        tele_args = (
+            {"from_qname": from_qname, "direction": direction, "depth": depth}
+            if telemetry.capture_args()
+            else {}
+        )
+        tele_ctx_outer = telemetry.timed("mcp_call", tool="walk", args=tele_args)
+        with tele_ctx_outer as tele_ctx:
+            if direction not in ("callers", "callees", "both"):
+                err = _error(
+                    "invalid_argument",
+                    f"`direction` must be one of callers/callees/both, got {direction!r}.",
                 )
-                edge_record = {**edge, "direction": edge_dir}
-                if edge_record not in edges:
-                    edges.append(edge_record)
+                tele_ctx["result_kind"] = "error"
+                tele_ctx["error_code"] = err["error"]["code"]
+                return err
+            root_detail = self.store.get_symbol_detail(from_qname)
+            if root_detail is None:
+                err = _error(
+                    "not_found",
+                    f"No symbol with qualified name {from_qname!r}.",
+                    self._suggest_for_qname(from_qname),
+                )
+                tele_ctx["result_kind"] = "error"
+                tele_ctx["error_code"] = err["error"]["code"]
+                return err
 
-                if neighbour in visited:
-                    continue
-                neighbour_detail = self.store.get_symbol_detail(neighbour)
-                if neighbour_detail is None:
-                    continue
-                if not add_node(neighbour_detail):
-                    capacity_hit = True
-                    continue
-                visited.add(neighbour)
-                queue.append((neighbour, hop + 1))
+            notes: list[str] = []
+            requested_depth = depth
+            depth = max(0, min(depth, self.mcp_cfg.walk_max_depth))
+            if depth != requested_depth:
+                notes.append(f"depth was clamped from {requested_depth} to {depth} (server max).")
 
-        if capacity_hit:
-            notes.append(f"walk reached max_nodes={max_nodes}; result is BFS-ordered from root.")
+            nodes: dict[str, dict[str, Any]] = {}
+            edges: list[dict[str, str]] = []
+            truncated_at: list[str] = []
+            max_nodes = self.mcp_cfg.walk_max_nodes
+            hub_threshold = self.mcp_cfg.walk_hub_threshold
+            one_liner_cap = self.mcp_cfg.explain_neighbour_one_liner_max_chars
 
-        result: dict[str, Any] = {
-            "root": {
-                "qname": root_detail.qualified_name,
-                "signature": root_detail.signature or "",
-                "one_liner": _truncate(root_detail.one_liner, one_liner_cap),
-            },
-            "nodes": nodes,
-            "edges": edges,
-        }
-        if truncated_at:
-            result["truncated_at"] = truncated_at
-        if notes:
-            result["notes"] = notes
-        return result
+            def add_node(detail: SymbolDetail) -> bool:
+                """Register a node if it fits under max_nodes. False on capacity hit."""
+                if detail.qualified_name in nodes:
+                    return True
+                if len(nodes) >= max_nodes:
+                    return False
+                nodes[detail.qualified_name] = {
+                    "signature": detail.signature or "",
+                    "one_liner": _truncate(detail.one_liner, one_liner_cap),
+                }
+                return True
+
+            add_node(root_detail)
+
+            # BFS frontier carries (qname, current_hop) so we know when to stop expanding.
+            queue: deque[tuple[str, int]] = deque([(root_detail.qualified_name, 0)])
+            visited: set[str] = {root_detail.qualified_name}
+            capacity_hit = False
+
+            while queue:
+                qname, hop = queue.popleft()
+                if hop >= depth:
+                    continue
+                detail = self.store.get_symbol_detail(qname)
+                if detail is None:
+                    continue
+                # Hub guard: skip outward expansion *through* a hub. The hub itself is
+                # already a node; we just don't pull its neighbours into the result.
+                if qname != root_detail.qualified_name and detail.inbound_count > hub_threshold:
+                    if qname not in truncated_at:
+                        truncated_at.append(qname)
+                    continue
+
+                outbound_qnames: list[tuple[str, str]] = []  # (neighbour_qname, edge_direction)
+                if direction in ("callers", "both"):
+                    for src in self.store.references_in(qname):
+                        outbound_qnames.append((src, "in"))
+                if direction in ("callees", "both"):
+                    for dst in self.store.references_out(qname):
+                        outbound_qnames.append((dst, "out"))
+
+                for neighbour, edge_dir in outbound_qnames:
+                    # Edge: oriented relative to root. "in" = neighbour calls qname, etc.
+                    edge = (
+                        {"from": neighbour, "to": qname}
+                        if edge_dir == "in"
+                        else {
+                            "from": qname,
+                            "to": neighbour,
+                        }
+                    )
+                    edge_record = {**edge, "direction": edge_dir}
+                    if edge_record not in edges:
+                        edges.append(edge_record)
+
+                    if neighbour in visited:
+                        continue
+                    neighbour_detail = self.store.get_symbol_detail(neighbour)
+                    if neighbour_detail is None:
+                        continue
+                    if not add_node(neighbour_detail):
+                        capacity_hit = True
+                        continue
+                    visited.add(neighbour)
+                    queue.append((neighbour, hop + 1))
+
+            if capacity_hit:
+                notes.append(
+                    f"walk reached max_nodes={max_nodes}; result is BFS-ordered from root."
+                )
+
+            result: dict[str, Any] = {
+                "root": {
+                    "qname": root_detail.qualified_name,
+                    "signature": root_detail.signature or "",
+                    "one_liner": _truncate(root_detail.one_liner, one_liner_cap),
+                },
+                "nodes": nodes,
+                "edges": edges,
+            }
+            if truncated_at:
+                result["truncated_at"] = truncated_at
+            if notes:
+                result["notes"] = notes
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["nodes_count"] = len(nodes)
+            tele_ctx["edges_count"] = len(edges)
+            tele_ctx["truncated_at_count"] = len(truncated_at)
+            tele_ctx["notes_count"] = len(notes)
+            tele_ctx["response_bytes"] = len(json.dumps(result, default=str))
+            if telemetry.capture_responses():
+                tele_ctx["response"] = result
+            return result
 
     # --- helpers -----------------------------------------------------------
 

@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
 
+from trie import telemetry
 from trie.config import Config
 from trie.parse.python import extract_symbols
 from trie.scope import discover_files
@@ -58,15 +59,22 @@ def check_project(*, project_root: Path, config: Config) -> CheckResult:
     the fingerprints used to detect drift. Designed to be fast: a few thousand files run
     in well under a second on a modern machine.
     """
+    with telemetry.timed("verify", project_root=str(project_root)) as tele:
+        return _check_project_inner(project_root=project_root, config=config, _tele=tele)
+
+
+def _check_project_inner(*, project_root: Path, config: Config, _tele: dict) -> CheckResult:
     project_root = project_root.resolve()
     src_root = (project_root / config.triefacts.source_root).resolve()
     discovered = discover_files(project_root, config.scope)
 
     items: list[StaleItem] = []
+    files_checked = 0
 
     for abs_source in discovered:
         if not abs_source.is_relative_to(src_root):
             continue
+        files_checked += 1
         rel_source = str(abs_source.relative_to(src_root))
 
         symbols = extract_symbols(abs_source, source_root=src_root)
@@ -149,5 +157,13 @@ def check_project(*, project_root: Path, config: Config) -> CheckResult:
                         qualified_name=qname,
                     )
                 )
+
+    # Telemetry: count by reason for the validation harness's "drift incidents" metric.
+    by_reason: dict[str, int] = {}
+    for it in items:
+        by_reason[it.reason.value] = by_reason.get(it.reason.value, 0) + 1
+    _tele["files_checked"] = files_checked
+    _tele["issues_found"] = len(items)
+    _tele["issues_by_reason"] = by_reason
 
     return CheckResult(items=items)

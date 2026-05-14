@@ -1,6 +1,10 @@
 # trie cache
 .trie/
 
+# trie telemetry (TRIE_DEBUG)
+debug.jsonl
+debug.*.jsonl
+
 # Python
 __pycache__/
 *.py[cod]

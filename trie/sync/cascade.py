@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from trie import telemetry
 from trie.graph.store import Store
 
 
@@ -37,43 +38,57 @@ def compute_cascade(
     `changed_files` always included.
     """
     seed_files = set(changed_files)
-    if not seed_files:
-        return CascadeResult(
-            affected_files=[],
-            changed_files=set(),
-            cascaded_from_change=set(),
-        )
+    with telemetry.timed(
+        "cascade",
+        seeds=len(seed_files),
+        depth=depth,
+        hub_threshold=hub_threshold,
+    ) as tele:
+        if not seed_files:
+            tele["affected_files"] = 0
+            tele["cascaded_from_change"] = 0
+            tele["hub_skips"] = 0
+            return CascadeResult(
+                affected_files=[],
+                changed_files=set(),
+                cascaded_from_change=set(),
+            )
 
-    inbound_counts = store.inbound_count_per_symbol()
-    affected_files: set[str] = set(seed_files)
+        inbound_counts = store.inbound_count_per_symbol()
+        affected_files: set[str] = set(seed_files)
 
-    seed_qnames: set[str] = set()
-    for f in seed_files:
-        seed_qnames.update(store.qnames_in_file(f))
+        seed_qnames: set[str] = set()
+        for f in seed_files:
+            seed_qnames.update(store.qnames_in_file(f))
 
-    visited: set[str] = set(seed_qnames)
-    frontier: list[str] = list(seed_qnames)
+        visited: set[str] = set(seed_qnames)
+        frontier: list[str] = list(seed_qnames)
+        hub_skips = 0
 
-    for _hop in range(max(0, depth)):
-        next_frontier: list[str] = []
-        for qname in frontier:
-            if inbound_counts.get(qname, 0) > hub_threshold:
-                # Hub symbol — skip outward expansion. The seed file itself is still
-                # in `affected_files`, but we don't pull in every caller of the hub.
-                continue
-            for src_qname, src_file in store.references_in_with_files(qname):
-                if src_qname in visited:
+        for _hop in range(max(0, depth)):
+            next_frontier: list[str] = []
+            for qname in frontier:
+                if inbound_counts.get(qname, 0) > hub_threshold:
+                    # Hub symbol — skip outward expansion. The seed file itself is still
+                    # in `affected_files`, but we don't pull in every caller of the hub.
+                    hub_skips += 1
                     continue
-                visited.add(src_qname)
-                affected_files.add(src_file)
-                next_frontier.append(src_qname)
-        if not next_frontier:
-            break
-        frontier = next_frontier
+                for src_qname, src_file in store.references_in_with_files(qname):
+                    if src_qname in visited:
+                        continue
+                    visited.add(src_qname)
+                    affected_files.add(src_file)
+                    next_frontier.append(src_qname)
+            if not next_frontier:
+                break
+            frontier = next_frontier
 
-    cascaded = affected_files - seed_files
-    return CascadeResult(
-        affected_files=sorted(affected_files),
-        changed_files=seed_files,
-        cascaded_from_change=cascaded,
-    )
+        cascaded = affected_files - seed_files
+        tele["affected_files"] = len(affected_files)
+        tele["cascaded_from_change"] = len(cascaded)
+        tele["hub_skips"] = hub_skips
+        return CascadeResult(
+            affected_files=sorted(affected_files),
+            changed_files=seed_files,
+            cascaded_from_change=cascaded,
+        )
