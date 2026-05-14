@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_generator.py
 file_fingerprint: 9d2c435ebc73dfbbdecf1a5bc5060b1343eb3106e63e9ec5e820ab75de2ff674
-last_synced_at: '2026-05-14T17:27:24Z'
+last_synced_at: '2026-05-14T18:26:12Z'
 defines:
 - kind: class
   qualified_name: tests/test_generator:FakeClient
@@ -34,13 +34,13 @@ defines:
 incoming_refs: 0
 outgoing_refs: 16
 ---
-<!-- trie:section symbol=tests/test_generator:FakeClient fingerprint=ebec988fe34a3959e1dc4041622df9100811f16c13ee31cd51550585e35d2deb body_fp=43e19e9c9bface45f457d317f9c5802cc3f7136046121839bb93c3bfc07aff65 -->
+<!-- trie:section symbol=tests/test_generator:FakeClient fingerprint=ebec988fe34a3959e1dc4041622df9100811f16c13ee31cd51550585e35d2deb body_fp=fb70d8a51c85d4e00369f1f8bb8f44fa8b7c83fa50aa7d22485042ae78c24322 -->
 ## `FakeClient`
 
 Test double that records the last `GenerationRequest` and returns a configurable canned `GenerationResponse`.
 
-- `response_text`: default Markdown body returned by `generate`.
-- `last_request`: stores the most recent request for assertion in tests.
+- `response_text`: default response body returned by `generate`.
+- `last_request`: populated on each `generate` call for assertion.
 <!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_generator:FakeClient.generate fingerprint=42d29f746c846f08569316c39868e14083913bde3de32fbf80aea806431cee3a body_fp=a3eb9ca7beb24153a300b50cda44a264c032ecc7dee0b71ab59a8837eb139405 -->
@@ -61,10 +61,10 @@ Assert that `build_cached_context` embeds the file path, source code, and a Pyth
 Assert that `_build_request` output contains the symbol's qualified name, kind, and line reference.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_generator:test_generate_section_passes_correct_prompt fingerprint=795a74eedf9662289e987121ee0a7ceaf9d5554910b2acadc3934d7556b5cfb2 body_fp=88fa5b863fe67917e1de094fe1bf46736dfb4b74a7134d9a2a9ca91c480a9012 -->
+<!-- trie:section symbol=tests/test_generator:test_generate_section_passes_correct_prompt fingerprint=795a74eedf9662289e987121ee0a7ceaf9d5554910b2acadc3934d7556b5cfb2 body_fp=8e6bf4f5ec05d8a2eb718ce89a2ed3ce8a5720e6da0a3b1fa6aab121d5d38220 -->
 ## `test_generate_section_passes_correct_prompt(tmp_path: Path)`
 
-Verify that `generate_section` sends the correct system prompt, cached context, and request, and returns a properly populated section.
+Verify that `generate_section` sends the correct system prompt, cached context, request text, and returns a properly populated section with token metadata.
 <!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_generator:test_generate_section_strips_surrounding_whitespace fingerprint=3bd204788338622df5251a6832f74b175b6480c415c0f2fdd8185cf4a015a702 body_fp=c62b99b8e09fbf4ae37f4e4ef73fac8829de3ffdb59e08ea98b2dda270501a55 -->
@@ -79,14 +79,14 @@ Assert that `generate_section` strips leading and trailing whitespace from the m
 Assert that `make_client` raises `NotImplementedError` for an unrecognised provider prefix.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_generator:test_make_client_requires_provider_prefix fingerprint=df2b5275115453c8315d3057c0b82e0ee7f1cedc1b60219fc1624984efb88cda body_fp=f9dbac98d75ff20a7a0a66bbd75f7e32bfd04665daaa91125544d51d9b3f2678 -->
+<!-- trie:section symbol=tests/test_generator:test_make_client_requires_provider_prefix fingerprint=df2b5275115453c8315d3057c0b82e0ee7f1cedc1b60219fc1624984efb88cda body_fp=ffcc3bf3a0153b7c6a9d08023c3df3fac2954060b1f47c41af29f742374f0855 -->
 ## `test_make_client_requires_provider_prefix()`
 
-Assert that `make_client` raises `ValueError` when given a model string without a `provider/` prefix.
+Assert `make_client` raises `ValueError` when given a model string without a `provider/` prefix.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_generator:test_make_client_anthropic_constructs fingerprint=abb7663559910baa08ced366ecfdf3a45b7765fa1724004772179456482b1b31 body_fp=194a503bfa387efd29058a33eb385bcf9b51c1ee2ecd67de9581d857f1e6a4dd -->
+<!-- trie:section symbol=tests/test_generator:test_make_client_anthropic_constructs fingerprint=abb7663559910baa08ced366ecfdf3a45b7765fa1724004772179456482b1b31 body_fp=6f78e24f0bedc31e108752655b65f1f3bec7e7ef377e526f048225bee17f53e4 -->
 ## `test_make_client_anthropic_constructs(monkeypatch: pytest.MonkeyPatch)`
 
-Verify that `make_client` with an `anthropic/` prefix constructs the SDK client and propagates the model ID correctly.
+Verify that `make_client` with an `anthropic/` prefix constructs an Anthropic client and propagates the model ID correctly.
 <!-- trie:end -->
