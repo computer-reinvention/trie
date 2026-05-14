@@ -35,3 +35,15 @@ default_depth = 1
 # Symbols with more inbound references than this are treated as depth-0 only,
 # preventing utility hubs (utils.py, common types) from invalidating the world.
 hub_symbol_threshold = 20
+
+[debug]
+# Append-only JSONL telemetry for trie's own operations. We're dogfooding and
+# actively investigating regen quality, so this is on by default in this repo.
+# Override per-invocation with TRIE_DEBUG=0 (force off) or TRIE_DEBUG=/path.jsonl
+# (force on, custom path). See trie/telemetry.py for the event schema.
+enabled = true
+log_path = "debug.jsonl"          # gitignored; relative to project root
+log_to_stderr = false             # mirror events to stderr (dev only; noisy)
+capture_args = true               # include MCP tool args in mcp_call events
+capture_responses = false         # full response bodies are large; keep off
+redact_keys = []                  # field paths to elide, e.g. ["args.predicate"]
