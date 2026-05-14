@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/parse/python.py
 file_fingerprint: 9030494455ceb54707d181a941297997d2ef7d02e4d9d6ed62ed1681a2cd9c96
-last_synced_at: '2026-05-12T18:29:59Z'
+last_synced_at: '2026-05-14T17:27:07Z'
 defines:
 - kind: class
   qualified_name: trie/parse/python:Symbol
@@ -19,41 +19,41 @@ defines:
 incoming_refs: 38
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=trie/parse/python:Symbol fingerprint=d9bc6c2e7a7f2bbdca9af4f1c7982a826342217f984a3fec7cdd6b475bf8a35e body_fp=fe0d3c53e575be2b7662c8cea86f640184b73d18d0384496c8a660c2f8b0f9be -->
+<!-- trie:section symbol=trie/parse/python:Symbol fingerprint=d9bc6c2e7a7f2bbdca9af4f1c7982a826342217f984a3fec7cdd6b475bf8a35e body_fp=5f8b8bb5f31b2a6cbbba2754e7fb6267b961927dfa480a2a38d869c0610ce579 -->
 ## `Symbol`
 
-Frozen dataclass representing a single extracted Python symbol with identity, source location, and content hashes.
+Immutable dataclass representing a parsed Python symbol (function, class, or method) with identity, source location, and content hashes.
 
 - `qualified_name`: `"module_key:dotted.name"` format
-- `kind`: one of `"function"`, `"class"`, or `"method"`
-- `file_path`: source-root-relative path string
-- `body_normalized_hash`: SHA-256 of comment-stripped token stream; used for change detection
-- `signature_hash`: SHA-256 of the `def`/`class` header line
+- `body_normalized_hash`: SHA-256 of comment-stripped body tokens; used for change detection
+- `signature_hash`: SHA-256 of the definition header text
 - `start_line` / `end_line`: 1-indexed, inclusive
 - `is_public`: `False` if name starts with `_` or enclosing class is private
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/parse/python:extract_module_docstring fingerprint=a2c67b5e81f19fe45381a6ac03c6b5e9ebc676e4d257b241a9600f8ce15222aa body_fp=1f9a4f969b09026fbc88b8dfdfbe4a8ff3dfd1581576d60ff9d0c123ccefc62b -->
+<!-- trie:section symbol=trie/parse/python:extract_module_docstring fingerprint=a2c67b5e81f19fe45381a6ac03c6b5e9ebc676e4d257b241a9600f8ce15222aa body_fp=047ffff55c673abc852162f5737e9c5f09324a46801a9e33bf0e63826672d3f3 -->
 ## `extract_module_docstring(file_path: Path) -> str | None`
 
-Parse a Python file and return its module-level docstring literal, or `None`.
+Parse a Python file and return the module-level docstring literal text, or `None`.
 
-- Returns raw text including surrounding quote marks; callers must strip delimiters.
+- Returns raw string including quote marks; callers must strip delimiters.
+- Only the first statement is considered, per PEP 257.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/parse/python:strip_string_literal fingerprint=d97254e76c736cbb686dec07837358d8ca659d0925bee0c37861f53acb07029f body_fp=106831a44be3bf07323d2a8c3f3d6a97a343e7c2ecfce9e153291df34b5342c4 -->
+<!-- trie:section symbol=trie/parse/python:strip_string_literal fingerprint=d97254e76c736cbb686dec07837358d8ca659d0925bee0c37861f53acb07029f body_fp=99067afec1280fd06516bbf5f87a4db4d6381d02374f8bea519a807098efb0b7 -->
 ## `strip_string_literal(raw: str) -> str`
 
-Strip Python string-literal delimiters and leading `f`/`r`/`b`/`u` prefixes, returning trimmed content.
+Strip Python string-literal delimiters and leading `f`/`r`/`b`/`u` prefix from a tree-sitter `string` node's text.
 
-- `raw`: raw text of a tree-sitter `string` node, including quotes and any prefix.
+- `raw`: raw node text including quotes and optional prefix characters
+- Returns inner content with surrounding whitespace stripped
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/parse/python:extract_symbols fingerprint=74c692ca103dc04ce6e5539f1c7a2068961cb9451642861cf10476095691e005 body_fp=ac2ff638cabe586e0b5b7ec176cab0a7fa781fc0f98693804547dcdc7bdb2f37 -->
+<!-- trie:section symbol=trie/parse/python:extract_symbols fingerprint=74c692ca103dc04ce6e5539f1c7a2068961cb9451642861cf10476095691e005 body_fp=b0ad967bf299a9fb5399f6a1faee1f50030ad119af297bf23ade86f9921da9f8 -->
 ## `extract_symbols(file_path: Path, source_root: Path | None = None) -> list[Symbol]`
 
-Parse a Python file and return deduplicated top-level functions, classes, and methods.
+Parse a Python file and return all top-level functions, classes, and class methods as `Symbol` objects.
 
-- `source_root`: sets the qualified-name prefix; defaults to the file's parent directory.
-- Duplicates (e.g. `@overload`, `@property`/setter) resolved last-wins by source order.
+- `source_root`: determines `qualified_name` prefix and stored `file_path`; defaults to `file_path.parent`.
+- Duplicate `qualified_name` entries (e.g. `@overload`, `@property`/setter) are resolved last-wins.
 <!-- trie:end -->

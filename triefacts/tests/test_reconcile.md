@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_reconcile.py
 file_fingerprint: 2a74ac9442ff2a4091fcfa7273f4e9333f45408b133d1a0b1e56c226b64e22cf
-last_synced_at: '2026-05-12T18:33:40Z'
+last_synced_at: '2026-05-14T17:30:04Z'
 defines:
 - kind: function
   qualified_name: tests/test_reconcile:test_no_orphans_when_sources_exist
@@ -37,10 +37,10 @@ Assert that `find_orphan_triefacts` returns an empty list when every triefact's 
 Verify that a triefact whose source file no longer exists is identified as an orphan.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_reconcile:test_user_authored_triefact_left_alone fingerprint=f7e0b52e0293c96a859e10c8404939b3c5d53e6a31d935c3c93b650a7aeffae7 body_fp=7e19ea8dcb5e29867d8fe0059ad94ff44cb4ebf5a1fd3d861ef7b09814631ab7 -->
+<!-- trie:section symbol=tests/test_reconcile:test_user_authored_triefact_left_alone fingerprint=f7e0b52e0293c96a859e10c8404939b3c5d53e6a31d935c3c93b650a7aeffae7 body_fp=e0288b9a5411ad8509c82456ef4ede7fcb9e858145b18cd92f26d26cc630612f -->
 ## `test_user_authored_triefact_left_alone(tmp_path: Path)`
 
-Assert that triefacts without `trie_version` front-matter are not reported as orphans.
+Assert that triefacts lacking `trie_version` front-matter are not identified as orphans.
 <!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_reconcile:test_remove_actually_deletes fingerprint=e9e70bd5366d12b0d5cb0285a42b15a9ebd2f3443133380b49c1b6e7282ac4c0 body_fp=7dada9fa181fe67a4d9180354a1eceb6a806aeb4a86ab06a116a811d60d2ff7b -->
@@ -55,8 +55,8 @@ Verify that `remove_orphan_triefacts` deletes orphaned triefact files from disk.
 Assert that `find_orphan_triefacts` returns an empty list when the triefacts directory does not exist.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_reconcile:test_excluded_source_treated_as_orphan fingerprint=51f3b95780e73d907221d3b2b525cce77bf2a2119a05633c3389661f3bd94cbe body_fp=99cfc73f03768d218169754251cb63fa9dc74a3b429d194111716e4af4aad388 -->
+<!-- trie:section symbol=tests/test_reconcile:test_excluded_source_treated_as_orphan fingerprint=51f3b95780e73d907221d3b2b525cce77bf2a2119a05633c3389661f3bd94cbe body_fp=c5e74327f0ae9b7996337bdbb3f75ec48d8073e2c546dfa79bf33f7d93a2fb18 -->
 ## `test_excluded_source_treated_as_orphan(tmp_path: Path)`
 
-Verify that a triefact whose source file is excluded by scope config is detected as an orphan.
+Assert that a triefact whose source file is excluded by scope config is detected as an orphan.
 <!-- trie:end -->
