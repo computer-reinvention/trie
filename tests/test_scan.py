@@ -131,10 +131,10 @@ def test_scan_populates_cross_file_edges(tmp_path: Path):
         assert result.edges_total >= 1
         # app:run -> lib:helper edge present
         out = s.references_out("app:run")
-        assert ("lib:helper", "tree_sitter_import") in out
+        assert "lib:helper" in out
         # Inverse view also works
         ins = s.references_in("lib:helper")
-        assert ("app:run", "tree_sitter_import") in ins
+        assert "app:run" in ins
     finally:
         s.close()
 
@@ -155,7 +155,7 @@ def test_scan_populates_intra_file_edges(tmp_path: Path):
     s, _ = _scan(tmp_path)
     try:
         out = s.references_out("mod:caller")
-        assert ("mod:util", "name_match") in out
+        assert "mod:util" in out
     finally:
         s.close()
 

@@ -41,6 +41,44 @@ def hash_body(body: str) -> str:
     return sha256(body.strip().encode("utf-8")).hexdigest()
 
 
+_HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s")
+_SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+|\Z")
+
+
+def extract_one_liner(body: str, *, max_chars: int = 200) -> str:
+    """Pull the first sentence of a section body, skipping any leading heading.
+
+    The body has the shape `## signature\n\n<prose...>`. The first non-heading,
+    non-blank paragraph is treated as the description; we take its first sentence,
+    collapse whitespace, and truncate to `max_chars`.
+
+    Returns "" if no usable text is found.
+    """
+    text_lines: list[str] = []
+    for raw in body.splitlines():
+        line = raw.strip()
+        if not line:
+            if text_lines:
+                break  # paragraph break ends the candidate sentence
+            continue
+        if _HEADING_RE.match(line):
+            continue
+        text_lines.append(line)
+    if not text_lines:
+        return ""
+    paragraph = " ".join(text_lines)
+    paragraph = re.sub(r"\s+", " ", paragraph).strip()
+    if not paragraph:
+        return ""
+    # First sentence: up to the first ., !, or ? followed by whitespace or end.
+    match = _SENTENCE_END_RE.search(paragraph)
+    first = paragraph[: match.start()] if match else paragraph
+    first = first.strip()
+    if len(first) > max_chars:
+        first = first[: max_chars - 1].rstrip() + "\u2026"
+    return first
+
+
 @dataclass(frozen=True)
 class Section:
     qualified_name: str

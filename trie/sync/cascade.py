@@ -61,7 +61,7 @@ def compute_cascade(
                 # Hub symbol — skip outward expansion. The seed file itself is still
                 # in `affected_files`, but we don't pull in every caller of the hub.
                 continue
-            for src_qname, src_file, _conf in store.references_in_with_files(qname):
+            for src_qname, src_file in store.references_in_with_files(qname):
                 if src_qname in visited:
                     continue
                 visited.add(src_qname)

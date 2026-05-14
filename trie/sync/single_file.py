@@ -16,7 +16,7 @@ from trie.parse.python import (
     strip_string_literal,
 )
 from trie.sync.generator import FileGenerationContext, generate_section
-from trie.sync.writer import TriefactFile
+from trie.sync.writer import TriefactFile, extract_one_liner
 
 
 @dataclass(frozen=True)
@@ -126,6 +126,7 @@ def sync_single_file(
     file_ctx = FileGenerationContext(file_path=rel_path, source_text=source_text)
 
     totals = {"in": 0, "out": 0, "cache_create": 0, "cache_read": 0}
+    triefact_rel_path = str(canonical_triefact_path.relative_to(project_root))
     for sym in public_symbols:
         gen = generate_section(symbol=sym, file_ctx=file_ctx, client=client)
         triefact.upsert_section(
@@ -137,6 +138,18 @@ def sync_single_file(
         totals["out"] += gen.output_tokens
         totals["cache_create"] += gen.cache_creation_input_tokens
         totals["cache_read"] += gen.cache_read_input_tokens
+        # Record the section metadata for cheap MCP lookups (one_liner + fingerprint).
+        # The store may be omitted (e.g. tests that don't construct a graph), in which
+        # case the agent surface degrades to empty one_liners — still functional.
+        if store is not None:
+            section = triefact.get_section(sym.qualified_name)
+            if section is not None:
+                store.upsert_section_record(
+                    triefact_path=triefact_rel_path,
+                    symbol_qname=sym.qualified_name,
+                    section_fingerprint=sym.body_normalized_hash,
+                    one_liner=extract_one_liner(section.body),
+                )
 
     current_qnames = {s.qualified_name for s in public_symbols}
     sections_removed = 0
