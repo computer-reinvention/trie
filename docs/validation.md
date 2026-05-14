@@ -283,16 +283,47 @@ needs.
 
 ---
 
-## The honest part
+## Shelf criteria
 
-The single biggest risk isn't any specific metric — it's that **prose is
-good but unnecessary.** Agents are getting better at reading code directly;
+We commit to shelving if any of these hold after we have real data:
+
+**The prose is too generated.** If 50% of generated sections get
+hand-rewritten within a week, the LLM is adding friction, not value.
+The half-life of generated prose is the real test of whether this works.
+
+**Drift compounds despite the cascade.** If `trie verify` fires
+constantly on real refactors, or worse, misses real drift and the tree
+silently rots, trust collapses and the system becomes worse than nothing.
+Bidirectional drift detection is load-bearing.
+
+**Agents don't change their behaviour.** If, given the MCP server, agents
+keep grepping anyway — because the prose surface is awkward, or because
+their training is too biased toward code-reading — Ring 1 never lands and
+Ring 2 is impossible.
+
+**Humans don't change their behaviour.** If reviewers ignore the prose
+diff and only look at the code diff, Ring 3 never lands. The prose layer
+becomes a parallel artifact nobody trusts, which is the fate of every
+"living documentation" attempt before this one.
+
+**Ring 1 lands but Ring 2 doesn't.** We become "another MCP server" in a
+crowded market. Useful, but commodity. The most likely failure mode and
+the one to watch for hardest.
+
+**Prose is good but unnecessary.** The single biggest risk that isn't a
+specific metric. Agents are getting better at reading code directly;
 context windows are growing; tooling like Serena and aider does
 graph-aware code reading without the prose artifact. trie's bet is that
 the prose layer is _qualitatively_ different from "smarter code reading,"
-not quantitatively better at the same thing.
+not quantitatively better at the same thing. The metric that answers it:
+**does triefact-augmented agent quality plateau higher than
+code-reading-with-better-tools?** That's the strong-form test in claim 1.
+Beating the no-tools baseline proves nothing the market doesn't already
+know.
 
-The metric that actually answers that: **does triefact-augmented agent
-quality plateau higher than code-reading-with-better-tools?** That's the
-strong-form test in claim 1. If we only beat the no-tools baseline, we've
-proven nothing the market doesn't already know — and we should shelf.
+The distinction we hold ourselves to: **"trie works"** (Ring 1) vs.
+**"trie matters"** (Rings 2 and 3). The first is easy to demonstrate
+and not enough. The second is the near-term bet. Ring 4 is not something
+we will validate in the next year; it's the direction the architecture
+has to remain consistent with, and the reason we won't compromise the
+substrate to win Ring 1 faster.
