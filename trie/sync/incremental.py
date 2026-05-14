@@ -143,9 +143,19 @@ def run_incremental(
     actual_cost = 0.0
     skipped_budget = 0
     skipped_no_symbols = 0
-    total = len(worklist.affected_files)
 
-    for idx, rel in enumerate(worklist.affected_files, start=1):
+    # Sync directly-stale files first, then cascade-pulled files. Both groups stay
+    # alphabetically sorted within themselves. This ordering matters once we have
+    # diff-aware regen (Level 2): a cascade-pulled section's prompt can reference
+    # the upstream symbol's freshly-regenerated triefact rather than its previous
+    # one. `worklist.affected_files` (the union) stays alphabetical for `trie plan`.
+    stale_set = set(worklist.directly_stale)
+    ordered_files = list(worklist.directly_stale) + [
+        f for f in worklist.affected_files if f not in stale_set
+    ]
+    total = len(ordered_files)
+
+    for idx, rel in enumerate(ordered_files, start=1):
         if limit is not None and len(sync_results) >= limit:
             skipped_budget += 1
             cb.on_skip(rel, "limit reached")

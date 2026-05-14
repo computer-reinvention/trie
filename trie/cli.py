@@ -430,15 +430,23 @@ def _print_incremental_plan(
         f"({breakdown}), ~${plan.total_estimated_cost:.4f} estimated"
     )
 
+    # Display in execution order: stale files first (sync touches them first so
+    # diff-aware regen can feed their fresh prose into cascade-pulled prompts),
+    # then cascade-pulled files. Within each group, preserve `plan.items` order
+    # (bootstrap rank: LOC * public_symbols descending) so the most expensive
+    # work is visible at the top of each group.
     direct_set = set(worklist.directly_stale)
-    for it in plan.items[:10]:
+    stale_items = [it for it in plan.items if it.file_path in direct_set]
+    cascade_items = [it for it in plan.items if it.file_path not in direct_set]
+    ordered = stale_items + cascade_items
+    for it in ordered[:10]:
         tag = "stale" if it.file_path in direct_set else "cascade"
         reporter.info(
             f"  • [bold]{it.file_path}[/bold] [dim]({tag})[/dim] "
             f"({it.public_symbols} symbols, ~${it.estimated.cost_usd:.4f})"
         )
-    if len(plan.items) > 10:
-        reporter.info(f"  … and {len(plan.items) - 10} more")
+    if len(ordered) > 10:
+        reporter.info(f"  … and {len(ordered) - 10} more")
 
     if worklist.orphan_triefacts:
         reporter.detail("orphan triefacts (would be deleted by `trie sync`):")
