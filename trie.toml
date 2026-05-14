@@ -13,6 +13,7 @@ exclude = [
     "**/.venv/**",
     "**/build/**",
     "**/dist/**",
+    "tmp/**",        # session scratch (backfill scripts, notes); never trie-managed
 ]
 
 [triefacts]
