@@ -1,92 +1,93 @@
 ---
 trie_version: 0.1.0
 source: trie/mcp_server.py
-file_fingerprint: 603d01f010b2929ac6b20d18e6a44e209b7631021b71ca2e1029055ea100f0aa
-last_synced_at: '2026-05-14T17:21:36Z'
+file_fingerprint: dd6150114ab5b7c73dd5bd3f7920f782cebda2dfbb67b13afab1fbefe725ca6d
+last_synced_at: '2026-05-14T18:31:50Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
 - kind: class
   qualified_name: trie/mcp_server:TrieTools
-  lines: 88-486
+  lines: 90-544
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.close
-  lines: 101-102
+  lines: 109-110
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.locate
-  lines: 106-150
+  lines: 114-172
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain
-  lines: 227-272
+  lines: 249-307
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.walk
-  lines: 342-466
+  lines: 377-524
 - kind: function
   qualified_name: trie/mcp_server:build_server
-  lines: 492-503
+  lines: 550-561
 - kind: function
   qualified_name: trie/mcp_server:run_stdio
-  lines: 506-509
+  lines: 564-567
 incoming_refs: 2
 outgoing_refs: 10
 ---
-<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=3afac261a45c7adce610b119d56c701db4708148379bd67139606b201d9d4d2c body_fp=b4fef3d50737ccce9e82a62d62dcbfdc48ebb49d50fd4db5d2da5311b9562794 -->
-## `TrieTools(project_root: Path)`
+<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=a9276102fa3197d721d6aeea11f59f308aa262003a5bfdbdd933bdab4b98f35d body_fp=1896c8f1ff3cbc085a8570a7d7b569fbbc5b4a4a0de5b58e9942e4954f76970c -->
+## `TrieTools`
 
-Host the three MCP tools (`locate`, `explain`, `walk`) as plain methods, owning a `Store` for the server process lifetime.
+Encapsulate the three MCP tool methods (`locate`, `explain`, `walk`) against a persistent `Store`, testable without MCP transport.
 
-- `project_root`: resolved against `Config.find_and_load` to locate config and graph DB.
+- `project_root`: resolved via `Config.find_and_load`; determines DB path and triefact tree location.
+- Call `close()` to release the underlying store connection.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_server:TrieTools.close fingerprint=51581d83ec8f7571f9518e69587e72415b3fd4ca4abd2172e2a9129bfe37b523 body_fp=dea1685fafbfd885cd0d5039bb88bac15fcf1910b30f092d6c55ae5445971767 -->
-## `close() -> None`
+<!-- trie:section symbol=trie/mcp_server:TrieTools.close fingerprint=51581d83ec8f7571f9518e69587e72415b3fd4ca4abd2172e2a9129bfe37b523 body_fp=442e119f95b99008035d6247dddce6fe6e965d30dfa4d278b5b93ce14b135e9f -->
+## `close(self) -> None`
 
-Release the underlying Store's database connection.
+Release the underlying `Store` database connection.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_server:TrieTools.locate fingerprint=29eb69b3cefcaefb299d19c21bb3bae0701ebcc6fbf026a145486e24ec163b2f body_fp=d92e3c6ad7b476b5d742f959ec2dcfe2836552f3d7742bff7782bb17697d1e61 -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.locate fingerprint=153edba47e914290ef15c96bc9115c1ad61b23c296b28968be5602c151f6cba8 body_fp=66b21097a42278633e30412ff580679c88a9b39f242d8ec108a3dda3a482a1a1 -->
 ## `locate(self, predicate: dict[str, Any] | None = None, rank_by: str | None = None, limit: int = 10) -> list[dict[str, Any]] | dict[str, Any]`
 
-Find symbols in the store matching a structured predicate, returning a ranked, capped list of symbol records.
+Find symbols in the store matching a structured predicate, returning ranked, capped results.
 
-- `predicate`: optional dict with fields `name_contains`, `kind`, `scope_prefix`, `scope_exclude`, `public_only`, `inbound_count`, `outbound_count`.
+- `predicate`: dict with optional keys `name_contains`, `kind`, `scope_prefix`, `scope_exclude`, `public_only`, `inbound_count`, `outbound_count`.
 - `rank_by`: `"public_first"` (default), `"inbound_count"`, or `"alphabetical"`.
-- `limit`: clamped to `[1, mcp_cfg.locate_max_limit]`.
-- Returns error envelope `{error: {code, message, suggestion?}}` on invalid input.
+- `limit`: capped server-side at `mcp_cfg.locate_max_limit`; values below 1 are raised to 1.
+- Returns a list of symbol dicts or an `{error: ...}` envelope on bad input.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_server:TrieTools.explain fingerprint=1ae3cb9dd8160b29676fa21d3d2696c25fd9d736fce5215dac9f4191ea9f26d8 body_fp=d55a2f9866d870e58903233d0bec59cfd4e6566614af7d9b501ceb67f17ab071 -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.explain fingerprint=b6b7c0bc63a3e0879a5888ead9fce642aa5c3f94e8f2540a3de2f32b70e23bca body_fp=275b10af2a169586a33fd4c8bba145ecf9e2fed7394993dde28ceb3860bc3249 -->
 ## `explain(self, qname: str) -> dict[str, Any]`
 
-Return a symbol's full prose plus one-liner summaries of every immediate caller and callee.
+Return a symbol's full prose and compact one-liners for every immediate caller and callee.
 
-- `qname`: fully-qualified symbol name, e.g. as returned by `locate`.
+- `qname`: fully-qualified symbol name as stored in the graph DB.
 - Returns `{qname, signature, prose, source_pointer, callers, callees, notes?}`.
-- Returns `{error: {code, message, suggestion}}` with code `not_found` if `qname` is unknown.
-- `notes` lists truncation warnings, missing triefact warnings, and hub detection notices.
+- Returns `{error: {code, message, suggestion}}` if `qname` is not found.
+- `notes`: list of warnings about missing triefacts, hub symbols, or truncated neighbours.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_server:TrieTools.walk fingerprint=2e6816ae285b1d494147432aa2d1877647aec570ba18adcd439bfa71f082d142 body_fp=98b0802773ecef2e1d9bc92328f5f126b79787a32a946f312a413e83d2f76f44 -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.walk fingerprint=a47a925d92469a18a79aa4f13ef64e4a34cc19c41cc83e2d0d0fc29ae0104183 body_fp=0c6c7c2f0b331a9c4a6fba9f1c96a024197c484f3b7386d52e70811fe61c67ee -->
 ## `walk(self, from_qname: str, direction: str = "callers", depth: int = 2) -> dict[str, Any]`
 
 Trace the call graph from `from_qname` outward up to `depth` hops via BFS.
 
-- `direction`: `"callers"`, `"callees"`, or `"both"`; invalid values return an error dict.
-- `depth`: clamped to `Config.mcp.walk_max_depth`; a note records any clamping.
-- Expansion halts at hub symbols (inbound count > `walk_hub_threshold`); their qnames appear in `truncated_at`.
-- Returns `{root, nodes, edges, truncated_at?, notes?}`; nodes carry signature and one-liner only.
-- For full prose on any node, call `explain` afterward.
+- `direction`: `"callers"`, `"callees"`, or `"both"`; controls which edges are followed.
+- `depth`: clamped to `Config.mcp.walk_max_depth`; a note is added if clamped.
+- Returns `{root, nodes, edges, truncated_at?, notes?}`; hub symbols (inbound count above threshold) halt expansion and appear in `truncated_at`.
+- Expansion halts early and adds a note when `walk_max_nodes` is reached.
+- Edge records carry `direction`: `"in"` (neighbour calls node) or `"out"` (node calls neighbour).
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_server:build_server fingerprint=bd4ab2471102d2f7359a1496e476e579ec96cbe8b5577db0c3232e034acb8208 body_fp=3e0f55d5dda6919e5909c15aed0c620c39d8210053f126bbb4d7960f3a7b56d9 -->
+<!-- trie:section symbol=trie/mcp_server:build_server fingerprint=bd4ab2471102d2f7359a1496e476e579ec96cbe8b5577db0c3232e034acb8208 body_fp=465a6923a499ff236b872cd60d4956e2fe4fb4f5a8838254749fbcf7f9ee949f -->
 ## `build_server(project_root: Path) -> tuple[FastMCP, TrieTools]`
 
-Construct an MCP server with `locate`, `explain`, and `walk` tools bound to `project_root`.
+Construct an MCP server bound to the trie state under `project_root`, registering all three tools.
 
-- Returns both the server and `TrieTools` to allow direct method calls in tests.
+- Returns `(FastMCP, TrieTools)`; `TrieTools` is exposed for direct testing without the MCP transport.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_server:run_stdio fingerprint=8cde71e2ff11fda4cfbc2261e1213e79ff338b8961e2ab7b957cf8c864ef91a9 body_fp=8c2f5537c9cc2271008d996fd0e21c3a1cfdd2e2f6eb893d54b534bf302ba744 -->
+<!-- trie:section symbol=trie/mcp_server:run_stdio fingerprint=8cde71e2ff11fda4cfbc2261e1213e79ff338b8961e2ab7b957cf8c864ef91a9 body_fp=67b250d9427021896d3cc51336addbd6b9578fbbf05a05b75bb8fc586530b87c -->
 ## `run_stdio(project_root: Path) -> None`
 
-Run the MCP server over stdio, blocking until the parent process closes the pipe.
+Build and run the MCP server over stdio, blocking until the parent process closes the pipe.
 <!-- trie:end -->

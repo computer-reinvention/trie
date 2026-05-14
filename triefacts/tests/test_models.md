@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_models.py
 file_fingerprint: b308887d2a458d142f8af7881da7183c7a9158aa32f833ef12ad36d59684d3c7
-last_synced_at: '2026-05-14T17:31:01Z'
+last_synced_at: '2026-05-14T18:28:40Z'
 defines:
 - kind: function
   qualified_name: tests/test_models:test_count_tokens_returns_input_tokens_from_api
@@ -25,20 +25,20 @@ outgoing_refs: 5
 Assert that `AnthropicClient.count_tokens` returns the `input_tokens` value from the API response.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_models:test_payload_includes_request_block_when_non_empty fingerprint=4f22ab41ab118aa5cf77f32ccf8402bce46a22a67fdb26a51f50639150cc0233 body_fp=574325fa97ea1d8b27431173d661a8c489e74b495ac5423b8137190fa8b204f5 -->
+<!-- trie:section symbol=tests/test_models:test_payload_includes_request_block_when_non_empty fingerprint=4f22ab41ab118aa5cf77f32ccf8402bce46a22a67fdb26a51f50639150cc0233 body_fp=8383f3689faf7c5c93bc9dcbe12304b36d66916a2560db0ba809eb1d181a3920 -->
 ## `test_payload_includes_request_block_when_non_empty()`
 
-Assert that a non-empty `request` field produces two content blocks in the `count_tokens` API payload.
+Assert that a non-empty `request` field produces two content blocks in the `count_tokens` payload.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_models:test_payload_skips_empty_request_block fingerprint=fede8ab1ff54693374262d939db8635af46c0c671971b0682aad8fda0f662dbe body_fp=03f4aaf13d756704e64acd501fbba71afbe1c4c25e6e6b5220a7ae161a90029a -->
+<!-- trie:section symbol=tests/test_models:test_payload_skips_empty_request_block fingerprint=fede8ab1ff54693374262d939db8635af46c0c671971b0682aad8fda0f662dbe body_fp=e6f3d87ef4d011898e094a3b2b36d4f6730fe92ca1ceb37d2687b0e3c42b8132 -->
 ## `test_payload_skips_empty_request_block()`
 
-Assert that `count_tokens` omits empty text blocks and preserves `cache_control` on the cached-context block.
+Verify that an empty `request` string is omitted from the API payload and `cache_control` is preserved on the cached-context block.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_models:test_payload_carries_model_and_system_prompt fingerprint=55ff54e49d83aae379c8a9ad8c229250ed330a0905def5228a6662e4728409b3 body_fp=684a5e485349a048495349106e9d3ad44c143c1a9615c7aa02e98bafc241b118 -->
+<!-- trie:section symbol=tests/test_models:test_payload_carries_model_and_system_prompt fingerprint=55ff54e49d83aae379c8a9ad8c229250ed330a0905def5228a6662e4728409b3 body_fp=0b408c3fad94c32a00179280c6e3106a10a1939c9dd5a387a9da75c02d9b2458 -->
 ## `test_payload_carries_model_and_system_prompt()`
 
-Verify that `count_tokens` passes the correct model name and system prompt (with ephemeral cache control) to the Anthropic API.
+Assert that the `count_tokens` payload includes the correct model name and a cache-controlled system prompt block.
 <!-- trie:end -->
