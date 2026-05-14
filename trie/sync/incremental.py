@@ -23,12 +23,17 @@ class IncrementalWorklist:
     "what would sync actually do?" on established projects, and reused inside
     `run_incremental` so the prep pipeline (scan + check + cascade) lives in
     one place instead of two.
+
+    `hop_by_file` is the cascade's hop distance map (file → minimum hops from
+    any seed file). Stale files map to 0. Used to rank cascade-pulled files
+    closest-to-the-change first.
     """
 
     affected_files: list[str]
     directly_stale: list[str]
     cascaded_files: list[str]
     orphan_triefacts: list[Path]
+    hop_by_file: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -76,6 +81,7 @@ def compute_incremental_worklist(
             directly_stale=[],
             cascaded_files=[],
             orphan_triefacts=orphans,
+            hop_by_file={},
         )
 
     cascade = compute_cascade(
@@ -89,6 +95,7 @@ def compute_incremental_worklist(
         directly_stale=directly_stale,
         cascaded_files=sorted(cascade.cascaded_from_change),
         orphan_triefacts=orphans,
+        hop_by_file=cascade.hop_by_file,
     )
 
 
@@ -144,15 +151,21 @@ def run_incremental(
     skipped_budget = 0
     skipped_no_symbols = 0
 
-    # Sync directly-stale files first, then cascade-pulled files. Both groups stay
-    # alphabetically sorted within themselves. This ordering matters once we have
-    # diff-aware regen (Level 2): a cascade-pulled section's prompt can reference
-    # the upstream symbol's freshly-regenerated triefact rather than its previous
-    # one. `worklist.affected_files` (the union) stays alphabetical for `trie plan`.
+    # Sync directly-stale files first, then cascade-pulled files ordered by hop
+    # distance from any seed (depth-1 callers before depth-2, etc.). This ordering
+    # is the precondition for diff-aware regen: closest-to-the-change cascade
+    # sections are the ones whose prose is most likely to need real updates, and
+    # regenerating them earlier means later (further-out) sections can reference
+    # the already-refreshed prose of their upstream neighbours.
+    #
+    # `worklist.affected_files` (the alphabetically-sorted union) stays unchanged
+    # so `trie plan`'s preview surface remains stable.
     stale_set = set(worklist.directly_stale)
-    ordered_files = list(worklist.directly_stale) + [
-        f for f in worklist.affected_files if f not in stale_set
-    ]
+    cascade_pulled = sorted(
+        (f for f in worklist.affected_files if f not in stale_set),
+        key=lambda f: (worklist.hop_by_file.get(f, 0), f),
+    )
+    ordered_files = list(worklist.directly_stale) + cascade_pulled
     total = len(ordered_files)
 
     for idx, rel in enumerate(ordered_files, start=1):
