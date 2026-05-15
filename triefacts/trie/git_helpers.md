@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/git_helpers.py
-file_fingerprint: 0af5090ce86137d44829448e1eb3c60e9e21478dc1eeda49962aad6076ce27d7
-last_synced_at: '2026-05-15T13:33:40Z'
+file_fingerprint: 1869d4b8b6eeb7f63a2be16423a2b3d75ce0d4fe4a82033c30aa3e128686f00a
+last_synced_at: '2026-05-15T13:40:45Z'
 description: Quiet, narrowly-scoped git operations for diff-aware regen.
 defines:
 - kind: function
@@ -13,10 +13,10 @@ defines:
   lines: 59-62
 - kind: function
   qualified_name: trie/git_helpers:compute_blob_hash
-  lines: 65-95
+  lines: 65-104
 - kind: function
   qualified_name: trie/git_helpers:retrieve_blob
-  lines: 98-116
+  lines: 107-125
 incoming_refs: 15
 outgoing_refs: 0
 ---
@@ -26,12 +26,13 @@ outgoing_refs: 0
 Return `True` if `path` lies inside a git working tree.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/git_helpers:compute_blob_hash fingerprint=bf3bb6c1bcb66d3008274f64cdc9b9ca520284dbf1b8f7577db36d53acaca954 body_fp=1f3d128b2166b4aea004ce3056aa9651a01ef38f6a32f1de4365685974912eeb source_ref=eb161f1638b105bcc4478ec76744c9a8269cd0a9 -->
-## `compute_blob_hash(file_path: Path) -> str | None`
+<!-- trie:section symbol=trie/git_helpers:compute_blob_hash fingerprint=afcadc5bcb6bfdf267b316dd72280d4ca940d06468c430a28dee2d9a0e494747 body_fp=c0a9ef15356a8b6d924c1a5ed90a7df18e90f70206ee6faeb5234d63be9aac27 source_ref=eb5f10acce02fe703d0fb96cc4ef4d1429d7695d -->
+## `compute_blob_hash(file_path: Path, *, max_bytes: int | None = None) -> str | None`
 
 Compute the git blob hash for `file_path`'s working-tree content without writing to `.git/objects`.
 
-- Returns `None` if the file is unreadable, git is unavailable, or the file is outside a git repo.
+- Returns `None` if the file is unreadable, git is unavailable, the file is outside a git repo, or the file exceeds `max_bytes`.
+- `max_bytes=None` (default) imposes no size limit; when set, skips git entirely for oversized files.
 - Hash is 40 chars (SHA-1) or 64 chars (SHA-256); anything else returns `None`.
 - Runs from the file's directory so `autocrlf`/attribute rules match commit-time behaviour.
 <!-- trie:end -->
