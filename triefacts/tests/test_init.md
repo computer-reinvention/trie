@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_init.py
 file_fingerprint: 0e184c81d9362c7f73da7b478b840c800a1a07a9c74aec22327683a46e1f8beb
-last_synced_at: '2026-05-14T17:14:25Z'
+last_synced_at: '2026-05-15T13:10:17Z'
 defines:
 - kind: function
   qualified_name: tests/test_init:python_project

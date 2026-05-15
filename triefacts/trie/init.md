@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/init.py
 file_fingerprint: f3d1e4aaf968cb9aa30244b8adf95c075197fdc20c8ebf759dd18eee20d1ec2a
-last_synced_at: '2026-05-14T17:29:03Z'
+last_synced_at: '2026-05-15T13:05:28Z'
 defines:
 - kind: class
   qualified_name: trie/init:InitResult
@@ -10,6 +10,12 @@ defines:
 - kind: class
   qualified_name: trie/init:InitError
   lines: 38-39
+- kind: function
+  qualified_name: trie/init:_detect_python_project
+  lines: 42-57
+- kind: function
+  qualified_name: trie/init:_ensure_gitignore_entry
+  lines: 60-73
 - kind: function
   qualified_name: trie/init:install_pre_commit_hook
   lines: 76-105
@@ -56,4 +62,20 @@ Initialise trie in `root`: write `trie.toml`, update `.gitignore`, and optionall
 - `run_scan`: run initial symbol scan so the graph is ready for `trie sync`.
 - `install_hooks`: attempt pre-commit hook installation via `install_pre_commit_hook`.
 - Raises `InitError` if `root` is not a directory, not a Python project, or `trie.toml` exists (each suppressible with `force=True`).
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/init:_detect_python_project fingerprint=d6552c9bad1130f26878d296aa1117bad09a3cd47ec50d67215c497e7f3de1eb body_fp=b004f35ebd610c424e83fc058dc245b40bc2cee3304f57bcc6501db4e6dbf398 source_ref=2bb407d196526bad43f7647e409c43350e691c45 -->
+## `_detect_python_project(root: Path) -> list[str]`
+
+Return detected Python project marker filenames for `root`, or an empty list if none found.
+
+- Returns `["*.py files"]` as fallback when no standard config files exist but `.py` files are found.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/init:_ensure_gitignore_entry fingerprint=70d84e5eee964e2def6cf234ec4d0cf31e6e2f6ddb5176994fee2664237d2df1 body_fp=4916e4546fa0969284169cc88e016830f876c740173a1d9772f62922a1eb4aa4 source_ref=2bb407d196526bad43f7647e409c43350e691c45 -->
+## `_ensure_gitignore_entry(gitignore: Path, line: str) -> bool`
+
+Append `line` to the gitignore file if absent; return `True` if the file was modified.
+
+- `line`: exact string to match (trailing `/` is ignored during comparison).
 <!-- trie:end -->

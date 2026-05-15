@@ -1,13 +1,16 @@
 ---
 trie_version: 0.1.0
 source: tests/test_e2e_sync.py
-file_fingerprint: 2decb1cbea98bb44f7b019177b002d2a28cb8c119c6ba01fce0a34d2c67cc665
-last_synced_at: '2026-05-14T19:36:34Z'
+file_fingerprint: e8fff2def8fe5d80fb0fce773f0272f9d77f0bd10163b4269f4e303ae65900c5
+last_synced_at: '2026-05-15T13:01:49Z'
 description: End-to-end test for `trie sync --file` against the tiny fixture repo.
 defines:
 - kind: class
   qualified_name: tests/test_e2e_sync:FakeClient
   lines: 26-50
+- kind: method
+  qualified_name: tests/test_e2e_sync:FakeClient.__post_init__
+  lines: 33-34
 - kind: method
   qualified_name: tests/test_e2e_sync:FakeClient.generate
   lines: 36-47
@@ -19,40 +22,43 @@ defines:
   lines: 54-67
 - kind: function
   qualified_name: tests/test_e2e_sync:test_sync_single_file_writes_triefact
-  lines: 70-100
+  lines: 70-102
 - kind: function
   qualified_name: tests/test_e2e_sync:test_human_prose_between_sections_survives_resync
-  lines: 103-138
+  lines: 105-140
 - kind: function
   qualified_name: tests/test_e2e_sync:test_resync_updates_section_when_source_changes
-  lines: 141-172
+  lines: 143-174
 - kind: function
   qualified_name: tests/test_e2e_sync:test_resync_removes_section_when_symbol_deleted
-  lines: 175-200
+  lines: 177-202
 - kind: function
   qualified_name: tests/test_e2e_sync:test_first_call_creates_cache_subsequent_calls_read
-  lines: 203-216
+  lines: 205-219
 - kind: function
   qualified_name: tests/test_e2e_sync:test_cli_sync_auto_bootstraps_first_run
-  lines: 219-229
+  lines: 222-232
 - kind: function
   qualified_name: tests/test_e2e_sync:test_cli_sync_errors_on_missing_file
-  lines: 232-236
+  lines: 235-239
 - kind: function
   qualified_name: tests/test_e2e_sync:test_cli_sync_errors_when_no_config
-  lines: 239-245
+  lines: 242-248
+- kind: function
+  qualified_name: tests/test_e2e_sync:_init_git
+  lines: 254-260
 - kind: function
   qualified_name: tests/test_e2e_sync:test_first_sync_in_git_repo_stamps_source_ref
-  lines: 260-278
+  lines: 263-281
 - kind: function
   qualified_name: tests/test_e2e_sync:test_sync_outside_git_repo_omits_source_ref
-  lines: 281-293
+  lines: 284-296
 - kind: function
   qualified_name: tests/test_e2e_sync:test_resync_with_committed_history_takes_diff_aware_path
-  lines: 296-336
+  lines: 299-339
 - kind: function
   qualified_name: tests/test_e2e_sync:test_resync_after_uncommitted_change_falls_back_to_cold
-  lines: 339-369
+  lines: 342-372
 incoming_refs: 0
 outgoing_refs: 26
 ---
@@ -88,10 +94,10 @@ Copy the tiny fixture repo into a temp dir and write a minimal `trie.toml` for `
 - **returns** path to the populated project root inside `tmp_path`
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_e2e_sync:test_sync_single_file_writes_triefact fingerprint=0b29e347e438cb839792d6f51ac929736b5244acac3d4251071390587f566a49 body_fp=5db327bebe49979c06022e5d747007893015c8c7623ff07135a4d84188384008 source_ref=71542c3c3e0ef178aa3ed0414dd5c02ff50b0c94 -->
+<!-- trie:section symbol=tests/test_e2e_sync:test_sync_single_file_writes_triefact fingerprint=94b9928853195be421740237bfaca67bdaa59a4ba7330e35e51099530b458628 body_fp=62794588a127fcd52bcafd93a75344430c1e2452cf0f4382f65c6f20500f7986 source_ref=491d210417adfffde3fc0215cd433e1dae6e3a49 -->
 ## `test_sync_single_file_writes_triefact(project: Path)`
 
-Verify that syncing `calculator.py` generates exactly 5 public-symbol sections, writes a triefact file with correct front matter, and omits private symbols.
+Verify that syncing `calculator.py` generates exactly 6 sections (all parser-surfaced symbols including `_internal_helper`), writes a triefact file with correct front matter, and no longer omits private symbols.
 <!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_e2e_sync:test_human_prose_between_sections_survives_resync fingerprint=918ac4736b7f4fb6b3d9d2da82a2d4084996a1f4547563434cf25bfcc35c6abe body_fp=1ebd39b08ee00b557357e0e2e42d69b5595a57d159cca148fe63f1badab81a06 source_ref=71542c3c3e0ef178aa3ed0414dd5c02ff50b0c94 -->
@@ -114,13 +120,13 @@ Verify that resyncing after a symbol is deleted from source removes its section 
 - `project`: fixture providing a temp copy of the tiny repo with config.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_e2e_sync:test_first_call_creates_cache_subsequent_calls_read fingerprint=387e19cdf13b0a93927df45484e84aafbd347880a1bb9e517b1c675542a4a417 body_fp=565221085f40c5e22b6f457e28d86cb31d2b18796c135e76e42ba17a825b513f source_ref=71542c3c3e0ef178aa3ed0414dd5c02ff50b0c94 -->
+<!-- trie:section symbol=tests/test_e2e_sync:test_first_call_creates_cache_subsequent_calls_read fingerprint=d349234f6f28f8ec4ddae981bc0d114c8a9720ace243788a9b245d233d30c096 body_fp=86980e18df5e5e1cfa912417f7e092cbc866fd2f7d9842244f92aa6219fd4074 source_ref=491d210417adfffde3fc0215cd433e1dae6e3a49 -->
 ## `test_first_call_creates_cache_subsequent_calls_read(project: Path)`
 
 Verify that the first LLM call accumulates cache-creation tokens and all subsequent calls accumulate cache-read tokens.
 
 - `cache_creation_input_tokens`: expected 100 (first call only).
-- `cache_read_input_tokens`: expected 400 (4 remaining calls × 100).
+- `cache_read_input_tokens`: expected 500 (5 remaining calls × 100).
 <!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_e2e_sync:test_cli_sync_auto_bootstraps_first_run fingerprint=673cf069292418a390de6294d6cdf03dd74c745121894c272b2a5abed7230bbf body_fp=5ff57e66c778a6a78d30b673e101b395748e87326d5b010dd4bc3b82adcccffa source_ref=71542c3c3e0ef178aa3ed0414dd5c02ff50b0c94 -->
@@ -165,4 +171,16 @@ Verify that resyncing a committed-then-modified file passes previous source and 
 ## `test_resync_after_uncommitted_change_falls_back_to_cold(project: Path)`
 
 Verify that modifying a file without committing causes resync to fall back to cold generation, omitting `<previous_source>` from all requests.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_e2e_sync:FakeClient.__post_init__ fingerprint=acb5f189b6faf4617c18bdcf095ff513902e065e9313e669660eb6579ac7a01f body_fp=d3cd75b1f15faecb54c8436c1279b02e02baf3a2f8c17967da4e260bde105996 source_ref=491d210417adfffde3fc0215cd433e1dae6e3a49 -->
+## `__post_init__(self) -> None`
+
+Initialize `requests_seen` to an empty list after dataclass field assignment.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_e2e_sync:_init_git fingerprint=aa18a74813989bea6f6328ca8a6d8a11921def8852349e9daaea55280c606b4c body_fp=1b2e5e738e5761c5bf871861027e03a932da6e64d83ad64eb3b9882d35645d4e source_ref=491d210417adfffde3fc0215cd433e1dae6e3a49 -->
+## `_init_git(repo: Path) -> None`
+
+Initialize a bare git repository with a default `main` branch and test identity in `repo`.
 <!-- trie:end -->

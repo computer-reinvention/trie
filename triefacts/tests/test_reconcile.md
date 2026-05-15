@@ -2,8 +2,11 @@
 trie_version: 0.1.0
 source: tests/test_reconcile.py
 file_fingerprint: 2a74ac9442ff2a4091fcfa7273f4e9333f45408b133d1a0b1e56c226b64e22cf
-last_synced_at: '2026-05-14T17:30:04Z'
+last_synced_at: '2026-05-15T13:02:05Z'
 defines:
+- kind: function
+  qualified_name: tests/test_reconcile:_setup
+  lines: 9-18
 - kind: function
   qualified_name: tests/test_reconcile:test_no_orphans_when_sources_exist
   lines: 21-29
@@ -59,4 +62,10 @@ Assert that `find_orphan_triefacts` returns an empty list when the triefacts dir
 ## `test_excluded_source_treated_as_orphan(tmp_path: Path)`
 
 Assert that a triefact whose source file is excluded by scope config is detected as an orphan.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_reconcile:_setup fingerprint=9635d698397eed755ba54f18855a451e5f737f90ab053c81317de51f20a18b4a body_fp=83f575b3088b9b3cd4fbf38e8f4476ec60d5f5d8cb36818e176c0d442deaa2b7 source_ref=b8ce768666df722220fe0f640f91bf372ed4c931 -->
+## `_setup(tmp_path: Path) -> Path`
+
+Write a minimal `trie.toml` config file into `tmp_path` and return it as the project root.
 <!-- trie:end -->

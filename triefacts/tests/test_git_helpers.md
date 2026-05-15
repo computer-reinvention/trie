@@ -2,9 +2,15 @@
 trie_version: 0.1.0
 source: tests/test_git_helpers.py
 file_fingerprint: f3dcec4ab08da1021c94f58ed56c75875b776e2d27a98e78a6ff7d672154f3f9
-last_synced_at: '2026-05-14T19:37:34Z'
+last_synced_at: '2026-05-15T13:01:54Z'
 description: Tests for the narrow git helpers used by diff-aware regen.
 defines:
+- kind: function
+  qualified_name: tests/test_git_helpers:_git
+  lines: 19-21
+- kind: function
+  qualified_name: tests/test_git_helpers:_init_repo
+  lines: 24-27
 - kind: function
   qualified_name: tests/test_git_helpers:repo
   lines: 31-33
@@ -114,4 +120,18 @@ Assert that `retrieve_blob` returns `None` when called outside a git repository,
 ## `test_compute_blob_hash_outside_repo_returns_none(tmp_path: Path)`
 
 Assert that `compute_blob_hash` returns `None` when called outside a git repository.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_git_helpers:_git fingerprint=403db8e372782e481e7267d4964ff6549c8310ffba151940399e7782b72013b6 body_fp=6e15525727c23fc1bd344dc8d1bfc1d3212d12aea483347ec2b4a6694fe2d1f2 source_ref=6922d330926218a78e65a95d706a8038d95a55da -->
+## `_git(args: list[str], cwd: Path) -> None`
+
+Run a `git` subprocess in `cwd`, injecting no extra config beyond what the shell provides.
+
+- **`check=True`**: raises `CalledProcessError` on non-zero exit.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_git_helpers:_init_repo fingerprint=e6a8e59044cd4691a616ada677408e96c9c856caafae13744c548e08d2b462be body_fp=4747c14c52ba5d0c736b538ee435c1faef12957485894003a3254da1b08511c5 source_ref=6922d330926218a78e65a95d706a8038d95a55da -->
+## `_init_repo(path: Path) -> None`
+
+Initialize a git repository at `path` with a `main` branch and test identity config.
 <!-- trie:end -->

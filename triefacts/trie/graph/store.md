@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/graph/store.py
-file_fingerprint: 361ae12b4d8899b92fb7673d0847fd1cc711675faa3869ccd36f5c4fcf977702
-last_synced_at: '2026-05-14T19:44:32Z'
+file_fingerprint: 8c2dd95eb9b1ce4d2aad759766f24f74822daa986410af303d582e36c72e976f
+last_synced_at: '2026-05-15T13:05:21Z'
 defines:
 - kind: class
   qualified_name: trie/graph/store:FileRecord
@@ -21,10 +21,22 @@ defines:
   lines: 112-129
 - kind: class
   qualified_name: trie/graph/store:Store
-  lines: 132-649
+  lines: 132-654
+- kind: method
+  qualified_name: trie/graph/store:Store.__init__
+  lines: 141-144
+- kind: method
+  qualified_name: trie/graph/store:Store._open
+  lines: 146-167
 - kind: method
   qualified_name: trie/graph/store:Store.close
   lines: 169-170
+- kind: method
+  qualified_name: trie/graph/store:Store.__enter__
+  lines: 172-173
+- kind: method
+  qualified_name: trie/graph/store:Store.__exit__
+  lines: 175-176
 - kind: method
   qualified_name: trie/graph/store:Store.transaction
   lines: 179-185
@@ -75,29 +87,29 @@ defines:
   lines: 393-423
 - kind: method
   qualified_name: trie/graph/store:Store.file_stats
-  lines: 425-442
+  lines: 425-447
 - kind: method
   qualified_name: trie/graph/store:Store.upsert_section_record
-  lines: 446-481
+  lines: 451-486
 - kind: method
   qualified_name: trie/graph/store:Store.one_liner_for
-  lines: 483-496
+  lines: 488-501
 - kind: method
   qualified_name: trie/graph/store:Store.one_liners_for
-  lines: 498-511
+  lines: 503-516
 - kind: method
   qualified_name: trie/graph/store:Store.get_symbol_detail
-  lines: 515-548
+  lines: 520-553
 - kind: method
   qualified_name: trie/graph/store:Store.locate_symbols
-  lines: 550-639
+  lines: 555-644
 - kind: method
   qualified_name: trie/graph/store:Store.all_symbol_names
-  lines: 641-644
+  lines: 646-649
 - kind: method
   qualified_name: trie/graph/store:Store.all_qualified_names
-  lines: 646-649
-incoming_refs: 32
+  lines: 651-654
+incoming_refs: 34
 outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/graph/store:FileRecord fingerprint=9e5bd64fbbf95f8eb3616b9da3d84b73687a569550e6ace513eef354bd16b1e1 body_fp=66d0f20070cb4ff0fbcc153cfb392d3aa24addf48f3b73c0f1c45f48d6b74475 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
@@ -144,7 +156,7 @@ Frozen dataclass encoding all server-side filter criteria for `Store.locate_symb
 - `inbound_count_min/max` / `outbound_count_min/max`: edge-count bounds; either bound may be `None`
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/graph/store:Store fingerprint=582997ccb7efd7161561ec9e4ded46cd2f4e572cfad88ff3a5b6535f96703f55 body_fp=bf65225536c6d20ff0c87335ace1798a7d668859f5af19308b7fdddfff9939f2 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
+<!-- trie:section symbol=trie/graph/store:Store fingerprint=3385e63c82b75892eaee50ecbc8840d988f2284d2a5fb6499dabe353ed19f382 body_fp=bf65225536c6d20ff0c87335ace1798a7d668859f5af19308b7fdddfff9939f2 source_ref=aef35014ee7ba97f7bb5ee8252255be994acfdac -->
 ## `Store(db_path: Path)`
 
 SQLite-backed store for trie's symbol graph, file fingerprints, edges, and cached triefact sections.
@@ -262,10 +274,12 @@ Return a mapping of every symbol's `qualified_name` to its inbound edge count.
 Return `(inbound, outbound)` cross-file edge counts for a given file, excluding intra-file edges.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/graph/store:Store.file_stats fingerprint=ef7e2ff41a140fa94160ce524f5702ffa2e408fcef2da886345c76b343e50164 body_fp=29f1c532c2fb8129729259e3b33270d7fdd02d8a9e14aa50be9098d5eea518bc source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
+<!-- trie:section symbol=trie/graph/store:Store.file_stats fingerprint=818ee47e02de6186ac43c3deb53c5ddc50df1980e52047b405fca30d50d264d6 body_fp=fe9ced4621dd1697950410e17189eb3cdb6319a7d0b5f1a3f8b8df8c2b4c11c7 source_ref=aef35014ee7ba97f7bb5ee8252255be994acfdac -->
 ## `file_stats(self) -> list[FileStats]`
 
-Return per-file total and public symbol counts joined from `files` and `symbols`.
+Return per-file symbol counts joined from `files` and `symbols`, with `public_symbols` set equal to `total_symbols` for all files.
+
+- `public_symbols`: always equals `total_symbols`; the distinct public count is no longer computed.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/graph/store:Store.upsert_section_record fingerprint=c0ed5ba8a45dd21c6a60068fbc428a85bfe91bc62951744e0c93ca03042bdd96 body_fp=7d0845a8ce7f98909060be44c5eca6cbee509a0d905ec2ff5fec6e41b31ec76c source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
@@ -316,4 +330,28 @@ Return all distinct local symbol names for fuzzy-match suggestions on not-found 
 ## `all_qualified_names(self) -> list[str]`
 
 Return every qualified symbol name in the database.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/graph/store:Store.__init__ fingerprint=cbc4e30ba48edc9d8f65e1c5cbfcf9b29a9e2a9889581d7100fd1678981276b9 body_fp=ee4be1a173be0da98881aa3cab05cd4dde05853e5691d349f495586782dab2fd source_ref=aef35014ee7ba97f7bb5ee8252255be994acfdac -->
+## `Store.__init__(self, db_path: Path) -> None`
+
+Open or create the SQLite database at `db_path`, initialising the schema and dropping stale versions.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/graph/store:Store._open fingerprint=1840acd2bf92663690f9ecd8c1a418eb53e4525df3070283393ae5fb73deed99 body_fp=226094a7201d3de1c2ebbad53e6be972c9ae2ee30528221cd7ba0c2162ebd585 source_ref=aef35014ee7ba97f7bb5ee8252255be994acfdac -->
+## `_open(self) -> None`
+
+Open the SQLite connection, detect a stale schema version, nuke and recreate the DB if stale, then apply `SCHEMA_SQL` and record the current version.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/graph/store:Store.__enter__ fingerprint=9f210cb9718c0e2ccf1afd3e1a8f2d55beb6c6390abbe06ed35fdd33a7172f7f body_fp=8f144d8f59958372f7043f35f597c38d5e459da2eda5e89bf2c40427413e5bc9 source_ref=aef35014ee7ba97f7bb5ee8252255be994acfdac -->
+## `Store.__enter__(self) -> Store`
+
+Return `self` to support use as a context manager.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/graph/store:Store.__exit__ fingerprint=67b1b6b146522ac7c8bdfff45bab8a41537d8e61231b937b0475a712971729e7 body_fp=757f4b526a63273903bb78c3e05916c1337a73aba75e3355c816501c3d0db310 source_ref=aef35014ee7ba97f7bb5ee8252255be994acfdac -->
+## `__exit__(self, *_args: object) -> None`
+
+Close the store connection when exiting the context manager.
 <!-- trie:end -->

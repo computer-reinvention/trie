@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/check.py
-file_fingerprint: 21ddc33581d7cdf8967f5ca49c870251e5859b00cbf5e80f2243f0807e8fe567
-last_synced_at: '2026-05-14T19:42:31Z'
+file_fingerprint: 7f06c7053f40e5352b290eaab4c216f06e376680c60d9886afcf46daa647c6aa
+last_synced_at: '2026-05-15T13:03:21Z'
 defines:
 - kind: class
   qualified_name: trie/check:StaleReason
@@ -17,9 +17,15 @@ defines:
   qualified_name: trie/check:CheckResult.is_clean
   lines: 36-37
 - kind: function
+  qualified_name: trie/check:_triefact_path_for
+  lines: 40-43
+- kind: function
   qualified_name: trie/check:check_project
   lines: 46-63
-incoming_refs: 18
+- kind: function
+  qualified_name: trie/check:_check_project_inner
+  lines: 66-172
+incoming_refs: 20
 outgoing_refs: 5
 ---
 <!-- trie:section symbol=trie/check:StaleReason fingerprint=b7162ffe7f29cd254fc576ebd54af00f835144adc63c5f9a2d54a96b4f1fec3b body_fp=42e7454a4d73e396f5fd5e68d5a922cfcc0cbdca908c2351ec109fb8a286e761 source_ref=85ed6191c067f50c30ed25f64e46e5b61ce37465 -->
@@ -66,4 +72,18 @@ Compute stale items by comparing each in-scope source file's symbols to its trie
 
 - Covers both Code→Triefact and Triefact→Code drift directions.
 - Reads no database; uses source files and triefact sentinel fingerprints only.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/check:_triefact_path_for fingerprint=4a1dcef0054474a18efab389b26d7da835bb361c92aaee997af6d5a2473cab49 body_fp=1b60b87ebb590991b0c281dcd91303b5358f6df9730d8798e91db6cc703acd5b source_ref=b13418772d94c7dea0e494653a1d4aadcca3a1c6 -->
+## `_triefact_path_for(rel_source: str, config: Config) -> str`
+
+Map a source-root-relative `.py` path to its corresponding source-root-relative `.md` triefact path.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/check:_check_project_inner fingerprint=43b2ccab358f3cca3c315d2d842d841287809a0a13c40e980ba1e1b5498e925e body_fp=eec138a20699633967fdd3d2affe9c7e8ab72c7bcdccf5a7aeb8c433005cb610 source_ref=b13418772d94c7dea0e494653a1d4aadcca3a1c6 -->
+## `_check_project_inner(*, project_root: Path, config: Config, _tele: dict) -> CheckResult`
+
+Execute the full bidirectional staleness scan and populate telemetry in `_tele`.
+
+- `_tele`: mutable dict updated with `files_checked`, `issues_found`, `issues_by_reason`.
 <!-- trie:end -->

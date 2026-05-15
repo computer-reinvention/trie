@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: tests/test_bootstrap.py
-file_fingerprint: b7e820e3e92550cf0c2ee3689408f86431e536626e3b4d2036416c795fdcc811
-last_synced_at: '2026-05-14T18:23:14Z'
+file_fingerprint: 8e816114d9d35e4ce37ec02cc1864f7f0062947382163671f1ed9d3f77c375f8
+last_synced_at: '2026-05-15T13:01:29Z'
 defines:
 - kind: class
   qualified_name: tests/test_bootstrap:FakeClient
@@ -17,53 +17,56 @@ defines:
   qualified_name: tests/test_bootstrap:project
   lines: 38-54
 - kind: function
+  qualified_name: tests/test_bootstrap:_scanned_store
+  lines: 57-61
+- kind: function
   qualified_name: tests/test_bootstrap:test_plan_ranks_higher_score_first
   lines: 64-77
 - kind: function
-  qualified_name: tests/test_bootstrap:test_plan_excludes_files_with_no_public_symbols
-  lines: 80-90
+  qualified_name: tests/test_bootstrap:test_plan_excludes_files_with_no_documentable_symbols
+  lines: 80-101
 - kind: function
   qualified_name: tests/test_bootstrap:test_plan_with_unknown_model_zero_cost
-  lines: 93-102
+  lines: 104-113
 - kind: function
   qualified_name: tests/test_bootstrap:test_plan_only_files_restricts_worklist
-  lines: 105-117
+  lines: 116-128
 - kind: function
   qualified_name: tests/test_bootstrap:test_plan_only_files_empty_yields_empty_plan
-  lines: 120-130
+  lines: 131-141
 - kind: function
   qualified_name: tests/test_bootstrap:test_run_bootstrap_respects_limit
-  lines: 133-154
+  lines: 144-165
 - kind: function
   qualified_name: tests/test_bootstrap:test_run_bootstrap_respects_budget
-  lines: 157-180
+  lines: 168-191
 - kind: function
   qualified_name: tests/test_bootstrap:test_run_bootstrap_unbounded_processes_all
-  lines: 183-204
+  lines: 194-215
 - kind: function
   qualified_name: tests/test_bootstrap:test_cli_plan_makes_no_message_calls
-  lines: 207-216
+  lines: 218-227
 - kind: function
   qualified_name: tests/test_bootstrap:test_cli_plan_outside_project_errors
-  lines: 219-232
+  lines: 230-243
 - kind: function
   qualified_name: tests/test_bootstrap:test_cli_first_run_sync_requires_budget_or_limit_non_interactive
-  lines: 235-245
+  lines: 246-256
 - kind: function
   qualified_name: tests/test_bootstrap:test_cli_first_run_sync_with_limit_succeeds
-  lines: 248-255
+  lines: 259-266
 - kind: function
   qualified_name: tests/test_bootstrap:test_cli_sync_all_forces_full_pass
-  lines: 258-270
+  lines: 269-281
 - kind: function
   qualified_name: tests/test_bootstrap:test_cli_sync_rejects_file_and_all_together
-  lines: 273-278
+  lines: 284-289
 - kind: function
   qualified_name: tests/test_bootstrap:test_cli_sync_with_no_config_errors
-  lines: 281-287
+  lines: 292-298
 - kind: function
   qualified_name: tests/test_bootstrap:test_run_bootstrap_invokes_progress_callback
-  lines: 290-336
+  lines: 301-347
 incoming_refs: 0
 outgoing_refs: 27
 ---
@@ -102,11 +105,7 @@ Pytest fixture that creates a minimal trie project with `trie.toml` and three Py
 Assert that `build_plan` orders files by descending LOC×symbol-count score, with pricing populated.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_bootstrap:test_plan_excludes_files_with_no_public_symbols fingerprint=1b3def771af61667125275913a5e4e30ae77069eb12659adf48c36ae58704f50 body_fp=03003eb66597ae8b00b5c85fb96bd19f92a3ceb378df4a1a041b85f090ea378a source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
-## `test_plan_excludes_files_with_no_public_symbols(project: Path, tmp_path: Path)`
 
-Assert that `build_plan` omits files whose only symbols are private (underscore-prefixed).
-<!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_bootstrap:test_plan_with_unknown_model_zero_cost fingerprint=9cb25e13e4a98b51e03583f7d0300be59ea8cecf99b02408f98582488b3299c5 body_fp=1ed5391b8839797f01507d031ebead435f8f9cf03ca9918b8389df4220dd805b source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
 ## `test_plan_with_unknown_model_zero_cost(project: Path)`
@@ -198,4 +197,19 @@ Verify that `run_bootstrap` fires `on_start`/`on_done` for each processed file a
 
 - `starts`: asserted to equal `limit` (2) entries.
 - `skips`: asserted to equal `len(plan.items) - 2`, each with reason `"limit reached"`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_bootstrap:_scanned_store fingerprint=be2171d309873933c9dd828dece87833bd3c117974cc17e64314491077d352a8 body_fp=b866baf8b0f0da0e2c1ed73fe582834631116b216fac7d64fa7001b5a456b868 source_ref=d81050fda19efe01c9150c2635c3b24dff5debd3 -->
+## `_scanned_store(project: Path) -> Store`
+
+Load config from `project`, initialise a graph `Store`, scan the project into it, and return the open store.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_bootstrap:test_plan_excludes_files_with_no_documentable_symbols fingerprint=726c876c56b82d65b082a64bb62bb92ccd91d87af9683b492c0958654b307c17 body_fp=caa31741df143c8479993a1a55ea8a55c9864ec5a253a285fa2e41e60fb7784b source_ref=d81050fda19efe01c9150c2635c3b24dff5debd3 -->
+## `test_plan_excludes_files_with_no_documentable_symbols(project: Path, tmp_path: Path)`
+
+Assert that `build_plan` omits files with no parser-surfaced symbols but includes files with private (`_`-prefixed) defs.
+
+- `empty_module.py`: imports + constant only; no `def`/`class` → excluded.
+- `private.py`: contains `_hidden()` def → included.
 <!-- trie:end -->

@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/reporter.py
 file_fingerprint: 0d25e92681b94ef96d032a5e5f36c20fcbfab84a6061886aae0515f89fb991e8
-last_synced_at: '2026-05-14T17:24:22Z'
+last_synced_at: '2026-05-15T13:07:09Z'
 defines:
 - kind: class
   qualified_name: trie/reporter:Verbosity
@@ -10,6 +10,9 @@ defines:
 - kind: class
   qualified_name: trie/reporter:Reporter
   lines: 25-64
+- kind: method
+  qualified_name: trie/reporter:Reporter.__init__
+  lines: 33-35
 - kind: method
   qualified_name: trie/reporter:Reporter.info
   lines: 37-39
@@ -32,8 +35,29 @@ defines:
   qualified_name: trie/reporter:Reporter.start_progress
   lines: 63-64
 - kind: class
+  qualified_name: trie/reporter:_NullContext
+  lines: 67-72
+- kind: method
+  qualified_name: trie/reporter:_NullContext.__enter__
+  lines: 68-69
+- kind: method
+  qualified_name: trie/reporter:_NullContext.__exit__
+  lines: 71-72
+- kind: class
   qualified_name: trie/reporter:ProgressHandle
   lines: 75-170
+- kind: method
+  qualified_name: trie/reporter:ProgressHandle.__init__
+  lines: 82-87
+- kind: method
+  qualified_name: trie/reporter:ProgressHandle.__enter__
+  lines: 89-103
+- kind: method
+  qualified_name: trie/reporter:ProgressHandle.__exit__
+  lines: 105-114
+- kind: method
+  qualified_name: trie/reporter:ProgressHandle._print
+  lines: 116-122
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.start_file
   lines: 124-130
@@ -141,4 +165,52 @@ Advance the progress bar and print a completion line for a processed file.
 ## `skip_file(self, rel_path: str, reason: str) -> None`
 
 Advance the progress bar and print a skip notice (MEDIUM+ only).
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/reporter:Reporter.__init__ fingerprint=014fff4f617144fe244251854a6e2c712bf6c84f9fa795c3aeafeb1467bbcb81 body_fp=d9f2a8a3bdab158d41a65db4f5d9e483e7b573688f111d23ac848e6e15706aa6 source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
+## `Reporter.__init__(self, verbosity: Verbosity = Verbosity.MEDIUM, console: Console | None = None)`
+
+Initialise with an optional verbosity level and Rich console, defaulting to `MEDIUM` and a fresh `Console`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/reporter:_NullContext fingerprint=83551b487c19ee10276faa46f53cc5f87b4d0223fa118d136b8a9c2fae376504 body_fp=fe5b7696c22f47ae87ad432a90fb046611e2a26a41a34691b63225e29980409b source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
+## `_NullContext()`
+
+No-op context manager returned by `Reporter.status` when verbosity is below `MEDIUM`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/reporter:_NullContext.__enter__ fingerprint=9f210cb9718c0e2ccf1afd3e1a8f2d55beb6c6390abbe06ed35fdd33a7172f7f body_fp=d3fb1f90062b08b61edebe5f1ab8d21f9692f07bf2392c204868a62bf14c4ca5 source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
+## `__enter__(self) -> _NullContext`
+
+Return self to satisfy the context manager protocol.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/reporter:_NullContext.__exit__ fingerprint=9f730a1a70a6144b0dc8da4942d9093cd268d625eafac5188775d0d6b8b25f08 body_fp=12cfa75cf9eb51eecbb828e56d425ba7f292f2eab9fa1282a93f8211a91bf51c source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
+## `__exit__(self, *exc: Any) -> None`
+
+No-op exit that satisfies the context manager protocol.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/reporter:ProgressHandle.__init__ fingerprint=9fe2bc3db3e89583fe4c67c5533f44b25630873d1c3d52254cf9f4719866f0c1 body_fp=6403515aa06c30a306b365051139cd7a0bb81fef09c264c08810e7d0d60fc3e7 source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
+## `ProgressHandle.__init__(self, reporter: Reporter, total: int, label: str)`
+
+Store reporter, total file count, and label; initialize progress bar state to `None`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/reporter:ProgressHandle.__enter__ fingerprint=2ae868997c36e66820006407e666b9295cdd9635a2abf4d7434f1c79cd4b08b7 body_fp=606eab9c27cf23454adc80acec4263c11ef1b5333443c626bd39ef6f9efb02be source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
+## `__enter__(self) -> ProgressHandle`
+
+Start the Rich progress bar if verbosity is MEDIUM+ and `total > 0`, then return `self`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/reporter:ProgressHandle.__exit__ fingerprint=f7249b97149bb3359cf78e0141969f8be0b13fc309365f184bdfe2c0cfc6b6dd body_fp=83c4d274d8d31577ebe837295b2eef22835e09230ea1829962b458485c45e8f2 source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
+## `__exit__(self, exc_type, exc, tb) -> None`
+
+Tear down the Rich progress bar and reset internal state.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/reporter:ProgressHandle._print fingerprint=0587173aa56c0bd7479119eebcdf7b3056cc2980f27405895f6a4532541fd28f body_fp=2ff625c70f74dca8825b25eb247d283fa05171643af9a1b649122cbae16fee15 source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
+## `_print(self, line: str) -> None`
+
+Route a line to the active progress bar's console or fall back to the reporter's console.
 <!-- trie:end -->

@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/fixtures/tiny_repo/calculator.py
 file_fingerprint: d3b37289441711a16a1b150a6a1594f610ed72432d622215fdc582e2552d3f2c
-last_synced_at: '2026-05-14T17:31:10Z'
+last_synced_at: '2026-05-15T13:01:22Z'
 description: A pocket calculator with a tiny API surface.
 defines:
 - kind: class
@@ -20,6 +20,9 @@ defines:
 - kind: function
   qualified_name: tests/fixtures/tiny_repo/calculator:add
   lines: 27-29
+- kind: function
+  qualified_name: tests/fixtures/tiny_repo/calculator:_internal_helper
+  lines: 32-34
 incoming_refs: 0
 outgoing_refs: 0
 ---
@@ -53,4 +56,10 @@ Reset the running value to zero.
 ## `add(a: float, b: float) -> float`
 
 Return the sum of two numbers.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/fixtures/tiny_repo/calculator:_internal_helper fingerprint=51a7bd3ae943c2de14466feb851c5ef0db6e9070c468aee27c2642293ab586f8 body_fp=6bc02b7a1ce13e27f320d0910fc12ec07bd5834b7aae91486b9cb1867ae56062 source_ref=881d199032d2ff0cbdb0952e5b809f523c3a0eaf -->
+## `_internal_helper(x: float) -> float`
+
+Return `x` multiplied by 2.
 <!-- trie:end -->

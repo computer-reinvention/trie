@@ -2,8 +2,11 @@
 trie_version: 0.1.0
 source: tests/test_reporter.py
 file_fingerprint: d6f396d10b0e62e4fbf237881ec75c8c98d6135f86e045160be8f316bdb164cf
-last_synced_at: '2026-05-14T17:28:22Z'
+last_synced_at: '2026-05-15T13:02:09Z'
 defines:
+- kind: function
+  qualified_name: tests/test_reporter:_make_reporter
+  lines: 12-15
 - kind: function
   qualified_name: tests/test_reporter:test_mute_suppresses_info_and_success
   lines: 18-23
@@ -86,4 +89,10 @@ Assert that passing `--quiet` and `--verbose` together exits with code 2 and a "
 ## `test_root_version_still_works_with_verbosity_flags()`
 
 Verify that `--version` succeeds and outputs `"trie"` when combined with `-v`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_reporter:_make_reporter fingerprint=44304bf94e6d49c89000ca5e595dd99f96ec8892f0358184b7d7ca51fb4da72c body_fp=ad09bdcd202167db1c7cdc087f5fc9fed6e9cc3ecd86ecab5a95d5b6a731dddb source_ref=df741a005acc31e764a566519cdb2c64bda589ef -->
+## `_make_reporter(level: Verbosity) -> tuple[Reporter, io.StringIO]`
+
+Construct a `Reporter` wired to an in-memory buffer for test assertions.
 <!-- trie:end -->

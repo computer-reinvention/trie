@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_triefact_metadata.py
 file_fingerprint: cbb246bc77d50bccca68c7617723e48dd6f8da7b2b32e7047937c0f361c36eed
-last_synced_at: '2026-05-14T19:42:13Z'
+last_synced_at: '2026-05-15T13:03:15Z'
 description: Front-matter enrichment in `sync_single_file`.
 defines:
 - kind: class
@@ -17,6 +17,12 @@ defines:
 - kind: function
   qualified_name: tests/test_triefact_metadata:project
   lines: 44-65
+- kind: function
+  qualified_name: tests/test_triefact_metadata:_front_matter
+  lines: 68-73
+- kind: function
+  qualified_name: tests/test_triefact_metadata:_sync
+  lines: 76-95
 - kind: function
   qualified_name: tests/test_triefact_metadata:test_front_matter_carries_description_from_module_docstring
   lines: 98-101
@@ -138,4 +144,18 @@ Verify `strip_string_literal` correctly strips `r`, `rb`, and `f` prefix charact
 ## `test_store_file_ref_counts_excludes_intra_file_edges(project: Path)`
 
 Verify that `store.file_ref_counts` counts only cross-file edges, ignoring intra-file calls.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_triefact_metadata:_front_matter fingerprint=668ca6fd53da0259864ac2c0b688a4812d05787a2d27b80e431d7ae671be580b body_fp=6fc0d16622f604b3fccc9aff26ee7adfa7fd25e8ccce2278565918332201858c source_ref=480f8b41ba6bac1ac6af261df4d8e39102fe2c55 -->
+## `_front_matter(path: Path) -> dict`
+
+Parse the YAML front-matter block from a triefact file and return it as a dict.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_triefact_metadata:_sync fingerprint=01a73721a724ab824593515a56f32ab25dadc0ee5a29ab4b0a9529a6d8a318b6 body_fp=d5cec07907696e80ac8f53e272466aa21177e0cae3dc0e1cc074d53b00d25d95 source_ref=480f8b41ba6bac1ac6af261df4d8e39102fe2c55 -->
+## `_sync(project: Path, *, with_store: bool) -> Path`
+
+Run `sync_single_file` on `src/alpha.py` within the project fixture, optionally with a populated `Store`, and return the resulting triefact path.
+
+- `with_store`: when `True`, scans the project graph before syncing.
 <!-- trie:end -->

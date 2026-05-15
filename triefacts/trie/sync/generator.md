@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/sync/generator.py
 file_fingerprint: 6c1e05b2416c4eea05493d1f21246bc67e93bc98dc90c4e5c7fc34862fa01aff
-last_synced_at: '2026-05-14T19:39:17Z'
+last_synced_at: '2026-05-15T13:07:30Z'
 defines:
 - kind: class
   qualified_name: trie/sync/generator:FileGenerationContext
@@ -13,6 +13,15 @@ defines:
 - kind: function
   qualified_name: trie/sync/generator:build_cached_context
   lines: 77-82
+- kind: function
+  qualified_name: trie/sync/generator:_build_request
+  lines: 85-91
+- kind: function
+  qualified_name: trie/sync/generator:_build_diff_aware_request
+  lines: 94-124
+- kind: function
+  qualified_name: trie/sync/generator:_symbol_source
+  lines: 127-135
 - kind: function
   qualified_name: trie/sync/generator:generate_section
   lines: 138-191
@@ -47,4 +56,26 @@ Generate the Markdown body for a single symbol via a model call, using cold or d
 - `previous_source` + `previous_prose`: both must be provided to activate diff-aware mode; either `None` forces cold mode.
 - `file_ctx`: supplies the full source file as a cached prompt context, amortised across symbols in the same file.
 - `max_tokens`: caps the model's output length.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/generator:_build_request fingerprint=fb0ae4000b307cb75a6341181dccf02c42032dde4b83bce0e52e722163d90df2 body_fp=edfd7883095c5806e92524b77f7b6aaa6897a90d1b94e6a65365b2e7dc6d7ef0 source_ref=2c58b1aa9ada95e7978956fc2d84138ee1f9a681 -->
+## `_build_request(symbol: Symbol) -> str`
+
+Build the cold-write user message prompting the LLM to document a single symbol.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/generator:_build_diff_aware_request fingerprint=b52e15d8c213ac4ab7f45ccb1dec48b9a6ab14d7b394c14310fba357d95e3a67 body_fp=affda1abcc6d87296263b1a2838837cd018b7c23d4ad3cef61c57d613224a566 source_ref=2c58b1aa9ada95e7978956fc2d84138ee1f9a681 -->
+## `_build_diff_aware_request(symbol: Symbol, *, previous_source: str, previous_prose: str, current_source: str) -> str`
+
+Build the user-message string for a diff-aware regeneration request.
+
+- `previous_source`: full source (signature + body) of the symbol before the change.
+- `current_source`: full source (signature + body) of the symbol after the change.
+- Returns a prompt block containing the rubric, three labelled source/prose sections, and a closing format constraint.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/generator:_symbol_source fingerprint=3c066b91d6eeae404201d2b89cad5a68a613d9fb6d8b0fbf606f513a850a9509 body_fp=9c1f2c996237b789661dd13dbfdc386fcfee3ad306c04feca66037e1d0b19c78 source_ref=2c58b1aa9ada95e7978956fc2d84138ee1f9a681 -->
+## `_symbol_source(symbol: Symbol) -> str`
+
+Reconstruct the full `<signature>:\n<body>` text for a symbol by joining its signature and body with a colon.
 <!-- trie:end -->

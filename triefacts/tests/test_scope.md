@@ -2,8 +2,11 @@
 trie_version: 0.1.0
 source: tests/test_scope.py
 file_fingerprint: a51ea69b9e98556ed79b176802dbd1c3e0393f6eb0f02f61cb7a279ce4cf309e
-last_synced_at: '2026-05-14T18:29:18Z'
+last_synced_at: '2026-05-15T13:02:14Z'
 defines:
+- kind: function
+  qualified_name: tests/test_scope:_touch
+  lines: 9-11
 - kind: function
   qualified_name: tests/test_scope:test_basic_include
   lines: 14-20
@@ -68,4 +71,10 @@ Assert that `discover_files` returns an empty list when no files match the inclu
 ## `test_returns_sorted(tmp_path: Path)`
 
 Assert that `discover_files` returns paths in sorted order.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_scope:_touch fingerprint=7f9bceb734fe3336297747674f3903c7f8df21766031b524275430cc173a776f body_fp=650e080f8a2ba7d0435644627bed27dd56eeb4013d351da21e949aa05c8e6162 source_ref=bd44eb44cf2776e5fc7c1af37e5a76bd75db4836 -->
+## `_touch(p: Path, content: str = "") -> None`
+
+Create a file at `p`, making parent directories as needed, with optional text content.
 <!-- trie:end -->

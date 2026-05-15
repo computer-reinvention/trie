@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: tests/test_check.py
-file_fingerprint: 21461919e0bfa539f022d5f65d1e169783ce880dbe5b0dd9ae54569f0d26c9fb
-last_synced_at: '2026-05-14T19:35:47Z'
+file_fingerprint: 82262f96501d7dda4e1e1766404de80fe839675416364ceef6f6fd1273d58ca0
+last_synced_at: '2026-05-15T13:01:38Z'
 defines:
 - kind: class
   qualified_name: tests/test_check:FakeClient
@@ -16,6 +16,9 @@ defines:
 - kind: function
   qualified_name: tests/test_check:project
   lines: 36-48
+- kind: function
+  qualified_name: tests/test_check:_sync_all
+  lines: 51-54
 - kind: function
   qualified_name: tests/test_check:test_clean_after_fresh_sync
   lines: 57-61
@@ -32,31 +35,34 @@ defines:
   qualified_name: tests/test_check:test_orphan_section_detected
   lines: 95-104
 - kind: function
-  qualified_name: tests/test_check:test_no_public_symbols_no_triefact_required
-  lines: 107-115
+  qualified_name: tests/test_check:test_private_only_file_requires_a_triefact
+  lines: 107-118
+- kind: function
+  qualified_name: tests/test_check:test_file_with_no_parser_surfaced_symbols_needs_no_triefact
+  lines: 121-130
 - kind: function
   qualified_name: tests/test_check:test_clean_when_all_in_sync_with_human_prose
-  lines: 118-126
+  lines: 133-141
 - kind: function
   qualified_name: tests/test_check:test_cli_verify_exits_zero_when_clean
-  lines: 129-135
+  lines: 144-150
 - kind: function
   qualified_name: tests/test_check:test_cli_verify_exits_nonzero_when_stale
-  lines: 138-146
+  lines: 153-161
 - kind: function
   qualified_name: tests/test_check:test_cli_verify_quiet_mode
-  lines: 149-160
+  lines: 164-175
 - kind: function
   qualified_name: tests/test_check:test_cli_verify_detects_tampered_body
-  lines: 163-177
+  lines: 178-192
 - kind: function
   qualified_name: tests/test_check:test_check_project_detects_tampered_body
-  lines: 180-194
+  lines: 195-209
 - kind: function
   qualified_name: tests/test_check:test_check_project_detects_legacy_section
-  lines: 197-215
+  lines: 212-230
 incoming_refs: 0
-outgoing_refs: 29
+outgoing_refs: 32
 ---
 <!-- trie:section symbol=tests/test_check:FakeClient fingerprint=e41cdf8484085fe52836a78fa046003a64b4ee976928802814aeb5dfbe564b63 body_fp=12bc935f908c1e630237fe9e607b3f2869cfd6efa2c01f334f947b7b3d2be1f1 source_ref=fc96c03d022e7a77097fa682a3129c583b33858c -->
 ## `FakeClient`
@@ -114,11 +120,7 @@ Assert that adding a new symbol to a source file causes `check_project` to repor
 Assert that deleting a symbol from source causes `check_project` to report `StaleReason.ORPHAN_SECTION` for the removed qualified name.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_check:test_no_public_symbols_no_triefact_required fingerprint=b1880f912a31cce387f522f5a8bc16d42e42953fe89c985d9ca118e4cb5e7004 body_fp=99ba530732eebd797925a9089f074d030f143e4f540ff0f6aba3b916e665093e source_ref=fc96c03d022e7a77097fa682a3129c583b33858c -->
-## `test_no_public_symbols_no_triefact_required(project: Path)`
 
-Assert that a source file containing only private symbols produces no `check_project` items.
-<!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_check:test_clean_when_all_in_sync_with_human_prose fingerprint=5dc7b3e44dcb10bc2ccf33dc2fadca8bd2532b0be41200707c9eede67ea30fe1 body_fp=ee104198158354c794849e58fc6ff0560da063f98bee3d35b42040305f425fb9 source_ref=fc96c03d022e7a77097fa682a3129c583b33858c -->
 ## `test_clean_when_all_in_sync_with_human_prose(project: Path)`
@@ -160,4 +162,22 @@ Assert that `check_project` flags `TAMPERED_BODY` when section content is hand-e
 ## `test_check_project_detects_legacy_section(project: Path)`
 
 Assert that a triefact section missing `body_fp=` (pre-0.1 format) is flagged as `LEGACY_SECTION`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_check:_sync_all fingerprint=3f2b125695b5b50997a8d53f68a89b4f3197dfff22f3493c8beab868ef6e100a body_fp=347c13417c7b2b31afa55ce6fdaef3f14d53bbfcda7b7cb3547ce58fc1261c2e source_ref=8d039b4accde06e724a1524de1f79d0a628e9c5f -->
+## `_sync_all(project: Path) -> None`
+
+Sync all `.py` source files in the project's `src/` directory using a `FakeClient`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_check:test_private_only_file_requires_a_triefact fingerprint=98ffaaffbffb6147cea08a7a5a60f8def21a95b776735ea3669398bf858f7064 body_fp=2ef638ae79aa49d67386de7a3959c201357293853947a5e9b2859193d708233e source_ref=8d039b4accde06e724a1524de1f79d0a628e9c5f -->
+## `test_private_only_file_requires_a_triefact(project: Path)`
+
+Assert that a file containing only underscore-prefixed symbols still requires a triefact and triggers `MISSING_TRIEFACT`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_check:test_file_with_no_parser_surfaced_symbols_needs_no_triefact fingerprint=8f19352819a8d5cbb82efe14fdc653d1dd1c9aa72839479952adea4d79e042c4 body_fp=8e68142b6decaf7183796a96fda7581b8e853254ac2fb6568b04e9ec7720912d source_ref=8d039b4accde06e724a1524de1f79d0a628e9c5f -->
+## `test_file_with_no_parser_surfaced_symbols_needs_no_triefact(project: Path)`
+
+Assert that a file containing only imports and module-level assignments produces no check items.
 <!-- trie:end -->

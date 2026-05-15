@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/sync/writer.py
 file_fingerprint: fba68b4d92b0b42c4ef52ce8dcfbd05d5cecf3d04e0a3b0655d3ec43c1e2c53a
-last_synced_at: '2026-05-14T19:40:18Z'
+last_synced_at: '2026-05-15T13:08:24Z'
 defines:
 - kind: function
   qualified_name: trie/sync/writer:hash_body
@@ -38,9 +38,12 @@ defines:
   qualified_name: trie/sync/writer:TriefactFile.remove_section
   lines: 219-224
 - kind: method
+  qualified_name: trie/sync/writer:TriefactFile._append_section
+  lines: 226-237
+- kind: method
   qualified_name: trie/sync/writer:TriefactFile.render
   lines: 241-269
-incoming_refs: 51
+incoming_refs: 55
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/sync/writer:hash_body fingerprint=ab22edfb13d8ba9c75b86d2384923163f1c839f46c4a2ed06ca566491fc6f96d body_fp=ff4cc0d8d37a35d35446d795e12b6d335ea4491d8f9b3e64ac1d995839f65670 source_ref=bb3efe260f5fd45bd8f95219af0e2e36472bd19d -->
@@ -136,4 +139,10 @@ Serialise the `TriefactFile` to a Markdown string, emitting front matter, prose 
 
 - `body_fp` is always stamped; legacy sections without it are hashed on the fly.
 - `source_ref` field is omitted from the sentinel when `None`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/writer:TriefactFile._append_section fingerprint=39d0ed815c7e15cf563957738a217245397a9ae9c72076762ea523a6b7cb189c body_fp=dad3fbc6ec434ca412558a314b5ab58e20b8ff0e88c8def9ac7142aab4e765ef source_ref=bb3efe260f5fd45bd8f95219af0e2e36472bd19d -->
+## `_append_section(self, section: Section) -> None`
+
+Append a `Section` chunk, inserting blank-line separators to keep rendered output well-formed.
 <!-- trie:end -->

@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_incremental.py
 file_fingerprint: ef5b6fc086e0ace26a386b6560803d21d876401c23cd23f8ea530347a8733e57
-last_synced_at: '2026-05-14T19:41:38Z'
+last_synced_at: '2026-05-15T13:01:56Z'
 defines:
 - kind: class
   qualified_name: tests/test_incremental:FakeClient
@@ -16,6 +16,9 @@ defines:
 - kind: function
   qualified_name: tests/test_incremental:project
   lines: 40-53
+- kind: function
+  qualified_name: tests/test_incremental:_initial_sync
+  lines: 56-69
 - kind: function
   qualified_name: tests/test_incremental:test_incremental_no_op_when_clean
   lines: 72-86
@@ -204,4 +207,10 @@ Assert that `trie plan` on an established project with drift shows incremental c
 ## `test_cli_plan_all_forces_full_bootstrap_view(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that `trie plan --all` displays the full-bootstrap cost view, not the incremental plan.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_incremental:_initial_sync fingerprint=26e91fbfaf35286067bf8b736a60ae24749de7c391b5f08c3d758862a8c71c34 body_fp=5c966db4c9e7c01b996ce303f54e0632b4d57b2961a546b15f4408627f55140b source_ref=634fbeecb09b136114605fc4deac4b2a8647db8c -->
+## `_initial_sync(project: Path) -> None`
+
+Sync both `lib.py` and `app.py` into the project's triefacts directory using fixed v1 body text.
 <!-- trie:end -->

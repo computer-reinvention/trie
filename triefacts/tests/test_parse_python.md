@@ -2,11 +2,14 @@
 trie_version: 0.1.0
 source: tests/test_parse_python.py
 file_fingerprint: 2c71d961810a8958fdb4cb5ae028dd577ed513a31e5fd9b2f3d7fdd551c473ce
-last_synced_at: '2026-05-14T17:20:21Z'
+last_synced_at: '2026-05-15T13:02:02Z'
 defines:
 - kind: function
   qualified_name: tests/test_parse_python:sample_file
   lines: 61-64
+- kind: function
+  qualified_name: tests/test_parse_python:_by_qname
+  lines: 67-68
 - kind: function
   qualified_name: tests/test_parse_python:test_extracts_top_level_functions
   lines: 71-76
@@ -158,4 +161,10 @@ Assert that multiple `@overload` definitions with the same qualified name dedupl
 ## `test_property_setter_pair_dedupes(tmp_path: Path)`
 
 Assert that a `@property`/`@setter` pair with the same name deduplicates to a single symbol entry.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_parse_python:_by_qname fingerprint=0a85addfd9a9878b63811e01d3b7e72652f5ffa26a39429ed2e9ea7d11f485eb body_fp=578455a4d8c4793b48cb186f3bc6263c120610748ea4f68d6df7b1cc2c92fbaa source_ref=c1ada9d77b60fb66c2b1e14e94d08485646b4e02 -->
+## `_by_qname(syms: list[Symbol]) -> dict[str, Symbol]`
+
+Index a list of `Symbol` objects by their `qualified_name` for O(1) lookup in tests.
 <!-- trie:end -->

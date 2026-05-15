@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/sync/progress.py
 file_fingerprint: 9d32e2b8cd47ef1fc2895a61b413751e82e465eef96ca2f9b143ec43ebc0075e
-last_synced_at: '2026-05-14T19:45:12Z'
+last_synced_at: '2026-05-15T13:07:57Z'
 defines:
 - kind: class
   qualified_name: trie/sync/progress:ProgressCallback
@@ -16,6 +16,18 @@ defines:
 - kind: method
   qualified_name: trie/sync/progress:ProgressCallback.on_skip
   lines: 21-21
+- kind: class
+  qualified_name: trie/sync/progress:_NullProgress
+  lines: 24-32
+- kind: method
+  qualified_name: trie/sync/progress:_NullProgress.on_start
+  lines: 25-26
+- kind: method
+  qualified_name: trie/sync/progress:_NullProgress.on_done
+  lines: 28-29
+- kind: method
+  qualified_name: trie/sync/progress:_NullProgress.on_skip
+  lines: 31-32
 incoming_refs: 3
 outgoing_refs: 2
 ---
@@ -52,4 +64,28 @@ Called after a file sync completes, reporting its result and cumulative cost.
 Called when a file is skipped during a multi-file sync run.
 
 - **`reason`**: human-readable explanation for why the file was skipped.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/progress:_NullProgress fingerprint=f1dc526d0962ddb43c7b0076178c5845f35929a2730c41265e44450eedfc1711 body_fp=f643baf72871e3943de0e6ffacc7b09cd3a39b7a6b60f48305e3f190532ded50 source_ref=3711cd8c6acb475bbd3b2400719e537dec17211d -->
+## `_NullProgress`
+
+No-op implementation of `ProgressCallback` that silently discards all progress events.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/progress:_NullProgress.on_start fingerprint=9f730a1a70a6144b0dc8da4942d9093cd268d625eafac5188775d0d6b8b25f08 body_fp=df8d60ae1665e6dff707e676c24a9d6bb92a06a31e9c3673af5505b716c14d26 source_ref=3711cd8c6acb475bbd3b2400719e537dec17211d -->
+## `on_start(self, rel_path: str, idx: int, total: int) -> None`
+
+No-op implementation of `ProgressCallback.on_start`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/progress:_NullProgress.on_done fingerprint=9f730a1a70a6144b0dc8da4942d9093cd268d625eafac5188775d0d6b8b25f08 body_fp=e16c73e5e8f9b54d3462a0892b96e891f8d8cbc62bc8e21cd1f7461ebb733df2 source_ref=3711cd8c6acb475bbd3b2400719e537dec17211d -->
+## `on_done(self, rel_path: str, result: FileSyncResult, running_cost_usd: float) -> None`
+
+No-op implementation of the `on_done` progress hook.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/progress:_NullProgress.on_skip fingerprint=9f730a1a70a6144b0dc8da4942d9093cd268d625eafac5188775d0d6b8b25f08 body_fp=9c1631e45d6d8da254887f84e691acd36a1e8a4cb93913ede3fbbd70e56a7749 source_ref=3711cd8c6acb475bbd3b2400719e537dec17211d -->
+## `on_skip(self, rel_path: str, reason: str) -> None`
+
+No-op implementation of the skip callback; does nothing.
 <!-- trie:end -->

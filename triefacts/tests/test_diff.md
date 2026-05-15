@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_diff.py
 file_fingerprint: 3c845bf01769c96238939850337c6e86b9e68a5769aa381ce7efa60879d00785
-last_synced_at: '2026-05-14T18:25:14Z'
+last_synced_at: '2026-05-15T13:08:48Z'
 defines:
 - kind: class
   qualified_name: tests/test_diff:StableClient

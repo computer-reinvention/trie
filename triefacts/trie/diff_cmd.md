@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/diff_cmd.py
-file_fingerprint: 08ed6eafaada2d96c6b49b87678500785ee5aebe1173eb337d1ff5b441dd9b07
-last_synced_at: '2026-05-14T19:43:05Z'
+file_fingerprint: 4000181a96da75377e49dd956d62958fee83874a5a2404378edb21fb0e9d64cc
+last_synced_at: '2026-05-15T13:05:01Z'
 defines:
 - kind: class
   qualified_name: trie/diff_cmd:FileDiff
@@ -12,7 +12,7 @@ defines:
   lines: 26-29
 - kind: function
   qualified_name: trie/diff_cmd:diff_project
-  lines: 32-128
+  lines: 32-145
 incoming_refs: 6
 outgoing_refs: 5
 ---
@@ -31,7 +31,7 @@ Frozen dataclass holding the aggregate outcome of a `diff_project` run.
 - `actual_cost_usd`: total estimated USD spent on model calls during the run.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/diff_cmd:diff_project fingerprint=edb982dc1acfc078364a682a2fb826d8e69db0f15f3f08e187b6c2f51c6f41e8 body_fp=630f2ebd53b0d152d3e84e73fb33d27c100e258f3fcdb92095230f3dca348699 source_ref=b27d7657d1e987fdf66bd52ab7c7b86d576cae2b -->
+<!-- trie:section symbol=trie/diff_cmd:diff_project fingerprint=bf8c5025e2d84ba1b505f054c1303f130e6589b23bd4a0d3c4abfc00ee48f9f2 body_fp=630f2ebd53b0d152d3e84e73fb33d27c100e258f3fcdb92095230f3dca348699 source_ref=6f05daac303d962947af10d1a505706948b32064 -->
 ## `diff_project(*, project_root, config, client, pricing=None, budget_usd=None, limit=None, progress=None, store=None) -> DiffResult`
 
 Regenerate stale triefacts into `.trie/preview/` and return unified diffs against canonical versions.

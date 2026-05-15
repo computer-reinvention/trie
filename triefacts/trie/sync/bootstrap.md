@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/sync/bootstrap.py
-file_fingerprint: 58be95f926987e7fd99407998fa1c1f20eeaef04ecd696fbc43c0a50d961c964
-last_synced_at: '2026-05-14T19:44:57Z'
+file_fingerprint: c0f4f174435148e121708503ba60c8afc867ea101708bae16e1d220cc1fe5ade
+last_synced_at: '2026-05-15T13:07:13Z'
 defines:
 - kind: class
   qualified_name: trie/sync/bootstrap:PlanItem
@@ -15,10 +15,10 @@ defines:
   lines: 38-43
 - kind: function
   qualified_name: trie/sync/bootstrap:build_plan
-  lines: 46-114
+  lines: 46-133
 - kind: function
   qualified_name: trie/sync/bootstrap:run_bootstrap
-  lines: 117-186
+  lines: 136-205
 incoming_refs: 16
 outgoing_refs: 12
 ---
@@ -46,12 +46,14 @@ Frozen dataclass holding a ranked worklist of files and aggregate cost estimates
 Immutable record of a completed bootstrap run's outcome and cost.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/bootstrap:build_plan fingerprint=08ab28078e22b0e8cbda5b286c321381af5000a1042cf0aa9c11563e38acf475 body_fp=44d566a367ce4cadbc071f61bccb01ac7300d2efe9af47eb7969ed37c4fd1a94 source_ref=b583bb2faaee7145d066e7c3b4ea1688f30fec3e -->
-## `build_plan(*, project_root: Path, store: Store, model_id: str, client: ModelClient, only_files: Iterable[str] | None = None) -> BootstrapPlan`
+<!-- trie:section symbol=trie/sync/bootstrap:build_plan fingerprint=cb58508dbf1731b80ba6987d1ed9b9c6985a068b30e6e48d9d4e1fa52e119e1f body_fp=ddcb84692f36f7848a60ecc92e4a8d3c5621970d4e8815e9b4cbc07f27631819 source_ref=6fa7f487ae550d9e0cbd13df58df2357ddc4b78a -->
+## `build_plan(*, project_root: Path, store: Store, model_id: str, client: ModelClient, only_files: Iterable[str] | None = None, regen_count_by_file: dict[str, int] | None = None) -> BootstrapPlan`
 
 Rank all files with public symbols by `LOC × public_symbol_count` and produce per-file cost estimates.
 
 - `only_files`: restrict plan to these source-relative paths; skips all others
+- `regen_count_by_file`: scale per-file cost estimate to only the symbols that will hit the LLM; absent file means regen all
+- `PlanItem.public_symbols`: always the file's total documented symbol count, not the regen target
 - `pricing_known`: `False` when model pricing is unavailable; cost estimates are zeroed
 - Files with zero public symbols or missing from disk are silently excluded
 <!-- trie:end -->
