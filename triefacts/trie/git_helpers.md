@@ -2,9 +2,12 @@
 trie_version: 0.1.0
 source: trie/git_helpers.py
 file_fingerprint: 7eac35fb496950fc01ebfed52b837b5a8ae494ed0c1223efa36b3f6f71ce09e7
-last_synced_at: '2026-05-14T19:38:45Z'
+last_synced_at: '2026-05-15T13:05:04Z'
 description: Quiet, narrowly-scoped git operations for diff-aware regen.
 defines:
+- kind: function
+  qualified_name: trie/git_helpers:_run_git
+  lines: 32-56
 - kind: function
   qualified_name: trie/git_helpers:is_git_repo
   lines: 59-62
@@ -40,4 +43,13 @@ Fetch and decode a git blob by its content-addressed hash; returns `None` if unr
 
 - `blob_hash`: must be a 40- or 64-character hex string; anything else returns `None` immediately.
 - Returns decoded UTF-8 text with `replace` error handling for binary content.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/git_helpers:_run_git fingerprint=f24bcb15562c359a607a98f1f189a2041a915a24878e60ce8bb1715db27d4d56 body_fp=4eb87ce9d155d002327837dd6af7e404ba753420c10b58940cd56d8d083eb4ad source_ref=dbf6fc45f22045181a4f474e363792eb03ff7011 -->
+## `_run_git(args: list[str], *, cwd: Path, input_bytes: bytes | None = None) -> bytes | None`
+
+Run `git <args>` from `cwd`, returning stdout bytes on success or `None` on any failure.
+
+- `input_bytes`: piped to stdin if provided.
+- Returns `None` on non-zero exit, timeout, missing binary, or OS error.
 <!-- trie:end -->

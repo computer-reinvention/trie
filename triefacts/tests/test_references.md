@@ -2,8 +2,11 @@
 trie_version: 0.1.0
 source: tests/test_references.py
 file_fingerprint: 57b5f2c5ed4a13fefd04ad9cda47ab3013f6ffdbda1ba0c08c6bd20fe2eefdb3
-last_synced_at: '2026-05-14T17:26:32Z'
+last_synced_at: '2026-05-15T13:02:07Z'
 defines:
+- kind: function
+  qualified_name: tests/test_references:_refs_by_src
+  lines: 8-13
 - kind: function
   qualified_name: tests/test_references:test_intra_file_function_calls_create_edges
   lines: 16-26
@@ -104,4 +107,10 @@ Verify that `extract_file_data` populates `fd.symbols` with the correct qualifie
 ## `test_both_import_and_intra_file_edges_resolve(tmp_path: Path)`
 
 Verify that a single caller resolves both cross-file import edges and intra-file local edges simultaneously.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_references:_refs_by_src fingerprint=9008a0d0cd30929c25a818e62440a5015ef19e44627b3d4e097d9be3eba52021 body_fp=8aa5f61d3ed45382fcf0f8b04f2bb3d917280d60d70d90376764dd08ca34f67a source_ref=83e454d8231cd6f64c4000e41597feef296bf20c -->
+## `_refs_by_src(file_data) -> dict[str, list[str]]`
+
+Build a mapping from each source qualified name to a sorted list of its target qualified names.
 <!-- trie:end -->

@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_writer_sentinels.py
 file_fingerprint: e644dfe8b6ae9b4b2a3df7889ddea50b0db07fdc7d47bea43a8cf001b3704a8c
-last_synced_at: '2026-05-14T19:38:37Z'
+last_synced_at: '2026-05-15T13:11:06Z'
 defines:
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_empty

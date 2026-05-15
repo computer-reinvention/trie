@@ -2,11 +2,14 @@
 trie_version: 0.1.0
 source: tests/test_cascade.py
 file_fingerprint: ca44c8672eec3463c6d59a800f9ec28960007de1c8829653abda78d27fdf63ca
-last_synced_at: '2026-05-14T19:40:41Z'
+last_synced_at: '2026-05-15T13:01:31Z'
 defines:
 - kind: function
   qualified_name: tests/test_cascade:project
   lines: 14-33
+- kind: function
+  qualified_name: tests/test_cascade:_store
+  lines: 36-40
 - kind: function
   qualified_name: tests/test_cascade:test_cascade_returns_seed_when_empty
   lines: 43-49
@@ -93,4 +96,10 @@ Assert that `compute_cascade` returns `affected_files` in sorted order.
 ## `test_cascade_no_inbound_edges(tmp_path: Path)`
 
 Assert that a file with no callers cascades only to itself with an empty `cascaded_from_change` set.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_cascade:_store fingerprint=baaa0b7b2e6d36d567fcba260f5d9d727395f0f6c6a4aec077e0fc3cb066367e body_fp=4889322c7a18db700ba51e931eb1377f56cc9e0164338036f963df0ebd0abc0c source_ref=78b3c31180f4a80c82a54271a580c33ec1e2c2e8 -->
+## `_store(project: Path) -> Store`
+
+Build and return a scanned `Store` backed by a SQLite graph database in the given project directory.
 <!-- trie:end -->

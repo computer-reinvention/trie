@@ -2,8 +2,11 @@
 trie_version: 0.1.0
 source: tests/test_models.py
 file_fingerprint: b308887d2a458d142f8af7881da7183c7a9158aa32f833ef12ad36d59684d3c7
-last_synced_at: '2026-05-14T18:28:40Z'
+last_synced_at: '2026-05-15T13:02:00Z'
 defines:
+- kind: function
+  qualified_name: tests/test_models:_make_client
+  lines: 9-12
 - kind: function
   qualified_name: tests/test_models:test_count_tokens_returns_input_tokens_from_api
   lines: 15-19
@@ -41,4 +44,12 @@ Verify that an empty `request` string is omitted from the API payload and `cache
 ## `test_payload_carries_model_and_system_prompt()`
 
 Assert that the `count_tokens` payload includes the correct model name and a cache-controlled system prompt block.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_models:_make_client fingerprint=d156a4aa22c94c9c11c7e4c6b8392815d9850cf211eea2b9c5a0eed19b424aa6 body_fp=ddb80d200bb589ac01f6682c2b73910c2f62bc815281da9b53244e3ff18ac7ad source_ref=afdf164a14b52d4a76e32a6ebe1eefd605ccd95d -->
+## `_make_client(input_tokens: int = 42) -> tuple[AnthropicClient, MagicMock]`
+
+Construct a test `AnthropicClient` backed by a `MagicMock` with a stubbed `count_tokens` response.
+
+- `input_tokens`: value returned by the mock's `messages.count_tokens` call.
 <!-- trie:end -->

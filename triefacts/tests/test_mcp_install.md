@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_mcp_install.py
 file_fingerprint: 185cb2e15fa149dd3eadd42decf008cb10ef4e4447cdaf95772914d9c51dff97
-last_synced_at: '2026-05-14T17:17:27Z'
+last_synced_at: '2026-05-15T13:10:46Z'
 defines:
 - kind: function
   qualified_name: tests/test_mcp_install:project

@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: tests/test_store.py
-file_fingerprint: 00985eef34289663d51531504237528eae803e32d20b342ddd394043268f245c
-last_synced_at: '2026-05-14T17:26:04Z'
+file_fingerprint: afbabafdabc5fae36b75de2bc15153adc4a70c97d1b0bf6cf9079460d646fab0
+last_synced_at: '2026-05-15T13:02:18Z'
 defines:
 - kind: function
   qualified_name: tests/test_store:store
@@ -30,13 +30,13 @@ defines:
   lines: 78-88
 - kind: function
   qualified_name: tests/test_store:test_file_stats
-  lines: 91-109
+  lines: 91-111
 - kind: function
   qualified_name: tests/test_store:test_context_manager_closes
-  lines: 112-118
+  lines: 114-120
 - kind: function
   qualified_name: tests/test_store:test_transaction_rolls_back_on_error
-  lines: 121-128
+  lines: 123-130
 incoming_refs: 0
 outgoing_refs: 7
 ---
@@ -88,10 +88,12 @@ Verify that `replace_file_symbols` overwrites stale symbols atomically and toler
 Verify that `count_symbols` with `public_only=True` excludes private functions and private classes.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_store:test_file_stats fingerprint=60d0859a360ca33fb52b55a651b0a9873def70d5663820ce72a5b02e48979082 body_fp=08e45f5fe5e7030027a9cc7762bd4f2e82b056eee6691d6c9aaccc6f0da1d62f source_ref=a20694337904925106e4ac6f4c15d03a2a3e5038 -->
+<!-- trie:section symbol=tests/test_store:test_file_stats fingerprint=d9c36a2293bcc3553bccb18227e7f62b1745bdcce0cc7886a4a0f4b99c31d6a0 body_fp=07eb57a5e11afef8444663b6103cca64ebb66c226a6a19c4924312931c17696a source_ref=839b1a45c99e07b791659b6edeac04dc61a4910c -->
 ## `test_file_stats(store: Store, tmp_path: Path)`
 
 Verify `file_stats()` returns correct total and public symbol counts per file.
+
+- `public_symbols` now equals `total_symbols` (4), as every parser-surfaced symbol is treated as public.
 <!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_store:test_context_manager_closes fingerprint=65d7ddf8931633bad6022ea097f4d7205028b3ba29b009cc72ff71f01b4d0c14 body_fp=f7b385bfe6262e4d452bc4db45962e4d50bb5bf771cf5b7734afdbba03c4291b source_ref=a20694337904925106e4ac6f4c15d03a2a3e5038 -->

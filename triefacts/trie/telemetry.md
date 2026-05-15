@@ -2,12 +2,21 @@
 trie_version: 0.1.0
 source: trie/telemetry.py
 file_fingerprint: 139de3396f21b6ea7bf609a055d7cee08a071a4fae7439e93e65104014d2b6fe
-last_synced_at: '2026-05-14T18:33:49Z'
+last_synced_at: '2026-05-15T13:08:36Z'
 description: Append-only JSONL telemetry for trie's own operations.
 defines:
 - kind: function
   qualified_name: trie/telemetry:configure
   lines: 64-75
+- kind: function
+  qualified_name: trie/telemetry:_resolve
+  lines: 78-137
+- kind: function
+  qualified_name: trie/telemetry:_open
+  lines: 140-149
+- kind: function
+  qualified_name: trie/telemetry:_close
+  lines: 152-160
 - kind: function
   qualified_name: trie/telemetry:is_enabled
   lines: 163-166
@@ -17,6 +26,9 @@ defines:
 - kind: function
   qualified_name: trie/telemetry:capture_responses
   lines: 175-178
+- kind: function
+  qualified_name: trie/telemetry:_apply_redactions
+  lines: 181-195
 - kind: function
   qualified_name: trie/telemetry:emit
   lines: 198-220
@@ -80,4 +92,35 @@ Context manager that emits `event` on exit with elapsed `duration_ms` automatica
 ## `reset_for_tests() -> None`
 
 Reset all process-level telemetry state to defaults, closing any open log file.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/telemetry:_resolve fingerprint=2b823d46e6a7cc0c7cfc52d279a833200768631f198ede261bfc2994067a27dc body_fp=34a09b9566ee7ebc7207a0d04bf2032cec6ad74679c75a0715c108687b4f48e0 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_resolve() -> None`
+
+Resolve whether telemetry is enabled and open the log file, reading `TRIE_DEBUG` env var then `cfg.enabled`; idempotent unless `configure()` reset `_resolved`.
+
+- `TRIE_DEBUG=0/false/no/off`: disables telemetry immediately.
+- `TRIE_DEBUG=1/true/yes/on`: enables, writing to default path.
+- `TRIE_DEBUG=<path>`: enables, writing to that path.
+- Subsequent calls are no-ops while `_resolved` is `True`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/telemetry:_open fingerprint=d2382bca32b3053880c2f7e6d30f328b5cda996fc590dec5752861d2b1a3cb7d body_fp=ac4bf49c72a09aae3cfb6d0844e8ae17eba3669acd7855cb0d40990061ab3edf source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_open(path: Path) -> None`
+
+Open the append-mode log file at `path`; disables telemetry and prints to stderr on `OSError`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/telemetry:_close fingerprint=171eb098b8d920cbcff51070df2295d2cf8c29c8e46aa8158c069b3d486e31c4 body_fp=929e80a9313a76e664bfc57bf91b89b3a0dc1d762e999541ec21c558152aa87b source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_close() -> None`
+
+Flush and close the open log file handle, setting `_file` to `None`; silently swallows `OSError`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/telemetry:_apply_redactions fingerprint=d72a6e1ff48f56b4aebf8d4fa8033bd30739a0ccc8d9a88fd5cce437939ac442 body_fp=71872cd3721ffe9638b8e9c29a9deafb2465784556226992c09a787320a318ce source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_apply_redactions(record: dict[str, Any]) -> dict[str, Any]`
+
+Replace values at `_redact_keys` paths with `"<redacted>"` in-place, then return the record.
+
+- Dotted key strings (e.g. `"a.b"`) navigate into nested dicts.
 <!-- trie:end -->

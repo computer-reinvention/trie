@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/models.py
 file_fingerprint: 633c70ba0083615574b83566baa11a4e2d89f259aa25213c06b5312abaaee1dd
-last_synced_at: '2026-05-14T18:32:14Z'
+last_synced_at: '2026-05-15T13:06:14Z'
 defines:
 - kind: class
   qualified_name: trie/models:GenerationRequest
@@ -23,6 +23,12 @@ defines:
   qualified_name: trie/models:AnthropicClient
   lines: 39-98
 - kind: method
+  qualified_name: trie/models:AnthropicClient.__init__
+  lines: 40-42
+- kind: method
+  qualified_name: trie/models:AnthropicClient._payload
+  lines: 44-67
+- kind: method
   qualified_name: trie/models:AnthropicClient.generate
   lines: 69-86
 - kind: method
@@ -31,7 +37,7 @@ defines:
 - kind: function
   qualified_name: trie/models:make_client
   lines: 101-115
-incoming_refs: 39
+incoming_refs: 42
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/models:GenerationRequest fingerprint=ee00a8e1df60152e58509cf285b21002f69fc9b5031a0a0bad0a3e946cd47302 body_fp=cda362a4b85d926dc6c80be1647e94e2c65825c86bf5773c52778704cd29584a source_ref=e12e23ef268599c29347001c72ed8323b67a45bd -->
@@ -108,4 +114,18 @@ Construct a `ModelClient` from a `"provider/model"` string, returning an `Anthro
 - `model_id`: must contain `/`; only `"anthropic/<model>"` is supported.
 - Raises `ValueError` if no `/` present.
 - Raises `NotImplementedError` for any provider other than `"anthropic"`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/models:AnthropicClient.__init__ fingerprint=1460dce83b415f52c5f80061ac684494d7a6a6df179850737fb9f46dda855c5d body_fp=d35ad052292443beb64170485c91077aa001eff6bfcf7c75015fdf820ca34947 source_ref=e12e23ef268599c29347001c72ed8323b67a45bd -->
+## `AnthropicClient.__init__(self, model_id: str, *, client: Anthropic | None = None) -> None`
+
+Initialize an `AnthropicClient`, creating a default `Anthropic` SDK client if none is provided.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/models:AnthropicClient._payload fingerprint=5960421b7af1c3033a30ed3a6db0e0c36f5af7f5248046a8d1aa7c78ab2ca7a1 body_fp=e7a8d99e27cfbdbf14c6d47de2d7685c6cfaa22d645800b6723619c57b883941 source_ref=e12e23ef268599c29347001c72ed8323b67a45bd -->
+## `_payload(self, req: GenerationRequest) -> dict`
+
+Build the Anthropic API payload dict from a `GenerationRequest`, applying prompt caching headers.
+
+- Omits the `request` content block when empty to avoid API rejection.
 <!-- trie:end -->

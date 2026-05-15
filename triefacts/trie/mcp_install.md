@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/mcp_install.py
 file_fingerprint: 6c38c90552d80587396bcaa468bd5981cc31afd14a3cd6db915998f588476eab
-last_synced_at: '2026-05-14T17:23:47Z'
+last_synced_at: '2026-05-15T13:05:34Z'
 defines:
 - kind: class
   qualified_name: trie/mcp_install:MCPInstallError
@@ -25,12 +25,18 @@ defines:
 - kind: function
   qualified_name: trie/mcp_install:trie_server_snippet
   lines: 68-74
+- kind: function
+  qualified_name: trie/mcp_install:_claude_desktop_user_path
+  lines: 77-82
 - kind: class
   qualified_name: trie/mcp_install:InstallPlan
   lines: 136-141
 - kind: function
   qualified_name: trie/mcp_install:install
   lines: 144-191
+- kind: function
+  qualified_name: trie/mcp_install:_apply_one
+  lines: 194-266
 incoming_refs: 17
 outgoing_refs: 0
 ---
@@ -108,4 +114,20 @@ Apply or preview trie MCP server registration to one or more agent/IDE targets.
 - `print_only`: returns preview results without touching the filesystem.
 - `dry_run`: reads existing config but skips writes; returns preview results.
 - Raises `MCPInstallError` if an unknown target name is given or no agents are auto-detected.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_install:_claude_desktop_user_path fingerprint=1e2381f94ff68e010d0f1b97646bfd14095e971daa570304a0facb2146a41f36 body_fp=8ded51c9e23ce5755c95c0b6978ae6d85baccea27fe29eaf662c839f59ac895d source_ref=e7fbffcaf68e6e36cbeb989e0bd314b39f586cda -->
+## `_claude_desktop_user_path() -> str`
+
+Return the platform-appropriate Claude Desktop config file path string.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_install:_apply_one fingerprint=5ce32bad9732a0c68fec7ae3c3181e62d56d75e18b5282a5edc662b2197f974c body_fp=3bdad29756dfcd6a690b018c6d0c63ec9fffd66410fa1f1d6dbffe16a8b3bf4a source_ref=e7fbffcaf68e6e36cbeb989e0bd314b39f586cda -->
+## `_apply_one(target: MCPTarget, project_root: Path, scope: Scope, print_only: bool, dry_run: bool) -> ApplyResult`
+
+Read, merge, and write the trie MCP server entry into a single target's JSON config file.
+
+- `print_only`: returns a preview result without reading or writing any file.
+- `dry_run`: reads and validates the config but skips writing; returns preview.
+- Returns `"skipped"` if the entry already matches; `"created"` or `"updated"` on success; `"error"` on invalid JSON.
 <!-- trie:end -->

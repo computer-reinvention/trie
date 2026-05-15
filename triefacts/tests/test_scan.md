@@ -2,11 +2,14 @@
 trie_version: 0.1.0
 source: tests/test_scan.py
 file_fingerprint: d0035bcdb5ccc4b3f9c4748e45283ac972f74f2285893cacf984dd70abeac8ce
-last_synced_at: '2026-05-14T18:29:03Z'
+last_synced_at: '2026-05-15T13:02:12Z'
 defines:
 - kind: function
   qualified_name: tests/test_scan:project
   lines: 13-28
+- kind: function
+  qualified_name: tests/test_scan:_scan
+  lines: 31-35
 - kind: function
   qualified_name: tests/test_scan:test_first_scan_marks_all_new
   lines: 38-50
@@ -95,4 +98,10 @@ Verify that stale cross-file edges are removed and replaced when a source file i
 ## `test_excluded_file_treated_as_removed(project: Path)`
 
 Verify that tightening the scope exclusion removes a previously-scanned file from the store.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_scan:_scan fingerprint=02aa825501406c55a6abf16d9c5c7e4028d2ee0794e5c14f08ba2e960e706a01 body_fp=5ac5217d13d9e962454bec00dde8c3330fbda97e6422ceeee05df43dd739b366 source_ref=ed904186acd6a05bbb10153e0e7543578502266f -->
+## `_scan(project: Path) -> tuple[Store, object]`
+
+Load config and store from a project path, run `scan_project`, and return the store and scan result.
 <!-- trie:end -->
