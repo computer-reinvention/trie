@@ -327,6 +327,11 @@ def plan_cmd(
                 else:
                     reporter.success("triefact tree is coherent — `trie sync` would be a no-op")
                 return
+            # Per-file regen counts let the cost estimate reflect symbol-level
+            # reality. A file present in `regen_qnames_by_file` will only regen the
+            # listed qnames; a file absent (e.g. MISSING_TRIEFACT cold-write) regens
+            # everything. `build_plan` interprets the map the same way.
+            regen_counts = {f: len(qns) for f, qns in worklist.regen_qnames_by_file.items()}
             with reporter.status("counting tokens…"):
                 plan = build_plan(
                     project_root=project_root,
@@ -334,6 +339,7 @@ def plan_cmd(
                     model_id=model_id,
                     client=client,
                     only_files=worklist.affected_files,
+                    regen_count_by_file=regen_counts,
                 )
             _print_incremental_plan(reporter, plan, worklist, model_id)
             return
@@ -449,9 +455,17 @@ def _print_incremental_plan(
         else:
             hop = worklist.hop_by_file.get(it.file_path, 0)
             tag = f"cascade · hop {hop}" if hop else "cascade"
+        # Symbol-level breakdown: how many of the file's documented symbols will
+        # actually hit the LLM. Absence from the map means full-file regen (cold-
+        # write, MISSING_TRIEFACT) so all `public_symbols` will be touched.
+        regen_set = worklist.regen_qnames_by_file.get(it.file_path)
+        if regen_set is None:
+            sym_label = f"{it.public_symbols} symbols"
+        else:
+            sym_label = f"{len(regen_set)}/{it.public_symbols} symbols"
         reporter.info(
             f"  • [bold]{it.file_path}[/bold] [dim]({tag})[/dim] "
-            f"({it.public_symbols} symbols, ~${it.estimated.cost_usd:.4f})"
+            f"({sym_label}, ~${it.estimated.cost_usd:.4f})"
         )
     if len(ordered) > 10:
         reporter.info(f"  … and {len(ordered) - 10} more")

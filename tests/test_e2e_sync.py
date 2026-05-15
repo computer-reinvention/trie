@@ -78,8 +78,11 @@ def test_sync_single_file_writes_triefact(project: Path):
         client=client,
     )
 
-    # Public symbols only: Calculator, Calculator.add, Calculator.multiply, Calculator.reset, add (5).
-    assert result.symbols_generated == 5
+    # Every parser-surfaced symbol is documented under symbol-level sync — the
+    # `is_public` flag is descriptive metadata, not a filter. Calculator, its three
+    # methods, the module-level `add`, and the underscored `_internal_helper` all
+    # get sections (6 total).
+    assert result.symbols_generated == 6
     assert result.triefact_path == project / "triefacts" / "calculator.md"
     assert result.triefact_path.exists()
 
@@ -88,7 +91,7 @@ def test_sync_single_file_writes_triefact(project: Path):
     assert "trie_version:" in rendered
     assert "source: calculator.py" in rendered
     assert "file_fingerprint:" in rendered
-    # All public symbols got sections
+    # Every symbol got a section, including the underscored helper.
     triefact = TriefactFile.parse(rendered)
     qnames = triefact.section_qnames()
     assert "calculator:add" in qnames
@@ -96,8 +99,7 @@ def test_sync_single_file_writes_triefact(project: Path):
     assert "calculator:Calculator.add" in qnames
     assert "calculator:Calculator.multiply" in qnames
     assert "calculator:Calculator.reset" in qnames
-    # Private symbol skipped
-    assert "calculator:_internal_helper" not in qnames
+    assert "calculator:_internal_helper" in qnames
 
 
 def test_human_prose_between_sections_survives_resync(project: Path):
@@ -210,10 +212,11 @@ def test_first_call_creates_cache_subsequent_calls_read(project: Path):
         config=config,
         client=client,
     )
-    # 5 public symbols → 5 calls. First creates cache, rest read.
-    assert client.calls == 5
+    # 6 documented symbols (every parser-surfaced symbol — `_internal_helper` is
+    # no longer filtered out) → 6 calls. First creates cache, rest read.
+    assert client.calls == 6
     assert result.cache_creation_input_tokens == 100
-    assert result.cache_read_input_tokens == 400
+    assert result.cache_read_input_tokens == 500
 
 
 def test_cli_sync_auto_bootstraps_first_run(project: Path, monkeypatch):

@@ -50,10 +50,11 @@ def build_plan(
     model_id: str,
     client: ModelClient,
     only_files: Iterable[str] | None = None,
+    regen_count_by_file: dict[str, int] | None = None,
 ) -> BootstrapPlan:
-    """Rank files by `LOC * public_symbol_count` and produce per-file cost estimates.
+    """Rank files by `LOC * documented_symbol_count` and produce per-file cost estimates.
 
-    Files with no public symbols are excluded — there's nothing for the generator to do.
+    Files with no documented symbols are excluded — there's nothing for the generator to do.
     Files that disappeared between scan and now are skipped silently. The cached-prefix
     token count for each file comes from the Anthropic `count_tokens` API (free, but
     subject to its own RPM limit), giving accurate cost estimates instead of a heuristic.
@@ -62,6 +63,16 @@ def build_plan(
     — used by `trie plan` on established projects so the cost estimate matches the
     incremental worklist that `trie sync` would actually execute, not a hypothetical
     full re-bootstrap.
+
+    When `regen_count_by_file` is provided, the per-file cost estimate is scaled to the
+    actual number of symbols that will hit the LLM (rather than every documented symbol
+    in the file). Absence of a file from the map signals "regen everything" — the
+    cold-write / `--file` path. This is the input that lets `trie plan` show the
+    symbol-level reality instead of the file-level upper bound.
+
+    `public_symbols` on the returned `PlanItem` always reflects the file's total
+    documented symbol count, so the UI can show "N/M symbols" — the regen target
+    against the file's full surface.
     """
     pricing = get_pricing(model_id)
     only_set = set(only_files) if only_files is not None else None
@@ -77,6 +88,14 @@ def build_plan(
         text = abs_path.read_text()
         loc = max(1, text.count("\n"))
         score = float(loc * stats.public_symbols)
+        # Default to "regen all" (full file) unless the caller specified a smaller
+        # target. The map's absence-as-full-regen contract matches what the runner
+        # does with `symbols_to_regen`.
+        regen_symbols = (
+            regen_count_by_file.get(stats.path, stats.public_symbols)
+            if regen_count_by_file is not None
+            else stats.public_symbols
+        )
         if pricing is not None:
             ctx = FileGenerationContext(file_path=stats.path, source_text=text)
             count_req = GenerationRequest(
@@ -88,13 +107,13 @@ def build_plan(
             est = estimate_file_cost(
                 file_path=stats.path,
                 cached_prefix_tokens=cached_prefix_tokens,
-                public_symbols=stats.public_symbols,
+                public_symbols=regen_symbols,
                 pricing=pricing,
             )
         else:
             est = FileEstimate(
                 file_path=stats.path,
-                public_symbols=stats.public_symbols,
+                public_symbols=regen_symbols,
                 cache_create_tokens=0,
                 cache_read_tokens=0,
                 request_tokens=0,
