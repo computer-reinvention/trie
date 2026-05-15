@@ -62,7 +62,7 @@ def is_git_repo(path: Path) -> bool:
     return out is not None and out.strip() == b"true"
 
 
-def compute_blob_hash(file_path: Path) -> str | None:
+def compute_blob_hash(file_path: Path, *, max_bytes: int | None = None) -> str | None:
     """Compute the git blob hash for the working-tree content of `file_path`.
 
     Does not write the blob into `.git/objects`. The returned hash is the same one
@@ -70,7 +70,14 @@ def compute_blob_hash(file_path: Path) -> str | None:
 
       - the file is unreadable,
       - git is unavailable,
-      - the file is outside a git working tree.
+      - the file is outside a git working tree,
+      - the file size exceeds `max_bytes` (when set).
+
+    When `max_bytes` is provided, files larger than the cap return None without
+    invoking git. The cap is a defensive guard for diff-aware regen: a multi-MB
+    file produces a hash trie can stamp but cannot usefully feed back into the
+    diff-aware prompt window on the next sync. Default `None` preserves the
+    unlimited behaviour every existing caller relies on.
 
     The repo check is deliberate: `git hash-object` technically works without a repo,
     but a hash stamped outside a repo is unretrievable forever and stamping it
@@ -79,6 +86,8 @@ def compute_blob_hash(file_path: Path) -> str | None:
     """
     resolved = file_path.resolve()
     if not resolved.is_file():
+        return None
+    if max_bytes is not None and resolved.stat().st_size > max_bytes:
         return None
     if not is_git_repo(resolved.parent):
         return None

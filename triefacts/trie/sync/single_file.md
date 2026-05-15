@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/sync/single_file.py
 file_fingerprint: 4fbe4a104134dfb3ea61347e446368cc26799c167efc9fdba302a09f676fd0a7
-last_synced_at: '2026-05-15T13:34:10Z'
+last_synced_at: '2026-05-15T13:41:15Z'
 defines:
 - kind: class
   qualified_name: trie/sync/single_file:FileSyncResult
