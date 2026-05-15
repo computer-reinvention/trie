@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/git_helpers.py
-file_fingerprint: 7eac35fb496950fc01ebfed52b837b5a8ae494ed0c1223efa36b3f6f71ce09e7
-last_synced_at: '2026-05-15T13:05:04Z'
+file_fingerprint: 0af5090ce86137d44829448e1eb3c60e9e21478dc1eeda49962aad6076ce27d7
+last_synced_at: '2026-05-15T13:33:40Z'
 description: Quiet, narrowly-scoped git operations for diff-aware regen.
 defines:
 - kind: function
@@ -26,7 +26,7 @@ outgoing_refs: 0
 Return `True` if `path` lies inside a git working tree.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/git_helpers:compute_blob_hash fingerprint=c4b13a76b7637c7a239a65ee75230528e8dabf018de33ffedb4ab4aec5b2d82b body_fp=1f3d128b2166b4aea004ce3056aa9651a01ef38f6a32f1de4365685974912eeb source_ref=dbf6fc45f22045181a4f474e363792eb03ff7011 -->
+<!-- trie:section symbol=trie/git_helpers:compute_blob_hash fingerprint=bf3bb6c1bcb66d3008274f64cdc9b9ca520284dbf1b8f7577db36d53acaca954 body_fp=1f3d128b2166b4aea004ce3056aa9651a01ef38f6a32f1de4365685974912eeb source_ref=eb161f1638b105bcc4478ec76744c9a8269cd0a9 -->
 ## `compute_blob_hash(file_path: Path) -> str | None`
 
 Compute the git blob hash for `file_path`'s working-tree content without writing to `.git/objects`.
