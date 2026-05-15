@@ -77,17 +77,17 @@ def compute_blob_hash(file_path: Path) -> str | None:
     confuses future tooling that assumes a present hash is resolvable. We'd rather
     omit the field than carry a dead reference.
     """
-    file_path = file_path.resolve()
-    if not file_path.is_file():
+    resolved = file_path.resolve()
+    if not resolved.is_file():
         return None
-    if not is_git_repo(file_path.parent):
+    if not is_git_repo(resolved.parent):
         return None
     # Run from the file's directory so any repo-config flags that affect hashing
     # (autocrlf, attributes) behave the same way as commit-time hashing.
-    out = _run_git(["hash-object", "--", str(file_path)], cwd=file_path.parent)
-    if out is None:
+    raw = _run_git(["hash-object", "--", str(resolved)], cwd=resolved.parent)
+    if raw is None:
         return None
-    text = out.decode("utf-8", errors="replace").strip()
+    text = raw.decode("utf-8", errors="replace").strip()
     # A blob hash is a 40-char (SHA-1) or 64-char (SHA-256) hex string. Anything else
     # is unexpected output we'd rather not stamp into a sentinel.
     if len(text) not in (40, 64):
