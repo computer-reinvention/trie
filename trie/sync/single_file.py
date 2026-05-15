@@ -30,6 +30,9 @@ class FileSyncResult:
     output_tokens: int
     cache_creation_input_tokens: int
     cache_read_input_tokens: int
+    symbols_skipped: int = 0
+    """Symbols whose existing sections were left untouched because they were not in
+    `symbols_to_regen`. Always 0 when `symbols_to_regen` is None (full-file regen)."""
 
 
 def _file_fingerprint(text: str) -> str:
@@ -61,8 +64,8 @@ def _file_description(source_path: Path) -> str | None:
     return None
 
 
-def _build_defines(public_symbols: list[Symbol]) -> list[dict[str, object]]:
-    """List of `{kind, qualified_name, lines}` entries — one per public symbol.
+def _build_defines(symbols: list[Symbol]) -> list[dict[str, object]]:
+    """List of `{kind, qualified_name, lines}` entries — one per documented symbol.
 
     Surfaces the symbol roster as an agent-navigable index without re-parsing the
     triefact's section sentinels. Sorted by start_line so the order matches the source.
@@ -73,7 +76,7 @@ def _build_defines(public_symbols: list[Symbol]) -> list[dict[str, object]]:
             "qualified_name": s.qualified_name,
             "lines": f"{s.start_line}-{s.end_line}",
         }
-        for s in sorted(public_symbols, key=lambda x: x.start_line)
+        for s in sorted(symbols, key=lambda x: x.start_line)
     ]
 
 
@@ -133,12 +136,28 @@ def sync_single_file(
     client: ModelClient,
     dest_triefact_path: Path | None = None,
     store: Store | None = None,
+    symbols_to_regen: set[str] | None = None,
 ) -> FileSyncResult:
     """Generate or refresh the triefact file for a single Python source file.
 
-    Existing hand-written prose between trie:section sentinels is preserved. Sections for
-    public symbols are upserted; sections for symbols no longer in the source are removed.
-    Private symbols (leading underscore) are not generated in v0.1.
+    Existing hand-written prose between trie:section sentinels is preserved. Sections are
+    upserted for every parser-surfaced symbol that's targeted for regeneration; sections
+    for symbols no longer in the source are removed.
+
+    `symbols_to_regen` controls which symbols actually hit the LLM:
+      - `None` → regenerate every symbol the parser surfaces. This is the explicit-force
+        path, used by `trie sync --file X` and bootstrap. The caller is asking for a
+        full rewrite of this file.
+      - A set of qnames → regenerate only the listed symbols. Every other symbol's
+        existing section is passed through byte-identically (no LLM call, no rewrite).
+        This is the symbol-level path: combined with per-symbol staleness from
+        `check_project` and per-symbol cascade from `compute_cascade`, the caller can
+        target exactly the symbols whose source changed or whose dependencies did,
+        leaving the rest of a possibly-large file untouched.
+
+    Qnames in `symbols_to_regen` that don't appear in the current source are silently
+    ignored (the symbol was renamed or removed; its orphan section is handled by the
+    file-level orphan sweep below).
 
     If `dest_triefact_path` is provided, the rendered triefact is written there instead of
     the canonical `<triefacts.root>/<source>.md` path. The existing canonical triefact is
@@ -162,8 +181,11 @@ def sync_single_file(
     rel_path = str(source_path.relative_to(src_root))
 
     with telemetry.timed("sync_file", path=rel_path, model=client.model_id) as tele:
-        symbols = extract_symbols(source_path, source_root=src_root)
-        public_symbols = [s for s in symbols if s.is_public]
+        # Every parser-surfaced symbol gets a section. The `is_public` flag (leading
+        # underscore by convention) is kept as descriptive metadata on Symbol but is
+        # NOT used as a filter — stale prose is stale regardless of author intent,
+        # and the cascade walks edges to/from every symbol uniformly.
+        target_symbols = extract_symbols(source_path, source_root=src_root)
 
         canonical_triefact_path = _triefact_path_for(source_path, project_root, config)
         write_path = (
@@ -202,8 +224,32 @@ def sync_single_file(
         totals = {"in": 0, "out": 0, "cache_create": 0, "cache_read": 0}
         mode_counts: dict[str, int] = {"cold": 0, "diff_aware": 0}
         triefact_rel_path = str(canonical_triefact_path.relative_to(project_root))
-        for sym in public_symbols:
+        symbols_generated = 0
+        symbols_skipped = 0
+        for sym in target_symbols:
             qn = sym.qualified_name
+            # Symbol-level regen gate: when `symbols_to_regen` is supplied, anything
+            # not in the set is a pass-through. Its existing section stays in
+            # `triefact.chunks` untouched (we never call `upsert_section` for it),
+            # so render emits byte-identical bytes for it. Front-matter timestamps
+            # still update because the *file* was looked at.
+            if symbols_to_regen is not None and qn not in symbols_to_regen:
+                symbols_skipped += 1
+                # Still refresh the store's section metadata if there's an existing
+                # section — its body and fingerprint haven't changed, but a previous
+                # store row may be stale (e.g. a section that existed before the
+                # store record was first populated). Cheap and idempotent.
+                if store is not None:
+                    existing_section = existing_sections.get(qn)
+                    if existing_section is not None:
+                        store.upsert_section_record(
+                            triefact_path=triefact_rel_path,
+                            symbol_qname=qn,
+                            section_fingerprint=existing_section.fingerprint,
+                            one_liner=extract_one_liner(existing_section.body),
+                        )
+                continue
+
             prev_sym = previous_symbols.get(qn)
             prev_section = existing_sections.get(qn)
             # Diff-aware path requires: previous symbol *source* (signature + body, from
@@ -229,6 +275,7 @@ def sync_single_file(
                 body=gen.body,
                 source_ref=current_blob,
             )
+            symbols_generated += 1
             totals["in"] += gen.input_tokens
             totals["out"] += gen.output_tokens
             totals["cache_create"] += gen.cache_creation_input_tokens
@@ -246,7 +293,7 @@ def sync_single_file(
                         one_liner=extract_one_liner(section.body),
                     )
 
-        current_qnames = {s.qualified_name for s in public_symbols}
+        current_qnames = {s.qualified_name for s in target_symbols}
         sections_removed = 0
         for stale_qname in list(triefact.section_qnames()):
             if stale_qname not in current_qnames:
@@ -262,8 +309,8 @@ def sync_single_file(
         description = _file_description(source_path)
         if description is not None:
             front_matter["description"] = description
-        if public_symbols:
-            front_matter["defines"] = _build_defines(public_symbols)
+        if target_symbols:
+            front_matter["defines"] = _build_defines(target_symbols)
         if store is not None:
             inbound, outbound = store.file_ref_counts(rel_path)
             front_matter["incoming_refs"] = inbound
@@ -274,7 +321,8 @@ def sync_single_file(
         write_path.parent.mkdir(parents=True, exist_ok=True)
         write_path.write_text(triefact.render())
 
-        tele["symbols_generated"] = len(public_symbols)
+        tele["symbols_generated"] = symbols_generated
+        tele["symbols_skipped"] = symbols_skipped
         tele["sections_removed"] = sections_removed
         tele["input_tokens"] = totals["in"]
         tele["output_tokens"] = totals["out"]
@@ -287,10 +335,11 @@ def sync_single_file(
         return FileSyncResult(
             source_path=source_path,
             triefact_path=write_path,
-            symbols_generated=len(public_symbols),
+            symbols_generated=symbols_generated,
             sections_removed=sections_removed,
             input_tokens=totals["in"],
             output_tokens=totals["out"],
             cache_creation_input_tokens=totals["cache_create"],
             cache_read_input_tokens=totals["cache_read"],
+            symbols_skipped=symbols_skipped,
         )

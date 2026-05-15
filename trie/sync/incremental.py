@@ -27,13 +27,28 @@ class IncrementalWorklist:
     `hop_by_file` is the cascade's hop distance map (file → minimum hops from
     any seed file). Stale files map to 0. Used to rank cascade-pulled files
     closest-to-the-change first.
-    """
+
+    `regen_qnames_by_file` is the per-symbol regen target for each affected file.
+    For each file in `affected_files`, the value is the set of qualified names that
+    sync should hand to the LLM; every other symbol in the file is a pass-through
+    (its existing section stays byte-identical). This is the load-bearing data for
+    symbol-level sync: with file-level sync, every public symbol in a touched file
+    was regenerated regardless of whether it changed; with this map, the LLM only
+    sees symbols that actually need new prose.
+
+    A special sentinel applies for the cold-write case: if a file has no triefact
+    at all (`MISSING_TRIEFACT` from check), `regen_qnames_by_file` does not list it
+    explicitly. The sync driver detects the missing triefact and passes
+    `symbols_to_regen=None` to `sync_single_file`, which regenerates everything.
+    Files mapped here always have *at least one* qname — empty sets are filtered
+    out by `compute_incremental_worklist`."""
 
     affected_files: list[str]
     directly_stale: list[str]
     cascaded_files: list[str]
     orphan_triefacts: list[Path]
     hop_by_file: dict[str, int] = field(default_factory=dict)
+    regen_qnames_by_file: dict[str, set[str]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -67,13 +82,27 @@ def compute_incremental_worklist(
     orphans = find_orphan_triefacts(project_root=project_root, config=config)
 
     check = check_project(project_root=project_root, config=config)
-    directly_stale = sorted(
-        {
-            it.source_path
-            for it in check.items
-            if it.source_path and (src_root / it.source_path).is_file()
-        }
-    )
+    # Stale items that survive the file-existence filter, indexed both ways. The set of
+    # files comes from the source_paths; the per-file qname set comes from items that
+    # carry a qualified_name (everything except `MISSING_TRIEFACT`, which signals a
+    # whole-file cold-write).
+    stale_items_alive = [
+        it for it in check.items if it.source_path and (src_root / it.source_path).is_file()
+    ]
+    directly_stale = sorted({it.source_path for it in stale_items_alive})
+
+    # Per-file regen target: union of stale qnames (from check) and cascade-pulled qnames
+    # (from the cascade walk). Files marked MISSING_TRIEFACT are NOT entered into this
+    # map; their absence signals to the runner "regen everything in this file" via the
+    # `symbols_to_regen=None` path in sync_single_file.
+    regen_qnames_by_file: dict[str, set[str]] = {}
+    files_needing_full_regen: set[str] = set()
+    for it in stale_items_alive:
+        if it.qualified_name is None:
+            # MISSING_TRIEFACT — record so we skip the per-symbol path for this file.
+            files_needing_full_regen.add(it.source_path)
+            continue
+        regen_qnames_by_file.setdefault(it.source_path, set()).add(it.qualified_name)
 
     if not directly_stale:
         return IncrementalWorklist(
@@ -82,6 +111,7 @@ def compute_incremental_worklist(
             cascaded_files=[],
             orphan_triefacts=orphans,
             hop_by_file={},
+            regen_qnames_by_file={},
         )
 
     cascade = compute_cascade(
@@ -90,12 +120,25 @@ def compute_incremental_worklist(
         depth=config.cascade.default_depth,
         hub_threshold=config.cascade.hub_symbol_threshold,
     )
+
+    # Project cascade-pulled qnames onto their owning files. Cascade-pulled symbols may
+    # land in a file that's already directly-stale (callers in the same file as the
+    # change); the set semantics handle that idempotently.
+    for cqn, cfile in cascade.file_by_cascaded_qname.items():
+        regen_qnames_by_file.setdefault(cfile, set()).add(cqn)
+
+    # Files flagged for full-file regen drop out of the per-symbol map — the runner
+    # will see them missing and pass `symbols_to_regen=None`, regenerating every symbol.
+    for f in files_needing_full_regen:
+        regen_qnames_by_file.pop(f, None)
+
     return IncrementalWorklist(
         affected_files=cascade.affected_files,
         directly_stale=directly_stale,
         cascaded_files=sorted(cascade.cascaded_from_change),
         orphan_triefacts=orphans,
         hop_by_file=cascade.hop_by_file,
+        regen_qnames_by_file=regen_qnames_by_file,
     )
 
 
@@ -184,12 +227,29 @@ def run_incremental(
             continue
 
         cb.on_start(rel, idx, total)
+        # Symbol-level regen target. Absence from the map means "full-file regen"
+        # (cold-write path, e.g. MISSING_TRIEFACT). A present entry restricts the
+        # LLM to exactly those qnames; everything else in the file is pass-through.
+        regen_set = worklist.regen_qnames_by_file.get(rel)
         result = sync_single_file(
-            abs_path, project_root=project_root, config=config, client=client, store=store
+            abs_path,
+            project_root=project_root,
+            config=config,
+            client=client,
+            store=store,
+            symbols_to_regen=regen_set,
         )
-        if result.symbols_generated == 0 and result.sections_removed == 0:
+        if (
+            result.symbols_generated == 0
+            and result.sections_removed == 0
+            and result.symbols_skipped == 0
+        ):
+            # The file had no symbols at all — nothing to do. Distinct from the
+            # symbol-level case where every target was a pass-through; in that case
+            # `symbols_skipped > 0` and the front matter still updated, so we count
+            # the file as synced even though no LLM call ran.
             skipped_no_symbols += 1
-            cb.on_skip(rel, "no public symbols")
+            cb.on_skip(rel, "no symbols to document")
             continue
         sync_results.append(result)
         file_cost = 0.0

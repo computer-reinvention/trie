@@ -423,13 +423,18 @@ class Store:
         return inbound, outbound
 
     def file_stats(self) -> list[FileStats]:
-        """Per-file counts joined from files + symbols, used by the bootstrap ranker."""
+        """Per-file counts joined from files + symbols, used by the bootstrap ranker.
+
+        The `public_symbols` field is a legacy name; under symbol-level sync trie
+        documents every parser-surfaced symbol regardless of the leading-underscore
+        convention, so the count returned here is "documentable symbols," which
+        equals the total. The field name is preserved for API stability.
+        """
         rows = self._conn.execute(
             """
             SELECT
                 f.path,
-                COUNT(s.id) AS total,
-                COUNT(CASE WHEN s.is_public = 1 THEN 1 END) AS public_count
+                COUNT(s.id) AS total
             FROM files f
             LEFT JOIN symbols s ON s.file_path = f.path
             GROUP BY f.path
@@ -437,7 +442,7 @@ class Store:
             """
         ).fetchall()
         return [
-            FileStats(path=row[0], total_symbols=int(row[1]), public_symbols=int(row[2]))
+            FileStats(path=row[0], total_symbols=int(row[1]), public_symbols=int(row[1]))
             for row in rows
         ]
 

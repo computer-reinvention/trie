@@ -77,17 +77,20 @@ def _check_project_inner(*, project_root: Path, config: Config, _tele: dict) -> 
         files_checked += 1
         rel_source = str(abs_source.relative_to(src_root))
 
+        # Every parser-surfaced symbol is in scope for verification. The `is_public`
+        # flag is descriptive metadata on Symbol but is NOT a filter — stale prose
+        # is stale regardless of whether the author named the symbol with a leading
+        # underscore, and sync documents the same set.
         symbols = extract_symbols(abs_source, source_root=src_root)
-        public = [s for s in symbols if s.is_public]
         rel_triefact = _triefact_path_for(rel_source, config)
         abs_triefact = project_root / rel_triefact
         triefact_exists = abs_triefact.exists()
 
-        if not public and not triefact_exists:
+        if not symbols and not triefact_exists:
             # Nothing to document, nothing to check.
             continue
 
-        if public and not triefact_exists:
+        if symbols and not triefact_exists:
             items.append(
                 StaleItem(
                     source_path=rel_source,
@@ -99,11 +102,11 @@ def _check_project_inner(*, project_root: Path, config: Config, _tele: dict) -> 
             continue
 
         # triefact_exists is True at this point — check section-level staleness regardless
-        # of whether `public` is empty. An empty public set means every existing section is
-        # orphaned (the symbol it documents was renamed, made private, or removed).
+        # of whether `symbols` is empty. An empty symbol set means every existing section
+        # is orphaned (the symbol it documents was renamed or removed).
         triefact = TriefactFile.parse(abs_triefact.read_text())
         existing_sections = {c.qualified_name: c for c in triefact.chunks if isinstance(c, Section)}
-        symbol_index = {sym.qualified_name: sym for sym in public}
+        symbol_index = {sym.qualified_name: sym for sym in symbols}
 
         for qname, sym in symbol_index.items():
             sec = existing_sections.get(qname)

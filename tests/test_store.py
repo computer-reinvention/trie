@@ -104,7 +104,9 @@ def test_file_stats(store: Store, tmp_path: Path):
 
     stats = {s.path: s for s in store.file_stats()}
     assert stats["a.py"].total_symbols == 4  # alpha, _hidden, Public, Public.m
-    assert stats["a.py"].public_symbols == 3
+    # Under symbol-level sync, `public_symbols` is a legacy field name; the value
+    # equals `total_symbols` because every parser-surfaced symbol is documented.
+    assert stats["a.py"].public_symbols == 4
     assert stats["b.py"].total_symbols == 0
     assert stats["b.py"].public_symbols == 0
 

@@ -54,6 +54,22 @@ def diff_project(
     check = check_project(project_root=project_root, config=config)
     stale_sources = sorted({it.source_path for it in check.items if it.source_path})
 
+    # Build the per-file symbol-level regen target. Files marked MISSING_TRIEFACT
+    # (no qualified_name on the item) get a full-file regen via `symbols_to_regen=None`;
+    # all other files restrict to exactly the qnames that drifted, so the diff reflects
+    # what `trie sync` will actually do.
+    regen_qnames_by_file: dict[str, set[str]] = {}
+    files_needing_full_regen: set[str] = set()
+    for it in check.items:
+        if not it.source_path:
+            continue
+        if it.qualified_name is None:
+            files_needing_full_regen.add(it.source_path)
+            continue
+        regen_qnames_by_file.setdefault(it.source_path, set()).add(it.qualified_name)
+    for f in files_needing_full_regen:
+        regen_qnames_by_file.pop(f, None)
+
     cb: ProgressCallback = progress if progress is not None else NULL_PROGRESS
     diffs: list[FileDiff] = []
     skipped = 0
@@ -89,6 +105,7 @@ def diff_project(
             client=client,
             dest_triefact_path=preview,
             store=store,
+            symbols_to_regen=regen_qnames_by_file.get(rel_source),
         )
 
         original = canonical.read_text() if canonical.exists() else ""

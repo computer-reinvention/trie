@@ -104,15 +104,30 @@ def test_orphan_section_detected(project: Path):
     assert any(it.qualified_name == "src/alpha:alpha" for it in orphan)
 
 
-def test_no_public_symbols_no_triefact_required(project: Path):
-    """A file with only private symbols doesn't need a triefact — don't flag missing_triefact."""
+def test_private_only_file_requires_a_triefact(project: Path):
+    """Under symbol-level sync, the leading-underscore convention is descriptive,
+    not a filter. A file of only `_`-prefixed symbols is still documented, and
+    `check` flags `MISSING_TRIEFACT` for it until sync runs."""
     (project / "src" / "private_only.py").write_text(
         "def _hidden():\n    pass\n\n\ndef _also_hidden():\n    pass\n"
     )
     config, _ = Config.find_and_load(project)
     result = check_project(project_root=project, config=config)
     private_items = [it for it in result.items if it.source_path == "src/private_only.py"]
-    assert private_items == []
+    assert len(private_items) == 1
+    assert private_items[0].reason == StaleReason.MISSING_TRIEFACT
+
+
+def test_file_with_no_parser_surfaced_symbols_needs_no_triefact(project: Path):
+    """A file with zero parser-surfaced defs (imports + module-level only) is
+    excluded from the check — there is literally nothing to document."""
+    (project / "src" / "empty_module.py").write_text(
+        "import os\nfrom pathlib import Path\n\nCONSTANT = 1\n"
+    )
+    config, _ = Config.find_and_load(project)
+    result = check_project(project_root=project, config=config)
+    items = [it for it in result.items if it.source_path == "src/empty_module.py"]
+    assert items == []
 
 
 def test_clean_when_all_in_sync_with_human_prose(project: Path):

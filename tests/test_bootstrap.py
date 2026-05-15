@@ -77,7 +77,15 @@ def test_plan_ranks_higher_score_first(project: Path):
     assert plan.total_estimated_cost > 0
 
 
-def test_plan_excludes_files_with_no_public_symbols(project: Path, tmp_path: Path):
+def test_plan_excludes_files_with_no_documentable_symbols(project: Path, tmp_path: Path):
+    """Files with zero parser-surfaced symbols drop out of the plan.
+
+    Under symbol-level sync, the leading-underscore "private" convention is *not* a
+    filter — `_hidden` would be documented. Only files where the parser surfaces
+    nothing at all (e.g., a module of imports + module-level statements with no
+    function/class defs) are excluded from the plan.
+    """
+    (project / "empty_module.py").write_text("import os\nfrom typing import Any\n\nCONSTANT = 1\n")
     (project / "private.py").write_text("def _hidden():\n    pass\n")
     with _scanned_store(project) as store:
         plan = build_plan(
@@ -87,7 +95,10 @@ def test_plan_excludes_files_with_no_public_symbols(project: Path, tmp_path: Pat
             client=FakeClient(),
         )
     paths = [it.file_path for it in plan.items]
-    assert "private.py" not in paths
+    # `private.py` is now documented — its `_hidden` symbol is a real, parser-surfaced def.
+    assert "private.py" in paths
+    # `empty_module.py` has no def-style symbols; the parser surfaces nothing.
+    assert "empty_module.py" not in paths
 
 
 def test_plan_with_unknown_model_zero_cost(project: Path):
