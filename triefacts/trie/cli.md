@@ -1,116 +1,119 @@
 ---
 trie_version: 0.1.0
 source: trie/cli.py
-file_fingerprint: 39ed5d7457b99745c5a90b527c06ecc53f49990fdfa2f1c060f1c413057953a3
-last_synced_at: '2026-05-16T11:23:01Z'
+file_fingerprint: 11a455b8cd63c71ef70d5467a923196845cb83f1e057d162fee778db260d0063
+last_synced_at: '2026-05-16T11:46:35Z'
 defines:
 - kind: function
   qualified_name: trie/cli:_get_reporter
-  lines: 44-50
+  lines: 49-55
 - kind: class
   qualified_name: trie/cli:_ProgressAdapter
-  lines: 53-98
+  lines: 58-103
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.__init__
-  lines: 61-65
+  lines: 66-70
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter._ensure
-  lines: 67-71
+  lines: 72-76
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.close
-  lines: 73-76
+  lines: 78-81
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_start
-  lines: 78-79
+  lines: 83-84
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_done
-  lines: 81-94
+  lines: 86-99
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_skip
-  lines: 96-98
+  lines: 101-103
 - kind: function
   qualified_name: trie/cli:_progress_callback
-  lines: 102-107
+  lines: 107-112
 - kind: function
   qualified_name: trie/cli:_root
-  lines: 111-149
+  lines: 116-154
 - kind: function
   qualified_name: trie/cli:_telemetry_bootstrap
-  lines: 152-164
+  lines: 157-169
 - kind: function
   qualified_name: trie/cli:init_cmd
-  lines: 168-251
+  lines: 173-256
 - kind: function
   qualified_name: trie/cli:_is_interactive
-  lines: 254-261
+  lines: 259-266
 - kind: class
   qualified_name: trie/cli:_NoOpStatus
-  lines: 264-269
+  lines: 269-274
 - kind: method
   qualified_name: trie/cli:_NoOpStatus.__enter__
-  lines: 265-266
+  lines: 270-271
 - kind: method
   qualified_name: trie/cli:_NoOpStatus.__exit__
-  lines: 268-269
+  lines: 273-274
 - kind: function
   qualified_name: trie/cli:plan_cmd
-  lines: 273-366
+  lines: 278-371
 - kind: function
   qualified_name: trie/cli:verify_cmd
-  lines: 370-382
+  lines: 375-387
 - kind: function
   qualified_name: trie/cli:audit_cmd
-  lines: 386-446
+  lines: 391-451
 - kind: function
   qualified_name: trie/cli:_resolve_audit_log_path
-  lines: 449-465
+  lines: 454-470
 - kind: function
   qualified_name: trie/cli:_print_scan_breakdown
-  lines: 468-485
+  lines: 473-490
 - kind: function
   qualified_name: trie/cli:_print_plan
-  lines: 488-499
+  lines: 493-504
 - kind: function
   qualified_name: trie/cli:_print_incremental_plan
-  lines: 502-568
+  lines: 507-573
 - kind: function
   qualified_name: trie/cli:_print_drift_detail
-  lines: 581-592
+  lines: 586-597
 - kind: function
   qualified_name: trie/cli:_verify_drift
-  lines: 595-626
+  lines: 600-631
 - kind: function
   qualified_name: trie/cli:sync_cmd
-  lines: 630-713
+  lines: 635-739
 - kind: function
   qualified_name: trie/cli:_has_existing_triefacts
-  lines: 716-722
+  lines: 742-748
 - kind: function
   qualified_name: trie/cli:_run_full_pass
-  lines: 725-789
+  lines: 751-815
 - kind: function
   qualified_name: trie/cli:_run_dry_run_diff
-  lines: 792-837
+  lines: 818-863
 - kind: function
   qualified_name: trie/cli:_run_single_file_sync
-  lines: 840-868
+  lines: 866-894
+- kind: function
+  qualified_name: trie/cli:_run_metadata_only_refresh
+  lines: 897-954
 - kind: function
   qualified_name: trie/cli:_run_incremental_sync
-  lines: 871-920
+  lines: 957-1006
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 932-934
+  lines: 1018-1020
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 937-947
+  lines: 1023-1033
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 951-1020
+  lines: 1037-1106
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 1023-1038
+  lines: 1109-1124
 incoming_refs: 0
-outgoing_refs: 59
+outgoing_refs: 65
 ---
 <!-- trie:section symbol=trie/cli:init_cmd fingerprint=b4f1d7bff0bc8e455ed6de5c56b9e0c884e01c1dc12eba107d91abe90e5b8584 body_fp=a30e268f60bb85196fe5055818affc8f1a117b80c3e981aed18fd2751c260c76 source_ref=f9896112d3c74faa4a548ca30df39e8106603df3 -->
 ## `init_cmd(ctx, root, force, install_hooks, run_scan) -> None`
@@ -143,8 +146,8 @@ Scan the project, estimate token costs, and print the sync worklist without writ
 Run an offline drift check and exit 1 if any triefact has drifted from its source.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:sync_cmd fingerprint=fa4a984982fd7da361719c731982521093b761228ce0fd0ec1aa0d24ea193753 body_fp=47e255dc306f02490c03988f58f292b152f6303ce46518f9e33e547ca44e656a source_ref=f9896112d3c74faa4a548ca30df39e8106603df3 -->
-## `sync_cmd(ctx: typer.Context, file: Path | None, all_: bool, budget: float | None, limit: int | None, dry_run: bool, model: str | None) -> None`
+<!-- trie:section symbol=trie/cli:sync_cmd fingerprint=2de43338fd2fe4b3e4170ca730f7b7ad178668cf74f51afc95d31d332ca70cec body_fp=7125bbf60cc27926ce251a98ec04aeca0cd25fee1a0703470a8a579f860fd774 source_ref=167adca5ea7743fb00da044680bd8f65fb05469c -->
+## `sync_cmd(ctx: typer.Context, file: Path | None, all_: bool, budget: float | None, limit: int | None, dry_run: bool, metadata_only: bool, model: str | None) -> None`
 
 Generate or refresh triefacts, auto-detecting full bootstrap vs. incremental cascade mode.
 
@@ -153,6 +156,7 @@ Generate or refresh triefacts, auto-detecting full bootstrap vs. incremental cas
 - `budget`: stop once cumulative actual spend reaches this USD value.
 - `limit`: cap total files processed.
 - `dry_run`: write previews to `.trie/preview/` and print unified diffs instead of updating live triefacts.
+- `metadata_only`: refresh front matter from the store only; no LLM calls; mutually exclusive with all other flags.
 - `model`: overrides the configured model slug.
 <!-- trie:end -->
 
@@ -393,4 +397,13 @@ Resolve the `debug.jsonl` path from explicit arg, configured `log_path`, or cwd 
 
 - `log`: returned directly if provided; skips all config resolution.
 - Returns cwd `debug.jsonl` if no `trie.toml` is found.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:_run_metadata_only_refresh fingerprint=ab88ff6a5f8617fcb6bbcc42dae27974d38c2d4d9d9e8f5df2a4c2dcd0f4ad19 body_fp=c777944aa3562954585519eb25a905a5e76f9dcbdda8d6edda859064d837e132 source_ref=167adca5ea7743fb00da044680bd8f65fb05469c -->
+## `_run_metadata_only_refresh(reporter: Reporter) -> None`
+
+Refresh every triefact's front matter from the live store without calling the LLM.
+
+- Rescans the project first so the graph reflects any resolver changes before rewriting metadata.
+- Skips files outside `source_root`; reports changed vs already-current counts on completion.
 <!-- trie:end -->

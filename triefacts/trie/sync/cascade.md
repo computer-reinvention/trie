@@ -11,7 +11,7 @@ defines:
   qualified_name: trie/sync/cascade:compute_cascade
   lines: 48-152
 incoming_refs: 9
-outgoing_refs: 0
+outgoing_refs: 1
 ---
 <!-- trie:section symbol=trie/sync/cascade:CascadeResult fingerprint=4427fc9e9b33bd6592de10605387006d37145125ccdcf08ffbaaff4711fb0c21 body_fp=7fbc9344e99658e38dee40d3e7807f4952ab57d5450e4529e0c45cbb18dc0cbe source_ref=c1c2b9ed991a072e6f2783f4adee6e8e49fa2f32 -->
 ## `CascadeResult`

@@ -43,7 +43,7 @@ defines:
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
   lines: 164-165
-incoming_refs: 117
+incoming_refs: 121
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/config:TrieMeta fingerprint=43460a16db027d61c4297084d70ce0d1e70048e3c983aba83ed17fbd4935301a body_fp=fc099c55e56a7cbf7ea5a31d4965af5f5003dcad2f1ee09cc25a0896fe818bc3 source_ref=435b779093e30070dbf454dc787d8b346cc4ebc9 -->

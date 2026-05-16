@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: tests/test_references.py
-file_fingerprint: 57b5f2c5ed4a13fefd04ad9cda47ab3013f6ffdbda1ba0c08c6bd20fe2eefdb3
-last_synced_at: '2026-05-15T13:02:07Z'
+file_fingerprint: 24aa3c08899578f0fe7321610c519c21a0aaf6e5fe2a018b478f8685b94afa06
+last_synced_at: '2026-05-16T11:46:30Z'
 defines:
 - kind: function
   qualified_name: tests/test_references:_refs_by_src
@@ -40,8 +40,32 @@ defines:
 - kind: function
   qualified_name: tests/test_references:test_both_import_and_intra_file_edges_resolve
   lines: 113-123
+- kind: function
+  qualified_name: tests/test_references:test_plain_import_attribute_access
+  lines: 131-137
+- kind: function
+  qualified_name: tests/test_references:test_aliased_plain_import_attribute_access
+  lines: 140-147
+- kind: function
+  qualified_name: tests/test_references:test_dotted_import_attribute_access
+  lines: 150-160
+- kind: function
+  qualified_name: tests/test_references:test_from_import_submodule_attribute_resolves
+  lines: 163-175
+- kind: function
+  qualified_name: tests/test_references:test_module_attribute_emitted_even_for_stdlib
+  lines: 178-189
+- kind: function
+  qualified_name: tests/test_references:test_mixed_from_and_plain_import
+  lines: 192-204
+- kind: function
+  qualified_name: tests/test_references:test_attribute_access_through_local_var_not_treated_as_module
+  lines: 207-219
+- kind: function
+  qualified_name: tests/test_references:test_module_attribute_no_self_edge
+  lines: 222-233
 incoming_refs: 0
-outgoing_refs: 11
+outgoing_refs: 19
 ---
 <!-- trie:section symbol=tests/test_references:test_intra_file_function_calls_create_edges fingerprint=f59ed7b0886dada67f2106498921a398c3ef4d7b0dabcf68629f2e9682a8866c body_fp=081f23272c512af4d4aea2849e881aed89fdccceb76a5bce5fc99b30cf0f191d source_ref=83e454d8231cd6f64c4000e41597feef296bf20c -->
 ## `test_intra_file_function_calls_create_edges(tmp_path: Path)`
@@ -113,4 +137,55 @@ Verify that a single caller resolves both cross-file import edges and intra-file
 ## `_refs_by_src(file_data) -> dict[str, list[str]]`
 
 Build a mapping from each source qualified name to a sorted list of its target qualified names.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_references:test_plain_import_attribute_access fingerprint=9db43c1bc6facc99a0f5bd980f2976af5d303a71998ea31d579ad82b44395c7f body_fp=54628f041e2bcfac0462cc4313d46f149c0e2f44761679ae455829d07288c843 source_ref=5a91a8c60b5e6b0f8348157ccb0c571d36a3d8a6 -->
+## `test_plain_import_attribute_access(tmp_path: Path)`
+
+Assert that `import foo` followed by `foo.bar()` resolves to a `foo:bar` reference edge.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_references:test_aliased_plain_import_attribute_access fingerprint=8f322e134ab11d36dc9413ddd7c8458cddc834ff56fe7034b931f13e2364b653 body_fp=1392565bc4a22f496226e8aa39a003f966a78198199e3aaef45ec663d9dfb001 source_ref=5a91a8c60b5e6b0f8348157ccb0c571d36a3d8a6 -->
+## `test_aliased_plain_import_attribute_access(tmp_path: Path)`
+
+Assert that `import foo as f; f.bar()` resolves the reference target to `foo:bar`, not `f:bar`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_references:test_dotted_import_attribute_access fingerprint=0665796fe22e5e64a9401028fa5d7cbeea7071c344232d40f0d907111701a0e7 body_fp=b139609ecea3b70a13ccb4101d261b4769777a0490a5c10475adb0ad0cb96d50 source_ref=5a91a8c60b5e6b0f8348157ccb0c571d36a3d8a6 -->
+## `test_dotted_import_attribute_access(tmp_path: Path)`
+
+Assert that `import foo.bar` followed by `foo.bar.baz()` resolves to the target qname `foo/bar:baz`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_references:test_from_import_submodule_attribute_resolves fingerprint=4779064a355c55a1b4e3262f650c10a0b45cdb543b6373f1358902ce134755fe body_fp=17ff51e48a4e33a298795064a99678502582dacbeda3840e0e00b0fae5029b30 source_ref=5a91a8c60b5e6b0f8348157ccb0c571d36a3d8a6 -->
+## `test_from_import_submodule_attribute_resolves(tmp_path: Path)`
+
+Assert that `from pkg import submod; submod.thing()` emits both bare-symbol and module-attribute candidate edges.
+
+- `"pkg:submod"` — bare-name interpretation, as if `submod` is a symbol in `pkg`
+- `"pkg/submod:thing"` — module-attribute interpretation for `submod.thing()`
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_references:test_module_attribute_emitted_even_for_stdlib fingerprint=f623eebef9d9e3d1d91d970bba554d84befea18cd3ef7203abc8d7bbf62bca27 body_fp=2f6d6538d6ec59f87d676515f22b5fe4e9c381e32d62f99918fb54484a7580e5 source_ref=5a91a8c60b5e6b0f8348157ccb0c571d36a3d8a6 -->
+## `test_module_attribute_emitted_even_for_stdlib(tmp_path: Path)`
+
+Assert that `import os; os.path.join(...)` emits a candidate reference edge without stdlib filtering at extraction time.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_references:test_mixed_from_and_plain_import fingerprint=7c85295591ddf8c3d91d011bf9f8a35ae696d5bd5f0bd8da85f8a51db484ea7f body_fp=42ce2b3ee7391da3f97ccf73a997d05b8de4cd89c63c1b44d29d0a4b536b5100 source_ref=5a91a8c60b5e6b0f8348157ccb0c571d36a3d8a6 -->
+## `test_mixed_from_and_plain_import(tmp_path: Path)`
+
+Assert that combining `from X import Y` and `import Z; Z.W()` in one file produces edges from both resolution paths.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_references:test_attribute_access_through_local_var_not_treated_as_module fingerprint=6a5fe3c17b6c9346eb0735615bbdc763de2cb87c685d39a15963410fad068caa body_fp=532058fbfff71b9142d0ef3b23281d822fdf9002056c5a4743d81ce0c21162a6 source_ref=5a91a8c60b5e6b0f8348157ccb0c571d36a3d8a6 -->
+## `test_attribute_access_through_local_var_not_treated_as_module(tmp_path: Path)`
+
+Assert that attribute access on a local variable emits no module-attribute edge, only the intra-file call edge.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_references:test_module_attribute_no_self_edge fingerprint=33c0b251e18a1a4d26a6420f0b878d0abf794b7056b2139951eb33a3bc69dac7 body_fp=49685159c1cde42dfc224b119e7bb6b808bc49d35badc1df076ae82ef4d67b26 source_ref=5a91a8c60b5e6b0f8348157ccb0c571d36a3d8a6 -->
+## `test_module_attribute_no_self_edge(tmp_path: Path)`
+
+Assert that a symbol referencing itself via module-attribute access does not produce a self-edge.
 <!-- trie:end -->

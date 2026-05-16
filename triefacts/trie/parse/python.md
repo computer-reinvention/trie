@@ -46,7 +46,7 @@ defines:
 - kind: function
   qualified_name: trie/parse/python:extract_symbols
   lines: 216-264
-incoming_refs: 44
+incoming_refs: 50
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/parse/python:Symbol fingerprint=d9bc6c2e7a7f2bbdca9af4f1c7982a826342217f984a3fec7cdd6b475bf8a35e body_fp=879c309a54165bf864d2ad851bebac172b40931735019bbda12c854e3ce53695 source_ref=9ef40d21b0e2845b12219ed57628ec87f9eb4293 -->

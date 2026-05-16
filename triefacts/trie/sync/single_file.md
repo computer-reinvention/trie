@@ -1,35 +1,41 @@
 ---
 trie_version: 0.1.0
 source: trie/sync/single_file.py
-file_fingerprint: bf58fcedac6e0e26abee8c89fb3487061b30cc0929b03b92b5781ca1be17969f
-last_synced_at: '2026-05-16T11:23:15Z'
+file_fingerprint: 3bdf831aeb90bb062a56404b4d91b7a4d521d68cd71441ef31dbe2016124ccc2
+last_synced_at: '2026-05-16T11:46:48Z'
 defines:
 - kind: class
   qualified_name: trie/sync/single_file:FileSyncResult
   lines: 25-36
 - kind: class
+  qualified_name: trie/sync/single_file:MetadataRefreshResult
+  lines: 40-48
+- kind: class
   qualified_name: trie/sync/single_file:_SymbolJob
-  lines: 40-50
+  lines: 52-62
 - kind: function
   qualified_name: trie/sync/single_file:_file_fingerprint
-  lines: 53-54
+  lines: 65-66
 - kind: function
   qualified_name: trie/sync/single_file:_triefact_path_for
-  lines: 57-61
+  lines: 69-73
 - kind: function
   qualified_name: trie/sync/single_file:_file_description
-  lines: 64-79
+  lines: 76-91
 - kind: function
   qualified_name: trie/sync/single_file:_build_defines
-  lines: 82-95
+  lines: 94-107
 - kind: function
   qualified_name: trie/sync/single_file:_resolve_previous_symbols
-  lines: 98-143
+  lines: 110-155
+- kind: function
+  qualified_name: trie/sync/single_file:refresh_triefact_metadata
+  lines: 158-235
 - kind: function
   qualified_name: trie/sync/single_file:sync_single_file
-  lines: 146-400
-incoming_refs: 41
-outgoing_refs: 15
+  lines: 238-492
+incoming_refs: 51
+outgoing_refs: 17
 ---
 <!-- trie:section symbol=trie/sync/single_file:FileSyncResult fingerprint=f658b6cb6f956faf262f29751e15b6efaad12e661c2976d58946940db38a0ed7 body_fp=a14f526007aca92c0796d86e378c557ef5d8443dcb245ccd6b6df85d0970222e source_ref=d6da1d131c5c5e11b320faa2c7147616cfbd1f01 -->
 ## `@dataclass(frozen=True) class FileSyncResult`
@@ -95,4 +101,23 @@ Holds one symbol's inputs for the thread-pool generate phase.
 
 - `previous_source`: prior signature+body from git blob; `None` triggers cold-write mode.
 - `previous_prose`: existing section body; `None` triggers cold-write mode.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/single_file:MetadataRefreshResult fingerprint=0049c0670ad0f133fe15a0c3be095e1eeb57d78e4751912b0e33094080c9e04e body_fp=1cf383a19901e5539c7c475c042d167a37d38f05d9b9932a6367d6bd5620b10d source_ref=34057e5d9c5ee57019bcfb44216c4b3de34127e1 -->
+## `MetadataRefreshResult`
+
+Frozen dataclass reporting the outcome of a `refresh_triefact_metadata` call for one file.
+
+- `changed`: `True` when rewritten triefact bytes differ from previous bytes.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/single_file:refresh_triefact_metadata fingerprint=2f9eb0431e1d2bea4e45739c32f76fca9716eb96d3b1455f680fc5bdf71e8615 body_fp=ec7b270cddba0146aa442a704141bde7aa0fdcbb2950010924ac0c91706d5e9f source_ref=34057e5d9c5ee57019bcfb44216c4b3de34127e1 -->
+## `refresh_triefact_metadata(source_path: Path, *, project_root: Path, config: Config, store: Store | None = None) -> MetadataRefreshResult`
+
+Rewrite a triefact's front matter from live data without calling the LLM or touching section bodies.
+
+- `store`: when provided, enriches front matter with `incoming_refs`/`outgoing_refs` counts.
+- `changed`: `True` if the rewritten bytes differ from what was on disk.
+- Returns `changed=False` (no-op) when no triefact exists yet for the source file.
+- Raises `ValueError` if `source_path` is not under `config.triefacts.source_root`.
 <!-- trie:end -->

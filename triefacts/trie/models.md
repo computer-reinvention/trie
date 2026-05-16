@@ -50,7 +50,7 @@ defines:
   qualified_name: trie/models:make_client
   lines: 253-271
 incoming_refs: 61
-outgoing_refs: 2
+outgoing_refs: 6
 ---
 <!-- trie:section symbol=trie/models:GenerationRequest fingerprint=ee00a8e1df60152e58509cf285b21002f69fc9b5031a0a0bad0a3e946cd47302 body_fp=cda362a4b85d926dc6c80be1647e94e2c65825c86bf5773c52778704cd29584a source_ref=e12e23ef268599c29347001c72ed8323b67a45bd -->
 ## `GenerationRequest(system_prompt: str, cached_context: str, request: str, max_tokens: int = 1024)`

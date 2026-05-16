@@ -57,7 +57,7 @@ defines:
   qualified_name: trie/mcp_server:run_stdio
   lines: 564-567
 incoming_refs: 2
-outgoing_refs: 10
+outgoing_refs: 26
 ---
 <!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=a9276102fa3197d721d6aeea11f59f308aa262003a5bfdbdd933bdab4b98f35d body_fp=1896c8f1ff3cbc085a8570a7d7b569fbbc5b4a4a0de5b58e9942e4954f76970c source_ref=7e9bcac1d9e11809a5a2f2cc565ded53aa1ea42b -->
 ## `TrieTools`

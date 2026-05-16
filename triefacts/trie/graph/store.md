@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/graph/store.py
 file_fingerprint: 8c2dd95eb9b1ce4d2aad759766f24f74822daa986410af303d582e36c72e976f
-last_synced_at: '2026-05-15T13:05:21Z'
+last_synced_at: '2026-05-16T11:46:54Z'
 defines:
 - kind: class
   qualified_name: trie/graph/store:FileRecord
@@ -109,7 +109,7 @@ defines:
 - kind: method
   qualified_name: trie/graph/store:Store.all_qualified_names
   lines: 651-654
-incoming_refs: 34
+incoming_refs: 36
 outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/graph/store:FileRecord fingerprint=9e5bd64fbbf95f8eb3616b9da3d84b73687a569550e6ace513eef354bd16b1e1 body_fp=66d0f20070cb4ff0fbcc153cfb392d3aa24addf48f3b73c0f1c45f48d6b74475 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->

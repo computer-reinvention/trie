@@ -25,6 +25,7 @@ from trie.mcp_server import run_stdio as run_mcp_stdio
 from trie.models import make_client
 from trie.reporter import ProgressHandle, Reporter, Verbosity
 from trie.scan import scan_project
+from trie.scope import discover_files
 from trie.sync.bootstrap import BootstrapPlan, build_plan, run_bootstrap
 from trie.sync.incremental import (
     IncrementalWorklist,
@@ -32,7 +33,11 @@ from trie.sync.incremental import (
     run_incremental,
 )
 from trie.sync.progress import ProgressCallback
-from trie.sync.single_file import FileSyncResult, sync_single_file
+from trie.sync.single_file import (
+    FileSyncResult,
+    refresh_triefact_metadata,
+    sync_single_file,
+)
 
 app = typer.Typer(
     name="trie",
@@ -659,6 +664,15 @@ def sync_cmd(
             "--budget / --limit)."
         ),
     ),
+    metadata_only: bool = typer.Option(
+        False,
+        "--metadata-only",
+        help=(
+            "Refresh triefact front matter from the live store without calling the LLM. "
+            "Useful after a graph-only change (e.g. an improved reference resolver) "
+            "where edge counts moved but source did not."
+        ),
+    ),
     model: str | None = typer.Option(
         None,
         "--model",
@@ -668,11 +682,12 @@ def sync_cmd(
     """Generate or refresh trie triefacts.
 
     Modes (auto-detected):
-      • --file   : sync one file.
-      • --dry-run: preview unified diff against the live tree.
-      • --all    : force full re-pass.
-      • default  : if no triefacts exist yet → first-run bootstrap (with cost confirmation);
-                   otherwise → incremental cascade.
+      • --file          : sync one file.
+      • --dry-run       : preview unified diff against the live tree.
+      • --metadata-only : refresh front matter only; no LLM, no section changes.
+      • --all           : force full re-pass.
+      • default         : if no triefacts exist yet → first-run bootstrap;
+                          otherwise → incremental cascade.
 
     Drift detection runs as the first step regardless. For an LLM-free, exit-coded
     drift gate suitable for pre-commit hooks, use `trie verify`.
@@ -681,6 +696,17 @@ def sync_cmd(
     if file is not None and all_:
         reporter.error("--file and --all are mutually exclusive")
         raise typer.Exit(code=1)
+    if metadata_only and (
+        file is not None or all_ or dry_run or budget is not None or limit is not None
+    ):
+        reporter.error(
+            "--metadata-only cannot be combined with --file / --all / --dry-run / --budget / --limit"
+        )
+        raise typer.Exit(code=1)
+
+    if metadata_only:
+        _run_metadata_only_refresh(reporter)
+        return
 
     if file is not None:
         _run_single_file_sync(reporter, file, model)
@@ -865,6 +891,66 @@ def _run_single_file_sync(reporter: Reporter, file: Path, model: str | None) -> 
     reporter.detail(
         f"  tokens: {result.input_tokens} in / {result.output_tokens} out · "
         f"cache: {result.cache_creation_input_tokens} write / {result.cache_read_input_tokens} read"
+    )
+
+
+def _run_metadata_only_refresh(reporter: Reporter) -> None:
+    """Refresh every triefact's front matter from the live store without any LLM calls.
+
+    The flow:
+      1. Load config + open the store.
+      2. Re-scan the project to make sure the graph reflects current source — this
+         picks up new edges introduced by a resolver change automatically.
+      3. For each in-scope source file with a triefact, recompute its front matter
+         from the just-scanned store and rewrite only if the bytes changed.
+
+    Designed for the post-graph-change case: nothing prose moved, but ref counts
+    and `defines` entries are stale. Free (no API), idempotent (re-runs are
+    no-ops once everything matches).
+    """
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    db_path = project_root / ".trie" / "graph.db"
+    src_root = (project_root / config.triefacts.source_root).resolve()
+
+    with Store(db_path) as store:
+        with reporter.status("scanning project…"):
+            scan_result = scan_project(project_root=project_root, config=config, store=store)
+        reporter.detail(
+            f"  scanned {scan_result.files_total} files · {scan_result.symbols_total} symbols "
+            f"· {scan_result.edges_total} edges"
+        )
+
+        files = discover_files(project_root, config.scope)
+        total = len(files)
+        changed_count = 0
+        skipped_count = 0
+        with reporter.start_progress(total, label="refreshing metadata") as bar:
+            for f in files:
+                # `discover_files` returns absolute paths beneath the scope; ensure they
+                # also live under `source_root` (the refresh function requires this).
+                if not f.is_relative_to(src_root):
+                    bar.skip_file(str(f), "outside source_root")
+                    skipped_count += 1
+                    continue
+                rel = str(f.relative_to(src_root))
+                bar.start_file(rel)
+                result = refresh_triefact_metadata(
+                    f, project_root=project_root, config=config, store=store
+                )
+                if result.changed:
+                    changed_count += 1
+                # Use `finish_file` to advance the bar; metadata refreshes have no
+                # cost or token telemetry to report.
+                bar.finish_file(rel)
+
+    reporter.success(
+        f"refreshed metadata on {changed_count} of {total - skipped_count} triefact(s) "
+        f"({total - changed_count - skipped_count} already current)"
     )
 
 

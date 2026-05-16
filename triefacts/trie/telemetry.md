@@ -38,7 +38,7 @@ defines:
 - kind: function
   qualified_name: trie/telemetry:reset_for_tests
   lines: 253-261
-incoming_refs: 0
+incoming_refs: 26
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/telemetry:configure fingerprint=3d7526358fbe30bf4a41e3bfcc6b5c89580f453b6f8c407595d25483a1214caf body_fp=859ffc13888898ef833937b73f46c2032d9b90d237f097162e027dbe58a1ddd7 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
