@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_config.py
 file_fingerprint: 2bcb482da874ab07a264159020e701c8eefa3f0880189896ae7f44f0d7bebad6
-last_synced_at: '2026-05-16T12:51:24Z'
+last_synced_at: '2026-05-16T13:27:56Z'
 defines:
 - kind: function
   qualified_name: tests/test_config:test_defaults_when_empty_dict

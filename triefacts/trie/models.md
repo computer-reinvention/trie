@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/models.py
 file_fingerprint: eed971b1aee49803434c0744c5585a07ecf33c7018ba891ece9c67ea15a7f614
-last_synced_at: '2026-05-16T12:51:48Z'
+last_synced_at: '2026-05-16T13:28:22Z'
 defines:
 - kind: class
   qualified_name: trie/models:GenerationRequest

@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/cli.py
 file_fingerprint: 974998eb437f93df2fbeb8246c706d79ce69fbdb24ea3b4edf30d4cba26aaef8
-last_synced_at: '2026-05-16T13:17:29Z'
+last_synced_at: '2026-05-16T13:28:16Z'
 defines:
 - kind: function
   qualified_name: trie/cli:_get_reporter
@@ -148,18 +148,15 @@ Initialize a trie project: write `trie.toml`, update `.gitignore`, optionally sc
 - Exits 2 if the write lock is contended; exits 1 on `InitError`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:plan_cmd fingerprint=1f9525fd75f6e14df3b9d54f2f02446677e7a0ab7562b7c1f66684cca46ca390 body_fp=b9b881fda530e0449864c63ebc6e79c6a933166a6184ab0ada386272e5eca657 source_ref=df2eab34e273723a3bf42ae891020acd147e6bd4 -->
-## `plan_cmd(ctx: typer.Context, model: str | None, all_: bool) -> None`
+<!-- trie:section symbol=trie/cli:plan_cmd fingerprint=1f9525fd75f6e14df3b9d54f2f02446677e7a0ab7562b7c1f66684cca46ca390 body_fp=32fffe4d193e74de627e39221f5eb3bfaa3b7f4c96da580f43b27821eff37f29 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+## `plan_cmd(ctx, model=None, all_=False)`
 
-Scan the project, estimate token costs, and print the sync worklist without writing any triefacts.
+Scan the project, surface drift, and print the worklist with estimated LLM cost before committing to a sync.
 
-- `model`: overrides `config.models.bootstrap` for cost estimation only.
-- `all_`: forces full re-bootstrap cost view even when triefacts already exist.
-- Runs offline drift check first; warns but does not abort on drift.
-- Auto-selects incremental or full-bootstrap path based on existing triefacts.
-- Uses Anthropic's `count_tokens` endpoint — networked but never `messages.create`.
-- Incremental path passes per-file symbol regen counts to `build_plan` for symbol-level cost accuracy.
-- Acquires the write lock for the entire command; exits with code 2 if contended.
+- `model`: overrides the configured model for token-count estimation only.
+- `all_`: forces the full re-bootstrap view even when triefacts already exist.
+- Exits 1 on config errors; drift is reported as a warning but does not abort.
+- Uses Anthropic's free `count_tokens` endpoint; never calls `messages.create`.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/cli:verify_cmd fingerprint=404a8a489ac3dff8f8a175632d07fbefd00f73f95de59264aab035c20b6af2c9 body_fp=7e53deb328e082791efe83f54f36b9744d8bae0789ffe2150787a6728327293b source_ref=f9896112d3c74faa4a548ca30df39e8106603df3 -->
@@ -168,18 +165,18 @@ Scan the project, estimate token costs, and print the sync worklist without writ
 Run an offline drift check and exit 1 if any triefact has drifted from its source.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:sync_cmd fingerprint=c08b2a86195dc0b7272c5f6c6ff6df2e7761fa27119ca2232fae50cbea7a3c51 body_fp=7125bbf60cc27926ce251a98ec04aeca0cd25fee1a0703470a8a579f860fd774 source_ref=df2eab34e273723a3bf42ae891020acd147e6bd4 -->
+<!-- trie:section symbol=trie/cli:sync_cmd fingerprint=c08b2a86195dc0b7272c5f6c6ff6df2e7761fa27119ca2232fae50cbea7a3c51 body_fp=3d7fcfd41176e308116f3e9524eb49b108831af2aec47f7fd7b357ac838880a3 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
 ## `sync_cmd(ctx: typer.Context, file: Path | None, all_: bool, budget: float | None, limit: int | None, dry_run: bool, metadata_only: bool, model: str | None) -> None`
 
-Generate or refresh triefacts, auto-detecting full bootstrap vs. incremental cascade mode.
+Generate or refresh triefacts, auto-selecting bootstrap, incremental, single-file, dry-run, or metadata-only mode.
 
-- `file`: sync a single source file; mutually exclusive with `--all`.
-- `all_`: force full re-pass over every in-scope file.
-- `budget`: stop once cumulative actual spend reaches this USD value.
-- `limit`: cap total files processed.
-- `dry_run`: write previews to `.trie/preview/` and print unified diffs instead of updating live triefacts.
-- `metadata_only`: refresh front matter from the store only; no LLM calls; mutually exclusive with all other flags.
-- `model`: overrides the configured model slug.
+- `file`: sync exactly one source file; mutually exclusive with `--all`.
+- `all_`: force full re-pass over every in-scope file even if triefacts exist.
+- `budget`: stop once cumulative actual USD cost reaches this value.
+- `limit`: cap total files synced.
+- `dry_run`: write regenerated triefacts to `.trie/preview/` and print unified diffs; makes API calls.
+- `metadata_only`: rewrite front matter from live store only; no LLM, incompatible with all other flags.
+- Exits 1 on config errors; exits 2 if write lock is held by another process.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/cli:mcp_serve fingerprint=cd3c1e0935ce39624688d3d14d5849759c65f9d7765068ccd8ef4ca118b44211 body_fp=c93e3469bbad48c77068e625d2c914a89a1e108a8747e920d1f2d45194952fda source_ref=e48506a40b0b3397d184473a43843345d0706887 -->
@@ -188,7 +185,7 @@ Generate or refresh triefacts, auto-detecting full bootstrap vs. incremental cas
 Launch the stdio MCP server; hidden from help output and invoked directly by agent-installed snippets.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:mcp_install_cmd fingerprint=2b0ec965d048ca70c51eb306977f7e7c8fd3f2b163fb3ede828618f3a9f3921c body_fp=2cc66f9f96d4842d8cc30188c10793327db51598b8fce5aa5bb261b842117677 source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
+<!-- trie:section symbol=trie/cli:mcp_install_cmd fingerprint=2b0ec965d048ca70c51eb306977f7e7c8fd3f2b163fb3ede828618f3a9f3921c body_fp=2cc66f9f96d4842d8cc30188c10793327db51598b8fce5aa5bb261b842117677 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
 ## `mcp_install_cmd(ctx, target, install_all, scope, print_only, dry_run)`
 
 Register `trie mcp serve` as a stdio MCP server with one or more coding agents.
@@ -273,7 +270,7 @@ Root Typer callback; sets up the `Reporter` on `ctx.obj` and handles `--version`
 - Emits a telemetry `cli` event for every subcommand invocation.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_telemetry_bootstrap fingerprint=f6f6f0318c080e04dbad6edbf345f40a4e69fcc84f49dc4d7d452fe5aa73c0cb body_fp=5321640521e297cd44691f6243ca18fec2fa0460b77d497845375a07a3dfbb71 source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
+<!-- trie:section symbol=trie/cli:_telemetry_bootstrap fingerprint=f6f6f0318c080e04dbad6edbf345f40a4e69fcc84f49dc4d7d452fe5aa73c0cb body_fp=5321640521e297cd44691f6243ca18fec2fa0460b77d497845375a07a3dfbb71 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
 ## `_telemetry_bootstrap(subcommand: str | None, argv_tail: list[str]) -> None`
 
 Load config (if available) to configure telemetry, then emit a `cli` event.
@@ -336,7 +333,7 @@ Render per-file drift items grouped by triefact path, with labeled reasons, at M
 - `items`: list of drift result objects with `triefact_path`, `reason`, `qualified_name`, and `source_path` attributes.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_verify_drift fingerprint=f89fbd7b24f02c1114b3df4a32ee4fb2d48667c85a33b093eb01d3f64becede3 body_fp=ef3e367c95de6ba08711713a641d033313ab831ffe560665fbc803de70c77e28 source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
+<!-- trie:section symbol=trie/cli:_verify_drift fingerprint=f89fbd7b24f02c1114b3df4a32ee4fb2d48667c85a33b093eb01d3f64becede3 body_fp=ef3e367c95de6ba08711713a641d033313ab831ffe560665fbc803de70c77e28 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
 ## `_verify_drift(reporter: Reporter, *, exit_on_drift: bool) -> bool`
 
 Run an offline drift check and report results; return `True` if clean, `False` if drift found.
@@ -360,7 +357,7 @@ Scan, plan, optionally confirm, then run a full bootstrap sync with streaming pe
 - Prompts for confirmation in interactive mode when neither `budget` nor `limit` is set; exits 1 in non-interactive mode.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_run_dry_run_diff fingerprint=ea340e6fb3ae76699d84d7c95cb3dbffd3a8307777a7fada12178a997f8133c5 body_fp=ac70a5ec59f69172dc697f98497c599045405973789ca078ed9484b0f1d968dd source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
+<!-- trie:section symbol=trie/cli:_run_dry_run_diff fingerprint=ea340e6fb3ae76699d84d7c95cb3dbffd3a8307777a7fada12178a997f8133c5 body_fp=ac70a5ec59f69172dc697f98497c599045405973789ca078ed9484b0f1d968dd source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
 ## `_run_dry_run_diff(*, reporter: Reporter, model: str | None, budget: float | None, limit: int | None) -> None`
 
 Regenerate stale triefacts into `.trie/preview/` and print unified diffs against the live tree.
@@ -369,7 +366,7 @@ Regenerate stale triefacts into `.trie/preview/` and print unified diffs against
 - `limit`: caps the number of files diffed.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_run_single_file_sync fingerprint=19a520c5b19e8901f07865a60c1613fb5dcaef9ee1c50321c6316f4baa71608c body_fp=b09e34f407e668bb1f6b55b5c55b7f0215a7009c0fd81eb63bff9049050e421d source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
+<!-- trie:section symbol=trie/cli:_run_single_file_sync fingerprint=19a520c5b19e8901f07865a60c1613fb5dcaef9ee1c50321c6316f4baa71608c body_fp=b09e34f407e668bb1f6b55b5c55b7f0215a7009c0fd81eb63bff9049050e421d source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
 ## `_run_single_file_sync(reporter: Reporter, file: Path, model: str | None) -> None`
 
 Sync a single source file to its triefact, writing results and token stats via the reporter.
@@ -377,7 +374,7 @@ Sync a single source file to its triefact, writing results and token stats via t
 - `model`: overrides the configured bootstrap model when provided.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_run_incremental_sync fingerprint=c0296f53afdae836d3646b2af7059167e69e09ce2828ef92af30e3df36f33e9a body_fp=22d50512b1fad776cf28d60527267edfe62e0292f68d9714cdf0ca68344b3926 source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
+<!-- trie:section symbol=trie/cli:_run_incremental_sync fingerprint=c0296f53afdae836d3646b2af7059167e69e09ce2828ef92af30e3df36f33e9a body_fp=22d50512b1fad776cf28d60527267edfe62e0292f68d9714cdf0ca68344b3926 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
 ## `_run_incremental_sync(*, reporter: Reporter, model: str | None, budget: float | None, limit: int | None) -> None`
 
 Load config, build a client, and run incremental cascade sync, reporting orphan removals and cost.
@@ -388,7 +385,7 @@ Load config, build a client, and run incremental cascade sync, reporting orphan 
 
 
 
-<!-- trie:section symbol=trie/cli:_run_mcp_serve fingerprint=ae7533faa0329509290b89496e7a1965bcac67339cfb61c9d2092872d3505fb6 body_fp=07eb42ce1a286e495b0cd202a9503cbd0cba66cff4cd5451e81254a12ac619a2 source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
+<!-- trie:section symbol=trie/cli:_run_mcp_serve fingerprint=ae7533faa0329509290b89496e7a1965bcac67339cfb61c9d2092872d3505fb6 body_fp=07eb42ce1a286e495b0cd202a9503cbd0cba66cff4cd5451e81254a12ac619a2 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
 ## `_run_mcp_serve() -> None`
 
 Load config from cwd and launch the stdio MCP server, exiting 1 if no config is found.
@@ -412,7 +409,7 @@ Summarise a telemetry `debug.jsonl` log; optionally compare two logs side-by-sid
 - `as_json`: print `AuditSummary` as JSON to stdout; mutually exclusive with `--compare`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_resolve_audit_log_path fingerprint=bad827442bead53f02cef4cde6dbfbf24222786901e57c0aee3d03c19918abf5 body_fp=0660b55daee64da526b9c6830a141120b802aa26aee944f9dcae8f8ab08cdfb5 source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
+<!-- trie:section symbol=trie/cli:_resolve_audit_log_path fingerprint=bad827442bead53f02cef4cde6dbfbf24222786901e57c0aee3d03c19918abf5 body_fp=0660b55daee64da526b9c6830a141120b802aa26aee944f9dcae8f8ab08cdfb5 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
 ## `_resolve_audit_log_path(log: Path | None, reporter: Reporter) -> Path`
 
 Resolve the `debug.jsonl` path from explicit arg, configured `log_path`, or cwd fallback.
@@ -421,7 +418,7 @@ Resolve the `debug.jsonl` path from explicit arg, configured `log_path`, or cwd 
 - Returns cwd `debug.jsonl` if no `trie.toml` is found.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_run_metadata_only_refresh fingerprint=ab88ff6a5f8617fcb6bbcc42dae27974d38c2d4d9d9e8f5df2a4c2dcd0f4ad19 body_fp=c777944aa3562954585519eb25a905a5e76f9dcbdda8d6edda859064d837e132 source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
+<!-- trie:section symbol=trie/cli:_run_metadata_only_refresh fingerprint=ab88ff6a5f8617fcb6bbcc42dae27974d38c2d4d9d9e8f5df2a4c2dcd0f4ad19 body_fp=c777944aa3562954585519eb25a905a5e76f9dcbdda8d6edda859064d837e132 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
 ## `_run_metadata_only_refresh(reporter: Reporter) -> None`
 
 Refresh every triefact's front matter from the live store without calling the LLM.
@@ -430,16 +427,16 @@ Refresh every triefact's front matter from the live store without calling the LL
 - Skips files outside `source_root`; reports changed vs already-current counts on completion.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:refresh_cmd fingerprint=95e65ccc97ba70699bc324ee65dfe871388eac222ef0b055579035abd808497d body_fp=5e945868e3ac7efd2b942cf9fcb9882769ff405248105eb76f3c988dc5a27495 source_ref=5ef8f6f2aff0fc71527ab68e07c96f20e1d14cdb -->
-## `refresh_cmd(ctx: typer.Context, before_turn: bool, after_turn: bool, model: str | None) -> None`
+<!-- trie:section symbol=trie/cli:refresh_cmd fingerprint=95e65ccc97ba70699bc324ee65dfe871388eac222ef0b055579035abd808497d body_fp=05729acad5ed11d9e54b78144c94e261ccbcbfa92d62f8b87108a9858e2418de source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+## `refresh_cmd(ctx, before_turn, after_turn, model)`
 
-Bring the graph and triefacts up to date with the working tree via a freshness gate.
+Bring the graph and triefacts up to date with the working tree via a freshness-gated sync.
 
-- `before_turn`: cheap pre-turn check; full sync only when HEAD or mtimes changed.
-- `after_turn`: post-turn sweep; detects filesystem changes since last refresh.
-- Defaults to `--after-turn` when neither flag is given.
-- Acquires a per-project lock; concurrent calls queue a single tail pass instead of racing.
-- Exits 1 outside a git repo.
+- `--before-turn`: cheap gate; full sync only if HEAD or mtimes changed since last refresh.
+- `--after-turn`: detects filesystem changes since last refresh and syncs affected files.
+- Neither flag: defaults to `--after-turn` behaviour.
+- `--model`: overrides `config.models.cascade`; only used when a sync actually fires.
+- Exits 1 outside a git repo; serialises concurrent refreshes via lock, coalescing queued callers into one tail pass.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/cli:_report_freshness fingerprint=39c12516433ffd01deaf7e6d4dc9d72f23e588c64a16997bc815624ddc2aeb44 body_fp=7644c6fc037fd8d0e5e3762babb2135d704b50c9b5ee408b0e30fe27f4f364c2 source_ref=245a1b3bb69d531fc2880760ae9b2ca22d6e4815 -->
@@ -452,7 +449,7 @@ Render a single-line refresh outcome to the reporter, plus sync statistics when 
 - `result.incremental`: used to report files synced and actual cost; skips detail if `None`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:setup_cmd fingerprint=cbf2c9a32c22a2454580c6882d6c1dff35e6adf3b923556c4b7bfe7b72a8968e body_fp=71d52b29ca5788e54605802efa07cb2d55823bba60e2c4b298dc3ad51912be83 source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
+<!-- trie:section symbol=trie/cli:setup_cmd fingerprint=cbf2c9a32c22a2454580c6882d6c1dff35e6adf3b923556c4b7bfe7b72a8968e body_fp=71d52b29ca5788e54605802efa07cb2d55823bba60e2c4b298dc3ad51912be83 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
 ## `setup_cmd(ctx, target, install_all, scope, print_only, dry_run)`
 
 Wire trie into an agent end-to-end: MCP server registration plus `trie refresh --after-turn` hook install.

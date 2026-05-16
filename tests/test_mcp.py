@@ -245,20 +245,44 @@ def test_locate_fallback_ranks_by_inbound_count_desc(tools: TrieTools):
     assert inbounds == sorted(inbounds, reverse=True)
 
 
-def test_locate_fallback_kind_grep_too_noisy_when_threshold_exceeded(
+def test_locate_fallback_caps_matches_and_notes_truncation(
     tools: TrieTools,
 ):
-    """Force `grep_too_noisy` by lowering the unique-symbols threshold. The
-    fallback should refuse to pick favourites when the query is too generic."""
+    """Broad queries that match many symbols don't get refused — they get
+    a ranked top-N with a truncation note. Raw grep would have dumped every
+    line; trie's fallback owes at least that floor of utility.
+
+    Force a tiny match cap so we can exercise the truncation path on the
+    small fixture project without depending on a huge match set.
+    """
     tools.mcp_cfg = tools.mcp_cfg.__class__(
-        **{**tools.mcp_cfg.__dict__, "locate_fallback_max_unique_symbols": 0}
+        **{**tools.mcp_cfg.__dict__, "locate_fallback_match_limit": 1}
     )
-    # "def " appears in every Python file body; with the threshold at 0,
-    # any non-zero unique symbol count triggers too_noisy.
+    # "def " appears inside multiple function bodies in the fixture project.
     result = tools.locate({"name_contains": "def "})
     assert result["hits"] == []
-    assert result["fallback"]["kind"] == "grep_too_noisy"
-    assert "unique_symbols" in result["fallback"]
+    fb = result["fallback"]
+    assert fb["kind"] == "grep"
+    # We capped at 1 match but the underlying grep found more candidates.
+    assert len(fb["matches"]) == 1
+    assert fb["unique_symbols"] > 1
+    # The note must communicate that the agent isn't seeing everything.
+    assert "of" in fb["note"].lower()  # "Showing top 1 of N matching symbols..."
+    # The single returned match still carries all the standard fields.
+    only = fb["matches"][0]
+    assert "qname" in only
+    assert "inbound_count" in only
+
+
+def test_locate_fallback_omits_truncation_note_when_under_cap(tools: TrieTools):
+    """When the match count fits inside `match_limit`, no truncation note is
+    appended — the agent is seeing the full picture."""
+    result = tools.locate({"name_contains": "replace"})
+    assert result["hits"] == []
+    fb = result["fallback"]
+    assert fb["kind"] == "grep"
+    # Standard pretext is always present; truncation-specific text isn't.
+    assert "showing top" not in fb["note"].lower()
 
 
 def test_locate_fallback_honours_scope_prefix(tools: TrieTools):
