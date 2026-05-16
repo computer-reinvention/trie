@@ -102,16 +102,16 @@ class Mcp:
     locate_default_rank_by: str = "public_first"
     # When `locate` returns no symbol-name matches, fall back to grepping in-scope
     # source bodies for the `name_contains` string and attributing hits to the
-    # symbols whose line ranges enclose them. These knobs bound the cost and
-    # decide what counts as "too noisy to suggest":
-    #   - max_files: walk at most this many in-scope files before giving up.
-    #   - max_unique_symbols: if hits land in more than this many distinct
-    #     symbols, return `kind="grep_too_noisy"` (the query is too generic to
-    #     redirect on). The agent gets a clear "refine your query" signal.
-    #   - match_limit: cap on returned candidates after hub-ranking by inbound count.
+    # symbols whose line ranges enclose them. Two knobs:
+    #   - max_files: walk at most this many in-scope files; a runtime guard that
+    #     stops the grep walker when the substring is very common. The fallback
+    #     still returns whatever was accumulated — never a "too noisy" refusal.
+    #   - match_limit: cap on returned candidate symbols after hub-ranking by
+    #     inbound count. Defaults to 20 so the agent always sees enough to
+    #     triangulate even on broad queries; raw grep would have shown N lines
+    #     and we owe at least that floor of utility.
     locate_fallback_max_files: int = 200
-    locate_fallback_max_unique_symbols: int = 20
-    locate_fallback_match_limit: int = 5
+    locate_fallback_match_limit: int = 20
 
     # explain
     explain_neighbour_one_liner_max_chars: int = 120

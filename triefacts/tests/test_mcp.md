@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: tests/test_mcp.py
-file_fingerprint: 813b17160f0fb393f02b2593944b666afe9bacba9fa2374f88956e1c439fd660
-last_synced_at: '2026-05-16T12:50:52Z'
+file_fingerprint: 64e8d93061b875ebf61460b727e3d793637ce9debc20d73203606debdf323150
+last_synced_at: '2026-05-16T13:27:44Z'
 description: 'Tests for the MCP tool surface: `locate`, `explain`, `walk`.'
 defines:
 - kind: class
@@ -72,53 +72,56 @@ defines:
   qualified_name: tests/test_mcp:test_locate_fallback_ranks_by_inbound_count_desc
   lines: 231-245
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_fallback_kind_grep_too_noisy_when_threshold_exceeded
-  lines: 248-261
+  qualified_name: tests/test_mcp:test_locate_fallback_caps_matches_and_notes_truncation
+  lines: 248-274
+- kind: function
+  qualified_name: tests/test_mcp:test_locate_fallback_omits_truncation_note_when_under_cap
+  lines: 277-285
 - kind: function
   qualified_name: tests/test_mcp:test_locate_fallback_honours_scope_prefix
-  lines: 264-279
+  lines: 288-303
 - kind: function
   qualified_name: tests/test_mcp:test_locate_normal_hits_path_omits_fallback_key
-  lines: 282-288
+  lines: 306-312
 - kind: function
   qualified_name: tests/test_mcp:test_explain_returns_prose_and_neighbours
-  lines: 294-301
+  lines: 318-325
 - kind: function
   qualified_name: tests/test_mcp:test_explain_source_pointer_shape
-  lines: 304-307
+  lines: 328-331
 - kind: function
   qualified_name: tests/test_mcp:test_explain_neighbour_carries_one_liner
-  lines: 310-313
+  lines: 334-337
 - kind: function
   qualified_name: tests/test_mcp:test_explain_unknown_qname_returns_not_found
-  lines: 316-319
+  lines: 340-343
 - kind: function
   qualified_name: tests/test_mcp:test_explain_fuzzy_suggestion_for_typo
-  lines: 322-328
+  lines: 346-352
 - kind: function
   qualified_name: tests/test_mcp:test_walk_callers_returns_topology
-  lines: 334-340
+  lines: 358-364
 - kind: function
   qualified_name: tests/test_mcp:test_walk_callees_returns_outbound
-  lines: 343-346
+  lines: 367-370
 - kind: function
   qualified_name: tests/test_mcp:test_walk_both_directions
-  lines: 349-354
+  lines: 373-378
 - kind: function
   qualified_name: tests/test_mcp:test_walk_invalid_direction_returns_error
-  lines: 357-360
+  lines: 381-384
 - kind: function
   qualified_name: tests/test_mcp:test_walk_unknown_qname_returns_not_found
-  lines: 363-366
+  lines: 387-390
 - kind: function
   qualified_name: tests/test_mcp:test_walk_depth_zero_returns_only_root
-  lines: 369-372
+  lines: 393-396
 - kind: function
   qualified_name: tests/test_mcp:test_walk_depth_clamp_adds_note
-  lines: 375-379
+  lines: 399-403
 - kind: function
   qualified_name: tests/test_mcp:test_build_server_registers_three_verbs
-  lines: 385-394
+  lines: 409-418
 incoming_refs: 0
 outgoing_refs: 7
 ---
@@ -337,14 +340,7 @@ Assert that grep-fallback candidates are sorted by `inbound_count` descending wh
 - Skips if the fixture gains a symbol named `"title"` or if fewer than two fallback candidates are returned.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_fallback_kind_grep_too_noisy_when_threshold_exceeded fingerprint=9e3ef57e36dcb15a172422534969b6196c97d62cd81585c9f5760913edcee66e body_fp=facdbad3d9f240d9eff9343858b1c8ecc33375f0dfb180d1de9e0bcac20cdd43 source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_fallback_kind_grep_too_noisy_when_threshold_exceeded(tools: TrieTools)`
 
-Verify that `locate` returns `fallback.kind == "grep_too_noisy"` when the matched symbol count exceeds the configured threshold.
-
-- Temporarily sets `locate_fallback_max_unique_symbols` to `0` to force the noisy path.
-- Asserts `unique_symbols` key is present in the fallback envelope.
-<!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_mcp:test_locate_fallback_honours_scope_prefix fingerprint=f2d122d82a9f89f3136c243fee5e421b5217ccb42f871475c2c753c079f99167 body_fp=a71c490af9fab098fed0835e13e664a858c73fd7864f9792bb6550b7446446ab source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
 ## `test_locate_fallback_honours_scope_prefix(tools: TrieTools)`
@@ -356,4 +352,18 @@ Assert that `scope_prefix` filters fallback grep candidates to the specified sco
 ## `test_locate_normal_hits_path_omits_fallback_key(tools: TrieTools)`
 
 Assert that a successful `locate` response contains no `fallback` key when primary hits are found.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_locate_fallback_caps_matches_and_notes_truncation fingerprint=bf572683898e4800cca4cf7f9ecf860ce8035308dd17a2de6611edb2fd95037e body_fp=feb63e551211b353edaac7de5471347efe66109f7533e0e4d167321825149d00 source_ref=5121a90af508a5817dab3b63572cb6f1f9499e4b -->
+## `test_locate_fallback_caps_matches_and_notes_truncation(tools: TrieTools)`
+
+Verify that fallback grep results are capped at `locate_fallback_match_limit` and the response includes a truncation note with total count.
+
+- `tools`: fixture providing a `TrieTools` instance with the populated project; `mcp_cfg` is mutated to force `locate_fallback_match_limit=1`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_locate_fallback_omits_truncation_note_when_under_cap fingerprint=07c3ee77b2a7505bba4da9c4bdc6f9281f3f4514d50e5b2d5bfadc78996bd759 body_fp=b70b324d2ec841712a880095c2ef1d3bc69fd8dabf77867bcdf573929b6394f3 source_ref=5121a90af508a5817dab3b63572cb6f1f9499e4b -->
+## `test_locate_fallback_omits_truncation_note_when_under_cap(tools: TrieTools)`
+
+Assert no truncation note appears in fallback when all grep matches fit within the match limit.
 <!-- trie:end -->

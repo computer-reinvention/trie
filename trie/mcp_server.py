@@ -167,11 +167,12 @@ class TrieTools:
         ```
         On empty hits, `fallback.kind` is one of:
         - `"none"`: predicate had no `name_contains` to grep on, nothing to suggest.
-        - `"grep"`: grep found candidate symbols whose bodies contain the query;
-          `matches` is the ranked list (by `inbound_count` desc).
         - `"grep_empty"`: the query string appears in no in-scope source body.
-        - `"grep_too_noisy"`: the query matches too widely to suggest a redirect;
-          the agent should refine the predicate.
+        - `"grep"`: grep found candidate symbols whose bodies contain the query;
+          `matches` is the ranked list (by `inbound_count` desc) capped at
+          `locate_fallback_match_limit`. Even when the underlying grep hit was
+          very broad, we always return the top-ranked candidates so the agent
+          can triangulate from data rather than refine blindly.
 
         Errors (bad predicate shape, etc.) still return `{"error": {...}}`.
         """
@@ -228,15 +229,20 @@ class TrieTools:
         """Build the `fallback` envelope returned alongside an empty `hits` list.
 
         The contract is to always return a dict with a `kind` field, so the
-        agent can dispatch on the four distinct empty cases:
+        agent can dispatch on three distinct empty cases:
 
         - `none`: no `name_contains` was supplied; nothing to grep for. The agent
           should not try the same predicate again — its shape isn't grep-able.
-        - `grep_empty`: the query appears in no in-scope source body. Likely a
-          typo or a wrong project.
-        - `grep_too_noisy`: the query is too generic; refine the predicate.
+        - `grep_empty`: the query appears in no in-scope source body (or only
+          outside any indexed symbol). Likely a typo or a wrong project.
         - `grep`: candidate symbols whose bodies contain the query, ranked by
-          `inbound_count` descending and capped at `match_limit`.
+          `inbound_count` descending and capped at `locate_fallback_match_limit`.
+
+        We deliberately do not bail out when the result is "too noisy" — raw
+        grep would have shown the user N matches and let them eyeball it; we
+        match that floor by ranking and capping. The `match_count` /
+        `unique_symbols` fields convey the breadth of the underlying hit so
+        the agent knows the cap was reached.
 
         Predicate fields beyond `name_contains` (`scope_prefix`, `scope_exclude`,
         `public_only`, etc.) are applied to the candidate list at the end, so
@@ -252,19 +258,12 @@ class TrieTools:
                 ),
             }
 
-        # Walk in-scope source files and collect line-level hits.
+        # Walk in-scope source files and collect line-level hits. The grep
+        # walker has its own internal cap on files-scanned (a runtime guard,
+        # not a discriminator); on hitting that cap it returns whatever it
+        # accumulated so far, which we treat as authoritative — the agent
+        # gets the most-relevant N files' worth of matches either way.
         grep_hits = self._grep_in_scope(query)
-        if grep_hits is None:
-            return {
-                "kind": "grep_too_noisy",
-                "query": query,
-                "note": (
-                    f"Query {query!r} appears in more files than the fallback "
-                    f"will consider (>{self.mcp_cfg.locate_fallback_max_files}). "
-                    "Refine the predicate with a more specific substring or "
-                    "tighten `scope_prefix`."
-                ),
-            }
         if not grep_hits:
             return {
                 "kind": "grep_empty",
@@ -293,24 +292,12 @@ class TrieTools:
                 ),
             }
 
-        if len(per_symbol) > self.mcp_cfg.locate_fallback_max_unique_symbols:
-            return {
-                "kind": "grep_too_noisy",
-                "query": query,
-                "match_count": sum(per_symbol.values()),
-                "unique_symbols": len(per_symbol),
-                "note": (
-                    f"Query {query!r} matches inside "
-                    f"{len(per_symbol)} different symbols "
-                    f"(>{self.mcp_cfg.locate_fallback_max_unique_symbols}). "
-                    "Too unspecific to suggest a redirect — refine the predicate."
-                ),
-            }
-
         # Build candidate hits with full SymbolDetail and the per-body hit count,
         # then apply predicate filters (scope_prefix, scope_exclude, public_only,
         # kind) the user originally asked for. Rank by inbound_count desc, cap
-        # at the configured match limit.
+        # at the configured match limit. We always return *something* when
+        # there are candidates — even a 30-symbol fanout is more useful as a
+        # ranked top-N than as a "too noisy" refusal.
         candidates: list[tuple[SymbolDetail, int]] = []
         for qname, body_hits in per_symbol.items():
             detail = self.store.get_symbol_detail(qname)
@@ -336,6 +323,7 @@ class TrieTools:
 
         candidates.sort(key=lambda c: (-c[0].inbound_count, c[0].qualified_name))
         capped = candidates[: self.mcp_cfg.locate_fallback_match_limit]
+        truncated = len(candidates) > len(capped)
 
         one_liner_cap = self.mcp_cfg.locate_one_liner_max_chars
         matches = [
@@ -352,27 +340,35 @@ class TrieTools:
             }
             for d, body_hits in capped
         ]
+        note = (
+            "Predicate matched no symbols, but the query string appears in "
+            "the bodies of these symbols. Ranked by `inbound_count` so the "
+            "most-referenced (likely hub) candidate is first."
+        )
+        if truncated:
+            note += (
+                f" Showing top {len(capped)} of {len(candidates)} matching "
+                f"symbols; refine `name_contains` or add `scope_prefix` to "
+                f"see different candidates."
+            )
         return {
             "kind": "grep",
             "query": query,
             "match_count": sum(per_symbol.values()),
             "unique_symbols": len(per_symbol),
             "matches": matches,
-            "note": (
-                "Predicate matched no symbols, but the query string appears in "
-                "the bodies of these symbols. Ranked by `inbound_count` so the "
-                "most-referenced (likely hub) candidate is first."
-            ),
+            "note": note,
         }
 
-    def _grep_in_scope(self, query: str) -> dict[str, list[int]] | None:
+    def _grep_in_scope(self, query: str) -> dict[str, list[int]]:
         """Walk in-scope source files and return `{rel_path: [line_numbers]}`.
 
-        Case-insensitive substring search. Returns `None` (signalling
-        "too noisy") when the number of files containing matches exceeds
-        `mcp_cfg.locate_fallback_max_files` — at that point the result is
-        too unspecific to redirect on, so we bail before paying for further
-        attribution work.
+        Case-insensitive substring search. Stops walking once the file-count
+        cap (`mcp_cfg.locate_fallback_max_files`) is reached and returns
+        whatever it has accumulated — this is a runtime guard against
+        scanning a huge project on a very common substring, not a signal to
+        the caller. The fallback ranks and caps the symbol-level result
+        regardless of how many files contributed.
         """
         src_root = self.src_root
         needle = query.lower()
@@ -391,8 +387,8 @@ class TrieTools:
             if file_hits:
                 rel = str(abs_path.relative_to(src_root))
                 hits[rel] = file_hits
-                if len(hits) > self.mcp_cfg.locate_fallback_max_files:
-                    return None
+                if len(hits) >= self.mcp_cfg.locate_fallback_max_files:
+                    break
         return hits
 
     def _attribute_grep_to_symbols(self, grep_hits: dict[str, list[int]]) -> dict[str, int]:

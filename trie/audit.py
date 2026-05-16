@@ -357,8 +357,8 @@ def _mcp_stats(tool: str, events: list[Event]) -> McpCallStats:
         if tool == "explain" and f.get("result_kind") == "ok" and (f.get("prose_chars") or 0) == 0:
             empty_result_count += 1
 
-        # Locate's fallback discriminator (one of "none", "grep", "grep_empty",
-        # "grep_too_noisy"). Present only on locate calls that returned empty.
+        # Locate's fallback discriminator (one of "none", "grep", "grep_empty").
+        # Present only on locate calls that returned empty.
         fb_kind = f.get("fallback_kind")
         if tool == "locate" and isinstance(fb_kind, str):
             fallback_kinds[fb_kind] += 1
@@ -646,8 +646,8 @@ def _render_mcp(mcp: dict[str, McpCallStats], console: Console) -> None:
 
     # Locate fallback breakdown: one extra line when the eval saw fallback
     # activity. Tells the operator at a glance whether agents are hitting
-    # typo paths (`grep_empty`), over-broad queries (`grep_too_noisy`), or
-    # successfully getting redirected (`grep`).
+    # typo paths (`grep_empty`), the no-name-contains path (`none`), or
+    # successfully getting redirected to body matches (`grep`).
     locate_stats = mcp.get("locate")
     if locate_stats is not None and locate_stats.fallback_kinds:
         parts = ", ".join(f"{k}={n}" for k, n in sorted(locate_stats.fallback_kinds.items()))

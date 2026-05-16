@@ -34,24 +34,22 @@ CI runs the same four commands. Tests + ruff must both pass before pushing.
 ## Navigating the codebase
 
 trie indexes itself. An MCP server is registered for this workdir (see
-`.mcp.json` / `opencode.json` / equivalent), exposing the three navigation tools
-trie ships. For structural questions about the code — *where is X defined, what
-calls Y, what's the signature of Z, is there already a helper for W* — prefer
-these over `grep` and directory walks:
+`.mcp.json` / `opencode.json` / equivalent), exposing three navigation
+tools: `locate`, `explain`, and `walk`. **Read [`USING_TRIE.md`](USING_TRIE.md)
+for the full usage guide** — it covers when to reach for which tool, the
+predicate shape, the grep fallback, worked examples, and the edge cases.
 
-- `locate(predicate, rank_by?, limit?)` — find symbols by `name_contains`,
-  `kind`, `scope_prefix` (e.g. `"trie/"` to skip tests), etc. Start here.
-- `explain(qname)` — read one symbol's prose plus one-liners for its immediate
-  callers and callees. Use after `locate`.
-- `walk(from_qname, direction, depth?)` — trace the call graph outward
-  (`"callers"` / `"callees"` / `"both"`). Use when one hop isn't enough.
+Two repo-specific notes that build on the general guide:
 
-`grep` and direct file reads remain appropriate for literal-string searches
-(error messages, TODOs, config keys) and for reading a file once trie has
-pointed at it.
-
-We dogfood. If a navigation flow feels awkward through these tools, that's a
-signal to fix the tool — not to silently fall back to grep. Note it.
+- **We dogfood.** A session where you reach for `grep` to answer a
+  structural question is a session that didn't exercise the thing we're
+  building. If a navigation flow feels awkward through these tools, that's
+  a signal to fix the tool — not to silently fall back to `grep`. Note it
+  in a session summary or open an issue.
+- **Constants are the main grep-still-wins case in this codebase.** Things
+  like `PRE_COMMIT_HOOK_MARKER` and `STAMP_FILENAME` are module-level data,
+  not indexed as separate symbols; grep for the literal when you need to
+  find their references.
 
 ## What's in scope
 
@@ -61,18 +59,28 @@ signal to fix the tool — not to silently fall back to grep. Note it.
 
 ## Dogfood loop
 
-trie's own repo has a `trie.toml` at the root. The full loop:
+trie's own repo has a `trie.toml` at the root. The hook installed by
+`trie setup` does the day-to-day work — the commands below are for
+bootstrapping a new checkout, one-off operations, and debugging.
 
 ```bash
 trie init && trie plan                  # plan adds free count_tokens cost preview
-trie sync --file path/to/some.py        # cheapest smoke test of the LLM path
-trie sync --limit 10                    # capped first-run bootstrap
-trie sync                               # day-to-day incremental cascade
+trie setup --target opencode            # install MCP + end-of-turn refresh hook
+trie sync --limit 10                    # capped first-run bootstrap (one-time)
+trie sync --file path/to/some.py        # smoke-test the LLM path on one file
 trie sync --dry-run                     # preview unified diff before paying
+trie refresh                            # manual refresh (hook also calls this)
 trie verify                             # fingerprint-only drift gate
-trie mcp install --target claude-code   # register the stdio server with an agent
-trie mcp serve                          # the server itself; agents spawn this
+trie lock-check                         # pre-commit's "is a writer running?" probe
+trie audit                              # telemetry summary for the last session
 ```
+
+Once `trie setup` has registered the hook, prefer letting the hook drive
+syncs — it runs `trie refresh` at the end of every agent turn, picks up
+exactly the files just edited, and stamps the graph so MCP queries stay
+honest. Manual `trie sync` is still available but will exit 2 if it
+collides with an in-flight refresh; this is the system telling you the
+hook is doing its job.
 
 ## Shipping
 

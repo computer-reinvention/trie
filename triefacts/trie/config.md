@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/config.py
-file_fingerprint: dd253be38672e17e7f32df887319d024f89bb5ad24650d43293cfe6508d0cb6f
-last_synced_at: '2026-05-16T12:51:01Z'
+file_fingerprint: 4242960fc6fdbabaaa99c4cc7d91d3fa2d6d25dfeabaf7ef3f3309fa9db58fae
+last_synced_at: '2026-05-16T13:27:47Z'
 defines:
 - kind: class
   qualified_name: trie/config:TrieMeta
@@ -43,7 +43,7 @@ defines:
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
   lines: 176-177
-incoming_refs: 138
+incoming_refs: 140
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/config:TrieMeta fingerprint=43460a16db027d61c4297084d70ce0d1e70048e3c983aba83ed17fbd4935301a body_fp=fc099c55e56a7cbf7ea5a31d4965af5f5003dcad2f1ee09cc25a0896fe818bc3 source_ref=435b779093e30070dbf454dc787d8b346cc4ebc9 -->
@@ -82,15 +82,14 @@ Configure reference-graph traversal defaults for incremental sync operations.
 - `hub_symbol_threshold`: symbols with more inbound refs than this are capped at depth 0
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/config:Mcp fingerprint=8d81aaec4b5925779e66e3e94041b2fa2730a044947b2eb9e2183335d2dad683 body_fp=fd93a56fae3f28bada892efe68a82f59a28e6be70e250ddfbb2a22aa95c948ec source_ref=5a8e8ef1f561c9a20d9fb6288a192469c1e75c6c -->
+<!-- trie:section symbol=trie/config:Mcp fingerprint=b39f0c214df58f1f374462cd5215607a3c0bc52ccc586e7780d939dc2bc4a6a2 body_fp=55439f46b619473f165a03f065e7f6b85b1e34231700c9eb71ca2ff6ab87b008 source_ref=8ea030fa79a2e9f417246770bfba08e904291cab -->
 ## `Mcp`
 
 Configure server-side behavioural knobs for the MCP agent tools: `locate`, `explain`, and `walk`.
 
 - `locate_default_rank_by`: accepts `"public_first"`, `"inbound_count"`, or `"alphabetical"`
 - `locate_fallback_max_files`: max in-scope files grepped when no symbol-name match found
-- `locate_fallback_max_unique_symbols`: hits spread across more symbols than this returns `kind="grep_too_noisy"`
-- `locate_fallback_match_limit`: cap on candidates returned after hub-ranking fallback
+- `locate_fallback_match_limit`: cap on candidates returned after hub-ranking fallback; fallback never refuses as too noisy
 - `explain_max_neighbours_per_direction`: `0` means unlimited
 - `explain_prose_max_chars`: `0` means unlimited
 - `walk_hub_threshold`: mirrors `Cascade.hub_symbol_threshold`
