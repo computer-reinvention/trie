@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_store.py
 file_fingerprint: afbabafdabc5fae36b75de2bc15153adc4a70c97d1b0bf6cf9079460d646fab0
-last_synced_at: '2026-05-15T13:02:18Z'
+last_synced_at: '2026-05-16T12:51:35Z'
 defines:
 - kind: function
   qualified_name: tests/test_store:store
@@ -52,7 +52,7 @@ Pytest fixture that yields a temporary `Store` instance backed by a fresh databa
 Assert that the `schema_version` table contains the expected `SCHEMA_VERSION` constant.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_store:test_upsert_and_get_file fingerprint=f3b58b4e3b9159727ab6287bf2302a550f35296a8d1eb39f62d33d4cdea3b959 body_fp=a219d314fcb2fa369624eace63d426f32876bb920fad79fd4c5b27d591e05278 source_ref=a20694337904925106e4ac6f4c15d03a2a3e5038 -->
+<!-- trie:section symbol=tests/test_store:test_upsert_and_get_file fingerprint=f3b58b4e3b9159727ab6287bf2302a550f35296a8d1eb39f62d33d4cdea3b959 body_fp=a219d314fcb2fa369624eace63d426f32876bb920fad79fd4c5b27d591e05278 source_ref=839b1a45c99e07b791659b6edeac04dc61a4910c -->
 ## `test_upsert_and_get_file(store: Store)`
 
 Verify that `get_file` returns `None` before insert and a matching `FileRecord` after `upsert_file`.

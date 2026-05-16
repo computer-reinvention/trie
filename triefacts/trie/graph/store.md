@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/graph/store.py
-file_fingerprint: 8c2dd95eb9b1ce4d2aad759766f24f74822daa986410af303d582e36c72e976f
-last_synced_at: '2026-05-16T11:46:54Z'
+file_fingerprint: 0a77633f9dcc887429cb9d41abcfc69a3ff0a8cd0c44f4c5d9ffda98747c390f
+last_synced_at: '2026-05-16T12:51:05Z'
 defines:
 - kind: class
   qualified_name: trie/graph/store:FileRecord
@@ -21,7 +21,7 @@ defines:
   lines: 112-129
 - kind: class
   qualified_name: trie/graph/store:Store
-  lines: 132-654
+  lines: 132-675
 - kind: method
   qualified_name: trie/graph/store:Store.__init__
   lines: 141-144
@@ -71,45 +71,48 @@ defines:
   qualified_name: trie/graph/store:Store.qnames_in_file
   lines: 328-334
 - kind: method
+  qualified_name: trie/graph/store:Store.symbols_in_file_with_lines
+  lines: 336-355
+- kind: method
   qualified_name: trie/graph/store:Store.search_symbols
-  lines: 336-363
+  lines: 357-384
 - kind: method
   qualified_name: trie/graph/store:Store.references_out
-  lines: 365-377
+  lines: 386-398
 - kind: method
   qualified_name: trie/graph/store:Store.count_edges
-  lines: 379-380
+  lines: 400-401
 - kind: method
   qualified_name: trie/graph/store:Store.inbound_count_per_symbol
-  lines: 382-391
+  lines: 403-412
 - kind: method
   qualified_name: trie/graph/store:Store.file_ref_counts
-  lines: 393-423
+  lines: 414-444
 - kind: method
   qualified_name: trie/graph/store:Store.file_stats
-  lines: 425-447
+  lines: 446-468
 - kind: method
   qualified_name: trie/graph/store:Store.upsert_section_record
-  lines: 451-486
+  lines: 472-507
 - kind: method
   qualified_name: trie/graph/store:Store.one_liner_for
-  lines: 488-501
+  lines: 509-522
 - kind: method
   qualified_name: trie/graph/store:Store.one_liners_for
-  lines: 503-516
+  lines: 524-537
 - kind: method
   qualified_name: trie/graph/store:Store.get_symbol_detail
-  lines: 520-553
+  lines: 541-574
 - kind: method
   qualified_name: trie/graph/store:Store.locate_symbols
-  lines: 555-644
+  lines: 576-665
 - kind: method
   qualified_name: trie/graph/store:Store.all_symbol_names
-  lines: 646-649
+  lines: 667-670
 - kind: method
   qualified_name: trie/graph/store:Store.all_qualified_names
-  lines: 651-654
-incoming_refs: 36
+  lines: 672-675
+incoming_refs: 41
 outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/graph/store:FileRecord fingerprint=9e5bd64fbbf95f8eb3616b9da3d84b73687a569550e6ace513eef354bd16b1e1 body_fp=66d0f20070cb4ff0fbcc153cfb392d3aa24addf48f3b73c0f1c45f48d6b74475 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
@@ -156,7 +159,7 @@ Frozen dataclass encoding all server-side filter criteria for `Store.locate_symb
 - `inbound_count_min/max` / `outbound_count_min/max`: edge-count bounds; either bound may be `None`
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/graph/store:Store fingerprint=3385e63c82b75892eaee50ecbc8840d988f2284d2a5fb6499dabe353ed19f382 body_fp=bf65225536c6d20ff0c87335ace1798a7d668859f5af19308b7fdddfff9939f2 source_ref=aef35014ee7ba97f7bb5ee8252255be994acfdac -->
+<!-- trie:section symbol=trie/graph/store:Store fingerprint=1f1cf5e0501417b1dbc4dbdc0c0a438a461f43a1d0b81c24293eb5e5269ed20f body_fp=bf65225536c6d20ff0c87335ace1798a7d668859f5af19308b7fdddfff9939f2 source_ref=6da877cab7a13b55f8c9b77428537bc9a241cac7 -->
 ## `Store(db_path: Path)`
 
 SQLite-backed store for trie's symbol graph, file fingerprints, edges, and cached triefact sections.
@@ -354,4 +357,12 @@ Return `self` to support use as a context manager.
 ## `__exit__(self, *_args: object) -> None`
 
 Close the store connection when exiting the context manager.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/graph/store:Store.symbols_in_file_with_lines fingerprint=6c50f1692f561e61d68233e23f1452068b7dc5151923fcf1a75c9e9f32d8fc97 body_fp=2a5400049acefd959d2d6ceb60c1543714f3239b956b5216b8e6514df4d99096 source_ref=6da877cab7a13b55f8c9b77428537bc9a241cac7 -->
+## `symbols_in_file_with_lines(self, file_path: str) -> list[tuple[str, int, int]]`
+
+Return `(qname, start_line, end_line)` for every symbol in `file_path`, ordered by `start_line`.
+
+- Returns empty list when the path has no recorded symbols.
 <!-- trie:end -->

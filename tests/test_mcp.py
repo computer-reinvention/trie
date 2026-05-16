@@ -102,29 +102,34 @@ def tools(populated_project: Path):
 
 
 def test_locate_name_contains_returns_matches(tools: TrieTools):
-    hits = tools.locate({"name_contains": "slug"})
-    qnames = {h["qname"] for h in hits}
+    result = tools.locate({"name_contains": "slug"})
+    qnames = {h["qname"] for h in result["hits"]}
     assert "lib:slugify" in qnames
+    # When there are real hits, no fallback envelope is attached.
+    assert "fallback" not in result
 
 
 def test_locate_returns_one_liner_from_section_body(tools: TrieTools):
-    hits = tools.locate({"name_contains": "slugify"})
-    assert hits, "expected at least one hit"
-    h = hits[0]
+    result = tools.locate({"name_contains": "slugify"})
+    assert result["hits"], "expected at least one hit"
+    h = result["hits"][0]
     assert "Lowercase" in h["one_liner"]
     # Sentence is truncated to first '.'
     assert h["one_liner"].endswith("words") or h["one_liner"].endswith("words.")
 
 
 def test_locate_returns_file_pointer(tools: TrieTools):
-    hits = tools.locate({"name_contains": "make_url"})
-    assert hits[0]["file_pointer"].endswith("app.py:4")
+    result = tools.locate({"name_contains": "make_url"})
+    assert result["hits"][0]["file_pointer"].endswith("app.py:4")
 
 
 def test_locate_kind_filter(tools: TrieTools):
-    # Both fixtures define only functions; class filter should return nothing.
-    hits = tools.locate({"name_contains": "slug", "kind": "class"})
-    assert hits == []
+    # Both fixtures define only functions; class filter should return zero hits.
+    # The fallback will fire because `name_contains` is present — the grep
+    # finds `slug` in source bodies. That's the new contract; we assert on
+    # hits being empty rather than the whole result.
+    result = tools.locate({"name_contains": "slug", "kind": "class"})
+    assert result["hits"] == []
 
 
 def test_locate_invalid_kind_returns_error(tools: TrieTools):
@@ -134,46 +139,153 @@ def test_locate_invalid_kind_returns_error(tools: TrieTools):
 
 
 def test_locate_scope_prefix_filter(tools: TrieTools):
-    hits = tools.locate({"scope_prefix": "lib"})
-    file_paths = {h["file_pointer"].split(":")[0] for h in hits}
+    result = tools.locate({"scope_prefix": "lib"})
+    file_paths = {h["file_pointer"].split(":")[0] for h in result["hits"]}
     assert all(p.startswith("lib") for p in file_paths)
 
 
 def test_locate_scope_exclude_filter(tools: TrieTools):
-    hits = tools.locate({"scope_exclude": ["app"]})
-    file_paths = {h["file_pointer"].split(":")[0] for h in hits}
+    result = tools.locate({"scope_exclude": ["app"]})
+    file_paths = {h["file_pointer"].split(":")[0] for h in result["hits"]}
     assert "app.py" not in file_paths
 
 
 def test_locate_inbound_count_predicate(tools: TrieTools):
     # slugify has one inbound edge from make_url.
-    hits = tools.locate({"inbound_count": {"min": 1}})
-    qnames = {h["qname"] for h in hits}
+    result = tools.locate({"inbound_count": {"min": 1}})
+    qnames = {h["qname"] for h in result["hits"]}
     assert "lib:slugify" in qnames
     assert "app:make_url" not in qnames  # make_url has no callers
 
 
 def test_locate_rank_by_inbound_count(tools: TrieTools):
-    hits = tools.locate({"name_contains": ""}, rank_by="inbound_count", limit=5)
+    result = tools.locate({"name_contains": ""}, rank_by="inbound_count", limit=5)
+    hits = result["hits"]
     # First hit should have the highest inbound_count.
     assert hits[0]["inbound_count"] >= hits[-1]["inbound_count"]
 
 
 def test_locate_limit_respected(tools: TrieTools):
-    hits = tools.locate({"name_contains": ""}, limit=1)
-    assert len(hits) == 1
+    result = tools.locate({"name_contains": ""}, limit=1)
+    assert len(result["hits"]) == 1
 
 
 def test_locate_unknown_predicate_field_silently_ignored(tools: TrieTools):
     # Extra fields don't break the call — we just ignore them.
-    hits = tools.locate({"name_contains": "slug", "totally_made_up_field": True})
-    assert hits  # match still works
+    result = tools.locate({"name_contains": "slug", "totally_made_up_field": True})
+    assert result["hits"]  # match still works
 
 
 def test_locate_invalid_predicate_returns_error(tools: TrieTools):
     result = tools.locate("not an object")  # type: ignore[arg-type]
     assert isinstance(result, dict) and "error" in result
     assert result["error"]["code"] == "invalid_argument"
+
+
+# --- locate: grep fallback on empty hits ---------------------------------
+
+
+def test_locate_fallback_kind_none_when_no_name_contains(tools: TrieTools):
+    """A predicate with no `name_contains` and no symbol-name match still
+    returns the envelope, with `fallback.kind == "none"` so the agent knows
+    grep was inapplicable rather than empty."""
+    # `inbound_count: {min: 999}` matches nothing in our fixture, and the
+    # predicate has no name_contains for grep to use.
+    result = tools.locate({"inbound_count": {"min": 999}})
+    assert result["hits"] == []
+    assert result["fallback"]["kind"] == "none"
+    assert "name_contains" in result["fallback"]["note"]
+
+
+def test_locate_fallback_kind_grep_empty_for_unseen_string(tools: TrieTools):
+    """When `name_contains` is set but the string appears nowhere in source,
+    fallback reports `grep_empty` — the agent gets clear "this doesn't exist"
+    signal rather than an ambiguous empty list."""
+    result = tools.locate({"name_contains": "xyzzy_no_such_thing"})
+    assert result["hits"] == []
+    assert result["fallback"]["kind"] == "grep_empty"
+    assert result["fallback"]["query"] == "xyzzy_no_such_thing"
+
+
+def test_locate_fallback_kind_grep_redirects_via_body_match(tools: TrieTools):
+    """The interesting case: the query is not a symbol name, but it appears
+    inside a symbol's body. Fallback returns the enclosing symbol so the
+    agent has a starting point one round-trip away."""
+    # "replace" appears inside lib:slugify's body (`.replace(" ", "-")`) but
+    # is not a symbol name itself.
+    result = tools.locate({"name_contains": "replace"})
+    assert result["hits"] == []
+    assert result["fallback"]["kind"] == "grep"
+    assert result["fallback"]["query"] == "replace"
+    matches = result["fallback"]["matches"]
+    qnames = {m["qname"] for m in matches}
+    assert "lib:slugify" in qnames
+    # Each match exposes the count of in-body occurrences and the standard
+    # hit fields so the agent can hub-rank further if it wants.
+    slugify_match = next(m for m in matches if m["qname"] == "lib:slugify")
+    assert slugify_match["grep_hits_in_body"] >= 1
+    assert "inbound_count" in slugify_match
+    assert "outbound_count" in slugify_match
+
+
+def test_locate_fallback_ranks_by_inbound_count_desc(tools: TrieTools):
+    """When grep produces multiple candidates, they're ranked by inbound_count
+    descending — hub-like symbols come first so the agent can pick the most
+    referenced starting point."""
+    # "title" appears in app:make_url (param + use) and as a substring in
+    # lib's body via "title" in shared examples; here we just confirm the
+    # ordering invariant on whatever candidates land.
+    result = tools.locate({"name_contains": "title"})
+    if result["hits"]:
+        pytest.skip("fixture grew a symbol named 'title' — adjust the test")
+    matches = result["fallback"].get("matches", [])
+    if len(matches) < 2:
+        pytest.skip("only one fallback candidate; ranking is trivially correct")
+    inbounds = [m["inbound_count"] for m in matches]
+    assert inbounds == sorted(inbounds, reverse=True)
+
+
+def test_locate_fallback_kind_grep_too_noisy_when_threshold_exceeded(
+    tools: TrieTools,
+):
+    """Force `grep_too_noisy` by lowering the unique-symbols threshold. The
+    fallback should refuse to pick favourites when the query is too generic."""
+    tools.mcp_cfg = tools.mcp_cfg.__class__(
+        **{**tools.mcp_cfg.__dict__, "locate_fallback_max_unique_symbols": 0}
+    )
+    # "def " appears in every Python file body; with the threshold at 0,
+    # any non-zero unique symbol count triggers too_noisy.
+    result = tools.locate({"name_contains": "def "})
+    assert result["hits"] == []
+    assert result["fallback"]["kind"] == "grep_too_noisy"
+    assert "unique_symbols" in result["fallback"]
+
+
+def test_locate_fallback_honours_scope_prefix(tools: TrieTools):
+    """The user's scope filter applies to fallback candidates too — grep
+    finds matches across the project, but only symbols in the allowed scope
+    are returned."""
+    # "slugify" appears in both lib.py (definition) and app.py (call).
+    # With scope_prefix="app", only app's symbols should be candidates.
+    # But there's a normal hit (lib:slugify) without the scope filter; the
+    # filter excludes it, so we hit the fallback path on app's body matches.
+    result = tools.locate({"name_contains": "slugify", "scope_prefix": "app"})
+    # No symbol *named* slugify exists under app/, so hits is empty.
+    assert result["hits"] == []
+    fb = result["fallback"]
+    # Whatever shape the fallback takes, no `lib:` qname should appear in it.
+    if fb["kind"] == "grep":
+        qnames = {m["qname"] for m in fb["matches"]}
+        assert not any(q.startswith("lib:") for q in qnames)
+
+
+def test_locate_normal_hits_path_omits_fallback_key(tools: TrieTools):
+    """When the primary path returns results, there's no `fallback` key
+    at all — the response is strictly `{"hits": [...]}` so the agent doesn't
+    waste tokens reading an envelope it doesn't need."""
+    result = tools.locate({"name_contains": "slugify"})
+    assert result["hits"]
+    assert "fallback" not in result
 
 
 # --- explain --------------------------------------------------------------

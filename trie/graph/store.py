@@ -333,6 +333,27 @@ class Store:
         ).fetchall()
         return [row[0] for row in rows]
 
+    def symbols_in_file_with_lines(self, file_path: str) -> list[tuple[str, int, int]]:
+        """Return `(qname, start_line, end_line)` for every symbol in `file_path`,
+        ordered by start_line. Used by `locate`'s grep fallback to attribute a
+        matched source line to the smallest enclosing symbol.
+
+        Returns an empty list when no symbols are recorded for the path (a file
+        outside the scanned set or a freshly-deleted file). The shape is a
+        compact tuple rather than `SymbolHit`/`SymbolDetail` because the caller
+        only needs the line-range bracket; full detail is fetched per-match.
+        """
+        rows = self._conn.execute(
+            """
+            SELECT qualified_name, start_line, end_line
+            FROM symbols
+            WHERE file_path = ?
+            ORDER BY start_line
+            """,
+            (file_path,),
+        ).fetchall()
+        return [(row[0], int(row[1]), int(row[2])) for row in rows]
+
     def search_symbols(self, name_pattern: str, *, limit: int = 50) -> list[SymbolHit]:
         """Find symbols whose `name` (the local part, not qname) contains `name_pattern`.
 

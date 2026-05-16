@@ -1,65 +1,80 @@
 ---
 trie_version: 0.1.0
 source: trie/mcp_server.py
-file_fingerprint: dd6150114ab5b7c73dd5bd3f7920f782cebda2dfbb67b13afab1fbefe725ca6d
-last_synced_at: '2026-05-16T10:52:28Z'
+file_fingerprint: 39fe3acf9973a8d2ef7983a13398a507f54dfd3105a9b5f7ae4d98594d75f4b2
+last_synced_at: '2026-05-16T12:51:14Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
 - kind: function
   qualified_name: trie/mcp_server:_error
-  lines: 49-62
+  lines: 50-63
 - kind: function
   qualified_name: trie/mcp_server:_truncate
-  lines: 65-69
+  lines: 66-70
 - kind: function
   qualified_name: trie/mcp_server:_symbol_summary
-  lines: 72-78
+  lines: 73-79
 - kind: function
   qualified_name: trie/mcp_server:_close_qname_matches
-  lines: 81-83
+  lines: 82-84
 - kind: function
   qualified_name: trie/mcp_server:_close_name_matches
-  lines: 86-87
+  lines: 87-88
+- kind: function
+  qualified_name: trie/mcp_server:_smallest_enclosing
+  lines: 91-110
 - kind: class
   qualified_name: trie/mcp_server:TrieTools
-  lines: 90-544
+  lines: 113-821
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.__init__
-  lines: 96-107
+  lines: 119-130
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.close
-  lines: 109-110
+  lines: 132-133
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.locate
-  lines: 114-172
+  lines: 137-225
+- kind: method
+  qualified_name: trie/mcp_server:TrieTools._maybe_grep_fallback
+  lines: 227-366
+- kind: method
+  qualified_name: trie/mcp_server:TrieTools._grep_in_scope
+  lines: 368-396
+- kind: method
+  qualified_name: trie/mcp_server:TrieTools._attribute_grep_to_symbols
+  lines: 398-421
+- kind: method
+  qualified_name: trie/mcp_server:TrieTools._candidate_matches_predicate
+  lines: 423-449
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._parse_predicate
-  lines: 174-245
+  lines: 451-522
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain
-  lines: 249-307
+  lines: 526-584
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._prose_for
-  lines: 309-346
+  lines: 586-623
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._neighbour_summaries
-  lines: 348-373
+  lines: 625-650
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.walk
-  lines: 377-524
+  lines: 654-801
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._suggest_for_qname
-  lines: 528-544
+  lines: 805-821
 - kind: function
   qualified_name: trie/mcp_server:build_server
-  lines: 550-561
+  lines: 827-838
 - kind: function
   qualified_name: trie/mcp_server:run_stdio
-  lines: 564-567
+  lines: 841-844
 incoming_refs: 2
-outgoing_refs: 26
+outgoing_refs: 29
 ---
-<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=a9276102fa3197d721d6aeea11f59f308aa262003a5bfdbdd933bdab4b98f35d body_fp=1896c8f1ff3cbc085a8570a7d7b569fbbc5b4a4a0de5b58e9942e4954f76970c source_ref=7e9bcac1d9e11809a5a2f2cc565ded53aa1ea42b -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=5fab9e994c09ecaac2eb77d2da6f1dd0f879b144fe9345cf953de63e704cd557 body_fp=1896c8f1ff3cbc085a8570a7d7b569fbbc5b4a4a0de5b58e9942e4954f76970c source_ref=6795f2438f7cef495f72fab2ec62616550b31303 -->
 ## `TrieTools`
 
 Encapsulate the three MCP tool methods (`locate`, `explain`, `walk`) against a persistent `Store`, testable without MCP transport.
@@ -74,15 +89,16 @@ Encapsulate the three MCP tool methods (`locate`, `explain`, `walk`) against a p
 Release the underlying `Store` database connection.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_server:TrieTools.locate fingerprint=153edba47e914290ef15c96bc9115c1ad61b23c296b28968be5602c151f6cba8 body_fp=66b21097a42278633e30412ff580679c88a9b39f242d8ec108a3dda3a482a1a1 source_ref=7e9bcac1d9e11809a5a2f2cc565ded53aa1ea42b -->
-## `locate(self, predicate: dict[str, Any] | None = None, rank_by: str | None = None, limit: int = 10) -> list[dict[str, Any]] | dict[str, Any]`
+<!-- trie:section symbol=trie/mcp_server:TrieTools.locate fingerprint=6d727e2b9cd6d400783ec71a8ae0366e84570a94b172d3cc4d091e463e9537e5 body_fp=1dc4fe6622fb53fdce66ffeea6a9a79b851654462a1e0e2545f1448f734de20e source_ref=6795f2438f7cef495f72fab2ec62616550b31303 -->
+## `locate(self, predicate: dict[str, Any] | None = None, rank_by: str | None = None, limit: int = 10) -> dict[str, Any]`
 
 Find symbols in the store matching a structured predicate, returning ranked, capped results.
 
 - `predicate`: dict with optional keys `name_contains`, `kind`, `scope_prefix`, `scope_exclude`, `public_only`, `inbound_count`, `outbound_count`.
 - `rank_by`: `"public_first"` (default), `"inbound_count"`, or `"alphabetical"`.
 - `limit`: capped server-side at `mcp_cfg.locate_max_limit`; values below 1 are raised to 1.
-- Returns a list of symbol dicts or an `{error: ...}` envelope on bad input.
+- Returns `{"hits": [...]}` on success; adds `"fallback"` key when hits is empty; returns `{"error": ...}` on bad input.
+- `fallback.kind`: one of `"none"`, `"grep"`, `"grep_empty"`, `"grep_too_noisy"`.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/mcp_server:TrieTools.explain fingerprint=b6b7c0bc63a3e0879a5888ead9fce642aa5c3f94e8f2540a3de2f32b70e23bca body_fp=275b10af2a169586a33fd4c8bba145ecf9e2fed7394993dde28ceb3860bc3249 source_ref=7e9bcac1d9e11809a5a2f2cc565ded53aa1ea42b -->
@@ -193,4 +209,53 @@ Return a human-readable suggestion string for a `not_found` qname using fuzzy ma
 
 - Falls back to local-name matching if no full qname match is found.
 - Returns `None` implicitly only if both match paths yield results; always returns a string otherwise.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_server:_smallest_enclosing fingerprint=4839c335a6d869c0fcaaaeb5126b1db1ddeac056279037b8a98dc142a759a02f body_fp=92106c63fe26c73554bb54967a4320a95e034e7fdadf17032d8a135003208d97 source_ref=6795f2438f7cef495f72fab2ec62616550b31303 -->
+## `_smallest_enclosing(symbols: list[tuple[str, int, int]], lineno: int) -> str | None`
+
+Return the qname of the innermost symbol whose line range brackets `lineno`.
+
+- `symbols`: `(qname, start_line, end_line)` tuples, ordered by `start_line` ascending.
+- Returns `None` when `lineno` falls outside every symbol's range.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_server:TrieTools._maybe_grep_fallback fingerprint=c57db0f25bf9222294bb3baa2358e3e0ea7958fbc0bb99c50db0e2b2982bd422 body_fp=0e2da0eeaf6d0210f2ccf7aebece7f63e5c6b3bc3a21c98bb4da025fb92d0a71 source_ref=6795f2438f7cef495f72fab2ec62616550b31303 -->
+## `_maybe_grep_fallback(self, pred: LocatePredicate) -> dict[str, Any]`
+
+Build the `fallback` envelope returned alongside an empty `hits` list from `locate`.
+
+- Returns a dict with a `kind` field: `"none"`, `"grep_empty"`, `"grep_too_noisy"`, or `"grep"`.
+- `"none"`: predicate has no `name_contains`; no grep attempted.
+- `"grep_empty"`: query appears nowhere in-scope, or only outside any symbol.
+- `"grep_too_noisy"`: matches exceed file or unique-symbol thresholds; agent must refine.
+- `"grep"`: `matches` list of candidate symbols whose bodies contain the query, ranked by `inbound_count` desc.
+- Predicate filters (`scope_prefix`, `scope_exclude`, `public_only`, `kind`, edge bounds) still apply to `"grep"` candidates; `name_contains` is intentionally skipped.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_server:TrieTools._grep_in_scope fingerprint=c8f1734d30f9396e8c501b71605472c75c31e3f0be9082ae94371599d727a2b9 body_fp=f108ee8fa60e03720515d6e8e5e07932eefa9e540a64a9fad427b61989b7aacd source_ref=6795f2438f7cef495f72fab2ec62616550b31303 -->
+## `_grep_in_scope(self, query: str) -> dict[str, list[int]] | None`
+
+Case-insensitively search all in-scope source files for `query`, returning matched line numbers per file.
+
+- Returns `None` when matching files exceed `mcp_cfg.locate_fallback_max_files` (too noisy).
+- Returns `{}` when no file contains the query.
+- Keys are paths relative to `src_root`; values are 1-based line number lists.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_server:TrieTools._attribute_grep_to_symbols fingerprint=4cc8dbd8650ae67b6b138abfebf17d9b3504a74a9db2b4451e2d84f881e631c8 body_fp=0686e8b421c2f2a66c4f81de594a035172247dcb18318132c8c6e565173402f6 source_ref=6795f2438f7cef495f72fab2ec62616550b31303 -->
+## `_attribute_grep_to_symbols(self, grep_hits: dict[str, list[int]]) -> dict[str, int]`
+
+Map each `(file, line)` grep match to its smallest enclosing symbol, returning `{qname: hit_count}`.
+
+- Lines outside any symbol (imports, module-level code) are silently dropped.
+- Nested symbols resolve to the innermost enclosing one (method over class).
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_server:TrieTools._candidate_matches_predicate fingerprint=67f81def759871cd0f3e53436f8010818ba7ae33393fd206cd91da97251ffc74 body_fp=5000c3ff619dbaf5774b9769db8d18365f9d5e81ca377d3a3c69713e223e14bd source_ref=6795f2438f7cef495f72fab2ec62616550b31303 -->
+## `_candidate_matches_predicate(self, detail: SymbolDetail, pred: LocatePredicate) -> bool`
+
+Apply non-name predicate filters to a grep fallback candidate symbol.
+
+- Skips `name_contains` check intentionally; only scope, visibility, kind, and edge-count bounds are enforced.
 <!-- trie:end -->

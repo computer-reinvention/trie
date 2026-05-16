@@ -44,6 +44,7 @@ from mcp.server.fastmcp import FastMCP
 from trie import telemetry
 from trie.config import Config, Mcp
 from trie.graph.store import LocatePredicate, Store, SymbolDetail
+from trie.scope import discover_files
 
 
 def _error(
@@ -87,6 +88,28 @@ def _close_name_matches(name: str, candidates: list[str], *, n: int = 3) -> list
     return difflib.get_close_matches(name, candidates, n=n, cutoff=0.6)
 
 
+def _smallest_enclosing(symbols: list[tuple[str, int, int]], lineno: int) -> str | None:
+    """Find the qname of the symbol whose `[start_line, end_line]` brackets `lineno`.
+
+    `symbols` is the `(qname, start_line, end_line)` list returned by
+    `Store.symbols_in_file_with_lines`. When symbols nest (a method inside a
+    class), the smallest enclosing one wins — i.e. the symbol with the latest
+    `start_line` still ≤ `lineno`, whose `end_line` is ≥ `lineno`.
+
+    Returns `None` when `lineno` falls outside every symbol's line range — the
+    grep matched something at module level (imports, top-level statements) or
+    in whitespace at end-of-file. The caller drops these from the fallback to
+    avoid suggesting "the whole file" as a symbol.
+    """
+    enclosing: str | None = None
+    for qname, start, end in symbols:
+        if start > lineno:
+            break  # symbols are start_line-ordered; no later one starts ≤ lineno
+        if start <= lineno <= end:
+            enclosing = qname
+    return enclosing
+
+
 class TrieTools:
     """The three MCP tools as plain methods, so they can be tested without the transport.
 
@@ -116,7 +139,7 @@ class TrieTools:
         predicate: dict[str, Any] | None = None,
         rank_by: str | None = None,
         limit: int = 10,
-    ) -> list[dict[str, Any]] | dict[str, Any]:
+    ) -> dict[str, Any]:
         """Find symbols matching `predicate`.
 
         Predicate fields (all optional):
@@ -133,6 +156,24 @@ class TrieTools:
 
         Provide only the fields you need — most queries use just `name_contains` or
         `scope_prefix`.
+
+        Return shape:
+        ```
+        {
+          "hits": [ {qname, signature, file_pointer, one_liner, is_public, kind,
+                     inbound_count, outbound_count}, ... ],
+          "fallback"?: { ... }   # present only when hits is empty
+        }
+        ```
+        On empty hits, `fallback.kind` is one of:
+        - `"none"`: predicate had no `name_contains` to grep on, nothing to suggest.
+        - `"grep"`: grep found candidate symbols whose bodies contain the query;
+          `matches` is the ranked list (by `inbound_count` desc).
+        - `"grep_empty"`: the query string appears in no in-scope source body.
+        - `"grep_too_noisy"`: the query matches too widely to suggest a redirect;
+          the agent should refine the predicate.
+
+        Errors (bad predicate shape, etc.) still return `{"error": {...}}`.
         """
         tele_args = (
             {"predicate": predicate, "rank_by": rank_by, "limit": limit}
@@ -151,7 +192,7 @@ class TrieTools:
 
             hits = self.store.locate_symbols(pred_obj, rank_by=rank, limit=capped_limit)
             one_liner_cap = self.mcp_cfg.locate_one_liner_max_chars
-            result = [
+            hit_dicts = [
                 {
                     "qname": h.qualified_name,
                     "signature": h.signature or "",
@@ -164,12 +205,248 @@ class TrieTools:
                 }
                 for h in hits
             ]
+            result: dict[str, Any] = {"hits": hit_dicts}
+
+            # When the predicate matched nothing, try the grep fallback. The
+            # fallback always produces SOMETHING in the response — even if it's
+            # `kind="none"` — so the agent never has to guess whether trie
+            # tried alternatives or not.
+            if not hit_dicts:
+                fallback = self._maybe_grep_fallback(pred_obj)
+                result["fallback"] = fallback
+                tele_ctx["fallback_kind"] = fallback["kind"]
+                tele_ctx["fallback_match_count"] = len(fallback.get("matches", []))
+
             tele_ctx["result_kind"] = "ok"
-            tele_ctx["result_count"] = len(result)
+            tele_ctx["result_count"] = len(hit_dicts)
             tele_ctx["response_bytes"] = len(json.dumps(result, default=str))
             if telemetry.capture_responses():
                 tele_ctx["response"] = result
             return result
+
+    def _maybe_grep_fallback(self, pred: LocatePredicate) -> dict[str, Any]:
+        """Build the `fallback` envelope returned alongside an empty `hits` list.
+
+        The contract is to always return a dict with a `kind` field, so the
+        agent can dispatch on the four distinct empty cases:
+
+        - `none`: no `name_contains` was supplied; nothing to grep for. The agent
+          should not try the same predicate again — its shape isn't grep-able.
+        - `grep_empty`: the query appears in no in-scope source body. Likely a
+          typo or a wrong project.
+        - `grep_too_noisy`: the query is too generic; refine the predicate.
+        - `grep`: candidate symbols whose bodies contain the query, ranked by
+          `inbound_count` descending and capped at `match_limit`.
+
+        Predicate fields beyond `name_contains` (`scope_prefix`, `scope_exclude`,
+        `public_only`, etc.) are applied to the candidate list at the end, so
+        the agent's scope restrictions are honoured even on the fallback path.
+        """
+        query = (pred.name_contains or "").strip()
+        if not query:
+            return {
+                "kind": "none",
+                "note": (
+                    "Predicate matched no symbols, and it has no `name_contains` "
+                    "to grep for. Add a name substring or relax other filters."
+                ),
+            }
+
+        # Walk in-scope source files and collect line-level hits.
+        grep_hits = self._grep_in_scope(query)
+        if grep_hits is None:
+            return {
+                "kind": "grep_too_noisy",
+                "query": query,
+                "note": (
+                    f"Query {query!r} appears in more files than the fallback "
+                    f"will consider (>{self.mcp_cfg.locate_fallback_max_files}). "
+                    "Refine the predicate with a more specific substring or "
+                    "tighten `scope_prefix`."
+                ),
+            }
+        if not grep_hits:
+            return {
+                "kind": "grep_empty",
+                "query": query,
+                "note": (
+                    f"Predicate matched no symbols, and {query!r} appears in no "
+                    "in-scope source file body either. Likely a typo or a name "
+                    "that doesn't exist in this project."
+                ),
+            }
+
+        # Attribute each matched line to the smallest enclosing symbol.
+        per_symbol = self._attribute_grep_to_symbols(grep_hits)
+        if not per_symbol:
+            # The query matched lines, but every match was outside any symbol
+            # (module-level code, imports, comments at file top, etc.). This
+            # is honest signal — the agent shouldn't be misled into thinking a
+            # symbol was found.
+            return {
+                "kind": "grep_empty",
+                "query": query,
+                "note": (
+                    f"Query {query!r} appears in source but only outside any "
+                    "documented symbol (e.g. in imports or module-level code). "
+                    "No symbol-level redirect possible."
+                ),
+            }
+
+        if len(per_symbol) > self.mcp_cfg.locate_fallback_max_unique_symbols:
+            return {
+                "kind": "grep_too_noisy",
+                "query": query,
+                "match_count": sum(per_symbol.values()),
+                "unique_symbols": len(per_symbol),
+                "note": (
+                    f"Query {query!r} matches inside "
+                    f"{len(per_symbol)} different symbols "
+                    f"(>{self.mcp_cfg.locate_fallback_max_unique_symbols}). "
+                    "Too unspecific to suggest a redirect — refine the predicate."
+                ),
+            }
+
+        # Build candidate hits with full SymbolDetail and the per-body hit count,
+        # then apply predicate filters (scope_prefix, scope_exclude, public_only,
+        # kind) the user originally asked for. Rank by inbound_count desc, cap
+        # at the configured match limit.
+        candidates: list[tuple[SymbolDetail, int]] = []
+        for qname, body_hits in per_symbol.items():
+            detail = self.store.get_symbol_detail(qname)
+            if detail is None:
+                continue
+            if not self._candidate_matches_predicate(detail, pred):
+                continue
+            candidates.append((detail, body_hits))
+
+        if not candidates:
+            # Grep found symbols, but none survived the predicate's other filters.
+            # That's still useful signal: the agent's scope restrictions are
+            # excluding what the substring would point to.
+            return {
+                "kind": "grep_empty",
+                "query": query,
+                "note": (
+                    f"Query {query!r} matched symbols, but none satisfied the "
+                    "other predicate filters (e.g. `scope_prefix`, `kind`, "
+                    "`public_only`). Try a broader predicate."
+                ),
+            }
+
+        candidates.sort(key=lambda c: (-c[0].inbound_count, c[0].qualified_name))
+        capped = candidates[: self.mcp_cfg.locate_fallback_match_limit]
+
+        one_liner_cap = self.mcp_cfg.locate_one_liner_max_chars
+        matches = [
+            {
+                "qname": d.qualified_name,
+                "signature": d.signature or "",
+                "file_pointer": f"{d.file_path}:{d.start_line}",
+                "one_liner": _truncate(d.one_liner, one_liner_cap),
+                "is_public": d.is_public,
+                "kind": d.kind,
+                "inbound_count": d.inbound_count,
+                "outbound_count": d.outbound_count,
+                "grep_hits_in_body": body_hits,
+            }
+            for d, body_hits in capped
+        ]
+        return {
+            "kind": "grep",
+            "query": query,
+            "match_count": sum(per_symbol.values()),
+            "unique_symbols": len(per_symbol),
+            "matches": matches,
+            "note": (
+                "Predicate matched no symbols, but the query string appears in "
+                "the bodies of these symbols. Ranked by `inbound_count` so the "
+                "most-referenced (likely hub) candidate is first."
+            ),
+        }
+
+    def _grep_in_scope(self, query: str) -> dict[str, list[int]] | None:
+        """Walk in-scope source files and return `{rel_path: [line_numbers]}`.
+
+        Case-insensitive substring search. Returns `None` (signalling
+        "too noisy") when the number of files containing matches exceeds
+        `mcp_cfg.locate_fallback_max_files` — at that point the result is
+        too unspecific to redirect on, so we bail before paying for further
+        attribution work.
+        """
+        src_root = self.src_root
+        needle = query.lower()
+        hits: dict[str, list[int]] = {}
+        for abs_path in discover_files(self.root, self.config.scope):
+            if not abs_path.is_relative_to(src_root):
+                continue
+            try:
+                text = abs_path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            file_hits: list[int] = []
+            for lineno, line in enumerate(text.splitlines(), start=1):
+                if needle in line.lower():
+                    file_hits.append(lineno)
+            if file_hits:
+                rel = str(abs_path.relative_to(src_root))
+                hits[rel] = file_hits
+                if len(hits) > self.mcp_cfg.locate_fallback_max_files:
+                    return None
+        return hits
+
+    def _attribute_grep_to_symbols(self, grep_hits: dict[str, list[int]]) -> dict[str, int]:
+        """For each `(file, line)` match, attribute it to the smallest enclosing
+        symbol by line range. Returns `{qname: count_of_hits_in_body}`.
+
+        Lines that don't fall inside any symbol (module-level code, imports,
+        whitespace at the bottom of a class) are dropped — the fallback is
+        about steering the agent toward symbols, not arbitrary source locations.
+
+        "Smallest enclosing" matters when symbols nest: a hit inside a method
+        attributes to the method, not the surrounding class. Implemented by
+        picking the symbol with the largest `start_line` not exceeding the
+        match line, then bounded by `end_line`.
+        """
+        per_symbol: dict[str, int] = {}
+        for file_path, linenos in grep_hits.items():
+            symbols = self.store.symbols_in_file_with_lines(file_path)
+            if not symbols:
+                continue
+            for lineno in linenos:
+                enclosing = _smallest_enclosing(symbols, lineno)
+                if enclosing is None:
+                    continue
+                per_symbol[enclosing] = per_symbol.get(enclosing, 0) + 1
+        return per_symbol
+
+    def _candidate_matches_predicate(self, detail: SymbolDetail, pred: LocatePredicate) -> bool:
+        """Apply the predicate's non-name filters to a fallback candidate.
+
+        `name_contains` is intentionally NOT enforced here: the whole point of
+        the fallback is that the name didn't match. The other filters
+        (`scope_prefix`, `scope_exclude`, `public_only`, `kind`, edge-count
+        bounds) DO still apply — the agent's scope restrictions should narrow
+        the fallback the same way they narrow the primary path.
+        """
+        if pred.scope_prefix and not detail.file_path.startswith(pred.scope_prefix):
+            return False
+        for excl in pred.scope_exclude:
+            if detail.file_path.startswith(excl):
+                return False
+        if pred.public_only and not detail.is_public:
+            return False
+        if pred.kind is not None and pred.kind != "any" and detail.kind != pred.kind:
+            return False
+        if pred.inbound_count_min is not None and detail.inbound_count < pred.inbound_count_min:
+            return False
+        if pred.inbound_count_max is not None and detail.inbound_count > pred.inbound_count_max:
+            return False
+        if pred.outbound_count_min is not None and detail.outbound_count < pred.outbound_count_min:
+            return False
+        return not (
+            pred.outbound_count_max is not None and detail.outbound_count > pred.outbound_count_max
+        )
 
     def _parse_predicate(
         self, predicate: dict[str, Any] | None
