@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/cli.py
 file_fingerprint: 974998eb437f93df2fbeb8246c706d79ce69fbdb24ea3b4edf30d4cba26aaef8
-last_synced_at: '2026-05-16T13:28:16Z'
+last_synced_at: '2026-05-16T13:43:45Z'
 defines:
 - kind: function
   qualified_name: trie/cli:_get_reporter

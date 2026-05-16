@@ -130,6 +130,16 @@ The hub-symbol cap matters: a `utils.py` referenced everywhere can't invalidate 
 
 ## Quick start
 
+### Prerequisites
+
+- **Python 3.11+** and [`uv`](https://docs.astral.sh/uv/) on PATH.
+- **[ripgrep](https://github.com/BurntSushi/ripgrep)** (`rg`) on PATH —
+  trie's MCP server uses it for the `locate` grep fallback and refuses
+  to start without it. Install with `brew install ripgrep` on macOS,
+  `apt install ripgrep` on Debian/Ubuntu.
+- An Anthropic API key in `ANTHROPIC_API_KEY` (default model is
+  `anthropic/claude-sonnet-4-6`).
+
 ```bash
 # 1. Install (pick one)
 uv tool install git+ssh://git@github.com/pankajgarkoti/trie    # persistent, on $PATH

@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: tests/test_mcp.py
-file_fingerprint: 64e8d93061b875ebf61460b727e3d793637ce9debc20d73203606debdf323150
-last_synced_at: '2026-05-16T13:27:44Z'
+file_fingerprint: c7b3f3ca31d88881e095b2de9c99c873a41f39e5fae7d1e21adba10193859511
+last_synced_at: '2026-05-16T13:39:45Z'
 description: 'Tests for the MCP tool surface: `locate`, `explain`, `walk`.'
 defines:
 - kind: class
@@ -24,106 +24,109 @@ defines:
   qualified_name: tests/test_mcp:tools
   lines: 95-98
 - kind: function
+  qualified_name: tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing
+  lines: 104-125
+- kind: function
   qualified_name: tests/test_mcp:test_locate_name_contains_returns_matches
-  lines: 104-109
+  lines: 131-136
 - kind: function
   qualified_name: tests/test_mcp:test_locate_returns_one_liner_from_section_body
-  lines: 112-118
+  lines: 139-145
 - kind: function
   qualified_name: tests/test_mcp:test_locate_returns_file_pointer
-  lines: 121-123
+  lines: 148-150
 - kind: function
   qualified_name: tests/test_mcp:test_locate_kind_filter
-  lines: 126-132
+  lines: 153-159
 - kind: function
   qualified_name: tests/test_mcp:test_locate_invalid_kind_returns_error
-  lines: 135-138
+  lines: 162-165
 - kind: function
   qualified_name: tests/test_mcp:test_locate_scope_prefix_filter
-  lines: 141-144
+  lines: 168-171
 - kind: function
   qualified_name: tests/test_mcp:test_locate_scope_exclude_filter
-  lines: 147-150
+  lines: 174-177
 - kind: function
   qualified_name: tests/test_mcp:test_locate_inbound_count_predicate
-  lines: 153-158
+  lines: 180-185
 - kind: function
   qualified_name: tests/test_mcp:test_locate_rank_by_inbound_count
-  lines: 161-165
+  lines: 188-192
 - kind: function
   qualified_name: tests/test_mcp:test_locate_limit_respected
-  lines: 168-170
+  lines: 195-197
 - kind: function
   qualified_name: tests/test_mcp:test_locate_unknown_predicate_field_silently_ignored
-  lines: 173-176
+  lines: 200-203
 - kind: function
   qualified_name: tests/test_mcp:test_locate_invalid_predicate_returns_error
-  lines: 179-182
+  lines: 206-209
 - kind: function
   qualified_name: tests/test_mcp:test_locate_fallback_kind_none_when_no_name_contains
-  lines: 188-197
+  lines: 215-224
 - kind: function
   qualified_name: tests/test_mcp:test_locate_fallback_kind_grep_empty_for_unseen_string
-  lines: 200-207
+  lines: 227-234
 - kind: function
   qualified_name: tests/test_mcp:test_locate_fallback_kind_grep_redirects_via_body_match
-  lines: 210-228
+  lines: 237-255
 - kind: function
   qualified_name: tests/test_mcp:test_locate_fallback_ranks_by_inbound_count_desc
-  lines: 231-245
+  lines: 258-272
 - kind: function
   qualified_name: tests/test_mcp:test_locate_fallback_caps_matches_and_notes_truncation
-  lines: 248-274
+  lines: 275-301
 - kind: function
   qualified_name: tests/test_mcp:test_locate_fallback_omits_truncation_note_when_under_cap
-  lines: 277-285
+  lines: 304-312
 - kind: function
   qualified_name: tests/test_mcp:test_locate_fallback_honours_scope_prefix
-  lines: 288-303
+  lines: 315-330
 - kind: function
   qualified_name: tests/test_mcp:test_locate_normal_hits_path_omits_fallback_key
-  lines: 306-312
+  lines: 333-339
 - kind: function
   qualified_name: tests/test_mcp:test_explain_returns_prose_and_neighbours
-  lines: 318-325
+  lines: 345-352
 - kind: function
   qualified_name: tests/test_mcp:test_explain_source_pointer_shape
-  lines: 328-331
+  lines: 355-358
 - kind: function
   qualified_name: tests/test_mcp:test_explain_neighbour_carries_one_liner
-  lines: 334-337
+  lines: 361-364
 - kind: function
   qualified_name: tests/test_mcp:test_explain_unknown_qname_returns_not_found
-  lines: 340-343
-- kind: function
-  qualified_name: tests/test_mcp:test_explain_fuzzy_suggestion_for_typo
-  lines: 346-352
-- kind: function
-  qualified_name: tests/test_mcp:test_walk_callers_returns_topology
-  lines: 358-364
-- kind: function
-  qualified_name: tests/test_mcp:test_walk_callees_returns_outbound
   lines: 367-370
 - kind: function
+  qualified_name: tests/test_mcp:test_explain_fuzzy_suggestion_for_typo
+  lines: 373-379
+- kind: function
+  qualified_name: tests/test_mcp:test_walk_callers_returns_topology
+  lines: 385-391
+- kind: function
+  qualified_name: tests/test_mcp:test_walk_callees_returns_outbound
+  lines: 394-397
+- kind: function
   qualified_name: tests/test_mcp:test_walk_both_directions
-  lines: 373-378
+  lines: 400-405
 - kind: function
   qualified_name: tests/test_mcp:test_walk_invalid_direction_returns_error
-  lines: 381-384
+  lines: 408-411
 - kind: function
   qualified_name: tests/test_mcp:test_walk_unknown_qname_returns_not_found
-  lines: 387-390
+  lines: 414-417
 - kind: function
   qualified_name: tests/test_mcp:test_walk_depth_zero_returns_only_root
-  lines: 393-396
+  lines: 420-423
 - kind: function
   qualified_name: tests/test_mcp:test_walk_depth_clamp_adds_note
-  lines: 399-403
+  lines: 426-430
 - kind: function
   qualified_name: tests/test_mcp:test_build_server_registers_three_verbs
-  lines: 409-418
+  lines: 436-445
 incoming_refs: 0
-outgoing_refs: 7
+outgoing_refs: 8
 ---
 <!-- trie:section symbol=tests/test_mcp:FakeClient fingerprint=b75f9ea63fb9bc13ffc916b979d6caad8ac663e1050c6f0b56c79dbb9959eb47 body_fp=2f6ce85a55a9885b27ad099612c9a4d867fff0b75aa4637d0fe35e2da66f4089 source_ref=6dbbdc95c4a370893e730330c3d0ef838e805585 -->
 ## `FakeClient`
@@ -366,4 +369,13 @@ Verify that fallback grep results are capped at `locate_fallback_match_limit` an
 ## `test_locate_fallback_omits_truncation_note_when_under_cap(tools: TrieTools)`
 
 Assert no truncation note appears in fallback when all grep matches fit within the match limit.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing fingerprint=e625643ba6a1b85500ca87f1c0222f623bf2bbbd7a2983711641f7d01846fb7a body_fp=2a96793ec1cda466eeaaf3c09ac0b655fcf2e8eb2f47306256a27b1b78c5d47b source_ref=080f8cf593472b38359d9336616c26fce746fcb9 -->
+## `test_trie_tools_init_fails_clearly_when_rg_missing(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `TrieTools` raises `RipgrepNotFoundError` with an actionable message when `rg` is absent from `PATH`.
+
+- `monkeypatch`: stubs `shutil.which` to return `None`, simulating missing `rg`.
+- Error message must contain `"rg"` and either `"install"` or `"ripgrep"`.
 <!-- trie:end -->

@@ -98,6 +98,33 @@ def tools(populated_project: Path):
     t.close()
 
 
+# --- rg dependency -------------------------------------------------------
+
+
+def test_trie_tools_init_fails_clearly_when_rg_missing(
+    populated_project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """`locate`'s grep fallback shells to ripgrep. We refuse to start the
+    MCP server when `rg` is absent rather than degrading silently: a half-
+    working server (symbol lookups fine, fallback broken) is the kind of
+    bug that wastes hours.
+
+    Simulate the missing-rg case by stubbing `shutil.which` to return
+    `None`; the error must name the binary and tell the user how to
+    install it so the failure is self-recovering.
+    """
+    from trie.mcp_server import RipgrepNotFoundError
+
+    monkeypatch.setattr("trie.mcp_server.shutil.which", lambda _name: None)
+    with pytest.raises(RipgrepNotFoundError) as excinfo:
+        TrieTools(populated_project)
+    msg = str(excinfo.value)
+    # Must name the missing dependency by its conventional binary name.
+    assert "rg" in msg
+    # Must point at a path forward (install hint or canonical URL).
+    assert "install" in msg.lower() or "ripgrep" in msg.lower()
+
+
 # --- locate ---------------------------------------------------------------
 
 

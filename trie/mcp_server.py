@@ -35,6 +35,8 @@ from __future__ import annotations
 
 import difflib
 import json
+import shutil
+import subprocess
 from collections import deque
 from pathlib import Path
 from typing import Any
@@ -45,6 +47,39 @@ from trie import telemetry
 from trie.config import Config, Mcp
 from trie.graph.store import LocatePredicate, Store, SymbolDetail
 from trie.scope import discover_files
+
+
+class RipgrepNotFoundError(RuntimeError):
+    """Raised at MCP server startup when `rg` (ripgrep) is not on PATH.
+
+    `locate`'s grep fallback shells out to ripgrep for in-source-body
+    searches. ripgrep gives us .gitignore-aware traversal, binary skip,
+    smart-case, encoding detection, and parallel scanning for free — all
+    of which a hand-rolled Python loop would have to re-implement badly.
+
+    We fail at startup rather than at the first fallback call: a half-
+    functional server (symbol-name `locate` works, fallback doesn't)
+    would surprise agents at unpredictable moments. One clear failure
+    surface is easier to debug.
+    """
+
+
+def _require_ripgrep() -> str:
+    """Return the absolute path to `rg`, or raise `RipgrepNotFoundError`.
+
+    Resolves via `shutil.which`, which honours PATH the same way the
+    shell does. The result is what we pass to `subprocess.run` so the
+    server doesn't have to re-resolve on every fallback call.
+    """
+    path = shutil.which("rg")
+    if path is None:
+        raise RipgrepNotFoundError(
+            "trie's MCP server requires `rg` (ripgrep) on PATH. "
+            "Install with `brew install ripgrep` on macOS, "
+            "`apt install ripgrep` on Debian/Ubuntu, or see "
+            "https://github.com/BurntSushi/ripgrep#installation."
+        )
+    return path
 
 
 def _error(
@@ -119,6 +154,10 @@ class TrieTools:
     def __init__(self, project_root: Path) -> None:
         self.config, self.root = Config.find_and_load(project_root)
         self.mcp_cfg: Mcp = self.config.mcp
+        # Resolve ripgrep up front so the failure mode is "server refuses
+        # to start" rather than "first fallback query mysteriously errors".
+        # Stored on the instance so per-call shellouts skip the PATH walk.
+        self.rg_path = _require_ripgrep()
         # Telemetry: configure from the project's [debug] block. Agents spawn the
         # MCP server directly (not via `trie ...`), so this is the only place we
         # can wire it from config for the stdio path. The env var TRIE_DEBUG
@@ -361,34 +400,104 @@ class TrieTools:
         }
 
     def _grep_in_scope(self, query: str) -> dict[str, list[int]]:
-        """Walk in-scope source files and return `{rel_path: [line_numbers]}`.
+        """Shell out to ripgrep to find `query` in in-scope source bodies.
 
-        Case-insensitive substring search. Stops walking once the file-count
-        cap (`mcp_cfg.locate_fallback_max_files`) is reached and returns
-        whatever it has accumulated — this is a runtime guard against
-        scanning a huge project on a very common substring, not a signal to
-        the caller. The fallback ranks and caps the symbol-level result
-        regardless of how many files contributed.
+        Returns `{rel_path: [line_numbers]}` keyed by paths relative to
+        `src_root`. The implementation runs `rg --json --line-number
+        --fixed-strings --ignore-case` rooted at `src_root` and parses
+        the streaming JSON output, taking the `match` events and ignoring
+        framing (`begin`/`end`/`summary`).
+
+        We post-filter results against `discover_files(...)`'s scope set
+        rather than translating `config.scope` into rg's `--glob` flags.
+        Single source of truth for scope (Python), and the post-filter
+        is a hash-set lookup per match — negligible cost. rg's default
+        `.gitignore` honouring already excludes the obvious noise.
+
+        Cap: stops accumulating once `locate_fallback_max_files` distinct
+        files have hits, matching the previous Python implementation's
+        runtime guard against very-common substrings on huge projects.
         """
-        src_root = self.src_root
-        needle = query.lower()
-        hits: dict[str, list[int]] = {}
+        # `-F`: treat the query as a literal string, not a regex. The agent
+        # passed `name_contains` expecting substring semantics.
+        # `-i`: case-insensitive, matching the previous Python behaviour.
+        # `--json --line-number`: structured output we can parse without
+        #   reinventing rg's text format.
+        # `--no-messages`: drop "file not readable" warnings; we only care
+        #   about matches.
+        proc = subprocess.run(
+            [
+                self.rg_path,
+                "--json",
+                "--line-number",
+                "--fixed-strings",
+                "--ignore-case",
+                "--no-messages",
+                "--",
+                query,
+                str(self.src_root),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        # rg exits 1 when there are no matches; that's not an error from
+        # our side. Exit codes ≥ 2 indicate genuine failure (invalid
+        # regex, broken pipe, etc.) but we already pass `--fixed-strings`,
+        # so the realistic failure is "rg disappeared between startup and
+        # now" — surface it loudly rather than mask it.
+        if proc.returncode not in (0, 1):
+            raise RuntimeError(
+                f"rg failed (exit {proc.returncode}): {proc.stderr.strip() or 'no stderr'}"
+            )
+
+        # Build the in-scope file set once so we can do O(1) membership
+        # checks per match. Stored as str relative paths to match what
+        # rg emits after we strip src_root.
+        scope_set: set[str] = set()
         for abs_path in discover_files(self.root, self.config.scope):
-            if not abs_path.is_relative_to(src_root):
+            if abs_path.is_relative_to(self.src_root):
+                scope_set.add(str(abs_path.relative_to(self.src_root)))
+
+        max_files = self.mcp_cfg.locate_fallback_max_files
+        hits: dict[str, list[int]] = {}
+        src_root_str = str(self.src_root)
+
+        for raw_line in proc.stdout.splitlines():
+            if not raw_line:
                 continue
             try:
-                text = abs_path.read_text(encoding="utf-8", errors="replace")
-            except OSError:
+                event = json.loads(raw_line)
+            except json.JSONDecodeError:
+                # rg occasionally emits non-JSON noise on stderr; we
+                # already filtered stderr, but defend against a torn
+                # event from a buffered write under load.
                 continue
-            file_hits: list[int] = []
-            for lineno, line in enumerate(text.splitlines(), start=1):
-                if needle in line.lower():
-                    file_hits.append(lineno)
-            if file_hits:
-                rel = str(abs_path.relative_to(src_root))
-                hits[rel] = file_hits
-                if len(hits) >= self.mcp_cfg.locate_fallback_max_files:
-                    break
+            if event.get("type") != "match":
+                continue
+            data = event.get("data") or {}
+            path_obj = data.get("path") or {}
+            abs_path_str = path_obj.get("text")
+            lineno = data.get("line_number")
+            if not isinstance(abs_path_str, str) or not isinstance(lineno, int):
+                continue
+
+            # Convert rg's absolute path back to src_root-relative. rg
+            # was rooted at src_root so every match path starts with it,
+            # but defend against symlink resolution drift.
+            if not abs_path_str.startswith(src_root_str):
+                continue
+            rel = abs_path_str[len(src_root_str) :].lstrip("/")
+            if rel not in scope_set:
+                continue
+
+            if rel in hits:
+                hits[rel].append(lineno)
+            else:
+                if len(hits) >= max_files:
+                    continue
+                hits[rel] = [lineno]
+
         return hits
 
     def _attribute_grep_to_symbols(self, grep_hits: dict[str, list[int]]) -> dict[str, int]:
