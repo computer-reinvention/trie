@@ -1,32 +1,35 @@
 ---
 trie_version: 0.1.0
 source: trie/sync/single_file.py
-file_fingerprint: 4fbe4a104134dfb3ea61347e446368cc26799c167efc9fdba302a09f676fd0a7
-last_synced_at: '2026-05-15T13:41:15Z'
+file_fingerprint: a96a71dbae311d4d30916bb4e099cbcb794cf4b8c12c114fd60d901427768f8a
+last_synced_at: '2026-05-16T10:52:02Z'
 defines:
 - kind: class
   qualified_name: trie/sync/single_file:FileSyncResult
-  lines: 24-35
+  lines: 25-36
+- kind: class
+  qualified_name: trie/sync/single_file:_SymbolJob
+  lines: 40-50
 - kind: function
   qualified_name: trie/sync/single_file:_file_fingerprint
-  lines: 38-39
+  lines: 53-54
 - kind: function
   qualified_name: trie/sync/single_file:_triefact_path_for
-  lines: 42-46
+  lines: 57-61
 - kind: function
   qualified_name: trie/sync/single_file:_file_description
-  lines: 49-64
+  lines: 64-79
 - kind: function
   qualified_name: trie/sync/single_file:_build_defines
-  lines: 67-80
+  lines: 82-95
 - kind: function
   qualified_name: trie/sync/single_file:_resolve_previous_symbols
-  lines: 83-128
+  lines: 98-143
 - kind: function
   qualified_name: trie/sync/single_file:sync_single_file
-  lines: 131-345
-incoming_refs: 37
-outgoing_refs: 12
+  lines: 146-398
+incoming_refs: 41
+outgoing_refs: 15
 ---
 <!-- trie:section symbol=trie/sync/single_file:FileSyncResult fingerprint=f658b6cb6f956faf262f29751e15b6efaad12e661c2976d58946940db38a0ed7 body_fp=a14f526007aca92c0796d86e378c557ef5d8443dcb245ccd6b6df85d0970222e source_ref=d6da1d131c5c5e11b320faa2c7147616cfbd1f01 -->
 ## `@dataclass(frozen=True) class FileSyncResult`
@@ -36,7 +39,7 @@ Immutable result record returned by `sync_single_file` summarising token usage a
 - `symbols_skipped`: count of symbols whose sections were passed through unchanged; always 0 when `symbols_to_regen` is `None`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/single_file:sync_single_file fingerprint=b6838cda8ef606a9052b242405e2811bb0358ca0f6944258fe7556fd001c763e body_fp=d73bf5ee93b38a05d02be569de4057e5820718e9d2ee2398ccf688d06e7dfbd8 source_ref=d6da1d131c5c5e11b320faa2c7147616cfbd1f01 -->
+<!-- trie:section symbol=trie/sync/single_file:sync_single_file fingerprint=cb552dd45724d07a7a457aeb0b5bfcf304002f1acb45a55d76bd98b9f488d62f body_fp=203ac363337b2fbbcc12d7035ecbd08eece56d9a939ce747ac824cacf77d13f8 source_ref=a30269d37f5e1cf5ab115c021914f0ca703881fd -->
 ## `sync_single_file(source_path, *, project_root, config, client, dest_triefact_path=None, store=None, symbols_to_regen=None) -> FileSyncResult`
 
 Generate or refresh the triefact file for a single Python source file, upserting sections for all parser-surfaced symbols and removing stale ones.
@@ -45,6 +48,7 @@ Generate or refresh the triefact file for a single Python source file, upserting
 - `dest_triefact_path`: write output here instead of the canonical path; canonical file is still read for existing prose.
 - `store`: when provided, enriches front matter with ref counts and records one-liner metadata; omit to skip graph queries.
 - Raises `ValueError` if `source_path` is not under `config.triefacts.source_root`.
+- Per-symbol LLM calls run in parallel via a `ThreadPoolExecutor` bounded by `config.sync.concurrency`; triefact and store mutations remain on the calling thread.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/sync/single_file:_file_fingerprint fingerprint=46c7c51a18ded3953f42cbf0478b0794532566079fd73b079dc9950d2c108e07 body_fp=3a3a26dce28d844c40dcedf8ffb17e41b1542e859c3800b44309f7e9e7760efe source_ref=d6da1d131c5c5e11b320faa2c7147616cfbd1f01 -->
@@ -82,4 +86,13 @@ Retrieve and parse previous-version `Symbol` objects for each qname that has a r
 - Returns empty dict if `existing_section_refs` is empty or all blobs are unresolvable.
 - Deduplicates git calls by grouping qnames sharing the same blob hash.
 - Silently skips qnames whose blob is unreachable, parse fails, or qname no longer exists.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/single_file:_SymbolJob fingerprint=0f7b75b7a065300e3f0be7a0e01b8244c10ca3f48b6706b7dbfea7ecaacef021 body_fp=411cee5f28da64fe84f1a50ff955f2cc491ae480049fbb36924b161010ffa562 source_ref=a30269d37f5e1cf5ab115c021914f0ca703881fd -->
+## `_SymbolJob`
+
+Holds one symbol's inputs for the thread-pool generate phase.
+
+- `previous_source`: prior signature+body from git blob; `None` triggers cold-write mode.
+- `previous_prose`: existing section body; `None` triggers cold-write mode.
 <!-- trie:end -->

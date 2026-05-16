@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: tests/test_bootstrap.py
-file_fingerprint: 8e816114d9d35e4ce37ec02cc1864f7f0062947382163671f1ed9d3f77c375f8
-last_synced_at: '2026-05-15T13:01:29Z'
+file_fingerprint: 1b3cc4748e30ace4478f8a8eae2c8b18e47b0d8d1a129e149b03b7403080f397
+last_synced_at: '2026-05-16T10:51:08Z'
 defines:
 - kind: class
   qualified_name: tests/test_bootstrap:FakeClient
@@ -145,7 +145,7 @@ Assert that a tiny `budget_usd` caps generation to fewer than all files but at l
 Verify that `run_bootstrap` with no budget or limit processes every file in the plan.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_bootstrap:test_cli_plan_makes_no_message_calls fingerprint=39b5d7917ee277414b01d873170fa14aaec8e4c4974768008976c972a3fe1d90 body_fp=8572c3397f8a53cab709e707c22ee072b9c642c11dad83fff02b8acf841a733d source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_cli_plan_makes_no_message_calls fingerprint=d225090e9f287c90f59210995c95d3e449567bdc5d4ccc428a9130c0960f7330 body_fp=8572c3397f8a53cab709e707c22ee072b9c642c11dad83fff02b8acf841a733d source_ref=c5f2a27d17af1fac1345ecf2d272264e44780d76 -->
 ## `test_cli_plan_makes_no_message_calls(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that `trie plan` calls `count_tokens` but never calls `generate` on the injected client.
@@ -160,19 +160,19 @@ Assert that `trie plan` calls `count_tokens` but never calls `generate` on the i
 Assert that `trie plan` exits with code 1 and never constructs a client when no `trie.toml` is found.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_bootstrap:test_cli_first_run_sync_requires_budget_or_limit_non_interactive fingerprint=55d19f815b2c63af3d7a743a8024aada97846247c97defa75e04a6e31125da04 body_fp=83e08da9ac915f519d9efb396dae8dfecde560b7aa62146db6abb1e975fac75f source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_cli_first_run_sync_requires_budget_or_limit_non_interactive fingerprint=c176cbf44d1f8ffa33d4a17b559ffeffe7015a4b129cc030212027dd9c181d30 body_fp=83e08da9ac915f519d9efb396dae8dfecde560b7aa62146db6abb1e975fac75f source_ref=c5f2a27d17af1fac1345ecf2d272264e44780d76 -->
 ## `test_cli_first_run_sync_requires_budget_or_limit_non_interactive(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that `trie sync` on a fresh project exits with code 1 when no `--budget` or `--limit` flag is provided.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_bootstrap:test_cli_first_run_sync_with_limit_succeeds fingerprint=a8a5f1553238f649f03c990e6347874ce8d2884edee4ee0e8ae220e9f05b62b3 body_fp=536339d88ffbbe09c350a1a4174629982acac38b3b2ec383a4ec554662b81610 source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_cli_first_run_sync_with_limit_succeeds fingerprint=9f99e521eba3b2b27410a062f94a8584e852b31e35a7a608b0e12db4102d0fba body_fp=536339d88ffbbe09c350a1a4174629982acac38b3b2ec383a4ec554662b81610 source_ref=c5f2a27d17af1fac1345ecf2d272264e44780d76 -->
 ## `test_cli_first_run_sync_with_limit_succeeds(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that `trie sync --limit 1` succeeds on a fresh project with no existing triefacts.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_bootstrap:test_cli_sync_all_forces_full_pass fingerprint=625e0c9ead995e825c124add9b676a2eea7489832d1538f84841acd170ef28b2 body_fp=29d1e4520c1a4be1ac857fec1fb4c04acf5d15a3c97dd03b7a5027a46d2c9258 source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_cli_sync_all_forces_full_pass fingerprint=d56ba3ef3b5d05f041df15ead42c9f087f79e118cdb43561fc1affec3453fe14 body_fp=29d1e4520c1a4be1ac857fec1fb4c04acf5d15a3c97dd03b7a5027a46d2c9258 source_ref=c5f2a27d17af1fac1345ecf2d272264e44780d76 -->
 ## `test_cli_sync_all_forces_full_pass(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that `trie sync --all` runs the bootstrap path even when triefacts already exist.

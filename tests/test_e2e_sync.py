@@ -224,7 +224,10 @@ def test_cli_sync_auto_bootstraps_first_run(project: Path, monkeypatch):
     --limit to satisfy the non-interactive cap requirement."""
     monkeypatch.chdir(project)
 
-    monkeypatch.setattr("trie.cli.make_client", lambda model_id: FakeClient(model_id=model_id))
+    monkeypatch.setattr(
+        "trie.cli.make_client",
+        lambda model_id, **_kw: FakeClient(model_id=model_id),
+    )
 
     runner = CliRunner()
     result = runner.invoke(app, ["sync", "--limit", "10"])

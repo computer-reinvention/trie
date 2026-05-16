@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/diff_cmd.py
 file_fingerprint: 4000181a96da75377e49dd956d62958fee83874a5a2404378edb21fb0e9d64cc
-last_synced_at: '2026-05-15T13:05:01Z'
+last_synced_at: '2026-05-16T10:52:24Z'
 defines:
 - kind: class
   qualified_name: trie/diff_cmd:FileDiff
@@ -16,7 +16,7 @@ defines:
 incoming_refs: 6
 outgoing_refs: 5
 ---
-<!-- trie:section symbol=trie/diff_cmd:FileDiff fingerprint=bbaa5525d99c5a921555181054314026e079df655184757146e111be5a021380 body_fp=79735eb295844c7a754b9c9b82fdd2e869b6a646865d6a616d67803c9fddb876 source_ref=b27d7657d1e987fdf66bd52ab7c7b86d576cae2b -->
+<!-- trie:section symbol=trie/diff_cmd:FileDiff fingerprint=bbaa5525d99c5a921555181054314026e079df655184757146e111be5a021380 body_fp=79735eb295844c7a754b9c9b82fdd2e869b6a646865d6a616d67803c9fddb876 source_ref=6f05daac303d962947af10d1a505706948b32064 -->
 ## `FileDiff(source_path, canonical_triefact_path, preview_triefact_path, unified_diff, sync_result)`
 
 Immutable record pairing a stale source file with its preview triefact path, unified diff text, and sync result.

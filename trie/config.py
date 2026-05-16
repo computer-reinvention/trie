@@ -42,6 +42,30 @@ class Cascade:
 
 
 @dataclass
+class Sync:
+    """Per-file sync execution knobs.
+
+    `concurrency` controls how many per-symbol LLM calls run in parallel inside a
+    single file's sync. The bottleneck is network I/O so threads are sufficient;
+    no asyncio involvement on the call path. Default of 4 is conservative — it
+    keeps headroom under Anthropic tier-1 RPM/ITPM ceilings while still giving
+    a meaningful speedup over serial. Bump for larger tiers; set to 1 to disable
+    parallelism (useful for deterministic eval runs or debugging).
+
+    The retry knobs apply to the underlying model client. `retry_after` headers
+    from 429 responses are honoured exactly; for 429s without a header and for
+    529s (overloaded), the client backs off `retry_base_delay_seconds * 2**attempt`
+    plus jitter, capped at `retry_cap_seconds`, up to `max_retries` attempts before
+    propagating the error.
+    """
+
+    concurrency: int = 4
+    max_retries: int = 5
+    retry_base_delay_seconds: float = 1.0
+    retry_cap_seconds: float = 60.0
+
+
+@dataclass
 class Debug:
     """Telemetry knobs. Off by default; flipped on for validation runs and dev work.
 
@@ -97,6 +121,7 @@ class Config:
     triefacts: Triefacts = field(default_factory=Triefacts)
     models: Models = field(default_factory=Models)
     cascade: Cascade = field(default_factory=Cascade)
+    sync: Sync = field(default_factory=Sync)
     mcp: Mcp = field(default_factory=Mcp)
     debug: Debug = field(default_factory=Debug)
 
@@ -108,6 +133,7 @@ class Config:
             triefacts=Triefacts(**data.get("triefacts", {})),
             models=Models(**data.get("models", {})),
             cascade=Cascade(**data.get("cascade", {})),
+            sync=Sync(**data.get("sync", {})),
             mcp=Mcp(**data.get("mcp", {})),
             debug=Debug(**data.get("debug", {})),
         )
@@ -177,6 +203,20 @@ default_depth = 1
 # Symbols with more inbound references than this are treated as depth-0 only,
 # preventing utility hubs (utils.py, common types) from invalidating the world.
 hub_symbol_threshold = 20
+
+[sync]
+# Parallel per-symbol LLM calls inside a single file's sync. The bottleneck is
+# network I/O so threads are sufficient. 4 is conservative under Anthropic tier-1
+# RPM/ITPM ceilings; raise for larger tiers, set to 1 to force serial execution.
+concurrency = 4
+# Retry-on-rate-limit settings for the underlying model client. `retry-after`
+# headers from 429s are honoured exactly. For 429s without a header and for
+# 529 (overloaded) responses, the client uses exponential backoff with jitter
+# (base * 2**attempt + jitter, capped at retry_cap_seconds) for up to
+# max_retries attempts before propagating the error.
+max_retries = 5
+retry_base_delay_seconds = 1.0
+retry_cap_seconds = 60.0
 
 [mcp]
 # Server-side knobs for the agent surface (`locate` / `explain` / `walk`). These are

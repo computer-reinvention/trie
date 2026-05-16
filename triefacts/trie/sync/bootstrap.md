@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/sync/bootstrap.py
 file_fingerprint: c0f4f174435148e121708503ba60c8afc867ea101708bae16e1d220cc1fe5ade
-last_synced_at: '2026-05-15T13:07:13Z'
+last_synced_at: '2026-05-16T10:52:33Z'
 defines:
 - kind: class
   qualified_name: trie/sync/bootstrap:PlanItem
@@ -40,7 +40,7 @@ Frozen dataclass holding a ranked worklist of files and aggregate cost estimates
 - `pricing_known`: `False` when model pricing is unavailable; cost fields will be zero.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/bootstrap:BootstrapResult fingerprint=3f3fd17f4bf3bb39691a228e43cfd2570d8f5faf3fec4a81808e46a8a00268f5 body_fp=6381a8c026e5ec7efd2b56703b75695312cdceb219aa98c99368f5a693007f6a source_ref=b583bb2faaee7145d066e7c3b4ea1688f30fec3e -->
+<!-- trie:section symbol=trie/sync/bootstrap:BootstrapResult fingerprint=3f3fd17f4bf3bb39691a228e43cfd2570d8f5faf3fec4a81808e46a8a00268f5 body_fp=6381a8c026e5ec7efd2b56703b75695312cdceb219aa98c99368f5a693007f6a source_ref=6fa7f487ae550d9e0cbd13df58df2357ddc4b78a -->
 ## `BootstrapResult`
 
 Immutable record of a completed bootstrap run's outcome and cost.
@@ -58,7 +58,7 @@ Rank all files with public symbols by `LOC × public_symbol_count` and produce p
 - Files with zero public symbols or missing from disk are silently excluded
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/bootstrap:run_bootstrap fingerprint=2c937a218d06abcc2c1e95a2902e01bf7fe41c2028ce38edb61c84e611636b2f body_fp=c1553ced5e1eace0953d1a6ee67ae81352e0a15e5a981be07ed9452be58680e9 source_ref=b583bb2faaee7145d066e7c3b4ea1688f30fec3e -->
+<!-- trie:section symbol=trie/sync/bootstrap:run_bootstrap fingerprint=2c937a218d06abcc2c1e95a2902e01bf7fe41c2028ce38edb61c84e611636b2f body_fp=c1553ced5e1eace0953d1a6ee67ae81352e0a15e5a981be07ed9452be58680e9 source_ref=6fa7f487ae550d9e0cbd13df58df2357ddc4b78a -->
 ## `run_bootstrap(*, plan: BootstrapPlan, project_root: Path, config: Config, client: ModelClient, pricing: ModelPricing | None, budget_usd: float | None, limit: int | None, progress: ProgressCallback | None = None, store: Store | None = None) -> BootstrapResult`
 
 Execute the ranked worklist, generating triefacts for each file until budget or limit is exhausted.

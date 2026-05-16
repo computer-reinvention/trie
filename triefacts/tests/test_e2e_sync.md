@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: tests/test_e2e_sync.py
-file_fingerprint: e8fff2def8fe5d80fb0fce773f0272f9d77f0bd10163b4269f4e303ae65900c5
-last_synced_at: '2026-05-15T13:01:49Z'
+file_fingerprint: 90d68079a850ec282b726421f3ffe31992e90309f93ad90186c79440d3016e87
+last_synced_at: '2026-05-16T10:51:12Z'
 description: End-to-end test for `trie sync --file` against the tiny fixture repo.
 defines:
 - kind: class
@@ -37,28 +37,28 @@ defines:
   lines: 205-219
 - kind: function
   qualified_name: tests/test_e2e_sync:test_cli_sync_auto_bootstraps_first_run
-  lines: 222-232
+  lines: 222-235
 - kind: function
   qualified_name: tests/test_e2e_sync:test_cli_sync_errors_on_missing_file
-  lines: 235-239
+  lines: 238-242
 - kind: function
   qualified_name: tests/test_e2e_sync:test_cli_sync_errors_when_no_config
-  lines: 242-248
+  lines: 245-251
 - kind: function
   qualified_name: tests/test_e2e_sync:_init_git
-  lines: 254-260
+  lines: 257-263
 - kind: function
   qualified_name: tests/test_e2e_sync:test_first_sync_in_git_repo_stamps_source_ref
-  lines: 263-281
+  lines: 266-284
 - kind: function
   qualified_name: tests/test_e2e_sync:test_sync_outside_git_repo_omits_source_ref
-  lines: 284-296
+  lines: 287-299
 - kind: function
   qualified_name: tests/test_e2e_sync:test_resync_with_committed_history_takes_diff_aware_path
-  lines: 299-339
+  lines: 302-342
 - kind: function
   qualified_name: tests/test_e2e_sync:test_resync_after_uncommitted_change_falls_back_to_cold
-  lines: 342-372
+  lines: 345-375
 incoming_refs: 0
 outgoing_refs: 26
 ---
@@ -129,7 +129,7 @@ Verify that the first LLM call accumulates cache-creation tokens and all subsequ
 - `cache_read_input_tokens`: expected 500 (5 remaining calls × 100).
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_e2e_sync:test_cli_sync_auto_bootstraps_first_run fingerprint=673cf069292418a390de6294d6cdf03dd74c745121894c272b2a5abed7230bbf body_fp=5ff57e66c778a6a78d30b673e101b395748e87326d5b010dd4bc3b82adcccffa source_ref=71542c3c3e0ef178aa3ed0414dd5c02ff50b0c94 -->
+<!-- trie:section symbol=tests/test_e2e_sync:test_cli_sync_auto_bootstraps_first_run fingerprint=2bcfc5f6118090e540d8bf670a676551d99e301c4e54623b6d9463d576f6ad4a body_fp=5ff57e66c778a6a78d30b673e101b395748e87326d5b010dd4bc3b82adcccffa source_ref=639d88fa0c90df5f1040715075c2c2de1239593e -->
 ## `test_cli_sync_auto_bootstraps_first_run(project: Path, monkeypatch)`
 
 Verify that `trie sync --limit 10` exits successfully and prints "synced" on a fresh project with no prior triefacts.

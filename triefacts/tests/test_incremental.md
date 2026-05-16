@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: tests/test_incremental.py
-file_fingerprint: ef5b6fc086e0ace26a386b6560803d21d876401c23cd23f8ea530347a8733e57
-last_synced_at: '2026-05-15T13:01:56Z'
+file_fingerprint: 098e6fa218a25f5c7930126568228d2885d8b4b4a382f2ddbb28690da9182b91
+last_synced_at: '2026-05-16T10:51:16Z'
 defines:
 - kind: class
   qualified_name: tests/test_incremental:FakeClient
@@ -36,40 +36,40 @@ defines:
   lines: 155-178
 - kind: function
   qualified_name: tests/test_incremental:test_incremental_clean_via_cli
-  lines: 181-188
+  lines: 181-191
 - kind: function
   qualified_name: tests/test_incremental:test_incremental_with_no_changes_yields_empty
-  lines: 191-205
+  lines: 194-208
 - kind: function
   qualified_name: tests/test_incremental:test_incremental_handles_missing_triefact
-  lines: 208-223
+  lines: 211-226
 - kind: function
   qualified_name: tests/test_incremental:test_triefact_regenerated_only_for_affected_symbols_v01_limitation
-  lines: 226-252
+  lines: 229-255
 - kind: function
   qualified_name: tests/test_incremental:test_run_incremental_invokes_progress_callback
-  lines: 255-297
+  lines: 258-300
 - kind: function
   qualified_name: tests/test_incremental:test_compute_incremental_worklist_empty_when_clean
-  lines: 300-309
+  lines: 303-312
 - kind: function
   qualified_name: tests/test_incremental:test_compute_incremental_worklist_includes_cascade
-  lines: 312-323
+  lines: 315-326
 - kind: function
   qualified_name: tests/test_incremental:test_compute_incremental_worklist_is_read_only
-  lines: 326-338
+  lines: 329-341
 - kind: function
   qualified_name: tests/test_incremental:test_compute_incremental_worklist_reports_orphans
-  lines: 341-353
+  lines: 344-356
 - kind: function
   qualified_name: tests/test_incremental:test_cli_plan_incremental_on_clean_tree_reports_noop
-  lines: 356-369
+  lines: 359-372
 - kind: function
   qualified_name: tests/test_incremental:test_cli_plan_incremental_on_drift_lists_only_affected
-  lines: 372-385
+  lines: 375-388
 - kind: function
   qualified_name: tests/test_incremental:test_cli_plan_all_forces_full_bootstrap_view
-  lines: 388-398
+  lines: 391-401
 incoming_refs: 0
 outgoing_refs: 51
 ---
@@ -128,13 +128,13 @@ Assert that `run_incremental` skips files once the USD budget is exhausted.
 - `budget_usd=0.0001`: tiny budget forces at least one file to be skipped.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_incremental:test_incremental_dispatched_via_cli fingerprint=76f88c12f569dd525ddcf02390e59164963d312a9c3a52ae5f0e880b916c8103 body_fp=ae9f6c3639cc8b51793945990592b203f3e05f29ed797180c2213f64241b452c source_ref=634fbeecb09b136114605fc4deac4b2a8647db8c -->
+<!-- trie:section symbol=tests/test_incremental:test_incremental_dispatched_via_cli fingerprint=a96b26f7d8714ef746368622e24dab2851385c5903972a766811da99fa3a7c81 body_fp=ae9f6c3639cc8b51793945990592b203f3e05f29ed797180c2213f64241b452c source_ref=cccb1012c6337a0910e535398f2041ab87ed321a -->
 ## `test_incremental_dispatched_via_cli(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Verify that `trie sync` CLI routes through `run_incremental` and regenerates both `lib.py` and `app.py` triefacts.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_incremental:test_incremental_clean_via_cli fingerprint=ec121dfcf3dfa2e20573a1207e05298b58a48f6463f2a003536e3e55f5262ac7 body_fp=6d516d3aa2ad54ba82718e89ba326aa00866f36da49298c2d07af5d537bb1cb6 source_ref=634fbeecb09b136114605fc4deac4b2a8647db8c -->
+<!-- trie:section symbol=tests/test_incremental:test_incremental_clean_via_cli fingerprint=fbb297b35f04c76646bb85116f3ffa5e8b6df65ea0c56e661f2e11504ccc4c9b body_fp=6d516d3aa2ad54ba82718e89ba326aa00866f36da49298c2d07af5d537bb1cb6 source_ref=cccb1012c6337a0910e535398f2041ab87ed321a -->
 ## `test_incremental_clean_via_cli(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that `trie sync` on an already-coherent tree exits 0 and reports "coherent".
@@ -191,19 +191,19 @@ Assert that `compute_incremental_worklist` does not modify any triefact files on
 Assert that deleting a source file surfaces its triefact as an orphan in the worklist without deleting the file from disk.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_incremental:test_cli_plan_incremental_on_clean_tree_reports_noop fingerprint=c5f369e80b62fb9b6394580e4fd6528bf01fd7fde46152fc5cff2b4e9addb870 body_fp=5cd48f07676178912191edef25da4e41d8d9538b1c8c2e29cb9cfd7a74f0d99f source_ref=634fbeecb09b136114605fc4deac4b2a8647db8c -->
+<!-- trie:section symbol=tests/test_incremental:test_cli_plan_incremental_on_clean_tree_reports_noop fingerprint=0ed0b5ad398f177bd0e3b1f0cddbaa78e2ada916bb9a7cf860b3421ee8467d4b body_fp=5cd48f07676178912191edef25da4e41d8d9538b1c8c2e29cb9cfd7a74f0d99f source_ref=cccb1012c6337a0910e535398f2041ab87ed321a -->
 ## `test_cli_plan_incremental_on_clean_tree_reports_noop(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that `trie plan` on a coherent, fully-synced project reports a no-op without showing full-bootstrap cost output.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_incremental:test_cli_plan_incremental_on_drift_lists_only_affected fingerprint=94665fe3e49bf70c830e7f50939f03dc26b64afeec6ae732c2548a49c5968a9b body_fp=3938783b982288f42a97e40783bf720ad2968bbe8c0c1a301f16edcc7ce7f3cb source_ref=634fbeecb09b136114605fc4deac4b2a8647db8c -->
+<!-- trie:section symbol=tests/test_incremental:test_cli_plan_incremental_on_drift_lists_only_affected fingerprint=89ce01ff9a98093056c0f96d66c2dec5f9b6405b7d9b5881d14987ce61799c1b body_fp=3938783b982288f42a97e40783bf720ad2968bbe8c0c1a301f16edcc7ce7f3cb source_ref=cccb1012c6337a0910e535398f2041ab87ed321a -->
 ## `test_cli_plan_incremental_on_drift_lists_only_affected(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that `trie plan` on an established project with drift shows incremental cost, not full-bootstrap cost.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_incremental:test_cli_plan_all_forces_full_bootstrap_view fingerprint=fd9b83493d1cf2bb3617946a5a9511d4a89d3fef2f3edcb6c60253ce01b034ed body_fp=ebb3a57122fe73aa4e1d7b96a29fe59f22cbb410764b24c110575a47d796364d source_ref=634fbeecb09b136114605fc4deac4b2a8647db8c -->
+<!-- trie:section symbol=tests/test_incremental:test_cli_plan_all_forces_full_bootstrap_view fingerprint=9a51a732f41159a3ecac00479af6014c0f5002971c2177545164581720fab29c body_fp=ebb3a57122fe73aa4e1d7b96a29fe59f22cbb410764b24c110575a47d796364d source_ref=cccb1012c6337a0910e535398f2041ab87ed321a -->
 ## `test_cli_plan_all_forces_full_bootstrap_view(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that `trie plan --all` displays the full-bootstrap cost view, not the incremental plan.

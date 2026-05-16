@@ -160,7 +160,7 @@ def test_incremental_dispatched_via_cli(project: Path, monkeypatch: pytest.Monke
 
     captured: dict = {}
 
-    def fake_make_client(model_id: str):
+    def fake_make_client(model_id: str, **_kwargs):
         captured["model_id"] = model_id
         return FakeClient(body="## via_cli\n\nbody.", model_id=model_id)
 
@@ -181,7 +181,10 @@ def test_incremental_dispatched_via_cli(project: Path, monkeypatch: pytest.Monke
 def test_incremental_clean_via_cli(project: Path, monkeypatch: pytest.MonkeyPatch):
     _initial_sync(project)
     monkeypatch.chdir(project)
-    monkeypatch.setattr("trie.cli.make_client", lambda model_id: FakeClient(model_id=model_id))
+    monkeypatch.setattr(
+        "trie.cli.make_client",
+        lambda model_id, **_kw: FakeClient(model_id=model_id),
+    )
     runner = CliRunner()
     cli_result = runner.invoke(app, ["sync"])
     assert cli_result.exit_code == 0
@@ -360,7 +363,7 @@ def test_cli_plan_incremental_on_clean_tree_reports_noop(
     bogus full-bootstrap cost."""
     _initial_sync(project)
     monkeypatch.chdir(project)
-    monkeypatch.setattr("trie.cli.make_client", lambda _model_id: FakeClient())
+    monkeypatch.setattr("trie.cli.make_client", lambda _model_id, **_kw: FakeClient())
     runner = CliRunner()
     result = runner.invoke(app, ["plan"])
     assert result.exit_code == 0, result.output
@@ -377,7 +380,7 @@ def test_cli_plan_incremental_on_drift_lists_only_affected(
     _initial_sync(project)
     (project / "lib.py").write_text("def helper():\n    return 999\n")
     monkeypatch.chdir(project)
-    monkeypatch.setattr("trie.cli.make_client", lambda _model_id: FakeClient())
+    monkeypatch.setattr("trie.cli.make_client", lambda _model_id, **_kw: FakeClient())
     runner = CliRunner()
     result = runner.invoke(app, ["plan"])
     assert result.exit_code == 0, result.output
@@ -390,7 +393,7 @@ def test_cli_plan_all_forces_full_bootstrap_view(project: Path, monkeypatch: pyt
     project — useful for 'what would re-bootstrapping cost?'"""
     _initial_sync(project)
     monkeypatch.chdir(project)
-    monkeypatch.setattr("trie.cli.make_client", lambda _model_id: FakeClient())
+    monkeypatch.setattr("trie.cli.make_client", lambda _model_id, **_kw: FakeClient())
     runner = CliRunner()
     result = runner.invoke(app, ["plan", "--all"])
     assert result.exit_code == 0, result.output

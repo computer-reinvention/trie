@@ -219,7 +219,7 @@ def test_cli_plan_makes_no_message_calls(project: Path, monkeypatch: pytest.Monk
     """`trie plan` may call count_tokens (free) but must never call generate."""
     monkeypatch.chdir(project)
     fake = FakeClient()
-    monkeypatch.setattr("trie.cli.make_client", lambda _model_id: fake)
+    monkeypatch.setattr("trie.cli.make_client", lambda _model_id, **_kw: fake)
     runner = CliRunner()
     result = runner.invoke(app, ["plan"])
     assert result.exit_code == 0, result.output
@@ -249,7 +249,7 @@ def test_cli_first_run_sync_requires_budget_or_limit_non_interactive(
     """In a fresh project (no triefacts yet), `trie sync` without --budget/--limit must
     refuse non-interactive runs to avoid surprise bills."""
     monkeypatch.chdir(project)
-    monkeypatch.setattr("trie.cli.make_client", lambda _model_id: FakeClient())
+    monkeypatch.setattr("trie.cli.make_client", lambda _model_id, **_kw: FakeClient())
     runner = CliRunner()
     result = runner.invoke(app, ["sync"])
     assert result.exit_code == 1
@@ -259,7 +259,7 @@ def test_cli_first_run_sync_requires_budget_or_limit_non_interactive(
 def test_cli_first_run_sync_with_limit_succeeds(project: Path, monkeypatch: pytest.MonkeyPatch):
     """Auto-detected first-run bootstrap proceeds when a cap is set."""
     monkeypatch.chdir(project)
-    monkeypatch.setattr("trie.cli.make_client", lambda _model_id: FakeClient())
+    monkeypatch.setattr("trie.cli.make_client", lambda _model_id, **_kw: FakeClient())
     runner = CliRunner()
     result = runner.invoke(app, ["sync", "--limit", "1"])
     assert result.exit_code == 0, result.output
@@ -273,7 +273,7 @@ def test_cli_sync_all_forces_full_pass(project: Path, monkeypatch: pytest.Monkey
     triefacts.mkdir()
     (triefacts / "small.md").write_text("# placeholder\n")
     monkeypatch.chdir(project)
-    monkeypatch.setattr("trie.cli.make_client", lambda _model_id: FakeClient())
+    monkeypatch.setattr("trie.cli.make_client", lambda _model_id, **_kw: FakeClient())
     runner = CliRunner()
     result = runner.invoke(app, ["sync", "--all", "--limit", "1"])
     assert result.exit_code == 0, result.output

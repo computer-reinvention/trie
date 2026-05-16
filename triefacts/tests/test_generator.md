@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_generator.py
 file_fingerprint: dbef242b0f1cc34b984a3dbda4ad2f44f44ee8dbaf7414679e5fbad7f1319677
-last_synced_at: '2026-05-15T13:09:19Z'
+last_synced_at: '2026-05-16T10:52:08Z'
 defines:
 - kind: class
   qualified_name: tests/test_generator:FakeClient

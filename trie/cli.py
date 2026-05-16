@@ -307,7 +307,7 @@ def plan_cmd(
         raise typer.Exit(code=1) from exc
 
     model_id = model or config.models.bootstrap
-    client = make_client(model_id)
+    client = make_client(model_id, sync_cfg=config.sync)
     db_path = project_root / ".trie" / "graph.db"
     triefacts_root = project_root / config.triefacts.root
     use_incremental = not all_ and _has_existing_triefacts(triefacts_root)
@@ -649,7 +649,7 @@ def _run_full_pass(
     cap is set, then runs bootstrap with streaming per-file progress."""
     model_id = model or config.models.bootstrap
     pricing = get_pricing(model_id)
-    client = make_client(model_id)
+    client = make_client(model_id, sync_cfg=config.sync)
     db_path = project_root / ".trie" / "graph.db"
 
     with Store(db_path) as store:
@@ -716,7 +716,7 @@ def _run_dry_run_diff(
 
     model_id = model or config.models.bootstrap
     pricing = get_pricing(model_id)
-    client = make_client(model_id)
+    client = make_client(model_id, sync_cfg=config.sync)
     db_path = project_root / ".trie" / "graph.db"
 
     with Store(db_path) as store, _progress_callback(reporter, label="diffing") as cb:
@@ -763,7 +763,7 @@ def _run_single_file_sync(reporter: Reporter, file: Path, model: str | None) -> 
         raise typer.Exit(code=1) from exc
 
     model_id = model or config.models.bootstrap
-    client = make_client(model_id)
+    client = make_client(model_id, sync_cfg=config.sync)
     db_path = project_root / ".trie" / "graph.db"
 
     with Store(db_path) as store, reporter.status(f"generating triefact for [cyan]{file}[/cyan]…"):
@@ -793,7 +793,7 @@ def _run_incremental_sync(
 
     model_id = model or config.models.cascade
     pricing = get_pricing(model_id)
-    client = make_client(model_id)
+    client = make_client(model_id, sync_cfg=config.sync)
 
     db_path = project_root / ".trie" / "graph.db"
     with Store(db_path) as store, _progress_callback(reporter, label="syncing") as cb:

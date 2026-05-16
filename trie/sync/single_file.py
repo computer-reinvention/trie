@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
@@ -16,7 +17,7 @@ from trie.parse.python import (
     extract_symbols,
     strip_string_literal,
 )
-from trie.sync.generator import FileGenerationContext, generate_section
+from trie.sync.generator import FileGenerationContext, GeneratedSection, generate_section
 from trie.sync.writer import Section, TriefactFile, extract_one_liner
 
 
@@ -33,6 +34,20 @@ class FileSyncResult:
     symbols_skipped: int = 0
     """Symbols whose existing sections were left untouched because they were not in
     `symbols_to_regen`. Always 0 when `symbols_to_regen` is None (full-file regen)."""
+
+
+@dataclass(frozen=True)
+class _SymbolJob:
+    """One per-symbol unit of work scheduled into the generate-phase thread pool.
+
+    Pure data: the symbol to document plus the optional previous-source / previous-prose
+    pair that selects diff-aware vs cold-write mode in `generate_section`. Constructed in
+    the plan phase from already-resolved inputs so the pool worker only does the LLM call.
+    """
+
+    symbol: Symbol
+    previous_source: str | None
+    previous_prose: str | None
 
 
 def _file_fingerprint(text: str) -> str:
@@ -168,6 +183,11 @@ def sync_single_file(
     counts. When omitted, the agent-navigation metadata still lands (defines list,
     description, timestamps), only the ref counts are skipped — useful for callers that
     want to render a triefact without spinning up the SQLite store.
+
+    Per-symbol generation runs through a thread pool bounded by `config.sync.concurrency`
+    (default 4). The plan/generate/apply split means the triefact and store are only
+    mutated on the calling thread; only `generate_section` (a network round-trip) runs
+    in parallel. Setting concurrency to 1 yields fully deterministic serial execution.
     """
     source_path = source_path.resolve()
     project_root = project_root.resolve()
@@ -226,6 +246,13 @@ def sync_single_file(
         triefact_rel_path = str(canonical_triefact_path.relative_to(project_root))
         symbols_generated = 0
         symbols_skipped = 0
+
+        # Phase 1 — plan. Walk the symbol list once and partition into skips (no LLM
+        # work) and jobs (need a generate_section call). The skip path eagerly does
+        # its store-record refresh because it's a cheap, idempotent SQLite write that
+        # doesn't fight the parallel phase. Each job carries everything the generator
+        # needs so phase 2 is a pure function over the job list.
+        jobs: list[_SymbolJob] = []
         for sym in target_symbols:
             qn = sym.qualified_name
             # Symbol-level regen gate: when `symbols_to_regen` is supplied, anything
@@ -235,10 +262,6 @@ def sync_single_file(
             # still update because the *file* was looked at.
             if symbols_to_regen is not None and qn not in symbols_to_regen:
                 symbols_skipped += 1
-                # Still refresh the store's section metadata if there's an existing
-                # section — its body and fingerprint haven't changed, but a previous
-                # store row may be stale (e.g. a section that existed before the
-                # store record was first populated). Cheap and idempotent.
                 if store is not None:
                     existing_section = existing_sections.get(qn)
                     if existing_section is not None:
@@ -260,14 +283,47 @@ def sync_single_file(
                 f"{prev_sym.signature}:\n{prev_sym.body_text}" if prev_sym is not None else None
             )
             prev_prose = prev_section.body if prev_section is not None else None
-
-            gen = generate_section(
-                symbol=sym,
-                file_ctx=file_ctx,
-                client=client,
-                previous_source=prev_source,
-                previous_prose=prev_prose,
+            jobs.append(
+                _SymbolJob(symbol=sym, previous_source=prev_source, previous_prose=prev_prose)
             )
+
+        # Phase 2 — generate. The per-symbol LLM call is pure network I/O; threads
+        # are sufficient. Each call shares the same `file_ctx` so Anthropic's prompt
+        # cache (keyed on the cached_context block) hits on every symbol after the
+        # first. Order of completion is irrelevant — `TriefactFile.upsert_section`
+        # is keyed by qname, not position, so phase 3 produces identical output
+        # regardless of which future resolved first.
+        #
+        # `concurrency=1` collapses to serial execution (a 1-thread pool is still a
+        # pool but adds no parallelism), useful for deterministic eval runs and for
+        # disabling the path entirely without a code change.
+        concurrency = max(1, config.sync.concurrency)
+        generated: list[tuple[Symbol, GeneratedSection]] = []
+        if jobs:
+            with ThreadPoolExecutor(max_workers=concurrency) as pool:
+                # Submit in source order; collect in submission order so the
+                # iteration below preserves the source-line ordering used by
+                # upsert_section's chunk placement.
+                futures = [
+                    pool.submit(
+                        generate_section,
+                        symbol=job.symbol,
+                        file_ctx=file_ctx,
+                        client=client,
+                        previous_source=job.previous_source,
+                        previous_prose=job.previous_prose,
+                    )
+                    for job in jobs
+                ]
+                for job, fut in zip(jobs, futures, strict=True):
+                    generated.append((job.symbol, fut.result()))
+
+        # Phase 3 — apply. All mutation of `triefact` and `store` happens on this
+        # thread; neither is safe to touch concurrently. We process generated
+        # sections in source order so the resulting `chunks` layout is identical to
+        # the pre-parallelisation serial path.
+        for sym, gen in generated:
+            qn = sym.qualified_name
             mode_counts[gen.mode] += 1
             triefact.upsert_section(
                 qualified_name=qn,
@@ -280,9 +336,6 @@ def sync_single_file(
             totals["out"] += gen.output_tokens
             totals["cache_create"] += gen.cache_creation_input_tokens
             totals["cache_read"] += gen.cache_read_input_tokens
-            # Record the section metadata for cheap MCP lookups (one_liner + fingerprint).
-            # The store may be omitted (e.g. tests that don't construct a graph), in which
-            # case the agent surface degrades to empty one_liners — still functional.
             if store is not None:
                 section = triefact.get_section(qn)
                 if section is not None:
