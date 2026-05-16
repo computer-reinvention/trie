@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/cli.py
-file_fingerprint: 68d5811e5e0c199697562d04fffd8edd93d3643aff3320360a52249c2aa51c11
-last_synced_at: '2026-05-16T10:51:43Z'
+file_fingerprint: 8e0804db4439918d7b5568d66bbfbd9eb3585a03c859335962c21932efd9d3ca
+last_synced_at: '2026-05-16T11:03:42Z'
 defines:
 - kind: function
   qualified_name: trie/cli:_get_reporter
@@ -92,20 +92,17 @@ defines:
   qualified_name: trie/cli:_run_incremental_sync
   lines: 785-834
 - kind: function
-  qualified_name: trie/cli:_mcp_root
-  lines: 847-853
-- kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 857-860
+  lines: 846-848
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 863-873
+  lines: 851-861
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 877-946
+  lines: 865-934
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 949-964
+  lines: 937-952
 incoming_refs: 0
 outgoing_refs: 54
 ---
@@ -153,7 +150,7 @@ Generate or refresh triefacts, auto-detecting full bootstrap vs. incremental cas
 - `model`: overrides the configured model slug.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:mcp_serve fingerprint=f6e87043d32e3a9bfe993957da9934d895d20a0eb666bd42b4cde01b9eab51bd body_fp=c93e3469bbad48c77068e625d2c914a89a1e108a8747e920d1f2d45194952fda source_ref=f9896112d3c74faa4a548ca30df39e8106603df3 -->
+<!-- trie:section symbol=trie/cli:mcp_serve fingerprint=cd3c1e0935ce39624688d3d14d5849759c65f9d7765068ccd8ef4ca118b44211 body_fp=c93e3469bbad48c77068e625d2c914a89a1e108a8747e920d1f2d45194952fda source_ref=e48506a40b0b3397d184473a43843345d0706887 -->
 ## `mcp_serve() -> None`
 
 Launch the stdio MCP server; hidden from help output and invoked directly by agent-installed snippets.
@@ -357,11 +354,7 @@ Load config, build a client, and run incremental cascade sync, reporting orphan 
 - `limit`: maximum number of files to sync.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_mcp_root fingerprint=0d2be7c1cf311937fb8eee2f77ea130c45b0cf766836314f5e4c52c31152ec47 body_fp=f840b81b1a756cd15d5fc77c8e8bf463cbfe355fda71d17715922f66a84cefd0 source_ref=7190421a8bd3d24b87655e9ae289b7d639fa3f21 -->
-## `_mcp_root(ctx: typer.Context) -> None`
 
-Fall through to `_run_mcp_serve()` when the `mcp` subcommand is invoked with no subcommand, preserving back-compatibility with `trie mcp` from v0.1.
-<!-- trie:end -->
 
 <!-- trie:section symbol=trie/cli:_run_mcp_serve fingerprint=ae7533faa0329509290b89496e7a1965bcac67339cfb61c9d2092872d3505fb6 body_fp=07eb42ce1a286e495b0cd202a9503cbd0cba66cff4cd5451e81254a12ac619a2 source_ref=7190421a8bd3d24b87655e9ae289b7d639fa3f21 -->
 ## `_run_mcp_serve() -> None`
