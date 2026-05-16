@@ -132,8 +132,8 @@ The hub-symbol cap matters: a `utils.py` referenced everywhere can't invalidate 
 
 ```bash
 # 1. Install (pick one)
-uv tool install git+https://github.com/pankajgarkoti/trie    # persistent, on $PATH
-uvx --from git+https://github.com/pankajgarkoti/trie trie    # ephemeral, run-anywhere
+uv tool install git+ssh://git@github.com/pankajgarkoti/trie    # persistent, on $PATH
+uvx --from git+ssh://git@github.com/pankajgarkoti/trie trie    # ephemeral, run-anywhere
 
 # 2. Initialise your project
 cd /path/to/your/project

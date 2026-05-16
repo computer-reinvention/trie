@@ -18,6 +18,6 @@ echo "→ pushing"
 git push origin main
 
 echo "→ reinstalling uv tool trie"
-uv tool install --reinstall git+https://github.com/pankajgarkoti/trie
+uv tool install --reinstall git+ssh://git@github.com/pankajgarkoti/trie
 
 echo "✓ done"
