@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_check.py
 file_fingerprint: 82262f96501d7dda4e1e1766404de80fe839675416364ceef6f6fd1273d58ca0
-last_synced_at: '2026-05-15T13:01:38Z'
+last_synced_at: '2026-05-16T10:52:03Z'
 defines:
 - kind: class
   qualified_name: tests/test_check:FakeClient
@@ -64,7 +64,7 @@ defines:
 incoming_refs: 0
 outgoing_refs: 32
 ---
-<!-- trie:section symbol=tests/test_check:FakeClient fingerprint=e41cdf8484085fe52836a78fa046003a64b4ee976928802814aeb5dfbe564b63 body_fp=12bc935f908c1e630237fe9e607b3f2869cfd6efa2c01f334f947b7b3d2be1f1 source_ref=fc96c03d022e7a77097fa682a3129c583b33858c -->
+<!-- trie:section symbol=tests/test_check:FakeClient fingerprint=e41cdf8484085fe52836a78fa046003a64b4ee976928802814aeb5dfbe564b63 body_fp=12bc935f908c1e630237fe9e607b3f2869cfd6efa2c01f334f947b7b3d2be1f1 source_ref=8d039b4accde06e724a1524de1f79d0a628e9c5f -->
 ## `FakeClient`
 
 Test double for an LLM client; returns a fixed `GenerationResponse` and counts `generate` calls.

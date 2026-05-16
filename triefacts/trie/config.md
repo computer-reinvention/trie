@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/config.py
-file_fingerprint: a5c738ec75736a93a83a6c0e2ff45816eb5403df4c70e8fbb88251cdc523c785
-last_synced_at: '2026-05-14T18:31:11Z'
+file_fingerprint: 6a636d7468f77e66f5ab612441d5ba46acf27d7e1baa27f65cbc8e17a04eeb4f
+last_synced_at: '2026-05-16T10:51:46Z'
 defines:
 - kind: class
   qualified_name: trie/config:TrieMeta
@@ -20,27 +20,30 @@ defines:
   qualified_name: trie/config:Cascade
   lines: 39-41
 - kind: class
+  qualified_name: trie/config:Sync
+  lines: 45-65
+- kind: class
   qualified_name: trie/config:Debug
-  lines: 45-64
+  lines: 69-88
 - kind: class
   qualified_name: trie/config:Mcp
-  lines: 68-90
+  lines: 92-114
 - kind: class
   qualified_name: trie/config:Config
-  lines: 94-135
+  lines: 118-161
 - kind: method
   qualified_name: trie/config:Config.from_dict
-  lines: 104-113
+  lines: 129-139
 - kind: method
   qualified_name: trie/config:Config.load
-  lines: 116-119
+  lines: 142-145
 - kind: method
   qualified_name: trie/config:Config.find_and_load
-  lines: 122-135
+  lines: 148-161
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
-  lines: 138-139
-incoming_refs: 88
+  lines: 164-165
+incoming_refs: 117
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/config:TrieMeta fingerprint=43460a16db027d61c4297084d70ce0d1e70048e3c983aba83ed17fbd4935301a body_fp=fc099c55e56a7cbf7ea5a31d4965af5f5003dcad2f1ee09cc25a0896fe818bc3 source_ref=435b779093e30070dbf454dc787d8b346cc4ebc9 -->
@@ -91,17 +94,17 @@ Configure server-side behavioural knobs for the MCP agent tools: `locate`, `expl
 - `walk_prose_at_depth`: `0` disables prose on walk nodes
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/config:Config fingerprint=4e975acd9b360d1711641a075f5065301e2d739231ad404c67fc60059164632e body_fp=b70d4f8aa11ac7103c24e45e8d0fcb30aa6177225a95b498d890046c4ebdd723 source_ref=435b779093e30070dbf454dc787d8b346cc4ebc9 -->
+<!-- trie:section symbol=trie/config:Config fingerprint=a550e09883e6c18df41905160eff158c7967ad28acfc1bbf54776be19224fac3 body_fp=d19d934b11a1133b82aa5d159576682fd2e297204fa1e979200d0683d985bf63 source_ref=e2aa05d59799353b5474d1cf35f500bdfbc368f9 -->
 ## `Config`
 
 Aggregate configuration dataclass combining all subsection configs, with TOML loading helpers.
 
-- `from_dict(data)`: construct from a raw parsed-TOML dict
+- `from_dict(data)`: construct from a raw parsed-TOML dict; now includes `sync` field
 - `load(path)`: parse a `trie.toml` file at the given path
 - `find_and_load(start)`: walk up from `start` to find `trie.toml`; returns `(Config, config_dir)`
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/config:Config.from_dict fingerprint=6018209163d6c185b3b2b8f92d4f9b1c2c356984c53fd36e5b9e05cd5ed37366 body_fp=5950b131f7183e8ca2fe6f05a0a557304101ba150695ed94d1e65d218a2d8dfd source_ref=435b779093e30070dbf454dc787d8b346cc4ebc9 -->
+<!-- trie:section symbol=trie/config:Config.from_dict fingerprint=2a49e1d83738c09e61cd41f62971e3bc5e6c4e3affac719b5f5b3a0498c717dc body_fp=5950b131f7183e8ca2fe6f05a0a557304101ba150695ed94d1e65d218a2d8dfd source_ref=e2aa05d59799353b5474d1cf35f500bdfbc368f9 -->
 ## `Config.from_dict(cls, data: dict) -> Config`
 
 Construct a `Config` from a plain dictionary, mapping each top-level key to its corresponding dataclass section.
@@ -138,4 +141,14 @@ Configure telemetry behaviour for trie's internal event logging.
 - `log_path`: relative to project root, or absolute
 - `capture_responses`: off by default; response bodies are large
 - `redact_keys`: field paths to elide from logged events
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/config:Sync fingerprint=6e78bc409faa3564065bef1b86229e39b56fce1ec430f52e79b1e562be89d6fe body_fp=78c3e901fbf90ff552b71a69efb20c994abeaabd9bfb2b5280c96edc9dffa7bd source_ref=e2aa05d59799353b5474d1cf35f500bdfbc368f9 -->
+## `Sync`
+
+Control per-file sync parallelism and model-client retry behaviour.
+
+- `concurrency`: parallel LLM calls per file; 1 disables parallelism
+- `retry_base_delay_seconds`: exponential-backoff base for 429/529 retries
+- `retry_cap_seconds`: maximum backoff delay before propagating error
 <!-- trie:end -->

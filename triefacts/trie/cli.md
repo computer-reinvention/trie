@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/cli.py
-file_fingerprint: 42b4d64de7305e8b6a3abd2e178c1ca37dea896dc9819230590f66613ef560ae
-last_synced_at: '2026-05-15T13:04:58Z'
+file_fingerprint: 68d5811e5e0c199697562d04fffd8edd93d3643aff3320360a52249c2aa51c11
+last_synced_at: '2026-05-16T10:51:43Z'
 defines:
 - kind: function
   qualified_name: trie/cli:_get_reporter
@@ -121,7 +121,7 @@ Initialize a trie project: write `trie.toml`, update `.gitignore`, optionally sc
 - Exits 1 on `InitError`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:plan_cmd fingerprint=c26236341e0a2732ce5b6908eacd4e2989ab283b0664ce6042dc9271e3541b54 body_fp=d1f62ac0e7cb4f54c4664c87191ea9e2fa4549acd9888b92839636963ae78f8a source_ref=7190421a8bd3d24b87655e9ae289b7d639fa3f21 -->
+<!-- trie:section symbol=trie/cli:plan_cmd fingerprint=5541161bd7ddef524d429670145d7e92c48258fa968a28a36dc0eeee96e30093 body_fp=d1f62ac0e7cb4f54c4664c87191ea9e2fa4549acd9888b92839636963ae78f8a source_ref=01455b75f5ce687baf9f3308e56ac1b4b24427bd -->
 ## `plan_cmd(ctx: typer.Context, model: str | None, all_: bool) -> None`
 
 Scan the project, estimate token costs, and print the sync worklist without writing any triefacts.
@@ -321,7 +321,7 @@ Run an offline drift check and report results; return `True` if clean, `False` i
 Return `True` if `triefacts_root` exists and contains at least one `.md` file.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_run_full_pass fingerprint=c6533e3b2e50bdc28f9ca7d4c01807f528aee08fa13530c736ec9aa469f0a3dc body_fp=b2d11d1112a24d9d0385e8e077c108a5d429207beb909a7f5bdf346c163ff21b source_ref=7190421a8bd3d24b87655e9ae289b7d639fa3f21 -->
+<!-- trie:section symbol=trie/cli:_run_full_pass fingerprint=699927ac70525f46f13cd69b8026fe5e3da3102e36ae1ab84a1694719543c46c body_fp=b2d11d1112a24d9d0385e8e077c108a5d429207beb909a7f5bdf346c163ff21b source_ref=01455b75f5ce687baf9f3308e56ac1b4b24427bd -->
 ## `_run_full_pass(*, reporter: Reporter, project_root: Path, config: Config, model: str | None, budget: float | None, limit: int | None) -> None`
 
 Scan, plan, optionally confirm, then run a full bootstrap sync with streaming per-file progress.
@@ -331,7 +331,7 @@ Scan, plan, optionally confirm, then run a full bootstrap sync with streaming pe
 - Prompts for confirmation in interactive mode when neither `budget` nor `limit` is set; exits 1 in non-interactive mode.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_run_dry_run_diff fingerprint=508485b82253b57b7d8c744e0c9ff4ad4fda017a47c601097d8cfbc56eb6cbf6 body_fp=ac70a5ec59f69172dc697f98497c599045405973789ca078ed9484b0f1d968dd source_ref=7190421a8bd3d24b87655e9ae289b7d639fa3f21 -->
+<!-- trie:section symbol=trie/cli:_run_dry_run_diff fingerprint=ea340e6fb3ae76699d84d7c95cb3dbffd3a8307777a7fada12178a997f8133c5 body_fp=ac70a5ec59f69172dc697f98497c599045405973789ca078ed9484b0f1d968dd source_ref=01455b75f5ce687baf9f3308e56ac1b4b24427bd -->
 ## `_run_dry_run_diff(*, reporter: Reporter, model: str | None, budget: float | None, limit: int | None) -> None`
 
 Regenerate stale triefacts into `.trie/preview/` and print unified diffs against the live tree.
@@ -340,7 +340,7 @@ Regenerate stale triefacts into `.trie/preview/` and print unified diffs against
 - `limit`: caps the number of files diffed.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_run_single_file_sync fingerprint=fb029b14fca1f85b7c3fad591caf8be50ee62e17579249ac84cef76d347012fc body_fp=b09e34f407e668bb1f6b55b5c55b7f0215a7009c0fd81eb63bff9049050e421d source_ref=7190421a8bd3d24b87655e9ae289b7d639fa3f21 -->
+<!-- trie:section symbol=trie/cli:_run_single_file_sync fingerprint=19a520c5b19e8901f07865a60c1613fb5dcaef9ee1c50321c6316f4baa71608c body_fp=b09e34f407e668bb1f6b55b5c55b7f0215a7009c0fd81eb63bff9049050e421d source_ref=01455b75f5ce687baf9f3308e56ac1b4b24427bd -->
 ## `_run_single_file_sync(reporter: Reporter, file: Path, model: str | None) -> None`
 
 Sync a single source file to its triefact, writing results and token stats via the reporter.
@@ -348,7 +348,7 @@ Sync a single source file to its triefact, writing results and token stats via t
 - `model`: overrides the configured bootstrap model when provided.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_run_incremental_sync fingerprint=ed18dd696aabf0fa346c31c725444100a8182c9c8f98f43efc8c16a5ec409e11 body_fp=22d50512b1fad776cf28d60527267edfe62e0292f68d9714cdf0ca68344b3926 source_ref=7190421a8bd3d24b87655e9ae289b7d639fa3f21 -->
+<!-- trie:section symbol=trie/cli:_run_incremental_sync fingerprint=c0296f53afdae836d3646b2af7059167e69e09ce2828ef92af30e3df36f33e9a body_fp=22d50512b1fad776cf28d60527267edfe62e0292f68d9714cdf0ca68344b3926 source_ref=01455b75f5ce687baf9f3308e56ac1b4b24427bd -->
 ## `_run_incremental_sync(*, reporter: Reporter, model: str | None, budget: float | None, limit: int | None) -> None`
 
 Load config, build a client, and run incremental cascade sync, reporting orphan removals and cost.

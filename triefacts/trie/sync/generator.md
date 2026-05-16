@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/sync/generator.py
 file_fingerprint: 6c1e05b2416c4eea05493d1f21246bc67e93bc98dc90c4e5c7fc34862fa01aff
-last_synced_at: '2026-05-15T13:07:30Z'
+last_synced_at: '2026-05-16T10:52:35Z'
 defines:
 - kind: class
   qualified_name: trie/sync/generator:FileGenerationContext
@@ -25,7 +25,7 @@ defines:
 - kind: function
   qualified_name: trie/sync/generator:generate_section
   lines: 138-191
-incoming_refs: 18
+incoming_refs: 19
 outgoing_refs: 1
 ---
 <!-- trie:section symbol=trie/sync/generator:FileGenerationContext fingerprint=a1af16c6fabdf74c0ad9d8b4b7e134aaa5a35b72940340443be4ac8e2690cc4f body_fp=c74c6bc4bd488ecf35317893d0fc0f1c328bee6d2c15d8b3bf489c02d8545ffe source_ref=2c58b1aa9ada95e7978956fc2d84138ee1f9a681 -->

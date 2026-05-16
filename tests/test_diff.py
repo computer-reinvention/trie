@@ -163,7 +163,7 @@ def test_cli_sync_dry_run_routes_through_diff(project: Path, monkeypatch: pytest
     monkeypatch.chdir(project)
     monkeypatch.setattr(
         "trie.cli.make_client",
-        lambda model_id: StableClient(body="## v2\n\nv2 body.", model_id=model_id),
+        lambda model_id, **_kw: StableClient(body="## v2\n\nv2 body.", model_id=model_id),
     )
 
     runner = CliRunner()
@@ -187,7 +187,7 @@ def test_cli_sync_dry_run_no_stale(project: Path, monkeypatch: pytest.MonkeyPatc
     monkeypatch.chdir(project)
     monkeypatch.setattr(
         "trie.cli.make_client",
-        lambda model_id: StableClient(model_id=model_id),
+        lambda model_id, **_kw: StableClient(model_id=model_id),
     )
     runner = CliRunner()
     result = runner.invoke(app, ["sync", "--dry-run"])

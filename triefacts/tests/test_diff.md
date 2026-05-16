@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: tests/test_diff.py
-file_fingerprint: 3c845bf01769c96238939850337c6e86b9e68a5769aa381ce7efa60879d00785
-last_synced_at: '2026-05-15T13:08:48Z'
+file_fingerprint: 0030606a42d9df6fee6abd7a751fc012e46dcd2b557eadf1b1332bca40bd62b3
+last_synced_at: '2026-05-16T10:51:11Z'
 defines:
 - kind: class
   qualified_name: tests/test_diff:StableClient
@@ -101,13 +101,13 @@ Verify that `diff_project` honours the `limit` parameter and reports skipped fil
 Verify that `diff_project` stops processing files once a tiny USD budget is exhausted.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_diff:test_cli_sync_dry_run_routes_through_diff fingerprint=831194ab02e9603646bf0707cbf213dea38ecb0aee6c955a10996d3c9063cb87 body_fp=2a96ea1be960f3276e25edb4dea1a2afe924c89e97f30d744743d8f94f48213d source_ref=a5296757622b2c57f6957aab50d948d8174a61ce -->
+<!-- trie:section symbol=tests/test_diff:test_cli_sync_dry_run_routes_through_diff fingerprint=b6587b526abd74010f9e1b5cd19969bf6b436434bcccb822cbf776aa7970202c body_fp=2a96ea1be960f3276e25edb4dea1a2afe924c89e97f30d744743d8f94f48213d source_ref=4fd2e8c6a6dd25c9e5daadba1cde7bf310ceece9 -->
 ## `test_cli_sync_dry_run_routes_through_diff(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Verify that `trie sync --dry-run` prints unified diffs and leaves canonical triefacts unmodified.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_diff:test_cli_sync_dry_run_no_stale fingerprint=e9d986de7ddd7664af9b0ae824115ee40ac9408d99a4d76615e0a8d163722375 body_fp=e87b56ad556f7aaa056235de39aa690104cd63a157c04910719fb32a92038751 source_ref=a5296757622b2c57f6957aab50d948d8174a61ce -->
+<!-- trie:section symbol=tests/test_diff:test_cli_sync_dry_run_no_stale fingerprint=185c02160ac4f6a11a92d047293f7243db9077443bfc2b8a2d17620dfa9b3c57 body_fp=e87b56ad556f7aaa056235de39aa690104cd63a157c04910719fb32a92038751 source_ref=4fd2e8c6a6dd25c9e5daadba1cde7bf310ceece9 -->
 ## `test_cli_sync_dry_run_no_stale(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that `trie sync --dry-run` prints "no stale triefacts" when all triefacts are current.

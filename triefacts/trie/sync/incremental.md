@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/sync/incremental.py
 file_fingerprint: 4c7a99e1ffa4459b158c5183633f0aad1eb6be7c6327019a3cdf30e8c64c2def
-last_synced_at: '2026-05-15T13:07:45Z'
+last_synced_at: '2026-05-16T10:52:39Z'
 defines:
 - kind: class
   qualified_name: trie/sync/incremental:IncrementalWorklist
@@ -28,7 +28,7 @@ Read-only preview of files `run_incremental` would touch, produced by `compute_i
 - `regen_qnames_by_file`: per-file set of qualified names to regenerate; absent entry means full-file regen (`symbols_to_regen=None`); never contains empty sets.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/incremental:IncrementalResult fingerprint=44d8d13db810a81ea27f75709b870895913876f1c8dbdc95aa93ed09cc9916cf body_fp=e3dc3304e84e6612872b6348d91fdf60ffce9a2ebdf7c41741052a2be27170a0 source_ref=3d33f6931189bf5186ab59a9a7c0eaf8728c4797 -->
+<!-- trie:section symbol=trie/sync/incremental:IncrementalResult fingerprint=44d8d13db810a81ea27f75709b870895913876f1c8dbdc95aa93ed09cc9916cf body_fp=e3dc3304e84e6612872b6348d91fdf60ffce9a2ebdf7c41741052a2be27170a0 source_ref=75fad555723fb0d9fdc38c5f729779434c0a4951 -->
 ## `IncrementalResult`
 
 Frozen dataclass holding counts and cost totals returned by `run_incremental`.

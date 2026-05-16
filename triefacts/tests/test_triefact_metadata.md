@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_triefact_metadata.py
 file_fingerprint: cbb246bc77d50bccca68c7617723e48dd6f8da7b2b32e7047937c0f361c36eed
-last_synced_at: '2026-05-15T13:03:15Z'
+last_synced_at: '2026-05-16T10:52:22Z'
 description: Front-matter enrichment in `sync_single_file`.
 defines:
 - kind: class
