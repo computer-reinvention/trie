@@ -36,20 +36,17 @@ CI runs the same four commands. Tests + ruff must both pass before pushing.
 trie indexes itself. An MCP server is registered for this workdir (see
 `.mcp.json` / `opencode.json` / equivalent), exposing three navigation
 tools: `locate`, `explain`, and `walk`. **Read [`USING_TRIE.md`](USING_TRIE.md)
-for the full usage guide** — it covers when to reach for which tool, the
-predicate shape, the grep fallback, worked examples, and the edge cases.
+for the full usage guide.**
 
-Two repo-specific notes that build on the general guide:
+One repo-specific note that goes beyond the general guide:
 
 - **We dogfood.** A session where you reach for `grep` to answer a
-  structural question is a session that didn't exercise the thing we're
-  building. If a navigation flow feels awkward through these tools, that's
-  a signal to fix the tool — not to silently fall back to `grep`. Note it
-  in a session summary or open an issue.
-- **Constants are the main grep-still-wins case in this codebase.** Things
-  like `PRE_COMMIT_HOOK_MARKER` and `STAMP_FILENAME` are module-level data,
-  not indexed as separate symbols; grep for the literal when you need to
-  find their references.
+  code-side question is a session that didn't exercise the thing we're
+  building. `locate` handles every search inside source — including
+  literal strings and module-level constants, via the rg-backed
+  fallback. If a navigation flow feels awkward through these tools,
+  that's a signal to fix the tool, not to silently fall back to grep.
+  Note it in a session summary or open an issue.
 
 ## What's in scope
 

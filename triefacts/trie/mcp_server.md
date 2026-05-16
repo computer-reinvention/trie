@@ -1,86 +1,92 @@
 ---
 trie_version: 0.1.0
 source: trie/mcp_server.py
-file_fingerprint: 41ba7d9044f2110117216ff7acbbac1eb4aa8922eb50c58c51aa16482958e9f7
-last_synced_at: '2026-05-16T13:27:54Z'
+file_fingerprint: 6b50dc896f002b4e4804596cf6a307d20dc622d5209c125956defb1a509931a3
+last_synced_at: '2026-05-16T13:43:59Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
+- kind: class
+  qualified_name: trie/mcp_server:RipgrepNotFoundError
+  lines: 52-64
+- kind: function
+  qualified_name: trie/mcp_server:_require_ripgrep
+  lines: 67-82
 - kind: function
   qualified_name: trie/mcp_server:_error
-  lines: 50-63
+  lines: 85-98
 - kind: function
   qualified_name: trie/mcp_server:_truncate
-  lines: 66-70
+  lines: 101-105
 - kind: function
   qualified_name: trie/mcp_server:_symbol_summary
-  lines: 73-79
+  lines: 108-114
 - kind: function
   qualified_name: trie/mcp_server:_close_qname_matches
-  lines: 82-84
+  lines: 117-119
 - kind: function
   qualified_name: trie/mcp_server:_close_name_matches
-  lines: 87-88
+  lines: 122-123
 - kind: function
   qualified_name: trie/mcp_server:_smallest_enclosing
-  lines: 91-110
+  lines: 126-145
 - kind: class
   qualified_name: trie/mcp_server:TrieTools
-  lines: 113-817
+  lines: 148-926
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.__init__
-  lines: 119-130
+  lines: 154-169
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.close
-  lines: 132-133
+  lines: 171-172
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.locate
-  lines: 137-226
+  lines: 176-265
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._maybe_grep_fallback
-  lines: 228-361
+  lines: 267-400
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._grep_in_scope
-  lines: 363-392
+  lines: 402-501
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._attribute_grep_to_symbols
-  lines: 394-417
+  lines: 503-526
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._candidate_matches_predicate
-  lines: 419-445
+  lines: 528-554
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._parse_predicate
-  lines: 447-518
+  lines: 556-627
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain
-  lines: 522-580
+  lines: 631-689
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._prose_for
-  lines: 582-619
+  lines: 691-728
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._neighbour_summaries
-  lines: 621-646
+  lines: 730-755
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.walk
-  lines: 650-797
+  lines: 759-906
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._suggest_for_qname
-  lines: 801-817
+  lines: 910-926
 - kind: function
   qualified_name: trie/mcp_server:build_server
-  lines: 823-834
+  lines: 932-943
 - kind: function
   qualified_name: trie/mcp_server:run_stdio
-  lines: 837-840
-incoming_refs: 2
+  lines: 946-949
+incoming_refs: 3
 outgoing_refs: 29
 ---
-<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=4a66fb673052300464014a636feb488a8fbf617547e2a15c2c60350a3d41689a body_fp=1896c8f1ff3cbc085a8570a7d7b569fbbc5b4a4a0de5b58e9942e4954f76970c source_ref=22e6fb3ec57eaecf27caa58799ec1da39b8b81d7 -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=55984c478b9fc5cdf6cd922700137d3b97dfa7e7369798db7c17f3bf4a90faa1 body_fp=be9c42a56808effa1f10331d4c4e5f739f44a87eb63e7bddde7a2e0affff6ae4 source_ref=b5595ca0056fcd22d5e1be4c1818598a1e3aab28 -->
 ## `TrieTools`
 
-Encapsulate the three MCP tool methods (`locate`, `explain`, `walk`) against a persistent `Store`, testable without MCP transport.
+Owns the Store and exposes `locate`, `explain`, and `walk` as directly callable methods, decoupled from MCP transport.
 
-- `project_root`: resolved via `Config.find_and_load`; determines DB path and triefact tree location.
-- Call `close()` to release the underlying store connection.
+- Initialises `Config`, `Store`, ripgrep path, and telemetry from `project_root` at construction time.
+- `close()` must be called to release the Store's database connection.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/mcp_server:TrieTools.close fingerprint=51581d83ec8f7571f9518e69587e72415b3fd4ca4abd2172e2a9129bfe37b523 body_fp=442e119f95b99008035d6247dddce6fe6e965d30dfa4d278b5b93ce14b135e9f source_ref=7e9bcac1d9e11809a5a2f2cc565ded53aa1ea42b -->
@@ -170,10 +176,12 @@ Return up to `n` fuzzy-matched qualified names from `candidates` for `not_found`
 Return up to `n` fuzzy matches for `name` against `candidates` using a 0.6 cutoff.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_server:TrieTools.__init__ fingerprint=27c0c1c0d5b5263b7d7e99a4d7f81c9c6c28f801c827e0d46ef58bafc491e61e body_fp=8b5c828e90eb7911e3941054c5a5892b482289c4320a093928eca5fe07d2fed1 source_ref=7e9bcac1d9e11809a5a2f2cc565ded53aa1ea42b -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.__init__ fingerprint=c4d81c0f0ecd5ee491698c665ec8cfbd31493da220582e00767270895a6303ed body_fp=8f30ce2ef56af84eeb53845db374b5de8128c5ab334d8218872202f4fcfa6b02 source_ref=b5595ca0056fcd22d5e1be4c1818598a1e3aab28 -->
 ## `TrieTools.__init__(self, project_root: Path) -> None`
 
-Initialise `TrieTools` by loading config, wiring telemetry, and opening the SQLite symbol store.
+Initialise the tool host: load config, resolve ripgrep, configure telemetry, and open the graph store.
+
+- `project_root`: searches upward for `trie.toml`; resolved root may differ.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/mcp_server:TrieTools._parse_predicate fingerprint=f67ca2b1749bd025582b3376f0c4fa839fefa9deed29e02309ce8ef5f01b3e57 body_fp=6fffcb3b1546b219462ef79686cb5ac899f661d6a3aac2a9411191f23c9a9e49 source_ref=7e9bcac1d9e11809a5a2f2cc565ded53aa1ea42b -->
@@ -232,14 +240,15 @@ Build the `fallback` envelope returned alongside an empty `hits` list from `loca
 - Predicate filters (`scope_prefix`, `scope_exclude`, `public_only`, `kind`, edge bounds) still apply to `"grep"` candidates; `name_contains` is intentionally skipped.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_server:TrieTools._grep_in_scope fingerprint=781552aed2c14208280c88cb127b24b9538f743f2950f6f1303fd1bdee64bb25 body_fp=5f165876c66fd4bf734c2b525f4a0cbf66fa74d623a28123747070ee4c277041 source_ref=22e6fb3ec57eaecf27caa58799ec1da39b8b81d7 -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools._grep_in_scope fingerprint=938bbb0772ff4961ba1dbd06dd7544575b478ac432d7ea29ca992e17de499c17 body_fp=5aae6553e76428ec8000027981cccb8360925f8f46cf308f5a2dd88030e43ab8 source_ref=b5595ca0056fcd22d5e1be4c1818598a1e3aab28 -->
 ## `_grep_in_scope(self, query: str) -> dict[str, list[int]]`
 
-Case-insensitively search all in-scope source files for `query`, returning matched line numbers per file.
+Shell out to ripgrep to case-insensitively search in-scope source files for `query`, returning matched line numbers per file.
 
-- Never returns `None`; stops walking and returns accumulated results when file count hits `mcp_cfg.locate_fallback_max_files`.
-- Returns `{}` when no file contains the query.
+- Raises `RuntimeError` if ripgrep exits with code ≥ 2 (genuine failure).
+- Returns `{}` when no in-scope file contains the query.
 - Keys are paths relative to `src_root`; values are 1-based line number lists.
+- Stops accumulating new files once `mcp_cfg.locate_fallback_max_files` distinct files have hits.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/mcp_server:TrieTools._attribute_grep_to_symbols fingerprint=4cc8dbd8650ae67b6b138abfebf17d9b3504a74a9db2b4451e2d84f881e631c8 body_fp=0686e8b421c2f2a66c4f81de594a035172247dcb18318132c8c6e565173402f6 source_ref=6795f2438f7cef495f72fab2ec62616550b31303 -->
@@ -257,4 +266,16 @@ Map each `(file, line)` grep match to its smallest enclosing symbol, returning `
 Apply non-name predicate filters to a grep fallback candidate symbol.
 
 - Skips `name_contains` check intentionally; only scope, visibility, kind, and edge-count bounds are enforced.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_server:RipgrepNotFoundError fingerprint=65d5250c99f9e2ed44c28492bda6e20531b8e13d9f85c8e32f2c20790f98bf56 body_fp=c1a44365ebc0cbbf17153502e6f9a4d3b771cb34b09ab99a00b9e888658f4165 source_ref=b5595ca0056fcd22d5e1be4c1818598a1e3aab28 -->
+## `RipgrepNotFoundError`
+
+Raised at MCP server startup when `rg` (ripgrep) is not found on PATH.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_server:_require_ripgrep fingerprint=056d3a41463d61526764214f6af30dce4f4833065b63def386f418891f20c4b6 body_fp=4ad43131cf9640c0fbade1d9ccd37fa572be6cb9aa3e2f2985939a2ba428c2fe source_ref=b5595ca0056fcd22d5e1be4c1818598a1e3aab28 -->
+## `_require_ripgrep() -> str`
+
+Return the absolute path to `rg` via `shutil.which`, or raise `RipgrepNotFoundError` if not found.
 <!-- trie:end -->

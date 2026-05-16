@@ -100,18 +100,19 @@ class Mcp:
     locate_max_limit: int = 50
     locate_one_liner_max_chars: int = 200
     locate_default_rank_by: str = "public_first"
-    # When `locate` returns no symbol-name matches, fall back to grepping in-scope
-    # source bodies for the `name_contains` string and attributing hits to the
-    # symbols whose line ranges enclose them. Two knobs:
+    # When `locate` returns no symbol-name matches, fall back to ripgrep
+    # against in-scope source bodies and attribute hits to the symbols whose
+    # line ranges enclose them. Two knobs:
     #   - max_files: walk at most this many in-scope files; a runtime guard that
-    #     stops the grep walker when the substring is very common. The fallback
+    #     stops the rg walker when the substring is very common. The fallback
     #     still returns whatever was accumulated — never a "too noisy" refusal.
     #   - match_limit: cap on returned candidate symbols after hub-ranking by
-    #     inbound count. Defaults to 20 so the agent always sees enough to
-    #     triangulate even on broad queries; raw grep would have shown N lines
-    #     and we owe at least that floor of utility.
+    #     inbound count. Defaults to 30 so the agent sees enough to triangulate
+    #     even on broad queries; raw grep would have shown N lines and we owe
+    #     at least that floor of utility. The `match_count` / `unique_symbols`
+    #     fields tell the agent how many candidates exist beyond the cap.
     locate_fallback_max_files: int = 200
-    locate_fallback_match_limit: int = 20
+    locate_fallback_match_limit: int = 30
 
     # explain
     explain_neighbour_one_liner_max_chars: int = 120

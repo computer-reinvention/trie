@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/config.py
-file_fingerprint: 4242960fc6fdbabaaa99c4cc7d91d3fa2d6d25dfeabaf7ef3f3309fa9db58fae
-last_synced_at: '2026-05-16T13:27:47Z'
+file_fingerprint: 4e46562d0aa3f90761adb3732c883ab08fc74f933e3db13a2b3718dc79d5167b
+last_synced_at: '2026-05-16T13:43:17Z'
 defines:
 - kind: class
   qualified_name: trie/config:TrieMeta
@@ -27,22 +27,22 @@ defines:
   lines: 69-88
 - kind: class
   qualified_name: trie/config:Mcp
-  lines: 92-126
+  lines: 92-127
 - kind: class
   qualified_name: trie/config:Config
-  lines: 130-173
+  lines: 131-174
 - kind: method
   qualified_name: trie/config:Config.from_dict
-  lines: 141-151
+  lines: 142-152
 - kind: method
   qualified_name: trie/config:Config.load
-  lines: 154-157
+  lines: 155-158
 - kind: method
   qualified_name: trie/config:Config.find_and_load
-  lines: 160-173
+  lines: 161-174
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
-  lines: 176-177
+  lines: 177-178
 incoming_refs: 140
 outgoing_refs: 0
 ---
@@ -82,14 +82,14 @@ Configure reference-graph traversal defaults for incremental sync operations.
 - `hub_symbol_threshold`: symbols with more inbound refs than this are capped at depth 0
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/config:Mcp fingerprint=b39f0c214df58f1f374462cd5215607a3c0bc52ccc586e7780d939dc2bc4a6a2 body_fp=55439f46b619473f165a03f065e7f6b85b1e34231700c9eb71ca2ff6ab87b008 source_ref=8ea030fa79a2e9f417246770bfba08e904291cab -->
+<!-- trie:section symbol=trie/config:Mcp fingerprint=d4b3775ae78c120393568d68043670d132f60b31d8688b6feddf38d2aea813d2 body_fp=65e4db6b752a7248d610bb5f98b42555e36978ead07d9872b715daea8aaa6ede source_ref=5ca6b73652ab02ca14b37d67f433a906eb867a0c -->
 ## `Mcp`
 
 Configure server-side behavioural knobs for the MCP agent tools: `locate`, `explain`, and `walk`.
 
 - `locate_default_rank_by`: accepts `"public_first"`, `"inbound_count"`, or `"alphabetical"`
-- `locate_fallback_max_files`: max in-scope files grepped when no symbol-name match found
-- `locate_fallback_match_limit`: cap on candidates returned after hub-ranking fallback; fallback never refuses as too noisy
+- `locate_fallback_max_files`: max in-scope files searched when no symbol-name match found
+- `locate_fallback_match_limit`: cap on candidates returned after hub-ranking fallback; default 30; fallback never refuses as too noisy
 - `explain_max_neighbours_per_direction`: `0` means unlimited
 - `explain_prose_max_chars`: `0` means unlimited
 - `walk_hub_threshold`: mirrors `Cascade.hub_symbol_threshold`
