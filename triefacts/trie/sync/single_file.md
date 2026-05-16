@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/sync/single_file.py
 file_fingerprint: 3bdf831aeb90bb062a56404b4d91b7a4d521d68cd71441ef31dbe2016124ccc2
-last_synced_at: '2026-05-16T11:46:48Z'
+last_synced_at: '2026-05-16T12:26:13Z'
 defines:
 - kind: class
   qualified_name: trie/sync/single_file:FileSyncResult
@@ -35,7 +35,7 @@ defines:
   qualified_name: trie/sync/single_file:sync_single_file
   lines: 238-492
 incoming_refs: 51
-outgoing_refs: 17
+outgoing_refs: 18
 ---
 <!-- trie:section symbol=trie/sync/single_file:FileSyncResult fingerprint=f658b6cb6f956faf262f29751e15b6efaad12e661c2976d58946940db38a0ed7 body_fp=a14f526007aca92c0796d86e378c557ef5d8443dcb245ccd6b6df85d0970222e source_ref=d6da1d131c5c5e11b320faa2c7147616cfbd1f01 -->
 ## `@dataclass(frozen=True) class FileSyncResult`
@@ -45,7 +45,7 @@ Immutable result record returned by `sync_single_file` summarising token usage a
 - `symbols_skipped`: count of symbols whose sections were passed through unchanged; always 0 when `symbols_to_regen` is `None`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/single_file:sync_single_file fingerprint=ac73ed59e70563c45e1291ebc796e4994c5a6b7bce9a6a44fa59c45e3b326991 body_fp=203ac363337b2fbbcc12d7035ecbd08eece56d9a939ce747ac824cacf77d13f8 source_ref=356a8e124a5f47830cfe45d3876ff546fee40c1e -->
+<!-- trie:section symbol=trie/sync/single_file:sync_single_file fingerprint=ac73ed59e70563c45e1291ebc796e4994c5a6b7bce9a6a44fa59c45e3b326991 body_fp=203ac363337b2fbbcc12d7035ecbd08eece56d9a939ce747ac824cacf77d13f8 source_ref=34057e5d9c5ee57019bcfb44216c4b3de34127e1 -->
 ## `sync_single_file(source_path, *, project_root, config, client, dest_triefact_path=None, store=None, symbols_to_regen=None) -> FileSyncResult`
 
 Generate or refresh the triefact file for a single Python source file, upserting sections for all parser-surfaced symbols and removing stale ones.
@@ -83,7 +83,7 @@ Build a sorted list of `{kind, qualified_name, lines}` dicts for all documented 
 - `lines`: formatted as `"start-end"` string, not separate integers.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/single_file:_resolve_previous_symbols fingerprint=7248cfa7303b0870f3a978ae9e249057d98b22401fd3291ebff715fa17660edf body_fp=e237e39e84175b49d59721b8651980fd55e40f83eb51c1a791fc724b713dcc5c source_ref=d6da1d131c5c5e11b320faa2c7147616cfbd1f01 -->
+<!-- trie:section symbol=trie/sync/single_file:_resolve_previous_symbols fingerprint=7248cfa7303b0870f3a978ae9e249057d98b22401fd3291ebff715fa17660edf body_fp=e237e39e84175b49d59721b8651980fd55e40f83eb51c1a791fc724b713dcc5c source_ref=34057e5d9c5ee57019bcfb44216c4b3de34127e1 -->
 ## `_resolve_previous_symbols(*, source_path, src_root, project_root, existing_section_refs) -> dict[str, Symbol]`
 
 Retrieve and parse previous-version `Symbol` objects for each qname that has a recorded `source_ref` blob hash.

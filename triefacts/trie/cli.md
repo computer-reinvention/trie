@@ -1,119 +1,134 @@
 ---
 trie_version: 0.1.0
 source: trie/cli.py
-file_fingerprint: 11a455b8cd63c71ef70d5467a923196845cb83f1e057d162fee778db260d0063
-last_synced_at: '2026-05-16T11:46:35Z'
+file_fingerprint: 5707a85b6d88180292515c18ccc3b81e8b88d2742817b51cfc8307920f7a5cee
+last_synced_at: '2026-05-16T12:25:37Z'
 defines:
 - kind: function
   qualified_name: trie/cli:_get_reporter
-  lines: 49-55
+  lines: 62-68
 - kind: class
   qualified_name: trie/cli:_ProgressAdapter
-  lines: 58-103
+  lines: 71-116
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.__init__
-  lines: 66-70
+  lines: 79-83
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter._ensure
-  lines: 72-76
+  lines: 85-89
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.close
-  lines: 78-81
+  lines: 91-94
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_start
-  lines: 83-84
+  lines: 96-97
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_done
-  lines: 86-99
+  lines: 99-112
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_skip
-  lines: 101-103
+  lines: 114-116
 - kind: function
   qualified_name: trie/cli:_progress_callback
-  lines: 107-112
+  lines: 120-125
 - kind: function
   qualified_name: trie/cli:_root
-  lines: 116-154
+  lines: 129-167
 - kind: function
   qualified_name: trie/cli:_telemetry_bootstrap
-  lines: 157-169
+  lines: 170-182
 - kind: function
   qualified_name: trie/cli:init_cmd
-  lines: 173-256
+  lines: 186-269
 - kind: function
   qualified_name: trie/cli:_is_interactive
-  lines: 259-266
+  lines: 272-279
 - kind: class
   qualified_name: trie/cli:_NoOpStatus
-  lines: 269-274
+  lines: 282-287
 - kind: method
   qualified_name: trie/cli:_NoOpStatus.__enter__
-  lines: 270-271
+  lines: 283-284
 - kind: method
   qualified_name: trie/cli:_NoOpStatus.__exit__
-  lines: 273-274
+  lines: 286-287
 - kind: function
   qualified_name: trie/cli:plan_cmd
-  lines: 278-371
+  lines: 291-384
 - kind: function
   qualified_name: trie/cli:verify_cmd
-  lines: 375-387
+  lines: 388-400
+- kind: function
+  qualified_name: trie/cli:refresh_cmd
+  lines: 404-475
+- kind: function
+  qualified_name: trie/cli:_report_freshness
+  lines: 478-492
 - kind: function
   qualified_name: trie/cli:audit_cmd
-  lines: 391-451
+  lines: 496-556
 - kind: function
   qualified_name: trie/cli:_resolve_audit_log_path
-  lines: 454-470
+  lines: 559-575
 - kind: function
   qualified_name: trie/cli:_print_scan_breakdown
-  lines: 473-490
+  lines: 578-595
 - kind: function
   qualified_name: trie/cli:_print_plan
-  lines: 493-504
+  lines: 598-609
 - kind: function
   qualified_name: trie/cli:_print_incremental_plan
-  lines: 507-573
+  lines: 612-678
 - kind: function
   qualified_name: trie/cli:_print_drift_detail
-  lines: 586-597
+  lines: 691-702
 - kind: function
   qualified_name: trie/cli:_verify_drift
-  lines: 600-631
+  lines: 705-736
 - kind: function
   qualified_name: trie/cli:sync_cmd
-  lines: 635-739
+  lines: 740-844
 - kind: function
   qualified_name: trie/cli:_has_existing_triefacts
-  lines: 742-748
+  lines: 847-853
 - kind: function
   qualified_name: trie/cli:_run_full_pass
-  lines: 751-815
+  lines: 856-920
 - kind: function
   qualified_name: trie/cli:_run_dry_run_diff
-  lines: 818-863
+  lines: 923-968
 - kind: function
   qualified_name: trie/cli:_run_single_file_sync
-  lines: 866-894
+  lines: 971-999
 - kind: function
   qualified_name: trie/cli:_run_metadata_only_refresh
-  lines: 897-954
+  lines: 1002-1059
 - kind: function
   qualified_name: trie/cli:_run_incremental_sync
-  lines: 957-1006
+  lines: 1062-1111
+- kind: function
+  qualified_name: trie/cli:setup_cmd
+  lines: 1115-1212
+- kind: function
+  qualified_name: trie/cli:_render_setup_plan
+  lines: 1215-1256
+- kind: function
+  qualified_name: trie/cli:_format_action
+  lines: 1259-1263
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 1018-1020
+  lines: 1275-1277
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 1023-1033
+  lines: 1280-1290
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 1037-1106
+  lines: 1294-1363
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 1109-1124
+  lines: 1366-1381
 incoming_refs: 0
-outgoing_refs: 65
+outgoing_refs: 80
 ---
 <!-- trie:section symbol=trie/cli:init_cmd fingerprint=b4f1d7bff0bc8e455ed6de5c56b9e0c884e01c1dc12eba107d91abe90e5b8584 body_fp=a30e268f60bb85196fe5055818affc8f1a117b80c3e981aed18fd2751c260c76 source_ref=f9896112d3c74faa4a548ca30df39e8106603df3 -->
 ## `init_cmd(ctx, root, force, install_hooks, run_scan) -> None`
@@ -406,4 +421,53 @@ Refresh every triefact's front matter from the live store without calling the LL
 
 - Rescans the project first so the graph reflects any resolver changes before rewriting metadata.
 - Skips files outside `source_root`; reports changed vs already-current counts on completion.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:refresh_cmd fingerprint=3586c99dcdaa0a5db09072dbd4d381d9e4547a8b1e6fdd51ea873e731d072a8f body_fp=ee8d45d6a97e57e252746273b2b27ce3c8d2c9d3fe7ab7227cf337a48c439ce8 source_ref=245a1b3bb69d531fc2880760ae9b2ca22d6e4815 -->
+## `refresh_cmd(ctx: typer.Context, before_turn: bool, after_turn: bool, model: str | None) -> None`
+
+Bring the symbol graph and triefact tree up to date with the current working tree.
+
+- `--before-turn`: cheap pre-turn gate; full sync only when HEAD or mtimes changed.
+- `--after-turn`: post-turn sweep; detects filesystem changes since last refresh.
+- Defaults to `--after-turn` when neither flag is given.
+- Exits 1 outside a git repository.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:_report_freshness fingerprint=39c12516433ffd01deaf7e6d4dc9d72f23e588c64a16997bc815624ddc2aeb44 body_fp=7644c6fc037fd8d0e5e3762babb2135d704b50c9b5ee408b0e30fe27f4f364c2 source_ref=245a1b3bb69d531fc2880760ae9b2ca22d6e4815 -->
+## `_report_freshness(reporter: Reporter, result: FreshnessResult, *, mode: str) -> None`
+
+Render a single-line refresh outcome to the reporter, plus sync statistics when a sync ran.
+
+- `mode`: label string (e.g. `"before-turn"` or `"after-turn"`) prepended to output.
+- `result.refreshed`: if `False`, prints an "already fresh" success line and returns.
+- `result.incremental`: used to report files synced and actual cost; skips detail if `None`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:setup_cmd fingerprint=cbf2c9a32c22a2454580c6882d6c1dff35e6adf3b923556c4b7bfe7b72a8968e body_fp=71d52b29ca5788e54605802efa07cb2d55823bba60e2c4b298dc3ad51912be83 source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
+## `setup_cmd(ctx, target, install_all, scope, print_only, dry_run)`
+
+Wire trie into an agent end-to-end: MCP server registration plus `trie refresh --after-turn` hook install.
+
+- `target`: repeat flag for multiple named agent targets; mutually exclusive with `--all`.
+- `install_all`: register for every known agent, skipping per-target detection.
+- `scope`: `'project'` writes into the repo; `'user'` writes to `~/.<agent>/...`.
+- `print_only`: print what would be written without touching any files.
+- `dry_run`: resolve paths and show changes without writing.
+- Exits 1 if either MCP or hook install encounters an error.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:_render_setup_plan fingerprint=f85552e40e3d01ef67aab9b8d9a5ab366b3a566edf5bbeb643245a0cc81d39a7 body_fp=f491f1b954a245a463a245995321c64bbcb53e2382fad0b0fba0808504200372 source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
+## `_render_setup_plan(reporter: Reporter, mcp_plan: InstallPlan, hook_plan: HookInstallPlan) -> None`
+
+Print a merged per-target report showing MCP and hook install outcomes, with manual-setup warnings where applicable.
+
+- `mcp_plan`: MCP install results grouped by target slug.
+- `hook_plan`: Hook install results grouped by target slug.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:_format_action fingerprint=8dac93a50edff702bbc2e173939a50d0d8f091203a3dd20675261719d0821994 body_fp=ae70c1dcc650d55b85c914d92499534930d66f081f32f21e7797135e8503ed84 source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
+## `_format_action(action: str, path: Path | None) -> str`
+
+Render an action label with an optional path suffix for display in install plan output.
 <!-- trie:end -->

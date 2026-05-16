@@ -307,7 +307,7 @@ repos:
 
 `trie verify` exits non-zero on any of: a source symbol whose fingerprint no longer matches its section, a public symbol with no section, a section whose body was edited between sentinels (`tampered_body`), a section pointing at a deleted symbol (`orphan`), or a missing triefact file. Failures point at the specific symbol, so you know exactly what regenerated and why.
 
-## Agent integration (MCP)
+## Agent integration (MCP + turn hooks)
 
 trie ships an MCP server so coding agents read your codebase's prose self-description as a separate, durable context layer — not chat memory, not retrieved chunks, but a structured tree they can navigate. Three verbs, exposed over stdio, that match how agents reason about a codebase: _find it_, _understand it_, _trace it_.
 
@@ -319,7 +319,26 @@ trie ships an MCP server so coding agents read your codebase's prose self-descri
 
 Every response carries `one_liner` fields pulled from the section body at sync time, so an agent walking the graph never has to open a triefact just to decide whether to open it. Errors return `{error: {code, message, suggestion?}}` — fuzzy-matched suggestions on `not_found` mean recovery is one round-trip, not three. The full contract lives in [`docs/agent_interface.md`](docs/agent_interface.md).
 
-Register trie with your agent in one command:
+### One-shot setup
+
+```bash
+trie setup --target opencode              # MCP + turn hook in one go
+trie setup --target claude-code           # MCP install + manual-hook notice
+trie setup --all --print-only             # preview both halves for every target
+```
+
+`trie setup` does two things at once:
+
+1. **MCP server registration** — makes trie available to the agent. Same as the standalone `trie mcp install`.
+2. **Turn-boundary hook** — makes trie current with the working copy automatically. Calls `trie refresh --after-turn` whenever the agent finishes a turn (so the graph picks up edits the agent just made) and again at the start of the next turn (so it picks up edits from `git pull` or another collaborator).
+
+Supported targets: `opencode`, `claude-code`, `claude-desktop`, `cursor`, `windsurf`, `vscode`, `codex`.
+
+**Hook automation coverage today**: only `opencode` exposes a documented per-turn event surface, so it's the only target where `trie setup` installs the hook automatically (via a plugin written to `.opencode/plugins/trie-refresh.ts`). For every other target, `trie setup` registers MCP and prints a `manual setup required` notice with the instruction you have to follow — typically "wrap the agent binary or run `trie refresh --after-turn` between sessions."
+
+### Just MCP, no hooks
+
+If you want only the MCP registration (you'll handle freshness yourself):
 
 ```bash
 trie mcp install --target claude-code     # writes <project>/.mcp.json
@@ -327,9 +346,7 @@ trie mcp install --target cursor          # writes <project>/.cursor/mcp.json
 trie mcp install --all --print-only       # preview snippets for every supported target
 ```
 
-Supported targets: `claude-code`, `claude-desktop`, `cursor`, `windsurf`, `vscode`, `codex`. Without a `--target`, the installer auto-detects which agents are present.
-
-The snippet `install` writes is the standard MCP server form:
+The MCP snippet shape depends on the agent's schema. For Claude-style agents:
 
 ```json
 {
@@ -343,7 +360,22 @@ The snippet `install` writes is the standard MCP server form:
 }
 ```
 
-The server is read-only. Agents can query the graph and join paragraphs; only `trie sync` (run by you, in your shell) modifies the triefact tree. Humans gate writes. Agents read freely.
+For opencode it's the `mcp.<name>` form documented in [opencode's docs](https://opencode.ai/docs/mcp-servers).
+
+### What `trie refresh` actually does
+
+The freshness gate has four states. Costs are bounded and predictable:
+
+| state | when | action |
+|---|---|---|
+| `unchanged` | stamp matches HEAD + mtimes | no-op |
+| `no_stamp` | first run in this checkout | rebuild the graph (no LLM); record stamp |
+| `head_moved` | `git pull` brought new commits | rebuild the graph (no LLM); trust committed triefacts; record stamp |
+| `mtimes_moved` | local edits since last refresh | scan + run incremental sync (LLM as needed; diff-aware rubric keeps cosmetic edits cheap) |
+
+The LLM path only fires for `mtimes_moved`. Trie does **not** auto-spend on fresh clones or after `git pull`. Run `trie sync` explicitly when you want prose regen beyond what edits warrant.
+
+The server itself is read-only. Agents can query the graph and join paragraphs; only `trie sync` (run by you, or by the post-turn hook for the files you edited) modifies the triefact tree. Humans gate writes; agents read freely.
 
 ## Reducing PR noise from generated triefacts
 
