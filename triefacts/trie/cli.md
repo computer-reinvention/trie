@@ -1,140 +1,140 @@
 ---
 trie_version: 0.1.0
 source: trie/cli.py
-file_fingerprint: 974998eb437f93df2fbeb8246c706d79ce69fbdb24ea3b4edf30d4cba26aaef8
-last_synced_at: '2026-05-16T13:43:45Z'
+file_fingerprint: ba0593cf596fccf9f374c0eda6ac22b2bdb0f3b6242e14b3ac109afcaf26ed4a
+last_synced_at: '2026-05-16T13:54:53Z'
 defines:
 - kind: function
   qualified_name: trie/cli:_get_reporter
-  lines: 63-69
+  lines: 70-76
 - kind: class
   qualified_name: trie/cli:_ProgressAdapter
-  lines: 72-117
+  lines: 79-124
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.__init__
-  lines: 80-84
+  lines: 87-91
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter._ensure
-  lines: 86-90
+  lines: 93-97
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.close
-  lines: 92-95
+  lines: 99-102
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_start
-  lines: 97-98
+  lines: 104-105
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_done
-  lines: 100-113
+  lines: 107-120
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_skip
-  lines: 115-117
+  lines: 122-124
 - kind: function
   qualified_name: trie/cli:_progress_callback
-  lines: 121-126
+  lines: 128-133
 - kind: function
   qualified_name: trie/cli:_acquire_write_lock_or_exit
-  lines: 130-161
+  lines: 137-168
 - kind: function
   qualified_name: trie/cli:_root
-  lines: 165-203
+  lines: 172-210
 - kind: function
   qualified_name: trie/cli:_telemetry_bootstrap
-  lines: 206-218
+  lines: 213-225
 - kind: function
   qualified_name: trie/cli:init_cmd
-  lines: 222-310
+  lines: 229-317
 - kind: function
   qualified_name: trie/cli:_is_interactive
-  lines: 313-320
+  lines: 320-327
 - kind: class
   qualified_name: trie/cli:_NoOpStatus
-  lines: 323-328
+  lines: 330-335
 - kind: method
   qualified_name: trie/cli:_NoOpStatus.__enter__
-  lines: 324-325
+  lines: 331-332
 - kind: method
   qualified_name: trie/cli:_NoOpStatus.__exit__
-  lines: 327-328
+  lines: 334-335
 - kind: function
   qualified_name: trie/cli:plan_cmd
-  lines: 332-428
+  lines: 339-435
 - kind: function
   qualified_name: trie/cli:verify_cmd
-  lines: 432-444
+  lines: 439-451
 - kind: function
   qualified_name: trie/cli:lock_check_cmd
-  lines: 448-498
+  lines: 455-505
 - kind: function
   qualified_name: trie/cli:refresh_cmd
-  lines: 502-609
+  lines: 509-616
 - kind: function
   qualified_name: trie/cli:_report_freshness
-  lines: 612-626
+  lines: 619-633
 - kind: function
   qualified_name: trie/cli:audit_cmd
-  lines: 630-690
+  lines: 637-697
 - kind: function
   qualified_name: trie/cli:_resolve_audit_log_path
-  lines: 693-709
+  lines: 700-716
 - kind: function
   qualified_name: trie/cli:_print_scan_breakdown
-  lines: 712-729
+  lines: 719-736
 - kind: function
   qualified_name: trie/cli:_print_plan
-  lines: 732-743
+  lines: 739-750
 - kind: function
   qualified_name: trie/cli:_print_incremental_plan
-  lines: 746-812
+  lines: 753-819
 - kind: function
   qualified_name: trie/cli:_print_drift_detail
-  lines: 825-836
+  lines: 832-843
 - kind: function
   qualified_name: trie/cli:_verify_drift
-  lines: 839-870
+  lines: 846-877
 - kind: function
   qualified_name: trie/cli:sync_cmd
-  lines: 874-990
+  lines: 881-997
 - kind: function
   qualified_name: trie/cli:_has_existing_triefacts
-  lines: 993-999
+  lines: 1000-1006
 - kind: function
   qualified_name: trie/cli:_run_full_pass
-  lines: 1002-1066
+  lines: 1009-1073
 - kind: function
   qualified_name: trie/cli:_run_dry_run_diff
-  lines: 1069-1114
+  lines: 1076-1121
 - kind: function
   qualified_name: trie/cli:_run_single_file_sync
-  lines: 1117-1145
+  lines: 1124-1152
 - kind: function
   qualified_name: trie/cli:_run_metadata_only_refresh
-  lines: 1148-1205
+  lines: 1155-1212
 - kind: function
   qualified_name: trie/cli:_run_incremental_sync
-  lines: 1208-1257
+  lines: 1215-1264
 - kind: function
   qualified_name: trie/cli:setup_cmd
-  lines: 1261-1358
+  lines: 1268-1381
 - kind: function
   qualified_name: trie/cli:_render_setup_plan
-  lines: 1361-1402
+  lines: 1384-1442
 - kind: function
   qualified_name: trie/cli:_format_action
-  lines: 1405-1409
+  lines: 1445-1449
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 1421-1423
+  lines: 1461-1463
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 1426-1436
+  lines: 1466-1476
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 1440-1509
+  lines: 1480-1549
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 1512-1527
+  lines: 1552-1567
 incoming_refs: 0
-outgoing_refs: 88
+outgoing_refs: 90
 ---
 <!-- trie:section symbol=trie/cli:init_cmd fingerprint=8b4d9be5bbc2597c7eb91b29c6c50db8494d6b7fc7007d6d96dae998df54d5e5 body_fp=e1f123d349c49c73cb575e54d9eec2677d06d4bd0dfd98e87c02da7274c4dfb9 source_ref=df2eab34e273723a3bf42ae891020acd147e6bd4 -->
 ## `init_cmd(ctx, root, force, install_hooks, run_scan) -> None`
@@ -449,26 +449,27 @@ Render a single-line refresh outcome to the reporter, plus sync statistics when 
 - `result.incremental`: used to report files synced and actual cost; skips detail if `None`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:setup_cmd fingerprint=cbf2c9a32c22a2454580c6882d6c1dff35e6adf3b923556c4b7bfe7b72a8968e body_fp=71d52b29ca5788e54605802efa07cb2d55823bba60e2c4b298dc3ad51912be83 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+<!-- trie:section symbol=trie/cli:setup_cmd fingerprint=2b2ed0fdfb80c7b5cfb70d2510ed9bbd043d621cf9517cdda703b2feb687bad5 body_fp=3849a3c2d8a006cac8f5aee3198ca797440ade5ef7dc57698564eb438cfb67c8 source_ref=577b5c634ebcbb90471bd6a1e8c66ae8c26b6a92 -->
 ## `setup_cmd(ctx, target, install_all, scope, print_only, dry_run)`
 
-Wire trie into an agent end-to-end: MCP server registration plus `trie refresh --after-turn` hook install.
+Wire trie into an agent end-to-end: MCP server registration, `trie refresh --after-turn` hook install, and docs install (TRIE.md + agent pointer blocks).
 
 - `target`: repeat flag for multiple named agent targets; mutually exclusive with `--all`.
 - `install_all`: register for every known agent, skipping per-target detection.
 - `scope`: `'project'` writes into the repo; `'user'` writes to `~/.<agent>/...`.
 - `print_only`: print what would be written without touching any files.
 - `dry_run`: resolve paths and show changes without writing.
-- Exits 1 if either MCP or hook install encounters an error.
+- Exits 1 if MCP, hook, or docs install encounters an error.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_render_setup_plan fingerprint=f85552e40e3d01ef67aab9b8d9a5ab366b3a566edf5bbeb643245a0cc81d39a7 body_fp=f491f1b954a245a463a245995321c64bbcb53e2382fad0b0fba0808504200372 source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
-## `_render_setup_plan(reporter: Reporter, mcp_plan: InstallPlan, hook_plan: HookInstallPlan) -> None`
+<!-- trie:section symbol=trie/cli:_render_setup_plan fingerprint=23b73d42f3d639a524d4f5eef189323ce01ac09d5a0fd2ba3dd53be1d0d082de body_fp=a7ce8efb58ec728ccfb96b8d8434caf29b1f9dcb24511bc133e16e21114050d4 source_ref=577b5c634ebcbb90471bd6a1e8c66ae8c26b6a92 -->
+## `_render_setup_plan(reporter: Reporter, mcp_plan: InstallPlan, hook_plan: HookInstallPlan, docs_plan: DocsInstallPlan) -> None`
 
-Print a merged per-target report showing MCP and hook install outcomes, with manual-setup warnings where applicable.
+Print a merged per-target report showing MCP and hook install outcomes, with manual-setup warnings where applicable, plus a target-independent docs section.
 
 - `mcp_plan`: MCP install results grouped by target slug.
 - `hook_plan`: Hook install results grouped by target slug.
+- `docs_plan`: Docs install results (TRIE.md / agent doc pointers); rendered as a single trailing section.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/cli:_format_action fingerprint=8dac93a50edff702bbc2e173939a50d0d8f091203a3dd20675261719d0821994 body_fp=ae70c1dcc650d55b85c914d92499534930d66f081f32f21e7797135e8503ed84 source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->

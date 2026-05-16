@@ -93,3 +93,8 @@ uv tool install --force ./dist/trie-0.1.0-py3-none-any.whl
 - Don't commit `.env`, credentials, or anything under `.trie/` or `tmp/`.
 - Commit messages follow `type(scope): subject` — see `git log` for the in-repo style.
 - `trie verify` is the pre-commit gate; it refuses commits when the triefact tree drifts.
+
+
+<!-- trie:docs (added by `trie setup`) -->
+**trie is installed in this project.** Read [TRIE.md](TRIE.md) for the navigation tools (`locate`, `explain`, `walk`) — use them instead of grep for code search.
+<!-- end trie:docs -->
