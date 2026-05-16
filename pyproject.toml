@@ -48,6 +48,13 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["trie"]
 
+# Bundle the agent-facing usage guide as package data. `trie setup` copies it
+# out to `TRIE.md` at the project root and adds a one-line pointer to
+# AGENTS.md / CLAUDE.md so agents land on a project-local doc rather than a
+# website they may not be able to fetch.
+[tool.hatch.build.targets.wheel.force-include]
+"trie/data/TRIE.md" = "trie/data/TRIE.md"
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

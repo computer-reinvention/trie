@@ -16,6 +16,13 @@ from trie.check import StaleReason, check_project
 from trie.config import Config, ConfigNotFoundError
 from trie.cost import get_pricing
 from trie.diff_cmd import diff_project
+from trie.docs_install import (
+    DocsInstallError,
+    DocsInstallPlan,
+)
+from trie.docs_install import (
+    install as docs_run_install,
+)
 from trie.freshness import (
     FreshnessResult,
     NotAGitRepoError,
@@ -1349,12 +1356,28 @@ def setup_cmd(
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
-    _render_setup_plan(reporter, mcp_plan, hook_plan)
+    # Docs install: write TRIE.md and refresh the pointer block in any
+    # existing AGENTS.md / CLAUDE.md so agents discover the navigation
+    # tools without the user having to author docs by hand. Target-
+    # independent — there's exactly one TRIE.md per project and the
+    # pointer line is the same regardless of which agent is wired in.
+    try:
+        docs_plan = docs_run_install(
+            project_root=project_root,
+            print_only=print_only,
+            dry_run=dry_run,
+        )
+    except DocsInstallError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
 
-    # Surface a non-zero exit if either half hit an error so CI/scripts react.
+    _render_setup_plan(reporter, mcp_plan, hook_plan, docs_plan)
+
+    # Surface a non-zero exit if any half hit an error so CI/scripts react.
     mcp_errors = any(r.action == "error" for r in mcp_plan.results)
     hook_errors = any(r.action == "error" for r in hook_plan.results)
-    if mcp_errors or hook_errors:
+    docs_errors = any(r.action == "error" for r in docs_plan.results)
+    if mcp_errors or hook_errors or docs_errors:
         raise typer.Exit(code=1)
 
 
@@ -1362,13 +1385,15 @@ def _render_setup_plan(
     reporter: Reporter,
     mcp_plan: InstallPlan,
     hook_plan: HookInstallPlan,
+    docs_plan: DocsInstallPlan,
 ) -> None:
-    """Print one merged report grouped by target, with MCP and hook sub-lines.
+    """Print one merged report: per-target MCP + hook lines, plus a docs section.
 
-    Each target gets a header. Under it: one line for the MCP install outcome,
-    one line for the hook install outcome. Manual-setup notes are emitted under
-    the hook line so the user can copy the instruction text out of their
-    terminal directly.
+    Each target gets a header with its MCP install outcome and hook install
+    outcome below. Manual-setup notes are emitted under the hook line so the
+    user can copy them out of their terminal directly. Docs install is
+    target-independent (one TRIE.md per project), so it gets its own section
+    at the end.
     """
     import json
 
@@ -1400,6 +1425,21 @@ def _render_setup_plan(
                 reporter.warn(f"    manual setup required: {hook_result.detail}")
             elif hook_result.action == "preview" and hook_result.path is not None:
                 reporter.console.print(hook_result.contents)
+
+    # Docs section. Empty `results` would only happen if TRIE.md write
+    # failed before any result was appended — defensive guard, shouldn't
+    # be reachable in practice.
+    if docs_plan.results:
+        reporter.info("\n[bold cyan]docs[/bold cyan]")
+        for result in docs_plan.results:
+            line = f"  {result.target}: {_format_action(result.action, result.path)}"
+            # `detail` carries either a status message ("already up to date")
+            # or, for preview/error, the full would-be contents / error text.
+            # Truncate the preview body so the renderer doesn't dump 14KB of
+            # markdown into the terminal; the user can read the file directly.
+            if result.detail and result.action not in ("preview",):
+                line += f" — {result.detail}"
+            reporter.info(line)
 
 
 def _format_action(action: str, path: Path | None) -> str:
