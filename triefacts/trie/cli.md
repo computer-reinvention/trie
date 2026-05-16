@@ -1,136 +1,142 @@
 ---
 trie_version: 0.1.0
 source: trie/cli.py
-file_fingerprint: 5707a85b6d88180292515c18ccc3b81e8b88d2742817b51cfc8307920f7a5cee
-last_synced_at: '2026-05-16T12:51:46Z'
+file_fingerprint: 974998eb437f93df2fbeb8246c706d79ce69fbdb24ea3b4edf30d4cba26aaef8
+last_synced_at: '2026-05-16T13:17:29Z'
 defines:
 - kind: function
   qualified_name: trie/cli:_get_reporter
-  lines: 62-68
+  lines: 63-69
 - kind: class
   qualified_name: trie/cli:_ProgressAdapter
-  lines: 71-116
+  lines: 72-117
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.__init__
-  lines: 79-83
+  lines: 80-84
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter._ensure
-  lines: 85-89
+  lines: 86-90
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.close
-  lines: 91-94
+  lines: 92-95
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_start
-  lines: 96-97
+  lines: 97-98
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_done
-  lines: 99-112
+  lines: 100-113
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_skip
-  lines: 114-116
+  lines: 115-117
 - kind: function
   qualified_name: trie/cli:_progress_callback
-  lines: 120-125
+  lines: 121-126
+- kind: function
+  qualified_name: trie/cli:_acquire_write_lock_or_exit
+  lines: 130-161
 - kind: function
   qualified_name: trie/cli:_root
-  lines: 129-167
+  lines: 165-203
 - kind: function
   qualified_name: trie/cli:_telemetry_bootstrap
-  lines: 170-182
+  lines: 206-218
 - kind: function
   qualified_name: trie/cli:init_cmd
-  lines: 186-269
+  lines: 222-310
 - kind: function
   qualified_name: trie/cli:_is_interactive
-  lines: 272-279
+  lines: 313-320
 - kind: class
   qualified_name: trie/cli:_NoOpStatus
-  lines: 282-287
+  lines: 323-328
 - kind: method
   qualified_name: trie/cli:_NoOpStatus.__enter__
-  lines: 283-284
+  lines: 324-325
 - kind: method
   qualified_name: trie/cli:_NoOpStatus.__exit__
-  lines: 286-287
+  lines: 327-328
 - kind: function
   qualified_name: trie/cli:plan_cmd
-  lines: 291-384
+  lines: 332-428
 - kind: function
   qualified_name: trie/cli:verify_cmd
-  lines: 388-400
+  lines: 432-444
+- kind: function
+  qualified_name: trie/cli:lock_check_cmd
+  lines: 448-498
 - kind: function
   qualified_name: trie/cli:refresh_cmd
-  lines: 404-475
+  lines: 502-609
 - kind: function
   qualified_name: trie/cli:_report_freshness
-  lines: 478-492
+  lines: 612-626
 - kind: function
   qualified_name: trie/cli:audit_cmd
-  lines: 496-556
+  lines: 630-690
 - kind: function
   qualified_name: trie/cli:_resolve_audit_log_path
-  lines: 559-575
+  lines: 693-709
 - kind: function
   qualified_name: trie/cli:_print_scan_breakdown
-  lines: 578-595
+  lines: 712-729
 - kind: function
   qualified_name: trie/cli:_print_plan
-  lines: 598-609
+  lines: 732-743
 - kind: function
   qualified_name: trie/cli:_print_incremental_plan
-  lines: 612-678
+  lines: 746-812
 - kind: function
   qualified_name: trie/cli:_print_drift_detail
-  lines: 691-702
+  lines: 825-836
 - kind: function
   qualified_name: trie/cli:_verify_drift
-  lines: 705-736
+  lines: 839-870
 - kind: function
   qualified_name: trie/cli:sync_cmd
-  lines: 740-844
+  lines: 874-990
 - kind: function
   qualified_name: trie/cli:_has_existing_triefacts
-  lines: 847-853
+  lines: 993-999
 - kind: function
   qualified_name: trie/cli:_run_full_pass
-  lines: 856-920
+  lines: 1002-1066
 - kind: function
   qualified_name: trie/cli:_run_dry_run_diff
-  lines: 923-968
+  lines: 1069-1114
 - kind: function
   qualified_name: trie/cli:_run_single_file_sync
-  lines: 971-999
+  lines: 1117-1145
 - kind: function
   qualified_name: trie/cli:_run_metadata_only_refresh
-  lines: 1002-1059
+  lines: 1148-1205
 - kind: function
   qualified_name: trie/cli:_run_incremental_sync
-  lines: 1062-1111
+  lines: 1208-1257
 - kind: function
   qualified_name: trie/cli:setup_cmd
-  lines: 1115-1212
+  lines: 1261-1358
 - kind: function
   qualified_name: trie/cli:_render_setup_plan
-  lines: 1215-1256
+  lines: 1361-1402
 - kind: function
   qualified_name: trie/cli:_format_action
-  lines: 1259-1263
+  lines: 1405-1409
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 1275-1277
+  lines: 1421-1423
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 1280-1290
+  lines: 1426-1436
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 1294-1363
+  lines: 1440-1509
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 1366-1381
+  lines: 1512-1527
 incoming_refs: 0
-outgoing_refs: 80
+outgoing_refs: 88
 ---
-<!-- trie:section symbol=trie/cli:init_cmd fingerprint=b4f1d7bff0bc8e455ed6de5c56b9e0c884e01c1dc12eba107d91abe90e5b8584 body_fp=a30e268f60bb85196fe5055818affc8f1a117b80c3e981aed18fd2751c260c76 source_ref=f9896112d3c74faa4a548ca30df39e8106603df3 -->
+<!-- trie:section symbol=trie/cli:init_cmd fingerprint=8b4d9be5bbc2597c7eb91b29c6c50db8494d6b7fc7007d6d96dae998df54d5e5 body_fp=e1f123d349c49c73cb575e54d9eec2677d06d4bd0dfd98e87c02da7274c4dfb9 source_ref=df2eab34e273723a3bf42ae891020acd147e6bd4 -->
 ## `init_cmd(ctx, root, force, install_hooks, run_scan) -> None`
 
 Initialize a trie project: write `trie.toml`, update `.gitignore`, optionally scan, and install a pre-commit hook.
@@ -139,10 +145,10 @@ Initialize a trie project: write `trie.toml`, update `.gitignore`, optionally sc
 - `force`: overwrites existing `trie.toml` and skips Python-project detection.
 - `install_hooks`: tri-state; prompts interactively when `None` in a tty, skips in CI.
 - `run_scan`: builds the symbol graph immediately when `True`.
-- Exits 1 on `InitError`.
+- Exits 2 if the write lock is contended; exits 1 on `InitError`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:plan_cmd fingerprint=5541161bd7ddef524d429670145d7e92c48258fa968a28a36dc0eeee96e30093 body_fp=d1f62ac0e7cb4f54c4664c87191ea9e2fa4549acd9888b92839636963ae78f8a source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
+<!-- trie:section symbol=trie/cli:plan_cmd fingerprint=1f9525fd75f6e14df3b9d54f2f02446677e7a0ab7562b7c1f66684cca46ca390 body_fp=b9b881fda530e0449864c63ebc6e79c6a933166a6184ab0ada386272e5eca657 source_ref=df2eab34e273723a3bf42ae891020acd147e6bd4 -->
 ## `plan_cmd(ctx: typer.Context, model: str | None, all_: bool) -> None`
 
 Scan the project, estimate token costs, and print the sync worklist without writing any triefacts.
@@ -153,6 +159,7 @@ Scan the project, estimate token costs, and print the sync worklist without writ
 - Auto-selects incremental or full-bootstrap path based on existing triefacts.
 - Uses Anthropic's `count_tokens` endpoint — networked but never `messages.create`.
 - Incremental path passes per-file symbol regen counts to `build_plan` for symbol-level cost accuracy.
+- Acquires the write lock for the entire command; exits with code 2 if contended.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/cli:verify_cmd fingerprint=404a8a489ac3dff8f8a175632d07fbefd00f73f95de59264aab035c20b6af2c9 body_fp=7e53deb328e082791efe83f54f36b9744d8bae0789ffe2150787a6728327293b source_ref=f9896112d3c74faa4a548ca30df39e8106603df3 -->
@@ -161,7 +168,7 @@ Scan the project, estimate token costs, and print the sync worklist without writ
 Run an offline drift check and exit 1 if any triefact has drifted from its source.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:sync_cmd fingerprint=2de43338fd2fe4b3e4170ca730f7b7ad178668cf74f51afc95d31d332ca70cec body_fp=7125bbf60cc27926ce251a98ec04aeca0cd25fee1a0703470a8a579f860fd774 source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
+<!-- trie:section symbol=trie/cli:sync_cmd fingerprint=c08b2a86195dc0b7272c5f6c6ff6df2e7761fa27119ca2232fae50cbea7a3c51 body_fp=7125bbf60cc27926ce251a98ec04aeca0cd25fee1a0703470a8a579f860fd774 source_ref=df2eab34e273723a3bf42ae891020acd147e6bd4 -->
 ## `sync_cmd(ctx: typer.Context, file: Path | None, all_: bool, budget: float | None, limit: int | None, dry_run: bool, metadata_only: bool, model: str | None) -> None`
 
 Generate or refresh triefacts, auto-detecting full bootstrap vs. incremental cascade mode.
@@ -423,7 +430,7 @@ Refresh every triefact's front matter from the live store without calling the LL
 - Skips files outside `source_root`; reports changed vs already-current counts on completion.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:refresh_cmd fingerprint=3586c99dcdaa0a5db09072dbd4d381d9e4547a8b1e6fdd51ea873e731d072a8f body_fp=f682e1e21e081e9e6dce4f2313626fc9a0aff92558425308c0d136959ccc3b05 source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
+<!-- trie:section symbol=trie/cli:refresh_cmd fingerprint=95e65ccc97ba70699bc324ee65dfe871388eac222ef0b055579035abd808497d body_fp=5e945868e3ac7efd2b942cf9fcb9882769ff405248105eb76f3c988dc5a27495 source_ref=5ef8f6f2aff0fc71527ab68e07c96f20e1d14cdb -->
 ## `refresh_cmd(ctx: typer.Context, before_turn: bool, after_turn: bool, model: str | None) -> None`
 
 Bring the graph and triefacts up to date with the working tree via a freshness gate.
@@ -431,6 +438,7 @@ Bring the graph and triefacts up to date with the working tree via a freshness g
 - `before_turn`: cheap pre-turn check; full sync only when HEAD or mtimes changed.
 - `after_turn`: post-turn sweep; detects filesystem changes since last refresh.
 - Defaults to `--after-turn` when neither flag is given.
+- Acquires a per-project lock; concurrent calls queue a single tail pass instead of racing.
 - Exits 1 outside a git repo.
 <!-- trie:end -->
 
@@ -470,4 +478,23 @@ Print a merged per-target report showing MCP and hook install outcomes, with man
 ## `_format_action(action: str, path: Path | None) -> str`
 
 Render an action label with an optional path suffix for display in install plan output.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:_acquire_write_lock_or_exit fingerprint=3ae553a9c7f238f7b80d985c0aa027e15c51ac29b1e281d7444eecc167631911 body_fp=a51d8a8232a5ba04fe6c145f2ce13ad8d75fe3add3190cd484908de246bea634 source_ref=df2eab34e273723a3bf42ae891020acd147e6bd4 -->
+## `_acquire_write_lock_or_exit(project_root: Path, reporter: Reporter, command_name: str) -> Iterator[None]`
+
+Context manager that holds the refresh lock for a write-side command, or exits with code 2 if already contended.
+
+- `project_root`: determines which `.trie/` lock file to acquire.
+- `command_name`: embedded in the error message and telemetry event.
+- Exits code 2 (transient/retry) rather than 1 (config error) on contention.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:lock_check_cmd fingerprint=b2588d0ec23978e9e8f4b7732d307584d0bad5d7227cee2cf553c7f4c21bf287 body_fp=12bc621b6c9982cc36c217189f79c16b1b6b20cec48af033f129d4cb48ed76ae source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+## `lock_check_cmd(ctx: typer.Context) -> None`
+
+Probe whether another trie process holds the project's write lock, exiting 2 if contended.
+
+- Exit 0: lock is free, or no `trie.toml` found.
+- Exit 2: lock is held; caller should refuse to proceed and retry.
 <!-- trie:end -->
