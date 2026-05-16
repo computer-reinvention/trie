@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/sync/single_file.py
-file_fingerprint: a96a71dbae311d4d30916bb4e099cbcb794cf4b8c12c114fd60d901427768f8a
-last_synced_at: '2026-05-16T10:52:02Z'
+file_fingerprint: bf58fcedac6e0e26abee8c89fb3487061b30cc0929b03b92b5781ca1be17969f
+last_synced_at: '2026-05-16T11:23:15Z'
 defines:
 - kind: class
   qualified_name: trie/sync/single_file:FileSyncResult
@@ -27,7 +27,7 @@ defines:
   lines: 98-143
 - kind: function
   qualified_name: trie/sync/single_file:sync_single_file
-  lines: 146-398
+  lines: 146-400
 incoming_refs: 41
 outgoing_refs: 15
 ---
@@ -39,7 +39,7 @@ Immutable result record returned by `sync_single_file` summarising token usage a
 - `symbols_skipped`: count of symbols whose sections were passed through unchanged; always 0 when `symbols_to_regen` is `None`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/sync/single_file:sync_single_file fingerprint=cb552dd45724d07a7a457aeb0b5bfcf304002f1acb45a55d76bd98b9f488d62f body_fp=203ac363337b2fbbcc12d7035ecbd08eece56d9a939ce747ac824cacf77d13f8 source_ref=a30269d37f5e1cf5ab115c021914f0ca703881fd -->
+<!-- trie:section symbol=trie/sync/single_file:sync_single_file fingerprint=ac73ed59e70563c45e1291ebc796e4994c5a6b7bce9a6a44fa59c45e3b326991 body_fp=203ac363337b2fbbcc12d7035ecbd08eece56d9a939ce747ac824cacf77d13f8 source_ref=356a8e124a5f47830cfe45d3876ff546fee40c1e -->
 ## `sync_single_file(source_path, *, project_root, config, client, dest_triefact_path=None, store=None, symbols_to_regen=None) -> FileSyncResult`
 
 Generate or refresh the triefact file for a single Python source file, upserting sections for all parser-surfaced symbols and removing stale ones.

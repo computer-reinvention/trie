@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/models.py
-file_fingerprint: f9f6bbe69c2c96fdd7486115feea561f00ae6b58096e1c8fdf5cf6557c145dce
-last_synced_at: '2026-05-16T10:51:54Z'
+file_fingerprint: eed971b1aee49803434c0744c5585a07ecf33c7018ba891ece9c67ea15a7f614
+last_synced_at: '2026-05-16T11:23:08Z'
 defines:
 - kind: class
   qualified_name: trie/models:GenerationRequest
@@ -12,43 +12,43 @@ defines:
   lines: 35-40
 - kind: class
   qualified_name: trie/models:ModelClient
-  lines: 43-48
+  lines: 43-49
 - kind: method
   qualified_name: trie/models:ModelClient.generate
-  lines: 46-46
+  lines: 47-47
 - kind: method
   qualified_name: trie/models:ModelClient.count_tokens
-  lines: 48-48
+  lines: 49-49
 - kind: function
   qualified_name: trie/models:_retry_after_seconds
-  lines: 51-66
+  lines: 52-67
 - kind: function
   qualified_name: trie/models:_is_retryable
-  lines: 69-77
+  lines: 70-78
 - kind: function
   qualified_name: trie/models:_backoff_delay
-  lines: 80-94
+  lines: 81-95
 - kind: function
   qualified_name: trie/models:_run_with_retry
-  lines: 97-157
+  lines: 98-158
 - kind: class
   qualified_name: trie/models:AnthropicClient
-  lines: 160-241
+  lines: 161-250
 - kind: method
   qualified_name: trie/models:AnthropicClient.__init__
-  lines: 161-173
+  lines: 162-182
 - kind: method
   qualified_name: trie/models:AnthropicClient._payload
-  lines: 175-198
+  lines: 184-207
 - kind: method
   qualified_name: trie/models:AnthropicClient.generate
-  lines: 200-224
+  lines: 209-233
 - kind: method
   qualified_name: trie/models:AnthropicClient.count_tokens
-  lines: 226-241
+  lines: 235-250
 - kind: function
   qualified_name: trie/models:make_client
-  lines: 244-262
+  lines: 253-271
 incoming_refs: 61
 outgoing_refs: 2
 ---
@@ -70,12 +70,13 @@ Frozen dataclass holding token-usage statistics and text returned from a single 
 - `cache_read_input_tokens`: tokens read from an existing prompt cache entry.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/models:ModelClient fingerprint=81529832a0d7a426971ab9d6b942c3a06c74067ec5af261fa1dcface3bf7a86d body_fp=5065cfd41539ba717c02cd2f3aef91ba6f836149f4f7ded4478979f684d872cb source_ref=e12e23ef268599c29347001c72ed8323b67a45bd -->
+<!-- trie:section symbol=trie/models:ModelClient fingerprint=a891b37089e10f77940f6eed6239c2b45cf3f81f2c93f1fa329331f8af0d0a62 body_fp=7de28aadc3a53adece5ea1faef3ee158bcbc171dc333f5012abdfdd261dc1c83 source_ref=474d1856e9eae610812aee137ef64ddc15dadb3f -->
 ## `class ModelClient(Protocol)`
 
 Structural protocol defining the interface any model client must satisfy.
 
-- `model_id`: string identifier for the model being used
+- `model_id`: bare model name passed to the provider API (e.g. `"claude-sonnet-4-6"`)
+- `full_model_id`: `"provider/model"` string used for telemetry and pricing lookups
 - `generate`: invoke the model and return a `GenerationResponse`
 - `count_tokens`: return token count without generating output
 <!-- trie:end -->
@@ -92,17 +93,18 @@ Send a generation request and return the model's response with token usage.
 Return the token count for a generation request.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/models:AnthropicClient fingerprint=4a7a6aafb7628bfd34b5f6d8735668e722e81c121cbc81b4a3963e9ffd61ff2c body_fp=f31b8ea93cd93f45144b122f9a06d7b4bfe36dbd0685599a9f26128064d7e78b source_ref=0eace8ba1bfe42022eaa1c2bfa10076fcf325f1c -->
-## `AnthropicClient(model_id: str, *, client: Anthropic | None = None, sync_cfg: Sync | None = None)`
+<!-- trie:section symbol=trie/models:AnthropicClient fingerprint=4b02a2ac7e8b3de6f34fc290d9c804835e33e714d681be5630686431c7d4d7e5 body_fp=a20ebbe7d9882e860c5c841d307a2dc6a02ebe1b9a8cf20e94a99adc6713c341 source_ref=474d1856e9eae610812aee137ef64ddc15dadb3f -->
+## `AnthropicClient(model_id: str, *, client: Anthropic | None = None, sync_cfg: Sync | None = None, full_model_id: str | None = None)`
 
 Wrap the Anthropic Messages API to implement `ModelClient` with prompt-caching support and configurable retry behaviour.
 
-- `model_id`: bare model name (without `anthropic/` prefix).
+- `model_id`: bare model name sent to the API (without `anthropic/` prefix).
+- `full_model_id`: `"anthropic/..."` string used for telemetry and pricing; defaults to `f"anthropic/{model_id}"`.
 - `client`: injectable `Anthropic` instance; creates one with `max_retries=0` if omitted.
 - `sync_cfg`: retry knobs (max attempts, backoff bounds); defaults to `Sync()` defaults.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/models:AnthropicClient.generate fingerprint=758851da76b59aa834ad142c0482508de371025699a5c7e816ccdee5cccdb3de body_fp=a820616b0e562eea6c5d2cef05c91bba88653bba95a637bd3cdddbaa4072c56a source_ref=0eace8ba1bfe42022eaa1c2bfa10076fcf325f1c -->
+<!-- trie:section symbol=trie/models:AnthropicClient.generate fingerprint=b1e5c1d97d7819149656f57eb7f6ed0c00a034d7d111b72ff06bf6a43363ac00 body_fp=a820616b0e562eea6c5d2cef05c91bba88653bba95a637bd3cdddbaa4072c56a source_ref=474d1856e9eae610812aee137ef64ddc15dadb3f -->
 ## `generate(self, req: GenerationRequest) -> GenerationResponse`
 
 Call the Anthropic messages API with retry logic, record telemetry, and return token usage with generated text.
@@ -112,7 +114,7 @@ Call the Anthropic messages API with retry logic, record telemetry, and return t
 - Retries on rate-limit, server error, and timeout per `self._sync_cfg`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/models:AnthropicClient.count_tokens fingerprint=10285a7e87dbcd4ad78eb5971b5350b6d31ef2a2ccd6059dcb6c4987fc229db2 body_fp=c834ed496c7a7adc0682d438aacaa366111b8b6e19386686490c33f8361fbe3d source_ref=0eace8ba1bfe42022eaa1c2bfa10076fcf325f1c -->
+<!-- trie:section symbol=trie/models:AnthropicClient.count_tokens fingerprint=7c178f267e3119d197a891ba453210782970593c79b8e4e7c5a7768ba8af2bfb body_fp=c834ed496c7a7adc0682d438aacaa366111b8b6e19386686490c33f8361fbe3d source_ref=474d1856e9eae610812aee137ef64ddc15dadb3f -->
 ## `count_tokens(self, req: GenerationRequest) -> int`
 
 Return the input token count for `req` using the Anthropic token-counting API, with retry on rate-limit/overload/timeout errors.
@@ -121,7 +123,7 @@ Return the input token count for `req` using the Anthropic token-counting API, w
 - Retries honour `retry-after` headers and exponential backoff per `self._sync_cfg`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/models:make_client fingerprint=12dc0080bffbf3920b3d2734b137bc532a0db1567ea00f8b25dfd3af8400ab86 body_fp=5cb7649cfd32ecb52ca698fbf5666aeaf91cd1819516a36be8ffe65172438841 source_ref=0eace8ba1bfe42022eaa1c2bfa10076fcf325f1c -->
+<!-- trie:section symbol=trie/models:make_client fingerprint=3d0e19bae886b2171f8a2f2cf9e2458eda873da3602d0167f653f079cb102b7c body_fp=5cb7649cfd32ecb52ca698fbf5666aeaf91cd1819516a36be8ffe65172438841 source_ref=474d1856e9eae610812aee137ef64ddc15dadb3f -->
 ## `make_client(model_id: str, *, sync_cfg: Sync | None = None) -> ModelClient`
 
 Construct a `ModelClient` from a `"provider/model"` string, returning an `AnthropicClient` for the `anthropic/` provider.
@@ -132,12 +134,13 @@ Construct a `ModelClient` from a `"provider/model"` string, returning an `Anthro
 - Raises `NotImplementedError` for any provider other than `"anthropic"`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/models:AnthropicClient.__init__ fingerprint=cab5f6668a9d454606c3eda866dd9f2fad3e685c8208c8c4644a59c35fa21a7b body_fp=7f7f18c08013d2f5b356ae16f9560d93aabeead6b1149b14c15be3f54f0e3256 source_ref=0eace8ba1bfe42022eaa1c2bfa10076fcf325f1c -->
-## `AnthropicClient.__init__(self, model_id: str, *, client: Anthropic | None = None, sync_cfg: Sync | None = None) -> None`
+<!-- trie:section symbol=trie/models:AnthropicClient.__init__ fingerprint=14954523888082107ed1212c61a27cc5987f7f201f14589287cee12834e5512f body_fp=b7a321db06903131c7b676df09627412d7a85b9d95268efb3a25fbe90c964705 source_ref=474d1856e9eae610812aee137ef64ddc15dadb3f -->
+## `AnthropicClient.__init__(self, model_id: str, *, client: Anthropic | None = None, sync_cfg: Sync | None = None, full_model_id: str | None = None) -> None`
 
 Initialize an `AnthropicClient`, creating a default `Anthropic` SDK client (with `max_retries=0`) and retry config if none are provided.
 
 - `sync_cfg`: controls retry knobs; defaults to `Sync()` when omitted.
+- `full_model_id`: "provider/model" string for telemetry/pricing; defaults to `"anthropic/{model_id}"`.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/models:AnthropicClient._payload fingerprint=5960421b7af1c3033a30ed3a6db0e0c36f5af7f5248046a8d1aa7c78ab2ca7a1 body_fp=e7a8d99e27cfbdbf14c6d47de2d7685c6cfaa22d645800b6723619c57b883941 source_ref=e12e23ef268599c29347001c72ed8323b67a45bd -->

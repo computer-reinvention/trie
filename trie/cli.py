@@ -9,6 +9,9 @@ import typer
 from rich.console import Console
 
 from trie import __version__, telemetry
+from trie.audit import AuditSummary
+from trie.audit import render as render_audit
+from trie.audit import render_comparison as render_audit_comparison
 from trie.check import StaleReason, check_project
 from trie.config import Config, ConfigNotFoundError
 from trie.cost import get_pricing
@@ -377,6 +380,89 @@ def verify_cmd(ctx: typer.Context) -> None:
     """
     reporter = _get_reporter(ctx)
     _verify_drift(reporter, exit_on_drift=True)
+
+
+@app.command("audit")
+def audit_cmd(
+    ctx: typer.Context,
+    log: Path | None = typer.Option(
+        None,
+        "--log",
+        "-l",
+        help="Path to the debug.jsonl to read. Defaults to the configured debug.log_path.",
+    ),
+    compare: Path | None = typer.Option(
+        None,
+        "--compare",
+        "-c",
+        help="Render a side-by-side comparison: this log is the candidate, --log is the baseline.",
+    ),
+    as_json: bool = typer.Option(
+        False,
+        "--json",
+        help="Print the summary as JSON. Mutually exclusive with --compare.",
+    ),
+) -> None:
+    """Summarise a telemetry log: MCP usage, sync activity, retries, CLI invocations.
+
+    Reads the `debug.jsonl` produced by trie's telemetry layer (see `[debug]` in
+    `trie.toml`) and prints a compressed view of what happened during the run.
+    With `--compare`, two logs are rendered side-by-side with deltas — the
+    primary use case is comparing `with_trie` vs `without_trie` eval runs of an
+    agent on the same task.
+
+    No state is read or written beyond the log file(s); safe to run after the
+    fact on archived logs.
+    """
+    reporter = _get_reporter(ctx)
+
+    if compare is not None and as_json:
+        reporter.error("--compare and --json are mutually exclusive")
+        raise typer.Exit(code=1)
+
+    log_path = _resolve_audit_log_path(log, reporter)
+    try:
+        baseline = AuditSummary.from_log(log_path)
+    except FileNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    if compare is not None:
+        try:
+            candidate = AuditSummary.from_log(compare)
+        except FileNotFoundError as exc:
+            reporter.error(str(exc))
+            raise typer.Exit(code=1) from exc
+        render_audit_comparison(baseline, candidate, reporter.console)
+        return
+
+    if as_json:
+        # Use plain print rather than the reporter so the output is pipeable.
+        import json as _json
+
+        typer.echo(_json.dumps(baseline.to_dict(), indent=2, default=str))
+        return
+
+    render_audit(baseline, reporter.console)
+
+
+def _resolve_audit_log_path(log: Path | None, reporter: Reporter) -> Path:
+    """Pick the debug.jsonl to read.
+
+    Resolution order: explicit `--log` argument, then the `[debug].log_path` from
+    the nearest `trie.toml`, then `./debug.jsonl` in the cwd. We don't *require*
+    a trie.toml — running `trie audit` against a log from a different project is
+    a normal eval workflow."""
+    if log is not None:
+        return log
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError:
+        return Path.cwd() / "debug.jsonl"
+    cfg_path = Path(config.debug.log_path)
+    if not cfg_path.is_absolute():
+        cfg_path = (project_root / cfg_path).resolve()
+    return cfg_path
 
 
 def _print_scan_breakdown(

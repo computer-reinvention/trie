@@ -200,7 +200,9 @@ def sync_single_file(
     file_fp = _file_fingerprint(source_text)
     rel_path = str(source_path.relative_to(src_root))
 
-    with telemetry.timed("sync_file", path=rel_path, model=client.model_id) as tele:
+    with telemetry.timed(
+        "sync_file", path=rel_path, model=getattr(client, "full_model_id", client.model_id)
+    ) as tele:
         # Every parser-surfaced symbol gets a section. The `is_public` flag (leading
         # underscore by convention) is kept as descriptive metadata on Symbol but is
         # NOT used as a filter — stale prose is stale regardless of author intent,

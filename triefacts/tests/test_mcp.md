@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_mcp.py
 file_fingerprint: 529a00357bd248b8813c896be09747bf213b01bda28a4ec9661295d1893b5897
-last_synced_at: '2026-05-16T10:52:10Z'
+last_synced_at: '2026-05-16T11:23:32Z'
 description: 'Tests for the MCP tool surface: `locate`, `explain`, `walk`.'
 defines:
 - kind: class

@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_e2e_sync.py
 file_fingerprint: 90d68079a850ec282b726421f3ffe31992e90309f93ad90186c79440d3016e87
-last_synced_at: '2026-05-16T10:51:12Z'
+last_synced_at: '2026-05-16T11:23:26Z'
 description: End-to-end test for `trie sync --file` against the tiny fixture repo.
 defines:
 - kind: class
@@ -62,7 +62,7 @@ defines:
 incoming_refs: 0
 outgoing_refs: 26
 ---
-<!-- trie:section symbol=tests/test_e2e_sync:FakeClient fingerprint=464e2049df41370146411117991983091506f10d89f570b2aa42a935790758e0 body_fp=9852cd47a02dd04f455480536d875320091630d48396ecdd6bed11d0336eab23 source_ref=71542c3c3e0ef178aa3ed0414dd5c02ff50b0c94 -->
+<!-- trie:section symbol=tests/test_e2e_sync:FakeClient fingerprint=464e2049df41370146411117991983091506f10d89f570b2aa42a935790758e0 body_fp=9852cd47a02dd04f455480536d875320091630d48396ecdd6bed11d0336eab23 source_ref=639d88fa0c90df5f1040715075c2c2de1239593e -->
 ## `FakeClient`
 
 Deterministic LLM client stub that returns templated responses and records call count for cache-accounting assertions.

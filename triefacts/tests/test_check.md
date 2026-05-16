@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_check.py
 file_fingerprint: 82262f96501d7dda4e1e1766404de80fe839675416364ceef6f6fd1273d58ca0
-last_synced_at: '2026-05-16T10:52:03Z'
+last_synced_at: '2026-05-16T11:23:19Z'
 defines:
 - kind: class
   qualified_name: tests/test_check:FakeClient
