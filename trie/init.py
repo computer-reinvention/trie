@@ -12,9 +12,19 @@ PreCommitStrategy = Literal["git_hook", "framework", "none", "skipped"]
 
 PRE_COMMIT_HOOK_MARKER = "# trie-verify (added by `trie init`)"
 PRE_COMMIT_HOOK_END_MARKER = "# end trie-verify"
+# The hook runs two checks in order:
+#   1. `trie lock-check` — refuses the commit if a `trie refresh` or `trie sync`
+#      is in flight. Committing during a write would capture a half-updated
+#      triefact tree; better to fail loudly and let the user retry once the
+#      writer finishes.
+#   2. `trie verify` — the standard drift gate. Refuses commits when triefacts
+#      have drifted from source.
+# Both are wrapped in `command -v trie` so the hook degrades cleanly if trie
+# isn't on PATH (uninstalled, fresh clone before `uv tool install`, etc.).
 PRE_COMMIT_HOOK_BLOCK = (
     f"{PRE_COMMIT_HOOK_MARKER}\n"
     "if command -v trie >/dev/null 2>&1; then\n"
+    "    trie -q lock-check || exit $?\n"
     "    trie -q verify || exit $?\n"
     "fi\n"
     f"{PRE_COMMIT_HOOK_END_MARKER}\n"

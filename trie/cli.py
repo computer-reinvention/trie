@@ -36,6 +36,7 @@ from trie.mcp_install import InstallPlan, MCPInstallError
 from trie.mcp_install import install as mcp_run_install
 from trie.mcp_server import run_stdio as run_mcp_stdio
 from trie.models import make_client
+from trie.refresh_lock import try_acquire as try_acquire_refresh_lock
 from trie.reporter import ProgressHandle, Reporter, Verbosity
 from trie.scan import scan_project
 from trie.scope import discover_files
@@ -123,6 +124,41 @@ def _progress_callback(reporter: Reporter, label: str) -> Iterator[ProgressCallb
         yield adapter
     finally:
         adapter.close()
+
+
+@contextmanager
+def _acquire_write_lock_or_exit(
+    project_root: Path, reporter: Reporter, command_name: str
+) -> Iterator[None]:
+    """Hold the refresh lock for the duration of a write-side command, or exit
+    with a clear message if another process already holds it.
+
+    The lock is shared with the hook-driven `trie refresh` and with any other
+    write-side trie command in the same checkout. The hook's refresh path
+    quietly queues itself when contended because the agent harness wants
+    no-op-on-conflict semantics; operator-typed commands deserve the opposite
+    — a loud failure with a non-zero exit so the operator knows their work
+    didn't happen and can retry once the contending process finishes.
+
+    Exit code 2 is reserved for this case so scripts can distinguish "you
+    raced another trie process" (transient, retry) from exit 1 ("your config
+    is broken" — non-transient, fix-the-input).
+    """
+    with try_acquire_refresh_lock(project_root) as holder:
+        if not holder.acquired:
+            telemetry.emit(
+                "refresh_lock_contended",
+                project_root=str(project_root),
+                command=command_name,
+                action="rejected",
+            )
+            reporter.error(
+                f"another trie process is writing to this project "
+                f"({project_root}); `trie {command_name}` would race the graph "
+                "store. Wait for it to finish and retry."
+            )
+            raise typer.Exit(code=2)
+        yield
 
 
 @app.callback(invoke_without_command=True)
@@ -221,17 +257,22 @@ def init_cmd(
         else:
             install_hooks = False
 
-    try:
-        with reporter.status("scanning project…") if run_scan else _NoOpStatus():
-            result = init_project(
-                root,
-                force=force,
-                install_hooks=install_hooks,
-                run_scan=run_scan,
-            )
-    except InitError as exc:
-        reporter.error(str(exc))
-        raise typer.Exit(code=1) from exc
+    # `init` materialises `.trie/graph.db` when `--scan` is set. Guard with
+    # the lock so two concurrent inits (rare, but possible if a setup script
+    # races a hook on an already-set-up checkout) don't corrupt the store.
+    # `try_acquire` creates `.trie/` if it doesn't exist yet.
+    with _acquire_write_lock_or_exit(root, reporter, "init"):
+        try:
+            with reporter.status("scanning project…") if run_scan else _NoOpStatus():
+                result = init_project(
+                    root,
+                    force=force,
+                    install_hooks=install_hooks,
+                    run_scan=run_scan,
+                )
+        except InitError as exc:
+            reporter.error(str(exc))
+            raise typer.Exit(code=1) from exc
 
     reporter.success(f"wrote {result.project_root / 'trie.toml'}")
     detected = ", ".join(result.detected_markers)
@@ -333,7 +374,10 @@ def plan_cmd(
     triefacts_root = project_root / config.triefacts.root
     use_incremental = not all_ and _has_existing_triefacts(triefacts_root)
 
-    with Store(db_path) as store:
+    # `plan` runs `scan_project` on the full-bootstrap branch, which writes
+    # to the graph store. Even on the incremental branch it locks reads to a
+    # consistent snapshot of the SQLite database. Guard the whole command.
+    with _acquire_write_lock_or_exit(project_root, reporter, "plan"), Store(db_path) as store:
         if use_incremental:
             with reporter.status("computing incremental worklist…"):
                 worklist = compute_incremental_worklist(
@@ -400,6 +444,60 @@ def verify_cmd(ctx: typer.Context) -> None:
     _verify_drift(reporter, exit_on_drift=True)
 
 
+@app.command("lock-check")
+def lock_check_cmd(ctx: typer.Context) -> None:
+    """Probe whether another trie process holds the project's write lock.
+
+    Designed for the pre-commit hook: if a `trie refresh` or `trie sync` is
+    mid-flight, committing would race the triefact tree the commit is trying
+    to capture. We refuse the commit in that case so the user retries once
+    the writer finishes.
+
+    Exit codes mirror the rest of the lock-aware CLI surface:
+
+      0 — lock is free (or this project isn't configured for trie at all,
+          which means there is no trie state to race).
+      2 — lock is held by another process; the caller (typically a git
+          pre-commit hook) should refuse to proceed and prompt a retry.
+
+    The probe is acquire-then-immediately-release; it never queues, blocks,
+    or interferes with the holder's work. No `.trie/` files are created if
+    the project isn't yet initialised — a fresh checkout simply reports free.
+    """
+    reporter = _get_reporter(ctx)
+
+    # If trie isn't configured here, there's no shared state to race; report
+    # free and exit 0. The pre-commit hook stays a no-op rather than throwing
+    # confusing errors at users who haven't set trie up in this repo.
+    try:
+        _, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError:
+        reporter.success("lock-check: no trie.toml — nothing to lock")
+        return
+
+    # `.trie/` may not exist yet on a fresh checkout. In that case the lock
+    # file path is materialisable but unmaterialised; acquire creates `.trie/`
+    # transparently and immediately releases — a stray `refresh.lock` anchor
+    # file is the only artefact left behind, which is harmless and avoids
+    # special-casing the not-yet-initialised state.
+    with try_acquire_refresh_lock(project_root) as holder:
+        if holder.acquired:
+            reporter.success("lock-check: free")
+            return
+
+        telemetry.emit(
+            "refresh_lock_contended",
+            project_root=str(project_root),
+            command="lock-check",
+            action="rejected",
+        )
+        reporter.error(
+            f"lock-check: another trie process is writing to {project_root}. "
+            "Wait for it to finish and retry."
+        )
+        raise typer.Exit(code=2)
+
+
 @app.command("refresh")
 def refresh_cmd(
     ctx: typer.Context,
@@ -458,21 +556,57 @@ def refresh_cmd(
     db_path = project_root / ".trie" / "graph.db"
 
     runner = ensure_fresh_before_turn if before_turn else ensure_fresh_after_turn
+    mode_label = "before-turn" if before_turn else "after-turn"
 
-    with Store(db_path) as store, _progress_callback(reporter, label="refreshing") as cb:
-        try:
-            result = runner(
-                project_root=project_root,
-                config=config,
-                store=store,
-                client=client,
-                progress=cb,
+    # `trie refresh` runs as a per-turn hook, so two agent turns in quick
+    # succession can fire two refresh processes that race the SQLite store
+    # and the triefact tree. The lock serialises them; the queued sentinel
+    # coalesces N rapid contests down to "one current run + at most one
+    # tail run" so we don't fan out an unbounded chain.
+    with try_acquire_refresh_lock(project_root) as holder:
+        if not holder.acquired:
+            holder.mark_queued()
+            telemetry.emit(
+                "refresh_lock_contended",
+                project_root=str(project_root),
+                mode=mode_label,
+                action="queued",
             )
-        except NotAGitRepoError as exc:
-            reporter.error(str(exc))
-            raise typer.Exit(code=1) from exc
+            reporter.success(f"{mode_label}: another refresh is running; queued for tail pass.")
+            return
 
-    _report_freshness(reporter, result, mode="before-turn" if before_turn else "after-turn")
+        with Store(db_path) as store, _progress_callback(reporter, label="refreshing") as cb:
+            try:
+                result = runner(
+                    project_root=project_root,
+                    config=config,
+                    store=store,
+                    client=client,
+                    progress=cb,
+                )
+            except NotAGitRepoError as exc:
+                reporter.error(str(exc))
+                raise typer.Exit(code=1) from exc
+            _report_freshness(reporter, result, mode=mode_label)
+
+            # Tail pass: at most one extra run, coalescing every refresh
+            # request that arrived while we held the lock. We deliberately
+            # don't loop further — if more refreshes pile up during the
+            # tail itself, the next hook invocation handles them.
+            if holder.consume_queued():
+                telemetry.emit(
+                    "refresh_lock_tail_pass",
+                    project_root=str(project_root),
+                    mode=mode_label,
+                )
+                tail = runner(
+                    project_root=project_root,
+                    config=config,
+                    store=store,
+                    client=client,
+                    progress=cb,
+                )
+                _report_freshness(reporter, tail, mode=f"{mode_label} (tail)")
 
 
 def _report_freshness(reporter: Reporter, result: FreshnessResult, *, mode: str) -> None:
@@ -809,39 +943,51 @@ def sync_cmd(
         )
         raise typer.Exit(code=1)
 
-    if metadata_only:
-        _run_metadata_only_refresh(reporter)
-        return
-
-    if file is not None:
-        _run_single_file_sync(reporter, file, model)
-        return
-
-    if dry_run:
-        _run_dry_run_diff(reporter=reporter, model=model, budget=budget, limit=limit)
-        return
-
-    # Auto-detect first-run vs incremental.
+    # Resolve project root up front so we can guard every sync sub-mode with
+    # the same write lock. Config errors stay exit-1; the lock guard is the
+    # only thing that raises exit-2 (transient contention).
     try:
-        config, project_root = Config.find_and_load(Path.cwd())
+        _, project_root = Config.find_and_load(Path.cwd())
     except ConfigNotFoundError as exc:
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
-    triefacts_root = project_root / config.triefacts.root
-    needs_full_pass = all_ or not _has_existing_triefacts(triefacts_root)
+    with _acquire_write_lock_or_exit(project_root, reporter, "sync"):
+        if metadata_only:
+            _run_metadata_only_refresh(reporter)
+            return
 
-    if needs_full_pass:
-        _run_full_pass(
-            reporter=reporter,
-            project_root=project_root,
-            config=config,
-            model=model,
-            budget=budget,
-            limit=limit,
-        )
-    else:
-        _run_incremental_sync(reporter=reporter, model=model, budget=budget, limit=limit)
+        if file is not None:
+            _run_single_file_sync(reporter, file, model)
+            return
+
+        if dry_run:
+            _run_dry_run_diff(reporter=reporter, model=model, budget=budget, limit=limit)
+            return
+
+        # Auto-detect first-run vs incremental. Re-load config here so the
+        # helpers see exactly the dataclass they were built around; the
+        # earlier load above was only to get a path for the lock.
+        try:
+            config, project_root = Config.find_and_load(Path.cwd())
+        except ConfigNotFoundError as exc:
+            reporter.error(str(exc))
+            raise typer.Exit(code=1) from exc
+
+        triefacts_root = project_root / config.triefacts.root
+        needs_full_pass = all_ or not _has_existing_triefacts(triefacts_root)
+
+        if needs_full_pass:
+            _run_full_pass(
+                reporter=reporter,
+                project_root=project_root,
+                config=config,
+                model=model,
+                budget=budget,
+                limit=limit,
+            )
+        else:
+            _run_incremental_sync(reporter=reporter, model=model, budget=budget, limit=limit)
 
 
 def _has_existing_triefacts(triefacts_root: Path) -> bool:

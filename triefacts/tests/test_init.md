@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: tests/test_init.py
-file_fingerprint: 0e184c81d9362c7f73da7b478b840c800a1a07a9c74aec22327683a46e1f8beb
-last_synced_at: '2026-05-15T13:10:17Z'
+file_fingerprint: e77ecbd2b75cfe4e26c7c804279c4f59c3d8d07b029f0daf1982c0b6f7286734
+last_synced_at: '2026-05-16T13:17:23Z'
 defines:
 - kind: function
   qualified_name: tests/test_init:python_project
@@ -69,40 +69,40 @@ defines:
   lines: 167-171
 - kind: function
   qualified_name: tests/test_init:test_install_hook_writes_new_pre_commit_when_git_repo
-  lines: 177-189
+  lines: 177-195
 - kind: function
   qualified_name: tests/test_init:test_install_hook_appends_to_existing_pre_commit
-  lines: 192-203
+  lines: 198-209
 - kind: function
   qualified_name: tests/test_init:test_install_hook_idempotent
-  lines: 206-211
+  lines: 212-217
 - kind: function
   qualified_name: tests/test_init:test_install_hook_skips_when_pre_commit_framework_present
-  lines: 214-220
+  lines: 220-226
 - kind: function
   qualified_name: tests/test_init:test_install_hook_skips_when_not_a_git_repo
-  lines: 223-227
+  lines: 229-233
 - kind: function
   qualified_name: tests/test_init:test_init_project_install_hooks_in_git_repo
-  lines: 233-238
+  lines: 239-244
 - kind: function
   qualified_name: tests/test_init:test_init_project_default_does_not_install_hooks
-  lines: 241-245
+  lines: 247-251
 - kind: function
   qualified_name: tests/test_init:test_cli_init_install_hooks_flag_in_git_repo
-  lines: 251-257
+  lines: 257-263
 - kind: function
   qualified_name: tests/test_init:test_cli_init_no_install_hooks_flag_skips
-  lines: 260-265
+  lines: 266-271
 - kind: function
   qualified_name: tests/test_init:test_cli_init_framework_path_prints_snippet
-  lines: 268-275
+  lines: 274-281
 - kind: function
   qualified_name: tests/test_init:test_cli_init_non_interactive_skips_prompt
-  lines: 278-282
+  lines: 284-288
 - kind: function
   qualified_name: tests/test_init:test_cli_init_prints_scan_summary
-  lines: 285-291
+  lines: 291-297
 incoming_refs: 0
 outgoing_refs: 27
 ---
@@ -232,10 +232,10 @@ Verify that `init_project` runs a scan by default, populating scan stats and cre
 Assert that `init_project` with `run_scan=False` skips scanning and leaves no `graph.db` file.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_init:test_install_hook_writes_new_pre_commit_when_git_repo fingerprint=ea202f5549ed284cda7fcdf0c825891eaf4600836200e1a2846c5e4c253e0028 body_fp=be7d561c10497057c2f4900c35ca988748bbedbe31758968359a77e45ee6f325 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_install_hook_writes_new_pre_commit_when_git_repo fingerprint=b18c0c04fcf836bcab6ffd1e5ab09560a6380646800a7832ec95a5287ec39fdf body_fp=c52a73ff85e4e626f9d1964b8499a7696a1db18bf45f160710d849779571c07c source_ref=ab16924db54b3f9d76dc63bc9d79de874868af04 -->
 ## `test_install_hook_writes_new_pre_commit_when_git_repo(python_project: Path)`
 
-Verify `install_pre_commit_hook` creates an executable pre-commit hook in a new `.git` repo with correct content and marker.
+Verify `install_pre_commit_hook` creates an executable pre-commit hook containing `lock-check` before `verify`, with marker, in a new `.git` repo.
 <!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_init:test_install_hook_appends_to_existing_pre_commit fingerprint=ab1aa18038215b7dde8e92f583a36876384f058fd046a737eb33efc13757f132 body_fp=b34abf9620c4097c1a161d2fdbb21f1e54998ddb5f6be813f804a76faf7aa43f source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->

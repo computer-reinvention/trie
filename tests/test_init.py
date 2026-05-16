@@ -182,7 +182,13 @@ def test_install_hook_writes_new_pre_commit_when_git_repo(python_project: Path):
     assert hook_path is not None
     text = hook_path.read_text()
     assert PRE_COMMIT_HOOK_MARKER in text
+    # The hook runs lock-check before verify so a commit during a refresh/sync
+    # fails fast with a clear message rather than racing the writer.
+    assert "trie -q lock-check" in text
     assert "trie -q verify" in text
+    # Order matters: lock-check must precede verify so the commit fails on
+    # contention before spending cycles on the offline drift check.
+    assert text.index("trie -q lock-check") < text.index("trie -q verify")
     # Must be executable.
     import stat
 
