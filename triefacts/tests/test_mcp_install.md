@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: tests/test_mcp_install.py
-file_fingerprint: 185cb2e15fa149dd3eadd42decf008cb10ef4e4447cdaf95772914d9c51dff97
-last_synced_at: '2026-05-15T13:10:46Z'
+file_fingerprint: 86998d7b7de324f0550cda292e4bea1559cc9ccfc7acbbcbea2f5eb75fd0866f
+last_synced_at: '2026-05-16T11:03:39Z'
 defines:
 - kind: function
   qualified_name: tests/test_mcp_install:project
@@ -29,46 +29,58 @@ defines:
   qualified_name: tests/test_mcp_install:test_install_dry_run_writes_no_file
   lines: 127-137
 - kind: function
+  qualified_name: tests/test_mcp_install:test_install_opencode_creates_project_config
+  lines: 143-165
+- kind: function
+  qualified_name: tests/test_mcp_install:test_install_opencode_user_scope_lands_in_config_dir
+  lines: 168-187
+- kind: function
+  qualified_name: tests/test_mcp_install:test_install_opencode_preserves_existing_mcp_servers
+  lines: 190-216
+- kind: function
+  qualified_name: tests/test_mcp_install:test_install_opencode_idempotent_when_unchanged
+  lines: 219-236
+- kind: function
   qualified_name: tests/test_mcp_install:test_install_vscode_uses_servers_key
-  lines: 143-158
+  lines: 242-257
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_errors_on_invalid_json
-  lines: 164-174
+  lines: 263-273
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_user_scope_writes_to_user_path
-  lines: 180-199
+  lines: 279-298
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_skips_target_without_scope
-  lines: 202-213
+  lines: 301-312
 - kind: function
   qualified_name: tests/test_mcp_install:test_detect_returns_false_in_clean_environment
-  lines: 219-226
+  lines: 318-325
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_auto_detect_errors_when_nothing_found
-  lines: 229-243
+  lines: 328-342
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_all_runs_every_target_in_print_mode
-  lines: 249-264
+  lines: 348-365
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_install_print_only
-  lines: 270-276
+  lines: 371-377
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_install_writes_file
-  lines: 279-285
+  lines: 380-386
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_install_unknown_target
-  lines: 288-293
+  lines: 389-394
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_install_target_and_all_mutex
-  lines: 296-301
+  lines: 397-402
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_serve_dispatches_to_run_stdio
-  lines: 304-316
+  lines: 405-417
 - kind: function
-  qualified_name: tests/test_mcp_install:test_cli_mcp_no_subcommand_runs_serve
-  lines: 319-332
+  qualified_name: tests/test_mcp_install:test_cli_mcp_no_subcommand_prints_help
+  lines: 420-438
 incoming_refs: 0
-outgoing_refs: 15
+outgoing_refs: 19
 ---
 <!-- trie:section symbol=tests/test_mcp_install:project fingerprint=9635d698397eed755ba54f18855a451e5f737f90ab053c81317de51f20a18b4a body_fp=ae09ec600ba8e89e4c44445846e66135344fc4e14a18a9d6fa2dc8e49187f6c0 source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
 ## `project(tmp_path: Path) -> Path`
@@ -156,13 +168,13 @@ Assert `install` raises `MCPInstallError` matching "no agents detected" when aut
 - Redirects `HOME` and `PATH` to non-existent locations to suppress all detection.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp_install:test_install_all_runs_every_target_in_print_mode fingerprint=34698c279db160b45ff5a07c148efb263e5deacecc3f46de20426de713de0179 body_fp=18fee4770bb465bc834955694319dd552d0a33174f47bf0cec56890239f41fc0 source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
+<!-- trie:section symbol=tests/test_mcp_install:test_install_all_runs_every_target_in_print_mode fingerprint=b0fda18ed4da73efc289339a12ccb0257ce9b572056669f413bce3f958cecab2 body_fp=292f8c8fa1a99f605ba2b8254366b84565eb138e58b3e58851dd6ee4bf3f2cdf source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
 ## `test_install_all_runs_every_target_in_print_mode(project: Path)`
 
 Assert that `install_all=True` with `print_only=True` covers every target, previewing project-scope targets and skipping user-scope-only ones.
 
 - `claude-desktop` and `windsurf` expect `"skipped"` as user-scope-only targets.
-- `claude-code` and `vscode` expect `"preview"` as project-scope-compatible targets.
+- `claude-code`, `vscode`, and `opencode` expect `"preview"` as project-scope-compatible targets.
 <!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_install_print_only fingerprint=ff72c235cd8c0a7bd68d24714747272e35a04b8f4dda60b434f7d23c379ca3c9 body_fp=f179440ddf3c33531cf2925bcc8d86e394f910e8445386cae4b63aea651f24fb source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
@@ -195,8 +207,39 @@ Assert that passing both `--target` and `--all` to `trie mcp install` exits with
 Assert that `trie mcp serve` invokes `run_mcp_stdio` with the resolved project root.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_no_subcommand_runs_serve fingerprint=1684a89b2d1ae28d0118412fb9c20e562c61d2b9dad00525e7c0cb7d8cd138a8 body_fp=b8c8a91d079356631ce9069c868c556b0f20f4c23741cacc873da2528077c63e source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
-## `test_cli_mcp_no_subcommand_runs_serve(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `trie mcp` (no subcommand) invokes `run_mcp_stdio` with the resolved project root.
+
+<!-- trie:section symbol=tests/test_mcp_install:test_install_opencode_creates_project_config fingerprint=056d1ec0c7977353f4a8cffaff32482702b1f93b8e3613017f92191c1adefcab body_fp=d1cd03c84510c694651f3ff43e12677055423393181fc5825356f31aad60fdad source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
+## `test_install_opencode_creates_project_config(project: Path)`
+
+Assert that installing the `opencode` target at project scope creates `opencode.json` with the correct `mcp.trie` snippet shape.
+
+- `type` must be `"local"`, `command` must be `["trie", "mcp", "serve"]`, `enabled` must be `True`.
+- `cwd` must be absent from the snippet; `mcpServers` key must not appear at the top level.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp_install:test_install_opencode_user_scope_lands_in_config_dir fingerprint=1d03ac3f2f3d2cc7e111ab61962771718ea315388c6e26ef4d5b5b913234a4e6 body_fp=ed4ba128770806b39a36a80369eb89421815c95711021280454ecd5dc87b1d39 source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
+## `test_install_opencode_user_scope_lands_in_config_dir(project: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert user-scope opencode install writes to `~/.config/opencode/opencode.json` with correct snippet shape.
+
+- `monkeypatch`: redirects `HOME` to a sandboxed temp directory to avoid touching the real filesystem.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp_install:test_install_opencode_preserves_existing_mcp_servers fingerprint=a5ebe471b22cc0b8e89250528323be69aa94350d8b75831d9e4a84d9c001f615 body_fp=675a46580b01da6135620a796d9d0a60d04fe5b4f1b99d7d5e84c2e24463296c source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
+## `test_install_opencode_preserves_existing_mcp_servers(project: Path)`
+
+Assert that installing the `opencode` target merges `trie` into an existing `opencode.json` without removing other MCP entries or top-level keys.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp_install:test_install_opencode_idempotent_when_unchanged fingerprint=4feb7ef3e18d0c41903e35f54d8c15fbe57b3e201600c0b55870bcf0c8f811d8 body_fp=f33f6092742514251e22730dd1d1c8e87fe4aa8aefe6947742335ad5a64e238d source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
+## `test_install_opencode_idempotent_when_unchanged(project: Path)`
+
+Assert that a second `install` call for `opencode` with identical config produces a `"skipped"` action.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_no_subcommand_prints_help fingerprint=81a7825c6ac3f78de339c25c6d9c267e2f68655c15bbb250a598119a1b2e1863 body_fp=5db9770ac1db659588822b63ef4a31ee7deb999131ca2c1394d6b5e7d4409d4c source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
+## `test_cli_mcp_no_subcommand_prints_help(project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie mcp` with no subcommand prints help, exits with code 2, and never starts the stdio server.
 <!-- trie:end -->

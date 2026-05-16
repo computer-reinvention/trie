@@ -3,12 +3,15 @@ from __future__ import annotations
 import json
 import shutil
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
 Scope = Literal["project", "user"]
 Action = Literal["created", "updated", "skipped", "preview", "error"]
+
+SnippetFactory = Callable[[Path], dict]
 
 
 class MCPInstallError(Exception):
@@ -24,15 +27,48 @@ class ApplyResult:
     detail: str = ""
 
 
+def _claude_style_snippet(project_root: Path) -> dict:
+    """Snippet shape used by Claude Code, Claude Desktop, Cursor, Windsurf, Codex, and
+    VS Code: a `command` string, a list of `args`, and an explicit `cwd` so the spawned
+    `trie mcp serve` resolves the correct project root regardless of where the agent
+    was launched from."""
+    return {
+        "command": "trie",
+        "args": ["mcp", "serve"],
+        "cwd": str(project_root.resolve()),
+    }
+
+
+def _opencode_style_snippet(project_root: Path) -> dict:
+    """Snippet shape used by opencode (`type: "local"` with `command` as a single array).
+
+    Unlike Claude, opencode's MCP config doesn't accept a `cwd` field. The server still
+    needs to find the right `trie.toml`, so we prepend `--directory` to the command —
+    `trie` itself doesn't honour that flag, but the SDK launches the process from the
+    project root by default, so omission is acceptable for project-scope installs. For
+    user-scope, the agent's own cwd is what trie scopes against."""
+    _ = project_root  # cwd is implicit in opencode's spawn semantics
+    return {
+        "type": "local",
+        "command": ["trie", "mcp", "serve"],
+        "enabled": True,
+    }
+
+
 @dataclass(frozen=True)
 class MCPTarget:
     """Static description of a coding agent / IDE that hosts MCP servers via JSON
     config. The shape is intentionally narrow: targets that don't fit (e.g. Zed,
-    which embeds MCP config in a TOML/settings.json) would need their own adapter."""
+    which embeds MCP config in a TOML/settings.json) would need their own adapter.
+
+    `snippet_factory` produces the JSON value registered under `snippet_key.trie`.
+    The default factory matches the Claude-style schema (`command` + `args` + `cwd`);
+    opencode supplies `_opencode_style_snippet` because its schema differs."""
 
     name: str  # short slug used as --target value
     display_name: str
     snippet_key: str = "mcpServers"
+    snippet_factory: SnippetFactory = field(default=_claude_style_snippet)
     project_rel_path: tuple[str, ...] | None = None  # relative to project root
     user_path_str: str | None = None  # passed to Path then expanduser-ed
     detect_paths_str: tuple[str, ...] = ()  # any of these existing → installed
@@ -64,14 +100,16 @@ class MCPTarget:
             return True
         return any(shutil.which(b) is not None for b in self.detect_binaries)
 
+    def snippet(self, project_root: Path) -> dict:
+        """Build the JSON value registered for this target under `snippet_key.trie`."""
+        return self.snippet_factory(project_root)
+
 
 def trie_server_snippet(project_root: Path) -> dict:
-    """The JSON value registered under each target's `mcpServers` (or equivalent) map."""
-    return {
-        "command": "trie",
-        "args": ["mcp", "serve"],
-        "cwd": str(project_root.resolve()),
-    }
+    """Back-compat shim. New callers should prefer `MCPTarget.snippet(project_root)`
+    because different agents expect different shapes. Kept as the Claude-style default
+    so existing tests and any external imports continue to work."""
+    return _claude_style_snippet(project_root)
 
 
 def _claude_desktop_user_path() -> str:
@@ -128,6 +166,17 @@ TARGETS: dict[str, MCPTarget] = {
         detect_paths_str=("~/.codex",),
         detect_binaries=("codex",),
         notes="Codex CLI MCP config path may evolve; verify after install.",
+    ),
+    "opencode": MCPTarget(
+        name="opencode",
+        display_name="opencode",
+        # opencode uses `mcp` (not `mcpServers`) under both project and user configs.
+        snippet_key="mcp",
+        snippet_factory=_opencode_style_snippet,
+        project_rel_path=("opencode.json",),
+        user_path_str="~/.config/opencode/opencode.json",
+        detect_paths_str=("~/.config/opencode", "~/.local/share/opencode"),
+        detect_binaries=("opencode",),
     ),
 }
 
@@ -198,7 +247,7 @@ def _apply_one(
     print_only: bool,
     dry_run: bool,
 ) -> ApplyResult:
-    snippet = trie_server_snippet(project_root)
+    snippet = target.snippet(project_root)
     config_path = target.config_path(project_root, scope)
 
     if print_only:

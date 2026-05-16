@@ -836,27 +836,15 @@ def _run_incremental_sync(
 
 mcp_app = typer.Typer(
     name="mcp",
-    help="MCP server: install for an agent (`install`), or serve over stdio.",
-    invoke_without_command=True,
-    no_args_is_help=False,
+    help="MCP server: install for an agent (`install`), or serve over stdio (`serve`).",
+    no_args_is_help=True,
 )
 app.add_typer(mcp_app, name="mcp")
 
 
-@mcp_app.callback()
-def _mcp_root(ctx: typer.Context) -> None:
-    """When invoked without a subcommand (back-compat with v0.1's `trie mcp`),
-    fall through to `serve`. New installs and snippets reference `trie mcp serve`
-    explicitly."""
-    if ctx.invoked_subcommand is None:
-        _run_mcp_serve()
-        raise typer.Exit()
-
-
-@mcp_app.command("serve", hidden=True)
+@mcp_app.command("serve")
 def mcp_serve() -> None:
-    """Stdio MCP server entry point. Hidden from help — agents spawn this directly
-    via the snippet that `trie mcp install` writes."""
+    """Run the trie MCP server over stdio (spawned by agents; rarely typed by hand)."""
     _run_mcp_serve()
 
 

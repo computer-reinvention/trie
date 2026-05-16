@@ -137,6 +137,105 @@ def test_install_dry_run_writes_no_file(project: Path):
     assert not (project / ".mcp.json").exists()
 
 
+# --- opencode uses `mcp` and a `type: "local"` snippet shape ---
+
+
+def test_install_opencode_creates_project_config(project: Path):
+    """opencode's project config is `opencode.json` at repo root, with the snippet
+    nested under `mcp.trie`."""
+    plan = install(
+        target_names=["opencode"],
+        scope="project",
+        install_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    r = plan.results[0]
+    assert r.action == "created"
+    assert r.path == project / "opencode.json"
+    data = json.loads(r.path.read_text())
+    assert "mcp" in data
+    assert "mcpServers" not in data  # opencode uses a different key
+    trie_entry = data["mcp"]["trie"]
+    assert trie_entry["type"] == "local"
+    assert trie_entry["command"] == ["trie", "mcp", "serve"]
+    assert trie_entry["enabled"] is True
+    # opencode snippets do not carry a `cwd` field — its absence is part of the shape.
+    assert "cwd" not in trie_entry
+
+
+def test_install_opencode_user_scope_lands_in_config_dir(
+    project: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """User-scope install resolves to `~/.config/opencode/opencode.json`."""
+    fake_home = tmp_path / "fakehome"
+    fake_home.mkdir()
+    monkeypatch.setenv("HOME", str(fake_home))
+    plan = install(
+        target_names=["opencode"],
+        scope="user",
+        install_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    r = plan.results[0]
+    assert r.action == "created"
+    assert r.path == fake_home / ".config" / "opencode" / "opencode.json"
+    data = json.loads(r.path.read_text())
+    assert data["mcp"]["trie"]["type"] == "local"
+
+
+def test_install_opencode_preserves_existing_mcp_servers(project: Path):
+    """When opencode.json already has other MCP servers, we add `trie` alongside
+    rather than clobbering them."""
+    existing = {
+        "$schema": "https://opencode.ai/config.json",
+        "mcp": {
+            "context7": {
+                "type": "remote",
+                "url": "https://mcp.context7.com/mcp",
+            }
+        },
+    }
+    (project / "opencode.json").write_text(json.dumps(existing))
+    plan = install(
+        target_names=["opencode"],
+        scope="project",
+        install_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    assert plan.results[0].action == "updated"
+    data = json.loads((project / "opencode.json").read_text())
+    assert "trie" in data["mcp"]
+    assert "context7" in data["mcp"]
+    # Non-mcp keys (the schema URL) survive too.
+    assert data["$schema"] == "https://opencode.ai/config.json"
+
+
+def test_install_opencode_idempotent_when_unchanged(project: Path):
+    install(
+        target_names=["opencode"],
+        scope="project",
+        install_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    second = install(
+        target_names=["opencode"],
+        scope="project",
+        install_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    assert second.results[0].action == "skipped"
+
+
 # --- VS Code uses `servers`, not `mcpServers` ---
 
 
@@ -256,10 +355,12 @@ def test_install_all_runs_every_target_in_print_mode(project: Path):
         project_root=project,
     )
     assert {r.target for r in plan.results} == set(TARGETS)
-    # VS Code supports project scope; user-scope-only targets get skipped here.
+    # VS Code, opencode, claude-code, cursor all support project scope; user-scope-only
+    # targets get skipped here.
     actions = {r.target: r.action for r in plan.results}
     assert actions["claude-code"] == "preview"
     assert actions["vscode"] == "preview"
+    assert actions["opencode"] == "preview"
     assert actions["claude-desktop"] == "skipped"  # user-scope only
     assert actions["windsurf"] == "skipped"  # user-scope only
 
@@ -316,9 +417,10 @@ def test_cli_mcp_serve_dispatches_to_run_stdio(project: Path, monkeypatch: pytes
     assert captured["root"].resolve() == project.resolve()
 
 
-def test_cli_mcp_no_subcommand_runs_serve(project: Path, monkeypatch: pytest.MonkeyPatch):
-    """Back-compat: `trie mcp` (no subcommand) still starts the server, so existing
-    snippets that reference just `trie mcp` keep working."""
+def test_cli_mcp_no_subcommand_prints_help(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """`trie mcp` with no subcommand must print help and exit non-zero (typer's
+    standard no-args-is-help behaviour). Earlier versions silently ran the stdio
+    server, which is hostile when a human types it at a terminal."""
     monkeypatch.chdir(project)
     captured: dict[str, Path] = {}
 
@@ -328,5 +430,9 @@ def test_cli_mcp_no_subcommand_runs_serve(project: Path, monkeypatch: pytest.Mon
     monkeypatch.setattr("trie.cli.run_mcp_stdio", fake_run_stdio)
     runner = CliRunner()
     result = runner.invoke(app, ["mcp"])
-    assert result.exit_code == 0, result.output
-    assert captured["root"].resolve() == project.resolve()
+    # typer's no_args_is_help renders help and exits with code 2 (missing command).
+    assert result.exit_code == 2
+    assert "serve" in result.output
+    assert "install" in result.output
+    # And critically, the server must NOT have been started.
+    assert "root" not in captured
