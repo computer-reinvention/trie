@@ -37,6 +37,18 @@ class FileSyncResult:
 
 
 @dataclass(frozen=True)
+class MetadataRefreshResult:
+    """Outcome of `refresh_triefact_metadata` for one file.
+
+    `changed` is True when the rewritten triefact bytes differ from the previous
+    bytes — useful for callers that want to report "N triefacts updated" without
+    re-reading the files."""
+
+    triefact_path: Path
+    changed: bool
+
+
+@dataclass(frozen=True)
 class _SymbolJob:
     """One per-symbol unit of work scheduled into the generate-phase thread pool.
 
@@ -141,6 +153,86 @@ def _resolve_previous_symbols(
             if sym is not None:
                 out[q] = sym
     return out
+
+
+def refresh_triefact_metadata(
+    source_path: Path,
+    *,
+    project_root: Path,
+    config: Config,
+    store: Store | None = None,
+) -> MetadataRefreshResult:
+    """Refresh a triefact's front matter from the live store; never call the LLM.
+
+    Use case: the reference graph changed (new resolver, new edges) but no source
+    file did. Section bodies and section fingerprints are functions of source
+    only, so they stay byte-identical. The front matter's `incoming_refs` /
+    `outgoing_refs` / `defines` are derived from the live store, so those need a
+    refresh to reflect reality.
+
+    What's intentionally NOT touched:
+
+    - Section bodies — written exactly as before.
+    - Section fingerprints (the `fingerprint=...` in each section sentinel).
+    - `last_synced_at` — semantically reserved for "the LLM ran"; leaving it
+      stable preserves the audit trail.
+    - `file_fingerprint` — re-derived from the current source, which we re-read.
+      In practice this is unchanged when source didn't change; recomputing keeps
+      the field honest if the file *did* change between scans without us noticing.
+
+    Returns `MetadataRefreshResult(changed=True)` when the rewritten bytes
+    differ from what was on disk. When the triefact doesn't exist (e.g. a source
+    file with no triefact yet), this is a no-op returning `changed=False`.
+    """
+    source_path = source_path.resolve()
+    project_root = project_root.resolve()
+    src_root = (project_root / config.triefacts.source_root).resolve()
+    if not source_path.is_relative_to(src_root):
+        raise ValueError(f"Source file {source_path} is not under source_root {src_root}")
+
+    triefact_path = _triefact_path_for(source_path, project_root, config)
+    if not triefact_path.exists():
+        # No triefact for this source — nothing to refresh. Callers should treat
+        # this as "fine, skip" rather than as an error.
+        return MetadataRefreshResult(triefact_path=triefact_path, changed=False)
+
+    rel_path = str(source_path.relative_to(src_root))
+    source_text = source_path.read_text()
+    file_fp = _file_fingerprint(source_text)
+    target_symbols = extract_symbols(source_path, source_root=src_root)
+
+    triefact = TriefactFile.parse(triefact_path.read_text())
+    previous_bytes = triefact.render().encode("utf-8")
+
+    # Preserve the existing `last_synced_at` if there is one — only set the
+    # default when the triefact is unsynced. We never bump it from this path.
+    previous_synced_at = (
+        triefact.front_matter.get("last_synced_at") if triefact.front_matter else None
+    )
+
+    new_front_matter: dict[str, object] = {
+        "trie_version": __version__,
+        "source": rel_path,
+        "file_fingerprint": file_fp,
+    }
+    if isinstance(previous_synced_at, str):
+        new_front_matter["last_synced_at"] = previous_synced_at
+    description = _file_description(source_path)
+    if description is not None:
+        new_front_matter["description"] = description
+    if target_symbols:
+        new_front_matter["defines"] = _build_defines(target_symbols)
+    if store is not None:
+        inbound, outbound = store.file_ref_counts(rel_path)
+        new_front_matter["incoming_refs"] = inbound
+        new_front_matter["outgoing_refs"] = outbound
+
+    triefact.front_matter = new_front_matter
+    new_bytes = triefact.render().encode("utf-8")
+    changed = new_bytes != previous_bytes
+    if changed:
+        triefact_path.write_text(triefact.render())
+    return MetadataRefreshResult(triefact_path=triefact_path, changed=changed)
 
 
 def sync_single_file(

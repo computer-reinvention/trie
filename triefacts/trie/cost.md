@@ -19,7 +19,7 @@ defines:
 - kind: function
   qualified_name: trie/cost:estimate_actual_cost
   lines: 108-122
-incoming_refs: 34
+incoming_refs: 36
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/cost:ModelPricing fingerprint=f9ce4d87fdcdcaeb6884df7e5f35c0b5787858b143344b6dcc4013c403030344 body_fp=dbad66594404f9458aa32af450f57602e6542b2d0671e6c47a1f1f47018105ae source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 -->

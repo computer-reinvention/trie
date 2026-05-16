@@ -43,7 +43,7 @@ defines:
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.render
   lines: 241-269
-incoming_refs: 55
+incoming_refs: 56
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/sync/writer:hash_body fingerprint=ab22edfb13d8ba9c75b86d2384923163f1c839f46c4a2ed06ca566491fc6f96d body_fp=ff4cc0d8d37a35d35446d795e12b6d335ea4491d8f9b3e64ac1d995839f65670 source_ref=bb3efe260f5fd45bd8f95219af0e2e36472bd19d -->

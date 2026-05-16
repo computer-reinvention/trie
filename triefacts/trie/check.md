@@ -26,7 +26,7 @@ defines:
   qualified_name: trie/check:_check_project_inner
   lines: 66-172
 incoming_refs: 20
-outgoing_refs: 5
+outgoing_refs: 6
 ---
 <!-- trie:section symbol=trie/check:StaleReason fingerprint=b7162ffe7f29cd254fc576ebd54af00f835144adc63c5f9a2d54a96b4f1fec3b body_fp=42e7454a4d73e396f5fd5e68d5a922cfcc0cbdca908c2351ec109fb8a286e761 source_ref=85ed6191c067f50c30ed25f64e46e5b61ce37465 -->
 ## `class StaleReason(StrEnum)`
