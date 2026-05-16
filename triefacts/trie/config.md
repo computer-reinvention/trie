@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/config.py
-file_fingerprint: 6a636d7468f77e66f5ab612441d5ba46acf27d7e1baa27f65cbc8e17a04eeb4f
-last_synced_at: '2026-05-16T10:51:46Z'
+file_fingerprint: dd253be38672e17e7f32df887319d024f89bb5ad24650d43293cfe6508d0cb6f
+last_synced_at: '2026-05-16T12:51:01Z'
 defines:
 - kind: class
   qualified_name: trie/config:TrieMeta
@@ -27,23 +27,23 @@ defines:
   lines: 69-88
 - kind: class
   qualified_name: trie/config:Mcp
-  lines: 92-114
+  lines: 92-126
 - kind: class
   qualified_name: trie/config:Config
-  lines: 118-161
+  lines: 130-173
 - kind: method
   qualified_name: trie/config:Config.from_dict
-  lines: 129-139
+  lines: 141-151
 - kind: method
   qualified_name: trie/config:Config.load
-  lines: 142-145
+  lines: 154-157
 - kind: method
   qualified_name: trie/config:Config.find_and_load
-  lines: 148-161
+  lines: 160-173
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
-  lines: 164-165
-incoming_refs: 121
+  lines: 176-177
+incoming_refs: 138
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/config:TrieMeta fingerprint=43460a16db027d61c4297084d70ce0d1e70048e3c983aba83ed17fbd4935301a body_fp=fc099c55e56a7cbf7ea5a31d4965af5f5003dcad2f1ee09cc25a0896fe818bc3 source_ref=435b779093e30070dbf454dc787d8b346cc4ebc9 -->
@@ -82,12 +82,15 @@ Configure reference-graph traversal defaults for incremental sync operations.
 - `hub_symbol_threshold`: symbols with more inbound refs than this are capped at depth 0
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/config:Mcp fingerprint=08297d135a9e1a2021203c4386b558e9d0f34e51b60a346b43ddd0f6c8bdec2b body_fp=4391e9994b64fa0db1ed74df7737eeacf090584df2e7e5b43f25dc54b66b0abf source_ref=435b779093e30070dbf454dc787d8b346cc4ebc9 -->
+<!-- trie:section symbol=trie/config:Mcp fingerprint=8d81aaec4b5925779e66e3e94041b2fa2730a044947b2eb9e2183335d2dad683 body_fp=fd93a56fae3f28bada892efe68a82f59a28e6be70e250ddfbb2a22aa95c948ec source_ref=5a8e8ef1f561c9a20d9fb6288a192469c1e75c6c -->
 ## `Mcp`
 
 Configure server-side behavioural knobs for the MCP agent tools: `locate`, `explain`, and `walk`.
 
 - `locate_default_rank_by`: accepts `"public_first"`, `"inbound_count"`, or `"alphabetical"`
+- `locate_fallback_max_files`: max in-scope files grepped when no symbol-name match found
+- `locate_fallback_max_unique_symbols`: hits spread across more symbols than this returns `kind="grep_too_noisy"`
+- `locate_fallback_match_limit`: cap on candidates returned after hub-ranking fallback
 - `explain_max_neighbours_per_direction`: `0` means unlimited
 - `explain_prose_max_chars`: `0` means unlimited
 - `walk_hub_threshold`: mirrors `Cascade.hub_symbol_threshold`

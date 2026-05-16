@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_audit.py
 file_fingerprint: 2acbe4f838e3001e1ef57723b6cf00cdd9201e496f7f6f7774419b94f548476c
-last_synced_at: '2026-05-16T11:22:30Z'
+last_synced_at: '2026-05-16T12:51:22Z'
 description: 'Audit summary: JSONL ingestion + rendering.'
 defines:
 - kind: function

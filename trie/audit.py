@@ -95,6 +95,11 @@ class McpCallStats:
     flavours worth surfacing separately: a `not_found` from `explain` usually
     means the agent passed a guessed-up qname; an empty `locate` result means
     the agent's predicate didn't match anything. Both are diagnostic.
+
+    `fallback_kinds` is locate-specific: when `locate` returns empty hits it
+    attaches a discriminated `fallback` envelope describing why. Audit rolls
+    those discriminator values up here so eval reports can show "of K empty
+    locates, M produced grep redirects, N were grep_empty (typos), etc."
     """
 
     tool: str
@@ -105,6 +110,7 @@ class McpCallStats:
     total_duration_ms: int = 0
     total_response_bytes: int = 0
     top_qnames: tuple[tuple[str, int], ...] = ()
+    fallback_kinds: dict[str, int] = field(default_factory=dict)
 
     @property
     def avg_duration_ms(self) -> float:
@@ -229,6 +235,7 @@ class AuditSummary:
                     "avg_duration_ms": s.avg_duration_ms,
                     "avg_response_bytes": s.avg_response_bytes,
                     "top_qnames": list(s.top_qnames),
+                    "fallback_kinds": dict(s.fallback_kinds),
                 }
                 for tool, s in self.mcp.items()
             },
@@ -328,6 +335,7 @@ def _mcp_stats(tool: str, events: list[Event]) -> McpCallStats:
     total_duration_ms = 0
     total_response_bytes = 0
     qname_counter: Counter[str] = Counter()
+    fallback_kinds: Counter[str] = Counter()
 
     for ev in events:
         f = ev.fields
@@ -348,6 +356,12 @@ def _mcp_stats(tool: str, events: list[Event]) -> McpCallStats:
         # graph but has no triefact section yet — agent got an empty body.
         if tool == "explain" and f.get("result_kind") == "ok" and (f.get("prose_chars") or 0) == 0:
             empty_result_count += 1
+
+        # Locate's fallback discriminator (one of "none", "grep", "grep_empty",
+        # "grep_too_noisy"). Present only on locate calls that returned empty.
+        fb_kind = f.get("fallback_kind")
+        if tool == "locate" and isinstance(fb_kind, str):
+            fallback_kinds[fb_kind] += 1
 
         # Qname extraction — only when capture_args was on at the time of emit.
         args = f.get("args") or {}
@@ -371,6 +385,7 @@ def _mcp_stats(tool: str, events: list[Event]) -> McpCallStats:
         total_duration_ms=total_duration_ms,
         total_response_bytes=total_response_bytes,
         top_qnames=tuple(qname_counter.most_common(5)),
+        fallback_kinds=dict(fallback_kinds),
     )
 
 
@@ -628,6 +643,15 @@ def _render_mcp(mcp: dict[str, McpCallStats], console: Console) -> None:
             "--",
         )
     console.print(table)
+
+    # Locate fallback breakdown: one extra line when the eval saw fallback
+    # activity. Tells the operator at a glance whether agents are hitting
+    # typo paths (`grep_empty`), over-broad queries (`grep_too_noisy`), or
+    # successfully getting redirected (`grep`).
+    locate_stats = mcp.get("locate")
+    if locate_stats is not None and locate_stats.fallback_kinds:
+        parts = ", ".join(f"{k}={n}" for k, n in sorted(locate_stats.fallback_kinds.items()))
+        console.print(f"  [dim]locate fallback:[/dim] {parts}")
 
 
 def _render_sync(s: SyncStats, console: Console) -> None:
