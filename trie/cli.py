@@ -16,7 +16,20 @@ from trie.check import StaleReason, check_project
 from trie.config import Config, ConfigNotFoundError
 from trie.cost import get_pricing
 from trie.diff_cmd import diff_project
+from trie.freshness import (
+    FreshnessResult,
+    NotAGitRepoError,
+    ensure_fresh_after_turn,
+    ensure_fresh_before_turn,
+)
 from trie.graph.store import Store
+from trie.hook_install import (
+    HookInstallError,
+    HookInstallPlan,
+)
+from trie.hook_install import (
+    install as hook_run_install,
+)
 from trie.init import InitError, init_project
 from trie.mcp_install import TARGETS as MCP_TARGETS
 from trie.mcp_install import InstallPlan, MCPInstallError
@@ -385,6 +398,98 @@ def verify_cmd(ctx: typer.Context) -> None:
     """
     reporter = _get_reporter(ctx)
     _verify_drift(reporter, exit_on_drift=True)
+
+
+@app.command("refresh")
+def refresh_cmd(
+    ctx: typer.Context,
+    before_turn: bool = typer.Option(
+        False,
+        "--before-turn",
+        help=(
+            "Run the cheap pre-turn freshness gate: full refresh if HEAD or mtimes "
+            "moved, no-op otherwise. Intended as an agent harness's pre-turn hook."
+        ),
+    ),
+    after_turn: bool = typer.Option(
+        False,
+        "--after-turn",
+        help=(
+            "Run the post-turn freshness sweep: detect filesystem changes since "
+            "the last refresh and sync affected files. Intended as an agent "
+            "harness's post-turn hook. Default mode when neither flag is given."
+        ),
+    ),
+    model: str | None = typer.Option(
+        None,
+        "--model",
+        help="Override the configured model (only used when refresh fires a sync).",
+    ),
+) -> None:
+    """Bring the graph + triefacts up to date with the working tree.
+
+    The freshness gate. Agent harnesses register this as a hook:
+
+      • `trie refresh --before-turn`: run at the start of an agent turn.
+        Cheap when nothing changed since last refresh, full sync when HEAD or
+        files have moved.
+      • `trie refresh --after-turn`: run at the end of a turn. Picks up the
+        agent's own edits and folds them into the graph + triefact tree before
+        anyone (this agent next turn, another tool, a human) reads them.
+
+    With neither flag, defaults to --after-turn behaviour.
+
+    Both modes fail loudly outside a git repo: the gate's correctness depends
+    on `git rev-parse HEAD` succeeding.
+    """
+    reporter = _get_reporter(ctx)
+    if before_turn and after_turn:
+        reporter.error("--before-turn and --after-turn are mutually exclusive")
+        raise typer.Exit(code=1)
+
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    model_id = model or config.models.cascade
+    client = make_client(model_id, sync_cfg=config.sync)
+    db_path = project_root / ".trie" / "graph.db"
+
+    runner = ensure_fresh_before_turn if before_turn else ensure_fresh_after_turn
+
+    with Store(db_path) as store, _progress_callback(reporter, label="refreshing") as cb:
+        try:
+            result = runner(
+                project_root=project_root,
+                config=config,
+                store=store,
+                client=client,
+                progress=cb,
+            )
+        except NotAGitRepoError as exc:
+            reporter.error(str(exc))
+            raise typer.Exit(code=1) from exc
+
+    _report_freshness(reporter, result, mode="before-turn" if before_turn else "after-turn")
+
+
+def _report_freshness(reporter: Reporter, result: FreshnessResult, *, mode: str) -> None:
+    """Render a single line per refresh outcome, plus token totals when a sync ran."""
+    if not result.refreshed:
+        reporter.success(f"{mode}: already fresh ({result.reason})")
+        return
+    inc = result.incremental
+    if inc is None:
+        # Defensive: ensure_fresh_* never returns refreshed=True with incremental=None,
+        # but typed code shouldn't assume invariants the caller's eye can't see.
+        reporter.success(f"{mode}: refreshed ({result.reason})")
+        return
+    reporter.success(
+        f"{mode}: refreshed ({result.reason}); "
+        f"synced {inc.files_synced} file(s), cost ${inc.actual_cost_usd:.4f}"
+    )
 
 
 @app.command("audit")
@@ -1004,6 +1109,158 @@ def _run_incremental_sync(
     if result.files_skipped_no_budget:
         reporter.info(f"  skipped {result.files_skipped_no_budget} due to budget/limit")
     reporter.info(f"  actual cost: ${result.actual_cost_usd:.4f}")
+
+
+@app.command("setup")
+def setup_cmd(
+    ctx: typer.Context,
+    target: list[str] | None = typer.Option(
+        None,
+        "--target",
+        "-t",
+        help=(
+            "Set up for a specific agent. Repeat the flag for multiple targets. "
+            f"Known: {', '.join(MCP_TARGETS)}."
+        ),
+    ),
+    install_all: bool = typer.Option(
+        False,
+        "--all",
+        help="Set up for every known agent. Skips per-target detection.",
+    ),
+    scope: str = typer.Option(
+        "project",
+        "--scope",
+        help="MCP install scope: 'project' (writes into this repo) or 'user' (~/.<agent>/...).",
+        case_sensitive=False,
+    ),
+    print_only: bool = typer.Option(
+        False,
+        "--print-only",
+        help="Print what would be written for both MCP and hooks; don't touch any files.",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Resolve target paths and show what would change, but don't write.",
+    ),
+) -> None:
+    """Wire trie into an agent end-to-end: MCP registration + turn hooks.
+
+    For each detected (or specified) target, this runs two installs:
+
+      1. The MCP server registration (same as `trie mcp install`).
+      2. A turn-boundary hook that calls `trie refresh --after-turn` so the
+         graph and triefact tree stay current with the agent's edits.
+
+    Agents without an automatable hook surface still get MCP registered, plus
+    a clear `needs_manual_setup` notice explaining what to wire by hand.
+    """
+    reporter = _get_reporter(ctx)
+
+    if target and install_all:
+        reporter.error("--target and --all are mutually exclusive")
+        raise typer.Exit(code=1)
+
+    scope_norm = scope.lower()
+    if scope_norm not in ("project", "user"):
+        reporter.error("--scope must be 'project' or 'user'")
+        raise typer.Exit(code=1)
+
+    try:
+        _, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    # MCP install.
+    try:
+        mcp_plan = mcp_run_install(
+            target_names=target,
+            scope=scope_norm,  # type: ignore[arg-type]
+            install_all=install_all,
+            print_only=print_only,
+            dry_run=dry_run,
+            project_root=project_root,
+        )
+    except MCPInstallError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    # Hook install runs against the same target slugs MCP just resolved, so
+    # auto-detection and --target / --all stay consistent. Pass the resolved
+    # names explicitly to avoid running detection a second time and risking
+    # divergence between the two halves.
+    try:
+        hook_plan = hook_run_install(
+            target_names=mcp_plan.target_names,
+            install_all=False,
+            print_only=print_only,
+            dry_run=dry_run,
+            project_root=project_root,
+        )
+    except HookInstallError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    _render_setup_plan(reporter, mcp_plan, hook_plan)
+
+    # Surface a non-zero exit if either half hit an error so CI/scripts react.
+    mcp_errors = any(r.action == "error" for r in mcp_plan.results)
+    hook_errors = any(r.action == "error" for r in hook_plan.results)
+    if mcp_errors or hook_errors:
+        raise typer.Exit(code=1)
+
+
+def _render_setup_plan(
+    reporter: Reporter,
+    mcp_plan: InstallPlan,
+    hook_plan: HookInstallPlan,
+) -> None:
+    """Print one merged report grouped by target, with MCP and hook sub-lines.
+
+    Each target gets a header. Under it: one line for the MCP install outcome,
+    one line for the hook install outcome. Manual-setup notes are emitted under
+    the hook line so the user can copy the instruction text out of their
+    terminal directly.
+    """
+    import json
+
+    mcp_by_target = {r.target: r for r in mcp_plan.results}
+    hook_by_target = {r.target: r for r in hook_plan.results}
+    targets = sorted({*mcp_by_target.keys(), *hook_by_target.keys()})
+
+    for slug in targets:
+        display = MCP_TARGETS[slug].display_name if slug in MCP_TARGETS else slug
+        reporter.info(f"\n[bold cyan]{display}[/bold cyan]")
+
+        mcp_result = mcp_by_target.get(slug)
+        if mcp_result is not None:
+            line = f"  mcp:  {_format_action(mcp_result.action, mcp_result.path)}"
+            if mcp_result.detail:
+                line += f" — {mcp_result.detail}"
+            reporter.info(line)
+            if mcp_result.action == "preview" and mcp_result.path is not None:
+                snippet = {mcp_result.target: mcp_result.snippet}
+                reporter.console.print(json.dumps(snippet, indent=2))
+
+        hook_result = hook_by_target.get(slug)
+        if hook_result is not None:
+            line = f"  hook: {_format_action(hook_result.action, hook_result.path)}"
+            if hook_result.detail and hook_result.action != "needs_manual_setup":
+                line += f" — {hook_result.detail}"
+            reporter.info(line)
+            if hook_result.action == "needs_manual_setup":
+                reporter.warn(f"    manual setup required: {hook_result.detail}")
+            elif hook_result.action == "preview" and hook_result.path is not None:
+                reporter.console.print(hook_result.contents)
+
+
+def _format_action(action: str, path: Path | None) -> str:
+    """Render an action label with a path suffix. Used for both MCP and hook lines."""
+    if path is None:
+        return action
+    return f"{action} → {path}"
 
 
 mcp_app = typer.Typer(

@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/git_helpers.py
-file_fingerprint: 1869d4b8b6eeb7f63a2be16423a2b3d75ce0d4fe4a82033c30aa3e128686f00a
-last_synced_at: '2026-05-15T13:40:45Z'
+file_fingerprint: 0ad427dd3e70edd0d2451be9e7c18fe1d93af86f8c3a2e0b3efba8ba83e39840
+last_synced_at: '2026-05-16T12:25:52Z'
 description: Quiet, narrowly-scoped git operations for diff-aware regen.
 defines:
 - kind: function
@@ -12,12 +12,15 @@ defines:
   qualified_name: trie/git_helpers:is_git_repo
   lines: 59-62
 - kind: function
+  qualified_name: trie/git_helpers:current_head
+  lines: 65-79
+- kind: function
   qualified_name: trie/git_helpers:compute_blob_hash
-  lines: 65-104
+  lines: 82-121
 - kind: function
   qualified_name: trie/git_helpers:retrieve_blob
-  lines: 107-125
-incoming_refs: 15
+  lines: 124-142
+incoming_refs: 17
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/git_helpers:is_git_repo fingerprint=675fb860d9da412270ab09ed63e85801dd9f4b3cdba59b53ef8e5ab821a7cf5f body_fp=5511a78edcda1ca1e60ff08f46e4671529420d6584a5965df5f30d19f43602ea source_ref=dbf6fc45f22045181a4f474e363792eb03ff7011 -->
@@ -53,4 +56,12 @@ Run `git <args>` from `cwd`, returning stdout bytes on success or `None` on any 
 
 - `input_bytes`: piped to stdin if provided.
 - Returns `None` on non-zero exit, timeout, missing binary, or OS error.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/git_helpers:current_head fingerprint=1163f4b6594e57f166e08145c0d383952b0e6eb6a09f729fe3c5ca2d2ee6fb8b body_fp=5be8470cc13660ac119f379ac8b136a40049e33b7b733210932c632c8b49a9af source_ref=a120f6a20e8bfca8afcb22b8c56ed8d56778c96f -->
+## `current_head(repo_root: Path) -> str | None`
+
+Return the SHA of HEAD, or None if the lookup fails for any reason.
+
+- Returns None for empty repos, detached HEADs, or any git error.
 <!-- trie:end -->

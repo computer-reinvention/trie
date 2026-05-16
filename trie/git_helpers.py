@@ -62,6 +62,23 @@ def is_git_repo(path: Path) -> bool:
     return out is not None and out.strip() == b"true"
 
 
+def current_head(repo_root: Path) -> str | None:
+    """Return the commit SHA at HEAD, or None if the lookup fails.
+
+    Used by trie's freshness gate to compare the working tree's HEAD against the
+    stamp written at the last refresh. None is returned for empty repositories
+    (no commits), detached states with no resolvable SHA, or any other git
+    failure. Callers that need to fail loud on missing git should test for
+    `is_git_repo` first; this function intentionally returns None rather than
+    raising, matching the rest of `git_helpers`.
+    """
+    out = _run_git(["rev-parse", "HEAD"], cwd=repo_root)
+    if out is None:
+        return None
+    text = out.decode("utf-8", errors="replace").strip()
+    return text or None
+
+
 def compute_blob_hash(file_path: Path, *, max_bytes: int | None = None) -> str | None:
     """Compute the git blob hash for the working-tree content of `file_path`.
 
