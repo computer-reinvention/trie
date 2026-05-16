@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_incremental.py
 file_fingerprint: 098e6fa218a25f5c7930126568228d2885d8b4b4a382f2ddbb28690da9182b91
-last_synced_at: '2026-05-16T10:51:16Z'
+last_synced_at: '2026-05-16T11:23:30Z'
 defines:
 - kind: class
   qualified_name: tests/test_incremental:FakeClient
@@ -73,7 +73,7 @@ defines:
 incoming_refs: 0
 outgoing_refs: 51
 ---
-<!-- trie:section symbol=tests/test_incremental:FakeClient fingerprint=dd2ce5cbac0a663e75372124f682811a08d99ca2d34d2c8147be3fb275b44790 body_fp=0c2506996518995494b4a7de01bb236daf07f9119d037edfe92acf6aba8cff17 source_ref=634fbeecb09b136114605fc4deac4b2a8647db8c -->
+<!-- trie:section symbol=tests/test_incremental:FakeClient fingerprint=dd2ce5cbac0a663e75372124f682811a08d99ca2d34d2c8147be3fb275b44790 body_fp=0c2506996518995494b4a7de01bb236daf07f9119d037edfe92acf6aba8cff17 source_ref=cccb1012c6337a0910e535398f2041ab87ed321a -->
 ## `FakeClient(model_id: str = "anthropic/claude-sonnet-4-6", body: str = "## generated\n\nbody.", calls: int = 0)`
 
 Stub LLM client that records call counts and returns fixed token counts and body text.

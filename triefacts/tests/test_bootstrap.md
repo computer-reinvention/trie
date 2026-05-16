@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_bootstrap.py
 file_fingerprint: 1b3cc4748e30ace4478f8a8eae2c8b18e47b0d8d1a129e149b03b7403080f397
-last_synced_at: '2026-05-16T10:51:08Z'
+last_synced_at: '2026-05-16T11:23:17Z'
 defines:
 - kind: class
   qualified_name: tests/test_bootstrap:FakeClient
@@ -70,7 +70,7 @@ defines:
 incoming_refs: 0
 outgoing_refs: 27
 ---
-<!-- trie:section symbol=tests/test_bootstrap:FakeClient fingerprint=ceebf20d768a48a04e09bf88002e0bd6342f4f5d5f4aaa6f137763c496e80a99 body_fp=daf058e1b67a18e9cd6b974b1d0813763e23b80f2f21f3711df3bd2b872a3ef9 source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+<!-- trie:section symbol=tests/test_bootstrap:FakeClient fingerprint=ceebf20d768a48a04e09bf88002e0bd6342f4f5d5f4aaa6f137763c496e80a99 body_fp=daf058e1b67a18e9cd6b974b1d0813763e23b80f2f21f3711df3bd2b872a3ef9 source_ref=c5f2a27d17af1fac1345ecf2d272264e44780d76 -->
 ## `FakeClient(model_id: str = "anthropic/claude-sonnet-4-6", calls: int = 0)`
 
 Stub LLM client that records call counts and returns fixed token/cost responses for bootstrap tests.

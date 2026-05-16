@@ -1,110 +1,116 @@
 ---
 trie_version: 0.1.0
 source: trie/cli.py
-file_fingerprint: 8e0804db4439918d7b5568d66bbfbd9eb3585a03c859335962c21932efd9d3ca
-last_synced_at: '2026-05-16T11:03:42Z'
+file_fingerprint: 39ed5d7457b99745c5a90b527c06ecc53f49990fdfa2f1c060f1c413057953a3
+last_synced_at: '2026-05-16T11:23:01Z'
 defines:
 - kind: function
   qualified_name: trie/cli:_get_reporter
-  lines: 41-47
+  lines: 44-50
 - kind: class
   qualified_name: trie/cli:_ProgressAdapter
-  lines: 50-95
+  lines: 53-98
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.__init__
-  lines: 58-62
+  lines: 61-65
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter._ensure
-  lines: 64-68
+  lines: 67-71
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.close
-  lines: 70-73
+  lines: 73-76
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_start
-  lines: 75-76
+  lines: 78-79
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_done
-  lines: 78-91
+  lines: 81-94
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_skip
-  lines: 93-95
+  lines: 96-98
 - kind: function
   qualified_name: trie/cli:_progress_callback
-  lines: 99-104
+  lines: 102-107
 - kind: function
   qualified_name: trie/cli:_root
-  lines: 108-146
+  lines: 111-149
 - kind: function
   qualified_name: trie/cli:_telemetry_bootstrap
-  lines: 149-161
+  lines: 152-164
 - kind: function
   qualified_name: trie/cli:init_cmd
-  lines: 165-248
+  lines: 168-251
 - kind: function
   qualified_name: trie/cli:_is_interactive
-  lines: 251-258
+  lines: 254-261
 - kind: class
   qualified_name: trie/cli:_NoOpStatus
-  lines: 261-266
+  lines: 264-269
 - kind: method
   qualified_name: trie/cli:_NoOpStatus.__enter__
-  lines: 262-263
+  lines: 265-266
 - kind: method
   qualified_name: trie/cli:_NoOpStatus.__exit__
-  lines: 265-266
+  lines: 268-269
 - kind: function
   qualified_name: trie/cli:plan_cmd
-  lines: 270-363
+  lines: 273-366
 - kind: function
   qualified_name: trie/cli:verify_cmd
-  lines: 367-379
+  lines: 370-382
+- kind: function
+  qualified_name: trie/cli:audit_cmd
+  lines: 386-446
+- kind: function
+  qualified_name: trie/cli:_resolve_audit_log_path
+  lines: 449-465
 - kind: function
   qualified_name: trie/cli:_print_scan_breakdown
-  lines: 382-399
+  lines: 468-485
 - kind: function
   qualified_name: trie/cli:_print_plan
-  lines: 402-413
+  lines: 488-499
 - kind: function
   qualified_name: trie/cli:_print_incremental_plan
-  lines: 416-482
+  lines: 502-568
 - kind: function
   qualified_name: trie/cli:_print_drift_detail
-  lines: 495-506
+  lines: 581-592
 - kind: function
   qualified_name: trie/cli:_verify_drift
-  lines: 509-540
+  lines: 595-626
 - kind: function
   qualified_name: trie/cli:sync_cmd
-  lines: 544-627
+  lines: 630-713
 - kind: function
   qualified_name: trie/cli:_has_existing_triefacts
-  lines: 630-636
+  lines: 716-722
 - kind: function
   qualified_name: trie/cli:_run_full_pass
-  lines: 639-703
+  lines: 725-789
 - kind: function
   qualified_name: trie/cli:_run_dry_run_diff
-  lines: 706-751
+  lines: 792-837
 - kind: function
   qualified_name: trie/cli:_run_single_file_sync
-  lines: 754-782
+  lines: 840-868
 - kind: function
   qualified_name: trie/cli:_run_incremental_sync
-  lines: 785-834
+  lines: 871-920
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 846-848
+  lines: 932-934
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 851-861
+  lines: 937-947
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 865-934
+  lines: 951-1020
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 937-952
+  lines: 1023-1038
 incoming_refs: 0
-outgoing_refs: 54
+outgoing_refs: 59
 ---
 <!-- trie:section symbol=trie/cli:init_cmd fingerprint=b4f1d7bff0bc8e455ed6de5c56b9e0c884e01c1dc12eba107d91abe90e5b8584 body_fp=a30e268f60bb85196fe5055818affc8f1a117b80c3e981aed18fd2751c260c76 source_ref=f9896112d3c74faa4a548ca30df39e8106603df3 -->
 ## `init_cmd(ctx, root, force, install_hooks, run_scan) -> None`
@@ -368,4 +374,23 @@ Load config from cwd and launch the stdio MCP server, exiting 1 if no config is 
 ## `_render_install_plan(reporter: Reporter, plan: InstallPlan) -> None`
 
 Print each MCP install result (preview, created, updated, skipped, or error) via the reporter.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:audit_cmd fingerprint=5756d1b7e32899d278d6ffb9c3d820058831de9e933722d87f89c248c1fbabcf body_fp=eec19cb7b0326e95cab70d820ed0b13615c844cd6c2d14154c9c3369b230d6e9 source_ref=c6a2db92d251c826372669ce25ffaf1290528f52 -->
+## `audit_cmd(ctx: typer.Context, log: Path | None, compare: Path | None, as_json: bool) -> None`
+
+Summarise a telemetry `debug.jsonl` log; optionally compare two logs side-by-side or emit JSON.
+
+- `log`: path to the log file; defaults to config's `debug.log_path` or `./debug.jsonl`.
+- `compare`: second log rendered as candidate against `log` as baseline; mutually exclusive with `--json`.
+- `as_json`: print `AuditSummary` as JSON to stdout; mutually exclusive with `--compare`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:_resolve_audit_log_path fingerprint=bad827442bead53f02cef4cde6dbfbf24222786901e57c0aee3d03c19918abf5 body_fp=0660b55daee64da526b9c6830a141120b802aa26aee944f9dcae8f8ab08cdfb5 source_ref=c6a2db92d251c826372669ce25ffaf1290528f52 -->
+## `_resolve_audit_log_path(log: Path | None, reporter: Reporter) -> Path`
+
+Resolve the `debug.jsonl` path from explicit arg, configured `log_path`, or cwd fallback.
+
+- `log`: returned directly if provided; skips all config resolution.
+- Returns cwd `debug.jsonl` if no `trie.toml` is found.
 <!-- trie:end -->

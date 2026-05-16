@@ -41,7 +41,8 @@ class GenerationResponse:
 
 
 class ModelClient(Protocol):
-    model_id: str
+    model_id: str  # bare model name passed to the provider API (e.g. "claude-sonnet-4-6")
+    full_model_id: str  # "provider/model" string used for telemetry + pricing lookups
 
     def generate(self, req: GenerationRequest) -> GenerationResponse: ...
 
@@ -164,11 +165,19 @@ class AnthropicClient:
         *,
         client: Anthropic | None = None,
         sync_cfg: Sync | None = None,
+        full_model_id: str | None = None,
     ) -> None:
         # `max_retries=0` disables the SDK's own retry loop. We run our own on top so
         # each attempt is visible in telemetry; doubling up would silently inflate
         # wall-clock without surfacing the cause.
+        #
+        # `model_id` is the bare name sent to the Anthropic API (e.g.
+        # `"claude-sonnet-4-6"`). `full_model_id` retains the `"anthropic/..."` prefix
+        # used by the pricing table and stamped into telemetry. We accept it as an
+        # optional kwarg so direct constructions (tests, ad-hoc scripts) without going
+        # through `make_client` still produce coherent identifiers.
         self.model_id = model_id
+        self.full_model_id = full_model_id or f"anthropic/{model_id}"
         self._client = client or Anthropic(max_retries=0)
         self._sync_cfg = sync_cfg or Sync()
 
@@ -198,14 +207,14 @@ class AnthropicClient:
         }
 
     def generate(self, req: GenerationRequest) -> GenerationResponse:
-        with telemetry.timed("model_call", model=self.model_id, kind="generate") as tele:
+        with telemetry.timed("model_call", model=self.full_model_id, kind="generate") as tele:
             resp = _run_with_retry(
                 lambda: self._client.messages.create(
                     max_tokens=req.max_tokens, **self._payload(req)
                 ),
                 cfg=self._sync_cfg,
                 kind="generate",
-                model_id=self.model_id,
+                model_id=self.full_model_id,
             )
             text = "".join(block.text for block in resp.content if block.type == "text")
             usage = resp.usage
@@ -230,12 +239,12 @@ class AnthropicClient:
         the generator would actually send (system + cached context + per-symbol request),
         so the result reflects real prompt size rather than a char-count heuristic.
         """
-        with telemetry.timed("model_call", model=self.model_id, kind="count_tokens") as tele:
+        with telemetry.timed("model_call", model=self.full_model_id, kind="count_tokens") as tele:
             resp = _run_with_retry(
                 lambda: self._client.messages.count_tokens(**self._payload(req)),
                 cfg=self._sync_cfg,
                 kind="count_tokens",
-                model_id=self.model_id,
+                model_id=self.full_model_id,
             )
             tele["input_tokens"] = resp.input_tokens
             return resp.input_tokens
@@ -255,7 +264,7 @@ def make_client(model_id: str, *, sync_cfg: Sync | None = None) -> ModelClient:
         raise ValueError(f"model_id must be of the form 'provider/model', got {model_id!r}")
     provider, model_name = model_id.split("/", 1)
     if provider == "anthropic":
-        return AnthropicClient(model_name, sync_cfg=sync_cfg)
+        return AnthropicClient(model_name, sync_cfg=sync_cfg, full_model_id=model_id)
     raise NotImplementedError(
         f"provider {provider!r} not implemented in v0.1. "
         "Use 'anthropic/<model>' or extend trie.models.make_client."

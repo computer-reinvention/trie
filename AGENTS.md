@@ -31,6 +31,28 @@ CI runs the same four commands. Tests + ruff must both pass before pushing.
 - Use `pytest-mock` for collaborator stubbing — don't introduce `unittest.mock` directly.
 - Ruff rules live in `pyproject.toml`. `E501` is ignored (100-char line length, soft). Tests skip `B011`. `cli.py` skips `B008` (Typer defaults).
 
+## Navigating the codebase
+
+trie indexes itself. An MCP server is registered for this workdir (see
+`.mcp.json` / `opencode.json` / equivalent), exposing the three navigation tools
+trie ships. For structural questions about the code — *where is X defined, what
+calls Y, what's the signature of Z, is there already a helper for W* — prefer
+these over `grep` and directory walks:
+
+- `locate(predicate, rank_by?, limit?)` — find symbols by `name_contains`,
+  `kind`, `scope_prefix` (e.g. `"trie/"` to skip tests), etc. Start here.
+- `explain(qname)` — read one symbol's prose plus one-liners for its immediate
+  callers and callees. Use after `locate`.
+- `walk(from_qname, direction, depth?)` — trace the call graph outward
+  (`"callers"` / `"callees"` / `"both"`). Use when one hop isn't enough.
+
+`grep` and direct file reads remain appropriate for literal-string searches
+(error messages, TODOs, config keys) and for reading a file once trie has
+pointed at it.
+
+We dogfood. If a navigation flow feels awkward through these tools, that's a
+signal to fix the tool — not to silently fall back to grep. Note it.
+
 ## What's in scope
 
 - Tests under `tests/` are in scope for documentation by default — they encode behavioural spec worth recording.

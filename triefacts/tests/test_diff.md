@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_diff.py
 file_fingerprint: 0030606a42d9df6fee6abd7a751fc012e46dcd2b557eadf1b1332bca40bd62b3
-last_synced_at: '2026-05-16T10:51:11Z'
+last_synced_at: '2026-05-16T11:23:24Z'
 defines:
 - kind: class
   qualified_name: tests/test_diff:StableClient
@@ -40,7 +40,7 @@ defines:
 incoming_refs: 0
 outgoing_refs: 24
 ---
-<!-- trie:section symbol=tests/test_diff:StableClient fingerprint=109768c2e5c2fad4aae6fbacbbbb331ec1dfe34d8d55d99c6acc942db573c9f2 body_fp=82d8da0655254e4214c2abb2b87e85e11599b47a58e8c2a6ede0fb80c64f6731 source_ref=a5296757622b2c57f6957aab50d948d8174a61ce -->
+<!-- trie:section symbol=tests/test_diff:StableClient fingerprint=109768c2e5c2fad4aae6fbacbbbb331ec1dfe34d8d55d99c6acc942db573c9f2 body_fp=82d8da0655254e4214c2abb2b87e85e11599b47a58e8c2a6ede0fb80c64f6731 source_ref=4fd2e8c6a6dd25c9e5daadba1cde7bf310ceece9 -->
 ## `StableClient`
 
 Fake LLM client returning a fixed body string for deterministic diff testing.

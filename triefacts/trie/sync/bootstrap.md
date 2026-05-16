@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: trie/sync/bootstrap.py
 file_fingerprint: c0f4f174435148e121708503ba60c8afc867ea101708bae16e1d220cc1fe5ade
-last_synced_at: '2026-05-16T10:52:33Z'
+last_synced_at: '2026-05-16T11:23:55Z'
 defines:
 - kind: class
   qualified_name: trie/sync/bootstrap:PlanItem

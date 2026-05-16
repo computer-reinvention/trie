@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_models.py
 file_fingerprint: b308887d2a458d142f8af7881da7183c7a9158aa32f833ef12ad36d59684d3c7
-last_synced_at: '2026-05-16T10:52:14Z'
+last_synced_at: '2026-05-16T11:23:35Z'
 defines:
 - kind: function
   qualified_name: tests/test_models:_make_client

@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_parallel_sync.py
 file_fingerprint: 1896aee13e6943d3bde193bcee19ac4caeb34a883495cb60566b3ff46955a357
-last_synced_at: '2026-05-16T10:51:37Z'
+last_synced_at: '2026-05-16T11:23:44Z'
 description: 'Parallel per-symbol sync: the threaded generate phase must produce output'
 defines:
 - kind: class
