@@ -1,170 +1,176 @@
 ---
 trie_version: 0.1.0
 source: trie/cli.py
-file_fingerprint: 135120699e272d870979307eb38b05864f30a5df6c9119c022896b51c59f1287
-last_synced_at: '2026-05-18T13:57:29Z'
+file_fingerprint: a3e4a9f7b72a5249f1dac8cc56a1642191bc5218cec2a36483eb4a5961a4acdb
+last_synced_at: '2026-05-18T14:18:15Z'
 defines:
 - kind: function
   qualified_name: trie/cli:_get_reporter
-  lines: 71-77
+  lines: 81-87
 - kind: class
   qualified_name: trie/cli:_ProgressAdapter
-  lines: 80-125
+  lines: 90-135
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.__init__
-  lines: 88-92
+  lines: 98-102
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter._ensure
-  lines: 94-98
+  lines: 104-108
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.close
-  lines: 100-103
+  lines: 110-113
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_start
-  lines: 105-106
+  lines: 115-116
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_done
-  lines: 108-121
+  lines: 118-131
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_skip
-  lines: 123-125
+  lines: 133-135
 - kind: function
   qualified_name: trie/cli:_progress_callback
-  lines: 129-134
+  lines: 139-144
 - kind: function
   qualified_name: trie/cli:_acquire_write_lock_or_exit
-  lines: 138-169
+  lines: 148-179
 - kind: function
   qualified_name: trie/cli:_root
-  lines: 173-211
+  lines: 183-221
 - kind: function
   qualified_name: trie/cli:_telemetry_bootstrap
-  lines: 214-226
+  lines: 224-236
 - kind: function
   qualified_name: trie/cli:init_cmd
-  lines: 230-318
+  lines: 240-328
 - kind: function
   qualified_name: trie/cli:_is_interactive
-  lines: 321-328
+  lines: 331-338
 - kind: class
   qualified_name: trie/cli:_NoOpStatus
-  lines: 331-336
+  lines: 341-346
 - kind: method
   qualified_name: trie/cli:_NoOpStatus.__enter__
-  lines: 332-333
+  lines: 342-343
 - kind: method
   qualified_name: trie/cli:_NoOpStatus.__exit__
-  lines: 335-336
+  lines: 345-346
 - kind: function
   qualified_name: trie/cli:plan_cmd
-  lines: 340-436
+  lines: 350-446
 - kind: function
   qualified_name: trie/cli:verify_cmd
-  lines: 440-452
+  lines: 450-462
 - kind: function
   qualified_name: trie/cli:lock_check_cmd
-  lines: 456-506
+  lines: 466-516
 - kind: function
   qualified_name: trie/cli:refresh_cmd
-  lines: 510-617
+  lines: 520-627
 - kind: function
   qualified_name: trie/cli:_report_freshness
-  lines: 620-634
+  lines: 630-644
 - kind: function
   qualified_name: trie/cli:audit_cmd
-  lines: 638-698
+  lines: 648-708
 - kind: function
   qualified_name: trie/cli:_resolve_audit_log_path
-  lines: 701-717
+  lines: 711-727
 - kind: function
   qualified_name: trie/cli:_print_scan_breakdown
-  lines: 720-737
+  lines: 730-747
 - kind: function
   qualified_name: trie/cli:_print_plan
-  lines: 740-751
+  lines: 750-761
 - kind: function
   qualified_name: trie/cli:_print_incremental_plan
-  lines: 754-820
+  lines: 764-830
 - kind: function
   qualified_name: trie/cli:_print_drift_detail
-  lines: 833-844
+  lines: 843-854
 - kind: function
   qualified_name: trie/cli:_verify_drift
-  lines: 847-878
+  lines: 857-888
 - kind: function
   qualified_name: trie/cli:sync_cmd
-  lines: 882-998
+  lines: 892-1008
 - kind: function
   qualified_name: trie/cli:_has_existing_triefacts
-  lines: 1001-1007
+  lines: 1011-1017
 - kind: function
   qualified_name: trie/cli:_run_full_pass
-  lines: 1010-1074
+  lines: 1020-1084
 - kind: function
   qualified_name: trie/cli:_run_dry_run_diff
-  lines: 1077-1122
+  lines: 1087-1132
 - kind: function
   qualified_name: trie/cli:_run_single_file_sync
-  lines: 1125-1153
+  lines: 1135-1163
 - kind: function
   qualified_name: trie/cli:_run_metadata_only_refresh
-  lines: 1156-1213
+  lines: 1166-1223
 - kind: function
   qualified_name: trie/cli:_run_incremental_sync
-  lines: 1216-1265
+  lines: 1226-1275
 - kind: function
   qualified_name: trie/cli:setup_cmd
-  lines: 1269-1385
+  lines: 1279-1445
+- kind: function
+  qualified_name: trie/cli:_resolve_override_consent
+  lines: 1448-1520
 - kind: function
   qualified_name: trie/cli:_render_setup_plan
-  lines: 1388-1446
+  lines: 1523-1593
+- kind: function
+  qualified_name: trie/cli:_render_override_target_block
+  lines: 1596-1622
 - kind: function
   qualified_name: trie/cli:_format_action
-  lines: 1449-1453
+  lines: 1625-1629
 - kind: function
   qualified_name: trie/cli:_open_tools
-  lines: 1468-1480
+  lines: 1644-1656
 - kind: function
   qualified_name: trie/cli:_emit_envelope
-  lines: 1483-1507
+  lines: 1659-1683
 - kind: function
   qualified_name: trie/cli:_render_grep
-  lines: 1510-1577
+  lines: 1686-1753
 - kind: function
   qualified_name: trie/cli:_render_read
-  lines: 1580-1627
+  lines: 1756-1803
 - kind: function
   qualified_name: trie/cli:_render_trace
-  lines: 1630-1680
+  lines: 1806-1856
 - kind: function
   qualified_name: trie/cli:_render_error_envelope
-  lines: 1683-1695
+  lines: 1859-1871
 - kind: function
   qualified_name: trie/cli:_build_grep_predicate
-  lines: 1698-1760
+  lines: 1874-1936
 - kind: function
   qualified_name: trie/cli:grep_cmd
-  lines: 1764-1867
+  lines: 1940-2043
 - kind: function
   qualified_name: trie/cli:read_cmd
-  lines: 1871-1902
+  lines: 2047-2078
 - kind: function
   qualified_name: trie/cli:trace_cmd
-  lines: 1906-1948
+  lines: 2082-2124
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 1965-1967
+  lines: 2141-2143
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 1970-1980
+  lines: 2146-2156
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 1984-2053
+  lines: 2160-2229
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 2056-2071
+  lines: 2232-2247
 incoming_refs: 0
-outgoing_refs: 93
+outgoing_refs: 96
 ---
 <!-- trie:section symbol=trie/cli:init_cmd fingerprint=8b4d9be5bbc2597c7eb91b29c6c50db8494d6b7fc7007d6d96dae998df54d5e5 body_fp=e1f123d349c49c73cb575e54d9eec2677d06d4bd0dfd98e87c02da7274c4dfb9 source_ref=df2eab34e273723a3bf42ae891020acd147e6bd4 -->
 ## `init_cmd(ctx, root, force, install_hooks, run_scan) -> None`
@@ -479,27 +485,29 @@ Render a single-line refresh outcome to the reporter, plus sync statistics when 
 - `result.incremental`: used to report files synced and actual cost; skips detail if `None`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:setup_cmd fingerprint=c2ade8d4aa61dcf4b5664c42b1c0027c7c6b1951cc4b6c330c154e9359c24e1e body_fp=3849a3c2d8a006cac8f5aee3198ca797440ade5ef7dc57698564eb438cfb67c8 source_ref=c11fff462ae5a7951cd77c1abfa48f71fb364825 -->
-## `setup_cmd(ctx, target, install_all, scope, print_only, dry_run)`
+<!-- trie:section symbol=trie/cli:setup_cmd fingerprint=7fe4447bde31d0cfb60c38e96883041566cfdecb2c9145bee18cc7c88438de04 body_fp=d4ea638b5c35481c3b0f0544531e69b848bf6d916263d8f2c4b45dc6342eaa8c source_ref=d1d50bb3b3ca812d5f20af628d688c8f98a4b62d -->
+## `setup_cmd(ctx, target, install_all, scope, print_only, dry_run, override_builtins)`
 
-Wire trie into an agent end-to-end: MCP server registration, `trie refresh --after-turn` hook install, and docs install (TRIE.md + agent pointer blocks).
+Wire trie into an agent end-to-end: MCP registration, turn hooks, docs, and optional tool-override install.
 
-- `target`: repeat flag for multiple named agent targets; mutually exclusive with `--all`.
-- `install_all`: register for every known agent, skipping per-target detection.
-- `scope`: `'project'` writes into the repo; `'user'` writes to `~/.<agent>/...`.
-- `print_only`: print what would be written without touching any files.
+- `target`: agent slug(s) to configure; auto-detected when omitted.
+- `install_all`: configure every known agent, skipping detection.
+- `scope`: `"project"` (writes into repo) or `"user"` (writes to `~/.<agent>/`).
+- `print_only`: print would-be file contents without writing anything.
 - `dry_run`: resolve paths and show changes without writing.
-- Exits 1 if MCP, hook, or docs install encounters an error.
+- `override_builtins`: `True` forces override install; `False` skips; `None` prompts interactively (or skips in CI).
+- Exits `1` if any install step produces an error result.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_render_setup_plan fingerprint=23b73d42f3d639a524d4f5eef189323ce01ac09d5a0fd2ba3dd53be1d0d082de body_fp=a7ce8efb58ec728ccfb96b8d8434caf29b1f9dcb24511bc133e16e21114050d4 source_ref=577b5c634ebcbb90471bd6a1e8c66ae8c26b6a92 -->
-## `_render_setup_plan(reporter: Reporter, mcp_plan: InstallPlan, hook_plan: HookInstallPlan, docs_plan: DocsInstallPlan) -> None`
+<!-- trie:section symbol=trie/cli:_render_setup_plan fingerprint=3e5b01ac92b109f053066da2201d46cb6cb10e544ab73ab4c3fb193743395c1b body_fp=c22cb466dba4cb9d7748425e323a9319d0e6736d782353f0838d7eac06d759c9 source_ref=d1d50bb3b3ca812d5f20af628d688c8f98a4b62d -->
+## `_render_setup_plan(reporter: Reporter, mcp_plan: InstallPlan, hook_plan: HookInstallPlan, docs_plan: DocsInstallPlan, override_plan: ToolOverrideInstallPlan | None = None) -> None`
 
-Print a merged per-target report showing MCP and hook install outcomes, with manual-setup warnings where applicable, plus a target-independent docs section.
+Print a merged per-target report showing MCP, hook, and optional tool-override install outcomes, with manual-setup warnings where applicable, plus a target-independent docs section.
 
 - `mcp_plan`: MCP install results grouped by target slug.
 - `hook_plan`: Hook install results grouped by target slug.
 - `docs_plan`: Docs install results (TRIE.md / agent doc pointers); rendered as a single trailing section.
+- `override_plan`: Optional tool-override install results; when provided, each target's override outcome is rendered via `_render_override_target_block`.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/cli:_format_action fingerprint=8dac93a50edff702bbc2e173939a50d0d8f091203a3dd20675261719d0821994 body_fp=ae70c1dcc650d55b85c914d92499534930d66f081f32f21e7797135e8503ed84 source_ref=59a8f59eb43081192cbbe4499ed354aa9437ca29 -->
@@ -618,4 +626,23 @@ Trace the call graph from a symbol outward up to `depth` hops via the MCP `trace
 - `direction`: `"callers"`, `"callees"`, or `"both"`.
 - `depth`: BFS depth; clamped by `trace_max_depth` in config.
 - `as_json`: dumps raw MCP envelope to stdout instead of human-readable output.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:_resolve_override_consent fingerprint=aa5338e97363dd4891d4058bfac5e88d25f8a3f1b51a1eb6860038d2104b7c8b body_fp=4f0a8b23e292b5941b78e20e2d216fef1c9a384ee442521e4199e8932deb145e source_ref=d1d50bb3b3ca812d5f20af628d688c8f98a4b62d -->
+## `_resolve_override_consent(reporter, *, override_builtins, target_names, print_only, dry_run) -> bool`
+
+Decide whether to run the tool-override install step for a `setup` invocation.
+
+- `override_builtins=True`: always returns `True`; `False`: always returns `False`.
+- `print_only` or `dry_run` with no explicit flag: returns `True` (show preview, no writes).
+- Non-interactive stdin with no explicit flag: returns `False` and emits an info message.
+- Interactive TTY with no explicit flag: prints per-target summary and prompts; default answer is no.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:_render_override_target_block fingerprint=c80b210bde2cc2ebe252cd36099bd080babac75fa8ea414d52267edef48c8058 body_fp=59ecd7a9421d8d1ac214923e0f932c2f4b2ee41d7d522a1161f5cdbb2e37f0e0 source_ref=d1d50bb3b3ca812d5f20af628d688c8f98a4b62d -->
+## `_render_override_target_block(reporter: Reporter, result: object) -> None`
+
+Render a single target's tool-override install outcome to the reporter, listing per-file results beneath a summary line.
+
+- `result`: duck-typed install result with `.action`, `.files`, `.detail`, and per-file `.relative_path`, `.description`, `.detail` attributes.
 <!-- trie:end -->
