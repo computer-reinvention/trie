@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/cli.py
-file_fingerprint: a3e4a9f7b72a5249f1dac8cc56a1642191bc5218cec2a36483eb4a5961a4acdb
-last_synced_at: '2026-05-18T14:18:15Z'
+file_fingerprint: e718ab72b285003cd1ee31b51a512c5957fa7a6339cc8d5e7f10c21837345e46
+last_synced_at: '2026-05-18T22:49:01Z'
 defines:
 - kind: function
   qualified_name: trie/cli:_get_reporter
@@ -42,146 +42,147 @@ defines:
   lines: 224-236
 - kind: function
   qualified_name: trie/cli:init_cmd
-  lines: 240-328
+  lines: 240-361
 - kind: function
   qualified_name: trie/cli:_is_interactive
-  lines: 331-338
+  lines: 364-371
 - kind: class
   qualified_name: trie/cli:_NoOpStatus
-  lines: 341-346
+  lines: 374-379
 - kind: method
   qualified_name: trie/cli:_NoOpStatus.__enter__
-  lines: 342-343
+  lines: 375-376
 - kind: method
   qualified_name: trie/cli:_NoOpStatus.__exit__
-  lines: 345-346
+  lines: 378-379
 - kind: function
   qualified_name: trie/cli:plan_cmd
-  lines: 350-446
+  lines: 383-479
 - kind: function
   qualified_name: trie/cli:verify_cmd
-  lines: 450-462
+  lines: 483-495
 - kind: function
   qualified_name: trie/cli:lock_check_cmd
-  lines: 466-516
+  lines: 499-549
 - kind: function
   qualified_name: trie/cli:refresh_cmd
-  lines: 520-627
+  lines: 553-660
 - kind: function
   qualified_name: trie/cli:_report_freshness
-  lines: 630-644
+  lines: 663-677
 - kind: function
   qualified_name: trie/cli:audit_cmd
-  lines: 648-708
+  lines: 681-741
 - kind: function
   qualified_name: trie/cli:_resolve_audit_log_path
-  lines: 711-727
+  lines: 744-760
 - kind: function
   qualified_name: trie/cli:_print_scan_breakdown
-  lines: 730-747
+  lines: 763-780
 - kind: function
   qualified_name: trie/cli:_print_plan
-  lines: 750-761
+  lines: 783-794
 - kind: function
   qualified_name: trie/cli:_print_incremental_plan
-  lines: 764-830
+  lines: 797-863
 - kind: function
   qualified_name: trie/cli:_print_drift_detail
-  lines: 843-854
+  lines: 876-887
 - kind: function
   qualified_name: trie/cli:_verify_drift
-  lines: 857-888
+  lines: 890-921
 - kind: function
   qualified_name: trie/cli:sync_cmd
-  lines: 892-1008
+  lines: 925-1041
 - kind: function
   qualified_name: trie/cli:_has_existing_triefacts
-  lines: 1011-1017
+  lines: 1044-1050
 - kind: function
   qualified_name: trie/cli:_run_full_pass
-  lines: 1020-1084
+  lines: 1053-1117
 - kind: function
   qualified_name: trie/cli:_run_dry_run_diff
-  lines: 1087-1132
+  lines: 1120-1165
 - kind: function
   qualified_name: trie/cli:_run_single_file_sync
-  lines: 1135-1163
+  lines: 1168-1196
 - kind: function
   qualified_name: trie/cli:_run_metadata_only_refresh
-  lines: 1166-1223
+  lines: 1199-1256
 - kind: function
   qualified_name: trie/cli:_run_incremental_sync
-  lines: 1226-1275
+  lines: 1259-1308
 - kind: function
   qualified_name: trie/cli:setup_cmd
-  lines: 1279-1445
+  lines: 1312-1478
 - kind: function
   qualified_name: trie/cli:_resolve_override_consent
-  lines: 1448-1520
+  lines: 1481-1553
 - kind: function
   qualified_name: trie/cli:_render_setup_plan
-  lines: 1523-1593
+  lines: 1556-1626
 - kind: function
   qualified_name: trie/cli:_render_override_target_block
-  lines: 1596-1622
+  lines: 1629-1655
 - kind: function
   qualified_name: trie/cli:_format_action
-  lines: 1625-1629
+  lines: 1658-1662
 - kind: function
   qualified_name: trie/cli:_open_tools
-  lines: 1644-1656
+  lines: 1677-1689
 - kind: function
   qualified_name: trie/cli:_emit_envelope
-  lines: 1659-1683
+  lines: 1692-1716
 - kind: function
   qualified_name: trie/cli:_render_grep
-  lines: 1686-1753
+  lines: 1719-1786
 - kind: function
   qualified_name: trie/cli:_render_read
-  lines: 1756-1803
+  lines: 1789-1836
 - kind: function
   qualified_name: trie/cli:_render_trace
-  lines: 1806-1856
+  lines: 1839-1889
 - kind: function
   qualified_name: trie/cli:_render_error_envelope
-  lines: 1859-1871
+  lines: 1892-1904
 - kind: function
   qualified_name: trie/cli:_build_grep_predicate
-  lines: 1874-1936
+  lines: 1907-1969
 - kind: function
   qualified_name: trie/cli:grep_cmd
-  lines: 1940-2043
+  lines: 1973-2076
 - kind: function
   qualified_name: trie/cli:read_cmd
-  lines: 2047-2078
+  lines: 2080-2111
 - kind: function
   qualified_name: trie/cli:trace_cmd
-  lines: 2082-2124
+  lines: 2115-2157
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 2141-2143
+  lines: 2174-2176
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 2146-2156
+  lines: 2179-2189
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 2160-2229
+  lines: 2193-2262
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 2232-2247
+  lines: 2265-2280
 incoming_refs: 0
 outgoing_refs: 96
 ---
-<!-- trie:section symbol=trie/cli:init_cmd fingerprint=8b4d9be5bbc2597c7eb91b29c6c50db8494d6b7fc7007d6d96dae998df54d5e5 body_fp=e1f123d349c49c73cb575e54d9eec2677d06d4bd0dfd98e87c02da7274c4dfb9 source_ref=df2eab34e273723a3bf42ae891020acd147e6bd4 -->
+<!-- trie:section symbol=trie/cli:init_cmd fingerprint=d73031440715902c67093bb14ec87479ecf1944b2e51c463133717c61d5f6642 body_fp=1c6cb5970e42afec64d45fece9df84f2b942bcf006c8b3719bb909e4270c3956 source_ref=ffa92f1d383e5f724d6bb3ddbf91a524903f8f73 -->
 ## `init_cmd(ctx, root, force, install_hooks, run_scan) -> None`
 
-Initialize a trie project: write `trie.toml`, update `.gitignore`, optionally scan, and install a pre-commit hook.
+Create `trie.toml`, update `.gitignore`, optionally build the symbol graph, and install a pre-commit hook.
 
-- `root`: project directory to initialize; defaults to `Path.cwd()`.
+- `root`: project directory to initialise; defaults to cwd.
 - `force`: overwrites existing `trie.toml` and skips Python-project detection.
-- `install_hooks`: tri-state; prompts interactively when `None` in a tty, skips in CI.
-- `run_scan`: builds the symbol graph immediately when `True`.
-- Exits 2 if the write lock is contended; exits 1 on `InitError`.
+- `install_hooks`: tri-state; prompts interactively in a tty, skips in CI.
+- `run_scan`: builds the symbol graph immediately after writing config.
+- Offers to run `setup_cmd` interactively after completion.
+- Exits 1 on `InitError`; exits 2 if the write lock is contended.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/cli:plan_cmd fingerprint=1f9525fd75f6e14df3b9d54f2f02446677e7a0ab7562b7c1f66684cca46ca390 body_fp=32fffe4d193e74de627e39221f5eb3bfaa3b7f4c96da580f43b27821eff37f29 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->

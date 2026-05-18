@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: tests/test_cli_agent_commands.py
-file_fingerprint: a2304221269df1182444e04c20aa418133081953116e880c93a51477e36cc32b
-last_synced_at: '2026-05-18T13:56:52Z'
+file_fingerprint: f4c1ec49454e9b150600316f2dfa0b408465afb412a7320c7536823b88cbf7bc
+last_synced_at: '2026-05-18T22:48:48Z'
 description: 'Tests for the agent-facing CLI subcommands: `trie grep`, `trie read`,
   `trie trace`.'
 defines:
@@ -34,38 +34,41 @@ defines:
   qualified_name: tests/test_cli_agent_commands:test_grep_no_matches_shows_fallback_envelope
   lines: 187-199
 - kind: function
+  qualified_name: tests/test_cli_agent_commands:test_grep_with_no_flags_exits_with_invalid_argument
+  lines: 202-223
+- kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_text_match_fallback_renders_candidates
-  lines: 202-214
+  lines: 226-238
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_read_known_qname_prints_prose_and_neighbours
-  lines: 222-234
+  lines: 246-258
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_read_unknown_qname_exits_1_with_suggestion
-  lines: 237-249
+  lines: 261-273
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_read_json_emits_envelope
-  lines: 252-264
+  lines: 276-288
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_trace_callers_renders_topology
-  lines: 272-284
+  lines: 296-308
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_trace_json_shape_matches_mcp
-  lines: 287-309
+  lines: 311-333
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_trace_unknown_qname_exits_1
-  lines: 312-319
+  lines: 336-343
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_trace_invalid_direction_exits_1
-  lines: 322-331
+  lines: 346-355
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_without_trie_toml_exits_1_with_clean_error
-  lines: 339-349
+  lines: 363-373
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_read_without_trie_toml_exits_1
-  lines: 352-358
+  lines: 376-382
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_trace_without_trie_toml_exits_1
-  lines: 361-367
+  lines: 385-391
 incoming_refs: 0
 outgoing_refs: 6
 ---
@@ -193,4 +196,13 @@ Assert `trie read` exits 1 with a `trie.toml` message when no config file exists
 ## `test_trace_without_trie_toml_exits_1(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert `trie trace` exits 1 with a `trie.toml` message when no config file exists.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_with_no_flags_exits_with_invalid_argument fingerprint=1fa4926a1140b7863c3c9783481b4a3b5b1de3c07e6319aa0d30e0206993e799 body_fp=a1198db29d0848e8cf532be35e954140d244d857f58c76b375cf78ad0e266f7f source_ref=3adab019d9e144c5db17f26244278c46468d7a08 -->
+## `test_grep_with_no_flags_exits_with_invalid_argument(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie grep` with no filter flags exits 1 with an `invalid_argument` envelope naming a usable filter.
+
+- Exit code 1 signals a tool error, not a CLI usage error (exit 2).
+- Output must contain `name_contains` or `scope_prefix` as a hint.
 <!-- trie:end -->

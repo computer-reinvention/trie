@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: tests/test_init.py
-file_fingerprint: e77ecbd2b75cfe4e26c7c804279c4f59c3d8d07b029f0daf1982c0b6f7286734
-last_synced_at: '2026-05-16T13:17:23Z'
+file_fingerprint: e2a72c51fe1f6c7144b6c823ed90adfd1fec4a364d2a34324f3f9196a5a28861
+last_synced_at: '2026-05-18T22:48:51Z'
 defines:
 - kind: function
   qualified_name: tests/test_init:python_project
@@ -103,6 +103,18 @@ defines:
 - kind: function
   qualified_name: tests/test_init:test_cli_init_prints_scan_summary
   lines: 291-297
+- kind: function
+  qualified_name: tests/test_init:test_cli_init_prints_setup_instruction_in_next_steps
+  lines: 305-314
+- kind: function
+  qualified_name: tests/test_init:test_cli_init_does_not_run_setup_in_non_interactive_env
+  lines: 317-332
+- kind: function
+  qualified_name: tests/test_init:test_cli_init_runs_setup_when_user_accepts_prompt
+  lines: 335-359
+- kind: function
+  qualified_name: tests/test_init:test_cli_init_does_not_run_setup_when_user_declines_prompt
+  lines: 362-381
 incoming_refs: 0
 outgoing_refs: 27
 ---
@@ -302,4 +314,34 @@ Assert that `trie init` completes without blocking when no `--install-hooks` fla
 ## `test_cli_init_prints_scan_summary(python_project: Path)`
 
 Assert that `trie init` prints a scan summary containing "scanned" and "symbols" after indexing a Python file.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_init:test_cli_init_prints_setup_instruction_in_next_steps fingerprint=36b504ae41a1d76a4264c78b120d4ab32417d40a29c041fd7b8b98b83f4c4014 body_fp=55c2bd259dd2bf4d77dde1cc6900f69e901f40241a01b387f7ee9d3fb090d755 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
+## `test_cli_init_prints_setup_instruction_in_next_steps(python_project: Path)`
+
+Assert that `trie init` always prints a "Next steps:" block containing `trie setup`, even in non-TTY environments.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_init:test_cli_init_does_not_run_setup_in_non_interactive_env fingerprint=932d32e892605ad53ea8a369e542e2db3929656966e8dcba24c5046317966fc0 body_fp=374d40db34bde5bcec5f2280b2cad2eb633dd89e547c0779730d0c7ff45c9bf9 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
+## `test_cli_init_does_not_run_setup_in_non_interactive_env(python_project: Path)`
+
+Assert that `trie init` in a non-TTY environment never auto-invokes `trie setup` or writes MCP config files.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_init:test_cli_init_runs_setup_when_user_accepts_prompt fingerprint=4fc6f3632b51dadbf4b6aa8d4dc094ff81e0779ee67530c414bb6f9da2d60e01 body_fp=e283e3af6af148861dff915f5e693d0a93a6a40aac6fc63c6d9aadf0e7fcdc9b source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
+## `test_cli_init_runs_setup_when_user_accepts_prompt(python_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that accepting the interactive setup prompt triggers the `trie setup` banner in CLI output.
+
+- `monkeypatch`: patches `trie.cli._is_interactive` to return `True`, simulating a TTY.
+- `--no-install-hooks`: prevents the hooks prompt from consuming the `"y\n"` input.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_init:test_cli_init_does_not_run_setup_when_user_declines_prompt fingerprint=2b88a1a18da864f17d833277406db5bf219c9e374d807aafa36d720cb4263986 body_fp=40fb184458e0777ab3bc4fab87092642ea626952f974ec191b7b21c0864485a8 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
+## `test_cli_init_does_not_run_setup_when_user_declines_prompt(python_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that declining the setup prompt suppresses `trie setup` invocation while the instruction still appears in Next steps.
+
+- `input="n\n"`: simulates user declining the interactive setup prompt.
+- `--no-install-hooks`: prevents the pre-commit prompt from consuming the input.
 <!-- trie:end -->

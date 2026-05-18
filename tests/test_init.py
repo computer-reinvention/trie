@@ -295,3 +295,87 @@ def test_cli_init_prints_scan_summary(python_project: Path):
     assert result.exit_code == 0, result.output
     assert "scanned" in result.output
     assert "symbols" in result.output
+
+
+# ---------------------------------------------------------------------------
+# Next-step nudge: trie setup
+# ---------------------------------------------------------------------------
+
+
+def test_cli_init_prints_setup_instruction_in_next_steps(python_project: Path):
+    """Every init run must surface `trie setup` in the Next steps block,
+    regardless of whether the user accepted the auto-run prompt. This is the
+    fallback for non-TTY environments and for users who decline the prompt:
+    they still see how to wire trie into their agent."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["init", str(python_project)])
+    assert result.exit_code == 0, result.output
+    assert "Next steps:" in result.output
+    assert "trie setup" in result.output
+
+
+def test_cli_init_does_not_run_setup_in_non_interactive_env(
+    python_project: Path,
+):
+    """Non-TTY runs (CI, scripted setup) must never auto-invoke `trie setup`.
+    The instruction line above is the only nudge; the prompt is suppressed.
+    Verified by the absence of setup's signature output ("Running `trie
+    setup`…" banner) and by no MCP config files landing in the project root."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["init", str(python_project)])
+    assert result.exit_code == 0, result.output
+    # Setup's banner doesn't appear because the prompt is gated on TTY.
+    assert "Running `trie setup`" not in result.output
+    # And setup didn't write any MCP config files into the project.
+    assert not (python_project / "opencode.json").exists()
+    assert not (python_project / ".mcp.json").exists()
+    assert not (python_project / ".opencode" / "plugins").exists()
+
+
+def test_cli_init_runs_setup_when_user_accepts_prompt(
+    python_project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """In an interactive TTY, default Y means a bare Enter (or explicit "y")
+    triggers setup. We simulate TTY by patching `_is_interactive` and pipe
+    "y\\n" as stdin so `typer.confirm` reads acceptance.
+
+    `--no-install-hooks` skips the pre-commit prompt so this test's input
+    speaks only to the setup prompt; otherwise the first "y" would go to
+    the hooks prompt and the setup prompt would see EOF.
+
+    Concrete proof that setup ran: the post-init banner appears in the
+    output. We can't assert on the exit code because setup's outcome
+    depends on what's installed on the test host (a developer running
+    `pytest` locally with opencode on PATH will see setup succeed; CI
+    will see it error). The banner is the only platform-independent
+    signal that init transitioned into the auto-setup branch."""
+    monkeypatch.setattr("trie.cli._is_interactive", lambda: True)
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        ["init", str(python_project), "--no-install-hooks"],
+        input="y\n",
+    )
+    assert "Running `trie setup`" in result.output
+
+
+def test_cli_init_does_not_run_setup_when_user_declines_prompt(
+    python_project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Explicit "n" at the prompt skips setup. The instruction line still
+    showed up earlier in the Next steps block, so the user knows how to
+    run it manually — but no setup invocation happens.
+
+    `--no-install-hooks` skips the pre-commit prompt so the test input
+    speaks only to the setup prompt."""
+    monkeypatch.setattr("trie.cli._is_interactive", lambda: True)
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        ["init", str(python_project), "--no-install-hooks"],
+        input="n\n",
+    )
+    assert result.exit_code == 0, result.output
+    assert "Running `trie setup`" not in result.output
+    # The instruction line in Next steps still appeared.
+    assert "trie setup" in result.output
