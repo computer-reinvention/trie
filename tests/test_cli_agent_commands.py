@@ -199,6 +199,30 @@ def test_grep_no_matches_shows_fallback_envelope(
     assert "text_match_empty" in result.output
 
 
+def test_grep_with_no_flags_exits_with_invalid_argument(
+    populated_project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """`trie grep` with no filter flags must error out instead of silently
+    returning the alphabetically-first N public symbols. The CLI builds an
+    empty predicate when no flags are passed; `TrieTools.grep` rejects it.
+    The agent (or human) sees an `invalid_argument` envelope with a
+    suggestion naming usable filters.
+
+    This is the contract that prevents the 'noisy empty grep' footgun on
+    the CLI surface, matching the same enforcement on the MCP wire.
+    """
+    monkeypatch.chdir(populated_project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["grep"])
+    # Exit code 1 = tool returned an error envelope. (2 is for CLI-level
+    # usage errors like malformed --predicate JSON, not for tool errors.)
+    assert result.exit_code == 1
+    assert "invalid_argument" in result.output
+    # The suggestion should name at least one usable filter so the next
+    # invocation is obvious.
+    assert "name_contains" in result.output or "scope_prefix" in result.output
+
+
 def test_grep_text_match_fallback_renders_candidates(
     populated_project: Path, monkeypatch: pytest.MonkeyPatch
 ):

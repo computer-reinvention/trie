@@ -76,8 +76,13 @@ The same dispatch in both cases: scan the symbols, pick the one whose
 
 ### Predicate fields
 
-Build your query as one nested object. All fields optional; most
-queries use one or two.
+Build your query as one nested object. **At least one filter field is
+required.** An empty predicate (no fields, or only `name_contains: ""`
+/ `kind: "any"`) is rejected with an `invalid_argument` error — there's
+no "list everything" mode, because the result would be the
+alphabetically-first N public symbols, which is useful to nobody. Pick
+a filter; the rest of the fields are optional. Most queries use one or
+two.
 
 ```python
 # Find by name substring (case-insensitive, local name only)
@@ -501,6 +506,12 @@ Every error response has one shape:
 The `suggestion` field is load-bearing. When you get a not-found, the
 suggestion will usually point you at the closest matching qname or
 suggest a broader `trie_grep` query. Use it.
+
+`invalid_argument` shows up for two common cases beyond malformed types:
+an empty `trie_grep` predicate (at least one filter field is required —
+see the Predicate fields section above) and an unrecognised `direction`
+on `trie_trace`. The suggestion field names the valid options in each
+case.
 
 ---
 

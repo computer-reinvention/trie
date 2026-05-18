@@ -187,15 +187,46 @@ def test_grep_inbound_count_predicate(tools: TrieTools):
 
 
 def test_grep_rank_by_inbound_count(tools: TrieTools):
-    result = tools.grep({"name_contains": ""}, rank_by="inbound_count", limit=5)
+    # `public_only: true` is the documented orientation query — every public
+    # symbol in scope, ranked by centrality. Using a real filter here also
+    # avoids the empty-predicate rejection path that `grep` enforces.
+    result = tools.grep({"public_only": True}, rank_by="inbound_count", limit=5)
     hits = result["hits"]
     # First hit should have the highest inbound_count.
     assert hits[0]["inbound_count"] >= hits[-1]["inbound_count"]
 
 
 def test_grep_limit_respected(tools: TrieTools):
-    result = tools.grep({"name_contains": ""}, limit=1)
+    # Same trick: a non-empty predicate keeps us out of the empty-predicate
+    # rejection path while still exercising the `limit` clamp.
+    result = tools.grep({"public_only": True}, limit=1)
     assert len(result["hits"]) == 1
+
+
+def test_grep_empty_predicate_returns_invalid_argument(tools: TrieTools):
+    """An empty predicate is rejected explicitly with `invalid_argument` and
+    a `suggestion` pointing the agent at the documented orientation patterns.
+
+    This is the headline contract for the rejection: we don't return random
+    alphabetical leaves disguised as relevant hits. The agent must specify
+    *what kind* of search it wants before trie returns anything.
+    """
+    for predicate in (None, {}, {"name_contains": ""}, {"kind": "any"}):
+        result = tools.grep(predicate)
+        assert "error" in result, f"predicate {predicate!r} should have errored"
+        assert result["error"]["code"] == "invalid_argument"
+        # Suggestion must name at least one usable filter so the agent can fix.
+        suggestion = result["error"].get("suggestion", "")
+        assert "name_contains" in suggestion or "scope_prefix" in suggestion
+
+
+def test_grep_empty_predicate_rejected_regardless_of_rank_by(tools: TrieTools):
+    """Passing `rank_by` doesn't rescue an empty predicate. `rank_by` only
+    orders results; without filter fields there's nothing meaningful to
+    order. The rejection happens before ranking is even consulted."""
+    result = tools.grep({}, rank_by="inbound_count", limit=10)
+    assert "error" in result
+    assert result["error"]["code"] == "invalid_argument"
 
 
 def test_grep_unknown_predicate_field_silently_ignored(tools: TrieTools):
