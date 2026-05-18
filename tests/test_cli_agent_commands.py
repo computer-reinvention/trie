@@ -389,3 +389,99 @@ def test_trace_without_trie_toml_exits_1(tmp_path: Path, monkeypatch: pytest.Mon
     result = runner.invoke(app, ["trace", "some:qname"])
     assert result.exit_code == 1
     assert "trie.toml" in result.output
+
+
+# ---------------------------------------------------------------------------
+# Telemetry: CLI calls emit `cli_call` events (not `mcp_call`)
+# ---------------------------------------------------------------------------
+
+
+def _read_jsonl_events(path: Path) -> list[dict]:
+    """Read a JSONL file and return one parsed dict per non-empty line."""
+    out: list[dict] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            out.append(json.loads(line))
+    return out
+
+
+def test_grep_emits_cli_call_event_not_mcp_call(
+    populated_project: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    """A successful `trie grep` invocation must emit a `cli_call` event (not
+    a `mcp_call` event). This is the contract that lets `trie audit`
+    distinguish CLI usage from MCP-server usage — without it, audit
+    aggregates the CLI calls into the MCP bucket and operators can't tell
+    which surface the agent is actually using.
+
+    Verified by setting `TRIE_DEBUG=<tmp>/log.jsonl` so telemetry lands in
+    a tmp file we can read back, then asserting on the event names that
+    actually fired."""
+    log_path = tmp_path / "telem.jsonl"
+    monkeypatch.setenv("TRIE_DEBUG", str(log_path))
+    monkeypatch.chdir(populated_project)
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["grep", "--name", "slugify"])
+    assert result.exit_code == 0, result.output
+
+    assert log_path.exists()
+    events = _read_jsonl_events(log_path)
+    event_names = {e["event"] for e in events}
+    assert "cli_call" in event_names
+    # The MCP-only event names must NOT fire for a CLI invocation.
+    assert "mcp_call" not in event_names
+    assert "mcp_server_start" not in event_names
+
+
+def test_read_and_trace_also_emit_cli_call_events(
+    populated_project: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    """Symmetric coverage for `trie read` and `trie trace`. Both reach the
+    same `TrieTools` methods as `grep`, and both should emit `cli_call`
+    events when invoked via the CLI."""
+    log_path = tmp_path / "telem.jsonl"
+    monkeypatch.setenv("TRIE_DEBUG", str(log_path))
+    monkeypatch.chdir(populated_project)
+
+    runner = CliRunner()
+    read_result = runner.invoke(app, ["read", "lib:slugify"])
+    assert read_result.exit_code == 0, read_result.output
+    trace_result = runner.invoke(
+        app, ["trace", "lib:slugify", "--direction", "callers", "--depth", "1"]
+    )
+    assert trace_result.exit_code == 0, trace_result.output
+
+    events = _read_jsonl_events(log_path)
+    cli_call_tools = {e["tool"] for e in events if e["event"] == "cli_call"}
+    # Both tools represented; no mcp_call events.
+    assert "read" in cli_call_tools
+    assert "trace" in cli_call_tools
+    mcp_call_events = [e for e in events if e["event"] == "mcp_call"]
+    assert mcp_call_events == []
+
+
+def test_cli_call_event_carries_duration_and_result_fields(
+    populated_project: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    """`cli_call` events carry the same operational fields the MCP path
+    emits: `duration_ms` (from `telemetry.timed`), `result_kind`,
+    `result_count` for grep, `response_bytes`. Without these the audit
+    summary can't compute avg duration / error rate per CLI tool."""
+    log_path = tmp_path / "telem.jsonl"
+    monkeypatch.setenv("TRIE_DEBUG", str(log_path))
+    monkeypatch.chdir(populated_project)
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["grep", "--name", "slugify"])
+    assert result.exit_code == 0, result.output
+
+    events = _read_jsonl_events(log_path)
+    cli_calls = [e for e in events if e["event"] == "cli_call"]
+    assert len(cli_calls) == 1
+    ev = cli_calls[0]
+    assert ev["tool"] == "grep"
+    assert "duration_ms" in ev
+    assert ev["result_kind"] == "ok"
+    assert "result_count" in ev
+    assert "response_bytes" in ev

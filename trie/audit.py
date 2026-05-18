@@ -178,6 +178,13 @@ class AuditSummary:
     Construct via `AuditSummary.from_log(path)`. The structure is stable enough
     to JSON-serialise for scripting; `to_dict()` produces a representation
     suitable for `--json` output.
+
+    `mcp` aggregates `mcp_call` events emitted by the stdio MCP server.
+    `cli` aggregates `cli_call` events emitted by the agent-facing CLI
+    subcommands (`trie grep`, `trie read`, `trie trace`). The two surfaces
+    share an envelope shape but live on different call paths (persistent
+    MCP server vs short-lived `trie` process per call), so we keep them
+    in separate buckets here.
     """
 
     log_path: Path
@@ -186,6 +193,7 @@ class AuditSummary:
     span_end: str | None
     span_duration_seconds: float | None
     mcp: dict[str, McpCallStats]
+    cli: dict[str, McpCallStats]
     sync: SyncStats
     retries: RetryStats
     cli_invocations: tuple[tuple[str, int], ...]
@@ -227,19 +235,8 @@ class AuditSummary:
             "span_start": self.span_start,
             "span_end": self.span_end,
             "span_duration_seconds": self.span_duration_seconds,
-            "mcp": {
-                tool: {
-                    "count": s.count,
-                    "error_count": s.error_count,
-                    "not_found_count": s.not_found_count,
-                    "empty_result_count": s.empty_result_count,
-                    "avg_duration_ms": s.avg_duration_ms,
-                    "avg_response_bytes": s.avg_response_bytes,
-                    "top_qnames": list(s.top_qnames),
-                    "fallback_kinds": dict(s.fallback_kinds),
-                }
-                for tool, s in self.mcp.items()
-            },
+            "mcp": _stats_to_dict(self.mcp),
+            "cli": _stats_to_dict(self.cli),
             "sync": {
                 "file_runs": self.sync.file_runs,
                 "symbols_generated": self.sync.symbols_generated,
@@ -263,6 +260,28 @@ class AuditSummary:
         }
 
 
+def _stats_to_dict(stats_by_tool: dict[str, McpCallStats]) -> dict[str, dict[str, Any]]:
+    """Serialise a `{tool: McpCallStats}` mapping for `to_dict()`.
+
+    Factored out so `mcp` and `cli` (which share the McpCallStats shape)
+    can use the same renderer. JSON consumers see the same fields in both
+    sections so they can diff or aggregate freely across surfaces.
+    """
+    return {
+        tool: {
+            "count": s.count,
+            "error_count": s.error_count,
+            "not_found_count": s.not_found_count,
+            "empty_result_count": s.empty_result_count,
+            "avg_duration_ms": s.avg_duration_ms,
+            "avg_response_bytes": s.avg_response_bytes,
+            "top_qnames": list(s.top_qnames),
+            "fallback_kinds": dict(s.fallback_kinds),
+        }
+        for tool, s in stats_by_tool.items()
+    }
+
+
 # ---------------------------------------------------------------------------
 # Aggregation
 # ---------------------------------------------------------------------------
@@ -282,6 +301,7 @@ def _summarise(
     through the filesystem path.
     """
     mcp_calls: dict[str, list[Event]] = defaultdict(list)
+    cli_calls: dict[str, list[Event]] = defaultdict(list)
     sync_events: list[Event] = []
     retry_events: list[Event] = []
     cli_events: list[Event] = []
@@ -293,6 +313,15 @@ def _summarise(
             tool = ev.fields.get("tool")
             if isinstance(tool, str):
                 mcp_calls[tool].append(ev)
+        elif ev.event == "cli_call":
+            # `cli_call` mirrors `mcp_call` shape — same fields, just emitted
+            # from the `trie grep`/`read`/`trace` CLI handlers instead of the
+            # MCP server. We bucket separately so the audit can show usage
+            # per surface, but the per-tool stats logic in `_mcp_stats`
+            # works unchanged.
+            tool = ev.fields.get("tool")
+            if isinstance(tool, str):
+                cli_calls[tool].append(ev)
         elif ev.event == "sync_file":
             sync_events.append(ev)
         elif ev.event == "model_call_retry":
@@ -301,6 +330,7 @@ def _summarise(
             cli_events.append(ev)
 
     mcp = {tool: _mcp_stats(tool, evs) for tool, evs in mcp_calls.items()}
+    cli = {tool: _mcp_stats(tool, evs) for tool, evs in cli_calls.items()}
     sync = _sync_stats(sync_events)
     retries = _retry_stats(retry_events)
     cli_invocations = _cli_invocations(cli_events)
@@ -317,6 +347,7 @@ def _summarise(
         span_end=span_end,
         span_duration_seconds=span_duration,
         mcp=mcp,
+        cli=cli,
         sync=sync,
         retries=retries,
         cli_invocations=cli_invocations,
@@ -545,7 +576,7 @@ def _span(timestamps: list[str]) -> tuple[str | None, str | None, float | None]:
 
 
 def render(summary: AuditSummary, console: Console) -> None:
-    """Print one summary as four Rich sections: header, MCP, sync, retries.
+    """Print one summary as five Rich sections: header, MCP, CLI, sync, retries.
 
     Output is dense by design — the whole report should fit in a terminal
     pane without scrolling. Sections with no data are still printed (with a
@@ -555,6 +586,8 @@ def render(summary: AuditSummary, console: Console) -> None:
     _render_header(summary, console)
     console.print()
     _render_mcp(summary.mcp, console)
+    console.print()
+    _render_cli_calls(summary.cli, console)
     console.print()
     _render_sync(summary.sync, console)
     console.print()
@@ -602,10 +635,39 @@ def _render_header(s: AuditSummary, console: Console) -> None:
 
 
 def _render_mcp(mcp: dict[str, McpCallStats], console: Console) -> None:
-    if not mcp:
-        console.print("[bold]MCP calls[/bold]: [dim]none[/dim]")
+    """Render the MCP-server-side calls section."""
+    _render_tool_calls(mcp, console, title="MCP calls", empty_label="MCP calls")
+
+
+def _render_cli_calls(cli: dict[str, McpCallStats], console: Console) -> None:
+    """Render the CLI-side calls section (`trie grep`/`read`/`trace`).
+
+    Identical shape to the MCP table — same columns, same per-tool fallback
+    breakdown — because the underlying `McpCallStats` is the same. Only the
+    section heading differs so an operator can tell at a glance whether
+    the agent is reaching trie via MCP or via the shell.
+    """
+    _render_tool_calls(cli, console, title="CLI calls", empty_label="CLI calls")
+
+
+def _render_tool_calls(
+    by_tool: dict[str, McpCallStats],
+    console: Console,
+    *,
+    title: str,
+    empty_label: str,
+) -> None:
+    """Shared body for `_render_mcp` and `_render_cli_calls`.
+
+    Both surfaces emit `McpCallStats`-shaped buckets keyed by tool. The
+    column layout, the "always show grep/read/trace as rows even when
+    zero" placeholder pattern, and the per-grep fallback breakdown
+    underneath the table are all identical — only the title differs.
+    """
+    if not by_tool:
+        console.print(f"[bold]{empty_label}[/bold]: [dim]none[/dim]")
         return
-    table = Table(title="MCP calls", title_style="bold", show_header=True, header_style="bold")
+    table = Table(title=title, title_style="bold", show_header=True, header_style="bold")
     table.add_column("tool")
     table.add_column("count", justify="right")
     table.add_column("errors", justify="right")
@@ -614,7 +676,7 @@ def _render_mcp(mcp: dict[str, McpCallStats], console: Console) -> None:
     table.add_column("avg bytes", justify="right")
     table.add_column("top qname")
     for tool in ("grep", "read", "trace"):
-        stats = mcp.get(tool)
+        stats = by_tool.get(tool)
         if stats is None:
             table.add_row(tool, "0", "0", "0", "--", "--", "--")
             continue
@@ -631,7 +693,7 @@ def _render_mcp(mcp: dict[str, McpCallStats], console: Console) -> None:
             top,
         )
     # Surface any other tool names (forward-compat: if we add a fourth tool later).
-    for tool, stats in mcp.items():
+    for tool, stats in by_tool.items():
         if tool in ("grep", "read", "trace"):
             continue
         table.add_row(
@@ -649,7 +711,7 @@ def _render_mcp(mcp: dict[str, McpCallStats], console: Console) -> None:
     # activity. Tells the operator at a glance whether agents are hitting
     # typo paths (`text_match_empty`), the no-name-contains path (`none`),
     # or successfully getting redirected to body matches (`text_match`).
-    grep_stats = mcp.get("grep")
+    grep_stats = by_tool.get("grep")
     if grep_stats is not None and grep_stats.fallback_kinds:
         parts = ", ".join(f"{k}={n}" for k, n in sorted(grep_stats.fallback_kinds.items()))
         console.print(f"  [dim]grep fallback:[/dim] {parts}")
