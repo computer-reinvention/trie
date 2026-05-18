@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/mcp_server.py
-file_fingerprint: 1747fd0b8fce3583a808069fb5e461603808b303e24cf2bf4fa627e10760c3fd
-last_synced_at: '2026-05-18T13:57:56Z'
+file_fingerprint: ee79a8cee190f9a21d5cf6c01cc22d53760c7a772e27c84b6aadf6a0622c4137
+last_synced_at: '2026-05-18T22:49:08Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
 - kind: class
@@ -27,60 +27,63 @@ defines:
   qualified_name: trie/mcp_server:_close_name_matches
   lines: 128-129
 - kind: function
+  qualified_name: trie/mcp_server:_predicate_is_empty
+  lines: 132-155
+- kind: function
   qualified_name: trie/mcp_server:_smallest_enclosing
-  lines: 132-151
+  lines: 158-177
 - kind: class
   qualified_name: trie/mcp_server:TrieTools
-  lines: 154-937
+  lines: 180-988
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.__init__
-  lines: 160-175
+  lines: 186-201
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.close
-  lines: 177-178
+  lines: 203-204
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep
-  lines: 182-272
+  lines: 208-323
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._maybe_text_match_fallback
-  lines: 274-411
+  lines: 325-462
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._text_match_in_scope
-  lines: 413-512
+  lines: 464-563
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._attribute_text_matches_to_symbols
-  lines: 514-537
+  lines: 565-588
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._candidate_matches_predicate
-  lines: 539-565
+  lines: 590-616
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._parse_predicate
-  lines: 567-638
+  lines: 618-689
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.read
-  lines: 642-700
+  lines: 693-751
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._prose_for
-  lines: 702-739
+  lines: 753-790
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._neighbour_summaries
-  lines: 741-766
+  lines: 792-817
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.trace
-  lines: 770-917
+  lines: 821-968
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._suggest_for_qname
-  lines: 921-937
+  lines: 972-988
 - kind: function
   qualified_name: trie/mcp_server:build_server
-  lines: 943-960
+  lines: 994-1011
 - kind: function
   qualified_name: trie/mcp_server:run_stdio
-  lines: 963-966
+  lines: 1014-1017
 incoming_refs: 4
 outgoing_refs: 29
 ---
-<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=210787fce292cbc452226ab7e26167842c8ff5ff2a43a7eaeab664b03f0e2894 body_fp=213ce7664e199d0c0b7557ecc2fcdfd9ffb0cde0053fdbedd1f339b1a930e2e0 source_ref=cdb7c717485168c67e602f53f176ce638ce44ee9 -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=17c91ca4f7b48a399b6773ad0c86e2e4ef4a6e69ab9d6df66a4ee1c016022b83 body_fp=213ce7664e199d0c0b7557ecc2fcdfd9ffb0cde0053fdbedd1f339b1a930e2e0 source_ref=208d963e8755736b64473d98f04dd5c5ac701361 -->
 ## `TrieTools`
 
 Owns the Store and exposes `grep`, `read`, and `trace` as directly callable methods, decoupled from MCP transport.
@@ -225,17 +228,17 @@ Raised at MCP server startup when `rg` (ripgrep) is not found on PATH.
 Return the absolute path to `rg` via `shutil.which`, or raise `RipgrepNotFoundError` if not found.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_server:TrieTools.grep fingerprint=4357347a6f2038549c1dc892b20e65c51e50607534ee516dd09406f6effe7b7e body_fp=384e351bab2835fdf817fbed4a8ebe1d0db4333be4121da000d96105acaf96c0 source_ref=cdb7c717485168c67e602f53f176ce638ce44ee9 -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.grep fingerprint=92e9ff7af757d52190973e8db46d425d415ae46ae26c0fffabbae84e184f155e body_fp=8af935992c9857d94f06440458a09b6a90d0bc9c33269203a2b29fcfd9ed04eb source_ref=208d963e8755736b64473d98f04dd5c5ac701361 -->
 ## `grep(self, predicate: dict[str, Any] | None = None, rank_by: str | None = None, limit: int = 10) -> dict[str, Any]`
 
 Find symbols matching a predicate, with a text-match fallback when no symbols match.
 
-- `predicate`: optional dict with fields `name_contains`, `kind`, `scope_prefix`, `scope_exclude`, `public_only`, `inbound_count`, `outbound_count`.
+- `predicate`: optional dict with fields `name_contains`, `kind`, `scope_prefix`, `scope_exclude`, `public_only`, `inbound_count`, `outbound_count`; at least one field required or returns `invalid_argument`.
 - `rank_by`: `"public_first"` (default), `"inbound_count"`, or `"alphabetical"`.
 - `limit`: clamped to `[1, grep_max_limit]`; defaults to 10.
 - Returns `{hits: [...]}` on success; adds `fallback` key when `hits` is empty.
 - `fallback.kind` is `"none"`, `"text_match_empty"`, or `"text_match"` (ranked candidates).
-- Returns `{"error": {code, message, suggestion}}` on bad predicate shape.
+- Returns `{"error": {code, message, suggestion}}` on bad predicate shape or empty predicate.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/mcp_server:TrieTools._maybe_text_match_fallback fingerprint=524de26eaf4596c55ebc847a83ce241a4ff09e4c5334887f11daf161a83e0d94 body_fp=a699eb066305a4eaf289544af95a90bee017b82797dd9c2eedbb5dcbfba7d0c6 source_ref=cdb7c717485168c67e602f53f176ce638ce44ee9 -->
@@ -292,4 +295,12 @@ Traverse the call graph from `from_qname` via BFS up to `depth` hops, returning 
 - Node capacity (`trace_max_nodes`) is enforced BFS-order; hitting it adds a note but does not error.
 - Each edge record: `{from, to, direction}` where `direction` is `"in"` (caller-side) or `"out"` (callee-side).
 - Returns `{root, nodes, edges, truncated_at?, notes?}`; prose is omitted — follow up with `read` for a specific node.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_server:_predicate_is_empty fingerprint=0f46c4ac2fd44729683e473ace14c19cacdab7b4def3185826c7c004b4f8aefe body_fp=74a71f96050c5ecbee7c7ad0bc938c8fd109928ee78c0731a02240324484d19e source_ref=208d963e8755736b64473d98f04dd5c5ac701361 -->
+## `_predicate_is_empty(pred: GrepPredicate) -> bool`
+
+Return `True` when `pred` contains no filter that would narrow the symbol result set.
+
+- Returns `True` when `name_contains` is falsy, `kind` is `None` or `"any"`, `scope_prefix`/`scope_exclude` are absent, `public_only` is `False`, and all edge-count bounds are `None`.
 <!-- trie:end -->

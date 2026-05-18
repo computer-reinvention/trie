@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: tests/test_mcp.py
-file_fingerprint: 9659a5daca4366381f4f2a6feb84369c1a27c73663e6e4b6b136846cb6a75e4d
-last_synced_at: '2026-05-18T13:57:14Z'
+file_fingerprint: 471627eab2e6b3eac789fd8f29934f2fd7928c1c1298efbf49aecd5355398c0f
+last_synced_at: '2026-05-18T22:48:55Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: class
@@ -52,82 +52,88 @@ defines:
   lines: 181-186
 - kind: function
   qualified_name: tests/test_mcp:test_grep_rank_by_inbound_count
-  lines: 189-193
+  lines: 189-196
 - kind: function
   qualified_name: tests/test_mcp:test_grep_limit_respected
-  lines: 196-198
+  lines: 199-203
+- kind: function
+  qualified_name: tests/test_mcp:test_grep_empty_predicate_returns_invalid_argument
+  lines: 206-220
+- kind: function
+  qualified_name: tests/test_mcp:test_grep_empty_predicate_rejected_regardless_of_rank_by
+  lines: 223-229
 - kind: function
   qualified_name: tests/test_mcp:test_grep_unknown_predicate_field_silently_ignored
-  lines: 201-204
+  lines: 232-235
 - kind: function
   qualified_name: tests/test_mcp:test_grep_invalid_predicate_returns_error
-  lines: 207-210
+  lines: 238-241
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_kind_none_when_no_name_contains
-  lines: 216-225
+  lines: 247-256
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_kind_text_match_empty_for_unseen_string
-  lines: 228-235
+  lines: 259-266
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_kind_text_match_redirects_via_body_match
-  lines: 238-256
+  lines: 269-287
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_ranks_by_inbound_count_desc
-  lines: 259-273
+  lines: 290-304
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_caps_matches_and_notes_truncation
-  lines: 276-302
+  lines: 307-333
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_omits_truncation_note_when_under_cap
-  lines: 305-313
+  lines: 336-344
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_honours_scope_prefix
-  lines: 316-331
+  lines: 347-362
 - kind: function
   qualified_name: tests/test_mcp:test_grep_normal_hits_path_omits_fallback_key
-  lines: 334-340
+  lines: 365-371
 - kind: function
   qualified_name: tests/test_mcp:test_read_returns_prose_and_neighbours
-  lines: 346-353
+  lines: 377-384
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_pointer_shape
-  lines: 356-359
+  lines: 387-390
 - kind: function
   qualified_name: tests/test_mcp:test_read_neighbour_carries_one_liner
-  lines: 362-365
+  lines: 393-396
 - kind: function
   qualified_name: tests/test_mcp:test_read_unknown_qname_returns_not_found
-  lines: 368-371
+  lines: 399-402
 - kind: function
   qualified_name: tests/test_mcp:test_read_fuzzy_suggestion_for_typo
-  lines: 374-380
+  lines: 405-411
 - kind: function
   qualified_name: tests/test_mcp:test_trace_callers_returns_topology
-  lines: 386-392
+  lines: 417-423
 - kind: function
   qualified_name: tests/test_mcp:test_trace_callees_returns_outbound
-  lines: 395-398
+  lines: 426-429
 - kind: function
   qualified_name: tests/test_mcp:test_trace_both_directions
-  lines: 401-406
+  lines: 432-437
 - kind: function
   qualified_name: tests/test_mcp:test_trace_invalid_direction_returns_error
-  lines: 409-412
+  lines: 440-443
 - kind: function
   qualified_name: tests/test_mcp:test_trace_unknown_qname_returns_not_found
-  lines: 415-418
+  lines: 446-449
 - kind: function
   qualified_name: tests/test_mcp:test_trace_depth_zero_returns_only_root
-  lines: 421-424
+  lines: 452-455
 - kind: function
   qualified_name: tests/test_mcp:test_trace_depth_clamp_adds_note
-  lines: 427-431
+  lines: 458-462
 - kind: function
   qualified_name: tests/test_mcp:test_build_server_registers_three_verbs
-  lines: 437-448
+  lines: 468-479
 - kind: function
   qualified_name: tests/test_mcp:test_build_server_wire_names_bind_to_internal_methods
-  lines: 451-468
+  lines: 482-499
 incoming_refs: 0
 outgoing_refs: 8
 ---
@@ -307,13 +313,13 @@ Verify that `scope_exclude` removes matching scopes from `grep` results.
 Verify that `grep` with `inbound_count: {min: 1}` returns symbols with inbound edges and excludes those with none.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_grep_rank_by_inbound_count fingerprint=51d466d3abc98efcbb6ac36903992409886b24f2a09da68e2f7f2286a60e079b body_fp=d08117d04063a03ac0a2a5ecae66304ff3bce908f088b088daa9fef41ca0bce4 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_rank_by_inbound_count fingerprint=956741b97e66e5508ccc0365fd3a6a04e6e7c6f3cb7da4770fc673b73a03477e body_fp=d08117d04063a03ac0a2a5ecae66304ff3bce908f088b088daa9fef41ca0bce4 source_ref=b8a4bd60079a901c70ffa0704165e5211e078db6 -->
 ## `test_grep_rank_by_inbound_count(tools: TrieTools)`
 
 Assert that `grep` with `rank_by="inbound_count"` returns hits in descending inbound-count order.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_grep_limit_respected fingerprint=2fadc7de1998df74f256d4771afd3972c25ba12e1357a023caeeedddf3306df4 body_fp=cc707794291cc445710a69357ad9a79deb343a473ed805122c8ca4000a8b8e4a source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_limit_respected fingerprint=80407aa581af3497200f623a81e718ea1e94ee91389ac126830562e3b69348af body_fp=cc707794291cc445710a69357ad9a79deb343a473ed805122c8ca4000a8b8e4a source_ref=b8a4bd60079a901c70ffa0704165e5211e078db6 -->
 ## `test_grep_limit_respected(tools: TrieTools)`
 
 Assert that passing `limit=1` to `grep` returns exactly one hit.
@@ -460,4 +466,19 @@ Assert that `trace` with `depth=0` returns only the root node and no edges.
 ## `test_trace_depth_clamp_adds_note(tools: TrieTools)`
 
 Assert that requesting a depth exceeding `trace_max_depth` clamps the value and adds a "clamped" note to the response.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_empty_predicate_returns_invalid_argument fingerprint=b276ee91748c22279c9a40988da4c4daaebfea8382927b5fe18d9f2f3c5b17ce body_fp=df6315d579f0a0e35b62b1eff063fbbac8b5d5fcccd804fdc7e9c221f34cf9a8 source_ref=b8a4bd60079a901c70ffa0704165e5211e078db6 -->
+## `test_grep_empty_predicate_returns_invalid_argument(tools: TrieTools)`
+
+Assert that empty or vacuous predicates return `invalid_argument` with a usable suggestion.
+
+- Tested predicates: `None`, `{}`, `{"name_contains": ""}`, `{"kind": "any"}`.
+- `suggestion` must contain `name_contains` or `scope_prefix`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_empty_predicate_rejected_regardless_of_rank_by fingerprint=173c7d0e853ec0b26f7e6b2344e5c2c4c42c2b1245b1081fca21ec158813dd8d body_fp=825a090118a0b9bd6a12a1b3b21781d800556618991a2b370a83f250cd5ba9fe source_ref=b8a4bd60079a901c70ffa0704165e5211e078db6 -->
+## `test_grep_empty_predicate_rejected_regardless_of_rank_by(tools: TrieTools)`
+
+Assert that passing `rank_by` with an empty predicate still returns an `invalid_argument` error.
 <!-- trie:end -->

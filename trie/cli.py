@@ -323,9 +323,42 @@ def init_cmd(
 
     reporter.info("")
     reporter.info("Next steps:")
+    reporter.info(
+        "  [cyan]trie setup[/cyan]    wire trie into your coding agent "
+        "(MCP server, turn-boundary hook, agent docs)"
+    )
     reporter.info("  [cyan]trie plan[/cyan]     preview the worklist + estimated cost (free)")
     reporter.info("  [cyan]trie sync[/cyan]     generate triefacts")
     reporter.info("  [cyan]trie verify[/cyan]   check drift (also runs as pre-commit hook)")
+
+    # Offer to run `trie setup` right now so the user doesn't have to know
+    # the next-step incantation. Skip the prompt in non-TTY environments
+    # (CI, scripted init) so unattended invocations stay deterministic —
+    # users in CI explicitly run `trie setup` themselves. The setup default
+    # is "yes" since the only reason to run `trie init` in an interactive
+    # session is usually to set up the project end-to-end; making the user
+    # type Enter to continue down the happy path is friction we can spare.
+    if _is_interactive() and typer.confirm(
+        "Run `trie setup` now to wire trie into your coding agent?",
+        default=True,
+    ):
+        reporter.info("")
+        reporter.info("[bold cyan]Running `trie setup`…[/bold cyan]")
+        # Defer target selection and every other knob to setup itself —
+        # init's job is just to trigger it. setup uses its own defaults
+        # (auto-detect target via MCPTarget.detect, project scope, prompt
+        # for tool-override consent). If setup raises typer.Exit, the
+        # error already reached the user; we let it propagate so init's
+        # exit code reflects the actual outcome.
+        setup_cmd(
+            ctx,
+            target=None,
+            install_all=False,
+            scope="project",
+            print_only=False,
+            dry_run=False,
+            override_builtins=None,
+        )
 
 
 def _is_interactive() -> bool:
