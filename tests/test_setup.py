@@ -292,7 +292,7 @@ def test_cli_setup_override_builtins_writes_override_files(
 
     # All three opencode override files landed.
     assert (project / ".opencode" / "tools" / "grep.ts").exists()
-    assert (project / ".opencode" / "tools" / "trie_read.ts").exists()
+    assert (project / ".opencode" / "tools" / "read.ts").exists()
     assert (project / ".opencode" / "tools" / "trie_trace.ts").exists()
 
 
@@ -310,7 +310,7 @@ def test_cli_setup_no_override_builtins_skips_overrides(
     assert (project / ".opencode" / "plugins" / "trie-refresh.ts").exists()
     # But no override files.
     assert not (project / ".opencode" / "tools" / "grep.ts").exists()
-    assert not (project / ".opencode" / "tools" / "trie_read.ts").exists()
+    assert not (project / ".opencode" / "tools" / "read.ts").exists()
     assert not (project / ".opencode" / "tools" / "trie_trace.ts").exists()
 
 
@@ -344,7 +344,7 @@ def test_cli_setup_print_only_previews_overrides_without_writing(
     assert result.exit_code == 0, result.output
     # The per-file preview lines must appear in the report.
     assert "grep.ts" in result.output
-    assert "trie_read.ts" in result.output
+    assert "read.ts" in result.output
     assert "trie_trace.ts" in result.output
     # But the disk is untouched.
     assert not (project / ".opencode" / "tools").exists()
