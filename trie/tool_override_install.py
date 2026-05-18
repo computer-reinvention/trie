@@ -9,9 +9,10 @@ The interception story differs per harness:
 
 - **opencode** supports drop-in tool replacement via `.opencode/tools/<name>.ts`.
   A custom tool whose filename matches a built-in name takes precedence over
-  the built-in. We override `grep` (which has matching semantics — both find
-  things in code) and *add* new tools `trie_read` / `trie_trace` that wrap the
-  read and trace operations under non-colliding names.
+  the built-in. We override `grep` (symbol-aware search) and `read`
+  (triefact-first dispatch on qname vs path with a `show_source` escape
+  hatch), and add `trie_trace` as a new tool for graph traversal (no
+  built-in collision).
 - **Claude Code** has no tool-override surface. The closest mechanism is a
   `PreToolUse` hook that fires before each built-in tool call and can emit a
   `systemMessage` Claude sees on its next turn. We use it for advisory
@@ -46,10 +47,10 @@ class ToolOverrideInstallError(Exception):
 class FileToWrite:
     """One file an override target needs on disk.
 
-    A target may need several files: e.g. opencode needs `grep.ts` (the
-    override) plus `trie_read.ts` and `trie_trace.ts` (additions). Each is
-    rendered independently with its own idempotency check, so a partial
-    failure on one file doesn't roll back the others.
+    A target may need several files: e.g. opencode needs `grep.ts` and
+    `read.ts` (built-in overrides) plus `trie_trace.ts` (addition). Each
+    is rendered independently with its own idempotency check, so a
+    partial failure on one file doesn't roll back the others.
     """
 
     relative_path: tuple[str, ...]
@@ -92,11 +93,20 @@ class ToolOverrideTarget:
     `files` is the list of override files to write. Empty list means the
     target has no automatable override path; `apply_one` returns
     `needs_manual_setup` with `manual_instructions` for the user.
+
+    `obsolete_files` is the list of paths to delete on apply if they
+    exist — for cleaning up files that prior versions of `trie setup`
+    wrote but newer versions no longer need (e.g. when a separate
+    `trie_read.ts` tool was subsumed by an override of `read.ts`).
+    The cleanup is silent: an obsolete file that doesn't exist is a
+    no-op, and a successful delete is reported as part of the apply
+    result so users know the migration happened.
     """
 
     name: str
     display_name: str
     files: tuple[FileToWrite, ...] = ()
+    obsolete_files: tuple[tuple[str, ...], ...] = ()
     manual_instructions: str = ""
     # Human-readable one-line description of what installing for this target
     # actually does. Used in the interactive prompt so the user knows what
@@ -105,7 +115,7 @@ class ToolOverrideTarget:
 
 
 # ---------------------------------------------------------------------------
-# opencode: override `grep`, add `trie_read` and `trie_trace`.
+# opencode: override `grep` and `read`, add `trie_trace`.
 # ---------------------------------------------------------------------------
 
 
@@ -222,60 +232,205 @@ export default tool({
     )
 
 
-def _render_opencode_trie_read(_project_root: Path) -> str:
-    """Render `.opencode/tools/trie_read.ts` — exposes `trie read` to the agent.
+def _render_opencode_read_override(_project_root: Path) -> str:
+    """Render `.opencode/tools/read.ts` — overrides opencode's built-in `read`.
 
-    Unlike `grep.ts`, this filename does not collide with any opencode
-    built-in. The file *adds* a new tool to the agent's palette under the
-    name `trie_read`, sitting alongside the unmodified built-in `read`
-    (which still opens files by path).
+    The override dispatches on the argument shape so a single tool call
+    serves three distinct intents the agent has:
 
-    The semantic distinction is intentional: built-in `read` takes a file
-    path; this tool takes a qname and returns prose + immediate
-    neighbours. Both are useful for different things. We don't override
-    built-in `read` because doing so would break basic file reading; we
-    add this as a parallel tool the agent can reach for when it has a
-    symbol in mind, not a file path.
+    1. **Symbol read (qname)**: arg looks like a qname
+       (`path/to/file:Name` — contains `:`, not a URL scheme, not a
+       Windows drive prefix). Routes to `trie read --json <qname>` and
+       returns the standard trie envelope: signature, prose, source
+       pointer, callers, callees. This is the "I have a specific symbol
+       in mind, show me its prose and immediate neighbours" path.
+
+    2. **File-as-triefact**: arg is a plain file path AND a triefact
+       exists for it at `triefacts/<path>.md`. Returns the full triefact
+       contents (YAML frontmatter + every per-symbol section body). The
+       agent gets the dense, structured "what does this file contain"
+       view trie already paid LLM cost to produce — much cheaper per
+       token than reading raw source, and usually enough to decide which
+       symbol to drill into. This is the "give me everything trie knows
+       about this file" path.
+
+    3. **Source fallthrough**: `show_source: true` OR the path has no
+       triefact OR `offset`/`limit` were passed (the agent wants raw
+       line ranges, which are meaningless against triefact prose). The
+       wrapper shells out to a small `cat`-equivalent so the agent sees
+       the raw file bytes. This is the "I'm about to edit this and
+       need exact source" escape hatch.
+
+    Detection rule for qname vs path: any string containing `:` (and
+    not a URL scheme like `https://` or Windows drive prefix like
+    `C:\\`) is treated as a qname. This is intentionally permissive —
+    qnames have a stable `path/to/file:Name` shape; on the rare chance
+    a real file is named with a colon, the agent can pass
+    `show_source: true` to escape.
+
+    The triefact lookup uses the default `triefacts/` root. Projects
+    that have configured a different `triefacts.root` in trie.toml
+    will fall through to source for path reads — a known limitation
+    with a graceful failure mode.
     """
     return (
         _GENERATED_HEADER
         + """
 import { tool } from "@opencode-ai/plugin"
+import { readFile, stat } from "node:fs/promises"
+import { join, normalize } from "node:path"
+
+// Conservative qname detection: an argument is a qname when it contains
+// `:` but is NOT a URL (scheme://...) and NOT a Windows drive prefix
+// (^[A-Za-z]:[\\\\/]). Real qnames have shape `path/to/file:Name` or
+// `path/to/file:Class.method` — colon-bearing strings with at least one
+// slash and no URL/drive markers.
+function looksLikeQname(s: string): boolean {
+  if (!s.includes(":")) return false
+  if (/^[A-Za-z][A-Za-z0-9+.-]*:\\/\\//.test(s)) return false  // URL scheme
+  if (/^[A-Za-z]:[\\\\/]/.test(s)) return false                  // Windows drive
+  return true
+}
+
+async function shellOutToTrie(
+  flags: string[],
+  cwd: string,
+): Promise<string> {
+  const proc = Bun.spawn(["trie", ...flags], {
+    cwd,
+    stdout: "pipe",
+    stderr: "pipe",
+  })
+  const [stdout, stderr, code] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ])
+  // 0 = success, 1 = structured error envelope (e.g. not_found).
+  // Both produce useful JSON on stdout that the agent can consume.
+  if (code === 0 || code === 1) {
+    return stdout || "(empty response from trie)"
+  }
+  throw new Error(`trie failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+}
+
+async function readSourceFile(
+  cwd: string,
+  path: string,
+  offset?: number,
+  limit?: number,
+): Promise<string> {
+  // Resolve the path relative to the project root (cwd from context).
+  // No path-traversal guard here — the agent already has free reign
+  // over the project via the bash tool; this matches built-in `read`'s
+  // permissiveness rather than imposing a stricter sandbox.
+  const absPath = normalize(join(cwd, path))
+  const text = await readFile(absPath, "utf-8")
+  if (offset === undefined && limit === undefined) {
+    return text
+  }
+  // Honour line-range args the same way built-in read does: 1-indexed
+  // `offset` is the first line to include; `limit` is the count.
+  const lines = text.split("\\n")
+  const start = offset !== undefined ? Math.max(0, offset - 1) : 0
+  const end = limit !== undefined ? start + limit : lines.length
+  return lines.slice(start, end).join("\\n")
+}
+
+async function readTriefact(cwd: string, path: string): Promise<string | null> {
+  // Default triefact location: `<cwd>/triefacts/<path>.md`. We swap the
+  // source extension for `.md` (matching how the writer maps source →
+  // triefact in trie/sync/single_file.py). Projects with a non-default
+  // `triefacts.root` config won't be picked up here — we fall through
+  // to source in that case rather than parsing trie.toml from TS.
+  const dotIdx = path.lastIndexOf(".")
+  const stem = dotIdx > 0 ? path.slice(0, dotIdx) : path
+  const triefactPath = join(cwd, "triefacts", stem + ".md")
+  try {
+    const s = await stat(triefactPath)
+    if (!s.isFile()) return null
+  } catch {
+    return null  // ENOENT or any stat failure → no triefact
+  }
+  return readFile(triefactPath, "utf-8")
+}
 
 export default tool({
   description:
-    "Read a symbol's prose plus its immediate callers and callees from the " +
-    "trie graph. Takes a fully-qualified symbol name (qname), NOT a file " +
-    "path — for file paths, use the built-in `read` tool. Returns the " +
-    "symbol's signature, prose body from the triefact, source pointer, and " +
-    "one-liner descriptions of every caller and callee.",
+    "Read source code or trie's synthesised description of it. Replaces " +
+    "opencode's built-in `read` with a triefact-first wrapper that maximises " +
+    "context per token: " +
+    "(1) when `path` is a qualified symbol name like `pkg/module:Name`, returns " +
+    "the symbol's prose plus its callers/callees from the trie graph; " +
+    "(2) when `path` is a regular file path and a triefact exists at " +
+    "`triefacts/<path>.md`, returns the full triefact (YAML frontmatter + " +
+    "every per-symbol section); " +
+    "(3) when `show_source: true`, or no triefact exists, or `offset`/`limit` " +
+    "are passed for a line-range read, returns the raw source verbatim. " +
+    "Use the default mode for understanding what a file or symbol does; " +
+    "use `show_source: true` right before editing when you need exact source.",
   args: {
-    qname: tool.schema
+    path: tool.schema
       .string()
       .describe(
-        "Fully-qualified symbol name. Format is 'path/to/file:LocalName' " +
-          "for top-level symbols and 'path/to/file:ClassName.method' for " +
-          "methods. Drop the .py extension; forward slashes on all OSes. " +
-          "Round-trip qnames returned by `grep` or `trie_trace` verbatim.",
+        "Either a file path (e.g. 'src/foo.py') OR a qualified symbol " +
+          "name (e.g. 'src/foo:bar' for a top-level symbol, or " +
+          "'src/foo:Bar.baz' for a method). Qnames are detected by the " +
+          "presence of `:` (excluding URL schemes and Windows drive " +
+          "prefixes). Drop the source extension in qnames.",
+      ),
+    show_source: tool.schema
+      .boolean()
+      .optional()
+      .describe(
+        "Force raw source mode. Use right before editing when you need " +
+          "exact bytes/lines, not trie's synthesised description.",
+      ),
+    offset: tool.schema
+      .number()
+      .optional()
+      .describe(
+        "1-indexed first line to include. Implies `show_source: true` " +
+          "since line numbers are only meaningful against source bytes, " +
+          "not triefact prose.",
+      ),
+    limit: tool.schema
+      .number()
+      .optional()
+      .describe(
+        "Maximum number of lines to return from `offset`. Implies " +
+          "`show_source: true` for the same reason as `offset`.",
       ),
   },
   async execute(args, context) {
-    const proc = Bun.spawn(["trie", "read", "--json", args.qname], {
-      cwd: context.directory,
-      stdout: "pipe",
-      stderr: "pipe",
-    })
-    const [stdout, stderr, code] = await Promise.all([
-      new Response(proc.stdout).text(),
-      new Response(proc.stderr).text(),
-      proc.exited,
-    ])
-    if (code === 0 || code === 1) {
-      return stdout || "(empty response from trie)"
+    const cwd = context.directory
+    const forceSource =
+      args.show_source === true ||
+      args.offset !== undefined ||
+      args.limit !== undefined
+
+    if (forceSource) {
+      // Escape hatch: raw source bytes (or a line range from them).
+      return readSourceFile(cwd, args.path, args.offset, args.limit)
     }
-    throw new Error(
-      `trie read failed (exit ${code}): ${stderr.trim() || "no stderr"}`,
-    )
+
+    if (looksLikeQname(args.path)) {
+      // Symbol mode: route to `trie read --json <qname>`. The trie CLI
+      // returns either a success envelope (prose + callers + callees)
+      // or a structured `{error: ...}` envelope; both are returned to
+      // the agent verbatim so it can react.
+      return shellOutToTrie(["read", "--json", args.path], cwd)
+    }
+
+    // File-as-triefact mode: return the .md if it exists, otherwise
+    // fall through to source. Non-source files (README.md, configs,
+    // .gitignore, freshly added unsynced files) all 'just work' via
+    // the fallthrough — the override is transparent for them.
+    const triefact = await readTriefact(cwd, args.path)
+    if (triefact !== null) {
+      return triefact
+    }
+    return readSourceFile(cwd, args.path)
   },
 })
 """
@@ -301,13 +456,16 @@ export default tool({
     "Returns the root, every reachable node within depth, and the directed " +
     "edges between them. Use to understand a change's blast radius (callers) " +
     "or what a function ends up doing (callees). For prose on any specific " +
-    "node, follow up with `trie_read` on that qname.",
+    "node, follow up by calling `read` with that qname (the read override " +
+    "detects qname-shaped paths and routes to `trie read`).",
   args: {
     qname: tool.schema
       .string()
       .describe(
-        "Fully-qualified symbol name to trace from. Same format as " +
-          "`trie_read`'s qname argument.",
+        "Fully-qualified symbol name to trace from. Format is " +
+          "'path/to/file:LocalName' for top-level symbols and " +
+          "'path/to/file:ClassName.method' for methods. Drop the source " +
+          "extension; forward slashes on all OSes.",
       ),
     direction: tool.schema
       .string()
@@ -425,10 +583,12 @@ TARGETS: dict[str, ToolOverrideTarget] = {
         name="opencode",
         display_name="opencode",
         summary=(
-            "Override built-in `grep` with a wrapper that calls `trie grep`. "
-            "Also add `trie_read` and `trie_trace` as new tools (no built-in "
-            "collision). The agent will route every grep through trie and "
-            "see trie_read / trie_trace alongside its existing tools."
+            "Override built-in `grep` (routes to `trie grep`) and `read` "
+            "(triefact-first: qname → `trie read`, path → triefact .md, "
+            "with a `show_source: true` escape hatch for raw bytes). Also "
+            "add `trie_trace` for graph traversal. The agent gets trie's "
+            "synthesised view by default and falls through to source only "
+            "when it asks explicitly."
         ),
         files=(
             FileToWrite(
@@ -437,9 +597,12 @@ TARGETS: dict[str, ToolOverrideTarget] = {
                 description="override built-in `grep` (routes to `trie grep`)",
             ),
             FileToWrite(
-                relative_path=(".opencode", "tools", "trie_read.ts"),
-                render=_render_opencode_trie_read,
-                description="add `trie_read` (read a symbol by qname)",
+                relative_path=(".opencode", "tools", "read.ts"),
+                render=_render_opencode_read_override,
+                description=(
+                    "override built-in `read` (qname → `trie read`; path → "
+                    "triefact; `show_source: true` → raw source)"
+                ),
             ),
             FileToWrite(
                 relative_path=(".opencode", "tools", "trie_trace.ts"),
@@ -447,6 +610,12 @@ TARGETS: dict[str, ToolOverrideTarget] = {
                 description="add `trie_trace` (trace the call graph)",
             ),
         ),
+        # Earlier versions of `trie setup --override-builtins` shipped a
+        # separate `trie_read.ts` add-on; the new `read.ts` override
+        # subsumes it (qname-shaped paths route to `trie read` automatically).
+        # Drop the stale file on apply so users don't see two tools that do
+        # the same thing.
+        obsolete_files=((".opencode", "tools", "trie_read.ts"),),
     ),
     "claude-code": ToolOverrideTarget(
         name="claude-code",
@@ -606,6 +775,12 @@ def apply_one(
     file_results: list[ToolOverrideFileResult] = []
     for spec in target.files:
         file_results.append(_apply_file(spec, project_root, print_only, dry_run))
+    # Drop any files that earlier versions of this installer used to ship
+    # but newer versions no longer need. The cleanup runs after the writes
+    # so an interrupted install can't leave the user with both the new
+    # file AND the obsolete file simultaneously.
+    for rel_parts in target.obsolete_files:
+        file_results.append(_remove_obsolete(rel_parts, project_root, print_only, dry_run))
 
     # Summarise the per-file actions into one target-level action so the
     # rendered report can lead with a single status verb. Precedence:
@@ -626,6 +801,62 @@ def apply_one(
         target=target.name,
         action=top_action,
         files=file_results,
+    )
+
+
+def _remove_obsolete(
+    relative_path: tuple[str, ...],
+    project_root: Path,
+    print_only: bool,
+    dry_run: bool,
+) -> ToolOverrideFileResult:
+    """Remove an obsolete file if it exists, else report skipped.
+
+    Used by `apply_one` to clean up tool-override files that earlier
+    versions of `trie setup` wrote but newer versions no longer need
+    (e.g. `trie_read.ts`, replaced by the `read.ts` override). The
+    'description' tags this as a removal in the user-facing report.
+
+    Preview / dry-run paths report the prospective removal without
+    touching disk, matching `_apply_file`'s semantics for symmetry.
+    """
+    target_path = project_root.joinpath(*relative_path)
+    rel_str = str(Path(*relative_path))
+    description = "removed obsolete file from earlier trie version"
+
+    if not target_path.exists():
+        return ToolOverrideFileResult(
+            relative_path=rel_str,
+            action="skipped",
+            path=target_path,
+            description=description,
+            detail="not present; nothing to clean up",
+        )
+
+    if print_only or dry_run:
+        return ToolOverrideFileResult(
+            relative_path=rel_str,
+            action="preview",
+            path=target_path,
+            description=description,
+            detail="would remove",
+        )
+
+    try:
+        target_path.unlink()
+    except OSError as exc:
+        return ToolOverrideFileResult(
+            relative_path=rel_str,
+            action="error",
+            path=target_path,
+            description=description,
+            detail=f"could not remove: {exc}",
+        )
+    return ToolOverrideFileResult(
+        relative_path=rel_str,
+        action="updated",  # file state changed (now gone) — closest fit
+        path=target_path,
+        description=description,
     )
 
 

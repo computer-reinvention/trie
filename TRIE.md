@@ -424,24 +424,40 @@ trie trace trie/graph/store:Store.replace_all_edges --direction both
 
 ## Built-in tool overrides
 
-If `trie setup --override-builtins` was run for this project, the agent's
-built-in `grep` (and equivalents) may already be a wrapper that routes
-through `trie grep` directly. When that's the case:
+If `trie setup --override-builtins` was run for this project, the
+agent's built-in `grep` and `read` may already be wrappers that route
+through trie. When that's the case:
 
-- Calling the agent's built-in `grep` (whatever its prefix in the
-  current harness) **is the same as calling `trie_grep`** — the wrapper
-  passes the pattern to trie's predicate and returns the same envelope.
-- For opencode, two extra tools, `trie_read` and `trie_trace`, appear
-  alongside the harness's normal tools. They expose `trie_read` and
-  `trie_trace` under names that don't collide with any built-in.
+- **`grep`**: calling the agent's built-in `grep` (whatever its prefix
+  in the current harness) **is the same as calling `trie_grep`** — the
+  wrapper passes the pattern to trie's predicate and returns the same
+  envelope.
+
+- **`read`**: the override dispatches on the argument shape:
+  - **Qname-shaped path** (`path/to/file:Name`) → routes to `trie_read`
+    and returns the symbol's prose plus its callers/callees.
+  - **Plain file path** (`src/foo.py`) → returns the full triefact at
+    `triefacts/<path>.md` (YAML frontmatter + every per-symbol prose
+    section). This is the dense "what does this file contain" view —
+    much cheaper per token than reading raw source.
+  - **`show_source: true`** (or passing `offset` / `limit`) → falls
+    through to raw source bytes. Use this right before editing when
+    you need exact lines, not trie's synthesised description.
+  - **No triefact exists** (markdown files, configs, .gitignore,
+    freshly added unsynced files) → falls through to source
+    automatically; the override is transparent for non-source paths.
+
+- **`trie_trace`** is added as a new tool (no built-in collision)
+  exposing `trie_trace` for graph traversal.
+
 - Other harnesses get an advisory hook (Claude Code) or `mcp__trie__*`
-  via MCP only — the built-in `Grep` still works, but the agent is
-  nudged toward the trie tool on every call.
+  via MCP only — the built-in tools still work, but the agent is
+  nudged toward the trie versions on every call.
 
-There's no observable behaviour change inside this guide — the names
-above already reflect what the harness will actually surface. The
-override is just a way for the agent to *reach* those tools without
-having to learn a different name.
+The override is opt-in via `trie setup --override-builtins` and the
+generated wrapper files at `.opencode/tools/{grep,read,trie_trace}.ts`
+carry a "do not hand-edit" header — re-running setup overwrites them,
+deleting them opts back out.
 
 If the override isn't installed, all of the above still works through
 the trie MCP server and the `trie` CLI; the agent just has to invoke
