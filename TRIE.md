@@ -417,6 +417,33 @@ trie trace trie/graph/store:Store.replace_all_edges --direction both
 
 ---
 
+## Built-in tool overrides
+
+If `trie setup --override-builtins` was run for this project, the agent's
+built-in `grep` (and equivalents) may already be a wrapper that routes
+through `trie grep` directly. When that's the case:
+
+- Calling the agent's built-in `grep` (whatever its prefix in the
+  current harness) **is the same as calling `trie_grep`** — the wrapper
+  passes the pattern to trie's predicate and returns the same envelope.
+- For opencode, two extra tools, `trie_read` and `trie_trace`, appear
+  alongside the harness's normal tools. They expose `trie_read` and
+  `trie_trace` under names that don't collide with any built-in.
+- Other harnesses get an advisory hook (Claude Code) or `mcp__trie__*`
+  via MCP only — the built-in `Grep` still works, but the agent is
+  nudged toward the trie tool on every call.
+
+There's no observable behaviour change inside this guide — the names
+above already reflect what the harness will actually surface. The
+override is just a way for the agent to *reach* those tools without
+having to learn a different name.
+
+If the override isn't installed, all of the above still works through
+the trie MCP server and the `trie` CLI; the agent just has to invoke
+them explicitly rather than getting them via the built-in surface.
+
+---
+
 ## When to actually use shell `rg` / grep
 
 After all of the above, the remaining cases for the shell utilities:

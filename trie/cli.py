@@ -60,6 +60,16 @@ from trie.sync.single_file import (
     refresh_triefact_metadata,
     sync_single_file,
 )
+from trie.tool_override_install import (
+    TARGETS as TOOL_OVERRIDE_TARGETS,
+)
+from trie.tool_override_install import (
+    ToolOverrideInstallError,
+    ToolOverrideInstallPlan,
+)
+from trie.tool_override_install import (
+    install as tool_override_run_install,
+)
 
 app = typer.Typer(
     name="trie",
@@ -1298,17 +1308,39 @@ def setup_cmd(
         "--dry-run",
         help="Resolve target paths and show what would change, but don't write.",
     ),
+    override_builtins: bool | None = typer.Option(
+        None,
+        "--override-builtins/--no-override-builtins",
+        help=(
+            "Replace the agent's built-in `grep` (and add `trie_read`/`trie_trace` "
+            "where supported) with wrappers that call the trie CLI. Defaults to "
+            "interactive prompt; pass --no-override-builtins to skip without "
+            "prompting (useful in CI)."
+        ),
+    ),
 ) -> None:
     """Wire trie into an agent end-to-end: MCP registration + turn hooks.
 
-    For each detected (or specified) target, this runs two installs:
+    For each detected (or specified) target, this runs three installs:
 
       1. The MCP server registration (same as `trie mcp install`).
       2. A turn-boundary hook that calls `trie refresh --after-turn` so the
          graph and triefact tree stay current with the agent's edits.
+      3. The agent-facing docs (TRIE.md + AGENTS.md pointer), with tool
+         names rendered for the harness in question.
 
-    Agents without an automatable hook surface still get MCP registered, plus
-    a clear `needs_manual_setup` notice explaining what to wire by hand.
+    Optionally, with `--override-builtins`, also installs custom tool
+    wrappers that replace the agent's built-in `grep` with `trie grep`
+    (and add `trie_read`/`trie_trace` where the harness supports custom
+    tools). This is the most reflexive way to get the agent using trie —
+    the built-in `grep` literally routes through trie instead of opencode's
+    regex-over-files search. Off by default; the CLI prompts before
+    writing override files unless `--override-builtins` or
+    `--no-override-builtins` was passed explicitly.
+
+    Agents without an automatable hook or override surface still get MCP
+    registered, plus a clear `needs_manual_setup` notice explaining what
+    to wire by hand.
     """
     reporter = _get_reporter(ctx)
 
@@ -1375,14 +1407,117 @@ def setup_cmd(
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
-    _render_setup_plan(reporter, mcp_plan, hook_plan, docs_plan)
+    # Tool-override install: optional, off by default. Replaces the agent's
+    # built-in tools with wrappers that call trie (opencode) or installs an
+    # advisory PreToolUse hook (Claude Code). Other harnesses have no
+    # automated path and emit a `needs_manual_setup` notice.
+    override_plan: ToolOverrideInstallPlan | None = None
+    if mcp_plan.target_names:
+        decision = _resolve_override_consent(
+            reporter,
+            override_builtins=override_builtins,
+            target_names=mcp_plan.target_names,
+            print_only=print_only,
+            dry_run=dry_run,
+        )
+        if decision:
+            try:
+                override_plan = tool_override_run_install(
+                    target_names=mcp_plan.target_names,
+                    print_only=print_only,
+                    dry_run=dry_run,
+                    project_root=project_root,
+                )
+            except ToolOverrideInstallError as exc:
+                reporter.error(str(exc))
+                raise typer.Exit(code=1) from exc
+
+    _render_setup_plan(reporter, mcp_plan, hook_plan, docs_plan, override_plan)
 
     # Surface a non-zero exit if any half hit an error so CI/scripts react.
     mcp_errors = any(r.action == "error" for r in mcp_plan.results)
     hook_errors = any(r.action == "error" for r in hook_plan.results)
     docs_errors = any(r.action == "error" for r in docs_plan.results)
-    if mcp_errors or hook_errors or docs_errors:
+    override_errors = (
+        any(r.action == "error" for r in override_plan.results) if override_plan else False
+    )
+    if mcp_errors or hook_errors or docs_errors or override_errors:
         raise typer.Exit(code=1)
+
+
+def _resolve_override_consent(
+    reporter: Reporter,
+    *,
+    override_builtins: bool | None,
+    target_names: list[str],
+    print_only: bool,
+    dry_run: bool,
+) -> bool:
+    """Decide whether to run the tool-override install for this `setup` invocation.
+
+    The decision matrix:
+
+    - Explicit `--override-builtins` (True): always install, no prompt.
+    - Explicit `--no-override-builtins` (False): always skip.
+    - Preview modes (`--print-only` or `--dry-run`) with no explicit flag:
+      treat as opt-in so the user sees what the override step *would* do.
+      No files are written either way.
+    - Interactive TTY with no explicit flag: print the per-target summary
+      and ask. Empty/no/n answer → skip; y/yes → install.
+    - Non-interactive (no stdin TTY) with no explicit flag: skip silently.
+      Important for CI and scripted setup — we never block on stdin.
+
+    The prompt is intentionally informational: we tell the user what
+    installing the overrides will *do* before asking, citing the same
+    `summary` field used in the plan renderer, so there's no surprise
+    about what just landed in `.opencode/tools/` or `.claude/hooks/`.
+    """
+    if override_builtins is True:
+        return True
+    if override_builtins is False:
+        return False
+    if print_only or dry_run:
+        # Preview modes: show the plan, write nothing. Opt-in for the
+        # preview so the user sees what they'd be opting into.
+        return True
+
+    # No explicit flag, no preview mode — decide by TTY.
+    if not sys.stdin.isatty():
+        # Non-interactive (CI, scripts piped to setup). Stay off by default;
+        # users who want overrides in CI must pass --override-builtins.
+        reporter.info(
+            "[dim]Tool overrides skipped (non-interactive; pass "
+            "--override-builtins to enable).[/dim]"
+        )
+        return False
+
+    # Interactive prompt. List what would happen per target, then ask.
+    reporter.info("")
+    reporter.info("[bold]Tool overrides[/bold]")
+    reporter.info(
+        "trie can replace your agent's built-in code-search tool with a "
+        "wrapper that calls `trie grep` directly. This is far more "
+        "effective than just instructing the agent to prefer trie via "
+        "docs — the agent literally cannot reach the built-in once the "
+        "override is in place, so symbol-aware search becomes the default."
+    )
+    reporter.info("")
+    for slug in target_names:
+        if slug not in TOOL_OVERRIDE_TARGETS:
+            continue
+        t = TOOL_OVERRIDE_TARGETS[slug]
+        if t.summary:
+            reporter.info(f"  [cyan]{t.display_name}[/cyan]: {t.summary}")
+        elif t.manual_instructions:
+            reporter.info(
+                f"  [dim]{t.display_name}: no automated override path; "
+                f"manual instructions only.[/dim]"
+            )
+    reporter.info("")
+    # `typer.confirm` returns False on EOF; `default=False` so a bare Enter
+    # is a no-op. That matches "off by default" once the user has read the
+    # explainer.
+    return typer.confirm("Install tool overrides?", default=False)
 
 
 def _render_setup_plan(
@@ -1390,20 +1525,28 @@ def _render_setup_plan(
     mcp_plan: InstallPlan,
     hook_plan: HookInstallPlan,
     docs_plan: DocsInstallPlan,
+    override_plan: ToolOverrideInstallPlan | None = None,
 ) -> None:
-    """Print one merged report: per-target MCP + hook lines, plus a docs section.
+    """Print one merged report: per-target MCP + hook + override lines, plus a docs section.
 
-    Each target gets a header with its MCP install outcome and hook install
-    outcome below. Manual-setup notes are emitted under the hook line so the
-    user can copy them out of their terminal directly. Docs install is
-    target-independent (one TRIE.md per project), so it gets its own section
-    at the end.
+    Each target gets a header with its MCP, hook, and (optional) tool-override
+    install outcomes grouped beneath. Manual-setup notes are emitted under
+    the relevant line so the user can copy them out of their terminal
+    directly. Docs install is target-independent (one TRIE.md per project),
+    so it gets its own section at the end.
     """
     import json
 
     mcp_by_target = {r.target: r for r in mcp_plan.results}
     hook_by_target = {r.target: r for r in hook_plan.results}
-    targets = sorted({*mcp_by_target.keys(), *hook_by_target.keys()})
+    override_by_target = {r.target: r for r in override_plan.results} if override_plan else {}
+    targets = sorted(
+        {
+            *mcp_by_target.keys(),
+            *hook_by_target.keys(),
+            *override_by_target.keys(),
+        }
+    )
 
     for slug in targets:
         display = MCP_TARGETS[slug].display_name if slug in MCP_TARGETS else slug
@@ -1411,7 +1554,7 @@ def _render_setup_plan(
 
         mcp_result = mcp_by_target.get(slug)
         if mcp_result is not None:
-            line = f"  mcp:  {_format_action(mcp_result.action, mcp_result.path)}"
+            line = f"  mcp:       {_format_action(mcp_result.action, mcp_result.path)}"
             if mcp_result.detail:
                 line += f" — {mcp_result.detail}"
             reporter.info(line)
@@ -1421,7 +1564,7 @@ def _render_setup_plan(
 
         hook_result = hook_by_target.get(slug)
         if hook_result is not None:
-            line = f"  hook: {_format_action(hook_result.action, hook_result.path)}"
+            line = f"  hook:      {_format_action(hook_result.action, hook_result.path)}"
             if hook_result.detail and hook_result.action != "needs_manual_setup":
                 line += f" — {hook_result.detail}"
             reporter.info(line)
@@ -1429,6 +1572,10 @@ def _render_setup_plan(
                 reporter.warn(f"    manual setup required: {hook_result.detail}")
             elif hook_result.action == "preview" and hook_result.path is not None:
                 reporter.console.print(hook_result.contents)
+
+        override_result = override_by_target.get(slug)
+        if override_result is not None:
+            _render_override_target_block(reporter, override_result)
 
     # Docs section. Empty `results` would only happen if TRIE.md write
     # failed before any result was appended — defensive guard, shouldn't
@@ -1444,6 +1591,35 @@ def _render_setup_plan(
             if result.detail and result.action not in ("preview",):
                 line += f" — {result.detail}"
             reporter.info(line)
+
+
+def _render_override_target_block(reporter: Reporter, result: object) -> None:
+    """Render a single target's tool-override install outcome.
+
+    Tool overrides can write multiple files per target (e.g. opencode writes
+    `grep.ts` plus `trie_read.ts` plus `trie_trace.ts`), so we render a
+    summary line then list each file's outcome indented underneath. Manual-
+    setup notices for unsupported harnesses get the same treatment as the
+    hook line so users have one consistent visual style.
+    """
+    line = f"  override:  {result.action}"
+    if result.action == "needs_manual_setup":
+        line += " — see manual instructions below"
+    elif not result.files:
+        line += " — nothing to do"
+    reporter.info(line)
+
+    if result.action == "needs_manual_setup" and result.detail:
+        reporter.warn(f"    {result.detail}")
+        return
+
+    for f in result.files:
+        sub = f"    {f.action} {f.relative_path}"
+        if f.description:
+            sub += f" [dim]({f.description})[/dim]"
+        if f.action in ("skipped", "error") and f.detail:
+            sub += f" — {f.detail}"
+        reporter.info(sub)
 
 
 def _format_action(action: str, path: Path | None) -> str:

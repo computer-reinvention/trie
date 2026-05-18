@@ -272,3 +272,116 @@ def test_cli_setup_idempotent_second_run(project: Path, monkeypatch: pytest.Monk
 
     assert (project / "opencode.json").read_text() == mcp_before
     assert (project / ".opencode" / "plugins" / "trie-refresh.ts").read_text() == hook_before
+
+
+# ---------------------------------------------------------------------------
+# CLI: `trie setup` tool-override flag behaviour
+# ---------------------------------------------------------------------------
+
+
+def test_cli_setup_override_builtins_writes_override_files(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """`--override-builtins` skips the interactive prompt and lands the
+    override files. This is the path users hit when they've decided
+    'yes, override' and don't want to be asked again."""
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["setup", "--target", "opencode", "--override-builtins"])
+    assert result.exit_code == 0, result.output
+
+    # All three opencode override files landed.
+    assert (project / ".opencode" / "tools" / "grep.ts").exists()
+    assert (project / ".opencode" / "tools" / "trie_read.ts").exists()
+    assert (project / ".opencode" / "tools" / "trie_trace.ts").exists()
+
+
+def test_cli_setup_no_override_builtins_skips_overrides(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """`--no-override-builtins` is the explicit opt-out, useful in CI and
+    scripted setup. No override files land; no prompt fires."""
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["setup", "--target", "opencode", "--no-override-builtins"])
+    assert result.exit_code == 0, result.output
+    # MCP + hook + docs still ran; only overrides were skipped.
+    assert (project / "opencode.json").exists()
+    assert (project / ".opencode" / "plugins" / "trie-refresh.ts").exists()
+    # But no override files.
+    assert not (project / ".opencode" / "tools" / "grep.ts").exists()
+    assert not (project / ".opencode" / "tools" / "trie_read.ts").exists()
+    assert not (project / ".opencode" / "tools" / "trie_trace.ts").exists()
+
+
+def test_cli_setup_non_interactive_skips_overrides_silently(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Without an explicit flag, in a non-TTY environment (CliRunner),
+    the setup must not prompt and must not install overrides. The user
+    sees a one-line 'skipped' notice so they know overrides exist as a
+    feature; nothing breaks for unattended setup runs."""
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["setup", "--target", "opencode"])
+    assert result.exit_code == 0, result.output
+    # The skip notice surfaces so users discover the feature exists.
+    assert "non-interactive" in result.output or "Tool overrides skipped" in result.output
+    # No override files written.
+    assert not (project / ".opencode" / "tools" / "grep.ts").exists()
+
+
+def test_cli_setup_print_only_previews_overrides_without_writing(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """`--print-only` is opt-in for the override step: we *show* what
+    would be written so the user can audit it, but we don't ask and we
+    don't write. Crucially the user must see *which files* the override
+    would land, not just a generic 'override: preview' line."""
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["setup", "--target", "opencode", "--print-only"])
+    assert result.exit_code == 0, result.output
+    # The per-file preview lines must appear in the report.
+    assert "grep.ts" in result.output
+    assert "trie_read.ts" in result.output
+    assert "trie_trace.ts" in result.output
+    # But the disk is untouched.
+    assert not (project / ".opencode" / "tools").exists()
+
+
+def test_cli_setup_claude_code_override_creates_advisory_hook(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """For Claude Code, the override path writes a PreToolUse hook file
+    (the only available steering mechanism). The hook references
+    `mcp__trie__grep` so the agent gets nudged toward the trie tool
+    every time it reaches for built-in Grep."""
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["setup", "--target", "claude-code", "--override-builtins"])
+    assert result.exit_code == 0, result.output
+
+    hook_path = project / ".claude" / "hooks" / "trie-tools.json"
+    assert hook_path.exists()
+    assert "mcp__trie__grep" in hook_path.read_text()
+
+
+def test_cli_setup_override_idempotent_on_second_run(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Second run with `--override-builtins` reports skipped for every
+    override file. Same idempotency contract as MCP install and hook
+    install — `trie setup` is safe to re-run."""
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+    first = runner.invoke(app, ["setup", "--target", "opencode", "--override-builtins"])
+    assert first.exit_code == 0, first.output
+    grep_before = (project / ".opencode" / "tools" / "grep.ts").read_text()
+
+    second = runner.invoke(app, ["setup", "--target", "opencode", "--override-builtins"])
+    assert second.exit_code == 0, second.output
+    # File unchanged.
+    assert (project / ".opencode" / "tools" / "grep.ts").read_text() == grep_before
+    # And the report mentions skipped for the override files.
+    assert "skipped" in second.output
