@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: trie/scope.py
 file_fingerprint: 054b9955d944f35c87b1470e69533098f2d084f385d175c520128b2371d44638
 last_synced_at: '2026-05-14T17:31:38Z'

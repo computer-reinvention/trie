@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: tests/test_models_retry.py
 file_fingerprint: d8d4752517d6e5bf1496ef2c5d557771d28562d3a747f82dda60e3d14e5b946e
 last_synced_at: '2026-05-18T13:58:05Z'

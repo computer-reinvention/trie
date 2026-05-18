@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: tests/fixtures/tiny_repo/calculator.py
 file_fingerprint: d3b37289441711a16a1b150a6a1594f610ed72432d622215fdc582e2552d3f2c
 last_synced_at: '2026-05-15T13:01:22Z'

@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: trie/docs_install.py
 file_fingerprint: 778f367d7e715af47295fd5d06403d79910ec87e94a14d3813afc9b7c1b3bd90
 last_synced_at: '2026-05-18T13:26:13Z'

@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: trie/models.py
 file_fingerprint: eed971b1aee49803434c0744c5585a07ecf33c7018ba891ece9c67ea15a7f614
 last_synced_at: '2026-05-18T13:58:14Z'

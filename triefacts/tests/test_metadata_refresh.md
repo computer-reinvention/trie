@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: tests/test_metadata_refresh.py
 file_fingerprint: d92a12cc26b521a99b27cb7e0ac42b2fc2ee97a39b48abe2ef1e5900fb2105b9
 last_synced_at: '2026-05-16T11:46:24Z'

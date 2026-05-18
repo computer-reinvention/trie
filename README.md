@@ -205,7 +205,7 @@ After `trie sync --file src/slugify.py`, `triefacts/src/slugify.md`:
 
 ```markdown
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: src/slugify.py
 file_fingerprint: 9d4f374adc9a843c…
 last_synced_at: "2026-05-08T14:21:09Z"
@@ -246,7 +246,7 @@ A trie-managed Markdown triefact looks like this:
 
 ```markdown
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: src/foo.py
 file_fingerprint: 0830b9bb…
 last_synced_at: "2026-05-08T14:21:09Z"
@@ -296,7 +296,7 @@ Add to your `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/pankajgarkoti/trie
-    rev: v0.1.0
+    rev: v0.1.1
     hooks:
       - id: trie-verify
 ```

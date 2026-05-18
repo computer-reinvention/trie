@@ -7,8 +7,8 @@ Run trie on a Python project in five minutes.
 ```bash
 git clone https://github.com/pankajgarkoti/trie /tmp/trie
 cd /tmp/trie && uv build
-uv tool install --force ./dist/trie-0.1.0-py3-none-any.whl
-trie --version   # → trie 0.1.0
+uv tool install --force ./dist/trie-0.1.1-py3-none-any.whl
+trie --version   # → trie 0.1.1
 ```
 
 `trie sync` and `trie plan` make Anthropic API calls, so you'll need `ANTHROPIC_API_KEY` in your environment. Everything else (`init`, `verify`, `mcp install`, `mcp serve`) runs entirely offline.

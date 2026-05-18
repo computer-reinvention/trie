@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: tests/test_reporter.py
 file_fingerprint: d6f396d10b0e62e4fbf237881ec75c8c98d6135f86e045160be8f316bdb164cf
 last_synced_at: '2026-05-15T13:02:09Z'

@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: trie/audit.py
 file_fingerprint: 65d1a3f1c5f52b4f6602ca42ab5896763196da04f818ec9a5e37fad66e46f3d1
 last_synced_at: '2026-05-18T13:57:17Z'

@@ -83,7 +83,7 @@ hook is doing its job.
 
 ```bash
 uv build
-uv tool install --force ./dist/trie-0.1.0-py3-none-any.whl
+uv tool install --force ./dist/trie-0.1.1-py3-none-any.whl
 ```
 
 `scripts/ship.sh "<msg>"` commits, pushes to `origin/main`, and reinstalls the global `uv tool`. It pushes — don't run it casually.

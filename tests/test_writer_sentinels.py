@@ -96,7 +96,7 @@ def test_roundtrip_with_front_matter_and_section_carrying_body_fp():
     bfp = hash_body(body)
     text = (
         "---\n"
-        "trie_version: 0.1.0\n"
+        "trie_version: 0.1.1\n"
         "source: src/foo.py\n"
         "---\n"
         "# foo.py\n\n"

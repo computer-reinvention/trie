@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: trie/cli.py
 file_fingerprint: e718ab72b285003cd1ee31b51a512c5957fa7a6339cc8d5e7f10c21837345e46
 last_synced_at: '2026-05-18T22:49:01Z'

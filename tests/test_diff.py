@@ -39,7 +39,7 @@ class StableClient:
 @pytest.fixture
 def project(tmp_path: Path) -> Path:
     (tmp_path / "trie.toml").write_text(
-        '[trie]\nversion = "0.1.0"\n'
+        '[trie]\nversion = "0.1.1"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
         '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
