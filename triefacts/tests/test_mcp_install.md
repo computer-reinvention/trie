@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_mcp_install.py
 file_fingerprint: 86998d7b7de324f0550cda292e4bea1559cc9ccfc7acbbcbea2f5eb75fd0866f
-last_synced_at: '2026-05-16T11:03:39Z'
+last_synced_at: '2026-05-18T13:26:26Z'
 defines:
 - kind: function
   qualified_name: tests/test_mcp_install:project
@@ -88,67 +88,67 @@ outgoing_refs: 19
 Pytest fixture that writes a minimal `trie.toml` into a temp directory and returns it as the project root.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp_install:test_snippet_uses_serve_subcommand fingerprint=64e9dd207621028e9aaaa81e3e2f4ff89f8d2e8def334be47eea06f9eb38a9a0 body_fp=a81e29cf884f3c61bc7516e098e86b24fbfcc7e73107606bf7173bca3afa8181 source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
+<!-- trie:section symbol=tests/test_mcp_install:test_snippet_uses_serve_subcommand fingerprint=64e9dd207621028e9aaaa81e3e2f4ff89f8d2e8def334be47eea06f9eb38a9a0 body_fp=a81e29cf884f3c61bc7516e098e86b24fbfcc7e73107606bf7173bca3afa8181 source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
 ## `test_snippet_uses_serve_subcommand(project: Path)`
 
 Assert that `trie_server_snippet` returns a snippet with command `"trie"`, args `["mcp", "serve"]`, and correct `cwd`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp_install:test_install_claude_code_creates_file fingerprint=901f2a4de5c763742d248d63f1efe2f94fe89ae5a4547c2d4a1ffbfdd4757c24 body_fp=18a814b1e146e6f882af8d950cd393f209993d91c009d7965ce1fad455472863 source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
+<!-- trie:section symbol=tests/test_mcp_install:test_install_claude_code_creates_file fingerprint=901f2a4de5c763742d248d63f1efe2f94fe89ae5a4547c2d4a1ffbfdd4757c24 body_fp=18a814b1e146e6f882af8d950cd393f209993d91c009d7965ce1fad455472863 source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
 ## `test_install_claude_code_creates_file(project: Path)`
 
 Assert that installing the `claude-code` target creates `.mcp.json` with a valid `trie` server entry.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp_install:test_install_preserves_other_servers fingerprint=d7e5f3a30a59855914ceb6300c7973d65f4f9f3052e3289d40988a7fa7a4c2d7 body_fp=028629911c54b8df8d789ff4f59f83c6b896782f52cbae19152a6218620851fd source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
+<!-- trie:section symbol=tests/test_mcp_install:test_install_preserves_other_servers fingerprint=d7e5f3a30a59855914ceb6300c7973d65f4f9f3052e3289d40988a7fa7a4c2d7 body_fp=028629911c54b8df8d789ff4f59f83c6b896782f52cbae19152a6218620851fd source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
 ## `test_install_preserves_other_servers(project: Path)`
 
 Assert that installing the `claude-code` target into an existing `.mcp.json` merges entries without removing pre-existing servers.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp_install:test_install_idempotent_when_unchanged fingerprint=24e0cb1f0131366a118dcb75e676778cb66f4dbd891bf4436d2bc8bd96146a02 body_fp=b7367bf9997a498d67934da5f629e4cc26fe4619f2110196e75960d4e5be66f5 source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
+<!-- trie:section symbol=tests/test_mcp_install:test_install_idempotent_when_unchanged fingerprint=24e0cb1f0131366a118dcb75e676778cb66f4dbd891bf4436d2bc8bd96146a02 body_fp=b7367bf9997a498d67934da5f629e4cc26fe4619f2110196e75960d4e5be66f5 source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
 ## `test_install_idempotent_when_unchanged(project: Path)`
 
 Assert that a second `install` call for the same target returns `"skipped"` when the config is already up to date.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp_install:test_install_errors_on_unknown_target fingerprint=c1f6d21c077c44f6ca31b1a618e33f1f64a8e4a8b7c7ee59b8de7d502eca0470 body_fp=3818615400f569daab2782acdf8d83f9bfabaf0de300a905172ed62a378c1e94 source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
+<!-- trie:section symbol=tests/test_mcp_install:test_install_errors_on_unknown_target fingerprint=c1f6d21c077c44f6ca31b1a618e33f1f64a8e4a8b7c7ee59b8de7d502eca0470 body_fp=3818615400f569daab2782acdf8d83f9bfabaf0de300a905172ed62a378c1e94 source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
 ## `test_install_errors_on_unknown_target(project: Path)`
 
 Assert that `install` raises `MCPInstallError` with "unknown target" when given an unrecognised target name.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp_install:test_install_print_only_writes_no_file fingerprint=5f34d3623185276dc469ed875c75be469cd1bfc224527482601d004f1214bb4f body_fp=bec1377b990e1b84e5721fc6c6a0f09a78d40bef3270a86a45ec78d6978dd42d source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
+<!-- trie:section symbol=tests/test_mcp_install:test_install_print_only_writes_no_file fingerprint=5f34d3623185276dc469ed875c75be469cd1bfc224527482601d004f1214bb4f body_fp=bec1377b990e1b84e5721fc6c6a0f09a78d40bef3270a86a45ec78d6978dd42d source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
 ## `test_install_print_only_writes_no_file(project: Path)`
 
 Assert that `print_only=True` returns a `"preview"` action and writes no file to disk.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp_install:test_install_dry_run_writes_no_file fingerprint=f2b938546f453a63eb32e6747656f09e095bf8bdacefe51e84b35372b7939bff body_fp=c2589f43a38a67a0d617d144a20a64efe59269d5d396c459a3093735d0d9d4e8 source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
+<!-- trie:section symbol=tests/test_mcp_install:test_install_dry_run_writes_no_file fingerprint=f2b938546f453a63eb32e6747656f09e095bf8bdacefe51e84b35372b7939bff body_fp=c2589f43a38a67a0d617d144a20a64efe59269d5d396c459a3093735d0d9d4e8 source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
 ## `test_install_dry_run_writes_no_file(project: Path)`
 
 Assert that `dry_run=True` returns a `"preview"` action without writing any file to disk.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp_install:test_install_vscode_uses_servers_key fingerprint=12064f01b3a79dc6f332cfc0dde7fb01c28f9c76ed47588c834127f5f5f74b0f body_fp=3c9ed3839456207db01948076bae439959a1e6b5f959b9026744f8a8344020d3 source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
+<!-- trie:section symbol=tests/test_mcp_install:test_install_vscode_uses_servers_key fingerprint=12064f01b3a79dc6f332cfc0dde7fb01c28f9c76ed47588c834127f5f5f74b0f body_fp=3c9ed3839456207db01948076bae439959a1e6b5f959b9026744f8a8344020d3 source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
 ## `test_install_vscode_uses_servers_key(project: Path)`
 
 Assert that a VS Code project-scope install writes config under `"servers"`, not `"mcpServers"`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp_install:test_install_errors_on_invalid_json fingerprint=b219580693bbb91025df19bade8031d5b11a5ea8cb7cb36b20c1645e7cd0842e body_fp=fd902f9fa9e634691e0b901717ffc7acca3d3c4beb1a5fd72366efd3b5664612 source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
+<!-- trie:section symbol=tests/test_mcp_install:test_install_errors_on_invalid_json fingerprint=b219580693bbb91025df19bade8031d5b11a5ea8cb7cb36b20c1645e7cd0842e body_fp=fd902f9fa9e634691e0b901717ffc7acca3d3c4beb1a5fd72366efd3b5664612 source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
 ## `test_install_errors_on_invalid_json(project: Path)`
 
 Assert that installing into a config file containing malformed JSON records an `"error"` action rather than raising an exception.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp_install:test_install_user_scope_writes_to_user_path fingerprint=5f342f1684d327798ed976f2305c907845b83d5f576644da55e91fe72e5f3c04 body_fp=594dcee05c789fb7821728bb1f37f72c1780a1846657f05d9afabf627682a050 source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
+<!-- trie:section symbol=tests/test_mcp_install:test_install_user_scope_writes_to_user_path fingerprint=5f342f1684d327798ed976f2305c907845b83d5f576644da55e91fe72e5f3c04 body_fp=594dcee05c789fb7821728bb1f37f72c1780a1846657f05d9afabf627682a050 source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
 ## `test_install_user_scope_writes_to_user_path(project: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that a user-scope install writes `~/.claude.json` under a redirected `HOME`, keeping the test sandboxed.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp_install:test_install_skips_target_without_scope fingerprint=42874c537fdf9644872091b02f75cded37910b56a8300572544c3bd9f315d386 body_fp=9607952b6f9aa02e65d52beb96140a73ce463315282c8c8ab2080c084adac29a source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
+<!-- trie:section symbol=tests/test_mcp_install:test_install_skips_target_without_scope fingerprint=42874c537fdf9644872091b02f75cded37910b56a8300572544c3bd9f315d386 body_fp=9607952b6f9aa02e65d52beb96140a73ce463315282c8c8ab2080c084adac29a source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
 ## `test_install_skips_target_without_scope(project: Path)`
 
 Assert that installing a user-scope-only target (VS Code) with `scope="user"` produces a `"skipped"` result mentioning `"scope"`.
@@ -160,7 +160,7 @@ Assert that installing a user-scope-only target (VS Code) with `scope="user"` pr
 Assert that every `TARGETS` entry returns `False` from `detect()` when `HOME` and `PATH` point to non-existent locations.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp_install:test_install_auto_detect_errors_when_nothing_found fingerprint=f729e5cb0970771d53976e18bfd16e7348a9a236597bc29dfa71ac580a755a70 body_fp=f6e3802d177b5e97acdc6b4ab956bb36a69d360943b951f1e80308f6fe2c2ea2 source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
+<!-- trie:section symbol=tests/test_mcp_install:test_install_auto_detect_errors_when_nothing_found fingerprint=f729e5cb0970771d53976e18bfd16e7348a9a236597bc29dfa71ac580a755a70 body_fp=f6e3802d177b5e97acdc6b4ab956bb36a69d360943b951f1e80308f6fe2c2ea2 source_ref=7fe9c5365e5d687b3a41f594c3f7556635ef1989 -->
 ## `test_install_auto_detect_errors_when_nothing_found(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert `install` raises `MCPInstallError` matching "no agents detected" when auto-detect finds no targets.

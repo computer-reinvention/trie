@@ -128,7 +128,7 @@ def test_from_log_computes_span(tmp_path: Path):
         [
             {"ts": _ts(0), "event": "cli", "subcommand": "sync"},
             {"ts": _ts(30), "event": "sync_file"},
-            {"ts": _ts(15), "event": "mcp_call", "tool": "locate"},
+            {"ts": _ts(15), "event": "mcp_call", "tool": "grep"},
         ],
     )
     summary = AuditSummary.from_log(p)
@@ -147,11 +147,11 @@ def test_mcp_call_buckets_per_tool(tmp_path: Path):
     _write_log(
         p,
         [
-            # 3 locate calls, one with empty result, one error
+            # 3 grep calls, one with empty result, one error
             {
                 "ts": _ts(0),
                 "event": "mcp_call",
-                "tool": "locate",
+                "tool": "grep",
                 "result_kind": "ok",
                 "result_count": 5,
                 "duration_ms": 12,
@@ -160,7 +160,7 @@ def test_mcp_call_buckets_per_tool(tmp_path: Path):
             {
                 "ts": _ts(1),
                 "event": "mcp_call",
-                "tool": "locate",
+                "tool": "grep",
                 "result_kind": "ok",
                 "result_count": 0,
                 "duration_ms": 8,
@@ -169,17 +169,17 @@ def test_mcp_call_buckets_per_tool(tmp_path: Path):
             {
                 "ts": _ts(2),
                 "event": "mcp_call",
-                "tool": "locate",
+                "tool": "grep",
                 "result_kind": "error",
                 "error_code": "invalid_argument",
                 "duration_ms": 3,
                 "response_bytes": 80,
             },
-            # 2 explain calls, one not_found
+            # 2 read calls, one not_found
             {
                 "ts": _ts(3),
                 "event": "mcp_call",
-                "tool": "explain",
+                "tool": "read",
                 "result_kind": "ok",
                 "prose_chars": 320,
                 "callers_count": 2,
@@ -191,18 +191,18 @@ def test_mcp_call_buckets_per_tool(tmp_path: Path):
             {
                 "ts": _ts(4),
                 "event": "mcp_call",
-                "tool": "explain",
+                "tool": "read",
                 "result_kind": "error",
                 "error_code": "not_found",
                 "duration_ms": 4,
                 "response_bytes": 200,
                 "args": {"qname": "trie/cli:does_not_exist"},
             },
-            # 1 walk call, hub-truncated (single node returned)
+            # 1 trace call, hub-truncated (single node returned)
             {
                 "ts": _ts(5),
                 "event": "mcp_call",
-                "tool": "walk",
+                "tool": "trace",
                 "result_kind": "ok",
                 "nodes_count": 1,
                 "edges_count": 0,
@@ -213,38 +213,38 @@ def test_mcp_call_buckets_per_tool(tmp_path: Path):
         ],
     )
     summary = AuditSummary.from_log(p)
-    assert set(summary.mcp.keys()) == {"locate", "explain", "walk"}
+    assert set(summary.mcp.keys()) == {"grep", "read", "trace"}
 
-    loc = summary.mcp["locate"]
-    assert loc.count == 3
-    assert loc.error_count == 1
-    assert loc.empty_result_count == 1  # the result_count==0 one
-    assert loc.avg_duration_ms == pytest.approx((12 + 8 + 3) / 3)
+    g = summary.mcp["grep"]
+    assert g.count == 3
+    assert g.error_count == 1
+    assert g.empty_result_count == 1  # the result_count==0 one
+    assert g.avg_duration_ms == pytest.approx((12 + 8 + 3) / 3)
 
-    exp = summary.mcp["explain"]
-    assert exp.count == 2
-    assert exp.error_count == 1
-    assert exp.not_found_count == 1
-    qnames = [q for q, _ in exp.top_qnames]
+    r = summary.mcp["read"]
+    assert r.count == 2
+    assert r.error_count == 1
+    assert r.not_found_count == 1
+    qnames = [q for q, _ in r.top_qnames]
     assert "trie/cli:sync_cmd" in qnames
 
-    wlk = summary.mcp["walk"]
-    assert wlk.count == 1
-    assert wlk.empty_result_count == 1  # nodes_count==1 == just the root
+    tr = summary.mcp["trace"]
+    assert tr.count == 1
+    assert tr.empty_result_count == 1  # nodes_count==1 == just the root
 
 
-def test_explain_empty_prose_counts_as_empty_result(tmp_path: Path):
-    """An explain that returns prose="" (no triefact section yet) is signal —
+def test_read_empty_prose_counts_as_empty_result(tmp_path: Path):
+    """A read that returns prose="" (no triefact section yet) is signal —
     the agent asked about a symbol the graph knows but trie hasn't documented.
     Lumping it in with errors would hide that this is a sync-coverage gap."""
-    p = tmp_path / "explain.jsonl"
+    p = tmp_path / "read.jsonl"
     _write_log(
         p,
         [
             {
                 "ts": _ts(0),
                 "event": "mcp_call",
-                "tool": "explain",
+                "tool": "read",
                 "result_kind": "ok",
                 "prose_chars": 0,
                 "duration_ms": 5,
@@ -253,7 +253,7 @@ def test_explain_empty_prose_counts_as_empty_result(tmp_path: Path):
             {
                 "ts": _ts(1),
                 "event": "mcp_call",
-                "tool": "explain",
+                "tool": "read",
                 "result_kind": "ok",
                 "prose_chars": 200,
                 "duration_ms": 5,
@@ -262,7 +262,7 @@ def test_explain_empty_prose_counts_as_empty_result(tmp_path: Path):
         ],
     )
     summary = AuditSummary.from_log(p)
-    assert summary.mcp["explain"].empty_result_count == 1
+    assert summary.mcp["read"].empty_result_count == 1
 
 
 def test_mcp_calls_without_capture_args_still_count(tmp_path: Path):
@@ -275,7 +275,7 @@ def test_mcp_calls_without_capture_args_still_count(tmp_path: Path):
             {
                 "ts": _ts(0),
                 "event": "mcp_call",
-                "tool": "explain",
+                "tool": "read",
                 "result_kind": "ok",
                 "prose_chars": 100,
                 "duration_ms": 5,
@@ -284,8 +284,8 @@ def test_mcp_calls_without_capture_args_still_count(tmp_path: Path):
         ],
     )
     summary = AuditSummary.from_log(p)
-    assert summary.mcp["explain"].count == 1
-    assert summary.mcp["explain"].top_qnames == ()
+    assert summary.mcp["read"].count == 1
+    assert summary.mcp["read"].top_qnames == ()
 
 
 # ---------------------------------------------------------------------------
@@ -479,7 +479,7 @@ def test_render_single_summary_includes_counts(tmp_path: Path):
             {
                 "ts": _ts(0),
                 "event": "mcp_call",
-                "tool": "locate",
+                "tool": "grep",
                 "result_kind": "ok",
                 "result_count": 3,
                 "duration_ms": 10,
@@ -499,7 +499,7 @@ def test_render_single_summary_includes_counts(tmp_path: Path):
     summary = AuditSummary.from_log(p)
     out = _render_to_string(render, summary)
     assert "MCP calls" in out
-    assert "locate" in out
+    assert "grep" in out
     assert "Sync" in out
     assert "2" in out
 
@@ -521,7 +521,7 @@ def test_render_comparison_includes_both_paths(tmp_path: Path):
             {
                 "ts": _ts(0),
                 "event": "mcp_call",
-                "tool": "locate",
+                "tool": "grep",
                 "result_kind": "ok",
                 "result_count": 5,
                 "duration_ms": 5,
@@ -535,7 +535,7 @@ def test_render_comparison_includes_both_paths(tmp_path: Path):
             {
                 "ts": _ts(0),
                 "event": "mcp_call",
-                "tool": "locate",
+                "tool": "grep",
                 "result_kind": "ok",
                 "result_count": 5,
                 "duration_ms": 5,
@@ -544,7 +544,7 @@ def test_render_comparison_includes_both_paths(tmp_path: Path):
             {
                 "ts": _ts(1),
                 "event": "mcp_call",
-                "tool": "explain",
+                "tool": "read",
                 "result_kind": "ok",
                 "prose_chars": 200,
                 "duration_ms": 5,
@@ -591,7 +591,7 @@ def test_cli_audit_json_output(tmp_path: Path):
             {
                 "ts": _ts(0),
                 "event": "mcp_call",
-                "tool": "locate",
+                "tool": "grep",
                 "result_kind": "ok",
                 "result_count": 3,
                 "duration_ms": 5,
@@ -603,7 +603,7 @@ def test_cli_audit_json_output(tmp_path: Path):
     result = runner.invoke(app, ["audit", "--log", str(p), "--json"])
     assert result.exit_code == 0, result.output
     data = json.loads(result.output)
-    assert data["mcp"]["locate"]["count"] == 1
+    assert data["mcp"]["grep"]["count"] == 1
 
 
 def test_cli_audit_compare_two_logs(tmp_path: Path):
@@ -615,7 +615,7 @@ def test_cli_audit_compare_two_logs(tmp_path: Path):
             {
                 "ts": _ts(0),
                 "event": "mcp_call",
-                "tool": "locate",
+                "tool": "grep",
                 "result_kind": "ok",
                 "result_count": 1,
                 "duration_ms": 5,
@@ -629,7 +629,7 @@ def test_cli_audit_compare_two_logs(tmp_path: Path):
             {
                 "ts": _ts(0),
                 "event": "mcp_call",
-                "tool": "locate",
+                "tool": "grep",
                 "result_kind": "ok",
                 "result_count": 1,
                 "duration_ms": 5,
@@ -663,7 +663,7 @@ def test_summarise_directly_with_event_list():
             ts=_ts(0),
             event="mcp_call",
             fields={
-                "tool": "locate",
+                "tool": "grep",
                 "result_kind": "ok",
                 "result_count": 2,
                 "duration_ms": 4,
@@ -674,7 +674,7 @@ def test_summarise_directly_with_event_list():
             ts=_ts(1),
             event="mcp_call",
             fields={
-                "tool": "explain",
+                "tool": "read",
                 "result_kind": "ok",
                 "prose_chars": 100,
                 "duration_ms": 8,
@@ -684,6 +684,6 @@ def test_summarise_directly_with_event_list():
         ),
     ]
     summary = _summarise(events, log_path=Path("synthetic"), lines_total=2, lines_parsed=2)
-    assert summary.mcp["locate"].count == 1
-    assert summary.mcp["explain"].count == 1
-    assert summary.mcp["explain"].top_qnames == (("x:y", 1),)
+    assert summary.mcp["grep"].count == 1
+    assert summary.mcp["read"].count == 1
+    assert summary.mcp["read"].top_qnames == (("x:y", 1),)

@@ -7,10 +7,16 @@ conversation memory.
 Three verbs match the cognitive moves an agent makes when navigating an unfamiliar
 codebase:
 
-- `locate(predicate, rank_by?, limit=10)` — find symbols matching a predicate.
-- `explain(qname)` — read one symbol's prose plus the one-liners of its immediate
+- `grep(predicate, rank_by?, limit=10)` — find symbols matching a predicate.
+- `read(qname)` — read one symbol's prose plus the one-liners of its immediate
   neighbours (callers + callees).
-- `walk(from_qname, direction, depth=2)` — trace the graph topology beyond one hop.
+- `trace(from_qname, direction, depth=2)` — trace the graph topology beyond one hop.
+
+The same three operations are also exposed as CLI subcommands (`trie grep`,
+`trie read`, `trie trace`) so an agent that prefers shelling out can do
+everything the MCP can without changing protocols. Both surfaces share
+the same `TrieTools` methods underneath, so behaviour, knobs, and error
+shapes are identical regardless of how the agent calls in.
 
 Every response carries a `one_liner` on each symbol it mentions, pulled from the
 section body at sync time and cached in `triefact_sections`. Errors return a
@@ -45,22 +51,22 @@ from mcp.server.fastmcp import FastMCP
 
 from trie import telemetry
 from trie.config import Config, Mcp
-from trie.graph.store import LocatePredicate, Store, SymbolDetail
+from trie.graph.store import GrepPredicate, Store, SymbolDetail
 from trie.scope import discover_files
 
 
 class RipgrepNotFoundError(RuntimeError):
     """Raised at MCP server startup when `rg` (ripgrep) is not on PATH.
 
-    `locate`'s grep fallback shells out to ripgrep for in-source-body
+    `grep`'s text-match fallback shells out to ripgrep for in-source-body
     searches. ripgrep gives us .gitignore-aware traversal, binary skip,
     smart-case, encoding detection, and parallel scanning for free — all
     of which a hand-rolled Python loop would have to re-implement badly.
 
     We fail at startup rather than at the first fallback call: a half-
-    functional server (symbol-name `locate` works, fallback doesn't)
-    would surprise agents at unpredictable moments. One clear failure
-    surface is easier to debug.
+    functional server (symbol-name `grep` works, fallback doesn't) would
+    surprise agents at unpredictable moments. One clear failure surface
+    is easier to debug.
     """
 
 
@@ -106,7 +112,7 @@ def _truncate(text: str, max_chars: int) -> str:
 
 
 def _symbol_summary(detail: SymbolDetail, *, one_liner_max: int) -> dict[str, Any]:
-    """Compact symbol record used inside neighbour / walk-node lists."""
+    """Compact symbol record used inside neighbour / trace-node lists."""
     return {
         "qname": detail.qualified_name,
         "signature": detail.signature or "",
@@ -171,9 +177,9 @@ class TrieTools:
     def close(self) -> None:
         self.store.close()
 
-    # --- locate ------------------------------------------------------------
+    # --- grep --------------------------------------------------------------
 
-    def locate(
+    def grep(
         self,
         predicate: dict[str, Any] | None = None,
         rank_by: str | None = None,
@@ -205,13 +211,14 @@ class TrieTools:
         }
         ```
         On empty hits, `fallback.kind` is one of:
-        - `"none"`: predicate had no `name_contains` to grep on, nothing to suggest.
-        - `"grep_empty"`: the query string appears in no in-scope source body.
-        - `"grep"`: grep found candidate symbols whose bodies contain the query;
-          `matches` is the ranked list (by `inbound_count` desc) capped at
-          `locate_fallback_match_limit`. Even when the underlying grep hit was
-          very broad, we always return the top-ranked candidates so the agent
-          can triangulate from data rather than refine blindly.
+        - `"none"`: predicate had no `name_contains` for the fallback to search on.
+        - `"text_match_empty"`: the query string appears in no in-scope source body.
+        - `"text_match"`: a string search against in-scope source bodies found
+          candidate symbols; `matches` is the ranked list (by `inbound_count`
+          desc) capped at `grep_fallback_match_limit`. Even when the underlying
+          string match was very broad, we always return the top-ranked
+          candidates so the agent can triangulate from data rather than refine
+          blindly.
 
         Errors (bad predicate shape, etc.) still return `{"error": {...}}`.
         """
@@ -220,18 +227,18 @@ class TrieTools:
             if telemetry.capture_args()
             else {}
         )
-        with telemetry.timed("mcp_call", tool="locate", args=tele_args) as tele_ctx:
+        with telemetry.timed("mcp_call", tool="grep", args=tele_args) as tele_ctx:
             pred_obj, err = self._parse_predicate(predicate)
             if err is not None:
                 tele_ctx["result_kind"] = "error"
                 tele_ctx["error_code"] = err["error"]["code"]
                 return err
 
-            rank = rank_by or self.mcp_cfg.locate_default_rank_by
-            capped_limit = min(max(1, limit), self.mcp_cfg.locate_max_limit)
+            rank = rank_by or self.mcp_cfg.grep_default_rank_by
+            capped_limit = min(max(1, limit), self.mcp_cfg.grep_max_limit)
 
-            hits = self.store.locate_symbols(pred_obj, rank_by=rank, limit=capped_limit)
-            one_liner_cap = self.mcp_cfg.locate_one_liner_max_chars
+            hits = self.store.grep_symbols(pred_obj, rank_by=rank, limit=capped_limit)
+            one_liner_cap = self.mcp_cfg.grep_one_liner_max_chars
             hit_dicts = [
                 {
                     "qname": h.qualified_name,
@@ -247,12 +254,12 @@ class TrieTools:
             ]
             result: dict[str, Any] = {"hits": hit_dicts}
 
-            # When the predicate matched nothing, try the grep fallback. The
-            # fallback always produces SOMETHING in the response — even if it's
-            # `kind="none"` — so the agent never has to guess whether trie
-            # tried alternatives or not.
+            # When the predicate matched nothing, try the text-match fallback.
+            # The fallback always produces SOMETHING in the response — even if
+            # it's `kind="none"` — so the agent never has to guess whether
+            # trie tried alternatives or not.
             if not hit_dicts:
-                fallback = self._maybe_grep_fallback(pred_obj)
+                fallback = self._maybe_text_match_fallback(pred_obj)
                 result["fallback"] = fallback
                 tele_ctx["fallback_kind"] = fallback["kind"]
                 tele_ctx["fallback_match_count"] = len(fallback.get("matches", []))
@@ -264,24 +271,27 @@ class TrieTools:
                 tele_ctx["response"] = result
             return result
 
-    def _maybe_grep_fallback(self, pred: LocatePredicate) -> dict[str, Any]:
+    def _maybe_text_match_fallback(self, pred: GrepPredicate) -> dict[str, Any]:
         """Build the `fallback` envelope returned alongside an empty `hits` list.
 
         The contract is to always return a dict with a `kind` field, so the
         agent can dispatch on three distinct empty cases:
 
-        - `none`: no `name_contains` was supplied; nothing to grep for. The agent
-          should not try the same predicate again — its shape isn't grep-able.
-        - `grep_empty`: the query appears in no in-scope source body (or only
-          outside any indexed symbol). Likely a typo or a wrong project.
-        - `grep`: candidate symbols whose bodies contain the query, ranked by
-          `inbound_count` descending and capped at `locate_fallback_match_limit`.
+        - `none`: no `name_contains` was supplied; nothing to text-search for.
+          The agent should not try the same predicate again — its shape isn't
+          string-searchable.
+        - `text_match_empty`: the query appears in no in-scope source body
+          (or only outside any indexed symbol). Likely a typo or a wrong
+          project.
+        - `text_match`: candidate symbols whose bodies contain the query,
+          ranked by `inbound_count` descending and capped at
+          `grep_fallback_match_limit`.
 
         We deliberately do not bail out when the result is "too noisy" — raw
-        grep would have shown the user N matches and let them eyeball it; we
-        match that floor by ranking and capping. The `match_count` /
-        `unique_symbols` fields convey the breadth of the underlying hit so
-        the agent knows the cap was reached.
+        ripgrep would have shown the user N matches and let them eyeball
+        them; we match that floor by ranking and capping. The `match_count`
+        / `unique_symbols` fields convey the breadth of the underlying hit
+        so the agent knows the cap was reached.
 
         Predicate fields beyond `name_contains` (`scope_prefix`, `scope_exclude`,
         `public_only`, etc.) are applied to the candidate list at the end, so
@@ -293,19 +303,20 @@ class TrieTools:
                 "kind": "none",
                 "note": (
                     "Predicate matched no symbols, and it has no `name_contains` "
-                    "to grep for. Add a name substring or relax other filters."
+                    "to text-search for. Add a name substring or relax other filters."
                 ),
             }
 
-        # Walk in-scope source files and collect line-level hits. The grep
-        # walker has its own internal cap on files-scanned (a runtime guard,
-        # not a discriminator); on hitting that cap it returns whatever it
-        # accumulated so far, which we treat as authoritative — the agent
-        # gets the most-relevant N files' worth of matches either way.
-        grep_hits = self._grep_in_scope(query)
-        if not grep_hits:
+        # Walk in-scope source files and collect line-level hits. The
+        # ripgrep walker has its own internal cap on files-scanned (a
+        # runtime guard, not a discriminator); on hitting that cap it
+        # returns whatever it accumulated so far, which we treat as
+        # authoritative — the agent gets the most-relevant N files' worth
+        # of matches either way.
+        rg_hits = self._text_match_in_scope(query)
+        if not rg_hits:
             return {
-                "kind": "grep_empty",
+                "kind": "text_match_empty",
                 "query": query,
                 "note": (
                     f"Predicate matched no symbols, and {query!r} appears in no "
@@ -315,14 +326,14 @@ class TrieTools:
             }
 
         # Attribute each matched line to the smallest enclosing symbol.
-        per_symbol = self._attribute_grep_to_symbols(grep_hits)
+        per_symbol = self._attribute_text_matches_to_symbols(rg_hits)
         if not per_symbol:
             # The query matched lines, but every match was outside any symbol
             # (module-level code, imports, comments at file top, etc.). This
             # is honest signal — the agent shouldn't be misled into thinking a
             # symbol was found.
             return {
-                "kind": "grep_empty",
+                "kind": "text_match_empty",
                 "query": query,
                 "note": (
                     f"Query {query!r} appears in source but only outside any "
@@ -347,11 +358,11 @@ class TrieTools:
             candidates.append((detail, body_hits))
 
         if not candidates:
-            # Grep found symbols, but none survived the predicate's other filters.
-            # That's still useful signal: the agent's scope restrictions are
-            # excluding what the substring would point to.
+            # Text-search found symbols, but none survived the predicate's
+            # other filters. That's still useful signal: the agent's scope
+            # restrictions are excluding what the substring would point to.
             return {
-                "kind": "grep_empty",
+                "kind": "text_match_empty",
                 "query": query,
                 "note": (
                     f"Query {query!r} matched symbols, but none satisfied the "
@@ -361,10 +372,10 @@ class TrieTools:
             }
 
         candidates.sort(key=lambda c: (-c[0].inbound_count, c[0].qualified_name))
-        capped = candidates[: self.mcp_cfg.locate_fallback_match_limit]
+        capped = candidates[: self.mcp_cfg.grep_fallback_match_limit]
         truncated = len(candidates) > len(capped)
 
-        one_liner_cap = self.mcp_cfg.locate_one_liner_max_chars
+        one_liner_cap = self.mcp_cfg.grep_one_liner_max_chars
         matches = [
             {
                 "qname": d.qualified_name,
@@ -375,7 +386,7 @@ class TrieTools:
                 "kind": d.kind,
                 "inbound_count": d.inbound_count,
                 "outbound_count": d.outbound_count,
-                "grep_hits_in_body": body_hits,
+                "text_match_hits_in_body": body_hits,
             }
             for d, body_hits in capped
         ]
@@ -391,7 +402,7 @@ class TrieTools:
                 f"see different candidates."
             )
         return {
-            "kind": "grep",
+            "kind": "text_match",
             "query": query,
             "match_count": sum(per_symbol.values()),
             "unique_symbols": len(per_symbol),
@@ -399,7 +410,7 @@ class TrieTools:
             "note": note,
         }
 
-    def _grep_in_scope(self, query: str) -> dict[str, list[int]]:
+    def _text_match_in_scope(self, query: str) -> dict[str, list[int]]:
         """Shell out to ripgrep to find `query` in in-scope source bodies.
 
         Returns `{rel_path: [line_numbers]}` keyed by paths relative to
@@ -414,7 +425,7 @@ class TrieTools:
         is a hash-set lookup per match — negligible cost. rg's default
         `.gitignore` honouring already excludes the obvious noise.
 
-        Cap: stops accumulating once `locate_fallback_max_files` distinct
+        Cap: stops accumulating once `grep_fallback_max_files` distinct
         files have hits, matching the previous Python implementation's
         runtime guard against very-common substrings on huge projects.
         """
@@ -459,7 +470,7 @@ class TrieTools:
             if abs_path.is_relative_to(self.src_root):
                 scope_set.add(str(abs_path.relative_to(self.src_root)))
 
-        max_files = self.mcp_cfg.locate_fallback_max_files
+        max_files = self.mcp_cfg.grep_fallback_max_files
         hits: dict[str, list[int]] = {}
         src_root_str = str(self.src_root)
 
@@ -500,7 +511,7 @@ class TrieTools:
 
         return hits
 
-    def _attribute_grep_to_symbols(self, grep_hits: dict[str, list[int]]) -> dict[str, int]:
+    def _attribute_text_matches_to_symbols(self, rg_hits: dict[str, list[int]]) -> dict[str, int]:
         """For each `(file, line)` match, attribute it to the smallest enclosing
         symbol by line range. Returns `{qname: count_of_hits_in_body}`.
 
@@ -514,7 +525,7 @@ class TrieTools:
         match line, then bounded by `end_line`.
         """
         per_symbol: dict[str, int] = {}
-        for file_path, linenos in grep_hits.items():
+        for file_path, linenos in rg_hits.items():
             symbols = self.store.symbols_in_file_with_lines(file_path)
             if not symbols:
                 continue
@@ -525,7 +536,7 @@ class TrieTools:
                 per_symbol[enclosing] = per_symbol.get(enclosing, 0) + 1
         return per_symbol
 
-    def _candidate_matches_predicate(self, detail: SymbolDetail, pred: LocatePredicate) -> bool:
+    def _candidate_matches_predicate(self, detail: SymbolDetail, pred: GrepPredicate) -> bool:
         """Apply the predicate's non-name filters to a fallback candidate.
 
         `name_contains` is intentionally NOT enforced here: the whole point of
@@ -555,12 +566,12 @@ class TrieTools:
 
     def _parse_predicate(
         self, predicate: dict[str, Any] | None
-    ) -> tuple[LocatePredicate, dict[str, Any] | None]:
-        """Turn the dict the agent passed into a LocatePredicate, or return an error."""
+    ) -> tuple[GrepPredicate, dict[str, Any] | None]:
+        """Turn the dict the agent passed into a GrepPredicate, or return an error."""
         if predicate is None:
-            return LocatePredicate(), None
+            return GrepPredicate(), None
         if not isinstance(predicate, dict):
-            return LocatePredicate(), _error(
+            return GrepPredicate(), _error(
                 "invalid_argument",
                 "`predicate` must be an object with optional filter fields.",
                 "Try predicate={'name_contains': '<fragment>'}.",
@@ -588,14 +599,14 @@ class TrieTools:
 
         in_min, in_max, err = _count_range(predicate.get("inbound_count"), "inbound_count")
         if err is not None:
-            return LocatePredicate(), err
+            return GrepPredicate(), err
         out_min, out_max, err = _count_range(predicate.get("outbound_count"), "outbound_count")
         if err is not None:
-            return LocatePredicate(), err
+            return GrepPredicate(), err
 
         kind = predicate.get("kind")
         if kind is not None and kind not in ("function", "class", "method", "any"):
-            return LocatePredicate(), _error(
+            return GrepPredicate(), _error(
                 "invalid_argument",
                 f"`kind` must be one of function/class/method/any, got {kind!r}.",
             )
@@ -606,13 +617,13 @@ class TrieTools:
         try:
             scope_exclude = tuple(str(x) for x in scope_exclude_raw)
         except TypeError:
-            return LocatePredicate(), _error(
+            return GrepPredicate(), _error(
                 "invalid_argument",
                 "`scope_exclude` must be a list of path prefixes.",
             )
 
         return (
-            LocatePredicate(
+            GrepPredicate(
                 name_contains=predicate.get("name_contains"),
                 kind=kind,
                 scope_prefix=predicate.get("scope_prefix"),
@@ -626,17 +637,17 @@ class TrieTools:
             None,
         )
 
-    # --- explain -----------------------------------------------------------
+    # --- read --------------------------------------------------------------
 
-    def explain(self, qname: str) -> dict[str, Any]:
+    def read(self, qname: str) -> dict[str, Any]:
         """Read a symbol's prose plus one-liners for every immediate caller and callee.
 
         Returns `{qname, signature, prose, source_pointer, callers, callees, notes?}`.
-        Use after `locate` once you know which symbol you want to understand. If you
-        need depth > 1, use `walk` and follow up with `explain` on the nodes that matter.
+        Use after `grep` once you know which symbol you want to understand. If you
+        need depth > 1, use `trace` and follow up with `read` on the nodes that matter.
         """
         tele_args = {"qname": qname} if telemetry.capture_args() else {}
-        with telemetry.timed("mcp_call", tool="explain", args=tele_args) as tele_ctx:
+        with telemetry.timed("mcp_call", tool="read", args=tele_args) as tele_ctx:
             detail = self.store.get_symbol_detail(qname)
             if detail is None:
                 err = _error(
@@ -662,7 +673,7 @@ class TrieTools:
                 notes.append(caller_truncated_note)
             if callee_truncated_note:
                 notes.append(callee_truncated_note)
-            if detail.inbound_count > self.mcp_cfg.walk_hub_threshold:
+            if detail.inbound_count > self.mcp_cfg.trace_hub_threshold:
                 notes.append(
                     f"this symbol has {detail.inbound_count} inbound edges and is treated "
                     "as a hub; cascade expansion stops here."
@@ -721,7 +732,7 @@ class TrieTools:
                 body = body[1:]
             if body.endswith("\n"):
                 body = body[:-1]
-            return _truncate(body, self.mcp_cfg.explain_prose_max_chars), []
+            return _truncate(body, self.mcp_cfg.read_prose_max_chars), []
         return "", [
             f"no section for {detail.qualified_name} in {triefact_path.name}; "
             "the triefact exists but this symbol hasn't been synced into it."
@@ -733,13 +744,13 @@ class TrieTools:
         Returns (records, note_or_None). If the configured per-direction cap is hit,
         the records are truncated and a note describes the cut.
         """
-        cap = self.mcp_cfg.explain_max_neighbours_per_direction
+        cap = self.mcp_cfg.read_max_neighbours_per_direction
         total = len(qnames)
         truncated_note: str | None = None
         if cap > 0 and total > cap:
             qnames = qnames[:cap]
             truncated_note = (
-                f"showed {cap} of {total} neighbours; use walk(direction=...) "
+                f"showed {cap} of {total} neighbours; use trace(direction=...) "
                 "for the full topology."
             )
 
@@ -750,13 +761,13 @@ class TrieTools:
                 # Symbol was deleted between scan and query; skip.
                 continue
             records.append(
-                _symbol_summary(d, one_liner_max=self.mcp_cfg.explain_neighbour_one_liner_max_chars)
+                _symbol_summary(d, one_liner_max=self.mcp_cfg.read_neighbour_one_liner_max_chars)
             )
         return records, truncated_note
 
-    # --- walk --------------------------------------------------------------
+    # --- trace -------------------------------------------------------------
 
-    def walk(
+    def trace(
         self,
         from_qname: str,
         direction: str = "callers",
@@ -769,7 +780,7 @@ class TrieTools:
         `"out"` = callee-side). Expansion stops at hub symbols (inbound count above the
         configured threshold); their qnames appear in `truncated_at`.
 
-        Returns signatures and one-liners only — for prose, follow up with `explain`
+        Returns signatures and one-liners only — for prose, follow up with `read`
         on a specific node.
         """
         tele_args = (
@@ -777,7 +788,7 @@ class TrieTools:
             if telemetry.capture_args()
             else {}
         )
-        tele_ctx_outer = telemetry.timed("mcp_call", tool="walk", args=tele_args)
+        tele_ctx_outer = telemetry.timed("mcp_call", tool="trace", args=tele_args)
         with tele_ctx_outer as tele_ctx:
             if direction not in ("callers", "callees", "both"):
                 err = _error(
@@ -800,16 +811,16 @@ class TrieTools:
 
             notes: list[str] = []
             requested_depth = depth
-            depth = max(0, min(depth, self.mcp_cfg.walk_max_depth))
+            depth = max(0, min(depth, self.mcp_cfg.trace_max_depth))
             if depth != requested_depth:
                 notes.append(f"depth was clamped from {requested_depth} to {depth} (server max).")
 
             nodes: dict[str, dict[str, Any]] = {}
             edges: list[dict[str, str]] = []
             truncated_at: list[str] = []
-            max_nodes = self.mcp_cfg.walk_max_nodes
-            hub_threshold = self.mcp_cfg.walk_hub_threshold
-            one_liner_cap = self.mcp_cfg.explain_neighbour_one_liner_max_chars
+            max_nodes = self.mcp_cfg.trace_max_nodes
+            hub_threshold = self.mcp_cfg.trace_hub_threshold
+            one_liner_cap = self.mcp_cfg.read_neighbour_one_liner_max_chars
 
             def add_node(detail: SymbolDetail) -> bool:
                 """Register a node if it fits under max_nodes. False on capacity hit."""
@@ -879,7 +890,7 @@ class TrieTools:
 
             if capacity_hit:
                 notes.append(
-                    f"walk reached max_nodes={max_nodes}; result is BFS-ordered from root."
+                    f"trace reached max_nodes={max_nodes}; result is BFS-ordered from root."
                 )
 
             result: dict[str, Any] = {
@@ -916,11 +927,11 @@ class TrieTools:
             short = qname.split(":")[-1].split(".")[-1]
             name_matches = _close_name_matches(short, self.store.all_symbol_names())
             if not name_matches:
-                return "Use locate({'name_contains': '...'}) to find the exact qname."
+                return "Use grep({'name_contains': '...'}) to find the exact qname."
             joined = ", ".join(name_matches)
             return (
                 f"No exact qname match. Names that look close: {joined}. "
-                "Use locate({'name_contains': '...'}) to resolve a full qname."
+                "Use grep({'name_contains': '...'}) to resolve a full qname."
             )
         joined = ", ".join(repr(m) for m in matches)
         return f"Did you mean one of: {joined}?"
@@ -933,13 +944,19 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     """Construct an MCP server bound to the trie state under `project_root`.
 
     Returns the server and the underlying TrieTools instance — the latter is exposed so
-    tests can call tool methods directly without driving the MCP transport.
+    tests can call tool methods directly without driving the MCP transport, and so the
+    CLI subcommands (`trie grep`, `trie read`, `trie trace`) can share the same
+    implementation as the MCP wire calls.
     """
     tools = TrieTools(project_root)
     server = FastMCP("trie")
-    server.tool()(tools.locate)
-    server.tool()(tools.explain)
-    server.tool()(tools.walk)
+    # Three operations, three wire names, three identical CLI subcommands.
+    # The underlying methods on TrieTools have the same names, so an agent
+    # calling `trie grep --json ...` from the shell gets a response that's
+    # byte-equivalent to what it would get from the MCP `grep` tool.
+    server.tool(name="grep")(tools.grep)
+    server.tool(name="read")(tools.read)
+    server.tool(name="trace")(tools.trace)
     return server, tools
 
 

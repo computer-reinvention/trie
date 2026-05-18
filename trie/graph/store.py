@@ -109,10 +109,10 @@ class SymbolDetail:
 
 
 @dataclass(frozen=True)
-class LocatePredicate:
-    """Server-side filter object for `Store.locate_symbols`.
+class GrepPredicate:
+    """Server-side filter object for `Store.grep_symbols`.
 
-    Mirrors the agent-facing `locate.predicate` shape. Every field is optional;
+    Mirrors the agent-facing `grep.predicate` shape. Every field is optional;
     omitted fields mean "don't filter on this." `scope_prefix` and `scope_exclude`
     match against `file_path`. `inbound_count` / `outbound_count` accept
     `(min, max)` tuples (either bound may be None).
@@ -573,9 +573,9 @@ class Store:
             one_liner=row[10] or "",
         )
 
-    def locate_symbols(
+    def grep_symbols(
         self,
-        predicate: LocatePredicate,
+        predicate: GrepPredicate,
         *,
         rank_by: str = "public_first",
         limit: int = 10,

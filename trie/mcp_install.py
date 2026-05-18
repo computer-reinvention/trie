@@ -63,7 +63,17 @@ class MCPTarget:
 
     `snippet_factory` produces the JSON value registered under `snippet_key.trie`.
     The default factory matches the Claude-style schema (`command` + `args` + `cwd`);
-    opencode supplies `_opencode_style_snippet` because its schema differs."""
+    opencode supplies `_opencode_style_snippet` because its schema differs.
+
+    `tool_name_format` is how this harness names MCP tools when the agent sees them.
+    The format string takes one `{tool}` placeholder; the trie server itself
+    registers tools as `grep`, `read`, and `trace`, but each harness prefixes or
+    mangles those names before showing them to the model. We need the rendered
+    name to bake into TRIE.md so the doc tells the agent what name to actually
+    call. Known formats live in the registry below; unknown harnesses default
+    to bare `{tool}` (no prefix), which is the safe fallback — the agent will
+    still find the tool via tab-completion / tool listing even when the doc
+    name doesn't match exactly."""
 
     name: str  # short slug used as --target value
     display_name: str
@@ -73,6 +83,7 @@ class MCPTarget:
     user_path_str: str | None = None  # passed to Path then expanduser-ed
     detect_paths_str: tuple[str, ...] = ()  # any of these existing → installed
     detect_binaries: tuple[str, ...] = ()  # any of these on PATH → installed
+    tool_name_format: str = "{tool}"  # how this harness names MCP tools
     notes: str = ""
 
     def supports(self, scope: Scope) -> bool:
@@ -129,12 +140,18 @@ TARGETS: dict[str, MCPTarget] = {
         user_path_str="~/.claude.json",
         detect_paths_str=("~/.claude.json", "~/.claude"),
         detect_binaries=("claude",),
+        # Claude Code namespaces MCP tools as `mcp__<server>__<tool>`. Confirmed
+        # from the docs at docs.claude.com/en/docs/claude-code/permissions
+        # (the MCP permission-rule example uses `mcp__puppeteer__puppeteer_navigate`).
+        tool_name_format="mcp__trie__{tool}",
     ),
     "claude-desktop": MCPTarget(
         name="claude-desktop",
         display_name="Claude Desktop",
         user_path_str=_claude_desktop_user_path(),
         detect_paths_str=(_claude_desktop_user_path(),),
+        # Same naming convention as Claude Code (same MCP host implementation).
+        tool_name_format="mcp__trie__{tool}",
     ),
     "cursor": MCPTarget(
         name="cursor",
@@ -143,6 +160,9 @@ TARGETS: dict[str, MCPTarget] = {
         user_path_str="~/.cursor/mcp.json",
         detect_paths_str=("~/.cursor",),
         detect_binaries=("cursor",),
+        # TODO: confirm Cursor's MCP tool naming convention; defaulting to
+        # bare `{tool}` until verified. Agents will still discover the tools
+        # via tool listing — the doc just won't show the exact rendered name.
     ),
     "windsurf": MCPTarget(
         name="windsurf",
@@ -150,6 +170,7 @@ TARGETS: dict[str, MCPTarget] = {
         user_path_str="~/.codeium/windsurf/mcp_config.json",
         detect_paths_str=("~/.codeium/windsurf",),
         detect_binaries=("windsurf",),
+        # TODO: confirm Windsurf's MCP tool naming convention.
     ),
     "vscode": MCPTarget(
         name="vscode",
@@ -158,6 +179,8 @@ TARGETS: dict[str, MCPTarget] = {
         project_rel_path=(".vscode", "mcp.json"),
         detect_binaries=("code",),
         notes="VS Code reads workspace MCP config from .vscode/mcp.json (project scope only).",
+        # TODO: confirm VS Code's MCP tool naming convention (likely depends on
+        # which AI extension is reading the config — Copilot Chat vs others).
     ),
     "codex": MCPTarget(
         name="codex",
@@ -166,6 +189,7 @@ TARGETS: dict[str, MCPTarget] = {
         detect_paths_str=("~/.codex",),
         detect_binaries=("codex",),
         notes="Codex CLI MCP config path may evolve; verify after install.",
+        # TODO: confirm Codex CLI's MCP tool naming convention.
     ),
     "opencode": MCPTarget(
         name="opencode",
@@ -177,6 +201,10 @@ TARGETS: dict[str, MCPTarget] = {
         user_path_str="~/.config/opencode/opencode.json",
         detect_paths_str=("~/.config/opencode", "~/.local/share/opencode"),
         detect_binaries=("opencode",),
+        # opencode prefixes MCP tools with `<server-name>_<tool>`. Confirmed
+        # from opencode.ai/docs/mcp-servers: "MCP server tools are registered
+        # with server name as prefix" (example: `mymcpservername_*`).
+        tool_name_format="trie_{tool}",
     ),
 }
 

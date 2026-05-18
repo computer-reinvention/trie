@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: tests/test_audit.py
-file_fingerprint: 2acbe4f838e3001e1ef57723b6cf00cdd9201e496f7f6f7774419b94f548476c
-last_synced_at: '2026-05-16T12:51:22Z'
+file_fingerprint: 24fa5c1a5e386342b2eb6c849c2707c3135fa8c4b074b4b73f26df683955424a
+last_synced_at: '2026-05-18T13:56:38Z'
 description: 'Audit summary: JSONL ingestion + rendering.'
 defines:
 - kind: function
@@ -33,7 +33,7 @@ defines:
   qualified_name: tests/test_audit:test_mcp_call_buckets_per_tool
   lines: 145-233
 - kind: function
-  qualified_name: tests/test_audit:test_explain_empty_prose_counts_as_empty_result
+  qualified_name: tests/test_audit:test_read_empty_prose_counts_as_empty_result
   lines: 236-265
 - kind: function
   qualified_name: tests/test_audit:test_mcp_calls_without_capture_args_still_count
@@ -133,29 +133,25 @@ Verify that invalid JSON and blank lines increment `lines_malformed` without rai
 - `lines_total` counts all four raw lines; `lines_parsed` counts only the two valid ones.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_audit:test_from_log_computes_span fingerprint=0c569d53f88b706f594c2fdb66fc6e6aff38c4c38815e6456779b60df6bdf247 body_fp=f13f0f4c5170488110a85907dd0021dab8aa68d7e1bd86f0da9f5b9ba883130c source_ref=1016ef16cd8f0c58806f1645f82b8759c5077b48 -->
+<!-- trie:section symbol=tests/test_audit:test_from_log_computes_span fingerprint=40dad95519eb3182c54e4aaefd2cbaee945088f9065d0adfb4b61b4428e92a54 body_fp=f13f0f4c5170488110a85907dd0021dab8aa68d7e1bd86f0da9f5b9ba883130c source_ref=ee7d0fdea4864e7b19aa3bc740e8dfc57f4281cd -->
 ## `test_from_log_computes_span(tmp_path: Path)`
 
 Verify that `AuditSummary.from_log` derives correct `span_start`, `span_end`, and `span_duration_seconds` from out-of-order timestamps.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_audit:test_mcp_call_buckets_per_tool fingerprint=d9b54b9ea87818f7e006226270fc640997049e9d5079d4d4fab212160056fc29 body_fp=44ddd6637f9ae18389a9c514738240eae462d21b82f2f9c33fdda6cd44c969bd source_ref=1016ef16cd8f0c58806f1645f82b8759c5077b48 -->
+<!-- trie:section symbol=tests/test_audit:test_mcp_call_buckets_per_tool fingerprint=d71df265f3618b55c6e5b8501dccde19387072e462ad4afcf7b8a8f60330d146 body_fp=4072254d6716dc072efd2edc362027f40de4d7c56b635bf65a94a652de68a195 source_ref=ee7d0fdea4864e7b19aa3bc740e8dfc57f4281cd -->
 ## `test_mcp_call_buckets_per_tool(tmp_path: Path)`
 
 Verify MCP tool aggregation buckets counts, errors, empty results, durations, and qnames per distinct tool.
 
-- `locate`: 3 calls, 1 error, 1 empty (`result_count==0`)
-- `explain`: 2 calls, 1 error, 1 `not_found`, top qname recorded
-- `walk`: 1 call, counted as empty when `nodes_count==1`
+- `grep`: 3 calls, 1 error, 1 empty (`result_count==0`)
+- `read`: 2 calls, 1 error, 1 `not_found`, top qname recorded
+- `trace`: 1 call, counted as empty when `nodes_count==1`
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_audit:test_explain_empty_prose_counts_as_empty_result fingerprint=74194a500ce6132eb4e04176b75f8fa8601c247b615b0f7a55f35cdb85ba6331 body_fp=1fddc987c6fd52d85bef6cf14bf126aae059a8ed66b248b2bb44e702c7896c69 source_ref=1016ef16cd8f0c58806f1645f82b8759c5077b48 -->
-## `test_explain_empty_prose_counts_as_empty_result(tmp_path: Path)`
 
-Assert that an `explain` call returning `prose_chars=0` increments `empty_result_count`, not `error_count`.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_audit:test_mcp_calls_without_capture_args_still_count fingerprint=54ad7f4a09cd6d466f0e24586b42ba07c7c34226ba97151ee6876f7266e89501 body_fp=039103e2d879b2df81dc310a702da0d88f053a719b058f42d5d737ff01dac45a source_ref=1016ef16cd8f0c58806f1645f82b8759c5077b48 -->
+<!-- trie:section symbol=tests/test_audit:test_mcp_calls_without_capture_args_still_count fingerprint=5f02e9f8ce0df07156bac5d496b1b76e742a0ebd2a0fbec017af6cbf3d0bf787 body_fp=039103e2d879b2df81dc310a702da0d88f053a719b058f42d5d737ff01dac45a source_ref=ee7d0fdea4864e7b19aa3bc740e8dfc57f4281cd -->
 ## `test_mcp_calls_without_capture_args_still_count(tmp_path: Path)`
 
 Verify that an `mcp_call` event missing the `args` field still increments the call count with an empty `top_qnames`.
@@ -206,7 +202,7 @@ Invoke a render function with a plain-text Rich `Console` and return captured ou
 - Returns ANSI-free string; `force_terminal=False` strips escape codes.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_audit:test_render_single_summary_includes_counts fingerprint=1d8051bec29ee8328130b4707c6f93f6a363835ec1254f7ace6777b630ee7260 body_fp=bd9b11d1a19f7ee51ae3fd6245db8ed54ba979661a1e7553bd768afd363840ba source_ref=1016ef16cd8f0c58806f1645f82b8759c5077b48 -->
+<!-- trie:section symbol=tests/test_audit:test_render_single_summary_includes_counts fingerprint=9df6bd18ba5368b9da29768e39fef43adc284fec13eaa91d72f6c6bc39b68231 body_fp=bd9b11d1a19f7ee51ae3fd6245db8ed54ba979661a1e7553bd768afd363840ba source_ref=ee7d0fdea4864e7b19aa3bc740e8dfc57f4281cd -->
 ## `test_render_single_summary_includes_counts(tmp_path: Path)`
 
 Assert that `render` output contains MCP tool names, section headers, and numeric counts from a two-event log.
@@ -218,10 +214,10 @@ Assert that `render` output contains MCP tool names, section headers, and numeri
 Assert that `render` on an empty log completes without raising and produces output containing "none" or "no".
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_audit:test_render_comparison_includes_both_paths fingerprint=cc8cf55ec657e36fb592e896cc3aa424c2cbdf11c836d12aebb05d9a034d5227 body_fp=17b940adcaf15c18178bde2e84a48d665c787c9f412b05745702ebe1c1fe2eb7 source_ref=1016ef16cd8f0c58806f1645f82b8759c5077b48 -->
+<!-- trie:section symbol=tests/test_audit:test_render_comparison_includes_both_paths fingerprint=06969b33c19c1ef5fdc076f8cd9f13ec312712f6180328118dda042592445321 body_fp=eb7cb32a7728333d74cd121c7e2910b198294350f64e8af5f183378140e5f66a source_ref=ee7d0fdea4864e7b19aa3bc740e8dfc57f4281cd -->
 ## `test_render_comparison_includes_both_paths(tmp_path: Path)`
 
-Verify that `render_comparison` output names both log files and shows a `+1` delta for the extra explain call in the second log.
+Verify that `render_comparison` output names both log files and shows a `+1` delta for the extra read call in the second log.
 <!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_audit:test_cli_audit_help_lists_log_option fingerprint=b5b79bb7880bf3f0c12b233a264c4d1060f77f1458cd607ac62a33b11e1e9a98 body_fp=ce662d67aeb203c994e1eae6fcf70d330f0d5f2afc672ef7947d5aab0e179611 source_ref=1016ef16cd8f0c58806f1645f82b8759c5077b48 -->
@@ -236,13 +232,13 @@ Assert that `audit --help` exits successfully and exposes `--log` in its output.
 Verify the `audit` CLI command exits zero when given an explicit log file path.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_audit:test_cli_audit_json_output fingerprint=3d300aac2bdf1ad7f54e53dca652d3a7ba4bdb81605c4167cc8b913cabf33a88 body_fp=c41cb36ac91d54246b90cab9bafd3e94847d399f045643870895c06f3e4fb282 source_ref=1016ef16cd8f0c58806f1645f82b8759c5077b48 -->
+<!-- trie:section symbol=tests/test_audit:test_cli_audit_json_output fingerprint=1ebb633d9c86847eb818d78b992ff9c4d7a2bb2c919cca9d19efa0c6ee2e4b18 body_fp=c41cb36ac91d54246b90cab9bafd3e94847d399f045643870895c06f3e4fb282 source_ref=ee7d0fdea4864e7b19aa3bc740e8dfc57f4281cd -->
 ## `test_cli_audit_json_output(tmp_path: Path)`
 
 Verify that `audit --json` exits cleanly and emits valid JSON with correct MCP call counts.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_audit:test_cli_audit_compare_two_logs fingerprint=633ce927bf4904a7e9b93d9ef98a1254b57fcbf792d41e50f34962a9b0eebea3 body_fp=2420b98eb7eb756fdc0a73d22768c1d26542aa1e4ac196f27352509be2c31172 source_ref=1016ef16cd8f0c58806f1645f82b8759c5077b48 -->
+<!-- trie:section symbol=tests/test_audit:test_cli_audit_compare_two_logs fingerprint=d789e6c8f87f7553aa544b19dfecdbfa46c8a87a734a44c6586252791f872daa body_fp=2420b98eb7eb756fdc0a73d22768c1d26542aa1e4ac196f27352509be2c31172 source_ref=ee7d0fdea4864e7b19aa3bc740e8dfc57f4281cd -->
 ## `test_cli_audit_compare_two_logs(tmp_path: Path)`
 
 Verify the `audit --compare` CLI command renders a comparison table containing both log filenames and exits cleanly.
@@ -254,8 +250,14 @@ Verify the `audit --compare` CLI command renders a comparison table containing b
 Assert that the `audit` CLI exits with a non-zero code when the specified log file does not exist.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_audit:test_summarise_directly_with_event_list fingerprint=3b96255ebdc888bd3844e5f81ab336a98d36cbb978ff400285407b253240e10e body_fp=1c80b90e4b408801feaf238a6fac6930a83fd5a2213598bbded0392519f5a307 source_ref=1016ef16cd8f0c58806f1645f82b8759c5077b48 -->
+<!-- trie:section symbol=tests/test_audit:test_summarise_directly_with_event_list fingerprint=5a50e6ff212176e95879a868884ee2fd952cb70d899925a4581956158416ec1d body_fp=1c80b90e4b408801feaf238a6fac6930a83fd5a2213598bbded0392519f5a307 source_ref=ee7d0fdea4864e7b19aa3bc740e8dfc57f4281cd -->
 ## `test_summarise_directly_with_event_list()`
 
 Verify `_summarise` correctly buckets `mcp_call` events when called directly with a pre-built event list.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_audit:test_read_empty_prose_counts_as_empty_result fingerprint=8d063b6bd968a17964e60624c799bc9d41769f0cd20cac8a0416745a4eec7b58 body_fp=0c212172a164325da528cae093a652c50b98355719be5888367b816a81edf361 source_ref=ee7d0fdea4864e7b19aa3bc740e8dfc57f4281cd -->
+## `test_read_empty_prose_counts_as_empty_result(tmp_path: Path)`
+
+Assert that a `read` MCP call returning `prose_chars=0` increments `empty_result_count`, not `error_count`.
 <!-- trie:end -->

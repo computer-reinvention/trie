@@ -77,16 +77,16 @@ When an agent answers a question or plans a change, it doesn't grep code and rec
 ```
 question: "what happens when an unauthenticated request hits /admin?"
 
-  ├── locate({ name_contains: "admin", kind: "function" })
+  ├── grep({ name_contains: "admin", kind: "function" })
   │     → api.handler:admin_route   (one-liner: "Routes admin endpoints…")
   │
-  ├── explain("api.handler:admin_route")
+  ├── read("api.handler:admin_route")
   │     prose: "Routes admin endpoints. Wrapped by require_auth before any
   │             handler body runs. Returns 401 if auth fails…"
   │     callees: [{ auth.middleware:require_auth, one_liner: "Validates the
   │             session cookie via session.validate()…" }]
   │
-  └── explain("auth.middleware:require_auth")
+  └── read("auth.middleware:require_auth")
         prose: "Validates the session cookie via session.validate(). On any
                 ValidationError, raises HTTPUnauthorized — never returns None…"
         callees: [{ auth.session:validate, one_liner: "Loads the session
@@ -134,8 +134,8 @@ The hub-symbol cap matters: a `utils.py` referenced everywhere can't invalidate 
 
 - **Python 3.11+** and [`uv`](https://docs.astral.sh/uv/) on PATH.
 - **[ripgrep](https://github.com/BurntSushi/ripgrep)** (`rg`) on PATH —
-  trie's MCP server uses it for the `locate` grep fallback and refuses
-  to start without it. Install with `brew install ripgrep` on macOS,
+  trie's MCP server uses it for the `grep` tool's text-match fallback
+  and refuses to start without it. Install with `brew install ripgrep` on macOS,
   `apt install ripgrep` on Debian/Ubuntu.
 - An Anthropic API key in `ANTHROPIC_API_KEY` (default model is
   `anthropic/claude-sonnet-4-6`).
@@ -208,7 +208,7 @@ After `trie sync --file src/slugify.py`, `triefacts/src/slugify.md`:
 trie_version: 0.1.0
 source: src/slugify.py
 file_fingerprint: 9d4f374adc9a843c…
-last_synced_at: '2026-05-08T14:21:09Z'
+last_synced_at: "2026-05-08T14:21:09Z"
 description: Pure-function library.
 defines:
   - kind: function
@@ -249,7 +249,7 @@ A trie-managed Markdown triefact looks like this:
 trie_version: 0.1.0
 source: src/foo.py
 file_fingerprint: 0830b9bb…
-last_synced_at: '2026-05-08T14:21:09Z'
+last_synced_at: "2026-05-08T14:21:09Z"
 description: One-line summary lifted from the module docstring.
 defines:
   - kind: function
@@ -321,11 +321,11 @@ repos:
 
 trie ships an MCP server so coding agents read your codebase's prose self-description as a separate, durable context layer — not chat memory, not retrieved chunks, but a structured tree they can navigate. Three verbs, exposed over stdio, that match how agents reason about a codebase: _find it_, _understand it_, _trace it_.
 
-| Tool                                          | What it returns                                                                       |
-| --------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `locate(predicate, rank_by?, limit=10)`       | Symbols matching a predicate (name, kind, scope, edge counts), with a one-line summary on each hit so the agent can pick without re-reading |
-| `explain(qname)`                              | A symbol's prose plus one-liners for every immediate caller and callee                |
-| `walk(from_qname, direction, depth=2)`        | Topology beyond one hop — signatures + one-liners across a depth-bounded graph slice  |
+| Tool                                    | What it returns                                                                                                                             |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `grep(predicate, rank_by?, limit=10)`  | Symbols matching a predicate (name, kind, scope, edge counts), with a one-line summary on each hit so the agent can pick without re-reading |
+| `read(qname)`                          | A symbol's prose plus one-liners for every immediate caller and callee                                                                      |
+| `trace(from_qname, direction, depth=2)`| Topology beyond one hop — signatures + one-liners across a depth-bounded graph slice                                                        |
 
 Every response carries `one_liner` fields pulled from the section body at sync time, so an agent walking the graph never has to open a triefact just to decide whether to open it. Errors return `{error: {code, message, suggestion?}}` — fuzzy-matched suggestions on `not_found` mean recovery is one round-trip, not three. The full contract lives in [`docs/agent_interface.md`](docs/agent_interface.md).
 
@@ -376,11 +376,11 @@ For opencode it's the `mcp.<name>` form documented in [opencode's docs](https://
 
 The freshness gate has four states. Costs are bounded and predictable:
 
-| state | when | action |
-|---|---|---|
-| `unchanged` | stamp matches HEAD + mtimes | no-op |
-| `no_stamp` | first run in this checkout | rebuild the graph (no LLM); record stamp |
-| `head_moved` | `git pull` brought new commits | rebuild the graph (no LLM); trust committed triefacts; record stamp |
+| state          | when                           | action                                                                                    |
+| -------------- | ------------------------------ | ----------------------------------------------------------------------------------------- |
+| `unchanged`    | stamp matches HEAD + mtimes    | no-op                                                                                     |
+| `no_stamp`     | first run in this checkout     | rebuild the graph (no LLM); record stamp                                                  |
+| `head_moved`   | `git pull` brought new commits | rebuild the graph (no LLM); trust committed triefacts; record stamp                       |
 | `mtimes_moved` | local edits since last refresh | scan + run incremental sync (LLM as needed; diff-aware rubric keeps cosmetic edits cheap) |
 
 The LLM path only fires for `mtimes_moved`. Trie does **not** auto-spend on fresh clones or after `git pull`. Run `trie sync` explicitly when you want prose regen beyond what edits warrant.
@@ -404,7 +404,7 @@ Hand-written prose between sentinels is still indexed by GitHub's search; only t
 - **M2** ✓ — symbol-graph scan, first-run bootstrap with budget/limit
 - **M3** ✓ — drift check (`trie verify`), preview (`trie sync --dry-run`), pre-commit hook
 - **M4** ✓ — heuristic cascade (tree-sitter imports + same-module name matching) _(the wedge)_
-- **M5** ✓ — MCP server (`trie mcp serve`) with three verbs: `locate`, `explain`, `walk`
+- **M5** ✓ — MCP server (`trie mcp serve`) with three verbs: `grep`, `read`, `trace` (also available as `trie grep` / `trie read` / `trie trace` CLI subcommands)
 - **M6** ✓ — README golden example, packaging, `trie plan`, `.gitattributes` recipe
 - **M7** ✓ — CLI redesign: auto-detect bootstrap, streaming progress + ETA, three-level verbosity, `trie mcp install` for six agents/IDEs
 - **v0.2** — SCIP precision (replace tree-sitter heuristic with `scip-python` for type-aware references), TypeScript support, vector-over-triefacts retrieval, `trie watch` daemon, rename detection in reconcile

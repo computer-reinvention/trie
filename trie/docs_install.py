@@ -30,6 +30,8 @@ from importlib import resources
 from pathlib import Path
 from typing import Literal
 
+from trie.mcp_install import TARGETS as MCP_TARGETS
+
 Action = Literal["created", "updated", "skipped", "preview", "error"]
 
 
@@ -43,11 +45,28 @@ class DocsInstallError(Exception):
 # END_MARKER, never anything outside.
 POINTER_MARKER = "<!-- trie:docs (added by `trie setup`) -->"
 POINTER_END_MARKER = "<!-- end trie:docs -->"
-POINTER_LINE = (
-    "**trie is installed in this project.** "
-    "Read [TRIE.md](TRIE.md) for the navigation tools "
-    "(`locate`, `explain`, `walk`) — use them instead of grep for code search."
-)
+
+
+def _pointer_line(grep_name: str, read_name: str, trace_name: str) -> str:
+    """Build the pointer line that nudges agents toward the trie tools.
+
+    The literal tool names are baked in at install time so an agent reading
+    AGENTS.md (or CLAUDE.md) sees the exact names its harness will surface,
+    not the trie-internal canonical names. Default values are the unprefixed
+    forms — what an agent would see if it inspected MCP tools directly with
+    no harness prefix.
+    """
+    return (
+        "**trie is installed in this project.** "
+        "Read [TRIE.md](TRIE.md) for the navigation tools "
+        f"(`{grep_name}`, `{read_name}`, `{trace_name}`) — use them "
+        "instead of grep for code search."
+    )
+
+
+# Default pointer line, rendered with the bare (unprefixed) tool names.
+# `_apply_pointer` re-renders this per-target when a target is provided.
+POINTER_LINE = _pointer_line("grep", "read", "trace")
 POINTER_BLOCK = f"{POINTER_MARKER}\n{POINTER_LINE}\n{POINTER_END_MARKER}\n"
 
 # Files we'll touch at the project root. Both are written when present;
@@ -114,7 +133,87 @@ def _load_trie_doc_body() -> str:
         ) from exc
 
 
-def _write_trie_doc(project_root: Path, *, print_only: bool, dry_run: bool) -> DocsApplyResult:
+def _render_tool_names(target_name: str | None) -> tuple[str, str, str]:
+    """Resolve the rendered `grep`/`read`/`trace` names for `target_name`.
+
+    Each MCPTarget carries a `tool_name_format` string with a `{tool}`
+    placeholder; we substitute the three canonical tool names and return
+    the trio. When `target_name` is None or unknown, fall back to the
+    bare names (no harness prefix) so the doc still reads sensibly — the
+    agent will still find the tools via tool listing, the names in the
+    doc just won't carry a harness-specific prefix.
+    """
+    target = MCP_TARGETS.get(target_name) if target_name else None
+    fmt = target.tool_name_format if target is not None else "{tool}"
+    return fmt.format(tool="grep"), fmt.format(tool="read"), fmt.format(tool="trace")
+
+
+def _render_trie_doc_body(target_name: str | None, additional_targets: list[str]) -> str:
+    """Render TRIE.md with tool names baked in for `target_name`.
+
+    Substitutes the `«grep»`, `«read»`, `«trace»` placeholders in the
+    template with the harness-specific tool names. When other targets are
+    also installed, appends a footer listing each one's equivalent tool
+    names so an agent running through any of the wired harnesses can
+    still resolve the tools — without forcing us to write multiple doc
+    files.
+    """
+    grep_name, read_name, trace_name = _render_tool_names(target_name)
+    body = _load_trie_doc_body()
+    body = (
+        body.replace("«grep»", grep_name)
+        .replace("«read»", read_name)
+        .replace("«trace»", trace_name)
+    )
+    if additional_targets:
+        body += _multi_target_footer(target_name, additional_targets)
+    return body
+
+
+def _multi_target_footer(primary: str | None, additional: list[str]) -> str:
+    """Build the footer that names tool aliases under other installed harnesses.
+
+    When `trie setup` wires more than one agent into the same project, the
+    primary harness's names go in the body and the rest land here. Each
+    row shows the harness's display name and the three rendered tool
+    names — enough for the agent to recognise the same tools by a
+    different prefix.
+    """
+    primary_display = (
+        MCP_TARGETS[primary].display_name if primary and primary in MCP_TARGETS else "primary"
+    )
+    lines = [
+        "",
+        "---",
+        "",
+        "## Tool names under other installed harnesses",
+        "",
+        (
+            f"The names above are rendered for **{primary_display}**. "
+            "This project is also wired for other agent harnesses, which "
+            "prefix MCP tool names differently. If you are one of the "
+            "agents below, use these names instead:"
+        ),
+        "",
+    ]
+    for slug in additional:
+        target = MCP_TARGETS.get(slug)
+        if target is None:
+            continue
+        grep_name, read_name, trace_name = _render_tool_names(slug)
+        lines.append(f"- **{target.display_name}**: `{grep_name}`, `{read_name}`, `{trace_name}`")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _write_trie_doc(
+    project_root: Path,
+    *,
+    print_only: bool,
+    dry_run: bool,
+    target_name: str | None,
+    additional_targets: list[str],
+) -> DocsApplyResult:
     """Materialise `TRIE.md` at the project root.
 
     Idempotent on content: if the existing file matches what we'd write
@@ -122,8 +221,14 @@ def _write_trie_doc(project_root: Path, *, print_only: bool, dry_run: bool) -> D
     notice means a user can identify the file as a trie artefact at a
     glance — and lets them safely delete it knowing it'll come back next
     `trie setup`.
+
+    `target_name` selects the harness whose tool-name prefix is baked
+    into the body (e.g. `mcp__trie__grep` for Claude Code, `trie_grep`
+    for opencode). `additional_targets` adds a footer that lists tool
+    names under any other installed harnesses, so a multi-agent project
+    still gets one doc that every wired agent can read.
     """
-    body = _GENERATED_NOTICE + _load_trie_doc_body()
+    body = _GENERATED_NOTICE + _render_trie_doc_body(target_name, additional_targets)
     path = project_root / TRIE_DOC_FILENAME
 
     if print_only:
@@ -159,8 +264,26 @@ def _write_trie_doc(project_root: Path, *, print_only: bool, dry_run: bool) -> D
     )
 
 
+def _pointer_block_for(target_name: str | None) -> str:
+    """Build the marker-fenced pointer block for `target_name`.
+
+    Uses the harness's tool-name format so the pointer line that lands
+    in AGENTS.md / CLAUDE.md names the same tools the agent will see
+    via MCP. When `target_name` is None or unknown, falls back to the
+    bare names.
+    """
+    grep_name, read_name, trace_name = _render_tool_names(target_name)
+    line = _pointer_line(grep_name, read_name, trace_name)
+    return f"{POINTER_MARKER}\n{line}\n{POINTER_END_MARKER}\n"
+
+
 def _apply_pointer(
-    project_root: Path, filename: str, *, print_only: bool, dry_run: bool
+    project_root: Path,
+    filename: str,
+    *,
+    print_only: bool,
+    dry_run: bool,
+    target_name: str | None,
 ) -> DocsApplyResult | None:
     """Append (or refresh) the trie pointer block in one agent doc file.
 
@@ -177,6 +300,9 @@ def _apply_pointer(
         block between MARKER and END_MARKER.
       - Otherwise append a fresh block at the end, preserving a blank
         line of separation from whatever the user had above it.
+
+    `target_name` selects which harness's tool names go in the pointer
+    line — same logic as `_write_trie_doc`.
     """
     path = project_root / filename
     if not path.exists():
@@ -192,7 +318,7 @@ def _apply_pointer(
             detail=f"could not read {filename}: {exc}",
         )
 
-    new_text = _splice_pointer_block(existing)
+    new_text = _splice_pointer_block(existing, _pointer_block_for(target_name))
 
     if print_only or dry_run:
         # For preview, hand back the spliced text so the user can eyeball
@@ -220,7 +346,7 @@ def _apply_pointer(
     )
 
 
-def _splice_pointer_block(existing: str) -> str:
+def _splice_pointer_block(existing: str, pointer_block: str = POINTER_BLOCK) -> str:
     """Return `existing` with our pointer block freshly written between markers.
 
     Two regimes:
@@ -230,6 +356,10 @@ def _splice_pointer_block(existing: str) -> str:
       - Marker absent: append the block at the end, separated by a blank
         line from whatever came before.
 
+    `pointer_block` defaults to the bare (unprefixed) form so callers
+    that don't know about target-specific rendering still get a sensible
+    result. `_apply_pointer` passes a target-rendered block.
+
     Pure text in / text out so the caller can use the same routine for
     both write and preview paths.
     """
@@ -237,15 +367,15 @@ def _splice_pointer_block(existing: str) -> str:
         before, _, rest = existing.partition(POINTER_MARKER)
         _, _, after = rest.partition(POINTER_END_MARKER)
         # Trim a leading newline from `after` so we don't accumulate blank
-        # lines on repeated rewrites; the trailing newline on POINTER_BLOCK
+        # lines on repeated rewrites; the trailing newline on pointer_block
         # provides the separator we need.
         after = after.lstrip("\n")
-        return before + POINTER_BLOCK + ("\n" + after if after else "")
+        return before + pointer_block + ("\n" + after if after else "")
 
     # Fresh append. Ensure a clear visual gap between the user's content
     # and our block, and a trailing newline on the file.
     sep = "" if existing == "" else ("\n" if existing.endswith("\n\n") else "\n\n")
-    return existing + sep + POINTER_BLOCK
+    return existing + sep + pointer_block
 
 
 def install(
@@ -253,6 +383,7 @@ def install(
     project_root: Path,
     print_only: bool,
     dry_run: bool,
+    target_names: list[str] | None = None,
 ) -> DocsInstallPlan:
     """Run the full docs install: TRIE.md plus pointer-line refresh.
 
@@ -261,14 +392,42 @@ def install(
     silently skipped (no result emitted) because materialising them
     means picking an agent convention we don't have signal to pick.
 
+    `target_names` is the list of MCP harnesses that just got wired in
+    (passed through from `mcp_run_install`). The first entry, if any,
+    selects which harness's tool-name prefix is baked into TRIE.md and
+    the pointer block; the rest land in a footer at the bottom of
+    TRIE.md so a multi-agent project still gets one doc that every
+    wired agent can read. When `target_names` is None or empty (e.g. a
+    standalone `trie docs install` invocation without MCP context),
+    fall back to the bare unprefixed names, which match what the trie
+    server actually registers.
+
     Errors on individual files don't abort the rest — each file gets its
     own result, and the CLI sums them up at the end.
     """
     plan = DocsInstallPlan(print_only=print_only, dry_run=dry_run)
 
-    plan.results.append(_write_trie_doc(project_root, print_only=print_only, dry_run=dry_run))
+    targets = list(target_names or [])
+    primary = targets[0] if targets else None
+    additional = targets[1:]
+
+    plan.results.append(
+        _write_trie_doc(
+            project_root,
+            print_only=print_only,
+            dry_run=dry_run,
+            target_name=primary,
+            additional_targets=additional,
+        )
+    )
     for filename in AGENT_DOC_FILES:
-        result = _apply_pointer(project_root, filename, print_only=print_only, dry_run=dry_run)
+        result = _apply_pointer(
+            project_root,
+            filename,
+            print_only=print_only,
+            dry_run=dry_run,
+            target_name=primary,
+        )
         if result is not None:
             plan.results.append(result)
     return plan

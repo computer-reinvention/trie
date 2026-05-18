@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/graph/store.py
-file_fingerprint: 0a77633f9dcc887429cb9d41abcfc69a3ff0a8cd0c44f4c5d9ffda98747c390f
-last_synced_at: '2026-05-16T12:51:05Z'
+file_fingerprint: f029c55fd0d2b163ac5ceff4c2280aa119855493ed83316cbd9c7ba72e836a7f
+last_synced_at: '2026-05-18T13:57:37Z'
 defines:
 - kind: class
   qualified_name: trie/graph/store:FileRecord
@@ -17,7 +17,7 @@ defines:
   qualified_name: trie/graph/store:SymbolDetail
   lines: 91-108
 - kind: class
-  qualified_name: trie/graph/store:LocatePredicate
+  qualified_name: trie/graph/store:GrepPredicate
   lines: 112-129
 - kind: class
   qualified_name: trie/graph/store:Store
@@ -104,7 +104,7 @@ defines:
   qualified_name: trie/graph/store:Store.get_symbol_detail
   lines: 541-574
 - kind: method
-  qualified_name: trie/graph/store:Store.locate_symbols
+  qualified_name: trie/graph/store:Store.grep_symbols
   lines: 576-665
 - kind: method
   qualified_name: trie/graph/store:Store.all_symbol_names
@@ -149,17 +149,9 @@ Frozen dataclass holding full per-symbol data with graph edge counts and cached 
 - `one_liner`: empty string when no triefact section exists yet.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/graph/store:LocatePredicate fingerprint=6c7f06d296f6fd21237853f2fbf326f7769fb6c93f91e321ad999c43eee096ac body_fp=ac8293fcc64be7cbaa13129c4083cbcb3a46ac3e6d03e8e998473cf81e862a01 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `LocatePredicate(name_contains=None, kind=None, scope_prefix=None, scope_exclude=(), public_only=False, inbound_count_min=None, inbound_count_max=None, outbound_count_min=None, outbound_count_max=None)`
 
-Frozen dataclass encoding all server-side filter criteria for `Store.locate_symbols`.
 
-- `kind`: accepts `"function"`, `"class"`, `"method"`, `"any"`, or `None`
-- `scope_prefix` / `scope_exclude`: matched against `file_path`; exclude is a tuple of prefixes
-- `inbound_count_min/max` / `outbound_count_min/max`: edge-count bounds; either bound may be `None`
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/graph/store:Store fingerprint=1f1cf5e0501417b1dbc4dbdc0c0a438a461f43a1d0b81c24293eb5e5269ed20f body_fp=bf65225536c6d20ff0c87335ace1798a7d668859f5af19308b7fdddfff9939f2 source_ref=6da877cab7a13b55f8c9b77428537bc9a241cac7 -->
+<!-- trie:section symbol=trie/graph/store:Store fingerprint=3e47a5ec09de60800ea885806dfe43a0a77128037d3e062bf2b7903ac6c1ec9f body_fp=bf65225536c6d20ff0c87335ace1798a7d668859f5af19308b7fdddfff9939f2 source_ref=8eaf1cb4ee663c2d5e33f11838248e2dc73b76fc -->
 ## `Store(db_path: Path)`
 
 SQLite-backed store for trie's symbol graph, file fingerprints, edges, and cached triefact sections.
@@ -314,14 +306,7 @@ Batch-fetch cached one-liners for multiple qualified names.
 Return full `SymbolDetail` for one symbol including inbound/outbound edge counts and cached one-liner, or `None` if not found.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/graph/store:Store.locate_symbols fingerprint=83b17a895d0060e7833abe22296476ad93ea93e488e0fd8bccb18773bec91068 body_fp=82798bb9fad2b4bee6d56b9f7513893039e6d55a1f74e36800560e588fe6e22d source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `locate_symbols(self, predicate: LocatePredicate, *, rank_by: str = "public_first", limit: int = 10) -> list[SymbolDetail]`
 
-Execute a predicate-driven symbol search and return ranked `SymbolDetail` results.
-
-- `rank_by`: accepts `"public_first"`, `"inbound_count"`, or `"alphabetical"`; unknown values fall back to `"public_first"`.
-- `limit`: maximum number of results returned.
-<!-- trie:end -->
 
 <!-- trie:section symbol=trie/graph/store:Store.all_symbol_names fingerprint=fd7275a10e4d910bbe493d3316de5e7e152c08eabc201043b81db9d247002f65 body_fp=c5c948306f096e398e8896567ea1426bcb3c09b4cc982c3d453d3a9ce2b66b34 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
 ## `all_symbol_names(self) -> list[str]`
@@ -365,4 +350,25 @@ Close the store connection when exiting the context manager.
 Return `(qname, start_line, end_line)` for every symbol in `file_path`, ordered by `start_line`.
 
 - Returns empty list when the path has no recorded symbols.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/graph/store:GrepPredicate fingerprint=81b14477a69c1b71b044aa52bd9ada00b925ac3b605f705c3d35c0c08cf0b614 body_fp=e22ed0b1df3fb48731cd1a9795c30cc6365abc96b9956cfc0c34abe717443f6a source_ref=8eaf1cb4ee663c2d5e33f11838248e2dc73b76fc -->
+## `GrepPredicate(name_contains=None, kind=None, scope_prefix=None, scope_exclude=(), public_only=False, inbound_count_min=None, inbound_count_max=None, outbound_count_min=None, outbound_count_max=None)`
+
+Server-side filter passed to `Store.grep_symbols`; every field is optional.
+
+- `kind`: `"function"`, `"class"`, `"method"`, `"any"`, or `None`
+- `scope_prefix`: matched as prefix against `file_path`
+- `scope_exclude`: each entry matched as prefix against `file_path` to exclude
+- `inbound_count_min/max`, `outbound_count_min/max`: inclusive edge-count bounds
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/graph/store:Store.grep_symbols fingerprint=83b17a895d0060e7833abe22296476ad93ea93e488e0fd8bccb18773bec91068 body_fp=fc615b217cb87a71c4bea3a7b6c92b5e8e849b8ba99b34c3732cacc2b3f55d11 source_ref=8eaf1cb4ee663c2d5e33f11838248e2dc73b76fc -->
+## `grep_symbols(self, predicate: GrepPredicate, *, rank_by: str = "public_first", limit: int = 10) -> list[SymbolDetail]`
+
+Execute a predicate-driven symbol search and return ranked `SymbolDetail` results.
+
+- `predicate`: compound filter; omitted fields are unconstrained.
+- `rank_by`: `"public_first"` (default), `"inbound_count"`, or `"alphabetical"`; unknown values fall back to `"public_first"`.
+- `limit`: maximum rows returned.
 <!-- trie:end -->

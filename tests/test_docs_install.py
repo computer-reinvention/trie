@@ -256,3 +256,165 @@ def test_agent_doc_files_covers_known_conventions():
     visibly so the conventions list stays explicit rather than drifting
     silently."""
     assert AGENT_DOC_FILES == ("AGENTS.md", "CLAUDE.md")
+
+
+# ---------------------------------------------------------------------------
+# Per-target tool name rendering
+# ---------------------------------------------------------------------------
+
+
+def test_install_with_no_target_renders_bare_tool_names(tmp_path: Path):
+    """Without a target, the doc body uses the unprefixed `grep`/`read`/`trace`
+    names. These match what the trie MCP server actually registers, so the doc
+    is still correct even when no harness-specific prefix is known."""
+    install(project_root=tmp_path, print_only=False, dry_run=False)
+    body = (tmp_path / TRIE_DOC_FILENAME).read_text(encoding="utf-8")
+    # Placeholder tokens must be substituted out entirely — no «...» should
+    # ever survive into the rendered doc.
+    assert "«grep»" not in body
+    assert "«read»" not in body
+    assert "«trace»" not in body
+    # Bare names appear in the doc body.
+    assert "`grep`" in body
+    assert "`read`" in body
+    assert "`trace`" in body
+
+
+def test_install_for_claude_code_uses_mcp_double_underscore_prefix(tmp_path: Path):
+    """Claude Code namespaces MCP tools as `mcp__<server>__<tool>`. Confirmed
+    from the Anthropic permissions docs (the example rule is
+    `mcp__puppeteer__puppeteer_navigate`). The doc body must use those names
+    so the agent calls the tool by the same identifier it sees in its tool
+    listing."""
+    install(
+        project_root=tmp_path,
+        print_only=False,
+        dry_run=False,
+        target_names=["claude-code"],
+    )
+    body = (tmp_path / TRIE_DOC_FILENAME).read_text(encoding="utf-8")
+    assert "mcp__trie__grep" in body
+    assert "mcp__trie__read" in body
+    assert "mcp__trie__trace" in body
+    # The pointer block in any AGENTS.md / CLAUDE.md uses the same names.
+    # (Tested separately below.) Body must NOT contain the bare names as
+    # standalone tool references — they should all be prefixed.
+    # We allow the bare word "grep" to appear in prose (e.g. "shell grep"),
+    # but the tool-reference form `«grep»` must be gone.
+    assert "«grep»" not in body
+
+
+def test_install_for_opencode_uses_single_underscore_prefix(tmp_path: Path):
+    """opencode prefixes MCP tools with `<server-name>_<tool>`. Confirmed
+    from opencode.ai/docs/mcp-servers ("MCP server tools are registered with
+    server name as prefix"). The trie server's name is `trie`, so tools
+    become `trie_grep`, `trie_read`, `trie_trace`."""
+    install(
+        project_root=tmp_path,
+        print_only=False,
+        dry_run=False,
+        target_names=["opencode"],
+    )
+    body = (tmp_path / TRIE_DOC_FILENAME).read_text(encoding="utf-8")
+    assert "trie_grep" in body
+    assert "trie_read" in body
+    assert "trie_trace" in body
+    assert "«grep»" not in body
+
+
+def test_install_unknown_target_falls_back_to_bare_names(tmp_path: Path):
+    """An unrecognised slug shouldn't blow up the install — we fall back to
+    the bare names, which is the safe default. This protects against a
+    typo'd --target or a future MCP_TARGETS entry being passed before its
+    `tool_name_format` is set."""
+    install(
+        project_root=tmp_path,
+        print_only=False,
+        dry_run=False,
+        target_names=["totally-made-up-harness"],
+    )
+    body = (tmp_path / TRIE_DOC_FILENAME).read_text(encoding="utf-8")
+    assert "«grep»" not in body
+    assert "`grep`" in body
+
+
+def test_install_pointer_block_uses_target_specific_names(tmp_path: Path):
+    """The pointer line we splice into AGENTS.md / CLAUDE.md must show the
+    same tool names the agent will actually use. An agent reading AGENTS.md
+    for Claude Code shouldn't see `grep` and then have to guess that it's
+    really `mcp__trie__grep` in its tool list."""
+    (tmp_path / "AGENTS.md").write_text("# AGENTS.md\n")
+    install(
+        project_root=tmp_path,
+        print_only=False,
+        dry_run=False,
+        target_names=["claude-code"],
+    )
+    agents = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
+    assert "mcp__trie__grep" in agents
+    assert "mcp__trie__read" in agents
+    assert "mcp__trie__trace" in agents
+
+
+def test_install_multiple_targets_renders_primary_in_body_and_footer_for_rest(
+    tmp_path: Path,
+):
+    """When multiple harnesses are wired in, the first target's names go in
+    the body and the rest land in a footer that names each harness's tool
+    aliases. This keeps the project to one TRIE.md while still being honest
+    about the multi-agent case."""
+    install(
+        project_root=tmp_path,
+        print_only=False,
+        dry_run=False,
+        target_names=["claude-code", "opencode"],
+    )
+    body = (tmp_path / TRIE_DOC_FILENAME).read_text(encoding="utf-8")
+    # Primary (claude-code) names dominate the body.
+    assert "mcp__trie__grep" in body
+    # Footer names the opencode aliases.
+    assert "Tool names under other installed harnesses" in body
+    assert "trie_grep" in body
+    assert "trie_read" in body
+    assert "trie_trace" in body
+
+
+def test_install_single_target_omits_multi_target_footer(tmp_path: Path):
+    """With only one target wired in, there's nothing to disambiguate, so
+    the footer must not appear. Belt-and-braces against the footer
+    inadvertently showing up on single-harness projects and confusing the
+    agent with names that aren't relevant."""
+    install(
+        project_root=tmp_path,
+        print_only=False,
+        dry_run=False,
+        target_names=["opencode"],
+    )
+    body = (tmp_path / TRIE_DOC_FILENAME).read_text(encoding="utf-8")
+    assert "Tool names under other installed harnesses" not in body
+
+
+def test_install_re_render_on_target_change_is_an_update(tmp_path: Path):
+    """If a user runs `trie setup --target opencode` and later
+    `trie setup --target claude-code`, the second invocation must rewrite
+    TRIE.md (different tool names baked in), not see it as up-to-date.
+    Without this, a project that gets re-wired to a different harness would
+    silently keep stale tool names."""
+    install(
+        project_root=tmp_path,
+        print_only=False,
+        dry_run=False,
+        target_names=["opencode"],
+    )
+    second = install(
+        project_root=tmp_path,
+        print_only=False,
+        dry_run=False,
+        target_names=["claude-code"],
+    )
+    trie_result = next(r for r in second.results if r.target == TRIE_DOC_FILENAME)
+    assert trie_result.action == "updated"
+    body = (tmp_path / TRIE_DOC_FILENAME).read_text(encoding="utf-8")
+    # Old opencode names gone, new claude-code names present.
+    assert "trie_grep" not in body
+    assert "mcp__trie__grep" in body

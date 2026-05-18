@@ -89,17 +89,18 @@ class Event:
 
 @dataclass(frozen=True)
 class McpCallStats:
-    """Aggregate statistics for one MCP tool (locate / explain / walk).
+    """Aggregate statistics for one MCP tool (grep / read / trace).
 
     `not_found_count` and `empty_result_count` are tool-specific failure
-    flavours worth surfacing separately: a `not_found` from `explain` usually
-    means the agent passed a guessed-up qname; an empty `locate` result means
+    flavours worth surfacing separately: a `not_found` from `read` usually
+    means the agent passed a guessed-up qname; an empty `grep` result means
     the agent's predicate didn't match anything. Both are diagnostic.
 
-    `fallback_kinds` is locate-specific: when `locate` returns empty hits it
+    `fallback_kinds` is grep-specific: when `grep` returns empty hits it
     attaches a discriminated `fallback` envelope describing why. Audit rolls
     those discriminator values up here so eval reports can show "of K empty
-    locates, M produced grep redirects, N were grep_empty (typos), etc."
+    greps, M produced text_match redirects, N were text_match_empty (typos),
+    etc."
     """
 
     tool: str
@@ -325,9 +326,9 @@ def _summarise(
 def _mcp_stats(tool: str, events: list[Event]) -> McpCallStats:
     """Build the per-tool stats. `top_qnames` is computed differently per tool:
 
-    - explain: the `qname` argument (when capture_args is on) names the symbol asked about.
-    - walk: same, via `from_qname`.
-    - locate: no single qname per call — predicates are diverse — so we leave it empty.
+    - read: the `qname` argument (when capture_args is on) names the symbol asked about.
+    - trace: same, via `from_qname`.
+    - grep: no single qname per call — predicates are diverse — so we leave it empty.
     """
     error_count = 0
     not_found_count = 0
@@ -348,30 +349,30 @@ def _mcp_stats(tool: str, events: list[Event]) -> McpCallStats:
 
         # Tool-specific empty-result detection. Each tool's "I returned nothing
         # useful" shape is different, and conflating them would hide the signal.
-        if tool == "locate" and f.get("result_kind") == "ok" and (f.get("result_count") or 0) == 0:
+        if tool == "grep" and f.get("result_kind") == "ok" and (f.get("result_count") or 0) == 0:
             empty_result_count += 1
-        if tool == "walk" and f.get("result_kind") == "ok" and (f.get("nodes_count") or 0) <= 1:
+        if tool == "trace" and f.get("result_kind") == "ok" and (f.get("nodes_count") or 0) <= 1:
             empty_result_count += 1
-        # An explain call with prose_chars == 0 means the symbol exists in the
+        # A read call with prose_chars == 0 means the symbol exists in the
         # graph but has no triefact section yet — agent got an empty body.
-        if tool == "explain" and f.get("result_kind") == "ok" and (f.get("prose_chars") or 0) == 0:
+        if tool == "read" and f.get("result_kind") == "ok" and (f.get("prose_chars") or 0) == 0:
             empty_result_count += 1
 
-        # Locate's fallback discriminator (one of "none", "grep", "grep_empty").
-        # Present only on locate calls that returned empty.
+        # grep's fallback discriminator (one of "none", "text_match",
+        # "text_match_empty"). Present only on grep calls that returned empty.
         fb_kind = f.get("fallback_kind")
-        if tool == "locate" and isinstance(fb_kind, str):
+        if tool == "grep" and isinstance(fb_kind, str):
             fallback_kinds[fb_kind] += 1
 
         # Qname extraction — only when capture_args was on at the time of emit.
         args = f.get("args") or {}
         if not isinstance(args, dict):
             args = {}
-        if tool == "explain":
+        if tool == "read":
             q = args.get("qname")
             if isinstance(q, str) and q:
                 qname_counter[q] += 1
-        elif tool == "walk":
+        elif tool == "trace":
             q = args.get("from_qname")
             if isinstance(q, str) and q:
                 qname_counter[q] += 1
@@ -612,7 +613,7 @@ def _render_mcp(mcp: dict[str, McpCallStats], console: Console) -> None:
     table.add_column("avg ms", justify="right")
     table.add_column("avg bytes", justify="right")
     table.add_column("top qname")
-    for tool in ("locate", "explain", "walk"):
+    for tool in ("grep", "read", "trace"):
         stats = mcp.get(tool)
         if stats is None:
             table.add_row(tool, "0", "0", "0", "--", "--", "--")
@@ -631,7 +632,7 @@ def _render_mcp(mcp: dict[str, McpCallStats], console: Console) -> None:
         )
     # Surface any other tool names (forward-compat: if we add a fourth tool later).
     for tool, stats in mcp.items():
-        if tool in ("locate", "explain", "walk"):
+        if tool in ("grep", "read", "trace"):
             continue
         table.add_row(
             tool,
@@ -644,14 +645,14 @@ def _render_mcp(mcp: dict[str, McpCallStats], console: Console) -> None:
         )
     console.print(table)
 
-    # Locate fallback breakdown: one extra line when the eval saw fallback
+    # grep fallback breakdown: one extra line when the eval saw fallback
     # activity. Tells the operator at a glance whether agents are hitting
-    # typo paths (`grep_empty`), the no-name-contains path (`none`), or
-    # successfully getting redirected to body matches (`grep`).
-    locate_stats = mcp.get("locate")
-    if locate_stats is not None and locate_stats.fallback_kinds:
-        parts = ", ".join(f"{k}={n}" for k, n in sorted(locate_stats.fallback_kinds.items()))
-        console.print(f"  [dim]locate fallback:[/dim] {parts}")
+    # typo paths (`text_match_empty`), the no-name-contains path (`none`),
+    # or successfully getting redirected to body matches (`text_match`).
+    grep_stats = mcp.get("grep")
+    if grep_stats is not None and grep_stats.fallback_kinds:
+        parts = ", ".join(f"{k}={n}" for k, n in sorted(grep_stats.fallback_kinds.items()))
+        console.print(f"  [dim]grep fallback:[/dim] {parts}")
 
 
 def _render_sync(s: SyncStats, console: Console) -> None:
@@ -722,7 +723,7 @@ def _render_compare_mcp(
     table.add_column("candidate", justify="right")
     table.add_column("Δ", justify="right")
 
-    tools = sorted({"locate", "explain", "walk", *baseline.keys(), *candidate.keys()})
+    tools = sorted({"grep", "read", "trace", *baseline.keys(), *candidate.keys()})
     for tool in tools:
         b = baseline.get(tool)
         c = candidate.get(tool)
