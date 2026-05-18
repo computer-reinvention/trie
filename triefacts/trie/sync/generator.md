@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: trie/sync/generator.py
 file_fingerprint: 6c1e05b2416c4eea05493d1f21246bc67e93bc98dc90c4e5c7fc34862fa01aff
 last_synced_at: '2026-05-16T11:23:58Z'

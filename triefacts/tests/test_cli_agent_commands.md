@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: tests/test_cli_agent_commands.py
 file_fingerprint: f4c1ec49454e9b150600316f2dfa0b408465afb412a7320c7536823b88cbf7bc
 last_synced_at: '2026-05-18T22:48:48Z'

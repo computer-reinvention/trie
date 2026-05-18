@@ -9,7 +9,7 @@ from trie.config import DEFAULT_CONFIG_TOML, Config, ConfigNotFoundError
 
 def test_defaults_when_empty_dict():
     cfg = Config.from_dict({})
-    assert cfg.trie.version == "0.1.0"
+    assert cfg.trie.version == "0.1.1"
     assert "**/*.py" in cfg.scope.include
     assert cfg.triefacts.root == "triefacts"
     assert cfg.models.bootstrap.startswith("anthropic/")
@@ -38,7 +38,7 @@ def test_load_roundtrips_default_template(tmp_path: Path):
     config_file = tmp_path / "trie.toml"
     config_file.write_text(DEFAULT_CONFIG_TOML)
     cfg = Config.load(config_file)
-    assert cfg.trie.version == "0.1.0"
+    assert cfg.trie.version == "0.1.1"
     assert cfg.triefacts.root == "triefacts"
 
 

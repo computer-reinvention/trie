@@ -71,7 +71,7 @@ def _make_project(tmp_path: Path, *, concurrency: int) -> Path:
     root = tmp_path / "demo"
     shutil.copytree(FIXTURE_DIR, root)
     (root / "trie.toml").write_text(
-        '[trie]\nversion = "0.1.0"\n'
+        '[trie]\nversion = "0.1.1"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
         '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'

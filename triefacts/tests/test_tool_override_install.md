@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: tests/test_tool_override_install.py
 file_fingerprint: 1a4334d05f21e46033563e82b5d7bba56e2ef96c0fc3077b0a8268601bb35f60
 last_synced_at: '2026-05-18T14:18:08Z'

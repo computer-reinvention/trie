@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: trie/mcp_server.py
 file_fingerprint: ee79a8cee190f9a21d5cf6c01cc22d53760c7a772e27c84b6aadf6a0622c4137
 last_synced_at: '2026-05-18T22:49:08Z'

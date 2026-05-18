@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: trie/graph/store.py
 file_fingerprint: f029c55fd0d2b163ac5ceff4c2280aa119855493ed83316cbd9c7ba72e836a7f
 last_synced_at: '2026-05-18T13:57:37Z'

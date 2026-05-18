@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: tests/test_incremental.py
 file_fingerprint: 098e6fa218a25f5c7930126568228d2885d8b4b4a382f2ddbb28690da9182b91
 last_synced_at: '2026-05-16T11:23:30Z'

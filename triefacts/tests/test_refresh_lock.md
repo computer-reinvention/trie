@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.0
+trie_version: 0.1.1
 source: tests/test_refresh_lock.py
 file_fingerprint: b480798bd7190b19332c9dec1d8046c15a7b4aad0275b2ced76ab2f7e9167304
 last_synced_at: '2026-05-16T13:17:25Z'
