@@ -180,12 +180,21 @@ def _smallest_enclosing(symbols: list[tuple[str, int, int]], lineno: int) -> str
 class TrieTools:
     """The three MCP tools as plain methods, so they can be tested without the transport.
 
-    Owns the Store for the lifetime of the surrounding server process.
+    Owns the Store for the lifetime of the surrounding process.
+
+    `event_name` controls the telemetry event name emitted on each call.
+    Defaults to `"mcp_call"` (the value the MCP server uses); the CLI
+    overrides it to `"cli_call"` so the audit can distinguish CLI-
+    originated invocations from real MCP traffic. The fields populated on
+    each event are identical regardless of surface — only the event name
+    differs — so an aggregator that wants to merge them can; one that
+    wants to split them can filter by `event`.
     """
 
-    def __init__(self, project_root: Path) -> None:
+    def __init__(self, project_root: Path, *, event_name: str = "mcp_call") -> None:
         self.config, self.root = Config.find_and_load(project_root)
         self.mcp_cfg: Mcp = self.config.mcp
+        self.event_name = event_name
         # Resolve ripgrep up front so the failure mode is "server refuses
         # to start" rather than "first fallback query mysteriously errors".
         # Stored on the instance so per-call shellouts skip the PATH walk.
@@ -195,7 +204,13 @@ class TrieTools:
         # can wire it from config for the stdio path. The env var TRIE_DEBUG
         # still wins if set.
         telemetry.configure(self.config.debug, self.root)
-        telemetry.emit("mcp_server_start", project_root=str(self.root))
+        # Only emit the `mcp_server_start` event on the actual MCP path.
+        # The CLI also constructs `TrieTools` for `trie grep`/`read`/`trace`,
+        # but those are short-lived processes — flagging them as server
+        # starts would pollute the audit's MCP usage stats with phantom
+        # spawns. CLI usage is captured separately via `cli_call` events.
+        if event_name == "mcp_call":
+            telemetry.emit("mcp_server_start", project_root=str(self.root))
         self.triefacts_root = self.root / self.config.triefacts.root
         self.src_root = (self.root / self.config.triefacts.source_root).resolve()
         self.store = Store(self.root / ".trie" / "graph.db")
@@ -255,7 +270,7 @@ class TrieTools:
             if telemetry.capture_args()
             else {}
         )
-        with telemetry.timed("mcp_call", tool="grep", args=tele_args) as tele_ctx:
+        with telemetry.timed(self.event_name, tool="grep", args=tele_args) as tele_ctx:
             pred_obj, err = self._parse_predicate(predicate)
             if err is not None:
                 tele_ctx["result_kind"] = "error"
@@ -698,7 +713,7 @@ class TrieTools:
         need depth > 1, use `trace` and follow up with `read` on the nodes that matter.
         """
         tele_args = {"qname": qname} if telemetry.capture_args() else {}
-        with telemetry.timed("mcp_call", tool="read", args=tele_args) as tele_ctx:
+        with telemetry.timed(self.event_name, tool="read", args=tele_args) as tele_ctx:
             detail = self.store.get_symbol_detail(qname)
             if detail is None:
                 err = _error(
@@ -839,7 +854,7 @@ class TrieTools:
             if telemetry.capture_args()
             else {}
         )
-        tele_ctx_outer = telemetry.timed("mcp_call", tool="trace", args=tele_args)
+        tele_ctx_outer = telemetry.timed(self.event_name, tool="trace", args=tele_args)
         with tele_ctx_outer as tele_ctx:
             if direction not in ("callers", "callees", "both"):
                 err = _error(

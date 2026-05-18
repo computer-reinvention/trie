@@ -1596,13 +1596,19 @@ def _open_tools(reporter: Reporter) -> TrieTools:
     Centralised so all three subcommands handle "no trie.toml found" the
     same way. The returned TrieTools holds an open SQLite handle; callers
     must `.close()` it when done.
+
+    Constructs `TrieTools` with `event_name="cli_call"` so per-call
+    telemetry emitted from `grep`/`read`/`trace` lands as `cli_call`
+    events rather than `mcp_call`. The audit module distinguishes the
+    two streams so an operator can tell how the agent (or human) is
+    reaching trie: shelled-out CLI vs persistent MCP server.
     """
     try:
         _, project_root = Config.find_and_load(Path.cwd())
     except ConfigNotFoundError as exc:
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
-    return TrieTools(project_root)
+    return TrieTools(project_root, event_name="cli_call")
 
 
 def _emit_envelope(

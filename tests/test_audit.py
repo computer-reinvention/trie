@@ -99,6 +99,9 @@ def test_from_log_empty_file_yields_empty_summary(tmp_path: Path):
     assert summary.parse.lines_total == 0
     assert summary.parse.lines_parsed == 0
     assert summary.mcp == {}
+    # CLI-side per-tool stats are a separate stream from `mcp_call`; an
+    # empty log produces empty buckets for both surfaces.
+    assert summary.cli == {}
     assert summary.sync.file_runs == 0
     assert summary.retries.total == 0
     assert summary.span_start is None
@@ -286,6 +289,157 @@ def test_mcp_calls_without_capture_args_still_count(tmp_path: Path):
     summary = AuditSummary.from_log(p)
     assert summary.mcp["read"].count == 1
     assert summary.mcp["read"].top_qnames == ()
+
+
+# ---------------------------------------------------------------------------
+# CLI-call aggregation: `cli_call` events from `trie grep`/`read`/`trace`
+# ---------------------------------------------------------------------------
+#
+# The CLI subcommands emit `cli_call` events with the same envelope shape
+# as the MCP server's `mcp_call`. The audit summarises them into a
+# separate `summary.cli` bucket so an operator can see which surface the
+# agent is reaching trie through.
+
+
+def test_cli_call_aggregation_buckets_per_tool(tmp_path: Path):
+    """A mix of `cli_call` events across tools lands in `summary.cli`,
+    keyed by tool. The aggregator reuses the per-tool stats logic from
+    the MCP side, so error/empty/duration counts work identically."""
+    p = tmp_path / "cli.jsonl"
+    _write_log(
+        p,
+        [
+            # Two CLI greps, one with empty result
+            {
+                "ts": _ts(0),
+                "event": "cli_call",
+                "tool": "grep",
+                "result_kind": "ok",
+                "result_count": 3,
+                "duration_ms": 8,
+                "response_bytes": 600,
+            },
+            {
+                "ts": _ts(1),
+                "event": "cli_call",
+                "tool": "grep",
+                "result_kind": "ok",
+                "result_count": 0,
+                "duration_ms": 5,
+                "response_bytes": 50,
+            },
+            # One CLI read
+            {
+                "ts": _ts(2),
+                "event": "cli_call",
+                "tool": "read",
+                "result_kind": "ok",
+                "prose_chars": 400,
+                "duration_ms": 12,
+                "response_bytes": 1500,
+                "args": {"qname": "trie/cli:grep_cmd"},
+            },
+            # One CLI trace
+            {
+                "ts": _ts(3),
+                "event": "cli_call",
+                "tool": "trace",
+                "result_kind": "ok",
+                "nodes_count": 4,
+                "edges_count": 3,
+                "duration_ms": 9,
+                "response_bytes": 800,
+                "args": {"from_qname": "trie/cli:setup_cmd"},
+            },
+        ],
+    )
+    summary = AuditSummary.from_log(p)
+    assert set(summary.cli.keys()) == {"grep", "read", "trace"}
+
+    g = summary.cli["grep"]
+    assert g.count == 2
+    assert g.empty_result_count == 1
+
+    r = summary.cli["read"]
+    assert r.count == 1
+    qnames = [q for q, _ in r.top_qnames]
+    assert "trie/cli:grep_cmd" in qnames
+
+    tr = summary.cli["trace"]
+    assert tr.count == 1
+
+
+def test_cli_call_and_mcp_call_are_separate_streams(tmp_path: Path):
+    """An `mcp_call` event lands in `summary.mcp`; a `cli_call` event with
+    the same tool lands in `summary.cli`. The two streams must not bleed
+    into each other — otherwise an operator looking at CLI usage stats
+    would see MCP events double-counted (and vice versa)."""
+    p = tmp_path / "mixed.jsonl"
+    _write_log(
+        p,
+        [
+            {
+                "ts": _ts(0),
+                "event": "mcp_call",
+                "tool": "grep",
+                "result_kind": "ok",
+                "result_count": 1,
+                "duration_ms": 3,
+                "response_bytes": 200,
+            },
+            {
+                "ts": _ts(1),
+                "event": "cli_call",
+                "tool": "grep",
+                "result_kind": "ok",
+                "result_count": 1,
+                "duration_ms": 6,
+                "response_bytes": 200,
+            },
+        ],
+    )
+    summary = AuditSummary.from_log(p)
+    # Each surface saw exactly one grep call; neither got the other's.
+    assert summary.mcp["grep"].count == 1
+    assert summary.cli["grep"].count == 1
+
+
+def test_to_dict_carries_cli_section(tmp_path: Path):
+    """`AuditSummary.to_dict()` exposes `cli` alongside `mcp` so scripts
+    consuming the JSON output can read CLI usage stats without having to
+    reconstruct them. Same shape as `mcp` — the renderer reuses one body
+    for both, and so does this serialiser."""
+    p = tmp_path / "tojson.jsonl"
+    _write_log(
+        p,
+        [
+            {
+                "ts": _ts(0),
+                "event": "cli_call",
+                "tool": "grep",
+                "result_kind": "ok",
+                "result_count": 2,
+                "duration_ms": 4,
+                "response_bytes": 300,
+            },
+        ],
+    )
+    data = AuditSummary.from_log(p).to_dict()
+    assert "cli" in data
+    assert "grep" in data["cli"]
+    assert data["cli"]["grep"]["count"] == 1
+    # Fields parallel `mcp` exactly — same renderer for both.
+    for k in (
+        "count",
+        "error_count",
+        "not_found_count",
+        "empty_result_count",
+        "avg_duration_ms",
+        "avg_response_bytes",
+        "top_qnames",
+        "fallback_kinds",
+    ):
+        assert k in data["cli"]["grep"]
 
 
 # ---------------------------------------------------------------------------
