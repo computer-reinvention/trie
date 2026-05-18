@@ -129,6 +129,32 @@ def _close_name_matches(name: str, candidates: list[str], *, n: int = 3) -> list
     return difflib.get_close_matches(name, candidates, n=n, cutoff=0.6)
 
 
+def _predicate_is_empty(pred: GrepPredicate) -> bool:
+    """True when `pred` carries no filter that would narrow the result set.
+
+    Mirrors the SQL builder's notion of "this field is unset": a falsy
+    `name_contains` (None or empty string), no `kind` or `kind == "any"`,
+    no `scope_prefix`, no `scope_exclude`, `public_only` False, and no
+    inbound/outbound bounds. An empty predicate against a populated graph
+    would otherwise hit the un-WHERE'd `SELECT ... FROM symbols ORDER BY
+    is_public DESC, qualified_name LIMIT N` path, which returns the
+    alphabetically-first public symbols — useful to nobody and easy to
+    misread as relevance. The caller rejects with an invalid_argument
+    envelope so the agent gets a clear next step instead.
+    """
+    return (
+        not pred.name_contains
+        and (pred.kind is None or pred.kind == "any")
+        and not pred.scope_prefix
+        and not pred.scope_exclude
+        and not pred.public_only
+        and pred.inbound_count_min is None
+        and pred.inbound_count_max is None
+        and pred.outbound_count_min is None
+        and pred.outbound_count_max is None
+    )
+
+
 def _smallest_enclosing(symbols: list[tuple[str, int, int]], lineno: int) -> str | None:
     """Find the qname of the symbol whose `[start_line, end_line]` brackets `lineno`.
 
@@ -187,7 +213,8 @@ class TrieTools:
     ) -> dict[str, Any]:
         """Find symbols matching `predicate`.
 
-        Predicate fields (all optional):
+        Predicate fields (all optional, but at least one is required —
+        an empty predicate returns an `invalid_argument` error):
         - `name_contains`: substring match against the symbol's local name (case-insensitive).
         - `kind`: one of `"function"`, `"class"`, `"method"`, `"any"`.
         - `scope_prefix`: file-path prefix, e.g. `"trie/"` to exclude tests/vendored code.
@@ -200,7 +227,8 @@ class TrieTools:
         for orientation queries), or `"alphabetical"`.
 
         Provide only the fields you need — most queries use just `name_contains` or
-        `scope_prefix`.
+        `scope_prefix`. To list the architectural hubs of a project, pass
+        `public_only: true` with `rank_by: "inbound_count"`.
 
         Return shape:
         ```
@@ -230,6 +258,29 @@ class TrieTools:
         with telemetry.timed("mcp_call", tool="grep", args=tele_args) as tele_ctx:
             pred_obj, err = self._parse_predicate(predicate)
             if err is not None:
+                tele_ctx["result_kind"] = "error"
+                tele_ctx["error_code"] = err["error"]["code"]
+                return err
+
+            # Reject no-op predicates explicitly. An empty predicate previously
+            # returned the alphabetically-first N public symbols under the
+            # default `public_first` ranking — useful for nobody, and easy to
+            # mistake for "trie found these relevant results." We refuse and
+            # tell the agent what shape of predicate to send instead. Both
+            # surfaces (MCP wire + `trie grep` CLI) share this code path so
+            # the behaviour is identical on either.
+            if _predicate_is_empty(pred_obj):
+                err = _error(
+                    "invalid_argument",
+                    "predicate is empty: at least one filter field is required.",
+                    (
+                        "Pass `name_contains` for a substring search, "
+                        "`scope_prefix` for a path-restricted query, "
+                        "`public_only: true` to list public symbols, or "
+                        '`inbound_count: {min: N}` (with `rank_by: "inbound_count"`) '
+                        "to surface architectural hubs."
+                    ),
+                )
                 tele_ctx["result_kind"] = "error"
                 tele_ctx["error_code"] = err["error"]["code"]
                 return err
