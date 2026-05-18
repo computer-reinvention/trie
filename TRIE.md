@@ -6,20 +6,27 @@ A guide for coding agents working in a project that has trie installed.
 
 trie indexes source code into a graph of symbols and references, attaches
 prose to each public symbol, and exposes three navigation tools over MCP:
-`locate`, `explain`, and `walk`. This document is how to use them well.
+`trie_grep`, `trie_read`, and `trie_trace`. This document is how to use them well.
 
-If you take one thing from this guide: **`locate` is the right tool for
-every code-side search.** Reach for it before grep, before file reads,
-before any other text-search tool. The reasons are below.
+If you take one thing from this guide: **`trie_grep` is the right tool for
+every code-side search.** Reach for it before the shell's `rg`/grep,
+before file reads, before any other text-search tool. The reasons are
+below.
+
+> Naming note: `trie_grep`, `trie_read`, and `trie_trace` are MCP tools served
+> by the trie process — not the shell utilities of similar names. When
+> this guide refers to the shell utilities, it says so explicitly:
+> "shell `rg`", "shell `grep`", "shell `cat`". Plain `trie_grep` /
+> `trie_read` / `trie_trace` always means the MCP tool.
 
 ---
 
 ## The three tools
 
 ```
-locate(predicate, rank_by?, limit?)   →  find symbols (and substrings)
-explain(qname)                        →  understand a symbol + immediate context
-walk(from_qname, direction, depth?)   →  trace the call graph farther
+trie_grep(predicate, rank_by?, limit?)    →  find symbols (and substrings)
+trie_read(qname)                          →  understand a symbol + immediate context
+trie_trace(from_qname, direction, depth?) →  follow the call graph farther
 ```
 
 Every navigation question decomposes into a short chain of these. You
@@ -28,17 +35,17 @@ unfamiliar codebase.
 
 ---
 
-## `locate` — your code search
+## `trie_grep` — your code search
 
-**Use `locate` for every search inside source code, full stop.** It does
-strictly more than grep:
+**Use `trie_grep` for every search inside source code, full stop.** It
+does strictly more than the shell's grep:
 
 1. **Symbol-name matches** return signatures, file pointers, one-liner
    summaries, public/private flags, and inbound/outbound edge counts.
    You pick the right symbol from prose, not from line numbers.
 
 2. **Literal-string searches** that don't match a symbol name still
-   work — `locate` falls back to ripgrep against indexed source bodies
+   work — `trie_grep` falls back to ripgrep against indexed source bodies
    and **attributes each match to the smallest enclosing symbol**.
    Instead of `lib.py:47`, you get `pkg/module:function_name` plus its
    signature, one-liner, and centrality in the call graph.
@@ -54,7 +61,7 @@ string-search result:
 {
   "hits": [ /* symbol-name matches, if any */ ],
   "fallback": {           // present only when hits is empty
-    "kind": "grep" | "grep_empty" | "none",
+    "kind": "text_match" | "text_match_empty" | "none",
     "matches": [ /* ranked enclosing symbols */ ],
     "match_count": 47,
     "unique_symbols": 12,
@@ -63,51 +70,52 @@ string-search result:
 }
 ```
 
-The same dispatch in both cases: read the symbols, pick the one whose
-`one_liner` matches what you wanted, follow up with `explain` or `walk`.
+The same dispatch in both cases: scan the symbols, pick the one whose
+`one_liner` matches what you wanted, follow up with `trie_read` or
+`trie_trace`.
 
 ### Predicate fields
 
-Build your query as one nested object. All fields optional; most queries
-use one or two.
+Build your query as one nested object. All fields optional; most
+queries use one or two.
 
 ```python
 # Find by name substring (case-insensitive, local name only)
-locate({ "name_contains": "compute_cascade" })
+trie_grep({ "name_contains": "compute_cascade" })
 
 # Restrict to a path prefix — "in trie/ but not tests/"
-locate({ "name_contains": "cascade", "scope_prefix": "trie/" })
+trie_grep({ "name_contains": "cascade", "scope_prefix": "trie/" })
 
 # Exclude paths
-locate({ "name_contains": "config", "scope_exclude": ["tests/", "vendor/"] })
+trie_grep({ "name_contains": "config", "scope_exclude": ["tests/", "vendor/"] })
 
 # Filter by symbol kind
-locate({ "kind": "class", "scope_prefix": "trie/" })
+trie_grep({ "kind": "class", "scope_prefix": "trie/" })
 # kind: "function" | "class" | "method" | "any"
 
 # Only public symbols (no leading underscore)
-locate({ "name_contains": "store", "public_only": true })
+trie_grep({ "name_contains": "store", "public_only": true })
 
 # Hubs (most-called) or leaves (uncalled)
-locate({ "inbound_count": { "min": 20 } })          # hubs
-locate({ "outbound_count": { "max": 0 } })          # leaves
-locate({ "inbound_count": { "min": 5, "max": 15 } }) # mid-tier
+trie_grep({ "inbound_count": { "min": 20 } })          # hubs
+trie_grep({ "outbound_count": { "max": 0 } })          # leaves
+trie_grep({ "inbound_count": { "min": 5, "max": 15 } }) # mid-tier
 ```
 
 ### Ranking
 
 ```python
-locate({ ... }, rank_by="public_first")    # default; public symbols first
-locate({ ... }, rank_by="inbound_count")   # most-referenced first
-locate({ ... }, rank_by="alphabetical")    # by qname
+trie_grep({ ... }, rank_by="public_first")    # default; public symbols first
+trie_grep({ ... }, rank_by="inbound_count")   # most-referenced first
+trie_grep({ ... }, rank_by="alphabetical")    # by qname
 ```
 
-`rank_by="inbound_count"` is the **architectural orientation primitive**.
-First call to make in an unfamiliar codebase:
+`rank_by="inbound_count"` is the **architectural orientation
+primitive**. First call to make in an unfamiliar codebase:
 
 ```python
-locate({ "scope_prefix": "src/", "public_only": true },
-       rank_by="inbound_count", limit=10)
+trie_grep({ "scope_prefix": "src/", "public_only": true },
+     rank_by="inbound_count", limit=10)
 # → the 10 most-referenced public symbols. The architectural skyline.
 ```
 
@@ -128,41 +136,42 @@ Each hit (whether in `hits` or in `fallback.matches`) carries:
 }
 ```
 
-The `one_liner` is the first sentence of the symbol's prose. **Use it to
-triage without opening files.** This is the single most valuable field
-on the response.
+The `one_liner` is the first sentence of the symbol's prose. **Use it
+to triage without opening files.** This is the single most valuable
+field on the response.
 
 ### Fallback responses
 
 When `hits` is empty, the `fallback.kind` tells you what happened:
 
-- **`"grep"`** — the literal string appears in source bodies. `matches`
-  is a ranked list of enclosing symbols, capped at 30 (configurable via
-  `locate_fallback_match_limit`). `match_count` and `unique_symbols`
-  tell you how many candidates exist beyond the cap; if `matches.length`
-  is less than `unique_symbols`, the note explains. Ranking is by
-  `inbound_count` descending — hub symbols first.
+- **`"text_match"`** — the literal string appears in source bodies.
+  `matches` is a ranked list of enclosing symbols, capped at 30
+  (configurable via `grep_fallback_match_limit`). `match_count` and
+  `unique_symbols` tell you how many candidates exist beyond the cap;
+  if `matches.length` is less than `unique_symbols`, the note
+  explains. Ranking is by `inbound_count` descending — hub symbols
+  first.
 
-- **`"grep_empty"`** — neither symbol names nor source bodies contain
-  the query. Likely a typo or a name that doesn't exist in this
-  project.
+- **`"text_match_empty"`** — neither symbol names nor source bodies
+  contain the query. Likely a typo or a name that doesn't exist in
+  this project.
 
 - **`"none"`** — the predicate had no `name_contains` for the fallback
   to search on. Add a name substring or relax other filters.
 
 ---
 
-## `explain` — understanding one symbol
+## `trie_read` — understanding one symbol
 
 ```
-explain(qname)
+trie_read(qname)
 ```
 
-Use this **after `locate`**, once you know which symbol you want to
+Use this **after `trie_grep`**, once you know which symbol you want to
 understand.
 
 ```python
-explain("trie/sync/cascade:compute_cascade")
+trie_read("trie/sync/cascade:compute_cascade")
 ```
 
 Returns:
@@ -173,13 +182,13 @@ Returns:
 - **`callers`** — every symbol that calls this one, with `qname`,
   `signature`, and `one_liner`.
 - **`callees`** — every symbol this one calls, same shape.
-- **`notes`** — present only when there's something to flag (incomplete
-  resolution, hub-capping, missing triefact).
+- **`notes`** — present only when there's something to flag
+  (incomplete resolution, hub-capping, missing triefact).
 
-The key property: **callers and callees come back with one-liners.** You
-don't need a follow-up call to know "what does that caller do?" The
-one-sentence summary is in the response. One round trip for the whole
-one-hop neighbourhood.
+The key property: **callers and callees come back with one-liners.**
+You don't need a follow-up call to know "what does that caller do?"
+The one-sentence summary is in the response. One round trip for the
+whole one-hop neighbourhood.
 
 ### Qnames
 
@@ -187,32 +196,32 @@ trie uses `path/to/file:LocalName` for top-level symbols and
 `path/to/file:ClassName.method` for methods. Drop the `.py` extension;
 use forward slashes regardless of OS.
 
-When `locate`, `explain`, or `walk` returns a `qname`, pass it straight
-back. Round-trip without rewriting.
+When `trie_grep`, `trie_read`, or `trie_trace` returns a `qname`, pass it
+straight back. Round-trip without rewriting.
 
 ---
 
-## `walk` — tracing topology
+## `trie_trace` — following topology
 
 ```
-walk(from_qname, direction, depth?)
+trie_trace(from_qname, direction, depth?)
 ```
 
-When one hop (which `explain` already gives you) isn't enough, use
-`walk` to traverse the call graph farther.
+When one hop (which `trie_read` already gives you) isn't enough, use
+`trie_trace` to walk the call graph farther.
 
 ```python
 # What calls this, transitively, two hops out?
-walk("trie/sync/cascade:compute_cascade",
-     direction="callers", depth=2)
+trie_trace("trie/sync/cascade:compute_cascade",
+      direction="callers", depth=2)
 
 # What does this end up calling, two hops down?
-walk("trie/sync/incremental:run_incremental",
-     direction="callees", depth=2)
+trie_trace("trie/sync/incremental:run_incremental",
+      direction="callees", depth=2)
 
 # Blast radius and dependencies in one call
-walk("trie/graph/store:Store.replace_all_edges",
-     direction="both", depth=2)
+trie_trace("trie/graph/store:Store.replace_all_edges",
+      direction="both", depth=2)
 ```
 
 ### Return shape
@@ -239,20 +248,20 @@ Nodes come back as a `{qname: data}` map. When the same symbol is
 reached through multiple paths, it appears once in `nodes` and the
 multiple edges in `edges` make the shared dependency obvious.
 
-### When `walk` stops
+### When `trie_trace` stops
 
-Expansion halts at **hub symbols** (those with very high inbound count).
-Hubs are listed in `truncated_at`. The rationale: hubs are usually
-framework code or shared utilities; expanding through them floods the
-result with irrelevant nodes. To see a hub's neighbourhood, query it
-directly with another `walk` call.
+Expansion halts at **hub symbols** (those with very high inbound
+count). Hubs are listed in `truncated_at`. The rationale: hubs are
+usually framework code or shared utilities; expanding through them
+floods the result with irrelevant nodes. To see a hub's neighbourhood,
+query it directly with another `trie_trace` call.
 
-### `walk` doesn't carry prose
+### `trie_trace` doesn't carry prose
 
-Only signatures and one-liners. When a specific node matters, follow up
-with `explain(qname)` for the full prose plus immediate neighbours.
+Only signatures and one-liners. When a specific node matters, follow
+up with `trie_read(qname)` for the full prose plus immediate neighbours.
 
-This is intentional. `walk` is about topology; `explain` is about
+This is intentional. `trie_trace` is about topology; `trie_read` is about
 substance. The verb split keeps each response focused.
 
 ---
@@ -262,65 +271,65 @@ substance. The verb split keeps each response focused.
 **"What does `compute_cascade` do?"**
 
 ```python
-explain("trie/sync/cascade:compute_cascade")
+trie_read("trie/sync/cascade:compute_cascade")
 # → one call. Prose + immediate neighbours with one-liners.
 ```
 
 **"Where is the cascade logic?"** (you know the term, not the qname)
 
 ```python
-locate({ "name_contains": "cascade", "scope_prefix": "trie/" })
+trie_grep({ "name_contains": "cascade", "scope_prefix": "trie/" })
 # → pick the right qname from one_liners
-explain(that_qname)
+trie_read(that_qname)
 # → two calls.
 ```
 
 **"What's the blast radius of refactoring `Store.replace_all_edges`?"**
 
 ```python
-walk("trie/graph/store:Store.replace_all_edges",
-     direction="callers", depth=2)
+trie_trace("trie/graph/store:Store.replace_all_edges",
+      direction="callers", depth=2)
 # → full topology of what transitively reaches this method.
-explain(qname) on any node that looks worth understanding deeper.
+trie_read(qname) on any node that looks worth understanding deeper.
 ```
 
 **"Where do I start in this codebase?"**
 
 ```python
-locate({ "scope_prefix": "src/", "public_only": true },
-       rank_by="inbound_count", limit=10)
+trie_grep({ "scope_prefix": "src/", "public_only": true },
+     rank_by="inbound_count", limit=10)
 # → the 10 most-referenced public symbols. The architectural skyline.
-explain on the two or three that look load-bearing.
+trie_read on the two or three that look load-bearing.
 ```
 
 **"What do functions A and B have in common?"**
 
 ```python
-walk("...:A", direction="callers", depth=1)
-walk("...:B", direction="callers", depth=1)
+trie_trace("...:A", direction="callers", depth=1)
+trie_trace("...:B", direction="callers", depth=1)
 # → intersect the node sets in your own reasoning.
 ```
 
 **"Find hubs that aren't in tests"**
 
 ```python
-locate({ "inbound_count": { "min": 20 }, "scope_exclude": ["tests/"] },
-       rank_by="inbound_count")
+trie_grep({ "inbound_count": { "min": 20 }, "scope_exclude": ["tests/"] },
+     rank_by="inbound_count")
 # → one call. Aggregate questions are just predicates.
 ```
 
 **"Where is the string 'rate limited' used?"** (a literal, not a name)
 
 ```python
-locate({ "name_contains": "rate limited" })
-# → hits empty; fallback.kind == "grep" + matches attributed to enclosing
-#   symbols. Better than raw grep: symbol context, not file:line.
+trie_grep({ "name_contains": "rate limited" })
+# → hits empty; fallback.kind == "text_match" + matches attributed to enclosing
+#   symbols. Better than raw shell grep: symbol context, not file:line.
 ```
 
 **"Where is `MAX_RETRIES` referenced?"** (a module-level constant)
 
 ```python
-locate({ "name_contains": "MAX_RETRIES" })
+trie_grep({ "name_contains": "MAX_RETRIES" })
 # → no symbol named MAX_RETRIES, but the fallback finds it in source bodies
 #   and points at the enclosing functions/methods that use it.
 ```
@@ -328,7 +337,7 @@ locate({ "name_contains": "MAX_RETRIES" })
 **"Every call site that passes `db_path` positionally"** (a usage pattern)
 
 ```python
-locate({ "name_contains": "db_path" })
+trie_grep({ "name_contains": "db_path" })
 # → fallback returns enclosing symbols ranked by centrality; check the
 #   bodies of the top results.
 ```
@@ -337,42 +346,85 @@ locate({ "name_contains": "db_path" })
 
 ## What NOT to do
 
-- **Don't grep for things in source code.** You lose symbol attribution
-  and graph context. `locate` handles every case where you'd reach for
-  grep on `.py` files — symbol-name searches, literal-string searches,
-  constants, usage patterns.
+- **Don't reach for the shell's `rg` or grep on source code.** You
+  lose symbol attribution and graph context. `trie_grep` handles every
+  case where you'd reach for shell grep on source files — symbol-name
+  searches, literal-string searches, constants, usage patterns.
 
-- **Don't call `explain` repeatedly to traverse a graph.** That's what
-  `walk` is for. `explain` is heavier (full prose); use it when you
+- **Don't call `trie_read` repeatedly to traverse a graph.** That's what
+  `trie_trace` is for. `trie_read` is heavier (full prose); use it when you
   actually want to understand a symbol.
 
-- **Don't paginate `locate`.** There's no page parameter. If results
+- **Don't paginate `trie_grep`.** There's no page parameter. If results
   overflow `limit`, **narrow the predicate** (add `scope_prefix`,
   tighten `name_contains`, restrict `kind`). When the fallback returns
-  fewer than `unique_symbols` matches, the response's note explains how
-  to see different candidates.
+  fewer than `unique_symbols` matches, the response's note explains
+  how to see different candidates.
 
-- **Don't over-specify the predicate.** Pick one or two fields. Filling
-  in every field usually means you're guessing — start broad, narrow
-  from results.
+- **Don't over-specify the predicate.** Pick one or two fields.
+  Filling in every field usually means you're guessing — start broad,
+  narrow from results.
 
-- **Don't manually parse triefact files.** `explain` returns the section
-  body for the symbol you asked about, directly.
+- **Don't manually parse triefact files.** `trie_read` returns the
+  section body for the symbol you asked about, directly.
 
 - **Don't worry about whether a triefact exists.** If a symbol has no
-  prose yet, `explain` still returns the signature, callers, and
+  prose yet, `trie_read` still returns the signature, callers, and
   callees from the graph; `prose` is empty and `notes` says so.
 
 ---
 
-## When to actually use grep
+## CLI equivalents
 
-After all of the above, the remaining cases for grep / rg:
+Every operation above is also available as a `trie` CLI subcommand, so
+an agent that prefers shelling out can do the full set of trie
+operations from the command line. The CLI calls the same code the MCP
+server registers, so the JSON output under `--json` is
+byte-equivalent to the wire response. Use whichever surface fits the
+agent's current call style.
+
+```
+trie grep   [--name STR] [--kind K] [--scope-prefix P] [--public-only]
+            [--inbound-min N] [--inbound-max N] [--outbound-min N]
+            [--outbound-max N] [--rank-by RANK] [--limit N]
+            [--predicate JSON] [--json]
+trie read   <qname> [--json]
+trie trace  <qname> [--direction callers|callees|both] [--depth N] [--json]
+```
+
+CLI-specific behaviour worth knowing:
+
+- **Default output is human-readable** (Rich-rendered tables for
+  `grep`, structured prose for `read`, an edge list for `trace`).
+  Pass `--json` for the raw envelope an agent would consume.
+- **Exit codes**: `0` on success (including empty hits with a
+  fallback envelope), `1` when the tool returns an error envelope
+  (`{"error": ...}`), `2` on CLI-level argument errors (e.g.
+  malformed `--predicate` JSON).
+- **The same project is targeted as the MCP server**: `trie` walks up
+  from the current directory looking for `trie.toml`. There's no
+  ambient project state to keep in sync between CLI and MCP — they're
+  one process configuration away from each other.
+
+Examples:
+
+```
+trie grep --name compute_cascade --scope-prefix trie/
+trie grep --predicate '{"name_contains": "store", "kind": "class"}' --json
+trie read trie/sync/cascade:compute_cascade
+trie trace trie/graph/store:Store.replace_all_edges --direction both
+```
+
+---
+
+## When to actually use shell `rg` / grep
+
+After all of the above, the remaining cases for the shell utilities:
 
 - **Non-code files**: markdown, logs (`debug.jsonl`), commit messages,
   CHANGELOG, config files trie's scope doesn't cover.
 
-That's it. Everything in indexed source code goes through `locate`.
+That's it. Everything in indexed source code goes through `trie_grep`.
 
 ---
 
@@ -380,25 +432,26 @@ That's it. Everything in indexed source code goes through `locate`.
 
 **Dynamic dispatch isn't always resolved.** If a function calls
 `handlers[name]()` where `handlers` is built at runtime, the static
-analyzer can't trace which functions get called. trie flags this with
-a `notes` field on the symbol's `explain` response: *"callees may be
-incomplete: this function dispatches via handlers[name]()"*. Read
-`notes` as authoritative — when present, it's the truth about what the
-analyzer couldn't see.
+analyzer can't follow which functions get called. trie flags this with
+a `notes` field on the symbol's `trie_read` response: *"callees may be
+incomplete: this function dispatches via handlers[name]()"*. The
+`notes` field is authoritative — when present, it's the truth about
+what the analyzer couldn't see.
 
-**Hub symbols cap walk depth.** Symbols above the configured inbound
-threshold appear as leaves in `walk` (listed in `truncated_at`). To see
-the hub's neighbourhood, query it directly.
+**Hub symbols cap `trie_trace` depth.** Symbols above the configured
+inbound threshold appear as leaves in `trie_trace` (listed in
+`truncated_at`). To see the hub's neighbourhood, query it directly.
 
-**Stale graph.** If `trie` is set up with a turn-boundary refresh hook,
-the graph stays current automatically. If not, the graph reflects the
-last `trie sync` or `trie refresh`. Symbols added or removed since then
-are absent or stale; `locate` won't find them and `explain` will return
-"not found" errors. Run `trie refresh` to bring the graph up to date.
+**Stale graph.** If `trie` is set up with a turn-boundary refresh
+hook, the graph stays current automatically. If not, the graph
+reflects the last `trie sync` or `trie refresh`. Symbols added or
+removed since then are absent or stale; `trie_grep` won't find them and
+`trie_read` will return "not found" errors. Run `trie refresh` to bring
+the graph up to date.
 
 **Module-level data (constants, globals) isn't indexed as separate
 symbols.** A top-level `MAX_RETRIES = 5` isn't its own entry in the
-symbol table; `locate({ name_contains: "MAX_RETRIES" })` finds it via
+symbol table; `trie_grep({ name_contains: "MAX_RETRIES" })` finds it via
 the fallback (returning the enclosing functions that reference it),
 not as a direct symbol hit.
 
@@ -420,16 +473,16 @@ Every error response has one shape:
 
 The `suggestion` field is load-bearing. When you get a not-found, the
 suggestion will usually point you at the closest matching qname or
-suggest a broader `locate` query. Read it and use it.
+suggest a broader `trie_grep` query. Use it.
 
 ---
 
 ## TL;DR
 
-- **Always start with `locate`.** It handles every code-side search —
+- **Always start with `trie_grep`.** It handles every code-side search —
   symbol names, literal strings, structural filters, usage patterns.
-- **`explain` for one symbol + its neighbours.** Drill in once you know
+- **`trie_read` for one symbol + its neighbours.** Drill in once you know
   the qname.
-- **`walk` for graph topology beyond one hop.**
-- Grep is for non-code files. Logs, markdown, commit messages. That's
-  the entire remaining surface.
+- **`trie_trace` for graph topology beyond one hop.**
+- The shell's `rg`/grep is for non-code files. Logs, markdown, commit
+  messages. That's the entire remaining surface.

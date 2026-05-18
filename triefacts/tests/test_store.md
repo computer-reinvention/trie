@@ -2,7 +2,7 @@
 trie_version: 0.1.0
 source: tests/test_store.py
 file_fingerprint: afbabafdabc5fae36b75de2bc15153adc4a70c97d1b0bf6cf9079460d646fab0
-last_synced_at: '2026-05-16T12:51:35Z'
+last_synced_at: '2026-05-18T13:58:11Z'
 defines:
 - kind: function
   qualified_name: tests/test_store:store

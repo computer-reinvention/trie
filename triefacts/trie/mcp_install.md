@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/mcp_install.py
-file_fingerprint: d1d66da6d454ef84f6c1cfbe47d920bbf2f90542fab25c539452f6a14685cc11
-last_synced_at: '2026-05-16T11:03:47Z'
+file_fingerprint: 56228de014b2f19f9f9eec8251ccab7ad10bb8e6567965a22c8a5551ab2e9210
+last_synced_at: '2026-05-18T13:26:17Z'
 defines:
 - kind: class
   qualified_name: trie/mcp_install:MCPInstallError
@@ -18,35 +18,35 @@ defines:
   lines: 42-55
 - kind: class
   qualified_name: trie/mcp_install:MCPTarget
-  lines: 59-105
+  lines: 59-116
 - kind: method
   qualified_name: trie/mcp_install:MCPTarget.supports
-  lines: 78-81
+  lines: 89-92
 - kind: method
   qualified_name: trie/mcp_install:MCPTarget.config_path
-  lines: 83-96
+  lines: 94-107
 - kind: method
   qualified_name: trie/mcp_install:MCPTarget.detect
-  lines: 98-101
+  lines: 109-112
 - kind: method
   qualified_name: trie/mcp_install:MCPTarget.snippet
-  lines: 103-105
+  lines: 114-116
 - kind: function
   qualified_name: trie/mcp_install:trie_server_snippet
-  lines: 108-112
+  lines: 119-123
 - kind: function
   qualified_name: trie/mcp_install:_claude_desktop_user_path
-  lines: 115-120
+  lines: 126-131
 - kind: class
   qualified_name: trie/mcp_install:InstallPlan
-  lines: 185-190
+  lines: 213-218
 - kind: function
   qualified_name: trie/mcp_install:install
-  lines: 193-240
+  lines: 221-268
 - kind: function
   qualified_name: trie/mcp_install:_apply_one
-  lines: 243-315
-incoming_refs: 21
+  lines: 271-343
+incoming_refs: 23
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/mcp_install:MCPInstallError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=050f6cc2d8f14a693693a9be4f79ee7bbd4aaf1d6c651837debdd37f83a634a4 source_ref=e7fbffcaf68e6e36cbeb989e0bd314b39f586cda -->
@@ -65,8 +65,8 @@ Frozen dataclass recording the outcome of a single MCP config install attempt.
 - `snippet`: the JSON fragment written or that would have been written
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_install:MCPTarget fingerprint=7648c3ca91dba3f5f3a03d4a07976a702a74f2f1a5e6dd3b7a313f8bf7988aed body_fp=d1238ef60055e7c169b49b4ef66f102d109be58b3cf1acbc0a4a525f458d1916 source_ref=d60cd5a0e4c46ef692c36bd100823726f9396960 -->
-## `MCPTarget(name, display_name, snippet_key, snippet_factory, project_rel_path, user_path_str, detect_paths_str, detect_binaries, notes)`
+<!-- trie:section symbol=trie/mcp_install:MCPTarget fingerprint=070d4c0ad55ae4ecd4f770fbcbbe6d66e3c83e34765d033cbaeae11990b2565b body_fp=d593163a56b67f8ec4ff8562f79326a043018bedb0006f1a4c4675a8b57de2f7 source_ref=ea97a5335fa14a0f02bd9dd07e89a2745ea03a45 -->
+## `MCPTarget(name, display_name, snippet_key, snippet_factory, project_rel_path, user_path_str, detect_paths_str, detect_binaries, tool_name_format, notes)`
 
 Frozen dataclass describing a coding agent or IDE that hosts MCP servers via a JSON config file.
 
@@ -76,6 +76,7 @@ Frozen dataclass describing a coding agent or IDE that hosts MCP servers via a J
 - `user_path_str`: `~`-expandable string for user-scope config path.
 - `detect_paths_str`: any existing path triggers auto-detection as installed.
 - `detect_binaries`: any `PATH`-resolvable binary triggers auto-detection as installed.
+- `tool_name_format`: format string with `{tool}` placeholder for how the harness exposes MCP tool names; defaults to bare `{tool}`.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/mcp_install:MCPTarget.supports fingerprint=79787e5e066fab97ba91f8b46938abb196bdba7a02388d1f6440a7065809f7ac body_fp=6747b22e71524d13d1c9e667bcef5c34ee1e3e882184f1351699ead7ea5749cc source_ref=e7fbffcaf68e6e36cbeb989e0bd314b39f586cda -->

@@ -1,130 +1,133 @@
 ---
 trie_version: 0.1.0
 source: tests/test_mcp.py
-file_fingerprint: c7b3f3ca31d88881e095b2de9c99c873a41f39e5fae7d1e21adba10193859511
-last_synced_at: '2026-05-16T13:39:45Z'
-description: 'Tests for the MCP tool surface: `locate`, `explain`, `walk`.'
+file_fingerprint: 9659a5daca4366381f4f2a6feb84369c1a27c73663e6e4b6b136846cb6a75e4d
+last_synced_at: '2026-05-18T13:57:14Z'
+description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: class
   qualified_name: tests/test_mcp:FakeClient
-  lines: 34-50
+  lines: 35-51
 - kind: method
   qualified_name: tests/test_mcp:FakeClient.generate
-  lines: 40-47
+  lines: 41-48
 - kind: method
   qualified_name: tests/test_mcp:FakeClient.count_tokens
-  lines: 49-50
+  lines: 50-51
 - kind: function
   qualified_name: tests/test_mcp:project
-  lines: 54-66
+  lines: 55-67
 - kind: function
   qualified_name: tests/test_mcp:populated_project
-  lines: 70-91
+  lines: 71-92
 - kind: function
   qualified_name: tests/test_mcp:tools
-  lines: 95-98
+  lines: 96-99
 - kind: function
   qualified_name: tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing
-  lines: 104-125
+  lines: 105-126
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_name_contains_returns_matches
-  lines: 131-136
+  qualified_name: tests/test_mcp:test_grep_name_contains_returns_matches
+  lines: 132-137
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_returns_one_liner_from_section_body
-  lines: 139-145
+  qualified_name: tests/test_mcp:test_grep_returns_one_liner_from_section_body
+  lines: 140-146
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_returns_file_pointer
-  lines: 148-150
+  qualified_name: tests/test_mcp:test_grep_returns_file_pointer
+  lines: 149-151
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_kind_filter
-  lines: 153-159
+  qualified_name: tests/test_mcp:test_grep_kind_filter
+  lines: 154-160
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_invalid_kind_returns_error
-  lines: 162-165
+  qualified_name: tests/test_mcp:test_grep_invalid_kind_returns_error
+  lines: 163-166
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_scope_prefix_filter
-  lines: 168-171
+  qualified_name: tests/test_mcp:test_grep_scope_prefix_filter
+  lines: 169-172
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_scope_exclude_filter
-  lines: 174-177
+  qualified_name: tests/test_mcp:test_grep_scope_exclude_filter
+  lines: 175-178
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_inbound_count_predicate
-  lines: 180-185
+  qualified_name: tests/test_mcp:test_grep_inbound_count_predicate
+  lines: 181-186
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_rank_by_inbound_count
-  lines: 188-192
+  qualified_name: tests/test_mcp:test_grep_rank_by_inbound_count
+  lines: 189-193
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_limit_respected
-  lines: 195-197
+  qualified_name: tests/test_mcp:test_grep_limit_respected
+  lines: 196-198
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_unknown_predicate_field_silently_ignored
-  lines: 200-203
+  qualified_name: tests/test_mcp:test_grep_unknown_predicate_field_silently_ignored
+  lines: 201-204
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_invalid_predicate_returns_error
-  lines: 206-209
+  qualified_name: tests/test_mcp:test_grep_invalid_predicate_returns_error
+  lines: 207-210
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_fallback_kind_none_when_no_name_contains
-  lines: 215-224
+  qualified_name: tests/test_mcp:test_grep_fallback_kind_none_when_no_name_contains
+  lines: 216-225
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_fallback_kind_grep_empty_for_unseen_string
-  lines: 227-234
+  qualified_name: tests/test_mcp:test_grep_fallback_kind_text_match_empty_for_unseen_string
+  lines: 228-235
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_fallback_kind_grep_redirects_via_body_match
-  lines: 237-255
+  qualified_name: tests/test_mcp:test_grep_fallback_kind_text_match_redirects_via_body_match
+  lines: 238-256
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_fallback_ranks_by_inbound_count_desc
-  lines: 258-272
+  qualified_name: tests/test_mcp:test_grep_fallback_ranks_by_inbound_count_desc
+  lines: 259-273
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_fallback_caps_matches_and_notes_truncation
-  lines: 275-301
+  qualified_name: tests/test_mcp:test_grep_fallback_caps_matches_and_notes_truncation
+  lines: 276-302
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_fallback_omits_truncation_note_when_under_cap
-  lines: 304-312
+  qualified_name: tests/test_mcp:test_grep_fallback_omits_truncation_note_when_under_cap
+  lines: 305-313
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_fallback_honours_scope_prefix
-  lines: 315-330
+  qualified_name: tests/test_mcp:test_grep_fallback_honours_scope_prefix
+  lines: 316-331
 - kind: function
-  qualified_name: tests/test_mcp:test_locate_normal_hits_path_omits_fallback_key
-  lines: 333-339
+  qualified_name: tests/test_mcp:test_grep_normal_hits_path_omits_fallback_key
+  lines: 334-340
 - kind: function
-  qualified_name: tests/test_mcp:test_explain_returns_prose_and_neighbours
-  lines: 345-352
+  qualified_name: tests/test_mcp:test_read_returns_prose_and_neighbours
+  lines: 346-353
 - kind: function
-  qualified_name: tests/test_mcp:test_explain_source_pointer_shape
-  lines: 355-358
+  qualified_name: tests/test_mcp:test_read_source_pointer_shape
+  lines: 356-359
 - kind: function
-  qualified_name: tests/test_mcp:test_explain_neighbour_carries_one_liner
-  lines: 361-364
+  qualified_name: tests/test_mcp:test_read_neighbour_carries_one_liner
+  lines: 362-365
 - kind: function
-  qualified_name: tests/test_mcp:test_explain_unknown_qname_returns_not_found
-  lines: 367-370
+  qualified_name: tests/test_mcp:test_read_unknown_qname_returns_not_found
+  lines: 368-371
 - kind: function
-  qualified_name: tests/test_mcp:test_explain_fuzzy_suggestion_for_typo
-  lines: 373-379
+  qualified_name: tests/test_mcp:test_read_fuzzy_suggestion_for_typo
+  lines: 374-380
 - kind: function
-  qualified_name: tests/test_mcp:test_walk_callers_returns_topology
-  lines: 385-391
+  qualified_name: tests/test_mcp:test_trace_callers_returns_topology
+  lines: 386-392
 - kind: function
-  qualified_name: tests/test_mcp:test_walk_callees_returns_outbound
-  lines: 394-397
+  qualified_name: tests/test_mcp:test_trace_callees_returns_outbound
+  lines: 395-398
 - kind: function
-  qualified_name: tests/test_mcp:test_walk_both_directions
-  lines: 400-405
+  qualified_name: tests/test_mcp:test_trace_both_directions
+  lines: 401-406
 - kind: function
-  qualified_name: tests/test_mcp:test_walk_invalid_direction_returns_error
-  lines: 408-411
+  qualified_name: tests/test_mcp:test_trace_invalid_direction_returns_error
+  lines: 409-412
 - kind: function
-  qualified_name: tests/test_mcp:test_walk_unknown_qname_returns_not_found
-  lines: 414-417
+  qualified_name: tests/test_mcp:test_trace_unknown_qname_returns_not_found
+  lines: 415-418
 - kind: function
-  qualified_name: tests/test_mcp:test_walk_depth_zero_returns_only_root
-  lines: 420-423
+  qualified_name: tests/test_mcp:test_trace_depth_zero_returns_only_root
+  lines: 421-424
 - kind: function
-  qualified_name: tests/test_mcp:test_walk_depth_clamp_adds_note
-  lines: 426-430
+  qualified_name: tests/test_mcp:test_trace_depth_clamp_adds_note
+  lines: 427-431
 - kind: function
   qualified_name: tests/test_mcp:test_build_server_registers_three_verbs
-  lines: 436-445
+  lines: 437-448
+- kind: function
+  qualified_name: tests/test_mcp:test_build_server_wire_names_bind_to_internal_methods
+  lines: 451-468
 incoming_refs: 0
 outgoing_refs: 8
 ---
@@ -167,215 +170,294 @@ Fixture that runs scan and sync on both project files so MCP tools have queryabl
 Yield a `TrieTools` instance for the populated project, closing it after the test.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_name_contains_returns_matches fingerprint=18e39f7284ba6a5d743a888fa0f66b235dd3907c917c79dea238f68b4becd3e2 body_fp=52a8601d55f8752796f6e571e917d9b4e564428d5ab7faf8a90e6fd64f4e8a37 source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_name_contains_returns_matches(tools: TrieTools)`
 
-Assert that `locate` with a `name_contains` predicate returns matching symbols under `result["hits"]` with no `fallback` key present.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_returns_one_liner_from_section_body fingerprint=4498143601b264c151125672d5320096658bda34fb59db7d3f21d4fccab01960 body_fp=383fbd5e2f0e28a3dc9b4f25b62ca7578340611abab0a2ce10ae34dea195217d source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_returns_one_liner_from_section_body(tools: TrieTools)`
 
-Assert that `locate` results include a `one_liner` field extracted from the triefact prose body.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_returns_file_pointer fingerprint=b912c6822fbf5e42d0b97795382267bc1d447d520c60a4abc35f9bf582854c9e body_fp=2f90abf5c26a8ddbbf1f614de0b7f94fca566c8b6a0f7ce35c34656e617e0183 source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_returns_file_pointer(tools: TrieTools)`
 
-Assert that `locate` results include a `file_pointer` ending with the correct filename and line number.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_kind_filter fingerprint=4ab6c522eeb7953030d8f3f238b4cdb988b24689c06c162b0e0756688c958042 body_fp=4fb6e97831d8ed8e41d535a8216f115ee4a94c3d8afb0e8fd0944d63dfa30166 source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_kind_filter(tools: TrieTools)`
 
-Assert `locate` with `kind="class"` returns empty `hits` when only functions exist, even when fallback grep fires.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_invalid_kind_returns_error fingerprint=4acadfe17294720f526183f87a2494bf1f6dcc403e4e8cc81dad65fb23d29cf6 body_fp=948be9cd8b1ec287cee4344342e767785b13cc449e5835b43ee25d92d6dd8f45 source_ref=6dbbdc95c4a370893e730330c3d0ef838e805585 -->
-## `test_locate_invalid_kind_returns_error(tools: TrieTools)`
 
-Assert that `locate` with an unsupported `kind` value returns an `invalid_argument` error dict.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_scope_prefix_filter fingerprint=17886df863c26934a3279442d7df5516e444f17b543636c1882909ab552c2903 body_fp=6a8851978a46888f73796a53ccb9ffa202291e5b400a8f705fc0ec79b6bd2658 source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_scope_prefix_filter(tools: TrieTools)`
 
-Verify that `locate` with `scope_prefix` returns only symbols from files matching that prefix.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_scope_exclude_filter fingerprint=f2d1ffb4462b9ec48e317f5c7c0fe4875e6e423ce2f7d24f7239597885e28f03 body_fp=e44f7aa10dd40cf79d7ef089e53e79d188a2d76f5d572769d1d1e5a53f87209b source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_scope_exclude_filter(tools: TrieTools)`
 
-Verify that `scope_exclude` filters out symbols whose file paths match excluded scope prefixes.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_inbound_count_predicate fingerprint=434010dc9271e7b19043e8ace55591ac26fb83b192daefa3a2760ff255b59bc1 body_fp=4801b49bb439e04cf86a723960b8236063f8c4f80921e722cac048a44f047d09 source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_inbound_count_predicate(tools: TrieTools)`
 
-Verify `locate` filters by minimum inbound edge count, including symbols with callers and excluding those without.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_rank_by_inbound_count fingerprint=076d3d599599b75bf4fd83a3ea668e14e235fbd05d177f0d682aa64c4766231b body_fp=d92b6316abe5606c1ee8c0f8c3ca2ee1266b7538fe590dde2431f577dbc0073f source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_rank_by_inbound_count(tools: TrieTools)`
 
-Assert that `locate` results are ordered descending by `inbound_count` when `rank_by="inbound_count"`.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_limit_respected fingerprint=9cab3af0507419236f8af08a0db51cf56eff4fe83606dadac4334240029fe1d4 body_fp=124bb5dbc0063dd9a48b27778ca4cef4dd1f479265723a09c3e251f8dd6c7ce6 source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_limit_respected(tools: TrieTools)`
 
-Assert that `locate` returns no more results than the specified `limit`.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_unknown_predicate_field_silently_ignored fingerprint=37daee59cfce4ce0f574b0ad0df138f2bbf583180c1947caa8954cbb9e7f7552 body_fp=dabe4aab6fe241708f210fa5c7645fcbef3d45c39bef2a84f77e8e7850938771 source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_unknown_predicate_field_silently_ignored(tools: TrieTools)`
 
-Assert that unrecognised predicate fields are ignored and matching still succeeds.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_invalid_predicate_returns_error fingerprint=4e314afe4b532d9d019d5940ca22c60800d918b4905dbce70630b9ea7c4d876b body_fp=b22247dcc4c9443fa02e06e7b6cce7619aa6e1332dc28723323d3c5ada08e69c source_ref=6dbbdc95c4a370893e730330c3d0ef838e805585 -->
-## `test_locate_invalid_predicate_returns_error(tools: TrieTools)`
 
-Assert that passing a non-dict predicate to `locate` returns an `invalid_argument` error dict.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_explain_returns_prose_and_neighbours fingerprint=ca0385a78e2823572e125385d4179dfec932d510ca279bb8c6ce49f7351da7d8 body_fp=1a5ce0afd38de584606fa3aecfd50345042e30968cedbaa2a888cd05e2099641 source_ref=6dbbdc95c4a370893e730330c3d0ef838e805585 -->
-## `test_explain_returns_prose_and_neighbours(tools: TrieTools)`
 
-Verify `explain` returns prose, correct callers, and an empty callees list for `lib:slugify`.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_explain_source_pointer_shape fingerprint=f3a209d4b72e5d5b8621ea6b0d721e45fd409d15bffc877f4da3759b9c8e47cc body_fp=5d98be4ff0748d2586219a3a6e7172edc3941b92c19ec956ab492030e1994667 source_ref=6dbbdc95c4a370893e730330c3d0ef838e805585 -->
-## `test_explain_source_pointer_shape(tools: TrieTools)`
 
-Assert that `explain` returns a `source_pointer` in `"file.py:start-end"` format.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_explain_neighbour_carries_one_liner fingerprint=1d4855ce5510d06cacace44de9704c023a0793220048421e685ba9966b5ec7e7 body_fp=af0d7e79939f6deb8435c0dbc88e3ee544959505657270ed7af76b712979f276 source_ref=6dbbdc95c4a370893e730330c3d0ef838e805585 -->
-## `test_explain_neighbour_carries_one_liner(tools: TrieTools)`
 
-Assert that a caller entry returned by `explain` includes a populated `one_liner` field.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_explain_unknown_qname_returns_not_found fingerprint=ed89721b2a059acd69c40a8e4fc1f616bb84478f78ccfd994bb8383ca9e3337b body_fp=8e27d2f0ff8fc838537d2180422871d27ce0f60e96501393a49b0470e0200739 source_ref=6dbbdc95c4a370893e730330c3d0ef838e805585 -->
-## `test_explain_unknown_qname_returns_not_found(tools: TrieTools)`
 
-Assert that `explain` returns a `not_found` error for an unrecognised qualified name.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_explain_fuzzy_suggestion_for_typo fingerprint=edbecabb6ccce06dc30d515ff8354c91924411a9c0bb165018c2fea6dcf26bf9 body_fp=536ef1f0b53851b52c0e5c89e7ebf760010352562180e4bdbbcaa149a6d76ff5 source_ref=6dbbdc95c4a370893e730330c3d0ef838e805585 -->
-## `test_explain_fuzzy_suggestion_for_typo(tools: TrieTools)`
 
-Assert that `explain` returns an error with a `suggestion` field when given a near-miss qname typo.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_walk_callers_returns_topology fingerprint=ffb593f85dec28894896ad20abb8ed225c671c776d0740e4ce527ce243cedb56 body_fp=378a7a4094a820d9b85c363667745dc9e517f450954031f95e4963f0cb9ef595 source_ref=6dbbdc95c4a370893e730330c3d0ef838e805585 -->
-## `test_walk_callers_returns_topology(tools: TrieTools)`
 
-Assert `walk` with `direction="callers"` returns root node, caller in nodes, and a directed edge.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_walk_callees_returns_outbound fingerprint=fa8734200d06de865fcd132e548589d13d70a14ed49394bd6e9aa161bf58609f body_fp=8c9084d2d2919c63eec35d400fcabd7dfcedcf5e5ba5236f1b4796c53d688210 source_ref=6dbbdc95c4a370893e730330c3d0ef838e805585 -->
-## `test_walk_callees_returns_outbound(tools: TrieTools)`
 
-Assert that walking callees from `app:make_url` includes `lib:slugify` as a node and edge.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_walk_both_directions fingerprint=cf5f9355a6720079c859a59ea6542b124965dcd5b6f404b9a3a1add6b650115f body_fp=433a2f733036f0e76b7fb3c0e7f102f920c5c6e9cff94d7646fa327db12de719 source_ref=6dbbdc95c4a370893e730330c3d0ef838e805585 -->
-## `test_walk_both_directions(tools: TrieTools)`
 
-Verify `walk` with `direction="both"` returns inbound caller nodes and edges.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_walk_invalid_direction_returns_error fingerprint=34c2309e2b1fa5d072874d9c584d6503334cc59e01aac682c87dbe621b0216f6 body_fp=e2338b2c1898fcb19a63aefa0551ca1d97a2d570150cea55ef9df2ab084a560f source_ref=6dbbdc95c4a370893e730330c3d0ef838e805585 -->
-## `test_walk_invalid_direction_returns_error(tools: TrieTools)`
 
-Assert that `walk` returns an `invalid_argument` error when given an unrecognised direction string.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_walk_unknown_qname_returns_not_found fingerprint=7db3c28c3e02fa3e0472794a781e83ca5834a982cd918918a0f53731bf6a165c body_fp=2485a16f4ee5d425081eb01430095e95b2517fc116900536920cfd52df8ba6de source_ref=6dbbdc95c4a370893e730330c3d0ef838e805585 -->
-## `test_walk_unknown_qname_returns_not_found(tools: TrieTools)`
 
-Assert that `walk` returns a `not_found` error for an unrecognised qualified name.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_walk_depth_zero_returns_only_root fingerprint=d57a8c520de9f8f6fefef7187a528a58a0b97181e81473b05a4d2de2f3eede71 body_fp=79c3e220d75eef77191295f6e0fd7730dc157f7fb9a8b347e0a8e5de7603da12 source_ref=6dbbdc95c4a370893e730330c3d0ef838e805585 -->
-## `test_walk_depth_zero_returns_only_root(tools: TrieTools)`
 
-Assert that `walk` with `depth=0` returns only the root node and no edges.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_walk_depth_clamp_adds_note fingerprint=5f2ad94096fc772644b9861e5bf2de89ff79fd7dfd3227d62b1cdceddd1e99f9 body_fp=1669a4c47ee15130361f9cac68195ad559af1ef528533180b65811d0267c2f07 source_ref=6dbbdc95c4a370893e730330c3d0ef838e805585 -->
-## `test_walk_depth_clamp_adds_note(tools: TrieTools)`
 
-Assert that requesting a depth exceeding `walk_max_depth` clamps the value and adds a "clamped" note to the result.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_build_server_registers_three_verbs fingerprint=85dad67991b790d69cb121abd834d86095f73cb0b212d565f131c62b696e037a body_fp=a9b95af912c112255bb24083610bad19c8396f4f62f3966ca69660d1a0cf52d0 source_ref=6dbbdc95c4a370893e730330c3d0ef838e805585 -->
+<!-- trie:section symbol=tests/test_mcp:test_build_server_registers_three_verbs fingerprint=017fbe1b09387e95619e1a41502d43b523d63dea07b52425d55d1381011d3029 body_fp=ba6e6f40c711df5f3ea55226930fd8037c92b25805e2eed509991c769c399bca source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
 ## `test_build_server_registers_three_verbs(populated_project: Path)`
 
-Verify `build_server` returns a FastMCP instance with exactly `locate`, `explain`, and `walk` tools registered.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_mcp:test_locate_fallback_kind_none_when_no_name_contains fingerprint=ce9789f41cdba22932d029e4852873c372192c4b42f1c1d90d0d7b1323e37ba1 body_fp=d1f99223ccf38dff1149fd4c86920c913d568679954a5c02a36b6101ffcba151 source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_fallback_kind_none_when_no_name_contains(tools: TrieTools)`
-
-Assert that a predicate with no `name_contains` field returns `fallback.kind == "none"` when no symbols match.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_mcp:test_locate_fallback_kind_grep_empty_for_unseen_string fingerprint=8399484b13d1ee3b4a61223ffbc7bb5e7f7ae7c059b06744dc7765582514d70c body_fp=266e8102d60a4c2a7f65d30aab0e933abdaa9773b193901cff2868767075bc67 source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_fallback_kind_grep_empty_for_unseen_string(tools: TrieTools)`
-
-Assert that `locate` returns `fallback.kind == "grep_empty"` when `name_contains` matches no symbol name and no source body.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_mcp:test_locate_fallback_kind_grep_redirects_via_body_match fingerprint=75dc0b85830bab88f98909d4f638c6cc05d44bf15325513cf056524676e7338d body_fp=0e9caf561b067c4bb9681f41d989d49692fe467be894a59252605d34b6d64750 source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_fallback_kind_grep_redirects_via_body_match(tools: TrieTools)`
-
-Assert that a `name_contains` query matching symbol bodies (not names) returns a `grep` fallback with enclosing symbols, occurrence counts, and graph metrics.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_mcp:test_locate_fallback_ranks_by_inbound_count_desc fingerprint=2514a954811a9d24af90a85ab99d3d7c59b96d1ad2def48e5843b21bf2652a76 body_fp=df3c9e3ff2c0fd18448e16b378d7df67cd742bba135e5d3af539de9f93df8ce2 source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_fallback_ranks_by_inbound_count_desc(tools: TrieTools)`
-
-Assert that grep-fallback candidates are sorted by `inbound_count` descending when multiple matches exist.
-
-- Skips if the fixture gains a symbol named `"title"` or if fewer than two fallback candidates are returned.
+Verify `build_server` returns a FastMCP instance with exactly `grep`, `read`, and `trace` registered as tools.
 <!-- trie:end -->
 
 
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_fallback_honours_scope_prefix fingerprint=f2d122d82a9f89f3136c243fee5e421b5217ccb42f871475c2c753c079f99167 body_fp=a71c490af9fab098fed0835e13e664a858c73fd7864f9792bb6550b7446446ab source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_fallback_honours_scope_prefix(tools: TrieTools)`
 
-Assert that `scope_prefix` filters fallback grep candidates to the specified scope, excluding symbols from other scopes.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_normal_hits_path_omits_fallback_key fingerprint=c2ca83ed88936f3042d75b5b12246fd5322bcbcf449cdf0ff86efbf1abe808fd body_fp=e74208a20d62c69abfff203bdf55322f0d4030ddf84e2e4e8d1f0ae18a508f94 source_ref=cab45f77d1dc61906302956ceaca9ec290ee6b94 -->
-## `test_locate_normal_hits_path_omits_fallback_key(tools: TrieTools)`
 
-Assert that a successful `locate` response contains no `fallback` key when primary hits are found.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_fallback_caps_matches_and_notes_truncation fingerprint=bf572683898e4800cca4cf7f9ecf860ce8035308dd17a2de6611edb2fd95037e body_fp=feb63e551211b353edaac7de5471347efe66109f7533e0e4d167321825149d00 source_ref=5121a90af508a5817dab3b63572cb6f1f9499e4b -->
-## `test_locate_fallback_caps_matches_and_notes_truncation(tools: TrieTools)`
 
-Verify that fallback grep results are capped at `locate_fallback_match_limit` and the response includes a truncation note with total count.
 
-- `tools`: fixture providing a `TrieTools` instance with the populated project; `mcp_cfg` is mutated to force `locate_fallback_match_limit=1`.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_locate_fallback_omits_truncation_note_when_under_cap fingerprint=07c3ee77b2a7505bba4da9c4bdc6f9281f3f4514d50e5b2d5bfadc78996bd759 body_fp=b70b324d2ec841712a880095c2ef1d3bc69fd8dabf77867bcdf573929b6394f3 source_ref=5121a90af508a5817dab3b63572cb6f1f9499e4b -->
-## `test_locate_fallback_omits_truncation_note_when_under_cap(tools: TrieTools)`
 
-Assert no truncation note appears in fallback when all grep matches fit within the match limit.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing fingerprint=e625643ba6a1b85500ca87f1c0222f623bf2bbbd7a2983711641f7d01846fb7a body_fp=2a96793ec1cda466eeaaf3c09ac0b655fcf2e8eb2f47306256a27b1b78c5d47b source_ref=080f8cf593472b38359d9336616c26fce746fcb9 -->
+
+
+
+
+
+
+
+<!-- trie:section symbol=tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing fingerprint=2ea97d1b02ea695fbca32b81cfd8377a7e1da3159c9b30a1815fe2099d25638b body_fp=2a96793ec1cda466eeaaf3c09ac0b655fcf2e8eb2f47306256a27b1b78c5d47b source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
 ## `test_trie_tools_init_fails_clearly_when_rg_missing(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that `TrieTools` raises `RipgrepNotFoundError` with an actionable message when `rg` is absent from `PATH`.
 
 - `monkeypatch`: stubs `shutil.which` to return `None`, simulating missing `rg`.
 - Error message must contain `"rg"` and either `"install"` or `"ripgrep"`.
+<!-- trie:end -->
+
+
+
+<!-- trie:section symbol=tests/test_mcp:test_build_server_wire_names_bind_to_internal_methods fingerprint=a480374391cd52c59bd6c51db2664d53e9150773ce64b5a08555c94f8cf832c5 body_fp=2d3f7fa4a7536b286b48c5ccef2a35d2dbc21df0d1eaa745de4f1f227510545c source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_build_server_wire_names_bind_to_internal_methods(populated_project: Path)`
+
+Assert each FastMCP wire tool's `fn` attribute points to the matching `TrieTools` method.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_name_contains_returns_matches fingerprint=13a70b013b95687914be7cf11a6a2926e39e6d256ed6ee0fc19ec38c6f2bcffb body_fp=09e4936084d84fe138daaf8c45a55d8fb344a06d72a915334e5e7c57e629d51c source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_name_contains_returns_matches(tools: TrieTools)`
+
+Assert that `grep` with `name_contains` returns matching symbols and omits the fallback envelope.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_returns_one_liner_from_section_body fingerprint=37a68231e58a6658814f1e064b7c136eeaa7a7f879f70bdfd4eaa836d69779ad body_fp=103b6ba0d0ec96ddde1d75abd10338a8cf5c18f01bf287417fdbd9b6f2222374 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_returns_one_liner_from_section_body(tools: TrieTools)`
+
+Assert that grep hits include a `one_liner` field derived from the triefact section body.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_returns_file_pointer fingerprint=fd44c10f827063015b2af6e12727ce6f8e2d67973fc32ea706be0a403274f87e body_fp=2a998bd16e7316172b31f19ac977015bf90977d4b4765b966c73f24be2a99657 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_returns_file_pointer(tools: TrieTools)`
+
+Assert that `grep` hits include a `file_pointer` of the form `<filename>:<line>`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_kind_filter fingerprint=05f736a15cd7708beed46d7beef0835ba93bb4867f848cec7c0d4da66a5d31bf body_fp=7f2f3da9891b906225e5f3242042e85be2507061a59930863fc9e5df4229bafe source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_kind_filter(tools: TrieTools)`
+
+Assert that filtering by `kind="class"` returns zero hits when only functions exist in the fixture.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_invalid_kind_returns_error fingerprint=93c63e643ced72ef46d974b15a6f15362abaa72e8e7b439e17f8d46411602d2e body_fp=4af18d263328b07ad0260e8f5d44a00017f2bb8e185a33cd693d4478ca8d44e7 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_invalid_kind_returns_error(tools: TrieTools)`
+
+Assert that passing an unrecognised `kind` value returns an `invalid_argument` error dict.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_scope_prefix_filter fingerprint=4087ec669cf402755c9ebcba58be379db4f126a23aaa314712e20b33ffa6a9f0 body_fp=75113f58734cf7b41af95f4b9cb5f978cae16b7e6e71c3564565be0b26a43a1a source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_scope_prefix_filter(tools: TrieTools)`
+
+Assert that `grep` with `scope_prefix` returns only hits whose file paths start with that prefix.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_scope_exclude_filter fingerprint=d9ed58e0d2cb505d72e32ca79f8f8032c881eff47584a5bf9377a006626e5793 body_fp=8f0f8424014ac84df63ffc33ddd349183edd76ef7180f363527d75882544d18a source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_scope_exclude_filter(tools: TrieTools)`
+
+Verify that `scope_exclude` removes matching scopes from `grep` results.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_inbound_count_predicate fingerprint=29ed9feb09b2e5254bd1cef76cabd75536142afaac8b064dcc196599c69f7b0b body_fp=bb16cb7153c6d67c51c7f1a179e5f3970ce0f57edbd341f94d83774db04fd7c0 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_inbound_count_predicate(tools: TrieTools)`
+
+Verify that `grep` with `inbound_count: {min: 1}` returns symbols with inbound edges and excludes those with none.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_rank_by_inbound_count fingerprint=51d466d3abc98efcbb6ac36903992409886b24f2a09da68e2f7f2286a60e079b body_fp=d08117d04063a03ac0a2a5ecae66304ff3bce908f088b088daa9fef41ca0bce4 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_rank_by_inbound_count(tools: TrieTools)`
+
+Assert that `grep` with `rank_by="inbound_count"` returns hits in descending inbound-count order.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_limit_respected fingerprint=2fadc7de1998df74f256d4771afd3972c25ba12e1357a023caeeedddf3306df4 body_fp=cc707794291cc445710a69357ad9a79deb343a473ed805122c8ca4000a8b8e4a source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_limit_respected(tools: TrieTools)`
+
+Assert that passing `limit=1` to `grep` returns exactly one hit.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_unknown_predicate_field_silently_ignored fingerprint=d932c0e53093906441747dbaef79cf5c314d42057b100dc5b2f257cc7518c2f0 body_fp=15b5b14a500d36307b23e45fb3db149c422266c4a0ab2352e469188a56e506cf source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_unknown_predicate_field_silently_ignored(tools: TrieTools)`
+
+Assert that unrecognised predicate fields are silently ignored and valid filters still return matches.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_invalid_predicate_returns_error fingerprint=a7cc46c17ae0d8aa0cd7f2ea984b0423139fb7ac60d05209e81e0ff92529668d body_fp=17bda2f7ed9818b2b9b4d783c28f59e522b238ef1bb7a7ac3d4f17d8afcd6da6 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_invalid_predicate_returns_error(tools: TrieTools)`
+
+Assert that passing a non-dict predicate to `grep` returns an `invalid_argument` error dict.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_kind_none_when_no_name_contains fingerprint=4e6e6519556d6b7fd8d18bba3fffc5f082582756e2362308de5d5c28e746be5e body_fp=27d4f8b1530becd58604970b0e61a7015dab834d6d3f63e9b22163af40dfb98c source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_fallback_kind_none_when_no_name_contains(tools: TrieTools)`
+
+Assert that a predicate with no `name_contains` and zero symbol hits returns `fallback.kind == "none"` with a note referencing `name_contains`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_kind_text_match_empty_for_unseen_string fingerprint=69f80642424418ade7fb9f362dc9f273b6a72bb84ecb843ccc644431f6056736 body_fp=da43a5552c767cb2ea30607a4261e831c637503e0329b4d2eec9e2fac33849a4 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_fallback_kind_text_match_empty_for_unseen_string(tools: TrieTools)`
+
+Assert that `grep` returns `fallback.kind == "text_match_empty"` when `name_contains` matches no symbol name and no source body.
+
+- `fallback.query` echoes back the searched string.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_kind_text_match_redirects_via_body_match fingerprint=d62ca25bade3109437990a6051d0a8e8811a4c2b569a8dc05e9bff1f79505cb8 body_fp=903b1a3a82b933d55114db06a79454a38cc2920aa211ee3cdb226aba8cc2cb4e source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_fallback_kind_text_match_redirects_via_body_match(tools: TrieTools)`
+
+Assert that when `name_contains` matches a string inside a symbol's body (not its name), the fallback returns the enclosing symbol with `kind == "text_match"`.
+
+- `tools`: populated `TrieTools` fixture with `lib:slugify` and `app:make_url` synced.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_ranks_by_inbound_count_desc fingerprint=ef3ac182e9ce5a40ceecd0150cf8383538870bd63efa253d6c0217440cccaa12 body_fp=823f39060cfbdd44033d3339c50e470a3a35ce91254bd15694807eafe61bdcf0 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_fallback_ranks_by_inbound_count_desc(tools: TrieTools)`
+
+Assert fallback candidates are ordered by `inbound_count` descending when no symbol name matches.
+
+- Skips if the fixture gains a symbol literally named `"title"` or yields fewer than two candidates.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_caps_matches_and_notes_truncation fingerprint=ecfb2d89504fa8c1d8605600e0862e1c961e5ed2840d64902cb9fc4e173cb723 body_fp=cf4191707ad37d5c258ffe8a359b1590854b362654a854a4e74997c1a01655db source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_fallback_caps_matches_and_notes_truncation(tools: TrieTools)`
+
+Assert that broad fallback queries return a ranked top-N slice with a truncation note, not a refusal.
+
+- Forces `grep_fallback_match_limit=1` to trigger truncation on the small fixture.
+- Verifies `fallback.unique_symbols` exceeds the capped `matches` list length.
+- Confirms the truncation note contains `"of"` (e.g. "Showing top 1 of N…").
+- Checks the single returned match still carries `qname` and `inbound_count`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_omits_truncation_note_when_under_cap fingerprint=cf99e3b6a8f38acee3321f95f67be04eb837de301219103c85baec04b0a7bad0 body_fp=6caac8f17f077149611ce22c49734328b2420a4a705a637de12ae028ed2eae6e source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_fallback_omits_truncation_note_when_under_cap(tools: TrieTools)`
+
+Assert that no truncation note appears in the fallback envelope when match count is within the cap.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_honours_scope_prefix fingerprint=31b191790a84b0b474a2cc9861f586ab8ea42430ceded08fcc62bdb2df882d24 body_fp=a4b85f803d10dc52cff8c65adddc0638eaad8e84e64e96d853dd7d413f5cfeb7 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_fallback_honours_scope_prefix(tools: TrieTools)`
+
+Assert that `scope_prefix` filters fallback candidates so no out-of-scope symbols appear in fallback matches.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_normal_hits_path_omits_fallback_key fingerprint=e4d4fa9ea51cf2db4cfeb5df2b356f09c2f3af9fb4af96059369c25e6b38f07d body_fp=c0f9fb82056027f99025af96bd69463433b507766eaee4a98977c25cbe71b07a source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_grep_normal_hits_path_omits_fallback_key(tools: TrieTools)`
+
+Assert that a successful `grep` response contains no `fallback` key.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_read_returns_prose_and_neighbours fingerprint=8c1f77548638b430933ea0f0fab8a398b6ee3ac0f3dce12584d0dc79166d6f8e body_fp=6ecc648d5c7d4a7e3ef67005c3b9ae82bb69b43180f437bd95b3f5775be0d479 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_read_returns_prose_and_neighbours(tools: TrieTools)`
+
+Assert `read("lib:slugify")` returns prose content, correct callers, and an empty callees list.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_read_source_pointer_shape fingerprint=420bf61a94fb75358593559620c310977d02c1bfeeb15481f3806550aeb73e97 body_fp=2be51b834ede5aaae9cc28f0cbc5c755cd8e47c683807515e31f629ef650ff3c source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_read_source_pointer_shape(tools: TrieTools)`
+
+Assert that `read` returns a `source_pointer` in `"file.py:start-end"` format.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_read_neighbour_carries_one_liner fingerprint=51c2f2f644f316fdeabf34c1c1d3b0dc3b57ec9e2f746d8c04d682b4cf8fd044 body_fp=71e9cf890c028244059f96cd1d9c50f1dc2516ce4cf313e7a658ce160345b500 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_read_neighbour_carries_one_liner(tools: TrieTools)`
+
+Assert that a caller neighbour returned by `read` includes a populated `one_liner` field.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_read_unknown_qname_returns_not_found fingerprint=3265a0090391b2d6756d124cacb28e9a01e3e19ee7b45fe0032c752b36efb7f7 body_fp=6df38ad52a7021926de83590054de13a74288db2501447381f019980661d3845 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_read_unknown_qname_returns_not_found(tools: TrieTools)`
+
+Assert that `read` returns a `not_found` error dict for an unrecognised qname.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_read_fuzzy_suggestion_for_typo fingerprint=656607d4483ca9d33fd84a8e21cd913fd53f6dfb9c395347ff19d836dabaa261 body_fp=7e9b2377ca51f3c8ca62bbb7f2192198b47967f84cff1a440cb8a4dbe0ddac76 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_read_fuzzy_suggestion_for_typo(tools: TrieTools)`
+
+Assert that a misspelled qname returns an error with an actionable suggestion containing the correct symbol name or a `grep()` hint.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_trace_callers_returns_topology fingerprint=ba52df6ec0918227c8a41b6a0d14ab17f8fca12de24f0684dd8eb190b5e31c9d body_fp=d020b40356b1299c663edb07760b76a20e949f623a74d0f57a071d78af06d0cd source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_trace_callers_returns_topology(tools: TrieTools)`
+
+Assert that `trace` with `direction="callers"` returns the root node, reachable caller nodes, and correctly directed edges.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_trace_callees_returns_outbound fingerprint=0f7a79554ab1ccc241fd5da78d98609b43458bbc13f8ab26ace19fde87547dde body_fp=12d9bed00c44d5f21a8b4f721254ff2565414617af9292787099f26e42dc4925 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_trace_callees_returns_outbound(tools: TrieTools)`
+
+Verify `trace` with `direction="callees"` returns outbound edges from `app:make_url` to `lib:slugify`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_trace_both_directions fingerprint=d982c36f43d513419ade4e39cc8a34a1405626cf97bdb9cf3043e5dc8e96bab0 body_fp=92a02d467228e2f86dbf14163a1efdd202561becd07257a3c1d5d4c4c519bb1e source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_trace_both_directions(tools: TrieTools)`
+
+Assert that `direction="both"` includes inbound caller nodes and edges in the trace result.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_trace_invalid_direction_returns_error fingerprint=ee66239794f468126ebd3f5e9d557088e75a14791456cb94d3242b919f9a1712 body_fp=a456ca3bdbddb5539516a7c34c0c71ad1e63c73292d78efb08aae16299995c29 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_trace_invalid_direction_returns_error(tools: TrieTools)`
+
+Assert that `trace` with an unrecognised `direction` returns an `invalid_argument` error dict.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_trace_unknown_qname_returns_not_found fingerprint=4a972421a152c7b560db28c9f942d12a1917d194cc1acb5041774f2b39f1b89d body_fp=ab680909520a42548b3c41fac9d4e80c24a6b28e23d9c691c35b357b94db0c56 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_trace_unknown_qname_returns_not_found(tools: TrieTools)`
+
+Assert that `trace` returns a `not_found` error for an unrecognised qname.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_trace_depth_zero_returns_only_root fingerprint=76be5ecaba8cb2a295a796f304e77c718a9dcc8d23868995efa57a5182d2a1c2 body_fp=a4b8ce06db00f8a4bb692ac09198e4db99d9e6941e30384985978db8a09755b4 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_trace_depth_zero_returns_only_root(tools: TrieTools)`
+
+Assert that `trace` with `depth=0` returns only the root node and no edges.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_trace_depth_clamp_adds_note fingerprint=c455960b8dcfb8693c4e826945685a9217238b8705ee7806c1ca182dccf62c13 body_fp=2d992cf64b4fa107d6623a22849b59bb26c379f3f6a2e71c3c7e63f9cfb1ede7 source_ref=7e4137c7ffe5d4956c376bb1b09455ea1b946bb8 -->
+## `test_trace_depth_clamp_adds_note(tools: TrieTools)`
+
+Assert that requesting a depth exceeding `trace_max_depth` clamps the value and adds a "clamped" note to the response.
 <!-- trie:end -->

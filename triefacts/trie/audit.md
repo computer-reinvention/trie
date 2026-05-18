@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/audit.py
-file_fingerprint: d96a61fc1863884c797a4579f6a38dea6734c512535a1f0cc13b4dafc8999705
-last_synced_at: '2026-05-16T12:50:57Z'
+file_fingerprint: 65d1a3f1c5f52b4f6602ca42ab5896763196da04f818ec9a5e37fad66e46f3d1
+last_synced_at: '2026-05-18T13:57:17Z'
 description: Post-hoc analysis of `debug.jsonl` telemetry logs.
 defines:
 - kind: class
@@ -13,97 +13,97 @@ defines:
   lines: 64-82
 - kind: class
   qualified_name: trie/audit:McpCallStats
-  lines: 91-121
+  lines: 91-122
 - kind: method
   qualified_name: trie/audit:McpCallStats.avg_duration_ms
-  lines: 116-117
+  lines: 117-118
 - kind: method
   qualified_name: trie/audit:McpCallStats.avg_response_bytes
-  lines: 120-121
+  lines: 121-122
 - kind: class
   qualified_name: trie/audit:SyncStats
-  lines: 125-147
+  lines: 126-148
 - kind: class
   qualified_name: trie/audit:RetryStats
-  lines: 151-156
+  lines: 152-157
 - kind: class
   qualified_name: trie/audit:ParseStats
-  lines: 160-165
+  lines: 161-166
 - kind: class
   qualified_name: trie/audit:AuditSummary
-  lines: 174-262
+  lines: 175-263
 - kind: method
   qualified_name: trie/audit:AuditSummary.from_log
-  lines: 193-213
+  lines: 194-214
 - kind: method
   qualified_name: trie/audit:AuditSummary.to_dict
-  lines: 215-262
+  lines: 216-263
 - kind: function
   qualified_name: trie/audit:_summarise
-  lines: 270-322
+  lines: 271-323
 - kind: function
   qualified_name: trie/audit:_mcp_stats
-  lines: 325-389
+  lines: 326-390
 - kind: function
   qualified_name: trie/audit:_pricing_for
-  lines: 397-410
+  lines: 398-411
 - kind: function
   qualified_name: trie/audit:_sync_stats
-  lines: 413-496
+  lines: 414-497
 - kind: function
   qualified_name: trie/audit:_retry_stats
-  lines: 499-510
+  lines: 500-511
 - kind: function
   qualified_name: trie/audit:_cli_invocations
-  lines: 513-518
+  lines: 514-519
 - kind: function
   qualified_name: trie/audit:_span
-  lines: 521-538
+  lines: 522-539
 - kind: function
   qualified_name: trie/audit:render
-  lines: 546-562
+  lines: 547-563
 - kind: function
   qualified_name: trie/audit:render_comparison
-  lines: 565-579
+  lines: 566-580
 - kind: function
   qualified_name: trie/audit:_render_header
-  lines: 585-600
+  lines: 586-601
 - kind: function
   qualified_name: trie/audit:_render_mcp
-  lines: 603-654
+  lines: 604-655
 - kind: function
   qualified_name: trie/audit:_render_sync
-  lines: 657-682
+  lines: 658-683
 - kind: function
   qualified_name: trie/audit:_render_retries
-  lines: 685-693
+  lines: 686-694
 - kind: function
   qualified_name: trie/audit:_render_cli
-  lines: 696-700
+  lines: 697-701
 - kind: function
   qualified_name: trie/audit:_render_compare_header
-  lines: 706-711
+  lines: 707-712
 - kind: function
   qualified_name: trie/audit:_render_compare_mcp
-  lines: 714-737
+  lines: 715-738
 - kind: function
   qualified_name: trie/audit:_render_compare_sync
-  lines: 740-764
+  lines: 741-765
 - kind: function
   qualified_name: trie/audit:_render_compare_retries
-  lines: 767-774
+  lines: 768-775
 - kind: function
   qualified_name: trie/audit:_delta
-  lines: 780-784
+  lines: 781-785
 - kind: function
   qualified_name: trie/audit:_delta_money
-  lines: 787-791
+  lines: 788-792
 - kind: function
   qualified_name: trie/audit:_err_cell
-  lines: 794-797
+  lines: 795-798
 - kind: function
   qualified_name: trie/audit:_fmt_seconds
-  lines: 800-807
+  lines: 801-808
 incoming_refs: 26
 outgoing_refs: 2
 ---
@@ -122,7 +122,7 @@ Frozen dataclass representing one decoded JSONL telemetry line.
 Parse one JSONL line into an `Event`, returning `None` for empty, malformed, or non-dict lines.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/audit:McpCallStats fingerprint=9c10094f11a1d43374e035ccf5619f4908f3e4f35d472d0898a3ef47c53dc622 body_fp=7a41eb4cf11793e015cbe869bc1bcf293d35e983136229ed03cb2bac1ee9d7c5 source_ref=7e35d40b97abcc3001784611068dd42278cf87dd -->
+<!-- trie:section symbol=trie/audit:McpCallStats fingerprint=ee248ecd3aa3808f38290996027259a1b3897ac161134472721307006374e91f body_fp=54cb03d6b281a3c9e0b81bc281704311ee8ab71f75c3a01dfdbe72991e8ba6b3 source_ref=a62487dc9e6a6cce2e76a275eada4489c288e86e -->
 ## `McpCallStats(tool, count, error_count, not_found_count, empty_result_count, total_duration_ms, total_response_bytes, top_qnames, fallback_kinds)`
 
 Frozen aggregate statistics for one MCP tool across all calls in a log.
@@ -130,7 +130,7 @@ Frozen aggregate statistics for one MCP tool across all calls in a log.
 - `not_found_count`: calls where the tool returned `error_code == "not_found"`
 - `empty_result_count`: tool-specific zero-result outcomes (no matches, empty body, single node)
 - `top_qnames`: up to 5 most-requested qnames, as `(qname, count)` pairs
-- `fallback_kinds`: locate-only; counts of each fallback discriminator value (e.g. `grep`, `grep_empty`)
+- `fallback_kinds`: grep-only; counts of each fallback discriminator value (e.g. `text_match`, `text_match_empty`)
 - `avg_duration_ms`: derived; zero when `count == 0`
 - `avg_response_bytes`: derived; zero when `count == 0`
 <!-- trie:end -->
@@ -205,14 +205,14 @@ Bucket a pre-parsed event list into an `AuditSummary` in a single pass.
 - `lines_total` / `lines_parsed`: forwarded into `ParseStats`; malformed count is derived as the difference.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/audit:_mcp_stats fingerprint=1a3ac130d22385b0597ccfcbecd7fca71383a7d7956ac481f553ec1e6f5ccb1d body_fp=7d6f1bb20fc92194448affc32f3af6fb307d854a106a4de8e97b051f218cb188 source_ref=7e35d40b97abcc3001784611068dd42278cf87dd -->
+<!-- trie:section symbol=trie/audit:_mcp_stats fingerprint=96d0ece17dcb7caeae1aa3f8f361a4e645183108a703b613cf75039104722946 body_fp=e293767266e4d1316a6e11d47b5c20d7f011bb4c794e33f3310e0da3b6722c53 source_ref=a62487dc9e6a6cce2e76a275eada4489c288e86e -->
 ## `_mcp_stats(tool: str, events: list[Event]) -> McpCallStats`
 
 Build aggregate per-tool statistics from raw MCP call events.
 
-- `top_qnames`: top-5 qnames for `explain`/`walk`; empty for `locate`
-- `empty_result_count`: tool-specific logic — zero results for `locate`, ≤1 node for `walk`, zero prose chars for `explain`
-- `fallback_kinds`: `locate`-only; counts `fallback_kind` discriminator values across all locate events
+- `top_qnames`: top-5 qnames for `read`/`trace`; empty for `grep`
+- `empty_result_count`: tool-specific logic — zero results for `grep`, ≤1 node for `trace`, zero prose chars for `read`
+- `fallback_kinds`: `grep`-only; counts `fallback_kind` discriminator values across all grep events
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/audit:_pricing_for fingerprint=81bc5640eca955efcad34e67471ba90c6f7f0fafea2861b567f92ccef61b922a body_fp=90a76c85c42b6065f880bef239d8d4a45b47bd3357b926d1d36f6fc2741aff19 source_ref=9199ba7d07a057fc5294735842b6dc55ccea55e4 -->
@@ -277,13 +277,13 @@ Render two audit summaries side-by-side with per-metric deltas to a Rich console
 Print the log path, time span, and parse-line counts to the console.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/audit:_render_mcp fingerprint=67202be4f3ff11705fa8e25e2ec9ecabf8d764cb7e7936f4fe910abac8c392b0 body_fp=6fefc4ed4e5afb7f66fcc42c962a4a4acafbba56291557a0441e6c6c040b090a source_ref=7e35d40b97abcc3001784611068dd42278cf87dd -->
+<!-- trie:section symbol=trie/audit:_render_mcp fingerprint=c5b9e9e69ce3aa93452d9141c409e0900183aa3867faff596a1af6b3b85ae66b body_fp=5e9cc8a2e7597567f78b0a9412cd5b862b874692cc822292d93445b764ee1a34 source_ref=a62487dc9e6a6cce2e76a275eada4489c288e86e -->
 ## `_render_mcp(mcp: dict[str, McpCallStats], console: Console) -> None`
 
-Render a Rich table of MCP tool call statistics for `locate`, `explain`, and `walk`, followed by a locate fallback breakdown line when fallback activity is present.
+Render a Rich table of MCP tool call statistics for `grep`, `read`, and `trace`, followed by a grep fallback breakdown line when fallback activity is present.
 
 - `mcp`: empty dict prints a "none" placeholder instead of a table.
-- Appends a `locate fallback:` summary line when `locate` stats include any `fallback_kinds`.
+- Appends a `grep fallback:` summary line when `grep` stats include any `fallback_kinds`.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/audit:_render_sync fingerprint=f52f1b1727ea65ecbb99e76d18a16787eceffb3e6d9053e8b4ce403868cbe012 body_fp=15aebf67f4d4572fc6dab758c5ea761813787e36a5601f32450418a883d6763e source_ref=9199ba7d07a057fc5294735842b6dc55ccea55e4 -->
@@ -310,7 +310,7 @@ Render CLI subcommand invocation counts as a single `Console` line; no-ops when 
 Print the "Compare" heading with both log paths to the console.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/audit:_render_compare_mcp fingerprint=4bea8978b700153d1b3cb4437e50dada0ed48bd0c06a28a114112a2f86a6c55f body_fp=a4e9b77faa00d50b27ce7759b21a052f779f3a2927772bdde95453556c14dc44 source_ref=9199ba7d07a057fc5294735842b6dc55ccea55e4 -->
+<!-- trie:section symbol=trie/audit:_render_compare_mcp fingerprint=c23e5a7740e6fe526f094571eb477491e54aeeba56fbd57cb77de601c098969c body_fp=a4e9b77faa00d50b27ce7759b21a052f779f3a2927772bdde95453556c14dc44 source_ref=a62487dc9e6a6cce2e76a275eada4489c288e86e -->
 ## `_render_compare_mcp(baseline: dict[str, McpCallStats], candidate: dict[str, McpCallStats], console: Console) -> None`
 
 Render a side-by-side Rich table of MCP call counts for baseline vs candidate, with a delta column.

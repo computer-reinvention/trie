@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -41,6 +41,7 @@ from trie.init import InitError, init_project
 from trie.mcp_install import TARGETS as MCP_TARGETS
 from trie.mcp_install import InstallPlan, MCPInstallError
 from trie.mcp_install import install as mcp_run_install
+from trie.mcp_server import TrieTools
 from trie.mcp_server import run_stdio as run_mcp_stdio
 from trie.models import make_client
 from trie.refresh_lock import try_acquire as try_acquire_refresh_lock
@@ -1358,14 +1359,17 @@ def setup_cmd(
 
     # Docs install: write TRIE.md and refresh the pointer block in any
     # existing AGENTS.md / CLAUDE.md so agents discover the navigation
-    # tools without the user having to author docs by hand. Target-
-    # independent — there's exactly one TRIE.md per project and the
-    # pointer line is the same regardless of which agent is wired in.
+    # tools without the user having to author docs by hand. We pass the
+    # MCP target slugs through so the doc can bake in harness-specific
+    # tool names (e.g. `mcp__trie__grep` for Claude Code, `trie_grep`
+    # for opencode). The first target wins for the body; the rest land
+    # in a footer that names tool aliases under the other harnesses.
     try:
         docs_plan = docs_run_install(
             project_root=project_root,
             print_only=print_only,
             dry_run=dry_run,
+            target_names=mcp_plan.target_names,
         )
     except DocsInstallError as exc:
         reporter.error(str(exc))
@@ -1447,6 +1451,506 @@ def _format_action(action: str, path: Path | None) -> str:
     if path is None:
         return action
     return f"{action} → {path}"
+
+
+# ---------------------------------------------------------------------------
+# grep / read / trace — agent-facing CLI mirror of the MCP tools
+# ---------------------------------------------------------------------------
+#
+# Every operation the MCP server exposes is also available as a `trie` CLI
+# subcommand, so an agent that prefers shelling out to making MCP calls can
+# still do the full set of trie operations. The CLI commands call the same
+# `TrieTools` methods the MCP server registers, so the JSON output under
+# `--json` is byte-equivalent to the MCP wire response. Default output is
+# human-readable for terminal use; pass `--json` for the raw envelope.
+
+
+def _open_tools(reporter: Reporter) -> TrieTools:
+    """Resolve project root and open a TrieTools session.
+
+    Centralised so all three subcommands handle "no trie.toml found" the
+    same way. The returned TrieTools holds an open SQLite handle; callers
+    must `.close()` it when done.
+    """
+    try:
+        _, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+    return TrieTools(project_root)
+
+
+def _emit_envelope(
+    envelope: dict[str, object],
+    *,
+    as_json: bool,
+    reporter: Reporter,
+    render: Callable[[dict[str, object], Reporter], None],
+) -> None:
+    """Print the envelope either as raw JSON or via the provided renderer.
+
+    Error envelopes (`{"error": {...}}`) always render through the renderer
+    so the human path produces a useful diagnostic, and exit code 1 is set
+    so scripts can react. JSON mode dumps to stdout verbatim so an agent
+    parsing the output gets exactly what the MCP wire would return.
+    """
+    if as_json:
+        import json as _json
+
+        # Print to the underlying console so Rich doesn't add ANSI codes;
+        # JSON consumers want a clean stream.
+        typer.echo(_json.dumps(envelope, indent=2, default=str))
+    else:
+        render(envelope, reporter)
+
+    if "error" in envelope:
+        raise typer.Exit(code=1)
+
+
+def _render_grep(envelope: dict[str, object], reporter: Reporter) -> None:
+    """Human-readable rendering for `trie grep` output.
+
+    Shows hits as a compact table (qname, kind, file pointer, one-liner)
+    when present. When hits is empty, falls through to the fallback
+    envelope: prints the fallback kind, query, note, and the ranked
+    candidate matches if any. Error envelopes show the code, message,
+    and suggestion on separate lines.
+    """
+    from rich.table import Table
+
+    err = envelope.get("error")
+    if isinstance(err, dict):
+        _render_error_envelope(err, reporter)
+        return
+
+    hits = envelope.get("hits") or []
+    if isinstance(hits, list) and hits:
+        table = Table(title=f"{len(hits)} hit(s)", show_header=True, header_style="bold")
+        table.add_column("qname", style="cyan")
+        table.add_column("kind", style="dim")
+        table.add_column("location", style="dim")
+        table.add_column("one-liner")
+        for h in hits:
+            if not isinstance(h, dict):
+                continue
+            table.add_row(
+                str(h.get("qname", "")),
+                str(h.get("kind", "")),
+                str(h.get("file_pointer", "")),
+                str(h.get("one_liner", "")),
+            )
+        reporter.console.print(table)
+        return
+
+    # No hits. Show the fallback envelope.
+    fallback = envelope.get("fallback")
+    if not isinstance(fallback, dict):
+        reporter.info("[dim]no hits, no fallback envelope[/dim]")
+        return
+
+    kind = fallback.get("kind", "?")
+    note = fallback.get("note", "")
+    reporter.info(f"[yellow]no symbol-name hits[/yellow] (fallback: {kind})")
+    if note:
+        reporter.info(f"  [dim]{note}[/dim]")
+
+    matches = fallback.get("matches") or []
+    if isinstance(matches, list) and matches:
+        table = Table(
+            title=f"{len(matches)} candidate(s) by text match",
+            show_header=True,
+            header_style="bold",
+        )
+        table.add_column("qname", style="cyan")
+        table.add_column("inbound", justify="right", style="dim")
+        table.add_column("location", style="dim")
+        table.add_column("one-liner")
+        for m in matches:
+            if not isinstance(m, dict):
+                continue
+            table.add_row(
+                str(m.get("qname", "")),
+                str(m.get("inbound_count", "")),
+                str(m.get("file_pointer", "")),
+                str(m.get("one_liner", "")),
+            )
+        reporter.console.print(table)
+
+
+def _render_read(envelope: dict[str, object], reporter: Reporter) -> None:
+    """Human-readable rendering for `trie read` output.
+
+    Prints signature, source pointer, prose, and the caller / callee
+    neighbour lists with their one-liners.
+    """
+    err = envelope.get("error")
+    if isinstance(err, dict):
+        _render_error_envelope(err, reporter)
+        return
+
+    qname = envelope.get("qname", "")
+    signature = envelope.get("signature", "")
+    source_pointer = envelope.get("source_pointer", "")
+    reporter.console.print(f"[bold cyan]{qname}[/bold cyan]")
+    if signature:
+        reporter.console.print(f"  [dim]{signature}[/dim]")
+    if source_pointer:
+        reporter.console.print(f"  [dim]→ {source_pointer}[/dim]")
+
+    prose = envelope.get("prose") or ""
+    if isinstance(prose, str) and prose.strip():
+        reporter.console.print()
+        reporter.console.print(prose)
+    else:
+        reporter.console.print()
+        reporter.console.print("[dim](no prose; run `trie sync` for this file)[/dim]")
+
+    def _print_neighbours(label: str, items: object) -> None:
+        if not isinstance(items, list) or not items:
+            return
+        reporter.console.print()
+        reporter.console.print(f"[bold]{label}[/bold] ({len(items)})")
+        for entry in items:
+            if not isinstance(entry, dict):
+                continue
+            ql = entry.get("qname", "")
+            ol = entry.get("one_liner", "")
+            reporter.console.print(f"  [cyan]{ql}[/cyan] — {ol}")
+
+    _print_neighbours("callers", envelope.get("callers"))
+    _print_neighbours("callees", envelope.get("callees"))
+
+    notes = envelope.get("notes") or []
+    if isinstance(notes, list) and notes:
+        reporter.console.print()
+        for n in notes:
+            reporter.console.print(f"[yellow]![/yellow] {n}")
+
+
+def _render_trace(envelope: dict[str, object], reporter: Reporter) -> None:
+    """Human-readable rendering for `trie trace` output.
+
+    Shows the root, then nodes by qname with their one-liners, then a
+    compact edge list. For larger graphs the JSON output is more useful
+    — `--json` exists for that path.
+    """
+    err = envelope.get("error")
+    if isinstance(err, dict):
+        _render_error_envelope(err, reporter)
+        return
+
+    root = envelope.get("root")
+    if isinstance(root, dict):
+        reporter.console.print(f"[bold cyan]{root.get('qname', '')}[/bold cyan]")
+        ol = root.get("one_liner", "")
+        if ol:
+            reporter.console.print(f"  [dim]{ol}[/dim]")
+
+    nodes = envelope.get("nodes") or {}
+    if isinstance(nodes, dict) and nodes:
+        reporter.console.print()
+        reporter.console.print(f"[bold]nodes[/bold] ({len(nodes)})")
+        for qname, data in nodes.items():
+            if not isinstance(data, dict):
+                continue
+            ol = data.get("one_liner", "")
+            reporter.console.print(f"  [cyan]{qname}[/cyan] — {ol}")
+
+    edges = envelope.get("edges") or []
+    if isinstance(edges, list) and edges:
+        reporter.console.print()
+        reporter.console.print(f"[bold]edges[/bold] ({len(edges)})")
+        for e in edges:
+            if not isinstance(e, dict):
+                continue
+            arrow = "→" if e.get("direction") == "out" else "←"
+            reporter.console.print(f"  {e.get('from', '')} {arrow} {e.get('to', '')}")
+
+    truncated = envelope.get("truncated_at") or []
+    if isinstance(truncated, list) and truncated:
+        reporter.console.print()
+        reporter.console.print(
+            f"[yellow]truncated at hub(s):[/yellow] {', '.join(str(q) for q in truncated)}"
+        )
+
+    notes = envelope.get("notes") or []
+    if isinstance(notes, list) and notes:
+        reporter.console.print()
+        for n in notes:
+            reporter.console.print(f"[yellow]![/yellow] {n}")
+
+
+def _render_error_envelope(err: dict[str, object], reporter: Reporter) -> None:
+    """Render a `{code, message, suggestion?}` error block in human-readable form.
+
+    Used by all three render functions because all three tools return the
+    same error envelope shape on failure. Keeps the error UX consistent
+    regardless of which subcommand the agent invoked.
+    """
+    code = err.get("code", "?")
+    message = err.get("message", "")
+    reporter.error(f"{code}: {message}")
+    suggestion = err.get("suggestion")
+    if suggestion:
+        reporter.info(f"  [dim]suggestion: {suggestion}[/dim]")
+
+
+def _build_grep_predicate(
+    name: str | None,
+    kind: str | None,
+    scope_prefix: str | None,
+    scope_exclude: list[str] | None,
+    public_only: bool,
+    inbound_min: int | None,
+    inbound_max: int | None,
+    outbound_min: int | None,
+    outbound_max: int | None,
+    predicate_json: str | None,
+    reporter: Reporter,
+) -> dict[str, object]:
+    """Assemble the predicate dict from the CLI's separate flags.
+
+    `--predicate JSON` lets the agent pass the full envelope verbatim (the
+    same shape it would send via MCP); the other flags are ergonomic
+    shortcuts for the common single-field queries. Flags override JSON
+    fields when both are given, which matches how an agent would expect
+    "more specific wins" — pass the JSON for the base shape, tighten with
+    flags.
+    """
+    pred: dict[str, object] = {}
+    if predicate_json:
+        import json as _json
+
+        try:
+            parsed = _json.loads(predicate_json)
+        except _json.JSONDecodeError as exc:
+            reporter.error(f"--predicate is not valid JSON: {exc}")
+            raise typer.Exit(code=2) from exc
+        if not isinstance(parsed, dict):
+            reporter.error("--predicate JSON must be an object")
+            raise typer.Exit(code=2)
+        pred.update(parsed)
+
+    if name is not None:
+        pred["name_contains"] = name
+    if kind is not None:
+        pred["kind"] = kind
+    if scope_prefix is not None:
+        pred["scope_prefix"] = scope_prefix
+    if scope_exclude:
+        pred["scope_exclude"] = list(scope_exclude)
+    if public_only:
+        pred["public_only"] = True
+
+    if inbound_min is not None or inbound_max is not None:
+        ic: dict[str, int] = {}
+        if inbound_min is not None:
+            ic["min"] = inbound_min
+        if inbound_max is not None:
+            ic["max"] = inbound_max
+        pred["inbound_count"] = ic
+    if outbound_min is not None or outbound_max is not None:
+        oc: dict[str, int] = {}
+        if outbound_min is not None:
+            oc["min"] = outbound_min
+        if outbound_max is not None:
+            oc["max"] = outbound_max
+        pred["outbound_count"] = oc
+
+    return pred
+
+
+@app.command("grep")
+def grep_cmd(
+    ctx: typer.Context,
+    name: str | None = typer.Option(
+        None,
+        "--name",
+        "-n",
+        help="Substring match against the symbol's local name (case-insensitive).",
+    ),
+    kind: str | None = typer.Option(
+        None,
+        "--kind",
+        "-k",
+        help="Restrict to one of: function, class, method, any.",
+    ),
+    scope_prefix: str | None = typer.Option(
+        None,
+        "--scope-prefix",
+        help="Restrict to symbols whose file path starts with this prefix (e.g. 'trie/').",
+    ),
+    scope_exclude: list[str] | None = typer.Option(
+        None,
+        "--scope-exclude",
+        help="File-path prefixes to skip. Repeat the flag for multiple exclusions.",
+    ),
+    public_only: bool = typer.Option(
+        False,
+        "--public-only",
+        help="Restrict to symbols whose name doesn't start with an underscore.",
+    ),
+    inbound_min: int | None = typer.Option(
+        None,
+        "--inbound-min",
+        help="Minimum inbound edge count (find hubs).",
+    ),
+    inbound_max: int | None = typer.Option(
+        None,
+        "--inbound-max",
+        help="Maximum inbound edge count.",
+    ),
+    outbound_min: int | None = typer.Option(
+        None,
+        "--outbound-min",
+        help="Minimum outbound edge count.",
+    ),
+    outbound_max: int | None = typer.Option(
+        None,
+        "--outbound-max",
+        help="Maximum outbound edge count (find leaves with --outbound-max 0).",
+    ),
+    predicate_json: str | None = typer.Option(
+        None,
+        "--predicate",
+        help="Full predicate as JSON; identical shape to the MCP `grep` predicate.",
+    ),
+    rank_by: str | None = typer.Option(
+        None,
+        "--rank-by",
+        help="public_first (default) | inbound_count | alphabetical.",
+    ),
+    limit: int = typer.Option(
+        10,
+        "--limit",
+        "-l",
+        help="Maximum number of hits to return.",
+    ),
+    as_json: bool = typer.Option(
+        False,
+        "--json",
+        help="Emit the raw MCP envelope as JSON instead of a human-readable summary.",
+    ),
+) -> None:
+    """Find symbols matching a predicate. Mirror of the MCP `grep` tool.
+
+    Uses the same TrieTools.grep method that the MCP server registers, so the
+    `--json` output is byte-equivalent to the MCP wire response. Common
+    queries can be expressed with the named flags; for the full predicate
+    envelope pass `--predicate '<json>'`.
+
+    Examples:
+
+      trie grep --name compute_cascade --scope-prefix trie/
+      trie grep --public-only --rank-by inbound_count --limit 10
+      trie grep --predicate '{"name_contains": "store", "kind": "class"}'
+    """
+    reporter = _get_reporter(ctx)
+    pred = _build_grep_predicate(
+        name,
+        kind,
+        scope_prefix,
+        scope_exclude,
+        public_only,
+        inbound_min,
+        inbound_max,
+        outbound_min,
+        outbound_max,
+        predicate_json,
+        reporter,
+    )
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.grep(pred or None, rank_by=rank_by, limit=limit)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_grep)
+
+
+@app.command("read")
+def read_cmd(
+    ctx: typer.Context,
+    qname: str = typer.Argument(
+        ...,
+        help="Fully-qualified symbol name (e.g. 'trie/sync/cascade:compute_cascade').",
+    ),
+    as_json: bool = typer.Option(
+        False,
+        "--json",
+        help="Emit the raw MCP envelope as JSON instead of a human-readable summary.",
+    ),
+) -> None:
+    """Read a symbol's prose plus its immediate callers and callees.
+
+    Mirror of the MCP `read` tool. Use after `trie grep` once you know
+    the qname you want to understand. Returns the symbol's signature,
+    triefact prose, source pointer, and one-liner descriptions of every
+    caller and callee — one round trip for the entire one-hop
+    neighbourhood.
+
+    Examples:
+
+      trie read trie/sync/cascade:compute_cascade
+      trie read --json trie/graph/store:Store.replace_all_edges
+    """
+    reporter = _get_reporter(ctx)
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.read(qname)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_read)
+
+
+@app.command("trace")
+def trace_cmd(
+    ctx: typer.Context,
+    qname: str = typer.Argument(
+        ...,
+        help="Fully-qualified symbol name to start tracing from.",
+    ),
+    direction: str = typer.Option(
+        "callers",
+        "--direction",
+        "-d",
+        help="callers | callees | both.",
+    ),
+    depth: int = typer.Option(
+        2,
+        "--depth",
+        help="Maximum BFS depth (clamped by trace_max_depth in config).",
+    ),
+    as_json: bool = typer.Option(
+        False,
+        "--json",
+        help="Emit the raw MCP envelope as JSON instead of a human-readable summary.",
+    ),
+) -> None:
+    """Trace the call graph from a symbol outward up to `depth` hops.
+
+    Mirror of the MCP `trace` tool. When one hop (which `trie read`
+    already gives you) isn't enough, use this to walk farther.
+    Expansion stops at hub symbols; their qnames appear in
+    `truncated_at`.
+
+    Examples:
+
+      trie trace trie/sync/cascade:compute_cascade --direction callers --depth 2
+      trie trace trie/graph/store:Store.replace_all_edges --direction both
+      trie trace --json some_qname --direction callees --depth 3
+    """
+    reporter = _get_reporter(ctx)
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.trace(qname, direction=direction, depth=depth)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_trace)
+
+
+# ---------------------------------------------------------------------------
+# mcp serve / mcp install
+# ---------------------------------------------------------------------------
 
 
 mcp_app = typer.Typer(

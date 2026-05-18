@@ -90,17 +90,17 @@ class Debug:
 
 @dataclass
 class Mcp:
-    """Server-side knobs for the MCP agent surface (`locate` / `explain` / `walk`).
+    """Server-side knobs for the MCP agent surface (`grep` / `read` / `trace`).
 
     Every field here is implementation detail the agent never sees. They exist so we can
     flip behaviour based on observed agent usage without changing the public contract.
     """
 
-    # locate
-    locate_max_limit: int = 50
-    locate_one_liner_max_chars: int = 200
-    locate_default_rank_by: str = "public_first"
-    # When `locate` returns no symbol-name matches, fall back to ripgrep
+    # grep
+    grep_max_limit: int = 50
+    grep_one_liner_max_chars: int = 200
+    grep_default_rank_by: str = "public_first"
+    # When `grep` returns no symbol-name matches, fall back to ripgrep
     # against in-scope source bodies and attribute hits to the symbols whose
     # line ranges enclose them. Two knobs:
     #   - max_files: walk at most this many in-scope files; a runtime guard that
@@ -108,23 +108,23 @@ class Mcp:
     #     still returns whatever was accumulated — never a "too noisy" refusal.
     #   - match_limit: cap on returned candidate symbols after hub-ranking by
     #     inbound count. Defaults to 30 so the agent sees enough to triangulate
-    #     even on broad queries; raw grep would have shown N lines and we owe
-    #     at least that floor of utility. The `match_count` / `unique_symbols`
+    #     even on broad queries; raw shell grep would have shown N lines and we
+    #     owe at least that floor of utility. The `match_count` / `unique_symbols`
     #     fields tell the agent how many candidates exist beyond the cap.
-    locate_fallback_max_files: int = 200
-    locate_fallback_match_limit: int = 30
+    grep_fallback_max_files: int = 200
+    grep_fallback_match_limit: int = 30
 
-    # explain
-    explain_neighbour_one_liner_max_chars: int = 120
-    explain_max_neighbours_per_direction: int = 0  # 0 = unlimited
-    explain_prose_max_chars: int = 0  # 0 = unlimited
+    # read
+    read_neighbour_one_liner_max_chars: int = 120
+    read_max_neighbours_per_direction: int = 0  # 0 = unlimited
+    read_prose_max_chars: int = 0  # 0 = unlimited
 
-    # walk
-    walk_max_depth: int = 5
-    walk_hub_threshold: int = 20  # mirrors Cascade.hub_symbol_threshold
-    walk_max_nodes: int = 200
-    walk_prose_at_depth: int = 0  # 0 = no prose on walk
-    walk_prose_budget: int = 10
+    # trace
+    trace_max_depth: int = 5
+    trace_hub_threshold: int = 20  # mirrors Cascade.hub_symbol_threshold
+    trace_max_nodes: int = 200
+    trace_prose_at_depth: int = 0  # 0 = no prose on trace
+    trace_prose_budget: int = 10
 
 
 @dataclass
@@ -232,26 +232,26 @@ retry_base_delay_seconds = 1.0
 retry_cap_seconds = 60.0
 
 [mcp]
-# Server-side knobs for the agent surface (`locate` / `explain` / `walk`). These are
+# Server-side knobs for the agent surface (`grep` / `read` / `trace`). These are
 # implementation detail — the agent never sees them. Tune to flip behaviour without
 # changing the public tool contract.
 
-# locate
-locate_max_limit = 50
-locate_one_liner_max_chars = 200
-locate_default_rank_by = "public_first"        # or "inbound_count" / "alphabetical"
+# grep
+grep_max_limit = 50
+grep_one_liner_max_chars = 200
+grep_default_rank_by = "public_first"          # or "inbound_count" / "alphabetical"
 
-# explain
-explain_neighbour_one_liner_max_chars = 120
-explain_max_neighbours_per_direction = 0       # 0 = unlimited
-explain_prose_max_chars = 0                    # 0 = unlimited
+# read
+read_neighbour_one_liner_max_chars = 120
+read_max_neighbours_per_direction = 0          # 0 = unlimited
+read_prose_max_chars = 0                       # 0 = unlimited
 
-# walk
-walk_max_depth = 5
-walk_hub_threshold = 20                        # mirrors cascade.hub_symbol_threshold
-walk_max_nodes = 200
-walk_prose_at_depth = 0                        # 0 = no prose on walk
-walk_prose_budget = 10
+# trace
+trace_max_depth = 5
+trace_hub_threshold = 20                       # mirrors cascade.hub_symbol_threshold
+trace_max_nodes = 200
+trace_prose_at_depth = 0                       # 0 = no prose on trace
+trace_prose_budget = 10
 
 [debug]
 # Append-only JSONL telemetry for trie's own operations. Off by default; flip on

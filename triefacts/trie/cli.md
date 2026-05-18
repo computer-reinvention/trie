@@ -1,140 +1,170 @@
 ---
 trie_version: 0.1.0
 source: trie/cli.py
-file_fingerprint: ba0593cf596fccf9f374c0eda6ac22b2bdb0f3b6242e14b3ac109afcaf26ed4a
-last_synced_at: '2026-05-16T13:54:53Z'
+file_fingerprint: 135120699e272d870979307eb38b05864f30a5df6c9119c022896b51c59f1287
+last_synced_at: '2026-05-18T13:57:29Z'
 defines:
 - kind: function
   qualified_name: trie/cli:_get_reporter
-  lines: 70-76
+  lines: 71-77
 - kind: class
   qualified_name: trie/cli:_ProgressAdapter
-  lines: 79-124
+  lines: 80-125
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.__init__
-  lines: 87-91
+  lines: 88-92
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter._ensure
-  lines: 93-97
+  lines: 94-98
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.close
-  lines: 99-102
+  lines: 100-103
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_start
-  lines: 104-105
+  lines: 105-106
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_done
-  lines: 107-120
+  lines: 108-121
 - kind: method
   qualified_name: trie/cli:_ProgressAdapter.on_skip
-  lines: 122-124
+  lines: 123-125
 - kind: function
   qualified_name: trie/cli:_progress_callback
-  lines: 128-133
+  lines: 129-134
 - kind: function
   qualified_name: trie/cli:_acquire_write_lock_or_exit
-  lines: 137-168
+  lines: 138-169
 - kind: function
   qualified_name: trie/cli:_root
-  lines: 172-210
+  lines: 173-211
 - kind: function
   qualified_name: trie/cli:_telemetry_bootstrap
-  lines: 213-225
+  lines: 214-226
 - kind: function
   qualified_name: trie/cli:init_cmd
-  lines: 229-317
+  lines: 230-318
 - kind: function
   qualified_name: trie/cli:_is_interactive
-  lines: 320-327
+  lines: 321-328
 - kind: class
   qualified_name: trie/cli:_NoOpStatus
-  lines: 330-335
+  lines: 331-336
 - kind: method
   qualified_name: trie/cli:_NoOpStatus.__enter__
-  lines: 331-332
+  lines: 332-333
 - kind: method
   qualified_name: trie/cli:_NoOpStatus.__exit__
-  lines: 334-335
+  lines: 335-336
 - kind: function
   qualified_name: trie/cli:plan_cmd
-  lines: 339-435
+  lines: 340-436
 - kind: function
   qualified_name: trie/cli:verify_cmd
-  lines: 439-451
+  lines: 440-452
 - kind: function
   qualified_name: trie/cli:lock_check_cmd
-  lines: 455-505
+  lines: 456-506
 - kind: function
   qualified_name: trie/cli:refresh_cmd
-  lines: 509-616
+  lines: 510-617
 - kind: function
   qualified_name: trie/cli:_report_freshness
-  lines: 619-633
+  lines: 620-634
 - kind: function
   qualified_name: trie/cli:audit_cmd
-  lines: 637-697
+  lines: 638-698
 - kind: function
   qualified_name: trie/cli:_resolve_audit_log_path
-  lines: 700-716
+  lines: 701-717
 - kind: function
   qualified_name: trie/cli:_print_scan_breakdown
-  lines: 719-736
+  lines: 720-737
 - kind: function
   qualified_name: trie/cli:_print_plan
-  lines: 739-750
+  lines: 740-751
 - kind: function
   qualified_name: trie/cli:_print_incremental_plan
-  lines: 753-819
+  lines: 754-820
 - kind: function
   qualified_name: trie/cli:_print_drift_detail
-  lines: 832-843
+  lines: 833-844
 - kind: function
   qualified_name: trie/cli:_verify_drift
-  lines: 846-877
+  lines: 847-878
 - kind: function
   qualified_name: trie/cli:sync_cmd
-  lines: 881-997
+  lines: 882-998
 - kind: function
   qualified_name: trie/cli:_has_existing_triefacts
-  lines: 1000-1006
+  lines: 1001-1007
 - kind: function
   qualified_name: trie/cli:_run_full_pass
-  lines: 1009-1073
+  lines: 1010-1074
 - kind: function
   qualified_name: trie/cli:_run_dry_run_diff
-  lines: 1076-1121
+  lines: 1077-1122
 - kind: function
   qualified_name: trie/cli:_run_single_file_sync
-  lines: 1124-1152
+  lines: 1125-1153
 - kind: function
   qualified_name: trie/cli:_run_metadata_only_refresh
-  lines: 1155-1212
+  lines: 1156-1213
 - kind: function
   qualified_name: trie/cli:_run_incremental_sync
-  lines: 1215-1264
+  lines: 1216-1265
 - kind: function
   qualified_name: trie/cli:setup_cmd
-  lines: 1268-1381
+  lines: 1269-1385
 - kind: function
   qualified_name: trie/cli:_render_setup_plan
-  lines: 1384-1442
+  lines: 1388-1446
 - kind: function
   qualified_name: trie/cli:_format_action
-  lines: 1445-1449
+  lines: 1449-1453
+- kind: function
+  qualified_name: trie/cli:_open_tools
+  lines: 1468-1480
+- kind: function
+  qualified_name: trie/cli:_emit_envelope
+  lines: 1483-1507
+- kind: function
+  qualified_name: trie/cli:_render_grep
+  lines: 1510-1577
+- kind: function
+  qualified_name: trie/cli:_render_read
+  lines: 1580-1627
+- kind: function
+  qualified_name: trie/cli:_render_trace
+  lines: 1630-1680
+- kind: function
+  qualified_name: trie/cli:_render_error_envelope
+  lines: 1683-1695
+- kind: function
+  qualified_name: trie/cli:_build_grep_predicate
+  lines: 1698-1760
+- kind: function
+  qualified_name: trie/cli:grep_cmd
+  lines: 1764-1867
+- kind: function
+  qualified_name: trie/cli:read_cmd
+  lines: 1871-1902
+- kind: function
+  qualified_name: trie/cli:trace_cmd
+  lines: 1906-1948
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 1461-1463
+  lines: 1965-1967
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 1466-1476
+  lines: 1970-1980
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 1480-1549
+  lines: 1984-2053
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 1552-1567
+  lines: 2056-2071
 incoming_refs: 0
-outgoing_refs: 90
+outgoing_refs: 93
 ---
 <!-- trie:section symbol=trie/cli:init_cmd fingerprint=8b4d9be5bbc2597c7eb91b29c6c50db8494d6b7fc7007d6d96dae998df54d5e5 body_fp=e1f123d349c49c73cb575e54d9eec2677d06d4bd0dfd98e87c02da7274c4dfb9 source_ref=df2eab34e273723a3bf42ae891020acd147e6bd4 -->
 ## `init_cmd(ctx, root, force, install_hooks, run_scan) -> None`
@@ -385,7 +415,7 @@ Load config, build a client, and run incremental cascade sync, reporting orphan 
 
 
 
-<!-- trie:section symbol=trie/cli:_run_mcp_serve fingerprint=ae7533faa0329509290b89496e7a1965bcac67339cfb61c9d2092872d3505fb6 body_fp=07eb42ce1a286e495b0cd202a9503cbd0cba66cff4cd5451e81254a12ac619a2 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+<!-- trie:section symbol=trie/cli:_run_mcp_serve fingerprint=ae7533faa0329509290b89496e7a1965bcac67339cfb61c9d2092872d3505fb6 body_fp=07eb42ce1a286e495b0cd202a9503cbd0cba66cff4cd5451e81254a12ac619a2 source_ref=577b5c634ebcbb90471bd6a1e8c66ae8c26b6a92 -->
 ## `_run_mcp_serve() -> None`
 
 Load config from cwd and launch the stdio MCP server, exiting 1 if no config is found.
@@ -449,7 +479,7 @@ Render a single-line refresh outcome to the reporter, plus sync statistics when 
 - `result.incremental`: used to report files synced and actual cost; skips detail if `None`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:setup_cmd fingerprint=2b2ed0fdfb80c7b5cfb70d2510ed9bbd043d621cf9517cdda703b2feb687bad5 body_fp=3849a3c2d8a006cac8f5aee3198ca797440ade5ef7dc57698564eb438cfb67c8 source_ref=577b5c634ebcbb90471bd6a1e8c66ae8c26b6a92 -->
+<!-- trie:section symbol=trie/cli:setup_cmd fingerprint=c2ade8d4aa61dcf4b5664c42b1c0027c7c6b1951cc4b6c330c154e9359c24e1e body_fp=3849a3c2d8a006cac8f5aee3198ca797440ade5ef7dc57698564eb438cfb67c8 source_ref=c11fff462ae5a7951cd77c1abfa48f71fb364825 -->
 ## `setup_cmd(ctx, target, install_all, scope, print_only, dry_run)`
 
 Wire trie into an agent end-to-end: MCP server registration, `trie refresh --after-turn` hook install, and docs install (TRIE.md + agent pointer blocks).
@@ -495,4 +525,97 @@ Probe whether another trie process holds the project's write lock, exiting 2 if 
 
 - Exit 0: lock is free, or no `trie.toml` found.
 - Exit 2: lock is held; caller should refuse to proceed and retry.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:_open_tools fingerprint=7b6edc0030a5ca5cfcaff08eebbcc1ec1b3f7400cae950745b9ee7c8b5fbd7f7 body_fp=e2f620a0cd5115a0e30c4339de6bc184952fb0096209fcc42dabc6480de5c5b5 source_ref=b3dad490301085704dfd690db8d4e4c82b1f8971 -->
+## `_open_tools(reporter: Reporter) -> TrieTools`
+
+Resolve project root and return an open `TrieTools` session; caller must call `.close()` when done.
+
+- Exits with code 1 if no `trie.toml` is found.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:_emit_envelope fingerprint=d1726392a85988504e1f10436d84418156249e0a58208a7944a61a7736385139 body_fp=d15b5370874d8b94df0d2372a280fa7b658c2527166c0dd2a6a2feb996a61427 source_ref=b3dad490301085704dfd690db8d4e4c82b1f8971 -->
+## `_emit_envelope(envelope, *, as_json, reporter, render)`
+
+Print an MCP response envelope as raw JSON or via a human-readable renderer, exiting 1 on error envelopes.
+
+- `envelope`: MCP response dict, optionally containing an `"error"` key.
+- `render`: callable that formats the envelope for human output.
+- `as_json`: dumps to stdout verbatim, bypassing Rich formatting.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:_render_grep fingerprint=868adb38d55c12e59d7a2b45d8f60f00fff09cafdddc5ed12610304a5621d8cd body_fp=936515847144cc5fa0c07943f2612d22a07bfedf1316d141fcdc4aee819dca97 source_ref=b3dad490301085704dfd690db8d4e4c82b1f8971 -->
+## `_render_grep(envelope: dict[str, object], reporter: Reporter) -> None`
+
+Render a `grep` response envelope in human-readable form: a Rich table of hits, or a fallback candidates table, or an error block.
+
+- `envelope`: MCP-shaped dict with `hits`, `fallback`, or `error` key.
+- Delegates error rendering to `_render_error_envelope`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:_render_read fingerprint=bd5e442551e9a4a5c99767903ee70eb72ece12ca2970bcd78b78d7a06ac19dd0 body_fp=75fe3286b5b2cc3946792a8f360f6d1cfb7b45c77c1ace49df981e7b1a825ee1 source_ref=b3dad490301085704dfd690db8d4e4c82b1f8971 -->
+## `_render_read(envelope: dict[str, object], reporter: Reporter) -> None`
+
+Render a `trie read` MCP envelope in human-readable form: signature, source pointer, prose, and caller/callee neighbour lists.
+
+- `envelope`: MCP response dict; error envelopes are dispatched to `_render_error_envelope`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:_render_trace fingerprint=fc3af28c35192dc6686d551bf13ac8695eb77b0a4a30aa3fa400b42a1197d6b6 body_fp=226ac5a9214e1b3e7fb9b48835dee94129535b963d7f06f03946d0c9b6b43f23 source_ref=b3dad490301085704dfd690db8d4e4c82b1f8971 -->
+## `_render_trace(envelope: dict[str, object], reporter: Reporter) -> None`
+
+Render a `trie trace` MCP envelope in human-readable form: root node, full node list, edge list, truncated hubs, and notes.
+
+- `envelope`: expected keys `root`, `nodes`, `edges`, `truncated_at`, `notes`, `error`.
+- Error envelopes are forwarded to `_render_error_envelope`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:_render_error_envelope fingerprint=eb679d10d43ad20f60079ecf971b43d76c2d34e9df56abca2edbc761852875e9 body_fp=cce4798c6e380be011d07af7ddb8c9e2d79b0efa700301d8b8f3df97d2ff6db2 source_ref=b3dad490301085704dfd690db8d4e4c82b1f8971 -->
+## `_render_error_envelope(err: dict[str, object], reporter: Reporter) -> None`
+
+Render a `{code, message, suggestion?}` error envelope to the terminal and exit with code 1.
+
+- `err`: dict with keys `code`, `message`, and optional `suggestion`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:_build_grep_predicate fingerprint=b001ffd9b944a9b6aec077b245e5eeb62037c4b7abaa0250017e5d70f1edfbdd body_fp=382d42b923ee5774c3f51a00d2149603b1a3a515add1e69fa25f9064c1a35c14 source_ref=b3dad490301085704dfd690db8d4e4c82b1f8971 -->
+## `_build_grep_predicate(name, kind, scope_prefix, scope_exclude, public_only, inbound_min, inbound_max, outbound_min, outbound_max, predicate_json, reporter) -> dict[str, object]`
+
+Assemble a TrieTools grep predicate dict from CLI flags, optionally merging a base JSON envelope.
+
+- `predicate_json`: parsed first as the base shape; explicit flags override matching fields.
+- `scope_exclude`: converted to a plain list under `"scope_exclude"` key.
+- `inbound_min`/`inbound_max`: merged into a single `"inbound_count"` sub-dict.
+- `outbound_min`/`outbound_max`: merged into a single `"outbound_count"` sub-dict.
+- Exits with code 2 if `predicate_json` is invalid JSON or not an object.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:grep_cmd fingerprint=825bfd6a4a60a6971e8d99bd056b8440fad1bb1febf4fe68c6b05add1bc774c0 body_fp=7af0b3ce0797e936332bf7102a9595b0ff85a838a842365164cb0322625ef53c source_ref=b3dad490301085704dfd690db8d4e4c82b1f8971 -->
+## `grep_cmd(ctx, name, kind, scope_prefix, scope_exclude, public_only, inbound_min, inbound_max, outbound_min, outbound_max, predicate_json, rank_by, limit, as_json)`
+
+Find symbols matching a predicate via `TrieTools.grep`; mirrors the MCP `grep` tool.
+
+- `predicate_json`: full predicate JSON object; individual flags override matching fields.
+- `rank_by`: `public_first` (default), `inbound_count`, or `alphabetical`.
+- `as_json`: emit raw MCP wire envelope to stdout instead of a Rich table.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:read_cmd fingerprint=17492b277aded6e3ff96eab437be39b135df14a26859018d4e3d5bdce03eeb0f body_fp=628dfc7d37a32fb5d27ab71f096c8ec2563fd9b0f4d9ad63d8e3e3725e1ed45e source_ref=b3dad490301085704dfd690db8d4e4c82b1f8971 -->
+## `read_cmd(ctx: typer.Context, qname: str, as_json: bool = False) -> None`
+
+Read a symbol's triefact prose, signature, source pointer, and one-hop caller/callee neighbourhood.
+
+- `qname`: fully-qualified symbol name, e.g. `trie/sync/cascade:compute_cascade`.
+- `as_json`: emit raw MCP envelope JSON instead of human-readable output.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cli:trace_cmd fingerprint=9cb63d88dbea2c7cbdd90e5991c0b5134a09f990e3bbfa46efb7174d0810140b body_fp=c903ff3d1a45112a45ca4c44e4cfc092dfc91326d4aba856a3a9de1609eddaa8 source_ref=b3dad490301085704dfd690db8d4e4c82b1f8971 -->
+## `trace_cmd(ctx, qname, direction, depth, as_json)`
+
+Trace the call graph from a symbol outward up to `depth` hops via the MCP `trace` tool.
+
+- `direction`: `"callers"`, `"callees"`, or `"both"`.
+- `depth`: BFS depth; clamped by `trace_max_depth` in config.
+- `as_json`: dumps raw MCP envelope to stdout instead of human-readable output.
 <!-- trie:end -->

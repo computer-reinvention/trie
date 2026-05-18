@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.0
 source: trie/config.py
-file_fingerprint: 4e46562d0aa3f90761adb3732c883ab08fc74f933e3db13a2b3718dc79d5167b
-last_synced_at: '2026-05-16T13:43:17Z'
+file_fingerprint: fdee7717f4f9304ec148adbb8a90bed6bbd5a390388e737d04d86a35d445959a
+last_synced_at: '2026-05-18T13:57:32Z'
 defines:
 - kind: class
   qualified_name: trie/config:TrieMeta
@@ -43,7 +43,7 @@ defines:
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
   lines: 177-178
-incoming_refs: 140
+incoming_refs: 143
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/config:TrieMeta fingerprint=43460a16db027d61c4297084d70ce0d1e70048e3c983aba83ed17fbd4935301a body_fp=fc099c55e56a7cbf7ea5a31d4965af5f5003dcad2f1ee09cc25a0896fe818bc3 source_ref=435b779093e30070dbf454dc787d8b346cc4ebc9 -->
@@ -82,18 +82,18 @@ Configure reference-graph traversal defaults for incremental sync operations.
 - `hub_symbol_threshold`: symbols with more inbound refs than this are capped at depth 0
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/config:Mcp fingerprint=d4b3775ae78c120393568d68043670d132f60b31d8688b6feddf38d2aea813d2 body_fp=65e4db6b752a7248d610bb5f98b42555e36978ead07d9872b715daea8aaa6ede source_ref=5ca6b73652ab02ca14b37d67f433a906eb867a0c -->
+<!-- trie:section symbol=trie/config:Mcp fingerprint=3c60269ba347b83cd8ee1964fa80392c68b52e4443eb19fea19a629b8c69345a body_fp=0f73080f70cc7eef00ce74e0b544dec0515fe67221fc49bc155491bbdeb40566 source_ref=792b9254fc55c5a78e54944bc93a125b426d9104 -->
 ## `Mcp`
 
-Configure server-side behavioural knobs for the MCP agent tools: `locate`, `explain`, and `walk`.
+Configure server-side behavioural knobs for the MCP agent tools: `grep`, `read`, and `trace`.
 
-- `locate_default_rank_by`: accepts `"public_first"`, `"inbound_count"`, or `"alphabetical"`
-- `locate_fallback_max_files`: max in-scope files searched when no symbol-name match found
-- `locate_fallback_match_limit`: cap on candidates returned after hub-ranking fallback; default 30; fallback never refuses as too noisy
-- `explain_max_neighbours_per_direction`: `0` means unlimited
-- `explain_prose_max_chars`: `0` means unlimited
-- `walk_hub_threshold`: mirrors `Cascade.hub_symbol_threshold`
-- `walk_prose_at_depth`: `0` disables prose on walk nodes
+- `grep_default_rank_by`: accepts `"public_first"`, `"inbound_count"`, or `"alphabetical"`
+- `grep_fallback_max_files`: max in-scope files searched when no symbol-name match found
+- `grep_fallback_match_limit`: cap on candidates returned after hub-ranking fallback; default 30; fallback never refuses as too noisy
+- `read_max_neighbours_per_direction`: `0` means unlimited
+- `read_prose_max_chars`: `0` means unlimited
+- `trace_hub_threshold`: mirrors `Cascade.hub_symbol_threshold`
+- `trace_prose_at_depth`: `0` disables prose on trace nodes
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/config:Config fingerprint=a550e09883e6c18df41905160eff158c7967ad28acfc1bbf54776be19224fac3 body_fp=d19d934b11a1133b82aa5d159576682fd2e297204fa1e979200d0683d985bf63 source_ref=e2aa05d59799353b5474d1cf35f500bdfbc368f9 -->
