@@ -119,7 +119,9 @@ class GrepPredicate:
     """
 
     name_contains: str | None = None
-    kind: str | None = None  # "function" | "class" | "method" | "any" | None
+    kind: str | None = (
+        None  # "function" | "class" | "method" | "constant" | "module" | "any" | None
+    )
     scope_prefix: str | None = None
     scope_exclude: tuple[str, ...] = ()
     public_only: bool = False

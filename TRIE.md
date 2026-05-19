@@ -96,7 +96,11 @@ trie_grep({ "name_contains": "config", "scope_exclude": ["tests/", "vendor/"] })
 
 # Filter by symbol kind
 trie_grep({ "kind": "class", "scope_prefix": "trie/" })
-# kind: "function" | "class" | "method" | "any"
+# kind: "function" | "class" | "method" | "constant" | "module" | "any"
+#   - constant: module-level `NAME = value` (e.g. `__version__`, `DEFAULT_TIMEOUT`)
+#   - module:   synthetic `__module__` symbol carrying file-level behaviour
+#               (the `setup(...)` call in setup.py, the `if __name__ == "__main__":`
+#               block, top-level framework instantiations like `app = FastAPI()`).
 
 # Only public symbols (no leading underscore)
 trie_grep({ "name_contains": "store", "public_only": true })

@@ -119,14 +119,16 @@ def test_private_only_file_requires_a_triefact(project: Path):
 
 
 def test_file_with_no_parser_surfaced_symbols_needs_no_triefact(project: Path):
-    """A file with zero parser-surfaced defs (imports + module-level only) is
-    excluded from the check — there is literally nothing to document."""
-    (project / "src" / "empty_module.py").write_text(
-        "import os\nfrom pathlib import Path\n\nCONSTANT = 1\n"
-    )
+    """A file with zero parser-surfaced symbols (pure imports, nothing
+    else) is excluded from the check — there is literally nothing to
+    document. The parser now surfaces constants and module-body
+    statements too, so the "nothing to document" state is harder to
+    construct than it used to be: only files with imports and absolutely
+    nothing else qualify."""
+    (project / "src" / "imports_only.py").write_text("import os\nfrom pathlib import Path\n")
     config, _ = Config.find_and_load(project)
     result = check_project(project_root=project, config=config)
-    items = [it for it in result.items if it.source_path == "src/empty_module.py"]
+    items = [it for it in result.items if it.source_path == "src/imports_only.py"]
     assert items == []
 
 
