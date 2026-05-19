@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.1
 source: tests/test_audit.py
-file_fingerprint: 2ad0b33ff7ecb7397a9856d5c1d0c34a07f37fd58893ce32afa2ae33a5ba0ae6
-last_synced_at: '2026-05-19T10:37:20Z'
+file_fingerprint: 3b93436d7a1eacb3ad160ec6ff447e4a925164865470ab188b00773ee8e8532a
+last_synced_at: '2026-05-19T15:19:17Z'
 description: 'Audit summary: JSONL ingestion + rendering.'
 defines:
 - kind: module
   qualified_name: tests/test_audit:__module__
-  lines: 1-990
+  lines: 1-1007
 - kind: constant
   qualified_name: tests/test_audit:FULL_MODEL
   lines: 42-42
@@ -61,61 +61,61 @@ defines:
   lines: 407-443
 - kind: function
   qualified_name: tests/test_audit:test_read_mode_breakdown_aggregates_from_cli_call_events
-  lines: 446-499
+  lines: 446-516
 - kind: function
   qualified_name: tests/test_audit:test_read_events_without_mode_field_count_as_qname
-  lines: 502-526
+  lines: 519-543
 - kind: function
   qualified_name: tests/test_audit:test_sync_aggregation_totals_and_cost
-  lines: 534-586
+  lines: 551-603
 - kind: function
   qualified_name: tests/test_audit:test_sync_with_legacy_bare_model_name_still_costs
-  lines: 589-611
+  lines: 606-628
 - kind: function
   qualified_name: tests/test_audit:test_sync_with_unknown_model_records_zero_cost
-  lines: 614-633
+  lines: 631-650
 - kind: function
   qualified_name: tests/test_audit:test_retries_grouped_by_reason
-  lines: 641-670
+  lines: 658-687
 - kind: function
   qualified_name: tests/test_audit:test_zero_retries_when_no_events
-  lines: 673-676
+  lines: 690-693
 - kind: function
   qualified_name: tests/test_audit:test_cli_invocations_counted
-  lines: 684-696
+  lines: 701-713
 - kind: function
   qualified_name: tests/test_audit:_render_to_string
-  lines: 704-709
+  lines: 721-726
 - kind: function
   qualified_name: tests/test_audit:test_render_single_summary_includes_counts
-  lines: 712-742
+  lines: 729-759
 - kind: function
   qualified_name: tests/test_audit:test_render_empty_log_does_not_crash
-  lines: 745-750
+  lines: 762-767
 - kind: function
   qualified_name: tests/test_audit:test_render_comparison_includes_both_paths
-  lines: 753-801
+  lines: 770-818
 - kind: function
   qualified_name: tests/test_audit:test_render_comparison_includes_cli_call_diff
-  lines: 804-863
+  lines: 821-880
 - kind: function
   qualified_name: tests/test_audit:test_cli_audit_help_lists_log_option
-  lines: 871-875
+  lines: 888-892
 - kind: function
   qualified_name: tests/test_audit:test_cli_audit_runs_against_explicit_log
-  lines: 878-883
+  lines: 895-900
 - kind: function
   qualified_name: tests/test_audit:test_cli_audit_json_output
-  lines: 886-906
+  lines: 903-923
 - kind: function
   qualified_name: tests/test_audit:test_cli_audit_compare_two_logs
-  lines: 909-945
+  lines: 926-962
 - kind: function
   qualified_name: tests/test_audit:test_cli_audit_missing_log_exits_nonzero
-  lines: 948-951
+  lines: 965-968
 - kind: function
   qualified_name: tests/test_audit:test_summarise_directly_with_event_list
-  lines: 959-989
+  lines: 976-1006
 incoming_refs: 0
 outgoing_refs: 35
 ---
@@ -328,13 +328,13 @@ Assert that `mcp_call` and `cli_call` events with the same tool name populate `s
 Verify that `AuditSummary.to_dict()` includes a `cli` key with per-tool stats matching the shape of the `mcp` section.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_audit:test_read_mode_breakdown_aggregates_from_cli_call_events fingerprint=e414250babf18df163e8874242e6dccc4b4af335f5a8b29d288a047c7ae2c0e8 body_fp=ad9de1657eea6d53da5f3ea048b08e5112250a6e627c6994586f02253bf8ef5a source_ref=cb94ee99a2944523034daac6d7b1884723dd84ec -->
+<!-- trie:section symbol=tests/test_audit:test_read_mode_breakdown_aggregates_from_cli_call_events fingerprint=7846b4cf97a29f5409f0866aa00fcb3f57fde1d1ddd38c31343b55d47c288bff body_fp=599b2e5307321a05d1e0964215dab040791a6de8789ad696bb87b96b88de29d1 source_ref=7b5ee3d5f7adab6f8ba5f38a4f9896e457c14fdb -->
 ## `test_read_mode_breakdown_aggregates_from_cli_call_events(tmp_path: Path)`
 
 Verify that `cli_call` events with a `mode` field are rolled into `McpCallStats.modes` keyed by mode name.
 
-- Emits four `cli_call` events: two `triefact`, one `source`, one `show_source`.
-- Asserts `summary.cli["read"].modes == {"triefact": 2, "source": 1, "show_source": 1}`.
+- Emits five `cli_call` events: two `triefact_compact`, one `triefact_full`, one `source`, one `show_source`.
+- Asserts `summary.cli["read"].modes == {"triefact_compact": 2, "triefact_full": 1, "source": 1, "show_source": 1}`.
 <!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_audit:test_read_events_without_mode_field_count_as_qname fingerprint=239e047d3a3191b56c46c4400027a51f3630bff20b5ea2ab1ffebdcda1c9a5eb body_fp=577e94978926fc7209b0ee9e454ac0fb16d7b898fedf6b4658bd49eec2d4619a source_ref=cb94ee99a2944523034daac6d7b1884723dd84ec -->

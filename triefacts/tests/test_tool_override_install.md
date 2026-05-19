@@ -1,14 +1,14 @@
 ---
 trie_version: 0.1.1
 source: tests/test_tool_override_install.py
-file_fingerprint: 463c0c464f03ab7f4eba4655f1813b04e68afa3297c9700be6b84bdde6daf5ea
-last_synced_at: '2026-05-19T10:39:35Z'
+file_fingerprint: 2434d77108e67662bceaebe70f8a470f397676ea48919c117a0d334a5379a899
+last_synced_at: '2026-05-19T15:19:22Z'
 description: 'Tests for `trie.tool_override_install`: replacing agent built-in tools
   with trie wrappers.'
 defines:
 - kind: module
   qualified_name: tests/test_tool_override_install:__module__
-  lines: 1-519
+  lines: 1-609
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_install_creates_three_override_files
   lines: 39-60
@@ -34,46 +34,58 @@ defines:
   qualified_name: tests/test_tool_override_install:test_opencode_read_override_appends_telemetry_atomically
   lines: 195-212
 - kind: function
+  qualified_name: tests/test_tool_override_install:test_opencode_read_override_handles_absolute_paths
+  lines: 215-236
+- kind: function
+  qualified_name: tests/test_tool_override_install:test_opencode_read_override_advertises_full_arg
+  lines: 239-255
+- kind: function
+  qualified_name: tests/test_tool_override_install:test_opencode_read_override_emits_compact_renderer
+  lines: 258-277
+- kind: function
+  qualified_name: tests/test_tool_override_install:test_opencode_read_override_full_mode_trims_for_agent
+  lines: 280-302
+- kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_trie_read_obsolete_file_removed_on_apply
-  lines: 215-240
+  lines: 305-330
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_obsolete_cleanup_is_noop_on_fresh_install
-  lines: 243-258
+  lines: 333-348
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_install_is_idempotent_on_identical_content
-  lines: 266-291
+  lines: 356-381
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_install_updates_on_drift
-  lines: 294-319
+  lines: 384-409
 - kind: function
   qualified_name: tests/test_tool_override_install:test_claude_code_install_creates_advisory_hook
-  lines: 327-354
+  lines: 417-444
 - kind: function
   qualified_name: tests/test_tool_override_install:test_claude_code_hook_does_not_deny_grep
-  lines: 357-371
+  lines: 447-461
 - kind: function
   qualified_name: tests/test_tool_override_install:test_unsupported_harnesses_emit_needs_manual_setup
-  lines: 383-401
+  lines: 473-491
 - kind: function
   qualified_name: tests/test_tool_override_install:test_install_for_opencode_and_claude_code_in_one_pass
-  lines: 409-422
+  lines: 499-512
 - kind: function
   qualified_name: tests/test_tool_override_install:test_print_only_does_not_write_anything
-  lines: 430-451
+  lines: 520-541
 - kind: function
   qualified_name: tests/test_tool_override_install:test_dry_run_does_not_write_when_file_already_correct
-  lines: 454-474
+  lines: 544-564
 - kind: function
   qualified_name: tests/test_tool_override_install:test_install_with_empty_target_names_raises
-  lines: 482-489
+  lines: 572-579
 - kind: function
   qualified_name: tests/test_tool_override_install:test_install_with_unknown_target_raises
-  lines: 492-506
+  lines: 582-596
 - kind: function
   qualified_name: tests/test_tool_override_install:test_apply_one_uses_needs_manual_setup_for_targets_with_no_files
-  lines: 509-518
+  lines: 599-608
 incoming_refs: 0
-outgoing_refs: 23
+outgoing_refs: 28
 ---
 <!-- trie:section symbol=tests/test_tool_override_install:test_opencode_install_creates_three_override_files fingerprint=311a913081b132222ae5933948bfc573701ad85a62aeaea33e46eb3141571d36 body_fp=738af83cbeb707dcda25021772677ed76f88d66c6495cbfc619a109956a3cfc4 source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
 ## `test_opencode_install_creates_three_override_files(tmp_path: Path)`
@@ -230,4 +242,34 @@ Test suite for `trie.tool_override_install`, covering tool-override installation
 - **other harnesses**: verifies `needs_manual_setup` result with no files written
 - **preview/dry-run**: verifies neither mode touches disk
 - **error handling**: verifies empty/unknown targets raise `ToolOverrideInstallError`
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_handles_absolute_paths fingerprint=331fc83490b3d1f8cf59065f4c0128e7d3321e595ed45c4912a282848cf2c585 body_fp=b95015ee329dd28c123fd697e93c22449b558e490a20be37e16403b054fc87e0 source_ref=d3095c353e2dea491cce6acc2c63c0f3f28041d3 -->
+## `test_opencode_read_override_handles_absolute_paths(tmp_path: Path)`
+
+Assert that `read.ts` uses `isAbsolute(path)` to handle absolute paths verbatim instead of joining them onto cwd.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_advertises_full_arg fingerprint=005cdc6c3d94967f1d1afa9f90580144130596b3eae9e920da25a090a43812dd body_fp=19dcdf875157bc8be64fd1ffb9364d1b878005d3a86959d9912d6e0d4042dae4 source_ref=d3095c353e2dea491cce6acc2c63c0f3f28041d3 -->
+## `test_opencode_read_override_advertises_full_arg(tmp_path: Path)`
+
+Assert that the rendered `read.ts` wrapper exposes a `full: bool` argument so agents can opt out of compact mode.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_emits_compact_renderer fingerprint=5695f91271e789440ef43b5a770758ef6502837591c372a78ebe8aa3c93de99a body_fp=e40c5a68212829bbaed5dbd83db3712a061a30346b8faf223fdcd258cea6bf24 source_ref=d3095c353e2dea491cce6acc2c63c0f3f28041d3 -->
+## `test_opencode_read_override_emits_compact_renderer(tmp_path: Path)`
+
+Assert that the rendered `read.ts` wrapper contains compact-rendering helpers and telemetry mode tags for both compact and full paths.
+
+- `tmp_path`: pytest fixture providing an isolated temporary directory.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_full_mode_trims_for_agent fingerprint=d16eec00436dccc69af73d191648d1d6ccfaa708532d5301f331e513bd01bf08 body_fp=3fcdc33b9f8685e84a167a0eeb48ccc4fbe8945994b79c9d9edbca9452e261c0 source_ref=d3095c353e2dea491cce6acc2c63c0f3f28041d3 -->
+## `test_opencode_read_override_full_mode_trims_for_agent(tmp_path: Path)`
+
+Assert that `full: true` mode routes through `renderForAgent`, stripping internal frontmatter keys and sentinel comments before returning content to the agent.
+
+- Checks for `renderForAgent`, `stripSentinels`, and `renderFrontMatterForAgent` helpers.
+- Verifies `result = renderForAgent(triefact)` call site exists.
+- Verifies the raw `result = triefact` leak pattern is absent for full mode.
 <!-- trie:end -->

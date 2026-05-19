@@ -1,83 +1,110 @@
 ---
 trie_version: 0.1.1
 source: tests/test_writer_sentinels.py
-file_fingerprint: 74e5809d451d5068253eea90e9f919a1312c1be8a4c1f2c42d3c9859840bccae
-last_synced_at: '2026-05-19T10:39:40Z'
+file_fingerprint: e45d38ba1c000324ac0fc0b8f299335bd208a9fd00d5a3a7476092b9b833250f
+last_synced_at: '2026-05-19T15:19:30Z'
 defines:
 - kind: module
   qualified_name: tests/test_writer_sentinels:__module__
-  lines: 1-338
+  lines: 1-478
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_empty
-  lines: 10-13
+  lines: 17-20
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_only_prose
-  lines: 16-21
+  lines: 23-28
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_front_matter_only
-  lines: 24-28
+  lines: 31-35
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_front_matter_and_prose
-  lines: 31-37
+  lines: 38-44
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_single_section
-  lines: 40-59
+  lines: 47-66
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_multiple_sections_with_prose_between
-  lines: 62-77
+  lines: 69-84
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_unterminated_section_raises
-  lines: 80-83
+  lines: 87-90
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_roundtrip_only_prose_is_byte_identical
-  lines: 89-91
+  lines: 96-98
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_roundtrip_with_front_matter_and_section_carrying_body_fp
-  lines: 94-108
+  lines: 101-115
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_roundtrip_multiple_sections_with_human_prose
-  lines: 111-130
+  lines: 118-137
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_legacy_section_without_body_fp_parses_and_promotes_on_render
-  lines: 133-143
+  lines: 140-150
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_section_round_trips_source_ref
-  lines: 146-160
+  lines: 153-167
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_section_without_source_ref_renders_without_it
-  lines: 163-170
+  lines: 170-177
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_section_with_source_ref_renders_field_in_stable_position
-  lines: 173-188
+  lines: 180-195
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_section_legacy_format_with_source_ref_appended_parses
-  lines: 191-205
+  lines: 198-212
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_upsert_replaces_existing_section_preserves_prose
-  lines: 211-234
+  lines: 218-241
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_upsert_appends_new_section_at_end
-  lines: 237-245
+  lines: 244-252
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_upsert_into_empty_triefact
-  lines: 248-256
+  lines: 255-263
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_remove_section
-  lines: 259-276
+  lines: 266-283
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_remove_missing_section_returns_false
-  lines: 279-281
+  lines: 286-288
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_section_qnames_in_order
-  lines: 284-291
+  lines: 291-298
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_human_edit_between_sections_survives_regen
-  lines: 297-328
+  lines: 304-335
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_front_matter_re_renders_in_insertion_order
-  lines: 331-337
+  lines: 338-344
+- kind: function
+  qualified_name: tests/test_writer_sentinels:_sample_triefact
+  lines: 350-382
+- kind: function
+  qualified_name: tests/test_writer_sentinels:test_render_for_agent_strips_internal_frontmatter
+  lines: 385-393
+- kind: function
+  qualified_name: tests/test_writer_sentinels:test_render_for_agent_keeps_agent_frontmatter
+  lines: 396-407
+- kind: function
+  qualified_name: tests/test_writer_sentinels:test_render_for_agent_strips_sentinels_and_fingerprints
+  lines: 410-418
+- kind: function
+  qualified_name: tests/test_writer_sentinels:test_render_for_agent_keeps_section_bodies_and_interleaved_prose
+  lines: 421-434
+- kind: function
+  qualified_name: tests/test_writer_sentinels:test_render_for_agent_omits_frontmatter_when_no_agent_keys
+  lines: 437-455
+- kind: function
+  qualified_name: tests/test_writer_sentinels:test_render_for_agent_empty_input
+  lines: 458-459
+- kind: function
+  qualified_name: tests/test_writer_sentinels:test_render_for_agent_prose_only_no_sentinels
+  lines: 462-467
+- kind: function
+  qualified_name: tests/test_writer_sentinels:test_agent_front_matter_keys_constant
+  lines: 470-477
 incoming_refs: 0
-outgoing_refs: 38
+outgoing_refs: 46
 ---
 <!-- trie:section symbol=tests/test_writer_sentinels:test_parse_empty fingerprint=d8d478032b2edcb69bfa32426a508c57ca253f274418d1d9533ca54ff39decf9 body_fp=0d95947135b774448a353a25eda4989fc50c0825a958d2b7f8da62fcfb6ed21e source_ref=abe160a19a920121281b497414b5215598b904f7 -->
 ## `test_parse_empty()`
@@ -226,4 +253,58 @@ Verify that a section with `source_ref=` but no `body_fp=` parses without error 
 Test suite for `TriefactFile` parsing, rendering, mutation, and round-trip fidelity.
 
 - Covers sentinel parsing, front-matter, prose preservation, upsert, remove, and field ordering.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_writer_sentinels:_sample_triefact fingerprint=da10c5cdf0a4dbdc27a89de7be7c634bfb5d951821a716bf2822c89925533877 body_fp=766d020a12f9bc9b5f8801f77abc02f45227af4f49d39abcb2f7322c5b2d2edc source_ref=343ba48556b010f8d0e6a5b3d9397d89575c65f0 -->
+## `_sample_triefact() -> str`
+
+Return a realistic triefact string with mixed front-matter keys, two sentinel-wrapped sections, and interleaved hand-written prose for use in `render_for_agent` tests.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_writer_sentinels:test_render_for_agent_strips_internal_frontmatter fingerprint=581537bdd2d548348dc9a84b5bde8ea693ed2a07b0aad02c8c9d939ebbbc50fe body_fp=ab39232c52df4388614dca9d76cf612c3525e390ae9e91ba639bdaa0cd4d7382 source_ref=343ba48556b010f8d0e6a5b3d9397d89575c65f0 -->
+## `test_render_for_agent_strips_internal_frontmatter()`
+
+Assert that `render_for_agent` removes internal-only front-matter keys from triefact output.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_writer_sentinels:test_render_for_agent_keeps_agent_frontmatter fingerprint=a1adf8b59b837a94c7f4d32da28500c17190cef92a3028be9b2fb2d8cead0fb8 body_fp=0ff465ec88a53133ba81f14383f8e53449d791fa06709e997819b668df22bb63 source_ref=343ba48556b010f8d0e6a5b3d9397d89575c65f0 -->
+## `test_render_for_agent_keeps_agent_frontmatter()`
+
+Assert that `render_for_agent` retains all agent-relevant front-matter keys in the output YAML block.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_writer_sentinels:test_render_for_agent_strips_sentinels_and_fingerprints fingerprint=9a939937bb00998aac30c7d8665ef774c0e37fa8cbfa88034c2f09595f5f766a body_fp=78c879d649b3e78c6008cdba4ff87110ce0f9613eb2487560cc6c86f8a2fcefe source_ref=343ba48556b010f8d0e6a5b3d9397d89575c65f0 -->
+## `test_render_for_agent_strips_sentinels_and_fingerprints()`
+
+Assert that `render_for_agent` removes all sentinel comments and fingerprint fields from output.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_writer_sentinels:test_render_for_agent_keeps_section_bodies_and_interleaved_prose fingerprint=3797428ea3cd60e6802fb0a0a5df383b905b236b7e32df134018405c909ed757 body_fp=c94648993afc377004ccd872f87f152a23e38a4e3233ee47971ee38eb83e7362 source_ref=343ba48556b010f8d0e6a5b3d9397d89575c65f0 -->
+## `test_render_for_agent_keeps_section_bodies_and_interleaved_prose()`
+
+Assert that `render_for_agent` preserves both section bodies, interleaved prose, and blank-line separation between sections.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_writer_sentinels:test_render_for_agent_omits_frontmatter_when_no_agent_keys fingerprint=7a1c78399101ebecde991d331809bf4373573ac31ede0ffb0fffdeb8d4281b1f body_fp=3ac3877da856b6612a50d69520756f2b038f25b091f0531a6027e184d89c160c source_ref=343ba48556b010f8d0e6a5b3d9397d89575c65f0 -->
+## `test_render_for_agent_omits_frontmatter_when_no_agent_keys()`
+
+Assert that `render_for_agent` drops the entire front-matter block when all keys are internal-only, while preserving section bodies.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_writer_sentinels:test_render_for_agent_empty_input fingerprint=cb071367cdb29133f48c3cb017fcdfe0b91718366df0e6889cb7019b8000b292 body_fp=ef16d8ff90c8a6b8a72da3f9aee5e722e8af41dcce4e9f637b9ae589a68a5a22 source_ref=343ba48556b010f8d0e6a5b3d9397d89575c65f0 -->
+## `test_render_for_agent_empty_input()`
+
+Assert that `render_for_agent("")` returns an empty string.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_writer_sentinels:test_render_for_agent_prose_only_no_sentinels fingerprint=15f31ad9e89445f42fad2dbafa59d52888fd7a5e00d9285756b45de6ab7361ec body_fp=cd2574973f8272ae05b600e59b0aa8120e1e548769d9364f293db698646fb717 source_ref=343ba48556b010f8d0e6a5b3d9397d89575c65f0 -->
+## `test_render_for_agent_prose_only_no_sentinels()`
+
+Assert that `render_for_agent` passes through plain prose with no frontmatter or sentinels unchanged.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_writer_sentinels:test_agent_front_matter_keys_constant fingerprint=64acc40a3816c88839dddb297dcc73231822240b25e6f37b53bd7d0d3808e85b body_fp=1948c10abb1005d7c211224915e72785d7a13fe95d81ac6752d86706d744d7c7 source_ref=343ba48556b010f8d0e6a5b3d9397d89575c65f0 -->
+## `test_agent_front_matter_keys_constant()`
+
+Assert that `AGENT_FRONT_MATTER_KEYS` contains exactly the four expected agent-facing front-matter key names.
 <!-- trie:end -->

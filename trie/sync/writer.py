@@ -98,6 +98,19 @@ def extract_one_liner(body: str, *, max_chars: int = 200) -> str:
     return first
 
 
+# Frontmatter keys that are useful to a reader (human or agent): the file's
+# synthesised description, the manifest of symbols it defines, and the inbound/
+# outbound reference counts. Everything else in frontmatter is trie's own
+# bookkeeping (versions, fingerprints, sync timestamps, git blob refs) and is
+# noise on the agent surface — see `render_for_agent` below.
+AGENT_FRONT_MATTER_KEYS: tuple[str, ...] = (
+    "description",
+    "defines",
+    "incoming_refs",
+    "outgoing_refs",
+)
+
+
 @dataclass(frozen=True)
 class Section:
     qualified_name: str
@@ -267,3 +280,68 @@ class TriefactFile:
                     parts.append("\n")
                 parts.append(SECTION_CLOSE)
         return "".join(parts)
+
+
+def render_for_agent(text: str) -> str:
+    """Re-render a triefact for an agent-facing surface.
+
+    Strips two classes of noise that exist for trie's machinery but mean
+    nothing to a reader:
+
+    1. **Frontmatter bookkeeping.** The YAML block at the top of every
+       triefact carries `trie_version`, `source`, `file_fingerprint`,
+       `last_synced_at`, plus the user-facing keys (`description`,
+       `defines`, `incoming_refs`, `outgoing_refs`). Only the user-facing
+       keys (`AGENT_FRONT_MATTER_KEYS`) survive the render; the rest is
+       dropped. When *no* agent-relevant keys are present the frontmatter
+       block is omitted entirely rather than emitting a confusing empty
+       `---/---` pair.
+
+    2. **Section sentinels.** The `<!-- trie:section ... -->` /
+       `<!-- trie:end -->` pairs that wrap each body carry fingerprints
+       (`fingerprint=`, `body_fp=`, `source_ref=`) used by the coherence
+       checker. None of that helps an agent reading the prose. Sentinels
+       are removed entirely; the section bodies they wrapped come through
+       as plain Markdown, separated by blank lines, with any inter-section
+       prose preserved.
+
+    Robust to legacy / partial triefacts — anything `TriefactFile.parse`
+    accepts round-trips here too.
+    """
+    tf = TriefactFile.parse(text)
+
+    parts: list[str] = []
+
+    # Frontmatter: keep only the agent-relevant keys, preserving their
+    # original order from the source file. PyYAML's safe_load honours
+    # insertion order, and we feed the subset back to safe_dump with
+    # sort_keys=False so what the agent sees mirrors the source order.
+    fm_subset = {k: tf.front_matter[k] for k in tf.front_matter if k in AGENT_FRONT_MATTER_KEYS}
+    if fm_subset:
+        yaml_text = yaml.safe_dump(fm_subset, sort_keys=False, default_flow_style=False)
+        parts.append("---\n")
+        parts.append(yaml_text)
+        parts.append("---\n")
+
+    # Chunks: emit Prose verbatim, emit Section bodies without their
+    # sentinels. Insert a blank-line separator between back-to-back
+    # sections (where the sentinels used to provide visual separation)
+    # so the result is a clean Markdown document instead of bodies
+    # butting up against each other.
+    prev_was_section = False
+    for c in tf.chunks:
+        if isinstance(c, Prose):
+            parts.append(c.text)
+            prev_was_section = False
+        else:
+            if prev_was_section:
+                # Ensure a blank line precedes this section's body.
+                tail = parts[-1] if parts else ""
+                if not tail.endswith("\n\n"):
+                    parts.append("\n" if tail.endswith("\n") else "\n\n")
+            parts.append(c.body)
+            if not c.body.endswith("\n"):
+                parts.append("\n")
+            prev_was_section = True
+
+    return "".join(parts)

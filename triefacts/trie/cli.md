@@ -2,7 +2,7 @@
 trie_version: 0.1.1
 source: trie/cli.py
 file_fingerprint: 1e6d1726fb5947408d2f03aa15de52d7710341ab9bf0848daf14bc42e3912783
-last_synced_at: '2026-05-19T10:40:11Z'
+last_synced_at: '2026-05-19T15:19:53Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
