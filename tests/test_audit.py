@@ -717,6 +717,68 @@ def test_render_comparison_includes_both_paths(tmp_path: Path):
     assert "+1" in out
 
 
+def test_render_comparison_includes_cli_call_diff(tmp_path: Path):
+    """The comparison renderer must show MCP and CLI surfaces as separate
+    tables. A regression where an agent's call mix shifted between
+    surfaces (more CLI, less MCP — or vice versa) should be visible at a
+    glance, not absorbed into one combined count.
+
+    Baseline run sees one MCP grep; candidate run sees an extra CLI grep
+    on top. The MCP delta is 0; the CLI delta is +1 — both tables must
+    appear, and the +1 must show up in the CLI table specifically."""
+    p1 = tmp_path / "baseline.jsonl"
+    p2 = tmp_path / "candidate.jsonl"
+    _write_log(
+        p1,
+        [
+            {
+                "ts": _ts(0),
+                "event": "mcp_call",
+                "tool": "grep",
+                "result_kind": "ok",
+                "result_count": 2,
+                "duration_ms": 4,
+                "response_bytes": 200,
+            },
+        ],
+    )
+    _write_log(
+        p2,
+        [
+            {
+                "ts": _ts(0),
+                "event": "mcp_call",
+                "tool": "grep",
+                "result_kind": "ok",
+                "result_count": 2,
+                "duration_ms": 4,
+                "response_bytes": 200,
+            },
+            {
+                "ts": _ts(1),
+                "event": "cli_call",
+                "tool": "grep",
+                "result_kind": "ok",
+                "result_count": 3,
+                "duration_ms": 6,
+                "response_bytes": 250,
+            },
+        ],
+    )
+    out = _render_to_string(
+        render_comparison,
+        AuditSummary.from_log(p1),
+        AuditSummary.from_log(p2),
+    )
+    # Both section titles must appear in the comparison output.
+    assert "MCP calls" in out
+    assert "CLI calls" in out
+    # The +1 delta is for the new CLI grep call. MCP grep count is
+    # unchanged across runs, so the only `+1` in the rendered text must
+    # be in the CLI table.
+    assert "+1" in out
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
