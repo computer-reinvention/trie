@@ -467,17 +467,44 @@ async function shellOutToTrie(
   throw new Error(`trie failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
 }
 
+function resolveAbsolutePath(cwd: string, path: string): string {
+  // Agents sometimes pass absolute paths (e.g. when copy-pasting from a
+  // grep result or a stack trace). Without this branch, `join(cwd, path)`
+  // produces `<cwd>/<abs-path-with-leading-slash-stripped>` — the literal
+  // Node behaviour for `path.join` with an absolute second arg, which is
+  // almost always wrong. Detect absolute paths and use them verbatim;
+  // relative paths land under cwd as before.
+  return isAbsolute(path) ? normalize(path) : normalize(join(cwd, path))
+}
+
+function projectRelativePath(cwd: string, path: string): string | null {
+  // Triefact lookup needs a path *relative to the project root*. When
+  // the agent passes an absolute path that lives inside the project
+  // tree, strip the cwd prefix and look up the triefact under the
+  // resulting relative path. When the absolute path is outside the
+  // project tree, return null — there's no triefact for files we
+  // didn't sync, and the caller should fall through to source.
+  if (!isAbsolute(path)) return path
+  const cwdNorm = normalize(cwd)
+  const absNorm = normalize(path)
+  // Path must start with cwd + separator. Use endsWith-slash check to
+  // avoid matching siblings like `/Users/foo-bar` from `/Users/foo`.
+  const prefix = cwdNorm.endsWith("/") ? cwdNorm : cwdNorm + "/"
+  if (!absNorm.startsWith(prefix)) return null
+  return absNorm.slice(prefix.length)
+}
+
 async function readSourceFile(
   cwd: string,
   path: string,
   offset?: number,
   limit?: number,
 ): Promise<string> {
-  // Resolve the path relative to the project root (cwd from context).
-  // No path-traversal guard here — the agent already has free reign
-  // over the project via the bash tool; this matches built-in `read`'s
-  // permissiveness rather than imposing a stricter sandbox.
-  const absPath = normalize(join(cwd, path))
+  // Resolve the path: absolute paths are used verbatim; relative paths
+  // land under cwd. No path-traversal guard — the agent already has free
+  // reign over the project via the bash tool; this matches built-in
+  // `read`'s permissiveness rather than imposing a stricter sandbox.
+  const absPath = resolveAbsolutePath(cwd, path)
   const text = await readFile(absPath, "utf-8")
   if (offset === undefined && limit === undefined) {
     return text
@@ -491,13 +518,20 @@ async function readSourceFile(
 }
 
 async function readTriefact(cwd: string, path: string): Promise<string | null> {
-  // Default triefact location: `<cwd>/triefacts/<path>.md`. We swap the
+  // Default triefact location: `<cwd>/triefacts/<rel>.md`. We swap the
   // source extension for `.md` (matching how the writer maps source →
   // triefact in trie/sync/single_file.py). Projects with a non-default
   // `triefacts.root` config won't be picked up here — we fall through
   // to source in that case rather than parsing trie.toml from TS.
-  const dotIdx = path.lastIndexOf(".")
-  const stem = dotIdx > 0 ? path.slice(0, dotIdx) : path
+  //
+  // When the agent passes an absolute path, we strip the cwd prefix so
+  // the triefact lookup still works for absolute paths inside the
+  // project tree. Absolute paths outside the tree return null — there's
+  // no triefact for files we didn't sync.
+  const rel = projectRelativePath(cwd, path)
+  if (rel === null) return null
+  const dotIdx = rel.lastIndexOf(".")
+  const stem = dotIdx > 0 ? rel.slice(0, dotIdx) : rel
   const triefactPath = join(cwd, "triefacts", stem + ".md")
   try {
     const s = await stat(triefactPath)
@@ -508,6 +542,178 @@ async function readTriefact(cwd: string, path: string): Promise<string | null> {
   return readFile(triefactPath, "utf-8")
 }
 
+// --- Compact-mode triefact rendering ---------------------------------------
+//
+// Default `read(path)` returns a compact view: the file's `description` and
+// ref counts (from the front matter), followed by one entry per symbol
+// containing the qname, kind, lines, public flag, signature, and the first
+// paragraph of the section body ("intro"). Agents probing "is this file
+// relevant?" pay one-line-per-symbol budget; if they need a specific
+// symbol's full prose they follow up with `read(qname)` or `read(path, full=true)`.
+//
+// Full mode (`full: true`) keeps the historical behaviour of returning the
+// .md body verbatim — useful when the agent really does want every section's
+// prose, e.g. for narrow files where the bundle fits in a turn.
+
+interface FrontMatter {
+  description?: string
+  incoming_refs?: number
+  outgoing_refs?: number
+  defines: { qualified_name: string; kind: string; lines: string }[]
+}
+
+function parseFrontMatter(triefact: string): { fm: FrontMatter; rest: string } {
+  // The writer always emits a `---\n<yaml>\n---\n` block at the very start
+  // of the file. We hand-parse the slice — only flat scalars and one
+  // list-of-objects (`defines`) appear in this schema, so a TOML parser
+  // or a YAML dep is overkill. Anything we don't recognise lands in the
+  // rest of the file, untouched.
+  const fm: FrontMatter = { defines: [] }
+  if (!triefact.startsWith("---\\n")) return { fm, rest: triefact }
+  const end = triefact.indexOf("\\n---\\n", 4)
+  if (end === -1) return { fm, rest: triefact }
+  const yaml = triefact.slice(4, end)
+  const rest = triefact.slice(end + 5)
+
+  // Walk lines. `defines:` opens a list block until the next dedented
+  // top-level key. Within a list item, `- kind: ...` starts a new entry;
+  // continuation lines (`  qualified_name: ...`, `  lines: ...`) extend
+  // the current entry. Everything else is a flat scalar assignment.
+  let inDefines = false
+  let current: { qualified_name: string; kind: string; lines: string } | null = null
+  for (const raw of yaml.split(/\\r?\\n/)) {
+    const line = raw.replace(/\\s+$/, "")
+    if (line === "") continue
+    if (!line.startsWith(" ") && !line.startsWith("-")) {
+      // Top-level key. Flush any in-progress defines entry.
+      if (current !== null) {
+        fm.defines.push(current)
+        current = null
+      }
+      inDefines = false
+      const m = /^([A-Za-z_][A-Za-z0-9_]*):\\s*(.*)$/.exec(line)
+      if (m === null) continue
+      const [, key, val] = m
+      if (key === "defines") {
+        inDefines = true
+        continue
+      }
+      const stripped = val.replace(/^["']|["']$/g, "")
+      if (key === "description") fm.description = stripped
+      else if (key === "incoming_refs") fm.incoming_refs = Number(stripped) || 0
+      else if (key === "outgoing_refs") fm.outgoing_refs = Number(stripped) || 0
+    } else if (inDefines) {
+      const trimmed = line.replace(/^\\s+/, "")
+      if (trimmed.startsWith("- ")) {
+        // New entry — flush previous.
+        if (current !== null) fm.defines.push(current)
+        current = { qualified_name: "", kind: "", lines: "" }
+        const m = /^- ([A-Za-z_]+):\\s*(.*)$/.exec(trimmed)
+        if (m !== null && current !== null) {
+          const [, key, val] = m
+          ;(current as Record<string, string>)[key] = val.replace(/^["']|["']$/g, "")
+        }
+      } else if (current !== null) {
+        const m = /^([A-Za-z_]+):\\s*(.*)$/.exec(trimmed)
+        if (m !== null) {
+          const [, key, val] = m
+          ;(current as Record<string, string>)[key] = val.replace(/^["']|["']$/g, "")
+        }
+      }
+    }
+  }
+  if (current !== null) fm.defines.push(current)
+  return { fm, rest }
+}
+
+interface SectionBody {
+  qname: string
+  signature: string  // first line of body, conventionally `## <signature>`
+  intro: string      // first paragraph after the signature line
+}
+
+function extractSections(rest: string): Map<string, SectionBody> {
+  // Sentinel format mirrors trie/sync/writer.py SECTION_OPEN_RE:
+  //   <!-- trie:section symbol=<qname> fingerprint=<fp> [body_fp=<bfp>] [source_ref=<ref>] -->
+  // We extract just `symbol=<qname>` per opening sentinel, find the
+  // matching `<!-- trie:end -->`, and break the body into a signature
+  // line + first-paragraph intro.
+  const out = new Map<string, SectionBody>()
+  const openRe =
+    /<!--\\s*trie:section\\s+symbol=(\\S+)[^>]*-->[\\t ]*\\n/g
+  const closeMarker = "<!-- trie:end -->"
+  let m: RegExpExecArray | null
+  while ((m = openRe.exec(rest)) !== null) {
+    const qname = m[1]
+    const bodyStart = m.index + m[0].length
+    const closeIdx = rest.indexOf(closeMarker, bodyStart)
+    if (closeIdx === -1) continue
+    const body = rest.slice(bodyStart, closeIdx).trimEnd()
+    out.set(qname, parseSectionBody(qname, body))
+  }
+  return out
+}
+
+function parseSectionBody(qname: string, body: string): SectionBody {
+  // Body convention: first line is `## <signature>` (the markdown
+  // header carrying the symbol's signature); a blank line follows;
+  // then the prose. The first paragraph (= up to the next blank line)
+  // is the intro. The signature line strips the leading `## ` and the
+  // intro is paragraph-1 trimmed.
+  const lines = body.split("\\n")
+  let signature = ""
+  let i = 0
+  if (lines.length > 0 && lines[0].startsWith("## ")) {
+    signature = lines[0].slice(3).trim()
+    i = 1
+  }
+  // Skip blank lines after the signature.
+  while (i < lines.length && lines[i].trim() === "") i++
+  // Collect lines until the next blank line.
+  const introLines: string[] = []
+  while (i < lines.length && lines[i].trim() !== "") {
+    introLines.push(lines[i])
+    i++
+  }
+  return { qname, signature, intro: introLines.join("\\n").trim() }
+}
+
+function renderCompact(triefact: string, path: string): string {
+  const { fm, rest } = parseFrontMatter(triefact)
+  const sections = extractSections(rest)
+  const out: string[] = []
+  out.push(`# ${path} (compact triefact view)`)
+  if (fm.description) out.push(`description: ${fm.description}`)
+  const refsParts: string[] = []
+  if (fm.incoming_refs !== undefined) refsParts.push(`incoming_refs: ${fm.incoming_refs}`)
+  if (fm.outgoing_refs !== undefined) refsParts.push(`outgoing_refs: ${fm.outgoing_refs}`)
+  if (refsParts.length > 0) out.push(refsParts.join(" · "))
+  out.push("")
+  out.push(`Symbols (${fm.defines.length}). Use \\`read(<qname>)\\` for full prose, ` +
+    `or \\`read(<path>, full=true)\\` for the full file bundle.`)
+  out.push("")
+  for (const entry of fm.defines) {
+    const sec = sections.get(entry.qualified_name)
+    const isPublic = !entry.qualified_name.split(":").pop()?.startsWith("_") ||
+      isDunder(entry.qualified_name.split(":").pop() || "")
+    out.push(
+      `## ${entry.qualified_name} (${entry.kind}, lines ${entry.lines}` +
+        `${isPublic ? "" : ", private"})`,
+    )
+    if (sec?.signature) out.push(`signature: \\`${sec.signature}\\``)
+    if (sec?.intro) {
+      out.push("")
+      out.push(sec.intro)
+    }
+    out.push("")
+  }
+  return out.join("\\n")
+}
+
+function isDunder(name: string): boolean {
+  return name.startsWith("__") && name.endsWith("__") && name.length > 4
+}
+
 export default tool({
   description:
     "Read source code or trie's synthesised description of it. Replaces " +
@@ -516,12 +722,17 @@ export default tool({
     "(1) when `path` is a qualified symbol name like `pkg/module:Name`, returns " +
     "the symbol's prose plus its callers/callees from the trie graph; " +
     "(2) when `path` is a regular file path and a triefact exists at " +
-    "`triefacts/<path>.md`, returns the full triefact (YAML frontmatter + " +
-    "every per-symbol section); " +
+    "`triefacts/<path>.md`, returns a COMPACT view by default — file " +
+    "description, ref counts, and one entry per symbol with its qname, kind, " +
+    "lines, signature, and a first-paragraph intro. Pass `full: true` to get " +
+    "the entire triefact (every section's full prose); " +
     "(3) when `show_source: true`, or no triefact exists, or `offset`/`limit` " +
     "are passed for a line-range read, returns the raw source verbatim. " +
-    "Use the default mode for understanding what a file or symbol does; " +
-    "use `show_source: true` right before editing when you need exact source.",
+    "Default flow for understanding a file: read in compact mode to see " +
+    "what's there, then `read(<qname>)` on the specific symbol that matters " +
+    "(or `read(<path>, full=true)` for the whole bundle). Use " +
+    "`show_source: true` right before editing when you need exact source. " +
+    "Both relative paths and absolute paths are accepted.",
   args: {
     path: tool.schema
       .string()
@@ -554,6 +765,20 @@ export default tool({
         "Maximum number of lines to return from `offset`. Implies " +
           "`show_source: true` for the same reason as `offset`.",
       ),
+    full: tool.schema
+      .boolean()
+      .optional()
+      .describe(
+        "When `path` is a file path and a triefact exists for it, return " +
+          "the entire triefact (full YAML frontmatter + every per-symbol " +
+          "section body). Default behaviour is compact mode: file " +
+          "description, ref counts, and one entry per symbol containing " +
+          "the qname, kind, lines, signature, and first-paragraph intro. " +
+          "Use `full: true` when you actually need the complete prose " +
+          "bundle; for narrow probing, default compact mode is much " +
+          "cheaper per token. Ignored for qname-shaped paths and for " +
+          "`show_source: true` calls.",
+      ),
   },
   async execute(args, context) {
     const cwd = context.directory
@@ -566,6 +791,7 @@ export default tool({
     if (args.show_source !== undefined) teleArgs.show_source = args.show_source
     if (args.offset !== undefined) teleArgs.offset = args.offset
     if (args.limit !== undefined) teleArgs.limit = args.limit
+    if (args.full !== undefined) teleArgs.full = args.full
 
     let mode = "source"
     let result: string
@@ -598,8 +824,16 @@ export default tool({
         // the fallthrough — the override is transparent for them.
         const triefact = await readTriefact(cwd, args.path)
         if (triefact !== null) {
-          mode = "triefact"
-          result = triefact
+          // Default: compact view (symbol manifest + intros). `full: true`
+          // returns the entire .md bundle for callers that genuinely need
+          // every section's prose.
+          if (args.full === true) {
+            mode = "triefact_full"
+            result = triefact
+          } else {
+            mode = "triefact_compact"
+            result = renderCompact(triefact, args.path)
+          }
         } else {
           mode = "source"
           result = await readSourceFile(cwd, args.path)

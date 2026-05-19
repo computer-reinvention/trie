@@ -453,12 +453,13 @@ def test_read_mode_breakdown_aggregates_from_cli_call_events(tmp_path: Path):
     _write_log(
         p,
         [
-            # Two triefact-mode reads (cheap path).
+            # Two compact-triefact reads (the default cheap path —
+            # symbol manifest + first-paragraph intros only).
             {
                 "ts": _ts(0),
                 "event": "cli_call",
                 "tool": "read",
-                "mode": "triefact",
+                "mode": "triefact_compact",
                 "result_kind": "ok",
                 "duration_ms": 3,
                 "response_bytes": 1200,
@@ -467,14 +468,25 @@ def test_read_mode_breakdown_aggregates_from_cli_call_events(tmp_path: Path):
                 "ts": _ts(1),
                 "event": "cli_call",
                 "tool": "read",
-                "mode": "triefact",
+                "mode": "triefact_compact",
                 "result_kind": "ok",
                 "duration_ms": 4,
                 "response_bytes": 800,
             },
-            # One source fallthrough (no triefact for this path).
+            # One full-triefact read (agent passed `full: true` because it
+            # wanted every section's prose — expensive but sometimes right).
             {
                 "ts": _ts(2),
+                "event": "cli_call",
+                "tool": "read",
+                "mode": "triefact_full",
+                "result_kind": "ok",
+                "duration_ms": 6,
+                "response_bytes": 12000,
+            },
+            # One source fallthrough (no triefact for this path).
+            {
+                "ts": _ts(3),
                 "event": "cli_call",
                 "tool": "read",
                 "mode": "source",
@@ -484,7 +496,7 @@ def test_read_mode_breakdown_aggregates_from_cli_call_events(tmp_path: Path):
             },
             # One show_source (agent reaching for raw source before edit).
             {
-                "ts": _ts(3),
+                "ts": _ts(4),
                 "event": "cli_call",
                 "tool": "read",
                 "mode": "show_source",
@@ -496,7 +508,12 @@ def test_read_mode_breakdown_aggregates_from_cli_call_events(tmp_path: Path):
     )
     summary = AuditSummary.from_log(p)
     modes = summary.cli["read"].modes
-    assert modes == {"triefact": 2, "source": 1, "show_source": 1}
+    assert modes == {
+        "triefact_compact": 2,
+        "triefact_full": 1,
+        "source": 1,
+        "show_source": 1,
+    }
 
 
 def test_read_events_without_mode_field_count_as_qname(tmp_path: Path):
