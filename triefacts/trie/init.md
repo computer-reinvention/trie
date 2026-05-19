@@ -1,27 +1,45 @@
 ---
 trie_version: 0.1.1
 source: trie/init.py
-file_fingerprint: f3d1e4aaf968cb9aa30244b8adf95c075197fdc20c8ebf759dd18eee20d1ec2a
-last_synced_at: '2026-05-15T13:05:28Z'
+file_fingerprint: 0a0f50d06e8a6f9d4f79bb977d3e2bd80e6beb28d3ea51ded39a2599aad8aeb4
+last_synced_at: '2026-05-19T10:40:57Z'
 defines:
+- kind: module
+  qualified_name: trie/init:__module__
+  lines: 1-179
+- kind: constant
+  qualified_name: trie/init:GITIGNORE_LINE
+  lines: 9-9
+- kind: constant
+  qualified_name: trie/init:PreCommitStrategy
+  lines: 11-11
+- kind: constant
+  qualified_name: trie/init:PRE_COMMIT_HOOK_MARKER
+  lines: 13-13
+- kind: constant
+  qualified_name: trie/init:PRE_COMMIT_HOOK_END_MARKER
+  lines: 14-14
+- kind: constant
+  qualified_name: trie/init:PRE_COMMIT_HOOK_BLOCK
+  lines: 24-31
 - kind: class
   qualified_name: trie/init:InitResult
-  lines: 25-35
+  lines: 35-45
 - kind: class
   qualified_name: trie/init:InitError
-  lines: 38-39
+  lines: 48-49
 - kind: function
   qualified_name: trie/init:_detect_python_project
-  lines: 42-57
+  lines: 52-67
 - kind: function
   qualified_name: trie/init:_ensure_gitignore_entry
-  lines: 60-73
+  lines: 70-83
 - kind: function
   qualified_name: trie/init:install_pre_commit_hook
-  lines: 76-105
+  lines: 86-115
 - kind: function
   qualified_name: trie/init:init_project
-  lines: 108-168
+  lines: 118-178
 incoming_refs: 29
 outgoing_refs: 0
 ---
@@ -78,4 +96,44 @@ Return detected Python project marker filenames for `root`, or an empty list if 
 Append `line` to the gitignore file if absent; return `True` if the file was modified.
 
 - `line`: exact string to match (trailing `/` is ignored during comparison).
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/init:GITIGNORE_LINE fingerprint=b9d82ba13e5468d46b74c1ca13f07a5f91362fb0734d7b6ae7a61507743b06ef body_fp=a3b45f3eb4718c2f382a21a5ab12124f3eefb7211e9c13e68051fe97d53438e6 source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 -->
+## `GITIGNORE_LINE = ".trie/"`
+
+The `.gitignore` entry appended to exclude the trie data directory from version control.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/init:PreCommitStrategy fingerprint=870bb5512347025a866aba447ba3e81c76b145fd766f52f1539aedf49de39247 body_fp=061df27dbf331351d2d03c2c83485561d4e8e3b5185ab1cd9943eee375280f99 source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 -->
+## `PreCommitStrategy = Literal["git_hook", "framework", "none", "skipped"]`
+
+Type alias for the four possible pre-commit installation outcomes.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/init:PRE_COMMIT_HOOK_MARKER fingerprint=db5c85dbdc0d42aa74f25ae1b2955578c9c0d2e12d16c71615b3899b42eae1ef body_fp=092b84ecde640a5e8cff95ee169afffaa23be4e9a274ea5a34b71a6020768b1c source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 -->
+## `PRE_COMMIT_HOOK_MARKER = "# trie-verify (added by \`trie init\`)"`
+
+Sentinel comment marking the start of the trie-injected pre-commit hook block.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/init:PRE_COMMIT_HOOK_END_MARKER fingerprint=d0c3f84018a4b0fdae65792bc7130e5d78252bcf888b935afbcbb1162fee2ec0 body_fp=823ea022d1827b4fda4f2faa1a1130d6b6ed7ac785e9265814607c4e85c1ef11 source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 -->
+## `PRE_COMMIT_HOOK_END_MARKER = "# end trie-verify"`
+
+Closing sentinel comment that marks the end of the trie-injected pre-commit hook block.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/init:PRE_COMMIT_HOOK_BLOCK fingerprint=aea969236fa4acff5bd395cd7cda878d70e23fa931773656426cb6b6397e037e body_fp=6a61889209aac758c8f8dfac24c1d07e19104914303cec4842edcbd7051034c4 source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 -->
+## `PRE_COMMIT_HOOK_BLOCK`
+
+Shell script block injected into `.git/hooks/pre-commit`, running `trie lock-check` then `trie verify`, guarded by a `command -v trie` check.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/init:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=e0c7563501e44750b6c9778ec13472afb19a98d2dec15dd7657aea21eac2e3fc source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 -->
+## `trie/init`
+
+Provides project initialisation: writes `trie.toml`, updates `.gitignore`, installs pre-commit hooks, and optionally runs the initial symbol scan.
+
+- `GITIGNORE_LINE`: the `.trie/` entry added to `.gitignore`
+- `PRE_COMMIT_HOOK_BLOCK`: shell snippet injected into `.git/hooks/pre-commit`; runs `lock-check` then `verify`
+- `PreCommitStrategy`: one of `"git_hook"`, `"framework"`, `"none"`, `"skipped"`
 <!-- trie:end -->

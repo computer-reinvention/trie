@@ -2,11 +2,17 @@
 trie_version: 0.1.1
 source: trie/cost.py
 file_fingerprint: a130d170e7b2e7efba48619ef0c572f926298712916f848f8e2e7eac3fac1e6e
-last_synced_at: '2026-05-14T17:29:17Z'
+last_synced_at: '2026-05-19T10:40:19Z'
 defines:
+- kind: module
+  qualified_name: trie/cost:__module__
+  lines: 1-123
 - kind: class
   qualified_name: trie/cost:ModelPricing
   lines: 10-15
+- kind: constant
+  qualified_name: trie/cost:PRICING
+  lines: 18-40
 - kind: class
   qualified_name: trie/cost:FileEstimate
   lines: 44-51
@@ -57,4 +63,21 @@ Estimate USD cost of generating triefacts for all public symbols in one file.
 ## `estimate_actual_cost(*, cache_creation_input_tokens: int, cache_read_input_tokens: int, input_tokens: int, output_tokens: int, pricing: ModelPricing) -> float`
 
 Compute USD cost from token usage counters returned by a real LLM API response.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cost:PRICING fingerprint=4ce2b7b5eb1a916633a98aef001ac4eae62b45ae55ca84fbc5936272f12f4e34 body_fp=bbd5571b191eeb4398d8158d4092376fe3ae485f23bbff381db782cf17ead863 source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 -->
+## `PRICING: dict[str, ModelPricing]`
+
+Maps model ID strings to their `ModelPricing` rate snapshots for Anthropic Claude models.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/cost:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=731a641d819e3253fa2d3798c4b524df947b57fdaad726ed1a520433d9f15e8b source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 -->
+## `cost`
+
+Defines token-cost pricing data and estimation utilities for LLM triefact generation.
+
+- `PRICING`: snapshot rates (USD/Mtok) for three Anthropic Claude models as of 2026-04
+- `ModelPricing`: frozen dataclass holding per-Mtok rates for input, output, cache-write, and cache-read
+- `FileEstimate`: frozen dataclass holding per-file token counts and estimated USD cost
+- Cache model: prefix written once (cache_write rate), reused per remaining symbol (cache_read rate)
 <!-- trie:end -->

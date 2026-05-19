@@ -1,10 +1,16 @@
 ---
 trie_version: 0.1.1
 source: tests/test_e2e_sync.py
-file_fingerprint: 90d68079a850ec282b726421f3ffe31992e90309f93ad90186c79440d3016e87
-last_synced_at: '2026-05-16T11:23:26Z'
+file_fingerprint: 1bd17a7e8c5a9516e569e430f26883f881fd81546d00f45768ae8fcff3d77837
+last_synced_at: '2026-05-19T10:37:56Z'
 description: End-to-end test for `trie sync --file` against the tiny fixture repo.
 defines:
+- kind: module
+  qualified_name: tests/test_e2e_sync:__module__
+  lines: 1-376
+- kind: constant
+  qualified_name: tests/test_e2e_sync:FIXTURE_DIR
+  lines: 22-22
 - kind: class
   qualified_name: tests/test_e2e_sync:FakeClient
   lines: 26-50
@@ -60,7 +66,7 @@ defines:
   qualified_name: tests/test_e2e_sync:test_resync_after_uncommitted_change_falls_back_to_cold
   lines: 345-375
 incoming_refs: 0
-outgoing_refs: 26
+outgoing_refs: 29
 ---
 <!-- trie:section symbol=tests/test_e2e_sync:FakeClient fingerprint=464e2049df41370146411117991983091506f10d89f570b2aa42a935790758e0 body_fp=9852cd47a02dd04f455480536d875320091630d48396ecdd6bed11d0336eab23 source_ref=639d88fa0c90df5f1040715075c2c2de1239593e -->
 ## `FakeClient`
@@ -183,4 +189,20 @@ Initialize `requests_seen` to an empty list after dataclass field assignment.
 ## `_init_git(repo: Path) -> None`
 
 Initialize a bare git repository with a default `main` branch and test identity in `repo`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_e2e_sync:FIXTURE_DIR fingerprint=2635a439793a81128764c32977c9356050865c2ac61f8264769219675508cca2 body_fp=31be59bd663e2948c992747ae9fcbbaa657d03cc57d9759e55dcc292e5cc6a4e source_ref=eec85783b1ea4d8bd62f5a545498cfa5865a4827 -->
+## `FIXTURE_DIR: Path`
+
+Path to the `tests/fixtures/tiny_repo` directory used as the source fixture for all e2e sync tests.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_e2e_sync:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=5125af9043517e42d10ccae930d091e7dbf562314a87221803946a2a71d1e409 source_ref=eec85783b1ea4d8bd62f5a545498cfa5865a4827 -->
+## `tests/test_e2e_sync`
+
+End-to-end tests for `trie sync --file` using a deterministic `FakeClient` in place of a real LLM, enabling offline validation.
+
+- `FIXTURE_DIR`: points to `tests/fixtures/tiny_repo`
+- `FakeClient`: records call count and requests; models prompt-cache token accounting
+- `project` fixture: copies fixture repo to `tmp_path`, writes minimal `trie.toml`
 <!-- trie:end -->

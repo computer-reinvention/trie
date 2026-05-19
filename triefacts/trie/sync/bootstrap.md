@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: trie/sync/bootstrap.py
 file_fingerprint: c0f4f174435148e121708503ba60c8afc867ea101708bae16e1d220cc1fe5ade
-last_synced_at: '2026-05-16T11:47:00Z'
+last_synced_at: '2026-05-19T10:41:53Z'
 defines:
+- kind: module
+  qualified_name: trie/sync/bootstrap:__module__
+  lines: 1-206
 - kind: class
   qualified_name: trie/sync/bootstrap:PlanItem
   lines: 23-27
@@ -67,4 +70,14 @@ Execute the ranked worklist, generating triefacts for each file until budget or 
 - `limit`: caps the number of files successfully synced, not items iterated.
 - `pricing`: when `None`, actual cost tracking is disabled and `actual_cost_usd` returns 0.
 - `progress`: defaults to a no-op callback when omitted.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/bootstrap:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=631cc54423e766f7b1a878b08b253359839010499bf3664253105075ddcf4e29 source_ref=6fa7f487ae550d9e0cbd13df58df2357ddc4b78a -->
+## `bootstrap`
+
+Rank, cost-estimate, and execute a batch documentation-generation run across a project's source files.
+
+- `build_plan`: scores files by `LOC × symbol_count`, calls Anthropic token-count API for accurate estimates
+- `run_bootstrap`: iterates the plan, stopping at budget or limit, accumulating real costs
+- `PlanItem` / `BootstrapPlan` / `BootstrapResult`: frozen dataclasses carrying plan and execution state
 <!-- trie:end -->

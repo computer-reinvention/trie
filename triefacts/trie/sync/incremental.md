@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: trie/sync/incremental.py
 file_fingerprint: 4c7a99e1ffa4459b158c5183633f0aad1eb6be7c6327019a3cdf30e8c64c2def
-last_synced_at: '2026-05-16T11:47:03Z'
+last_synced_at: '2026-05-19T10:42:06Z'
 defines:
+- kind: module
+  qualified_name: trie/sync/incremental:__module__
+  lines: 1-277
 - kind: class
   qualified_name: trie/sync/incremental:IncrementalWorklist
   lines: 19-51
@@ -16,7 +19,7 @@ defines:
 - kind: function
   qualified_name: trie/sync/incremental:run_incremental
   lines: 145-276
-incoming_refs: 17
+incoming_refs: 19
 outgoing_refs: 9
 ---
 <!-- trie:section symbol=trie/sync/incremental:IncrementalWorklist fingerprint=cdb0112edfc993b6d288ef8defa85093653d6f39080b9837798d5a3fddcb71a5 body_fp=65e8770ac5aeb349ce9d768ed38373a4c6c8a7d95f0efab27fb5808fd4cac946 source_ref=75fad555723fb0d9fdc38c5f729779434c0a4951 -->
@@ -63,4 +66,15 @@ Refresh triefacts for stale source files and their cascade of dependents, then r
 - Passes `symbols_to_regen` from `worklist.regen_qnames_by_file` to `sync_single_file`; absent entry means full-file regen, present entry restricts the LLM to those qualified names.
 - Files with no symbols and no removed sections and no skipped symbols are counted in `files_skipped_no_symbols`, not `files_synced`.
 - Directly-stale files are synced before cascade-pulled files; cascade files are ordered by hop distance ascending.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/incremental:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=f79debcaee0fd312a593601ad7b0523c410ab4064bf2dcb77ab3079edcaf7403 source_ref=75fad555723fb0d9fdc38c5f729779434c0a4951 -->
+## `incremental`
+
+Orchestrate incremental triefact sync: scan, stale-check, cascade, and per-symbol LLM regeneration.
+
+- `compute_incremental_worklist` — read-only prep pipeline; safe for dry-run/plan
+- `run_incremental` — executes sync, deletes orphans, honors budget and limit
+- `IncrementalWorklist` — frozen preview of files and symbols that would be touched
+- `IncrementalResult` — aggregated counts and cost from a completed sync run
 <!-- trie:end -->

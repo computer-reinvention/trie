@@ -2,11 +2,32 @@
 trie_version: 0.1.1
 source: trie/sync/writer.py
 file_fingerprint: fba68b4d92b0b42c4ef52ce8dcfbd05d5cecf3d04e0a3b0655d3ec43c1e2c53a
-last_synced_at: '2026-05-15T13:08:24Z'
+last_synced_at: '2026-05-19T10:42:23Z'
 defines:
+- kind: module
+  qualified_name: trie/sync/writer:__module__
+  lines: 1-270
+- kind: constant
+  qualified_name: trie/sync/writer:SECTION_OPEN_RE
+  lines: 42-47
+- kind: constant
+  qualified_name: trie/sync/writer:SECTION_CLOSE_RE
+  lines: 48-48
+- kind: constant
+  qualified_name: trie/sync/writer:SECTION_CLOSE
+  lines: 49-49
+- kind: constant
+  qualified_name: trie/sync/writer:FRONT_MATTER_RE
+  lines: 50-50
 - kind: function
   qualified_name: trie/sync/writer:hash_body
   lines: 53-60
+- kind: constant
+  qualified_name: trie/sync/writer:_HEADING_RE
+  lines: 63-63
+- kind: constant
+  qualified_name: trie/sync/writer:_SENTENCE_END_RE
+  lines: 64-64
 - kind: function
   qualified_name: trie/sync/writer:extract_one_liner
   lines: 67-98
@@ -16,6 +37,9 @@ defines:
 - kind: class
   qualified_name: trie/sync/writer:Prose
   lines: 111-112
+- kind: constant
+  qualified_name: trie/sync/writer:Chunk
+  lines: 115-115
 - kind: class
   qualified_name: trie/sync/writer:TriefactFile
   lines: 119-269
@@ -145,4 +169,61 @@ Serialise the `TriefactFile` to a Markdown string, emitting front matter, prose 
 ## `_append_section(self, section: Section) -> None`
 
 Append a `Section` chunk, inserting blank-line separators to keep rendered output well-formed.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/writer:SECTION_OPEN_RE fingerprint=1be5610e8a8a656183d1ce9d75ecba54ebb2113537e3c28d43cce24d941e0194 body_fp=3ca629bb2cb6510de86a1f84ce4161dc199faccbe230288b0dddf7f6d6bec79b source_ref=bb3efe260f5fd45bd8f95219af0e2e36472bd19d -->
+## `SECTION_OPEN_RE: re.Pattern`
+
+Match a trie section-open sentinel line, capturing `symbol`, `fp`, `body_fp`, and `source_ref` named groups.
+
+- `body_fp`, `source_ref`: optional; absent in sections written by older trie versions.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/writer:SECTION_CLOSE_RE fingerprint=49aa71874073d7e43da82cffb2e8446d3946ff6b664d86a74e4b8105f2ce602a body_fp=2004ebe542ee79fdad658aa9904ba1b0442250354b178a4fcdb94a6855062a34 source_ref=bb3efe260f5fd45bd8f95219af0e2e36472bd19d -->
+## `SECTION_CLOSE_RE = re.compile(r"(?m)^<!--\s*trie:end\s*-->[ \t]*$")`
+
+Match a `<!-- trie:end -->` sentinel that occupies its own line.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/writer:SECTION_CLOSE fingerprint=742e69c224d8d71b2d79094222e59b783d57ae9cf4e3a050b3874e1d05981d20 body_fp=644eeff9d597ebeb68e9c9f8e3877a510c976201f3b29b7680b02161e97d603e source_ref=bb3efe260f5fd45bd8f95219af0e2e36472bd19d -->
+## `SECTION_CLOSE = "<!-- trie:end -->"`
+
+Canonical closing sentinel string emitted by `render()` to terminate a trie section.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/writer:FRONT_MATTER_RE fingerprint=f100241e2f09e0c34d4dd9fbfafad078e9b2edeb64ad505b28512c83a51cdb48 body_fp=8ec49c3b262dd47d1f73cf8bdf8dcf4f60c2a937c05d5de64bcf3ec1de881979 source_ref=bb3efe260f5fd45bd8f95219af0e2e36472bd19d -->
+## `FRONT_MATTER_RE = re.compile(r"\A---\s*\n(?P<yaml>.*?)\n---\s*\n", re.DOTALL)`
+
+Match and capture YAML front matter at the start of a triefact file.
+
+- `yaml` group: raw YAML text between the `---` delimiters.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/writer:_HEADING_RE fingerprint=b171a12459c1801f28b3970483335daeacef5462126ceb123ef5793ee735f80b body_fp=205572cc4ec41ed44d4c479422c7505dae789fb4bbffde524fb3b1cde6779bf9 source_ref=bb3efe260f5fd45bd8f95219af0e2e36472bd19d -->
+## `_HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s")`
+
+Match lines that begin with a Markdown ATX heading (1–6 `#` characters, up to 3 leading spaces).
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/writer:_SENTENCE_END_RE fingerprint=46839332c70a94fc506bb56b7637497fd1a8b3a93af0eb5c4ff8390ddeb08946 body_fp=71fc01a373746c402544aa9ac4663d9c635d469a7afb75a4ad6588839709263a source_ref=bb3efe260f5fd45bd8f95219af0e2e36472bd19d -->
+## `_SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+|\Z")`
+
+Matches the boundary after a sentence-ending punctuation or the string end.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/writer:Chunk fingerprint=27a576a701491dcbdfeae28c3b7f87ee71a034e04c90aa8a336c241cf4a788c1 body_fp=4ae0b7ee81c0a0304c7f57f47b520acb02a29be2ccd0a21a5d81c160fb60121d source_ref=bb3efe260f5fd45bd8f95219af0e2e36472bd19d -->
+## `Chunk = Section | Prose`
+
+Type alias for a parsed unit of a triefact file: either a managed section or verbatim prose.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/writer:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=6630d0815b795c7d9e7a939e77866835dd791e1f7c3ca8b329ffe1aa162285cd source_ref=bb3efe260f5fd45bd8f95219af0e2e36472bd19d -->
+## `writer`
+
+Parse, mutate, and render trie-managed Markdown files containing sentinel-delimited documentation sections.
+
+- `SECTION_OPEN_RE` / `SECTION_CLOSE_RE`: line-anchored regexes for sentinel detection
+- `Section`: frozen dataclass holding parsed section metadata and body text
+- `Prose`: frozen dataclass for verbatim human-written text between sections
+- `TriefactFile`: mutable container with `parse`, `render`, and upsert/remove mutations
 <!-- trie:end -->

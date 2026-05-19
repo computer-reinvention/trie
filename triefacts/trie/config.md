@@ -1,9 +1,12 @@
 ---
 trie_version: 0.1.1
 source: trie/config.py
-file_fingerprint: fdee7717f4f9304ec148adbb8a90bed6bbd5a390388e737d04d86a35d445959a
-last_synced_at: '2026-05-18T13:57:32Z'
+file_fingerprint: 9ae7dc272ce247e7d6168935f3eeed218d1bd11dcbaecac4679fdeb61c9c773a
+last_synced_at: '2026-05-19T10:40:15Z'
 defines:
+- kind: module
+  qualified_name: trie/config:__module__
+  lines: 1-267
 - kind: class
   qualified_name: trie/config:TrieMeta
   lines: 9-10
@@ -43,10 +46,13 @@ defines:
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
   lines: 177-178
+- kind: constant
+  qualified_name: trie/config:DEFAULT_CONFIG_TOML
+  lines: 181-266
 incoming_refs: 143
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=trie/config:TrieMeta fingerprint=43460a16db027d61c4297084d70ce0d1e70048e3c983aba83ed17fbd4935301a body_fp=fc099c55e56a7cbf7ea5a31d4965af5f5003dcad2f1ee09cc25a0896fe818bc3 source_ref=435b779093e30070dbf454dc787d8b346cc4ebc9 -->
+<!-- trie:section symbol=trie/config:TrieMeta fingerprint=e1351786d7bb1868a3ce1444012247ecfaa2f58e33b3799a2d7d5621596d9913 body_fp=fc099c55e56a7cbf7ea5a31d4965af5f5003dcad2f1ee09cc25a0896fe818bc3 source_ref=049680f42014e6367cc29b3f2c95407827b715e4 -->
 ## `TrieMeta`
 
 Dataclass holding the trie configuration version string.
@@ -153,4 +159,22 @@ Control per-file sync parallelism and model-client retry behaviour.
 - `concurrency`: parallel LLM calls per file; 1 disables parallelism
 - `retry_base_delay_seconds`: exponential-backoff base for 429/529 retries
 - `retry_cap_seconds`: maximum backoff delay before propagating error
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/config:DEFAULT_CONFIG_TOML fingerprint=426323ff65b0749777c80398d4edf83a217cb91dd0f74a5eff4d84de9b0e4441 body_fp=ad5e7a7f545ea257b0e6b6bddf6d6234a9764d9a0494fce62e643fc80772739a source_ref=049680f42014e6367cc29b3f2c95407827b715e4 -->
+## `DEFAULT_CONFIG_TOML: str`
+
+Template TOML string containing fully-commented default configuration for a `trie.toml` project file.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/config:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=35129a2db5d510fbea595aa81525b50427443bc38e437108ed8d37bd8df7e487 source_ref=049680f42014e6367cc29b3f2c95407827b715e4 -->
+## `config`
+
+Define all configuration dataclasses and loading logic for `trie.toml` project configuration.
+
+- `Config.from_dict`: constructs a `Config` from a raw TOML-parsed dict
+- `Config.load`: reads and parses a `trie.toml` at the given `Path`
+- `Config.find_and_load`: walks up from `start` returning `(Config, project_root_dir)`
+- `ConfigNotFoundError`: raised when no `trie.toml` is found in the directory tree
+- `DEFAULT_CONFIG_TOML`: ready-to-write string for `trie init`
 <!-- trie:end -->

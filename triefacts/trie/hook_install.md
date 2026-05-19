@@ -2,9 +2,15 @@
 trie_version: 0.1.1
 source: trie/hook_install.py
 file_fingerprint: 7340943fc0bc65b8ec0494c43ed59bb271be3a2571fc20ca736adde2f12da2bf
-last_synced_at: '2026-05-16T12:25:59Z'
+last_synced_at: '2026-05-19T10:40:51Z'
 description: Turn-boundary hook installation for coding agents.
 defines:
+- kind: module
+  qualified_name: trie/hook_install:__module__
+  lines: 1-339
+- kind: constant
+  qualified_name: trie/hook_install:Action
+  lines: 35-35
 - kind: class
   qualified_name: trie/hook_install:HookInstallError
   lines: 38-39
@@ -14,9 +20,15 @@ defines:
 - kind: class
   qualified_name: trie/hook_install:HookTarget
   lines: 59-75
+- kind: constant
+  qualified_name: trie/hook_install:_OPENCODE_PLUGIN_FILENAME
+  lines: 83-83
 - kind: function
   qualified_name: trie/hook_install:_render_opencode_plugin
   lines: 86-124
+- kind: constant
+  qualified_name: trie/hook_install:TARGETS
+  lines: 133-195
 - kind: class
   qualified_name: trie/hook_install:HookInstallPlan
   lines: 204-210
@@ -91,4 +103,36 @@ Install or preview the turn-boundary hook file for a single `HookTarget`.
 - `scope`: accepted for API symmetry; currently ignored.
 - Returns `needs_manual_setup` when `target` has no automatable hook path.
 - Returns `skipped` when existing file content is identical to what would be written.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/hook_install:Action fingerprint=6d5466b453e0912edae50fab1848c782530de9137450b5c33b3682dc80488f21 body_fp=32279c251ea94e7209608bc60332aa0dfffbaa779e46e44c24f4c3e7c25593b4 source_ref=a445360f433e823758f976fd90cbed83047ba05a -->
+## `Action = Literal["created", "updated", "skipped", "preview", "error", "needs_manual_setup"]`
+
+Type alias enumerating all possible outcomes of a hook install operation.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/hook_install:_OPENCODE_PLUGIN_FILENAME fingerprint=7442e6e578a889b0767a95dd3881ed665d3e6834945f3fa54cb3a7c6aceb8925 body_fp=3f12210b383fb1a0bb1b682f931a559c516dddbfc7f60f7d86a63e31b423d629 source_ref=a445360f433e823758f976fd90cbed83047ba05a -->
+## `_OPENCODE_PLUGIN_FILENAME = "trie-refresh.ts"`
+
+Filename of the generated opencode plugin TypeScript file.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/hook_install:TARGETS fingerprint=0c2eda73613bdc004e4565b9007fc5d998c11469e84864f569dcff324137d7c9 body_fp=5d9d8c8220a9cb571754e9ceb1b19c6258c3c4a92368e4c2033283035e1c459c source_ref=a445360f433e823758f976fd90cbed83047ba05a -->
+## `TARGETS: dict[str, HookTarget]`
+
+Registry mapping agent slug to its `HookTarget` descriptor for all known turn-boundary hook targets.
+
+- Agents without automated hook support carry `manual_instructions` and no `render_contents`.
+- Every key must also exist in `trie.mcp_install.TARGETS` for unified setup reporting.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/hook_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8cc318cc8763705b8bfe040c5a741c7c6757309e2f4f59ae03460752cbe23250 source_ref=a445360f433e823758f976fd90cbed83047ba05a -->
+## `hook_install`
+
+Install turn-boundary hooks for coding agents, keeping the trie graph current after each agent turn.
+
+- `TARGETS`: registry of all known agents; only `opencode` supports automated install
+- `install()`: entry point for multi-target hook application
+- `apply_one()`: materialises or previews a single target's hook file
+- Agents without automated hook support return `needs_manual_setup` with human-readable instructions
 <!-- trie:end -->

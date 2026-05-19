@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: tests/test_init.py
 file_fingerprint: e2a72c51fe1f6c7144b6c823ed90adfd1fec4a364d2a34324f3f9196a5a28861
-last_synced_at: '2026-05-18T22:48:51Z'
+last_synced_at: '2026-05-19T10:38:17Z'
 defines:
+- kind: module
+  qualified_name: tests/test_init:__module__
+  lines: 1-382
 - kind: function
   qualified_name: tests/test_init:python_project
   lines: 21-23
@@ -116,7 +119,7 @@ defines:
   qualified_name: tests/test_init:test_cli_init_does_not_run_setup_when_user_declines_prompt
   lines: 362-381
 incoming_refs: 0
-outgoing_refs: 27
+outgoing_refs: 39
 ---
 <!-- trie:section symbol=tests/test_init:python_project fingerprint=3c46e839304076e37baaf33fc2ba0f6ef1d265bd95d3c382ef38e43bab36600e body_fp=0b5748d6ee0c9d175a9a3e74674e120ab0847abcd2baacdf694c4843ff5b9d74 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
 ## `python_project(tmp_path: Path) -> Path`
@@ -344,4 +347,10 @@ Assert that declining the setup prompt suppresses `trie setup` invocation while 
 
 - `input="n\n"`: simulates user declining the interactive setup prompt.
 - `--no-install-hooks`: prevents the pre-commit prompt from consuming the input.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_init:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=938fe13d6ea6ea4ffe599a0dbfe37b3bbc9fc1885db89c152322a82980b1a44d source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
+## `tests/test_init`
+
+Test suite for `trie.init` and related CLI commands covering project detection, gitignore management, config writing, scanning, and pre-commit hook installation.
 <!-- trie:end -->

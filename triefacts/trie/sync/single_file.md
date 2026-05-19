@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: trie/sync/single_file.py
 file_fingerprint: 3bdf831aeb90bb062a56404b4d91b7a4d521d68cd71441ef31dbe2016124ccc2
-last_synced_at: '2026-05-16T12:26:13Z'
+last_synced_at: '2026-05-19T10:42:16Z'
 defines:
+- kind: module
+  qualified_name: trie/sync/single_file:__module__
+  lines: 1-493
 - kind: class
   qualified_name: trie/sync/single_file:FileSyncResult
   lines: 25-36
@@ -34,7 +37,7 @@ defines:
 - kind: function
   qualified_name: trie/sync/single_file:sync_single_file
   lines: 238-492
-incoming_refs: 51
+incoming_refs: 52
 outgoing_refs: 18
 ---
 <!-- trie:section symbol=trie/sync/single_file:FileSyncResult fingerprint=f658b6cb6f956faf262f29751e15b6efaad12e661c2976d58946940db38a0ed7 body_fp=a14f526007aca92c0796d86e378c557ef5d8443dcb245ccd6b6df85d0970222e source_ref=d6da1d131c5c5e11b320faa2c7147616cfbd1f01 -->
@@ -120,4 +123,15 @@ Rewrite a triefact's front matter from live data without calling the LLM or touc
 - `changed`: `True` if the rewritten bytes differ from what was on disk.
 - Returns `changed=False` (no-op) when no triefact exists yet for the source file.
 - Raises `ValueError` if `source_path` is not under `config.triefacts.source_root`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/single_file:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=d8b1c6b223f88b270332763746c5067180410153e3fef8e9073fa9e7f611e8bd source_ref=34057e5d9c5ee57019bcfb44216c4b3de34127e1 -->
+## `single_file`
+
+Generate or refresh triefact Markdown files for individual Python source files.
+
+- `sync_single_file`: main entry point; plans, generates (parallel), and applies symbol sections
+- `refresh_triefact_metadata`: updates front matter from store without calling the LLM
+- `FileSyncResult`: aggregated token/symbol counts returned to callers
+- `MetadataRefreshResult`: signals whether the triefact bytes changed on disk
 <!-- trie:end -->

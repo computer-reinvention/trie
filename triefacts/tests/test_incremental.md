@@ -1,9 +1,12 @@
 ---
 trie_version: 0.1.1
 source: tests/test_incremental.py
-file_fingerprint: 098e6fa218a25f5c7930126568228d2885d8b4b4a382f2ddbb28690da9182b91
-last_synced_at: '2026-05-16T11:23:30Z'
+file_fingerprint: 29c8b8ef8ec9a5308f42db7ff2b4864b8f5d4fe5b9340b949d0f1d826d4d61f3
+last_synced_at: '2026-05-19T10:38:12Z'
 defines:
+- kind: module
+  qualified_name: tests/test_incremental:__module__
+  lines: 1-402
 - kind: class
   qualified_name: tests/test_incremental:FakeClient
   lines: 20-36
@@ -71,7 +74,7 @@ defines:
   qualified_name: tests/test_incremental:test_cli_plan_all_forces_full_bootstrap_view
   lines: 391-401
 incoming_refs: 0
-outgoing_refs: 51
+outgoing_refs: 56
 ---
 <!-- trie:section symbol=tests/test_incremental:FakeClient fingerprint=dd2ce5cbac0a663e75372124f682811a08d99ca2d34d2c8147be3fb275b44790 body_fp=0c2506996518995494b4a7de01bb236daf07f9119d037edfe92acf6aba8cff17 source_ref=cccb1012c6337a0910e535398f2041ab87ed321a -->
 ## `FakeClient(model_id: str = "anthropic/claude-sonnet-4-6", body: str = "## generated\n\nbody.", calls: int = 0)`
@@ -213,4 +216,14 @@ Assert that `trie plan --all` displays the full-bootstrap cost view, not the inc
 ## `_initial_sync(project: Path) -> None`
 
 Sync both `lib.py` and `app.py` into the project's triefacts directory using fixed v1 body text.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_incremental:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=727014eb36f176856223297b6fda5102561e335e8eaf0c5ca3f7dd8747152b19 source_ref=a0117e395aa062adbf5e2b983b5664f0d36835c4 -->
+## `tests/test_incremental`
+
+Integration tests for incremental sync, cascade, CLI routing, and worklist computation.
+
+- `FakeClient`: stub LLM client tracking call count and returning fixed bodies
+- `project`: pytest fixture creating a two-file Python project with `trie.toml`
+- `_initial_sync`: seeds both `lib.py` and `app.py` triefacts before each test
 <!-- trie:end -->

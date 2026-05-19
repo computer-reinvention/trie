@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: tests/test_models.py
 file_fingerprint: b308887d2a458d142f8af7881da7183c7a9158aa32f833ef12ad36d59684d3c7
-last_synced_at: '2026-05-16T11:23:35Z'
+last_synced_at: '2026-05-19T10:38:30Z'
 defines:
+- kind: module
+  qualified_name: tests/test_models:__module__
+  lines: 1-55
 - kind: function
   qualified_name: tests/test_models:_make_client
   lines: 9-12
@@ -52,4 +55,10 @@ Assert that the `count_tokens` payload includes the correct model name and a cac
 Construct a test `AnthropicClient` backed by a `MagicMock` with a stubbed `count_tokens` response.
 
 - `input_tokens`: value returned by the mock's `messages.count_tokens` call.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_models:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=76ff0a771ea6b16983ae361f5ad796e8bb5a5cbf0e766d871f51103f1437780c source_ref=afdf164a14b52d4a76e32a6ebe1eefd605ccd95d -->
+## `test_models`
+
+Unit tests for `AnthropicClient.count_tokens` payload construction and return value.
 <!-- trie:end -->

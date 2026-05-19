@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: tests/test_references.py
 file_fingerprint: 24aa3c08899578f0fe7321610c519c21a0aaf6e5fe2a018b478f8685b94afa06
-last_synced_at: '2026-05-16T11:46:30Z'
+last_synced_at: '2026-05-19T10:38:54Z'
 defines:
+- kind: module
+  qualified_name: tests/test_references:__module__
+  lines: 1-234
 - kind: function
   qualified_name: tests/test_references:_refs_by_src
   lines: 8-13
@@ -188,4 +191,10 @@ Assert that attribute access on a local variable emits no module-attribute edge,
 ## `test_module_attribute_no_self_edge(tmp_path: Path)`
 
 Assert that a symbol referencing itself via module-attribute access does not produce a self-edge.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_references:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=6a8a5ccb9b8672de47576950bfeb889d390303432955d842c6470d85948620d1 source_ref=5a91a8c60b5e6b0f8348157ccb0c571d36a3d8a6 -->
+## `tests/test_references`
+
+Test suite for `extract_file_data` reference extraction, covering intra-file calls, imports, aliasing, attribute access, and self-edge suppression.
 <!-- trie:end -->

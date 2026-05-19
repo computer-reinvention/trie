@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: trie/reporter.py
 file_fingerprint: 0d25e92681b94ef96d032a5e5f36c20fcbfab84a6061886aae0515f89fb991e8
-last_synced_at: '2026-05-15T13:07:09Z'
+last_synced_at: '2026-05-19T10:41:44Z'
 defines:
+- kind: module
+  qualified_name: trie/reporter:__module__
+  lines: 1-171
 - kind: class
   qualified_name: trie/reporter:Verbosity
   lines: 19-22
@@ -213,4 +216,14 @@ Tear down the Rich progress bar and reset internal state.
 ## `_print(self, line: str) -> None`
 
 Route a line to the active progress bar's console or fall back to the reporter's console.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/reporter:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=4eaefe99795bdf2d1e0a971a4381a1d0eb3c9bdd8340fbf82442ac96e547f121 source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
+## `reporter`
+
+Provide verbosity-gated console output and Rich progress-bar utilities for CLI commands.
+
+- `Verbosity`: three-level enum (`MUTE`, `MEDIUM`, `VERBOSE`) controlling output suppression.
+- `Reporter`: main wrapper; errors always print, warnings/info suppressed below `MEDIUM`.
+- `ProgressHandle`: context manager rendering a Rich progress bar at `MEDIUM+`; no-op at `MUTE`.
 <!-- trie:end -->

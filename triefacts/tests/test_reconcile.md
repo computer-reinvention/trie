@@ -1,9 +1,12 @@
 ---
 trie_version: 0.1.1
 source: tests/test_reconcile.py
-file_fingerprint: 2a74ac9442ff2a4091fcfa7273f4e9333f45408b133d1a0b1e56c226b64e22cf
-last_synced_at: '2026-05-15T13:02:05Z'
+file_fingerprint: 7dc91301502b0b1020de1ca3ad91d222d46b212ec44363ff80993f540b6444a7
+last_synced_at: '2026-05-19T10:38:49Z'
 defines:
+- kind: module
+  qualified_name: tests/test_reconcile:__module__
+  lines: 1-92
 - kind: function
   qualified_name: tests/test_reconcile:_setup
   lines: 9-18
@@ -68,4 +71,10 @@ Assert that a triefact whose source file is excluded by scope config is detected
 ## `_setup(tmp_path: Path) -> Path`
 
 Write a minimal `trie.toml` config file into `tmp_path` and return it as the project root.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_reconcile:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=c7e5a08f7855323dbbdf242cf9016583c21223b8f9917cd5eeae356c0109f651 source_ref=4ac2418a92e95cb2f64ee3d085c68c415388a0cd -->
+## `tests/test_reconcile`
+
+Tests for `find_orphan_triefacts` and `remove_orphan_triefacts`, covering missing sources, user-authored triefacts, excluded sources, and absent triefacts directories.
 <!-- trie:end -->

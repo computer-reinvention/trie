@@ -1,10 +1,13 @@
 ---
 trie_version: 0.1.1
 source: tests/test_setup.py
-file_fingerprint: cded5591d6c03034622d35b09ba56c6287e6134ce480eb7a5a5b88165c21ba8f
-last_synced_at: '2026-05-18T14:17:57Z'
+file_fingerprint: 46f5f53d4ccad83fc9cce3c6bc5cd2eeb10fde0e09a5f1b51edfeb5bc7c800b2
+last_synced_at: '2026-05-19T10:39:12Z'
 description: End-to-end tests for `trie setup` and the underlying hook installer.
 defines:
+- kind: module
+  qualified_name: tests/test_setup:__module__
+  lines: 1-376
 - kind: function
   qualified_name: tests/test_setup:project
   lines: 34-45
@@ -54,25 +57,22 @@ defines:
   qualified_name: tests/test_setup:test_cli_setup_idempotent_second_run
   lines: 258-274
 - kind: function
-  qualified_name: tests/test_setup:test_cli_setup_override_builtins_writes_override_files
-  lines: 282-296
+  qualified_name: tests/test_setup:test_cli_setup_installs_overrides_by_default
+  lines: 287-299
 - kind: function
-  qualified_name: tests/test_setup:test_cli_setup_no_override_builtins_skips_overrides
-  lines: 299-314
-- kind: function
-  qualified_name: tests/test_setup:test_cli_setup_non_interactive_skips_overrides_silently
-  lines: 317-331
+  qualified_name: tests/test_setup:test_cli_setup_no_overrides_flag_skips_overrides
+  lines: 302-318
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_print_only_previews_overrides_without_writing
-  lines: 334-350
+  lines: 321-336
 - kind: function
-  qualified_name: tests/test_setup:test_cli_setup_claude_code_override_creates_advisory_hook
-  lines: 353-367
+  qualified_name: tests/test_setup:test_cli_setup_claude_code_creates_advisory_hook_by_default
+  lines: 339-354
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_override_idempotent_on_second_run
-  lines: 370-387
+  lines: 357-375
 incoming_refs: 0
-outgoing_refs: 11
+outgoing_refs: 22
 ---
 <!-- trie:section symbol=tests/test_setup:project fingerprint=1f83c1fd82d36d3db04107648fc45b8a7541a7d15408974e22c21bda26a413b5 body_fp=ad646ff0bf22ebca2cb69d0e9f0ee1edbb6a6d7703170f9588696f6619e2a7e7 source_ref=eae88ef26c089f711012aa225c1debacb734217c -->
 ## `project(tmp_path: Path) -> Path`
@@ -176,30 +176,13 @@ Assert that `trie setup` exits with code 1 and mentions "scope" when given an un
 Assert that re-running `trie setup opencode` leaves MCP and hook files byte-identical.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_override_builtins_writes_override_files fingerprint=20dd8ea393fc7290d32f58c508ce0a5bac1df64d2773496919cc7ef9fa557a4e body_fp=5b804a0b1d4c352b63bc582710c6b60bf41eac10e66be53602ed9bae3bb6cbbc source_ref=dd8ddb2d64f96db66c2d0556487ddf1e029f1fad -->
-## `test_cli_setup_override_builtins_writes_override_files(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `--override-builtins` writes all three opencode tool override files without prompting.
 
-- `project`: tmp directory with a valid `trie.toml`
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_no_override_builtins_skips_overrides fingerprint=119e6160439e6ada811495631fdcf7e5c0d89a83fc7356009670d7e292b5fcfb body_fp=6ca8ac5fc03b54b7b62606fe255f6c7ebdbdc912624381b19ec39aba9e4af35b source_ref=dd8ddb2d64f96db66c2d0556487ddf1e029f1fad -->
-## `test_cli_setup_no_override_builtins_skips_overrides(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `--no-override-builtins` skips tool override files while MCP and hook files are still written.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_non_interactive_skips_overrides_silently fingerprint=7a4bda5a554a1be54e761db39e9249e3defe3cf339676de2f71510a8678d8123 body_fp=9ece3273025dd497c67a63d6a660cbf7eadf774c4a1b9402ecd7c4a6e70666ca source_ref=dd8ddb2d64f96db66c2d0556487ddf1e029f1fad -->
-## `test_cli_setup_non_interactive_skips_overrides_silently(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `trie setup` skips override files without prompting in a non-TTY environment.
-
-- `result.output` must contain `"non-interactive"` or `"Tool overrides skipped"`.
-- No override files (e.g. `grep.ts`) are written to disk.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_print_only_previews_overrides_without_writing fingerprint=5da151c29cba6c6a67de080d386d2412b586b4261eae6856a489df2bcb3c9ee2 body_fp=aa6ef5ba4eec29945c18ef46756df8f3c0ef62f5ea52b75337a575aca37d69b2 source_ref=dd8ddb2d64f96db66c2d0556487ddf1e029f1fad -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_print_only_previews_overrides_without_writing fingerprint=b1ebb850f2e5e3fc8e38f0ea33e3f01a120ba0cf72ada1eea7fe5434b290adca body_fp=aa6ef5ba4eec29945c18ef46756df8f3c0ef62f5ea52b75337a575aca37d69b2 source_ref=83d461b20e1178bd609db26de2df4ee987163495 -->
 ## `test_cli_setup_print_only_previews_overrides_without_writing(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert `--print-only` shows all three override filenames in output without writing any files to disk.
@@ -207,14 +190,40 @@ Assert `--print-only` shows all three override filenames in output without writi
 - `project`: temporary directory with a minimal `trie.toml`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_claude_code_override_creates_advisory_hook fingerprint=242a480bea448af62cfb85f590d3941e631ee0111c5b4d4cfbcb21b20edee711 body_fp=b4c342e6ba0fed687667b01d82c44612bda2b2b4ba7ddaf869d9c71d2c9d590a source_ref=dd8ddb2d64f96db66c2d0556487ddf1e029f1fad -->
-## `test_cli_setup_claude_code_override_creates_advisory_hook(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `--override-builtins` for `claude-code` writes a `PreToolUse` hook file referencing `mcp__trie__grep`.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_override_idempotent_on_second_run fingerprint=822fdd6090fdb3189bdd24ff3520b2137e81cc5c7181f5085b866097e5bf62f4 body_fp=44918e4994b32df3ed8dce3616068c158ffd16a00b95ddc95e30496ff9c9c235 source_ref=dd8ddb2d64f96db66c2d0556487ddf1e029f1fad -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_override_idempotent_on_second_run fingerprint=cf1b1f9d9fccd3a9e0b4c3cf87f6ee2ca5cc89a9f55e88d2b2228fd0ac05c34c body_fp=8caf075be48efa04b0e4683a5b397781a27c040e2aa9955f432f70b1bd08da62 source_ref=83d461b20e1178bd609db26de2df4ee987163495 -->
 ## `test_cli_setup_override_idempotent_on_second_run(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Verify that re-running `trie setup --override-builtins` skips unchanged override files and reports "skipped".
+Verify that re-running `trie setup` (without `--override-builtins`) skips unchanged override files and reports "skipped".
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_installs_overrides_by_default fingerprint=356d4f89b98b08b5ad78e8145c1c4b0ca434fd5bc6b5183834d8d468756a6b62 body_fp=c739266b3cb17198298509c091616bba1c5bc25a9ebcaaf8a86bcba2ef01c789 source_ref=83d461b20e1178bd609db26de2df4ee987163495 -->
+## `test_cli_setup_installs_overrides_by_default(project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie setup --target opencode` installs all three opencode tool-override files without any opt-in flag.
+
+- Checks `.opencode/tools/grep.ts`, `read.ts`, and `trie_trace.ts` all exist after invocation.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_no_overrides_flag_skips_overrides fingerprint=1152208439be12d21551f9408466b790ab8560619d9c19f535fe9217e89e951b body_fp=02094ee306f9e0bbcca539f5ef0e3a5361dc8d9e8bfdd49fd3ce2ac645ebe3b5 source_ref=83d461b20e1178bd609db26de2df4ee987163495 -->
+## `test_cli_setup_no_overrides_flag_skips_overrides(project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Verify that `--no-overrides` skips `.opencode/tools/` override files while MCP, hook, and docs steps still complete.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_claude_code_creates_advisory_hook_by_default fingerprint=22a9eac169969fc08042af9f7177daab246cabac72da267aac8b7c515ce3a647 body_fp=684eea9c84edfef7b8c17b4fa432e79187c110779e33c12becc15d237dd15a1e source_ref=83d461b20e1178bd609db26de2df4ee987163495 -->
+## `test_cli_setup_claude_code_creates_advisory_hook_by_default(project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Verify that `trie setup --target claude-code` writes a PreToolUse hook file referencing `mcp__trie__grep` by default, without any opt-in flag.
+
+- `project`: temporary directory with a minimal `trie.toml`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_setup:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a54abe81712a48ef5929396818127feb4d47ee6e411d706f516647c7740c5d4e source_ref=83d461b20e1178bd609db26de2df4ee987163495 -->
+## `tests/test_setup`
+
+End-to-end tests for `trie setup`, `hook_install.install`, and `apply_one` covering creation, idempotency, dry-run, manual-setup notices, and CLI behaviour.
+
+- `project` fixture: minimal `trie.toml` in `tmp_path`, returned as `Path`.
 <!-- trie:end -->

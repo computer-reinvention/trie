@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: trie/check.py
 file_fingerprint: 7f06c7053f40e5352b290eaab4c216f06e376680c60d9886afcf46daa647c6aa
-last_synced_at: '2026-05-15T13:03:21Z'
+last_synced_at: '2026-05-19T10:40:02Z'
 defines:
+- kind: module
+  qualified_name: trie/check:__module__
+  lines: 1-173
 - kind: class
   qualified_name: trie/check:StaleReason
   lines: 14-20
@@ -25,7 +28,7 @@ defines:
 - kind: function
   qualified_name: trie/check:_check_project_inner
   lines: 66-172
-incoming_refs: 20
+incoming_refs: 21
 outgoing_refs: 6
 ---
 <!-- trie:section symbol=trie/check:StaleReason fingerprint=b7162ffe7f29cd254fc576ebd54af00f835144adc63c5f9a2d54a96b4f1fec3b body_fp=42e7454a4d73e396f5fd5e68d5a922cfcc0cbdca908c2351ec109fb8a286e761 source_ref=85ed6191c067f50c30ed25f64e46e5b61ce37465 -->
@@ -86,4 +89,16 @@ Map a source-root-relative `.py` path to its corresponding source-root-relative 
 Execute the full bidirectional staleness scan and populate telemetry in `_tele`.
 
 - `_tele`: mutable dict updated with `files_checked`, `issues_found`, `issues_by_reason`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/check:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=3bd5bb84bb59d70358aa5b064d19f8014389b0e06e3420bed0e416797a499f4a source_ref=b13418772d94c7dea0e494653a1d4aadcca3a1c6 -->
+## `check`
+
+Detect drift between Python source symbols and their triefact documentation sections.
+
+- `StaleReason`: six-variant enum covering all forward and reverse drift cases
+- `StaleItem`: single drift record with source path, triefact path, reason, and optional symbol name
+- `CheckResult`: aggregates `StaleItem` list; `is_clean` is `True` when no drift found
+- `check_project`: entry point; wraps telemetry around the inner check loop
+- `_check_project_inner`: walks discovered files, compares symbols to sections bidirectionally
 <!-- trie:end -->

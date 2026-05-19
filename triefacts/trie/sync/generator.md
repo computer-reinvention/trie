@@ -2,11 +2,23 @@
 trie_version: 0.1.1
 source: trie/sync/generator.py
 file_fingerprint: 6c1e05b2416c4eea05493d1f21246bc67e93bc98dc90c4e5c7fc34862fa01aff
-last_synced_at: '2026-05-16T11:23:58Z'
+last_synced_at: '2026-05-19T10:42:01Z'
 defines:
+- kind: module
+  qualified_name: trie/sync/generator:__module__
+  lines: 1-192
+- kind: constant
+  qualified_name: trie/sync/generator:SYSTEM_PROMPT
+  lines: 9-27
+- kind: constant
+  qualified_name: trie/sync/generator:DIFF_AWARE_RUBRIC
+  lines: 33-54
 - kind: class
   qualified_name: trie/sync/generator:FileGenerationContext
   lines: 58-60
+- kind: constant
+  qualified_name: trie/sync/generator:RegenMode
+  lines: 63-63
 - kind: class
   qualified_name: trie/sync/generator:GeneratedSection
   lines: 67-74
@@ -78,4 +90,32 @@ Build the user-message string for a diff-aware regeneration request.
 ## `_symbol_source(symbol: Symbol) -> str`
 
 Reconstruct the full `<signature>:\n<body>` text for a symbol by joining its signature and body with a colon.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/generator:SYSTEM_PROMPT fingerprint=ad20b6f444c5ba37460802394b74294c961478ebd752b3e8c4cc32556ce7601c body_fp=e0ab7229a5cda3cac790bd3f095c0b9043324cc8dd47b4b50ad7f9330c13d9d1 source_ref=2c58b1aa9ada95e7978956fc2d84138ee1f9a681 -->
+## `SYSTEM_PROMPT: str`
+
+System prompt injected into every generation request, defining output format and hard rules for the documentation model.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/generator:DIFF_AWARE_RUBRIC fingerprint=7c866bd51ce563f306b0d97f7dc4de26b2b4a58b79c09173c397935974ee876b body_fp=f390cd72f3952ac0542d8ba74c5d4bcaf69c02895dcccc71f1c22a04cbb77d95 source_ref=2c58b1aa9ada95e7978956fc2d84138ee1f9a681 -->
+## `DIFF_AWARE_RUBRIC`
+
+Prompt prefix that instructs the model to preserve existing prose unless a behavioural change is detected.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/generator:RegenMode fingerprint=452f3b350a7c4165e170ddda83e4dd9e2a215de97abd1bad52673e3b27fe8a25 body_fp=bbdbebe32ec59031d6ca74a979159b60afb175a90161d5e1be1f96328b2e5f33 source_ref=2c58b1aa9ada95e7978956fc2d84138ee1f9a681 -->
+## `RegenMode = Literal["cold", "diff_aware"]`
+
+Type alias distinguishing cold-write generation from diff-aware regeneration modes.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/generator:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=9725dca708854a3fa17bfecb4c46cf7a6f5c11021f74cd901237df7878349eb7 source_ref=2c58b1aa9ada95e7978956fc2d84138ee1f9a681 -->
+## `trie/sync/generator`
+
+Provide prompt-building utilities and a `generate_section` entry point for generating per-symbol Markdown documentation via a `ModelClient`.
+
+- `FileGenerationContext`: pairs a file path with its full source text for prompt caching.
+- `GeneratedSection`: holds generated prose, token counts, and regen mode for one symbol.
+- `generate_section`: cold-write or diff-aware generation depending on whether previous source and prose are supplied.
 <!-- trie:end -->

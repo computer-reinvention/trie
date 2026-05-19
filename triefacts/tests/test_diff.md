@@ -1,9 +1,12 @@
 ---
 trie_version: 0.1.1
 source: tests/test_diff.py
-file_fingerprint: 0030606a42d9df6fee6abd7a751fc012e46dcd2b557eadf1b1332bca40bd62b3
-last_synced_at: '2026-05-16T11:23:24Z'
+file_fingerprint: 6e5cc4b95c291e51c3768c866f2e22c44d4843d08880f2a34a7a1c677404c8d8
+last_synced_at: '2026-05-19T10:37:48Z'
 defines:
+- kind: module
+  qualified_name: tests/test_diff:__module__
+  lines: 1-196
 - kind: class
   qualified_name: tests/test_diff:StableClient
   lines: 18-36
@@ -38,7 +41,7 @@ defines:
   qualified_name: tests/test_diff:test_cli_sync_dry_run_no_stale
   lines: 179-195
 incoming_refs: 0
-outgoing_refs: 24
+outgoing_refs: 26
 ---
 <!-- trie:section symbol=tests/test_diff:StableClient fingerprint=109768c2e5c2fad4aae6fbacbbbb331ec1dfe34d8d55d99c6acc942db573c9f2 body_fp=82d8da0655254e4214c2abb2b87e85e11599b47a58e8c2a6ede0fb80c64f6731 source_ref=4fd2e8c6a6dd25c9e5daadba1cde7bf310ceece9 -->
 ## `StableClient`
@@ -111,4 +114,12 @@ Verify that `trie sync --dry-run` prints unified diffs and leaves canonical trie
 ## `test_cli_sync_dry_run_no_stale(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that `trie sync --dry-run` prints "no stale triefacts" when all triefacts are current.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_diff:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=097320a21aa4c1ee79867cb44bf2591c28c427ccfc3a9850e04e7aa7bf4ada0b source_ref=e99940a7eb31f4ad6d686ba1255431e4bd91f38d -->
+## `__module__`
+
+Integration tests for `diff_project` and the `trie sync --dry-run` CLI command.
+
+- Tests cover: empty diff on clean state, changed content detection, preview-dir writing, `limit` and `budget_usd` guards, and CLI routing.
 <!-- trie:end -->

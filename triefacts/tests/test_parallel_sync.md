@@ -1,10 +1,16 @@
 ---
 trie_version: 0.1.1
 source: tests/test_parallel_sync.py
-file_fingerprint: 1896aee13e6943d3bde193bcee19ac4caeb34a883495cb60566b3ff46955a357
-last_synced_at: '2026-05-16T11:23:44Z'
+file_fingerprint: 980b842b9b3a0aea541dcb53329d44f98c454644e3decce780b5d5f9e3ee0be6
+last_synced_at: '2026-05-19T10:38:38Z'
 description: 'Parallel per-symbol sync: the threaded generate phase must produce output'
 defines:
+- kind: module
+  qualified_name: tests/test_parallel_sync:__module__
+  lines: 1-182
+- kind: constant
+  qualified_name: tests/test_parallel_sync:FIXTURE_DIR
+  lines: 25-25
 - kind: class
   qualified_name: tests/test_parallel_sync:_DeterministicClient
   lines: 29-67
@@ -107,4 +113,20 @@ Assert that `concurrency=1` never exceeds a peak in-flight count of 1, regardles
 ## `test_totals_match_between_serial_and_parallel(serial_project: Path, parallel_project: Path) -> None`
 
 Assert that token counts and symbol counts from `sync_single_file` are identical regardless of concurrency setting.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_parallel_sync:FIXTURE_DIR fingerprint=2635a439793a81128764c32977c9356050865c2ac61f8264769219675508cca2 body_fp=d2aa30cdb1a93d189630fadf958e6547c99213aad8557458c9d988042e5f9aa2 source_ref=075099ac3dcebfe91dd9a31be55fe436db16c124 -->
+## `FIXTURE_DIR`
+
+Path to the `tests/fixtures/tiny_repo` directory used as the source tree for all test projects.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_parallel_sync:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=1d892ceca84d82b7818ac9df043b5841e40b18cd8f1a32d593cf067df38f5d2a source_ref=075099ac3dcebfe91dd9a31be55fe436db16c124 -->
+## `tests/test_parallel_sync`
+
+Pin the contract that `sync_single_file`'s parallel generate phase produces byte-identical output to a serial run.
+
+- `_DeterministicClient`: fake LLM returning stable prose keyed on symbol qname; tracks peak concurrency.
+- `serial_project` / `parallel_project`: fixtures with concurrency=1 and concurrency=8 respectively.
+- Tests assert output identity, real fan-out under concurrency=8, no fan-out under concurrency=1, and equal token/symbol totals.
 <!-- trie:end -->

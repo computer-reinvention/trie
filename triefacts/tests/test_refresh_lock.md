@@ -1,10 +1,13 @@
 ---
 trie_version: 0.1.1
 source: tests/test_refresh_lock.py
-file_fingerprint: b480798bd7190b19332c9dec1d8046c15a7b4aad0275b2ced76ab2f7e9167304
-last_synced_at: '2026-05-16T13:17:25Z'
+file_fingerprint: 8436b2423546d75524e4cb5358d0581df152ddf3d8fdfec63494a30ee5618afb
+last_synced_at: '2026-05-19T10:38:59Z'
 description: Tests for the refresh lock + queue.
 defines:
+- kind: module
+  qualified_name: tests/test_refresh_lock:__module__
+  lines: 1-549
 - kind: function
   qualified_name: tests/test_refresh_lock:_project
   lines: 41-44
@@ -176,4 +179,14 @@ Assert that `trie lock-check` exits 0 with a "no trie.toml" message when no trie
 ## `test_cli_lock_check_when_contended_exits_two(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that `trie lock-check` exits 2 with an explanatory message when another process holds the lock.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_refresh_lock:__module__ fingerprint=e898e798072bf5c540959d26eaadc8cccfdbc85d6e9a0dcc06ceaa5812d960e9 body_fp=f644ac53310ab63f59e56178ed17a520fd2dd9ecc8106de4e1016141fb0a940a source_ref=b6d5ad4902d7ce1caabfba32ca4eb31d8134501b -->
+## `tests/test_refresh_lock`
+
+Test suite for the refresh lock and queue mechanism used to serialise concurrent `trie refresh` calls.
+
+- Covers: uncontested acquire, contention, tail-pass queue drain, crash safety, and CLI integration.
+- Uses real subprocesses for contention/crash tests; same-process flock re-acquire is silently permissive on Linux/macOS.
+- Skipped entirely on Windows; the lock is POSIX-only.
 <!-- trie:end -->

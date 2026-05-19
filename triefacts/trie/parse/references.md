@@ -2,9 +2,12 @@
 trie_version: 0.1.1
 source: trie/parse/references.py
 file_fingerprint: eed188fddba8106bfbc20fc06b846e50088aab906f4d2690d3fab9228072a88f
-last_synced_at: '2026-05-16T11:46:42Z'
+last_synced_at: '2026-05-19T10:41:36Z'
 description: Reference extraction via tree-sitter.
 defines:
+- kind: module
+  qualified_name: trie/parse/references:__module__
+  lines: 1-371
 - kind: class
   qualified_name: trie/parse/references:Reference
   lines: 50-58
@@ -38,6 +41,9 @@ defines:
 - kind: function
   qualified_name: trie/parse/references:extract_file_data
   lines: 302-367
+- kind: constant
+  qualified_name: trie/parse/references:__all__
+  lines: 370-370
 incoming_refs: 22
 outgoing_refs: 9
 ---
@@ -137,4 +143,21 @@ Return all `(base, attr)` pairs for every `<base>.<attr>` access in the subtree,
 Render an `identifier` or nested `attribute` AST node as a dotted name string (e.g. `"a.b.c"`).
 
 - Returns `""` for unrecognised node shapes (calls, subscripts, etc.).
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/parse/references:__all__ fingerprint=9bc78c305b022f72da1cfdbc0b7349422140eb7e0e905460ac531538b0e5f20c body_fp=054816f6e831b0495ba93e5ffb75d8cfcebc2055527555599dff22f6f12e1928 source_ref=c6775babce628ee17704cd01d13e5bd434d47d37 -->
+## `__all__ = ["FileData", "Reference", "extract_file_data"]`
+
+Declares the public API exported from this module.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/parse/references:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=d1186690bceead6d56b046dc0d545394e5c687b5eb94b08654fb8f5ef20f88bd source_ref=c6775babce628ee17704cd01d13e5bd434d47d37 -->
+## `references`
+
+Extract outbound symbol references from Python files using tree-sitter heuristics.
+
+- `Reference`: immutable edge from one qualified name to another
+- `FileData`: combined symbols + references from a single parse
+- `extract_file_data`: primary entry point; handles imports and attribute accesses
+- Candidate edges are emitted permissively; callers filter against known symbols
 <!-- trie:end -->

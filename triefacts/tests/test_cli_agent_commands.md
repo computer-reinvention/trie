@@ -1,11 +1,17 @@
 ---
 trie_version: 0.1.1
 source: tests/test_cli_agent_commands.py
-file_fingerprint: f4c1ec49454e9b150600316f2dfa0b408465afb412a7320c7536823b88cbf7bc
-last_synced_at: '2026-05-18T22:48:48Z'
+file_fingerprint: e0da36f1427b3c8b7b65d8b077ac1892657b07f9f87bc5ce21cd4f5ffe335e78
+last_synced_at: '2026-05-19T10:37:36Z'
 description: 'Tests for the agent-facing CLI subcommands: `trie grep`, `trie read`,
   `trie trace`.'
 defines:
+- kind: module
+  qualified_name: tests/test_cli_agent_commands:__module__
+  lines: 1-488
+- kind: constant
+  qualified_name: tests/test_cli_agent_commands:PROJECT_TOML
+  lines: 32-39
 - kind: class
   qualified_name: tests/test_cli_agent_commands:FakeClient
   lines: 43-57
@@ -69,8 +75,20 @@ defines:
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_trace_without_trie_toml_exits_1
   lines: 385-391
+- kind: function
+  qualified_name: tests/test_cli_agent_commands:_read_jsonl_events
+  lines: 399-405
+- kind: function
+  qualified_name: tests/test_cli_agent_commands:test_grep_emits_cli_call_event_not_mcp_call
+  lines: 408-434
+- kind: function
+  qualified_name: tests/test_cli_agent_commands:test_read_and_trace_also_emit_cli_call_events
+  lines: 437-461
+- kind: function
+  qualified_name: tests/test_cli_agent_commands:test_cli_call_event_carries_duration_and_result_fields
+  lines: 464-487
 incoming_refs: 0
-outgoing_refs: 6
+outgoing_refs: 26
 ---
 <!-- trie:section symbol=tests/test_cli_agent_commands:FakeClient fingerprint=57cb0d9af6bb40fa692b1e07a745ebc033aa599c53105b31098873c4ee475f36 body_fp=c586a59ff7ac1ee8d6255eeefe8ff7ccdcca1e084ce42536bb2d25440373ab3f source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
 ## `FakeClient(model_id: str = "fake/test", body: str = "## generated\n\nGenerated description.\n")`
@@ -205,4 +223,54 @@ Assert that `trie grep` with no filter flags exits 1 with an `invalid_argument` 
 
 - Exit code 1 signals a tool error, not a CLI usage error (exit 2).
 - Output must contain `name_contains` or `scope_prefix` as a hint.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_cli_agent_commands:PROJECT_TOML fingerprint=e9c7735b60c9b4e2a539d27c21376b8f0df51a16c1349855a9eec287b1183875 body_fp=3006fd6ccd22083fcb5bd9365720d8eb45fa6c045a6f100b66c24802c11e3f3d source_ref=f346d63ed161793d9941b393fb28468f324bb4ce -->
+## `PROJECT_TOML: str`
+
+TOML config string used to bootstrap the test project's `trie.toml` file.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_cli_agent_commands:_read_jsonl_events fingerprint=125817628eb1f7fc15e2a61035b6350edd8094f965da770e92e1a44a6c4c4177 body_fp=f97f5e3f6ef38e6e7150d1469a0a6a9810dd5c35e42607d78886c21e87fc6dd2 source_ref=f346d63ed161793d9941b393fb28468f324bb4ce -->
+## `_read_jsonl_events(path: Path) -> list[dict]`
+
+Parse a JSONL file and return one dict per non-empty line.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_emits_cli_call_event_not_mcp_call fingerprint=2c8f3798fc6d1622c87a523234e10d289743d7e2c64c7db1c89ffa8ffbb08344 body_fp=560d8af525515a756edf8f26d7c646e4070a8c6ec92140b3f6b5094a318a8ff5 source_ref=f346d63ed161793d9941b393fb28468f324bb4ce -->
+## `test_grep_emits_cli_call_event_not_mcp_call(populated_project, monkeypatch, tmp_path)`
+
+Assert that `trie grep` emits a `cli_call` telemetry event and never emits `mcp_call` or `mcp_server_start`.
+
+- `TRIE_DEBUG` env var is set to a tmp JSONL path to capture telemetry output.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_read_and_trace_also_emit_cli_call_events fingerprint=2555d2ce32fdcaeb3949422c08eb0431136ddb0de27b6d41f1efcb1ca0f16932 body_fp=7de714012a9f802815e0f76f3f47fd12e76e22523a145ad0233b07bc1866c9e9 source_ref=f346d63ed161793d9941b393fb28468f324bb4ce -->
+## `test_read_and_trace_also_emit_cli_call_events(populated_project, monkeypatch, tmp_path)`
+
+Verify that `trie read` and `trie trace` each emit a `cli_call` event (not `mcp_call`) when invoked via the CLI.
+
+- `log_path`: JSONL telemetry file written via `TRIE_DEBUG` env var.
+- Asserts both `"read"` and `"trace"` appear in `cli_call` event `tool` fields.
+- Asserts zero `mcp_call` events are emitted.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_cli_call_event_carries_duration_and_result_fields fingerprint=8bce6b8bf33876350ff2cc7019b5bf67715c081f34bf9c6124f2bf72d7f63572 body_fp=b044b9f412916ad18290b4c4be31c6d23fe0870f0782a19eac77d9a5d64270cb source_ref=f346d63ed161793d9941b393fb28468f324bb4ce -->
+## `test_cli_call_event_carries_duration_and_result_fields(populated_project: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path)`
+
+Assert that `cli_call` telemetry events include `duration_ms`, `result_kind`, `result_count`, and `response_bytes` fields.
+
+- `TRIE_DEBUG` env var routes telemetry to a temp JSONL file for inspection.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_cli_agent_commands:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=0107664b30db87a2ddeadbb2dbc077eebda9eb6b57d574cb2ea80f794db73d12 source_ref=f346d63ed161793d9941b393fb28468f324bb4ce -->
+## `tests/test_cli_agent_commands`
+
+Test suite for the agent-facing CLI subcommands `trie grep`, `trie read`, and `trie trace`.
+
+- Verifies `--json` output matches the MCP tool envelope structure
+- Verifies human-readable (Rich) output for default invocations
+- Verifies exit code 1 for tool errors, exit code 2 for predicate-parse errors
+- Verifies missing `trie.toml` produces a clean error, not a stack trace
+- Verifies `cli_call` telemetry events (not `mcp_call`) are emitted
 <!-- trie:end -->

@@ -2,8 +2,14 @@
 trie_version: 0.1.1
 source: trie/models.py
 file_fingerprint: eed971b1aee49803434c0744c5585a07ecf33c7018ba891ece9c67ea15a7f614
-last_synced_at: '2026-05-18T13:58:14Z'
+last_synced_at: '2026-05-19T10:41:22Z'
 defines:
+- kind: module
+  qualified_name: trie/models:__module__
+  lines: 1-272
+- kind: constant
+  qualified_name: trie/models:T
+  lines: 20-20
 - kind: class
   qualified_name: trie/models:GenerationRequest
   lines: 24-31
@@ -188,4 +194,22 @@ Invoke `fn`, retrying on rate-limit, overloaded, or timeout errors with configur
 - `rng`: seeded `Random` instance; a fresh one is created when `None`.
 - Respects `retry-after` header on 429; falls back to exponential backoff with full jitter.
 - Raises the last exception after `cfg.max_retries` attempts are exhausted.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/models:T fingerprint=d6131a915181abd7e0ca8fc2c3bed74bab33247b37a29f9660bd3f6ee42198ee body_fp=ce9cd110da6d79fb8f14c6f608e458f645c23062d804dfe9c52a1c1fdff37078 source_ref=474d1856e9eae610812aee137ef64ddc15dadb3f -->
+## `T = TypeVar("T")`
+
+Generic return-type variable used by `_run_with_retry` to preserve the return type of the callable it wraps.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/models:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=7bc95b50d76ccbb919cd3f35e5bd63698e98ecd784fa71f8e87e4a186ee73242 source_ref=474d1856e9eae610812aee137ef64ddc15dadb3f -->
+## `trie/models`
+
+Define LLM client abstractions, retry logic, and Anthropic-backed generation for trie's documentation pipeline.
+
+- `GenerationRequest`: immutable call spec with prompt-caching fields
+- `GenerationResponse`: token-usage breakdown plus generated text
+- `ModelClient`: structural protocol all clients must satisfy
+- `AnthropicClient`: concrete client with telemetry and retry loop
+- `make_client`: entry-point for constructing clients from `"provider/model"` strings
 <!-- trie:end -->

@@ -1,9 +1,12 @@
 ---
 trie_version: 0.1.1
 source: tests/test_check.py
-file_fingerprint: 82262f96501d7dda4e1e1766404de80fe839675416364ceef6f6fd1273d58ca0
-last_synced_at: '2026-05-16T11:23:19Z'
+file_fingerprint: 71316276873baedc05039e8faedd4ce056d9ee6f5d9c788811ec89339c459a5b
+last_synced_at: '2026-05-19T10:37:29Z'
 defines:
+- kind: module
+  qualified_name: tests/test_check:__module__
+  lines: 1-233
 - kind: class
   qualified_name: tests/test_check:FakeClient
   lines: 17-32
@@ -39,30 +42,30 @@ defines:
   lines: 107-118
 - kind: function
   qualified_name: tests/test_check:test_file_with_no_parser_surfaced_symbols_needs_no_triefact
-  lines: 121-130
+  lines: 121-132
 - kind: function
   qualified_name: tests/test_check:test_clean_when_all_in_sync_with_human_prose
-  lines: 133-141
+  lines: 135-143
 - kind: function
   qualified_name: tests/test_check:test_cli_verify_exits_zero_when_clean
-  lines: 144-150
+  lines: 146-152
 - kind: function
   qualified_name: tests/test_check:test_cli_verify_exits_nonzero_when_stale
-  lines: 153-161
+  lines: 155-163
 - kind: function
   qualified_name: tests/test_check:test_cli_verify_quiet_mode
-  lines: 164-175
+  lines: 166-177
 - kind: function
   qualified_name: tests/test_check:test_cli_verify_detects_tampered_body
-  lines: 178-192
+  lines: 180-194
 - kind: function
   qualified_name: tests/test_check:test_check_project_detects_tampered_body
-  lines: 195-209
+  lines: 197-211
 - kind: function
   qualified_name: tests/test_check:test_check_project_detects_legacy_section
-  lines: 212-230
+  lines: 214-232
 incoming_refs: 0
-outgoing_refs: 32
+outgoing_refs: 36
 ---
 <!-- trie:section symbol=tests/test_check:FakeClient fingerprint=e41cdf8484085fe52836a78fa046003a64b4ee976928802814aeb5dfbe564b63 body_fp=12bc935f908c1e630237fe9e607b3f2869cfd6efa2c01f334f947b7b3d2be1f1 source_ref=8d039b4accde06e724a1524de1f79d0a628e9c5f -->
 ## `FakeClient`
@@ -176,8 +179,17 @@ Sync all `.py` source files in the project's `src/` directory using a `FakeClien
 Assert that a file containing only underscore-prefixed symbols still requires a triefact and triggers `MISSING_TRIEFACT`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_check:test_file_with_no_parser_surfaced_symbols_needs_no_triefact fingerprint=8f19352819a8d5cbb82efe14fdc653d1dd1c9aa72839479952adea4d79e042c4 body_fp=8e68142b6decaf7183796a96fda7581b8e853254ac2fb6568b04e9ec7720912d source_ref=8d039b4accde06e724a1524de1f79d0a628e9c5f -->
+<!-- trie:section symbol=tests/test_check:test_file_with_no_parser_surfaced_symbols_needs_no_triefact fingerprint=f2ee7c27204c5bcfe8fe822d998b2b04f3982ae52c32d3ce7f7fd297a92696e3 body_fp=3ab307a50d9efd5b62d6159b3753c49a9e496c25803dadef6541a76b72b71301 source_ref=81d187ac12d82c70569f7158447eac4222307b93 -->
 ## `test_file_with_no_parser_surfaced_symbols_needs_no_triefact(project: Path)`
 
-Assert that a file containing only imports and module-level assignments produces no check items.
+Assert that a file containing only imports (no assignments, no defs) produces no check items.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_check:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=6050b74f967645a15b6f66cad5c99ea3bfa726ed4741752fa05a89f6907b72da source_ref=81d187ac12d82c70569f7158447eac4222307b93 -->
+## `tests/test_check`
+
+Integration and unit tests for `check_project` and the `verify` CLI command.
+
+- `FakeClient`: stub LLM client returning fixed generated text
+- `project`: `tmp_path`-based fixture with two Python source files and a `trie.toml`
 <!-- trie:end -->

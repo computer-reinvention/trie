@@ -1,9 +1,15 @@
 ---
 trie_version: 0.1.1
 source: tests/test_parse_python.py
-file_fingerprint: 2c71d961810a8958fdb4cb5ae028dd577ed513a31e5fd9b2f3d7fdd551c473ce
-last_synced_at: '2026-05-15T13:02:02Z'
+file_fingerprint: 7a7f5dc85073e3c01732755848109f060f12e1bedc84505a49eeda69b299bb72
+last_synced_at: '2026-05-19T10:38:47Z'
 defines:
+- kind: module
+  qualified_name: tests/test_parse_python:__module__
+  lines: 1-361
+- kind: constant
+  qualified_name: tests/test_parse_python:SAMPLE
+  lines: 9-57
 - kind: function
   qualified_name: tests/test_parse_python:sample_file
   lines: 61-64
@@ -30,36 +36,57 @@ defines:
   lines: 104-118
 - kind: function
   qualified_name: tests/test_parse_python:test_module_docstring_is_not_a_symbol
-  lines: 121-127
+  lines: 121-131
+- kind: function
+  qualified_name: tests/test_parse_python:test_module_level_constants_are_indexed
+  lines: 134-145
 - kind: function
   qualified_name: tests/test_parse_python:test_signature_includes_annotations_and_return_type
-  lines: 130-136
+  lines: 148-154
 - kind: function
   qualified_name: tests/test_parse_python:test_body_normalized_hash_is_stable_across_whitespace
-  lines: 139-146
+  lines: 157-164
 - kind: function
   qualified_name: tests/test_parse_python:test_body_normalized_hash_ignores_comments
-  lines: 149-156
+  lines: 167-174
 - kind: function
   qualified_name: tests/test_parse_python:test_body_normalized_hash_changes_on_real_change
-  lines: 159-166
+  lines: 177-184
 - kind: function
   qualified_name: tests/test_parse_python:test_signature_hash_changes_on_signature_change
-  lines: 169-176
+  lines: 187-194
 - kind: function
   qualified_name: tests/test_parse_python:test_qualified_name_uses_source_root
-  lines: 179-186
+  lines: 197-204
 - kind: function
   qualified_name: tests/test_parse_python:test_line_numbers_are_one_indexed
-  lines: 189-194
+  lines: 207-212
 - kind: function
   qualified_name: tests/test_parse_python:test_typing_overloads_dedupe_to_implementation
-  lines: 197-219
+  lines: 215-237
 - kind: function
   qualified_name: tests/test_parse_python:test_property_setter_pair_dedupes
-  lines: 222-237
+  lines: 240-255
+- kind: function
+  qualified_name: tests/test_parse_python:test_dunder_constants_are_public
+  lines: 263-274
+- kind: function
+  qualified_name: tests/test_parse_python:test_annotated_constants_are_indexed
+  lines: 277-285
+- kind: function
+  qualified_name: tests/test_parse_python:test_tuple_unpacking_assignment_is_not_indexed
+  lines: 288-299
+- kind: function
+  qualified_name: tests/test_parse_python:test_module_symbol_emitted_for_setup_py_style_call
+  lines: 302-324
+- kind: function
+  qualified_name: tests/test_parse_python:test_module_symbol_not_emitted_for_pure_defs_with_imports
+  lines: 327-349
+- kind: function
+  qualified_name: tests/test_parse_python:test_module_symbol_emitted_for_if_main_block
+  lines: 352-360
 incoming_refs: 0
-outgoing_refs: 16
+outgoing_refs: 23
 ---
 <!-- trie:section symbol=tests/test_parse_python:sample_file fingerprint=b7680b900a9acc188dfba8463fe039b88faa6b62e35109621d52f1e117bae469 body_fp=1a3a12b6ceae4916fdd22099ed0d7c812b82ae0fe8bfbd5985f80b5985f8013b source_ref=c1ada9d77b60fb66c2b1e14e94d08485646b4e02 -->
 ## `sample_file(tmp_path: Path) -> Path`
@@ -103,10 +130,10 @@ Assert that a dataclass-decorated class and its methods are extracted with corre
 Assert that methods of a private class are marked non-public regardless of their own name.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_parse_python:test_module_docstring_is_not_a_symbol fingerprint=9acbbcaa19aac76bc0f06d2452f2582235b9a8775e89694c414cfee4d898d939 body_fp=7e5aff603051e5a3b3f6fe9c18c4f4c6e99a2a47b2caf8424943c9e78e1cdfee source_ref=c1ada9d77b60fb66c2b1e14e94d08485646b4e02 -->
+<!-- trie:section symbol=tests/test_parse_python:test_module_docstring_is_not_a_symbol fingerprint=7dc979836e617d67e06caed3d5613df17b104280125ca185cc48f8989c7beba0 body_fp=6aa108d3f1953189dd1ac13d8ed852e5a8077bd48b186e233dd0c2f642c8bc09 source_ref=1eefecb3e6c1169dba9ec1c1839975a2e278182f -->
 ## `test_module_docstring_is_not_a_symbol(sample_file: Path)`
 
-Assert that module docstrings and top-level constants are not emitted as tracked symbols.
+Assert that module docstrings do not cause a `__module__` symbol to be emitted.
 <!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_parse_python:test_signature_includes_annotations_and_return_type fingerprint=090a7534671717c9765df4e6a87a99ebaf966a0ca91c602042577835228e3b23 body_fp=6a7e3fa4d32711a7ad3685f319e6b81fe031df74c59b1fd31f9f8ea3e163074d source_ref=c1ada9d77b60fb66c2b1e14e94d08485646b4e02 -->
@@ -167,4 +194,60 @@ Assert that a `@property`/`@setter` pair with the same name deduplicates to a si
 ## `_by_qname(syms: list[Symbol]) -> dict[str, Symbol]`
 
 Index a list of `Symbol` objects by their `qualified_name` for O(1) lookup in tests.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_parse_python:SAMPLE fingerprint=fb639546095eaf4b64bb3b8f29171c987afa4a72e204834daeb24e359a0c65c3 body_fp=057dd4e0858351af488629ac876d2d6fe1bb2412b65de80f113bb807619a5913 source_ref=1eefecb3e6c1169dba9ec1c1839975a2e278182f -->
+## `SAMPLE: str`
+
+Multi-definition Python source string used as fixture input across all `extract_symbols` tests.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_parse_python:test_module_level_constants_are_indexed fingerprint=934c99099ef7470d0b0c8d198b66401aad6ad5ff62e14f91297468a441f10dd1 body_fp=101527132a0ce425dd6be70858c8f148f7aef00bcfbc1aea153b69facb4481b3 source_ref=1eefecb3e6c1169dba9ec1c1839975a2e278182f -->
+## `test_module_level_constants_are_indexed(sample_file: Path)`
+
+Assert that module-level `NAME = value` assignments are extracted as `kind='constant'` symbols with correct public visibility and signature text.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_parse_python:test_dunder_constants_are_public fingerprint=2c69ff739047f70d26441af78a6e2406119f44399ed77d34e911349518e3cf35 body_fp=6dc8aa276a52b35ff0abf0259a702491cb05c1b41f6c7a251ddf9787627a1437 source_ref=1eefecb3e6c1169dba9ec1c1839975a2e278182f -->
+## `test_dunder_constants_are_public(tmp_path: Path)`
+
+Assert that dunder constants (`__version__`, `__all__`) have `is_public=True` while single-underscore names remain private.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_parse_python:test_annotated_constants_are_indexed fingerprint=3ecf126e6835b79df3f0a1937a60781e754cd925c121094f84c904eb1744e7f8 body_fp=228c72d6e8901a9da696a6cb9a114520de7cea90c470239c1ee848d66f16c9fe source_ref=1eefecb3e6c1169dba9ec1c1839975a2e278182f -->
+## `test_annotated_constants_are_indexed(tmp_path: Path)`
+
+Assert that annotated module-level assignments (`NAME: T = value`) are indexed as `kind='constant'` symbols.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_parse_python:test_tuple_unpacking_assignment_is_not_indexed fingerprint=8a67d2a581f1b300f468382b5c087928bb822a0fe09978c7cdd3abd22a8cc370 body_fp=20a4620e54b130aa74c2d5c3c01bcc5bc1a0b2b025a24636105f83a686d7da71 source_ref=1eefecb3e6c1169dba9ec1c1839975a2e278182f -->
+## `test_tuple_unpacking_assignment_is_not_indexed(tmp_path: Path)`
+
+Assert that tuple-unpacking assignments (`X, Y = 1, 2`) are excluded from the symbol table while single-target assignments remain indexed.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_parse_python:test_module_symbol_emitted_for_setup_py_style_call fingerprint=7eb7703bc33208626441d8edc612fec9c8e18a4b96f8a9c5083d08a0111cdc05 body_fp=fafb0434d20cc78fe106b6b89fcf0b3e23ab8a00cb311ead024412b7a72c565d source_ref=1eefecb3e6c1169dba9ec1c1839975a2e278182f -->
+## `test_module_symbol_emitted_for_setup_py_style_call(tmp_path: Path)`
+
+Assert that a file with module-level function calls emits a synthetic `__module__` symbol containing the residual call expression.
+
+- `__module__` symbol must have `kind == "module"` and `body_text` containing `setup(`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_parse_python:test_module_symbol_not_emitted_for_pure_defs_with_imports fingerprint=69fcafd1e131f38c364a599dea3eec3d85ed75d0a690c32f6670dfbda8c690b0 body_fp=7157fc486ea22f9889ff53b200704e67754fe6b14828ec7483590c1322758be5 source_ref=1eefecb3e6c1169dba9ec1c1839975a2e278182f -->
+## `test_module_symbol_not_emitted_for_pure_defs_with_imports(tmp_path: Path)`
+
+Assert that `extract_symbols` does not emit a `__module__` symbol when a file contains only imports, a docstring, and function definitions.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_parse_python:test_module_symbol_emitted_for_if_main_block fingerprint=4b26fd42e561b984ddd5a87821db2f718a35754e1127a3291eff52b85d1f33ed body_fp=a924e00143326ab0ed10c3a7ea769f78a4e0f374ac93d03c883e3ef574643474 source_ref=1eefecb3e6c1169dba9ec1c1839975a2e278182f -->
+## `test_module_symbol_emitted_for_if_main_block(tmp_path: Path)`
+
+Assert that an `if __name__ == '__main__':` block causes a `__module__` symbol to be emitted with the block's code in `body_text`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_parse_python:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=6627db8bd92f8d034164adaf103671e5f854a358ad1504ae5ee960fd26525112 source_ref=1eefecb3e6c1169dba9ec1c1839975a2e278182f -->
+## `tests/test_parse_python`
+
+Test suite for `trie.parse.python.extract_symbols`, covering symbol extraction, hashing, privacy, deduplication, and module-level constant and `__module__` symbol behaviour.
 <!-- trie:end -->

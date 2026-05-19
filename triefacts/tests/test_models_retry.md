@@ -2,9 +2,12 @@
 trie_version: 0.1.1
 source: tests/test_models_retry.py
 file_fingerprint: d8d4752517d6e5bf1496ef2c5d557771d28562d3a747f82dda60e3d14e5b946e
-last_synced_at: '2026-05-18T13:58:05Z'
+last_synced_at: '2026-05-19T10:38:34Z'
 description: Retry-on-rate-limit behaviour of `AnthropicClient`.
 defines:
+- kind: module
+  qualified_name: tests/test_models_retry:__module__
+  lines: 1-294
 - kind: function
   qualified_name: tests/test_models_retry:_fake_response
   lines: 42-48
@@ -200,4 +203,14 @@ Verify that `AnthropicClient.count_tokens` retries on a 429 and returns the toke
 ## `test_anthropic_client_disables_sdk_internal_retries(monkeypatch: pytest.MonkeyPatch)`
 
 Assert that `AnthropicClient` passes `max_retries=0` to the Anthropic SDK constructor when no explicit client is provided.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_models_retry:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=7dc039db4099136cb38c58b683059c6c3bc9db2f8e8ff995134499a6a5ed87fb source_ref=f265d955421abbef1f0ef04061dfebf390adf4eb -->
+## `tests/test_models_retry`
+
+Test suite for the retry-on-rate-limit behaviour of `AnthropicClient`.
+
+- Covers 429 with/without `retry-after`, 5xx/529, timeouts, non-retryable 4xx, and max-retries exhaustion.
+- Verifies retry loop applies to both `messages.create` and `messages.count_tokens`.
+- Confirms SDK internal retries are disabled when `AnthropicClient` constructs its own client.
 <!-- trie:end -->

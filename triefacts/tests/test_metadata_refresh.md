@@ -1,10 +1,13 @@
 ---
 trie_version: 0.1.1
 source: tests/test_metadata_refresh.py
-file_fingerprint: d92a12cc26b521a99b27cb7e0ac42b2fc2ee97a39b48abe2ef1e5900fb2105b9
-last_synced_at: '2026-05-16T11:46:24Z'
+file_fingerprint: 48334331aa6e68f827240e91235704508013e5ce086fe887a8b5f441aa12c023
+last_synced_at: '2026-05-19T10:38:28Z'
 description: Metadata-only triefact refresh.
 defines:
+- kind: module
+  qualified_name: tests/test_metadata_refresh:__module__
+  lines: 1-345
 - kind: class
   qualified_name: tests/test_metadata_refresh:FakeClient
   lines: 40-59
@@ -165,4 +168,14 @@ Assert that `--metadata-only` combined with `--all`, `--dry-run`, `--budget`, `-
 Verify `trie sync --metadata-only` succeeds after a cold sync without constructing an LLM client.
 
 - `monkeypatch`: patches `trie.cli.make_client` to raise if called, asserting no LLM access.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_metadata_refresh:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a34e4eeaa51137909458725b5c25ed35fb2866a4df576976862c574aa4ed1af0 source_ref=02fb0e3fc60bd3c2e10955fd32f6888e43ae2c7e -->
+## `tests/test_metadata_refresh`
+
+Test suite for the metadata-only triefact refresh contract.
+
+- Verifies `refresh_triefact_metadata` rewrites front matter without calling the LLM.
+- Asserts section bodies, fingerprints, and `last_synced_at` are preserved.
+- Covers edge-count deltas, idempotency, missing-triefact no-ops, and CLI mutex validation.
 <!-- trie:end -->

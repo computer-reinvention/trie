@@ -2,8 +2,20 @@
 trie_version: 0.1.1
 source: trie/mcp_install.py
 file_fingerprint: 56228de014b2f19f9f9eec8251ccab7ad10bb8e6567965a22c8a5551ab2e9210
-last_synced_at: '2026-05-18T13:26:17Z'
+last_synced_at: '2026-05-19T10:41:07Z'
 defines:
+- kind: module
+  qualified_name: trie/mcp_install:__module__
+  lines: 1-344
+- kind: constant
+  qualified_name: trie/mcp_install:Scope
+  lines: 11-11
+- kind: constant
+  qualified_name: trie/mcp_install:Action
+  lines: 12-12
+- kind: constant
+  qualified_name: trie/mcp_install:SnippetFactory
+  lines: 14-14
 - kind: class
   qualified_name: trie/mcp_install:MCPInstallError
   lines: 17-18
@@ -37,6 +49,9 @@ defines:
 - kind: function
   qualified_name: trie/mcp_install:_claude_desktop_user_path
   lines: 126-131
+- kind: constant
+  qualified_name: trie/mcp_install:TARGETS
+  lines: 135-209
 - kind: class
   qualified_name: trie/mcp_install:InstallPlan
   lines: 213-218
@@ -163,4 +178,42 @@ Build the opencode-style MCP snippet with `type: "local"` and a command array.
 ## `snippet(self, project_root: Path) -> dict`
 
 Build the JSON value registered for this target under `snippet_key.trie`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_install:Scope fingerprint=d12ea4ff19e63ba188c524bde1d23431cddd8bb548648d958a80898366b86958 body_fp=1ce6e9b74af3d741a1e63ad18b7b39d76facbb319ba1897326b6a38800959141 source_ref=ea97a5335fa14a0f02bd9dd07e89a2745ea03a45 -->
+## `Scope = Literal["project", "user"]`
+
+Type alias for the two installation scopes: project-level or user-level config.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_install:Action fingerprint=03abe0d9a9f55bacd9af247ac370a3359e892a9cc531f7c6123593afcbcd3922 body_fp=1e4427fa24e7093b87a2abe612fa6e24f710cc2d8d31d2abe9920676eb86b00b source_ref=ea97a5335fa14a0f02bd9dd07e89a2745ea03a45 -->
+## `Action = Literal["created", "updated", "skipped", "preview", "error"]`
+
+Type alias for the outcome of a single MCP config apply operation.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_install:SnippetFactory fingerprint=93c2a5173f07fcf25ba5724d0f0ae74f5ec427a1b364965f613ba2a6d9d59eb3 body_fp=b57d4f3a2db38fbfa5c89eb5ee00303136139c8867bb9adb2e0e555109c01b2c source_ref=ea97a5335fa14a0f02bd9dd07e89a2745ea03a45 -->
+## `SnippetFactory = Callable[[Path], dict]`
+
+Type alias for a callable that accepts a project root `Path` and returns an MCP server config snippet `dict`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_install:TARGETS fingerprint=e37d304acf66777b8a68a405b3940e6e2c8d3735c94b1fb39613dcef2fefd31d body_fp=92eb32bf1ef2340eaa33b952028b303712c61683f74976fe34e3c78da1aea5dd source_ref=ea97a5335fa14a0f02bd9dd07e89a2745ea03a45 -->
+## `TARGETS: dict[str, MCPTarget]`
+
+Ordered registry mapping target slug to `MCPTarget` for all supported coding agents; auto-detect iterates this dict in insertion order.
+
+- Keys: `"claude-code"`, `"claude-desktop"`, `"cursor"`, `"windsurf"`, `"vscode"`, `"codex"`, `"opencode"`
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=60ad221090023aebb3d480faff51a8c8a9e7be2ce01002b284c37ca8757f3aee source_ref=ea97a5335fa14a0f02bd9dd07e89a2745ea03a45 -->
+## `mcp_install`
+
+Register the trie MCP server into coding-agent JSON config files (Claude Code, Cursor, Windsurf, VS Code, Codex, opencode).
+
+- `TARGETS`: ordered registry of supported agents, keyed by slug
+- `install(...)`: main entry point; returns an `InstallPlan` with per-target `ApplyResult`s
+- `MCPTarget`: frozen dataclass describing one agent's config schema and file paths
+- `Scope`: `"project"` or `"user"` — controls which config path is written
+- `Action`: outcome tag on each `ApplyResult` (`created`, `updated`, `skipped`, `preview`, `error`)
 <!-- trie:end -->

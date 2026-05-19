@@ -2,9 +2,12 @@
 trie_version: 0.1.1
 source: tests/test_git_helpers.py
 file_fingerprint: f3dcec4ab08da1021c94f58ed56c75875b776e2d27a98e78a6ff7d672154f3f9
-last_synced_at: '2026-05-16T12:26:04Z'
+last_synced_at: '2026-05-19T10:38:07Z'
 description: Tests for the narrow git helpers used by diff-aware regen.
 defines:
+- kind: module
+  qualified_name: tests/test_git_helpers:__module__
+  lines: 1-128
 - kind: function
   qualified_name: tests/test_git_helpers:_git
   lines: 19-21
@@ -134,4 +137,13 @@ Run a `git` subprocess in `cwd`, injecting no extra config beyond what the shell
 ## `_init_repo(path: Path) -> None`
 
 Initialize a git repository at `path` with a `main` branch and test identity config.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_git_helpers:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=20127397ba4d040640a3a9532cef2bf4d8d8ec37c1e6fc9e5045d99f0802e096 source_ref=6922d330926218a78e65a95d706a8038d95a55da -->
+## `tests/test_git_helpers`
+
+Integration tests for `trie.git_helpers` using real git repositories created in `tmp_path`.
+
+- Tests cover `is_git_repo`, `compute_blob_hash`, and `retrieve_blob` against actual git subprocess behaviour.
+- No mocking: failure modes are exercised through genuine git operations.
 <!-- trie:end -->
