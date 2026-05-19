@@ -212,6 +212,71 @@ def test_opencode_read_override_appends_telemetry_atomically(tmp_path: Path):
     assert "readFile(cfg.logPath" not in body
 
 
+def test_opencode_read_override_handles_absolute_paths(tmp_path: Path):
+    """Earlier versions of `readSourceFile` did `normalize(join(cwd, path))`
+    unconditionally. Node's `path.join` strips the leading slash on the
+    second argument when it's absolute, producing `<cwd>/<abs-without-slash>`
+    — a bogus path that ENOENTs every time. Agents do pass absolute paths
+    (copy-paste from grep results, stack traces), so the wrapper must
+    detect absolute paths and use them verbatim. We assert on the
+    structural marker `isAbsolute(path)` being present in the resolver."""
+    install(
+        target_names=["opencode"],
+        print_only=False,
+        dry_run=False,
+        project_root=tmp_path,
+    )
+    body = (tmp_path / ".opencode" / "tools" / "read.ts").read_text()
+    # The resolver helper exists and branches on isAbsolute.
+    assert "resolveAbsolutePath" in body
+    # The resolver uses isAbsolute to skip joining onto cwd.
+    assert "isAbsolute(path) ? normalize(path)" in body
+    # The triefact lookup also handles absolute paths (strips cwd prefix
+    # when the absolute path is inside the project tree).
+    assert "projectRelativePath" in body
+
+
+def test_opencode_read_override_advertises_full_arg(tmp_path: Path):
+    """Compact mode is the new default for `read(path)`. The wrapper must
+    advertise a `full: bool` arg so the agent can opt back into the
+    historical "return the entire triefact verbatim" behaviour when it
+    actually needs the whole bundle (e.g. for narrow files). Without
+    this, agents would have no escape hatch from compact mode."""
+    install(
+        target_names=["opencode"],
+        print_only=False,
+        dry_run=False,
+        project_root=tmp_path,
+    )
+    body = (tmp_path / ".opencode" / "tools" / "read.ts").read_text()
+    assert "full: tool.schema" in body
+    # Description must mention `compact` so the agent understands the
+    # default behaviour.
+    assert "compact" in body.lower() or "COMPACT" in body
+
+
+def test_opencode_read_override_emits_compact_renderer(tmp_path: Path):
+    """Compact rendering happens TS-side. The rendered wrapper must
+    contain the helpers — frontmatter parser, sentinel-section scanner,
+    and the renderer that ties them together. We assert on the helper
+    names rather than full template equality so the rendering template
+    can evolve."""
+    install(
+        target_names=["opencode"],
+        print_only=False,
+        dry_run=False,
+        project_root=tmp_path,
+    )
+    body = (tmp_path / ".opencode" / "tools" / "read.ts").read_text()
+    assert "renderCompact" in body
+    assert "parseFrontMatter" in body
+    assert "extractSections" in body
+    # The compact mode and full mode each tag their telemetry differently
+    # so the audit can split usage. The two mode names must appear.
+    assert "triefact_compact" in body
+    assert "triefact_full" in body
+
+
 def test_opencode_trie_read_obsolete_file_removed_on_apply(tmp_path: Path):
     """Earlier versions of `trie setup --override-builtins` shipped a
     separate `.opencode/tools/trie_read.ts` add-on. The new `read.ts`
