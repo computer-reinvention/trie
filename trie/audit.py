@@ -603,10 +603,16 @@ def render_comparison(baseline: AuditSummary, candidate: AuditSummary, console: 
     the run being evaluated (`with_trie`). Deltas are reported on the candidate
     side as `(±N)`. When a section is missing from one run the corresponding
     column shows `--` so the asymmetry is loud rather than papered over.
+
+    MCP and CLI call counts are compared separately so a regression that
+    flips agents from `mcp_call` to `cli_call` (or vice versa) is visible
+    rather than absorbed into a single total.
     """
     _render_compare_header(baseline, candidate, console)
     console.print()
     _render_compare_mcp(baseline.mcp, candidate.mcp, console)
+    console.print()
+    _render_compare_cli_calls(baseline.cli, candidate.cli, console)
     console.print()
     _render_compare_sync(baseline.sync, candidate.sync, console)
     console.print()
@@ -779,7 +785,38 @@ def _render_compare_mcp(
     candidate: dict[str, McpCallStats],
     console: Console,
 ) -> None:
-    table = Table(title="MCP calls", title_style="bold", show_header=True, header_style="bold")
+    """MCP-server-side per-tool count diff."""
+    _render_compare_tool_calls(baseline, candidate, console, title="MCP calls")
+
+
+def _render_compare_cli_calls(
+    baseline: dict[str, McpCallStats],
+    candidate: dict[str, McpCallStats],
+    console: Console,
+) -> None:
+    """CLI-side per-tool count diff (`trie grep`/`read`/`trace`).
+
+    Same layout as the MCP comparison; only the title differs. Keeping the
+    two tables side-by-side in the report lets an operator spot when an
+    agent's call mix shifted between the surfaces from one run to the next.
+    """
+    _render_compare_tool_calls(baseline, candidate, console, title="CLI calls")
+
+
+def _render_compare_tool_calls(
+    baseline: dict[str, McpCallStats],
+    candidate: dict[str, McpCallStats],
+    console: Console,
+    *,
+    title: str,
+) -> None:
+    """Shared body for `_render_compare_mcp` and `_render_compare_cli_calls`.
+
+    Both surfaces emit `McpCallStats`-shaped buckets keyed by tool. The
+    diff layout — baseline / candidate / Δ — is identical; only the
+    section title changes.
+    """
+    table = Table(title=title, title_style="bold", show_header=True, header_style="bold")
     table.add_column("tool")
     table.add_column("baseline", justify="right")
     table.add_column("candidate", justify="right")
