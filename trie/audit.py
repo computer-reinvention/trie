@@ -101,6 +101,15 @@ class McpCallStats:
     those discriminator values up here so eval reports can show "of K empty
     greps, M produced text_match redirects, N were text_match_empty (typos),
     etc."
+
+    `modes` is read-specific: the opencode `read.ts` override dispatches
+    on argument shape (qname / triefact / source / show_source) and tags
+    its emitted `cli_call` events with the branch it took. Audit rolls
+    those tags up here so we can see "of N CLI reads, M hit the triefact
+    path (cheap), K fell through to raw source (expensive)" without
+    having to slice the raw events. `mode` is absent on `read` events
+    that came from Python directly — those count as qname mode by
+    construction (Python's `trie read` only accepts qnames).
     """
 
     tool: str
@@ -112,6 +121,7 @@ class McpCallStats:
     total_response_bytes: int = 0
     top_qnames: tuple[tuple[str, int], ...] = ()
     fallback_kinds: dict[str, int] = field(default_factory=dict)
+    modes: dict[str, int] = field(default_factory=dict)
 
     @property
     def avg_duration_ms(self) -> float:
@@ -277,6 +287,7 @@ def _stats_to_dict(stats_by_tool: dict[str, McpCallStats]) -> dict[str, dict[str
             "avg_response_bytes": s.avg_response_bytes,
             "top_qnames": list(s.top_qnames),
             "fallback_kinds": dict(s.fallback_kinds),
+            "modes": dict(s.modes),
         }
         for tool, s in stats_by_tool.items()
     }
@@ -368,6 +379,7 @@ def _mcp_stats(tool: str, events: list[Event]) -> McpCallStats:
     total_response_bytes = 0
     qname_counter: Counter[str] = Counter()
     fallback_kinds: Counter[str] = Counter()
+    modes: Counter[str] = Counter()
 
     for ev in events:
         f = ev.fields
@@ -395,6 +407,20 @@ def _mcp_stats(tool: str, events: list[Event]) -> McpCallStats:
         if tool == "grep" and isinstance(fb_kind, str):
             fallback_kinds[fb_kind] += 1
 
+        # `mode` is set by the opencode `read.ts` wrapper on `cli_call`
+        # events it emits directly (the triefact / source / show_source
+        # branches). Python-emitted `cli_call` and `mcp_call` events
+        # don't set this field — those are implicitly qname-mode for the
+        # read tool, since the CLI / MCP `read` only accepts qnames.
+        # We attribute the absent case to "qname" so the breakdown sums
+        # to the total call count.
+        if tool == "read":
+            mode = f.get("mode")
+            if isinstance(mode, str):
+                modes[mode] += 1
+            else:
+                modes["qname"] += 1
+
         # Qname extraction — only when capture_args was on at the time of emit.
         args = f.get("args") or {}
         if not isinstance(args, dict):
@@ -418,6 +444,7 @@ def _mcp_stats(tool: str, events: list[Event]) -> McpCallStats:
         total_response_bytes=total_response_bytes,
         top_qnames=tuple(qname_counter.most_common(5)),
         fallback_kinds=dict(fallback_kinds),
+        modes=dict(modes),
     )
 
 
@@ -721,6 +748,16 @@ def _render_tool_calls(
     if grep_stats is not None and grep_stats.fallback_kinds:
         parts = ", ".join(f"{k}={n}" for k, n in sorted(grep_stats.fallback_kinds.items()))
         console.print(f"  [dim]grep fallback:[/dim] {parts}")
+
+    # read mode breakdown: one extra line showing how the opencode `read.ts`
+    # override dispatched (qname / triefact / source / show_source). Lets the
+    # operator see whether agents are hitting the cheap triefact path or
+    # falling through to raw source — and how often they reach for the
+    # `show_source` escape hatch when editing.
+    read_stats = by_tool.get("read")
+    if read_stats is not None and read_stats.modes:
+        parts = ", ".join(f"{k}={n}" for k, n in sorted(read_stats.modes.items()))
+        console.print(f"  [dim]read modes:[/dim] {parts}")
 
 
 def _render_sync(s: SyncStats, console: Console) -> None:

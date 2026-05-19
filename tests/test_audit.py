@@ -438,8 +438,92 @@ def test_to_dict_carries_cli_section(tmp_path: Path):
         "avg_response_bytes",
         "top_qnames",
         "fallback_kinds",
+        "modes",
     ):
         assert k in data["cli"]["grep"]
+
+
+def test_read_mode_breakdown_aggregates_from_cli_call_events(tmp_path: Path):
+    """The opencode `read.ts` override emits `cli_call` events with a `mode`
+    field naming which dispatch branch fired (qname / triefact / source /
+    show_source). The audit aggregator rolls these into `McpCallStats.modes`
+    so an operator can see, at a glance, whether agents are getting the
+    cheap triefact view or falling through to raw source."""
+    p = tmp_path / "modes.jsonl"
+    _write_log(
+        p,
+        [
+            # Two triefact-mode reads (cheap path).
+            {
+                "ts": _ts(0),
+                "event": "cli_call",
+                "tool": "read",
+                "mode": "triefact",
+                "result_kind": "ok",
+                "duration_ms": 3,
+                "response_bytes": 1200,
+            },
+            {
+                "ts": _ts(1),
+                "event": "cli_call",
+                "tool": "read",
+                "mode": "triefact",
+                "result_kind": "ok",
+                "duration_ms": 4,
+                "response_bytes": 800,
+            },
+            # One source fallthrough (no triefact for this path).
+            {
+                "ts": _ts(2),
+                "event": "cli_call",
+                "tool": "read",
+                "mode": "source",
+                "result_kind": "ok",
+                "duration_ms": 2,
+                "response_bytes": 3000,
+            },
+            # One show_source (agent reaching for raw source before edit).
+            {
+                "ts": _ts(3),
+                "event": "cli_call",
+                "tool": "read",
+                "mode": "show_source",
+                "result_kind": "ok",
+                "duration_ms": 1,
+                "response_bytes": 4500,
+            },
+        ],
+    )
+    summary = AuditSummary.from_log(p)
+    modes = summary.cli["read"].modes
+    assert modes == {"triefact": 2, "source": 1, "show_source": 1}
+
+
+def test_read_events_without_mode_field_count_as_qname(tmp_path: Path):
+    """`cli_call` events emitted from Python (i.e. `trie read` invoked
+    directly from a shell) don't carry a `mode` field — those calls are
+    qname-mode by construction (the Python CLI only accepts qnames). The
+    aggregator attributes the absent case to `qname` so the mode
+    breakdown's totals always equal the call count, regardless of which
+    surface produced the events."""
+    p = tmp_path / "noprefix.jsonl"
+    _write_log(
+        p,
+        [
+            {
+                "ts": _ts(0),
+                "event": "cli_call",
+                "tool": "read",
+                "result_kind": "ok",
+                "duration_ms": 5,
+                "response_bytes": 800,
+                "args": {"qname": "trie/cli:grep_cmd"},
+            },
+        ],
+    )
+    summary = AuditSummary.from_log(p)
+    modes = summary.cli["read"].modes
+    assert modes == {"qname": 1}
 
 
 # ---------------------------------------------------------------------------

@@ -159,6 +159,59 @@ def test_opencode_read_override_qname_detection_excludes_urls_and_drives(tmp_pat
     assert "[A-Za-z]:" in body
 
 
+def test_opencode_read_override_emits_telemetry_from_typescript(tmp_path: Path):
+    """The `read.ts` wrapper handles three out of four call paths in-process
+    (triefact lookup, source fallthrough, show_source escape). Only the
+    qname path shells out to `trie read`, which gets `cli_call` telemetry
+    for free from Python. Without TS-side emission, the other three paths
+    would be invisible to `trie audit`.
+
+    The wrapper must therefore embed its own telemetry plumbing: a helper
+    that resolves the log path from trie.toml's [debug] section (or the
+    TRIE_DEBUG env var), tags each call with the dispatch `mode`, and
+    appends a `cli_call` JSONL event to debug.jsonl. We assert on the
+    structural markers (function names, event-shape strings) rather than
+    full template equality so the rendered TS can evolve."""
+    install(
+        target_names=["opencode"],
+        print_only=False,
+        dry_run=False,
+        project_root=tmp_path,
+    )
+    body = (tmp_path / ".opencode" / "tools" / "read.ts").read_text()
+    # Telemetry helpers must be present in the rendered TS.
+    assert "emitTelemetry" in body
+    assert "resolveTelemetryConfig" in body
+    assert "extractTomlSection" in body
+    # Event name + tool name are baked into every emit call.
+    assert '"cli_call"' in body
+    assert '"read"' in body
+    # The `mode` field is what distinguishes the four dispatch branches.
+    assert "mode" in body
+    # Honours TRIE_DEBUG the same way Python does (env var wins).
+    assert "TRIE_DEBUG" in body
+
+
+def test_opencode_read_override_appends_telemetry_atomically(tmp_path: Path):
+    """The telemetry write must use append-mode I/O (Node's `appendFile`),
+    not read-modify-write. Concurrent `read` calls from a long-running
+    opencode session must not race the log file. The rendered TS must
+    import `appendFile` from `node:fs/promises` rather than the broader
+    `writeFile` or any read-then-write pattern."""
+    install(
+        target_names=["opencode"],
+        print_only=False,
+        dry_run=False,
+        project_root=tmp_path,
+    )
+    body = (tmp_path / ".opencode" / "tools" / "read.ts").read_text()
+    # Single-line `appendFile` from node:fs/promises is the atomic-on-POSIX
+    # write primitive we want for JSONL telemetry.
+    assert "appendFile" in body
+    # And we shouldn't be doing readback-then-write for the log.
+    assert "readFile(cfg.logPath" not in body
+
+
 def test_opencode_trie_read_obsolete_file_removed_on_apply(tmp_path: Path):
     """Earlier versions of `trie setup --override-builtins` shipped a
     separate `.opencode/tools/trie_read.ts` add-on. The new `read.ts`
