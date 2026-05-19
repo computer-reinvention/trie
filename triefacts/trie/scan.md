@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: trie/scan.py
 file_fingerprint: 1ac64e845687c0b329b8bfd3e1c0d0cb7f588d619cc78b615953aab32750b7d7
-last_synced_at: '2026-05-16T11:46:57Z'
+last_synced_at: '2026-05-19T10:41:47Z'
 defines:
+- kind: module
+  qualified_name: trie/scan:__module__
+  lines: 1-110
 - kind: class
   qualified_name: trie/scan:ScanResult
   lines: 15-23
@@ -13,8 +16,8 @@ defines:
 - kind: function
   qualified_name: trie/scan:scan_project
   lines: 30-109
-incoming_refs: 13
-outgoing_refs: 3
+incoming_refs: 15
+outgoing_refs: 4
 ---
 <!-- trie:section symbol=trie/scan:ScanResult fingerprint=68500ac17e0377b57a57a8bd10eab23b03e157d3601244f237edd7ae22b31ecc body_fp=507c853897dc77fdb4c3c0b6edc5da7c1de7bb31baba5626595d4a5fbdc00a47 source_ref=ba0d38d68c99a578b6395e4b44522d5825f9668d -->
 ## `ScanResult`
@@ -37,4 +40,14 @@ Walk the project, parse changed files, persist symbols, and regenerate all edges
 - Files with unchanged fingerprints skip symbol re-persistence but still parse for references.
 - DB files absent from the current scope are deleted with cascading symbol removal.
 - `edges_total`: count of cross-file reference edges rebuilt from scratch each scan.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/scan:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=61975015fab339cefef03b319032d108f0e804866f1b738d5afa491f2438b9c9 source_ref=ba0d38d68c99a578b6395e4b44522d5825f9668d -->
+## `scan`
+
+Parse and persist project symbols and cross-file reference edges, skipping unchanged files by fingerprint comparison.
+
+- `ScanResult`: frozen dataclass summarising counts from one full scan
+- `file_fingerprint`: SHA-256 hex digest of UTF-8 encoded source text
+- `scan_project`: idempotent walk; removes stale DB entries, regenerates all edges
 <!-- trie:end -->

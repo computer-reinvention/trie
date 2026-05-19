@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: tests/test_generator.py
 file_fingerprint: dbef242b0f1cc34b984a3dbda4ad2f44f44ee8dbaf7414679e5fbad7f1319677
-last_synced_at: '2026-05-16T11:23:28Z'
+last_synced_at: '2026-05-19T10:38:03Z'
 defines:
+- kind: module
+  qualified_name: tests/test_generator:__module__
+  lines: 1-200
 - kind: class
   qualified_name: tests/test_generator:FakeClient
   lines: 22-37
@@ -125,4 +128,10 @@ Assert that supplying only one of `previous_source` or `previous_prose` produces
 ## `test_diff_aware_request_carries_cosmetic_preserve_instruction(tmp_path: Path)`
 
 Assert that the diff-aware request rubric contains cosmetic-preserve and verbatim language.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_generator:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=fdf460c25a8f7c55eb275cc7c1c71b40023012e1783d6e9b6f544d0902768c39 source_ref=eeeca93821a9947c85cab65d8b6299b8fa518f6f -->
+## `tests/test_generator`
+
+Test suite for `trie.sync.generator` covering prompt construction, diff-aware mode, cold mode fallback, and model client factory.
 <!-- trie:end -->

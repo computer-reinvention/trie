@@ -1,10 +1,13 @@
 ---
 trie_version: 0.1.1
 source: trie/mcp_server.py
-file_fingerprint: ee79a8cee190f9a21d5cf6c01cc22d53760c7a772e27c84b6aadf6a0622c4137
-last_synced_at: '2026-05-18T22:49:08Z'
+file_fingerprint: 1f3fc0d338f68c38148ecdadfa48f35db534ec727fc4d51adab6091b3acfb6e3
+last_synced_at: '2026-05-19T10:41:17Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
+- kind: module
+  qualified_name: trie/mcp_server:__module__
+  lines: 1-1040
 - kind: class
   qualified_name: trie/mcp_server:RipgrepNotFoundError
   lines: 58-70
@@ -34,60 +37,62 @@ defines:
   lines: 158-177
 - kind: class
   qualified_name: trie/mcp_server:TrieTools
-  lines: 180-988
+  lines: 180-1010
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.__init__
-  lines: 186-201
+  lines: 194-216
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.close
-  lines: 203-204
+  lines: 218-219
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep
-  lines: 208-323
+  lines: 223-338
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._maybe_text_match_fallback
-  lines: 325-462
+  lines: 340-477
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._text_match_in_scope
-  lines: 464-563
+  lines: 479-578
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._attribute_text_matches_to_symbols
-  lines: 565-588
+  lines: 580-603
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._candidate_matches_predicate
-  lines: 590-616
+  lines: 605-631
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._parse_predicate
-  lines: 618-689
+  lines: 633-711
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.read
-  lines: 693-751
+  lines: 715-773
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._prose_for
-  lines: 753-790
+  lines: 775-812
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._neighbour_summaries
-  lines: 792-817
+  lines: 814-839
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.trace
-  lines: 821-968
+  lines: 843-990
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._suggest_for_qname
-  lines: 972-988
+  lines: 994-1010
 - kind: function
   qualified_name: trie/mcp_server:build_server
-  lines: 994-1011
+  lines: 1016-1033
 - kind: function
   qualified_name: trie/mcp_server:run_stdio
-  lines: 1014-1017
+  lines: 1036-1039
 incoming_refs: 4
 outgoing_refs: 29
 ---
-<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=17c91ca4f7b48a399b6773ad0c86e2e4ef4a6e69ab9d6df66a4ee1c016022b83 body_fp=213ce7664e199d0c0b7557ecc2fcdfd9ffb0cde0053fdbedd1f339b1a930e2e0 source_ref=208d963e8755736b64473d98f04dd5c5ac701361 -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=7ee5dc607bb499394690a4b0485e255d6dd93b3328da3b8f98c5d2a04cd02296 body_fp=646da77eba50dd60498b67525315354b086abf60d422279c42e4c7acda551c4d source_ref=1d147ec50d38a315efdd117d9e4b3a9082c6e549 -->
 ## `TrieTools`
 
 Owns the Store and exposes `grep`, `read`, and `trace` as directly callable methods, decoupled from MCP transport.
 
+- Accepts `event_name` kwarg (`"mcp_call"` default); CLI passes `"cli_call"` to separate telemetry.
+- Emits `mcp_server_start` only when `event_name == "mcp_call"`; CLI construction is silent.
 - Initialises `Config`, `Store`, ripgrep path, and telemetry from `project_root` at construction time.
 - `close()` must be called to release the Store's database connection.
 <!-- trie:end -->
@@ -150,20 +155,22 @@ Return up to `n` fuzzy-matched qualified names from `candidates` for `not_found`
 Return up to `n` fuzzy matches for `name` against `candidates` using a 0.6 cutoff.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_server:TrieTools.__init__ fingerprint=c4d81c0f0ecd5ee491698c665ec8cfbd31493da220582e00767270895a6303ed body_fp=8f30ce2ef56af84eeb53845db374b5de8128c5ab334d8218872202f4fcfa6b02 source_ref=b5595ca0056fcd22d5e1be4c1818598a1e3aab28 -->
-## `TrieTools.__init__(self, project_root: Path) -> None`
+<!-- trie:section symbol=trie/mcp_server:TrieTools.__init__ fingerprint=74d86f992b0979150b25f2b106fe77651c32e445d36de5f044024d20949c62c9 body_fp=db79ca36a3b2a6c0c245c71ab29c3e4a560c4ea8ae4dc190c08a361979c76f19 source_ref=1d147ec50d38a315efdd117d9e4b3a9082c6e549 -->
+## `TrieTools.__init__(self, project_root: Path, *, event_name: str = "mcp_call") -> None`
 
 Initialise the tool host: load config, resolve ripgrep, configure telemetry, and open the graph store.
 
 - `project_root`: searches upward for `trie.toml`; resolved root may differ.
+- `event_name`: controls telemetry event name; `mcp_server_start` is only emitted when it equals `"mcp_call"`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_server:TrieTools._parse_predicate fingerprint=e83512c862a320cb259924252fb68e8045c5dd0fa2d1c4b78bc732ca081da3fb body_fp=3879ed2b79ad7fdbef5f5e1daeead84d8574f87e335a190ba55e46b39a028269 source_ref=cdb7c717485168c67e602f53f176ce638ce44ee9 -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools._parse_predicate fingerprint=39fb950cf30d8db1c53c19d70c183dac0a5026d690b104a4193debc0feb75ab9 body_fp=b41a8a30a553459309eece0878091eb2c28b0732ab182c84df88da25c801294a source_ref=1d147ec50d38a315efdd117d9e4b3a9082c6e549 -->
 ## `_parse_predicate(self, predicate: dict[str, Any] | None) -> tuple[GrepPredicate, dict[str, Any] | None]`
 
 Convert the raw predicate dict from an agent call into a `GrepPredicate`, returning a structured error on invalid input.
 
 - Returns `(GrepPredicate(), error_dict)` on validation failure; `None` as second element on success.
+- `kind` now accepts `"constant"` and `"module"` in addition to `"function"`, `"class"`, `"method"`, `"any"`.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/mcp_server:TrieTools._prose_for fingerprint=7a45e1b328dea006c2f4a127330932dcfd60881d0d728880577bad7bda39f136 body_fp=5ad1a422bfc5d60aa359b8372a0c76705148e4576fe0bfb838c7159cf650ffc3 source_ref=cdb7c717485168c67e602f53f176ce638ce44ee9 -->
@@ -228,7 +235,7 @@ Raised at MCP server startup when `rg` (ripgrep) is not found on PATH.
 Return the absolute path to `rg` via `shutil.which`, or raise `RipgrepNotFoundError` if not found.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_server:TrieTools.grep fingerprint=92e9ff7af757d52190973e8db46d425d415ae46ae26c0fffabbae84e184f155e body_fp=8af935992c9857d94f06440458a09b6a90d0bc9c33269203a2b29fcfd9ed04eb source_ref=208d963e8755736b64473d98f04dd5c5ac701361 -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.grep fingerprint=a86181d3aeb234fb6e45066e5edeb4073aea9859961eb9e05c614c4b640bb0a1 body_fp=8af935992c9857d94f06440458a09b6a90d0bc9c33269203a2b29fcfd9ed04eb source_ref=1d147ec50d38a315efdd117d9e4b3a9082c6e549 -->
 ## `grep(self, predicate: dict[str, Any] | None = None, rank_by: str | None = None, limit: int = 10) -> dict[str, Any]`
 
 Find symbols matching a predicate, with a text-match fallback when no symbols match.
@@ -273,7 +280,7 @@ Map each `(file, line)` ripgrep hit to its smallest enclosing symbol, returning 
 - Nesting resolved by picking the deepest symbol whose `[start_line, end_line]` brackets the match line.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_server:TrieTools.read fingerprint=c6048102a9037914f518b81e439d8b434ec19dbf7c46165e4e928f76c5c1d433 body_fp=21359eba7ec65d07959c8f7f60c7cbf1cdc262d77c03da929ad16d5c781b75eb source_ref=cdb7c717485168c67e602f53f176ce638ce44ee9 -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.read fingerprint=4169958b776cec1f8ce456c64e8cfb3cecad6995a99df2402d9fe7ab7f660268 body_fp=21359eba7ec65d07959c8f7f60c7cbf1cdc262d77c03da929ad16d5c781b75eb source_ref=1d147ec50d38a315efdd117d9e4b3a9082c6e549 -->
 ## `read(self, qname: str) -> dict[str, Any]`
 
 Read a symbol's full prose and compact one-liners for every immediate caller and callee.
@@ -284,7 +291,7 @@ Read a symbol's full prose and compact one-liners for every immediate caller and
 - Returns `{"error": {code, message, suggestion}}` if `qname` is not found.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_server:TrieTools.trace fingerprint=bff0483342f3d0274355b53cd7cf07e540c1b71c8322772928ef7a8bde8c7862 body_fp=41fe85050b6da40b6011f7912d5adc510026fd7523bd0ab685393303400d03cc source_ref=cdb7c717485168c67e602f53f176ce638ce44ee9 -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.trace fingerprint=11fb60c36dc4704ea8181354ddf832facebad431d34b396f61015e0f9139c285 body_fp=41fe85050b6da40b6011f7912d5adc510026fd7523bd0ab685393303400d03cc source_ref=1d147ec50d38a315efdd117d9e4b3a9082c6e549 -->
 ## `trace(self, from_qname: str, direction: str = "callers", depth: int = 2) -> dict[str, Any]`
 
 Traverse the call graph from `from_qname` via BFS up to `depth` hops, returning nodes, edges, and truncation metadata.
@@ -303,4 +310,15 @@ Traverse the call graph from `from_qname` via BFS up to `depth` hops, returning 
 Return `True` when `pred` contains no filter that would narrow the symbol result set.
 
 - Returns `True` when `name_contains` is falsy, `kind` is `None` or `"any"`, `scope_prefix`/`scope_exclude` are absent, `public_only` is `False`, and all edge-count bounds are `None`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_server:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=bd0b12eff0808bf296717b6a3e5dca068ff7711c7d60fc68c213790788812d6f source_ref=1d147ec50d38a315efdd117d9e4b3a9082c6e549 -->
+## `mcp_server`
+
+Expose the trie triefact tree and symbol graph to coding agents via MCP over stdio.
+
+- Three tools: `grep` (find symbols), `read` (prose + neighbours), `trace` (graph topology).
+- Same logic served by both MCP wire protocol and `trie grep/read/trace` CLI subcommands.
+- Errors return `{code, message, suggestion}` for agent-recoverable failures.
+- Requires `rg` (ripgrep) on PATH; fails at startup if absent.
 <!-- trie:end -->

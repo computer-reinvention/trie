@@ -1,9 +1,12 @@
 ---
 trie_version: 0.1.1
 source: tests/test_cascade.py
-file_fingerprint: ca44c8672eec3463c6d59a800f9ec28960007de1c8829653abda78d27fdf63ca
-last_synced_at: '2026-05-15T13:01:31Z'
+file_fingerprint: 2a2f512fcdd9f8b06bdbc3755d72d30665fe0ec5fc94ab2b8e7a7e9e9a6f72a1
+last_synced_at: '2026-05-19T10:37:26Z'
 defines:
+- kind: module
+  qualified_name: tests/test_cascade:__module__
+  lines: 1-132
 - kind: function
   qualified_name: tests/test_cascade:project
   lines: 14-33
@@ -102,4 +105,10 @@ Assert that a file with no callers cascades only to itself with an empty `cascad
 ## `_store(project: Path) -> Store`
 
 Build and return a scanned `Store` backed by a SQLite graph database in the given project directory.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_cascade:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=0bf58bdba73955c5e5a68a204bdd6fcada98c2f24a56f1229b8e30a12516edac source_ref=f4efc12967672a54e66f9053b394485e80c01e9b -->
+## `tests/test_cascade`
+
+Integration tests for `compute_cascade`, covering depth traversal, hub-threshold blocking, seed-only edge cases, and result ordering.
 <!-- trie:end -->

@@ -1,9 +1,15 @@
 ---
 trie_version: 0.1.1
 source: trie/parse/python.py
-file_fingerprint: 31edbc721a78a215b976726fcab6efc9e315d463ccc73087f587cf164d5efd41
-last_synced_at: '2026-05-15T13:06:41Z'
+file_fingerprint: c2775380973fba4b65ee337b5d0c97b9e5ff75611d5d95cb7e52010e063344c4
+last_synced_at: '2026-05-19T10:41:32Z'
 defines:
+- kind: module
+  qualified_name: trie/parse/python:__module__
+  lines: 1-522
+- kind: constant
+  qualified_name: trie/parse/python:PY_LANGUAGE
+  lines: 10-10
 - kind: class
   qualified_name: trie/parse/python:Symbol
   lines: 14-26
@@ -44,9 +50,21 @@ defines:
   qualified_name: trie/parse/python:strip_string_literal
   lines: 195-213
 - kind: function
+  qualified_name: trie/parse/python:_build_constant_symbol
+  lines: 216-260
+- kind: function
+  qualified_name: trie/parse/python:_is_dunder
+  lines: 263-270
+- kind: function
+  qualified_name: trie/parse/python:_module_level_constant
+  lines: 273-296
+- kind: function
+  qualified_name: trie/parse/python:_build_module_body_symbol
+  lines: 299-382
+- kind: function
   qualified_name: trie/parse/python:extract_symbols
-  lines: 216-264
-incoming_refs: 50
+  lines: 385-521
+incoming_refs: 57
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/parse/python:Symbol fingerprint=d9bc6c2e7a7f2bbdca9af4f1c7982a826342217f984a3fec7cdd6b475bf8a35e body_fp=879c309a54165bf864d2ad851bebac172b40931735019bbda12c854e3ce53695 source_ref=9ef40d21b0e2845b12219ed57628ec87f9eb4293 -->
@@ -79,14 +97,16 @@ Strip Python string-literal delimiters and leading prefix characters from a tree
 - Returns interior content with surrounding whitespace stripped
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/parse/python:extract_symbols fingerprint=07b8cdbaa929d2a2494bcde5993404d850b1c67524fde1ad70f7d4d953c75c09 body_fp=984c378ca3038cc35fd209d5610e3c5b893044a76fb1e78dd10ec883e4ba5354 source_ref=9ef40d21b0e2845b12219ed57628ec87f9eb4293 -->
+<!-- trie:section symbol=trie/parse/python:extract_symbols fingerprint=5a04917b0c9ad3d9b644201367ea96dfc21cd1ed82598e08eae81c0660e1fa13 body_fp=f3e8aa462bd67c3173fbee9450a98bd8c4a90fb09ceef15516e43b7a96f0253d source_ref=c94a919b6dda52ca18b2bd62f9a0174e8c411a94 -->
 ## `extract_symbols(file_path: Path, source_root: Path | None = None, *, source_text: str | None = None) -> list[Symbol]`
 
-Parse a Python file and return all top-level functions, classes, and their methods as `Symbol` objects.
+Parse a Python file and return all top-level symbols as `Symbol` objects.
 
+- Returns four kinds: `function`, `class`+`method`, `constant` (module-level `NAME = value`, including dunders), and a synthetic `module` symbol (`__module__`) for residual top-level code not captured by the others.
 - `source_root`: sets qualified-name prefix and stored `file_path`; defaults to `file_path.parent`.
 - `source_text`: overrides disk read; lets callers parse a prior version while keeping current-file qualified names.
 - Deduplicates by `qualified_name`; last definition wins (handles `@overload` and `@property`/setter pairs).
+- The `__module__` symbol is omitted when no non-import, non-docstring residual lines remain.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/parse/python:_make_parser fingerprint=f081dfd6916c63e7cd485b9082a93717d76eda229f07a7d0259ca3c3aff9fcbc body_fp=a52c1ef2381629555a85de265f653bc194c110e852d66983c1c24ee7ad3e379b source_ref=9ef40d21b0e2845b12219ed57628ec87f9eb4293 -->
@@ -159,4 +179,57 @@ If `node` is a `decorated_definition`, return the inner `def`/`class` node; othe
 Emit the class symbol plus one level of method symbols for a `class_definition` node.
 
 - `parent_is_private`: methods of a `_Foo` class inherit the private flag.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/parse/python:PY_LANGUAGE fingerprint=0a5ea4e9caea43b2aff7986c2453aaf98a5439baa3303d103a6a59fb780f0c9c body_fp=a2c2a0c1f645dbfc4fe4d20a8a43b9d895aabc14e7107a08d51e7aaa6e364c0a source_ref=c94a919b6dda52ca18b2bd62f9a0174e8c411a94 -->
+## `PY_LANGUAGE = Language(tree_sitter_python.language())`
+
+Module-level tree-sitter `Language` instance for Python, used to configure parsers.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/parse/python:_build_constant_symbol fingerprint=1144abec1cfbde2447fcc8744f55915888eacaecc5ff1cea5114b4e662d1b56e body_fp=98a00ff26ad3252765bf58075fae31f9c55768ff412e468089801c6a1ae2e782 source_ref=c94a919b6dda52ca18b2bd62f9a0174e8c411a94 -->
+## `_build_constant_symbol(node: Node, assignment_node: Node, target_name: str, source: bytes, *, module_key: str, rel_file: str) -> Symbol`
+
+Build a `kind='constant'` Symbol for a module-level `NAME = value` assignment.
+
+- `node`: wrapping `expression_statement`; sets the line range.
+- `assignment_node`: inner `assignment` node; used for body-token normalisation.
+- `target_name`: the identifier string on the left-hand side.
+- Dunders (`__all__`, `__version__`) are marked `is_public=True` despite leading underscores.
+- `signature` is the first line of the statement only; `body_text` is the full statement.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/parse/python:_is_dunder fingerprint=81d0c40a6404dfb330a7b05e9d459cf47b4ea3d89ac0964b2792d40358fcc217 body_fp=0cc548c4ad19f42cd74f9baf8c89f29302604d7ba74356bfe83a9a91376630c2 source_ref=c94a919b6dda52ca18b2bd62f9a0174e8c411a94 -->
+## `_is_dunder(name: str) -> bool`
+
+Return `True` if `name` is a dunder identifier (e.g. `__all__`, `__version__`).
+
+- Requires `len(name) > 4` to exclude bare `____`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/parse/python:_module_level_constant fingerprint=1470a5b4b31cb494ecca61bdcf5be516af254dc79fde2fc404bbe5345a1d88f7 body_fp=5aa0f649af2a720e09db485d5551006289f95409ea5978fdf5021b69a95e9b37 source_ref=c94a919b6dda52ca18b2bd62f9a0174e8c411a94 -->
+## `_module_level_constant(node: Node, source: bytes) -> tuple[Node, str] | None`
+
+Return `(assignment_node, name)` if `node` is a single-identifier top-level assignment, else `None`.
+
+- Skips tuple unpacking and attribute-target assignments.
+- `assignment_node`: the inner `assignment` node holding the right-hand side.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/parse/python:_build_module_body_symbol fingerprint=1910e1890486d83c8a17a98dabde20916177931683219cf50e4edebe4d8cfeab body_fp=004ecdac5d08671b82f46a3723fe11050dac0bdd50ae4a885aa9b73426b7d016 source_ref=c94a919b6dda52ca18b2bd62f9a0174e8c411a94 -->
+## `_build_module_body_symbol(tree_root, source, *, module_key, rel_file, consumed_ranges, noise_ranges=None) -> Symbol | None`
+
+Build a synthetic `kind='module'` symbol carrying residual module-level code not captured by any other symbol.
+
+- `consumed_ranges`: line ranges already claimed by functions, classes, or constants.
+- `noise_ranges`: line ranges of imports and the module docstring; also excluded.
+- Returns `None` when no meaningful residual lines remain (blank, comment, or fully consumed).
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/parse/python:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=623e75c61115d795321c9210eb23550a083efcab098cd518849856a733445d0c source_ref=c94a919b6dda52ca18b2bd62f9a0174e8c411a94 -->
+## `python`
+
+Parse Python source files into structured `Symbol` records using tree-sitter.
+
+- `PY_LANGUAGE`: initialised tree-sitter Python language instance used by all parsers in this module.
 <!-- trie:end -->

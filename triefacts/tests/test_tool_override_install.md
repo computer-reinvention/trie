@@ -1,66 +1,87 @@
 ---
 trie_version: 0.1.1
 source: tests/test_tool_override_install.py
-file_fingerprint: 1a4334d05f21e46033563e82b5d7bba56e2ef96c0fc3077b0a8268601bb35f60
-last_synced_at: '2026-05-18T14:18:08Z'
+file_fingerprint: 463c0c464f03ab7f4eba4655f1813b04e68afa3297c9700be6b84bdde6daf5ea
+last_synced_at: '2026-05-19T10:39:35Z'
 description: 'Tests for `trie.tool_override_install`: replacing agent built-in tools
   with trie wrappers.'
 defines:
+- kind: module
+  qualified_name: tests/test_tool_override_install:__module__
+  lines: 1-519
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_install_creates_three_override_files
   lines: 39-60
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_grep_override_routes_to_trie_grep
-  lines: 63-80
+  lines: 63-77
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_files_carry_generated_notice
-  lines: 83-96
+  lines: 80-93
 - kind: function
-  qualified_name: tests/test_tool_override_install:test_opencode_trie_read_takes_qname_not_path
-  lines: 99-116
+  qualified_name: tests/test_tool_override_install:test_opencode_read_override_dispatches_on_qname_path_or_show_source
+  lines: 101-122
+- kind: function
+  qualified_name: tests/test_tool_override_install:test_opencode_read_override_advertises_show_source_arg
+  lines: 125-138
+- kind: function
+  qualified_name: tests/test_tool_override_install:test_opencode_read_override_qname_detection_excludes_urls_and_drives
+  lines: 141-159
+- kind: function
+  qualified_name: tests/test_tool_override_install:test_opencode_read_override_emits_telemetry_from_typescript
+  lines: 162-192
+- kind: function
+  qualified_name: tests/test_tool_override_install:test_opencode_read_override_appends_telemetry_atomically
+  lines: 195-212
+- kind: function
+  qualified_name: tests/test_tool_override_install:test_opencode_trie_read_obsolete_file_removed_on_apply
+  lines: 215-240
+- kind: function
+  qualified_name: tests/test_tool_override_install:test_opencode_obsolete_cleanup_is_noop_on_fresh_install
+  lines: 243-258
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_install_is_idempotent_on_identical_content
-  lines: 124-144
+  lines: 266-291
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_install_updates_on_drift
-  lines: 147-172
+  lines: 294-319
 - kind: function
   qualified_name: tests/test_tool_override_install:test_claude_code_install_creates_advisory_hook
-  lines: 180-207
+  lines: 327-354
 - kind: function
   qualified_name: tests/test_tool_override_install:test_claude_code_hook_does_not_deny_grep
-  lines: 210-224
+  lines: 357-371
 - kind: function
   qualified_name: tests/test_tool_override_install:test_unsupported_harnesses_emit_needs_manual_setup
-  lines: 236-254
+  lines: 383-401
 - kind: function
   qualified_name: tests/test_tool_override_install:test_install_for_opencode_and_claude_code_in_one_pass
-  lines: 262-275
+  lines: 409-422
 - kind: function
   qualified_name: tests/test_tool_override_install:test_print_only_does_not_write_anything
-  lines: 283-299
+  lines: 430-451
 - kind: function
   qualified_name: tests/test_tool_override_install:test_dry_run_does_not_write_when_file_already_correct
-  lines: 302-322
+  lines: 454-474
 - kind: function
   qualified_name: tests/test_tool_override_install:test_install_with_empty_target_names_raises
-  lines: 330-337
+  lines: 482-489
 - kind: function
   qualified_name: tests/test_tool_override_install:test_install_with_unknown_target_raises
-  lines: 340-354
+  lines: 492-506
 - kind: function
   qualified_name: tests/test_tool_override_install:test_apply_one_uses_needs_manual_setup_for_targets_with_no_files
-  lines: 357-366
+  lines: 509-518
 incoming_refs: 0
-outgoing_refs: 17
+outgoing_refs: 23
 ---
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_install_creates_three_override_files fingerprint=a5e415f4eff2ac330724dd1ff7a46d728e0829f003db25aefaedba8523f4065c body_fp=9e1495557de05784705f322d708812045f77428dbf4a8f47fc7a3817dee95499 source_ref=48efd2b1af048b57c2891527546aedf621ea84ae -->
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_install_creates_three_override_files fingerprint=311a913081b132222ae5933948bfc573701ad85a62aeaea33e46eb3141571d36 body_fp=738af83cbeb707dcda25021772677ed76f88d66c6495cbfc619a109956a3cfc4 source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
 ## `test_opencode_install_creates_three_override_files(tmp_path: Path)`
 
-Assert that `install` for `"opencode"` creates exactly `grep.ts`, `trie_read.ts`, and `trie_trace.ts` under `.opencode/tools/` on disk.
+Assert that `install` for `"opencode"` creates exactly `grep.ts`, `read.ts`, and `trie_trace.ts` under `.opencode/tools/` on disk.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_grep_override_routes_to_trie_grep fingerprint=4d94a3118681715d6e9b3d1be0403096cb1c9c657f6095708c67ac3f00b4592e body_fp=d2f8fb18c439b5742c7894737bbfb700197d2389d17b59bfad7bfacf35c8c397 source_ref=48efd2b1af048b57c2891527546aedf621ea84ae -->
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_grep_override_routes_to_trie_grep fingerprint=9b92fd6651c9482e1e72bd7ff09a21b279bb5082bbfc5c07aedfef80081bedc5 body_fp=d2f8fb18c439b5742c7894737bbfb700197d2389d17b59bfad7bfacf35c8c397 source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
 ## `test_opencode_grep_override_routes_to_trie_grep(tmp_path: Path)`
 
 Assert that the rendered `grep.ts` override shells out to `trie grep --json` via `Bun.spawn`.
@@ -68,22 +89,18 @@ Assert that the rendered `grep.ts` override shells out to `trie grep --json` via
 - Checks spawn command string, not full file equality, allowing template evolution.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_files_carry_generated_notice fingerprint=1449c26a6f654a66721d374d982bc1a084003e3cb2d54ccc93c481ae151d7fb9 body_fp=2ef89e767c43d69f1969000a12999acf912a85903b07291f1f2f907715919def source_ref=48efd2b1af048b57c2891527546aedf621ea84ae -->
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_files_carry_generated_notice fingerprint=1ed4d58adc054245f9c7dee187d956a8dafd22a56e3756934931e69dea854d51 body_fp=2ef89e767c43d69f1969000a12999acf912a85903b07291f1f2f907715919def source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
 ## `test_opencode_files_carry_generated_notice(tmp_path: Path)`
 
 Assert all three opencode override files contain the auto-generated header and "Do not hand-edit" notice.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_trie_read_takes_qname_not_path fingerprint=bdfa2ad1ce51ed9276e88ce150e61be2a80e29b9ee242c540183b4765e3b8c49 body_fp=e74133bd2c144b16f33f539d8ff30f2ba7fba4b72c181bdc42857648a87ff6b0 source_ref=48efd2b1af048b57c2891527546aedf621ea84ae -->
-## `test_opencode_trie_read_takes_qname_not_path(tmp_path: Path)`
 
-Assert that `trie_read.ts` accepts a qname parameter, not a file path, and that its description disambiguates from the built-in `read` tool.
-<!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_install_is_idempotent_on_identical_content fingerprint=68d319152b04dfadc1f9f1ab82bcacfa698d7773e9b667118ceb3a48fc447bdb body_fp=4a49aa89366ea067a68c055ba15d372079bcd5fa8bfbd81c2ef0bd7a14de6e7a source_ref=48efd2b1af048b57c2891527546aedf621ea84ae -->
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_install_is_idempotent_on_identical_content fingerprint=87fc921b24fd75af74ee18291121a61336a1480d8b0b133629f017c95411a5fd body_fp=441d0d41588f01e2add6b3576bcc27fa4e20495dd4b40b11bbcb3784d478771b source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
 ## `test_opencode_install_is_idempotent_on_identical_content(tmp_path: Path)`
 
-Assert that a second `install` call with unchanged files reports `skipped` for every file with a "same contents" detail.
+Assert that a second `install` call with unchanged files reports `skipped` for every file; non-obsolete files carry "same contents" detail, obsolete-cleanup results carry "nothing to clean up".
 <!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_tool_override_install:test_opencode_install_updates_on_drift fingerprint=1598b027eb6c27bf0e21de5bea19063974caf4a976a86c98938412a210e0b5a3 body_fp=984b8039637ed58cb39eee6dd3c8efbb66aeb7bc6f3f5780467c28837580d314 source_ref=48efd2b1af048b57c2891527546aedf621ea84ae -->
@@ -122,10 +139,10 @@ Assert that harnesses with no tool-override mechanism emit `needs_manual_setup` 
 Verify that a single `install` call with both `"opencode"` and `"claude-code"` targets writes all expected files in one pass.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_tool_override_install:test_print_only_does_not_write_anything fingerprint=85337d2516f65896bea397a1cc6afb878de0aaece98e1ed34d6ef5a999af70c3 body_fp=e8b2e5cf8acd2805dcef89abc0b80cc5cf9eeb45a5f558b88e529c25a02f11a0 source_ref=48efd2b1af048b57c2891527546aedf621ea84ae -->
+<!-- trie:section symbol=tests/test_tool_override_install:test_print_only_does_not_write_anything fingerprint=195068d913203efa2f7a33563f5b2d88d92ce6ddea2f47b5768362fab4701a4b body_fp=9a18a0591097373da8a8611d47f4b7859cb9a8deab7a2aada9ba41f9aae48af1 source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
 ## `test_print_only_does_not_write_anything(tmp_path: Path)`
 
-Assert that `print_only=True` writes no files and returns `preview` action with rendered contents in each file's `detail`.
+Assert that `print_only=True` writes no files; new-file results are `preview` with rendered contents in `detail`; obsolete-cleanup results for absent files are `skipped`.
 <!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_tool_override_install:test_dry_run_does_not_write_when_file_already_correct fingerprint=97dd083d6cfe5d0fce2cf74184a64b3a1581bdb594a76cf69b3fe2c183f8370c body_fp=8ef34a599d2c7fe04872f1645ea0e97c963f50ce7884b704d7a3297371018d9d source_ref=48efd2b1af048b57c2891527546aedf621ea84ae -->
@@ -152,4 +169,65 @@ Assert `install` raises `ToolOverrideInstallError` for an unrecognised target na
 Assert `apply_one` returns `needs_manual_setup` for a target with no files, writing nothing to disk.
 
 - Uses `cursor` as the representative no-files target.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_dispatches_on_qname_path_or_show_source fingerprint=4322f9dae672938db27ec89fe5f9bca99aeee684b1fda63ade3688d232d451c7 body_fp=63db6c788cb9c2d69742ced192c2e739c9473ce48fda5c85854fa377f2684708 source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
+## `test_opencode_read_override_dispatches_on_qname_path_or_show_source(tmp_path: Path)`
+
+Assert that `read.ts` contains dispatch markers for all three call modes: qname→`trie read`, path→triefact lookup, and `show_source`→raw source fallback.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_advertises_show_source_arg fingerprint=d377a5b4a375cac89dd0bf1a263a6901952e353291915687374f1447324c8283 body_fp=57f66cff63966e017bcf49ab38013ab7717a93bc2caa0f068de7d767a6099270 source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
+## `test_opencode_read_override_advertises_show_source_arg(tmp_path: Path)`
+
+Assert that the rendered `read.ts` schema includes `show_source`, `offset`, and `limit` arguments.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_qname_detection_excludes_urls_and_drives fingerprint=a31e56fc088c1052530734293a7a78524443e45fac5d3e70153bda3a342a1916 body_fp=7dc38a4f3311ea07fae5bdb7a5ffd31d41f38b18543968171a53619d7d8e8456 source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
+## `test_opencode_read_override_qname_detection_excludes_urls_and_drives(tmp_path: Path)`
+
+Assert that `read.ts`'s `looksLikeQname` regex rejects URLs (`://`) and Windows drive paths (`[A-Za-z]:\`).
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_emits_telemetry_from_typescript fingerprint=7f8c4fed8e631923f71efea317df78da8411d4c17e61bd0e528cb429666e563b body_fp=ce5d26c89676d7a1de0d9a5e5b2b5e28ac57981db43dc6d2c1bfd50c8bad299f source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
+## `test_opencode_read_override_emits_telemetry_from_typescript(tmp_path: Path)`
+
+Assert that the rendered `read.ts` contains TS-side telemetry plumbing for non-qname dispatch paths.
+
+- Checks for `emitTelemetry`, `resolveTelemetryConfig`, `extractTomlSection` helper names.
+- Verifies `"cli_call"` event name, `"read"` tool name, and `mode` field are present.
+- Confirms `TRIE_DEBUG` env var is honoured in the rendered template.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_appends_telemetry_atomically fingerprint=4392ac7d6c58ee986401da04b6a844b5e514681cd33a94fed47d3360195fa4f2 body_fp=96448435d9dcf49ea7ebc4e4560ca851ff2925924cebedb667e7db48219d1dc2 source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
+## `test_opencode_read_override_appends_telemetry_atomically(tmp_path: Path)`
+
+Assert that the rendered `read.ts` uses `appendFile` from `node:fs/promises` for telemetry writes, not a read-modify-write pattern.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_trie_read_obsolete_file_removed_on_apply fingerprint=9b1d5f8b5a30c80327e621908e7e53850a244638429671af0c96104d234129fb body_fp=b4db4fbc574a92d55392bb6903aee33e8f155279a8af7c765692c7bf34f2a3c5 source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
+## `test_opencode_trie_read_obsolete_file_removed_on_apply(tmp_path: Path)`
+
+Verify that re-running install removes the obsolete `trie_read.ts` file superseded by the new `read.ts` override.
+
+- `tmp_path`: fresh temp directory pre-seeded with a stale `trie_read.ts` file.
+- Asserts the stale file is deleted and its cleanup result has action `"updated"` with `"removed obsolete"` in the description.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_obsolete_cleanup_is_noop_on_fresh_install fingerprint=04ec87c8983682f3c5d287e359bb0d00e26fb2b3059928626ca6aa13c0d16dd4 body_fp=bdabe8fc37911d3ca52d41d6b386e5a9baf855a7c498d526dc04cd1ac6d5ebcb source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
+## `test_opencode_obsolete_cleanup_is_noop_on_fresh_install(tmp_path: Path)`
+
+Assert that obsolete-file cleanup on a clean project reports `skipped` with "nothing to clean up" and does not error.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_tool_override_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=87a32003d5858b95154070db9afb9e072ea310d69f06685ac24f94421b6d5034 source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
+## `tests/test_tool_override_install`
+
+Test suite for `trie.tool_override_install`, covering tool-override installation across all supported agent harnesses.
+
+- **opencode**: verifies three files written (`grep.ts`, `read.ts`, `trie_trace.ts`), content correctness, idempotency, drift detection, and obsolete-file cleanup
+- **claude-code**: verifies advisory-only `PreToolUse` hook written to `.claude/hooks/trie-tools.json`
+- **other harnesses**: verifies `needs_manual_setup` result with no files written
+- **preview/dry-run**: verifies neither mode touches disk
+- **error handling**: verifies empty/unknown targets raise `ToolOverrideInstallError`
 <!-- trie:end -->

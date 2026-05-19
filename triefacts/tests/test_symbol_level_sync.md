@@ -1,10 +1,16 @@
 ---
 trie_version: 0.1.1
 source: tests/test_symbol_level_sync.py
-file_fingerprint: 314947ec0ba7fe9251e77a47882cf832d597ea954048a88d19549d75a33f7847
-last_synced_at: '2026-05-16T11:23:45Z'
+file_fingerprint: 736bb3c9afd792ac4c266ce945b679b6ee2ba6a07f01278808b929341c7ce084
+last_synced_at: '2026-05-19T10:39:19Z'
 description: 'Symbol-level sync: regenerate only the symbols actually asked for.'
 defines:
+- kind: module
+  qualified_name: tests/test_symbol_level_sync:__module__
+  lines: 1-363
+- kind: constant
+  qualified_name: tests/test_symbol_level_sync:FIXTURE_DIR
+  lines: 32-32
 - kind: class
   qualified_name: tests/test_symbol_level_sync:FakeClient
   lines: 36-53
@@ -146,4 +152,19 @@ Verify that editing one symbol triggers exactly one LLM call and leaves all othe
 ## `test_underscored_symbols_are_documented_and_can_go_stale(project: Path)`
 
 Verify that underscore-prefixed symbols receive triefact sections and are flagged stale when their source body changes.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_symbol_level_sync:FIXTURE_DIR fingerprint=2635a439793a81128764c32977c9356050865c2ac61f8264769219675508cca2 body_fp=dc2f093cfd6e61b63fd3b80b34b5cf1cf9f78cdb67ad09605257c88859113551 source_ref=c6bef4cdb477ede7938d3d0aea0ef65bc704914b -->
+## `FIXTURE_DIR = Path(__file__).parent / "fixtures" / "tiny_repo"`
+
+Path to the tiny_repo fixture directory used as the test project template.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_symbol_level_sync:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=d9a2f9dd8c447c76fbfc7b68a2445c77e1c8915a737594cdffa9dcdfd14fbf75 source_ref=c6bef4cdb477ede7938d3d0aea0ef65bc704914b -->
+## `tests/test_symbol_level_sync`
+
+Test suite for symbol-level sync contracts: selective regeneration, worklist computation, and end-to-end `run_incremental` behaviour.
+
+- `FakeClient`: deterministic LLM stub returning uniquely-tagged responses per call
+- `project` fixture: copies `tiny_repo` into a temp dir with a valid `trie.toml`
 <!-- trie:end -->

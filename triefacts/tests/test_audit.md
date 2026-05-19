@@ -1,10 +1,22 @@
 ---
 trie_version: 0.1.1
 source: tests/test_audit.py
-file_fingerprint: 24fa5c1a5e386342b2eb6c849c2707c3135fa8c4b074b4b73f26df683955424a
-last_synced_at: '2026-05-18T13:56:38Z'
+file_fingerprint: 2ad0b33ff7ecb7397a9856d5c1d0c34a07f37fd58893ce32afa2ae33a5ba0ae6
+last_synced_at: '2026-05-19T10:37:20Z'
 description: 'Audit summary: JSONL ingestion + rendering.'
 defines:
+- kind: module
+  qualified_name: tests/test_audit:__module__
+  lines: 1-990
+- kind: constant
+  qualified_name: tests/test_audit:FULL_MODEL
+  lines: 42-42
+- kind: constant
+  qualified_name: tests/test_audit:BARE_MODEL
+  lines: 43-43
+- kind: constant
+  qualified_name: tests/test_audit:ANTHROPIC_MODEL
+  lines: 44-44
 - kind: function
   qualified_name: tests/test_audit:_write_log
   lines: 47-51
@@ -22,72 +34,90 @@ defines:
   lines: 90-92
 - kind: function
   qualified_name: tests/test_audit:test_from_log_empty_file_yields_empty_summary
-  lines: 95-105
+  lines: 95-108
 - kind: function
   qualified_name: tests/test_audit:test_from_log_counts_malformed_lines
-  lines: 108-121
+  lines: 111-124
 - kind: function
   qualified_name: tests/test_audit:test_from_log_computes_span
-  lines: 124-137
+  lines: 127-140
 - kind: function
   qualified_name: tests/test_audit:test_mcp_call_buckets_per_tool
-  lines: 145-233
+  lines: 148-236
 - kind: function
   qualified_name: tests/test_audit:test_read_empty_prose_counts_as_empty_result
-  lines: 236-265
+  lines: 239-268
 - kind: function
   qualified_name: tests/test_audit:test_mcp_calls_without_capture_args_still_count
-  lines: 268-288
+  lines: 271-291
+- kind: function
+  qualified_name: tests/test_audit:test_cli_call_aggregation_buckets_per_tool
+  lines: 304-369
+- kind: function
+  qualified_name: tests/test_audit:test_cli_call_and_mcp_call_are_separate_streams
+  lines: 372-404
+- kind: function
+  qualified_name: tests/test_audit:test_to_dict_carries_cli_section
+  lines: 407-443
+- kind: function
+  qualified_name: tests/test_audit:test_read_mode_breakdown_aggregates_from_cli_call_events
+  lines: 446-499
+- kind: function
+  qualified_name: tests/test_audit:test_read_events_without_mode_field_count_as_qname
+  lines: 502-526
 - kind: function
   qualified_name: tests/test_audit:test_sync_aggregation_totals_and_cost
-  lines: 296-348
+  lines: 534-586
 - kind: function
   qualified_name: tests/test_audit:test_sync_with_legacy_bare_model_name_still_costs
-  lines: 351-373
+  lines: 589-611
 - kind: function
   qualified_name: tests/test_audit:test_sync_with_unknown_model_records_zero_cost
-  lines: 376-395
+  lines: 614-633
 - kind: function
   qualified_name: tests/test_audit:test_retries_grouped_by_reason
-  lines: 403-432
+  lines: 641-670
 - kind: function
   qualified_name: tests/test_audit:test_zero_retries_when_no_events
-  lines: 435-438
+  lines: 673-676
 - kind: function
   qualified_name: tests/test_audit:test_cli_invocations_counted
-  lines: 446-458
+  lines: 684-696
 - kind: function
   qualified_name: tests/test_audit:_render_to_string
-  lines: 466-471
+  lines: 704-709
 - kind: function
   qualified_name: tests/test_audit:test_render_single_summary_includes_counts
-  lines: 474-504
+  lines: 712-742
 - kind: function
   qualified_name: tests/test_audit:test_render_empty_log_does_not_crash
-  lines: 507-512
+  lines: 745-750
 - kind: function
   qualified_name: tests/test_audit:test_render_comparison_includes_both_paths
-  lines: 515-563
+  lines: 753-801
+- kind: function
+  qualified_name: tests/test_audit:test_render_comparison_includes_cli_call_diff
+  lines: 804-863
 - kind: function
   qualified_name: tests/test_audit:test_cli_audit_help_lists_log_option
-  lines: 571-575
+  lines: 871-875
 - kind: function
   qualified_name: tests/test_audit:test_cli_audit_runs_against_explicit_log
-  lines: 578-583
+  lines: 878-883
 - kind: function
   qualified_name: tests/test_audit:test_cli_audit_json_output
-  lines: 586-606
+  lines: 886-906
 - kind: function
   qualified_name: tests/test_audit:test_cli_audit_compare_two_logs
-  lines: 609-645
+  lines: 909-945
 - kind: function
   qualified_name: tests/test_audit:test_cli_audit_missing_log_exits_nonzero
-  lines: 648-651
+  lines: 948-951
 - kind: function
   qualified_name: tests/test_audit:test_summarise_directly_with_event_list
-  lines: 659-689
+  lines: 959-989
 incoming_refs: 0
-outgoing_refs: 23
+outgoing_refs: 35
 ---
 <!-- trie:section symbol=tests/test_audit:_write_log fingerprint=a49508ce8be7dce58721d370cb6b7acb6cc781d292b1e5962eb6c44d3ccb8278 body_fp=08ed690e43e8bb6e3ac012401caafee8453a888205fd3ff3f84303b9eb4d9e52 source_ref=1016ef16cd8f0c58806f1645f82b8759c5077b48 -->
 ## `_write_log(path: Path, records: list[dict]) -> None`
@@ -119,10 +149,10 @@ Verify `Event.from_json` returns `None` for empty strings, whitespace, invalid J
 Assert that `AuditSummary.from_log` raises `FileNotFoundError` for a non-existent path.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_audit:test_from_log_empty_file_yields_empty_summary fingerprint=65fcd36f698610843c6e9abec61e6318a45c826a1d858d882e45190253dd51ae body_fp=63b57cbff7dd4a688876a2727f6dd6f6055c5a1709a558f6d1e62c8c9ed64fb4 source_ref=1016ef16cd8f0c58806f1645f82b8759c5077b48 -->
+<!-- trie:section symbol=tests/test_audit:test_from_log_empty_file_yields_empty_summary fingerprint=7a9c7b54c7f993208b60945afadd8147f60b8144ff766301db64b6c4d99ec046 body_fp=06b032059b95bae064372fd8ad21a2d4a914be1b1d387360b6e5a6ea68a3677f source_ref=cb94ee99a2944523034daac6d7b1884723dd84ec -->
 ## `test_from_log_empty_file_yields_empty_summary(tmp_path: Path)`
 
-Assert that parsing a zero-byte JSONL file produces an `AuditSummary` with all counters at zero/None.
+Assert that parsing a zero-byte JSONL file produces an `AuditSummary` with all counters at zero/None, including an empty `cli` bucket.
 <!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_audit:test_from_log_counts_malformed_lines fingerprint=987feaff79fa266aca1552d0a1fa731fc0f28230d77dd418cf153ab2cc1f0412 body_fp=0e0013d76fe2a4a6953d4b888e5d0a4e75e34ec367d883c2f126e4a6c0897215 source_ref=1016ef16cd8f0c58806f1645f82b8759c5077b48 -->
@@ -260,4 +290,73 @@ Verify `_summarise` correctly buckets `mcp_call` events when called directly wit
 ## `test_read_empty_prose_counts_as_empty_result(tmp_path: Path)`
 
 Assert that a `read` MCP call returning `prose_chars=0` increments `empty_result_count`, not `error_count`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_audit:FULL_MODEL fingerprint=ff1e35768cf136d376f0ea56a2898853998578f19d1f3d483d687562d9caf7e2 body_fp=426f39aebfa8d68f460bb27c88ca49f34d6f621735715f5a424f8d27ca470bf7 source_ref=cb94ee99a2944523034daac6d7b1884723dd84ec -->
+## `FULL_MODEL = "anthropic/claude-sonnet-4-6"`
+
+Test constant representing the full provider-prefixed model ID for cost-routing tests.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_audit:BARE_MODEL fingerprint=b4adc561ff544880ff4d1080888606d88266fcf67c4a3a7a5a8c746f837b6009 body_fp=738f0a8ffb959a1f949cb93e8580322a5c0b50d3de32eae3d58b79cf9c317481 source_ref=cb94ee99a2944523034daac6d7b1884723dd84ec -->
+## `BARE_MODEL = "claude-sonnet-4-6"`
+
+Legacy bare model name used to test cost calculation when log entries lack the provider prefix.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_audit:ANTHROPIC_MODEL fingerprint=44b085589a51447c608dba58dc112c8b95ef64bdf829ad7bb15248e2a566b787 body_fp=08500f0db5f7973f20d0b4360c5a30e4ff70a34120d531cbfe40e8dc3d7c0e68 source_ref=cb94ee99a2944523034daac6d7b1884723dd84ec -->
+## `ANTHROPIC_MODEL = FULL_MODEL`
+
+Alias for `FULL_MODEL` used as the default model identifier in sync test fixtures.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_audit:test_cli_call_aggregation_buckets_per_tool fingerprint=9173ee008fb26aeb11a2ab9b499f0c944df0963b36fd9edbb6d2ea474b657519 body_fp=bab7eed64e14b20f5130adf779ef9ec0a8736a7cecdf36a6930db8aa50f7f075 source_ref=cb94ee99a2944523034daac6d7b1884723dd84ec -->
+## `test_cli_call_aggregation_buckets_per_tool(tmp_path: Path)`
+
+Verify that mixed `cli_call` events across grep, read, and trace tools populate `summary.cli` with correct per-tool counts, empty-result tracking, and qname attribution.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_audit:test_cli_call_and_mcp_call_are_separate_streams fingerprint=2066288cbb5d2b0b96a62cd7b0b160a49830bdf1aa4b274efff01523a67a203c body_fp=cb684b8c1a728066bc744603734775944308e42bf80522974d1f2460937a9fc8 source_ref=cb94ee99a2944523034daac6d7b1884723dd84ec -->
+## `test_cli_call_and_mcp_call_are_separate_streams(tmp_path: Path)`
+
+Assert that `mcp_call` and `cli_call` events with the same tool name populate `summary.mcp` and `summary.cli` independently, without cross-contamination.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_audit:test_to_dict_carries_cli_section fingerprint=4169576f5cf154f67c1b7b72d029a29a767cf9ccd66b92bdf2d347dc95a226ce body_fp=97387e73f112a8cebd14912c14e083ecaed84bfde524ae35b012387fdfaeead4 source_ref=cb94ee99a2944523034daac6d7b1884723dd84ec -->
+## `test_to_dict_carries_cli_section(tmp_path: Path)`
+
+Verify that `AuditSummary.to_dict()` includes a `cli` key with per-tool stats matching the shape of the `mcp` section.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_audit:test_read_mode_breakdown_aggregates_from_cli_call_events fingerprint=e414250babf18df163e8874242e6dccc4b4af335f5a8b29d288a047c7ae2c0e8 body_fp=ad9de1657eea6d53da5f3ea048b08e5112250a6e627c6994586f02253bf8ef5a source_ref=cb94ee99a2944523034daac6d7b1884723dd84ec -->
+## `test_read_mode_breakdown_aggregates_from_cli_call_events(tmp_path: Path)`
+
+Verify that `cli_call` events with a `mode` field are rolled into `McpCallStats.modes` keyed by mode name.
+
+- Emits four `cli_call` events: two `triefact`, one `source`, one `show_source`.
+- Asserts `summary.cli["read"].modes == {"triefact": 2, "source": 1, "show_source": 1}`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_audit:test_read_events_without_mode_field_count_as_qname fingerprint=239e047d3a3191b56c46c4400027a51f3630bff20b5ea2ab1ffebdcda1c9a5eb body_fp=577e94978926fc7209b0ee9e454ac0fb16d7b898fedf6b4658bd49eec2d4619a source_ref=cb94ee99a2944523034daac6d7b1884723dd84ec -->
+## `test_read_events_without_mode_field_count_as_qname(tmp_path: Path)`
+
+Assert that `cli_call` events lacking a `mode` field are attributed to `qname` in `McpCallStats.modes`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_audit:test_render_comparison_includes_cli_call_diff fingerprint=8f671d41f58ef1b6381d0a7f96c2b0bd82ae69a85673a012940589d463ccd028 body_fp=af0f397f350732f58edaef54397f7348fdcc02254508217bcec0649bc0e97698 source_ref=cb94ee99a2944523034daac6d7b1884723dd84ec -->
+## `test_render_comparison_includes_cli_call_diff(tmp_path: Path)`
+
+Verify that `render_comparison` shows MCP and CLI call surfaces in separate tables with correct deltas.
+
+- Baseline has one MCP grep; candidate adds one CLI grep, leaving MCP count unchanged.
+- Asserts both "MCP calls" and "CLI calls" headings appear and `+1` reflects only the CLI delta.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_audit:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=bcf9eb9d1f0e2d89472329ad5241b23797e2059f0c353d3f3f77489b82a6bcd5 source_ref=cb94ee99a2944523034daac6d7b1884723dd84ec -->
+## `tests/test_audit`
+
+Test suite for JSONL audit log ingestion and rendering in `trie.audit`.
+
+- Covers `Event.from_json`, `AuditSummary.from_log`, `_summarise`, `render`, `render_comparison`, and the `audit` CLI command.
+- Verifies per-tool MCP and CLI call bucketing, sync cost, retry grouping, span computation, malformed-line degradation, and comparison delta rendering.
 <!-- trie:end -->

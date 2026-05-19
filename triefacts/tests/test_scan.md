@@ -1,9 +1,12 @@
 ---
 trie_version: 0.1.1
 source: tests/test_scan.py
-file_fingerprint: d0035bcdb5ccc4b3f9c4748e45283ac972f74f2285893cacf984dd70abeac8ce
-last_synced_at: '2026-05-15T13:02:12Z'
+file_fingerprint: f794ea0f1d8f4b2ed640b04f1a12f0b40865a5ffefda17539c101bc5df04875f
+last_synced_at: '2026-05-19T10:39:05Z'
 defines:
+- kind: module
+  qualified_name: tests/test_scan:__module__
+  lines: 1-213
 - kind: function
   qualified_name: tests/test_scan:project
   lines: 13-28
@@ -104,4 +107,10 @@ Verify that tightening the scope exclusion removes a previously-scanned file fro
 ## `_scan(project: Path) -> tuple[Store, object]`
 
 Load config and store from a project path, run `scan_project`, and return the store and scan result.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_scan:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=54ea1c965132ef5ddac785c4b9e38f88d506bfcb72f0cbca19b9efb4dc7cf0ac source_ref=037ef0c2f8c3c2abca7fa9413c687814c6ef1c2b -->
+## `tests/test_scan`
+
+Integration tests for `scan_project`, covering first scan, rescans, file changes, additions, removals, exclusions, and cross-file/intra-file edge population.
 <!-- trie:end -->

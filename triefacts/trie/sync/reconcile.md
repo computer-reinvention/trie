@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: trie/sync/reconcile.py
 file_fingerprint: f08a21b3a2d39b28de540438b9631c2a6351b6e31b3d79bce8e05db59874a525
-last_synced_at: '2026-05-14T17:31:34Z'
+last_synced_at: '2026-05-19T10:42:11Z'
 defines:
+- kind: module
+  qualified_name: trie/sync/reconcile:__module__
+  lines: 1-61
 - kind: function
   qualified_name: trie/sync/reconcile:find_orphan_triefacts
   lines: 10-52
@@ -26,4 +29,13 @@ Return absolute paths of trie-owned triefact `.md` files whose corresponding sou
 ## `remove_orphan_triefacts(*, project_root: Path, config: Config) -> list[Path]`
 
 Delete trie-owned triefact files whose source no longer exists; return deleted paths.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/reconcile:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=f1b7d3a7c00abca3f571f9bc76587234eb0f8ab0f6338aefbd738cdeab8321e2 source_ref=9e576c94de69bc9bed35694ec4c6df87791394e6 -->
+## `reconcile`
+
+Identify and remove trie-owned triefact files whose source symbols no longer exist.
+
+- **`find_orphan_triefacts`**: returns absolute paths of stale trie-owned `.md` files
+- **`remove_orphan_triefacts`**: deletes those files and returns their paths
 <!-- trie:end -->

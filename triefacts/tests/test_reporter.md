@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: tests/test_reporter.py
 file_fingerprint: d6f396d10b0e62e4fbf237881ec75c8c98d6135f86e045160be8f316bdb164cf
-last_synced_at: '2026-05-15T13:02:09Z'
+last_synced_at: '2026-05-19T10:39:02Z'
 defines:
+- kind: module
+  qualified_name: tests/test_reporter:__module__
+  lines: 1-97
 - kind: function
   qualified_name: tests/test_reporter:_make_reporter
   lines: 12-15
@@ -35,7 +38,7 @@ defines:
   qualified_name: tests/test_reporter:test_root_version_still_works_with_verbosity_flags
   lines: 92-96
 incoming_refs: 0
-outgoing_refs: 9
+outgoing_refs: 11
 ---
 <!-- trie:section symbol=tests/test_reporter:test_mute_suppresses_info_and_success fingerprint=f63e90635d0ad62f227a9b8d564b4d187a86cc47cd33366b448730a2d327eca7 body_fp=a5c95c6ff7d875b5bb40c87d246b4e7eae8f25cd5eb3db0629f60bc0e5587fca source_ref=df741a005acc31e764a566519cdb2c64bda589ef -->
 ## `test_mute_suppresses_info_and_success()`
@@ -95,4 +98,10 @@ Verify that `--version` succeeds and outputs `"trie"` when combined with `-v`.
 ## `_make_reporter(level: Verbosity) -> tuple[Reporter, io.StringIO]`
 
 Construct a `Reporter` wired to an in-memory buffer for test assertions.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_reporter:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=f73a39cf1b585f2bdfd3534e113cb8651b940f8a996188d94617ffabb3d2d6b6 source_ref=df741a005acc31e764a566519cdb2c64bda589ef -->
+## `tests/test_reporter`
+
+Test suite for `Reporter` verbosity levels, `ProgressHandle` output, and CLI verbosity flag plumbing.
 <!-- trie:end -->

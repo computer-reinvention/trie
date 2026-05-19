@@ -2,10 +2,16 @@
 trie_version: 0.1.1
 source: trie/freshness.py
 file_fingerprint: 6ba5cf8f15f23143c865e5e361d1a37583fea064fb26b107a3f97bb650a25b76
-last_synced_at: '2026-05-16T12:25:49Z'
+last_synced_at: '2026-05-19T10:40:39Z'
 description: 'Freshness gate: keep the graph + triefact tree current with respect
   to disk and HEAD.'
 defines:
+- kind: module
+  qualified_name: trie/freshness:__module__
+  lines: 1-348
+- kind: constant
+  qualified_name: trie/freshness:STAMP_FILENAME
+  lines: 49-49
 - kind: class
   qualified_name: trie/freshness:NotAGitRepoError
   lines: 52-60
@@ -166,4 +172,21 @@ Shared implementation backing both `ensure_fresh_before_turn` and `ensure_fresh_
 - `no_stamp` / `head_moved`: rebuilds graph via `scan_project`, no LLM.
 - `mtimes_moved`: runs full `run_incremental` (graph + triefact prose, LLM as needed).
 - `unchanged`: returns immediately without I/O or LLM calls.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/freshness:STAMP_FILENAME fingerprint=aac8741000f280bd63bac926ffebec9cbf71b4495987943f78ec277e1b576db7 body_fp=9f17a4fdc4005fca371706a1454b4d629fda232eedc4ed20c66321a0ebd87100 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+## `STAMP_FILENAME = "graph.head"`
+
+Filename of the per-checkout freshness stamp stored under `.trie/`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/freshness:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=f7bee85abbb8ccbe9217945fce1258fb1b42256711dfa06f94a2538e0f9c54cc source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+## `freshness`
+
+Keep the dependency graph and triefact tree current with respect to disk and HEAD across agent turns and `git pull` events.
+
+- `ensure_fresh_before_turn`: cheap probe at turn start; detects HEAD or mtime drift.
+- `ensure_fresh_after_turn`: sweep at turn end; catches files the agent just edited.
+- Both delegate to `_ensure_fresh`, which calls `run_incremental` only for local edits (`mtimes_moved`); other stale states rebuild the graph without invoking the LLM.
+- Stamp file at `.trie/graph.head` records HEAD SHA and per-file mtimes; missing or malformed stamp triggers a full refresh.
 <!-- trie:end -->

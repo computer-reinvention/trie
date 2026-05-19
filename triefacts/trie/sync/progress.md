@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: trie/sync/progress.py
 file_fingerprint: 9d32e2b8cd47ef1fc2895a61b413751e82e465eef96ca2f9b143ec43ebc0075e
-last_synced_at: '2026-05-16T11:47:06Z'
+last_synced_at: '2026-05-19T10:42:09Z'
 defines:
+- kind: module
+  qualified_name: trie/sync/progress:__module__
+  lines: 1-36
 - kind: class
   qualified_name: trie/sync/progress:ProgressCallback
   lines: 9-21
@@ -28,6 +31,9 @@ defines:
 - kind: method
   qualified_name: trie/sync/progress:_NullProgress.on_skip
   lines: 31-32
+- kind: constant
+  qualified_name: trie/sync/progress:NULL_PROGRESS
+  lines: 35-35
 incoming_refs: 3
 outgoing_refs: 2
 ---
@@ -88,4 +94,19 @@ No-op implementation of the `on_done` progress hook.
 ## `on_skip(self, rel_path: str, reason: str) -> None`
 
 No-op implementation of the skip callback; does nothing.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/progress:NULL_PROGRESS fingerprint=f5526a45db3aeafec3262f11b51138473623ea67b987dab1455047e759350b0c body_fp=19d81d4eb713c1fed58e120e1f3325a1bf8aaaec5f9b8f12533bc104e9fa776e source_ref=3711cd8c6acb475bbd3b2400719e537dec17211d -->
+## `NULL_PROGRESS: ProgressCallback`
+
+No-op `ProgressCallback` singleton; use when progress reporting is unwanted.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/progress:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=c79bd13d935ba8fa1b4f74b3b1f2dbf9d3a14a33235d09262cde1b8bb6196e6f source_ref=3711cd8c6acb475bbd3b2400719e537dec17211d -->
+## `progress`
+
+Define the `ProgressCallback` protocol and a no-op implementation for per-file sync progress hooks.
+
+- `ProgressCallback`: runtime-checkable protocol; implement to receive sync lifecycle events.
+- `NULL_PROGRESS`: singleton no-op instance satisfying `ProgressCallback`; use as default.
 <!-- trie:end -->

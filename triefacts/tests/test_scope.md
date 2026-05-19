@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: tests/test_scope.py
 file_fingerprint: a51ea69b9e98556ed79b176802dbd1c3e0393f6eb0f02f61cb7a279ce4cf309e
-last_synced_at: '2026-05-18T13:58:08Z'
+last_synced_at: '2026-05-19T10:39:07Z'
 defines:
+- kind: module
+  qualified_name: tests/test_scope:__module__
+  lines: 1-81
 - kind: function
   qualified_name: tests/test_scope:_touch
   lines: 9-11
@@ -77,4 +80,10 @@ Assert that `discover_files` returns paths in sorted order.
 ## `_touch(p: Path, content: str = "") -> None`
 
 Create a file at `p`, making parent directories as needed, with optional text content.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_scope:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=ed31947f7697f52cced1c61c0b66410859f75bff3929708901e8fb0579247b99 source_ref=bd44eb44cf2776e5fc7c1af37e5a76bd75db4836 -->
+## `__module__`
+
+Tests for `discover_files` covering include/exclude glob patterns, default exclusions, empty results, and sort order.
 <!-- trie:end -->

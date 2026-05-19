@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: trie/sync/cascade.py
 file_fingerprint: a2176696d2fee6d099b05d37586bee9de5c5a369112381c68408097ca450fdfc
-last_synced_at: '2026-05-15T13:07:19Z'
+last_synced_at: '2026-05-19T10:41:57Z'
 defines:
+- kind: module
+  qualified_name: trie/sync/cascade:__module__
+  lines: 1-153
 - kind: class
   qualified_name: trie/sync/cascade:CascadeResult
   lines: 11-45
@@ -35,4 +38,13 @@ Compute the cascade closure for a set of changed files by walking inbound edges 
 - `hub_threshold`: symbols with more inbound references than this are not expanded.
 - `store`: graph store providing symbol-to-file mappings and inbound reference counts.
 - Returns files sorted alphabetically; seed files always included with hop 0; result now includes per-symbol sets `cascaded_qnames`, `hop_by_qname`, and `file_by_cascaded_qname`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/cascade:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=5c94138ec4b801abf44854dda09199e8ea5fabe7697b1320f9ebbf7cb3002525 source_ref=c1c2b9ed991a072e6f2783f4adee6e8e49fa2f32 -->
+## `cascade`
+
+Compute file and symbol cascade closure from a set of changed source files using BFS over inbound reference edges.
+
+- `CascadeResult`: frozen dataclass holding affected files, cascaded qnames, and hop distances
+- `compute_cascade`: BFS walk with hub-guard and configurable depth; returns a `CascadeResult`
 <!-- trie:end -->

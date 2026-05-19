@@ -1,10 +1,13 @@
 ---
 trie_version: 0.1.1
 source: tests/test_freshness.py
-file_fingerprint: 9ace346cd0997f6a8b7279fe9676d7c41b5ef074c188ce511a0612a66f5a4fc9
-last_synced_at: '2026-05-16T12:25:21Z'
+file_fingerprint: cad3bdaad74c6acc7a9774080260184b0f50138c37bb2d7fce5f3696d4db47b3
+last_synced_at: '2026-05-19T10:38:00Z'
 description: Tests for the turn-boundary freshness gate.
 defines:
+- kind: module
+  qualified_name: tests/test_freshness:__module__
+  lines: 1-406
 - kind: function
   qualified_name: tests/test_freshness:_git
   lines: 46-48
@@ -274,4 +277,14 @@ Assert that editing a file without committing triggers an incremental LLM-backed
 
 - `result.incremental` is not `None`, confirming `run_incremental` ran rather than scan-only.
 - HEAD in the stamp is unchanged because no commit was made.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_freshness:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=488d7737d3ec24cefb8eb28985ddda925a28a6bb935bceb38d9bed28300496b8 source_ref=1d2ba26c93a20762f516e32305df483e6603bae7 -->
+## `tests/test_freshness`
+
+Test suite for the turn-boundary freshness gate covering all four states: fresh, no_stamp, head_moved, and mtimes_moved.
+
+- `project` fixture: real git repo with two Python source files and a `trie.toml`
+- `FakeClient`: deterministic LLM stand-in that counts calls without hitting an API
+- Non-git repos must raise `NotAGitRepoError` rather than degrade silently
 <!-- trie:end -->

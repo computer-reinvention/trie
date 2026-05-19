@@ -2,15 +2,42 @@
 trie_version: 0.1.1
 source: trie/docs_install.py
 file_fingerprint: 778f367d7e715af47295fd5d06403d79910ec87e94a14d3813afc9b7c1b3bd90
-last_synced_at: '2026-05-18T13:26:13Z'
+last_synced_at: '2026-05-19T10:40:33Z'
 description: Project-local agent documentation install.
 defines:
+- kind: module
+  qualified_name: trie/docs_install:__module__
+  lines: 1-434
+- kind: constant
+  qualified_name: trie/docs_install:Action
+  lines: 35-35
 - kind: class
   qualified_name: trie/docs_install:DocsInstallError
   lines: 38-39
+- kind: constant
+  qualified_name: trie/docs_install:POINTER_MARKER
+  lines: 46-46
+- kind: constant
+  qualified_name: trie/docs_install:POINTER_END_MARKER
+  lines: 47-47
 - kind: function
   qualified_name: trie/docs_install:_pointer_line
   lines: 50-64
+- kind: constant
+  qualified_name: trie/docs_install:POINTER_LINE
+  lines: 69-69
+- kind: constant
+  qualified_name: trie/docs_install:POINTER_BLOCK
+  lines: 70-70
+- kind: constant
+  qualified_name: trie/docs_install:AGENT_DOC_FILES
+  lines: 76-76
+- kind: constant
+  qualified_name: trie/docs_install:TRIE_DOC_FILENAME
+  lines: 82-82
+- kind: constant
+  qualified_name: trie/docs_install:_GENERATED_NOTICE
+  lines: 88-91
 - kind: class
   qualified_name: trie/docs_install:DocsApplyResult
   lines: 95-106
@@ -163,4 +190,62 @@ Build a Markdown footer listing tool aliases for each harness beyond the primary
 Build the marker-fenced pointer block with tool names rendered for the given harness target.
 
 - **`target_name`**: MCP harness slug; `None` falls back to bare unprefixed tool names.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/docs_install:Action fingerprint=03abe0d9a9f55bacd9af247ac370a3359e892a9cc531f7c6123593afcbcd3922 body_fp=7b06568835c7fdf21e0c08863d7f06941f4c01e4bafa19edb7d81e1c5c1d50db source_ref=f33ef49ae65ead2b16b114b5450c290ad20aff99 -->
+## `Action = Literal["created", "updated", "skipped", "preview", "error"]`
+
+Type alias for the set of outcomes a single file operation can produce.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/docs_install:POINTER_MARKER fingerprint=c4efd8cc61a968603adee820add608f85f69816fa09687175778245d60136317 body_fp=fc3343eb73dee919ca79a4af1d70cb3cecc567bf1a76b7e3ed12ed7eb2e3796d source_ref=f33ef49ae65ead2b16b114b5450c290ad20aff99 -->
+## `POINTER_MARKER = "<!-- trie:docs (added by \`trie setup\`) -->"`
+
+Opening HTML-comment fence that delimits the trie pointer block in `AGENTS.md` / `CLAUDE.md`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/docs_install:POINTER_END_MARKER fingerprint=b09e750c1fcaebd68ee51bd3c1e225fe1e8252883c5367d509be322eae405541 body_fp=d726cb7c5da61b84c2166ecf7da7f48011a9c7b103ece1a535a173db0ff46018 source_ref=f33ef49ae65ead2b16b114b5450c290ad20aff99 -->
+## `POINTER_END_MARKER = "<!-- end trie:docs -->"`
+
+Closing fence that marks the end of the trie pointer block in agent doc files.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/docs_install:POINTER_LINE fingerprint=328dcedda39c4ca57c31c9db897a527267b7f9fb0962a44b91fae9076d23ef4e body_fp=b4ba56f2dd36b3a1db0d2ccd1e94b9427d1095c7013f64d97f77ff5b8b49a0fd source_ref=f33ef49ae65ead2b16b114b5450c290ad20aff99 -->
+## `POINTER_LINE`
+
+Default pointer line rendered with bare (unprefixed) tool names `grep`, `read`, `trace`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/docs_install:POINTER_BLOCK fingerprint=79ae21e9ab842d77a20345fa0a2336d634ddc9ab79fe1cfa124d897f9adb2746 body_fp=1ceb634c0c03eca2b30feac233b7809199c4eb40594d28aa98c75f873e73c679 source_ref=f33ef49ae65ead2b16b114b5450c290ad20aff99 -->
+## `POINTER_BLOCK`
+
+Marker-fenced block combining `POINTER_MARKER`, `POINTER_LINE`, and `POINTER_END_MARKER` for appending to agent doc files.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/docs_install:AGENT_DOC_FILES fingerprint=de7b23421580076632901b01f52eff52a9fb070a8ce8384d7b0b0947f6bb232a body_fp=13e87b2dfd130d979a67a7b13bbecfc0925b6b8e61d270632d832abccaa3de9e source_ref=f33ef49ae65ead2b16b114b5450c290ad20aff99 -->
+## `AGENT_DOC_FILES: tuple[str, ...] = ("AGENTS.md", "CLAUDE.md")`
+
+Agent doc filenames that receive the trie pointer block when they exist at project root.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/docs_install:TRIE_DOC_FILENAME fingerprint=cf3b380a179b16a13b4d4773331632abe1304ccbd8860a1c8fbd5eb7b771d1fd body_fp=e5e277f9351016f5f9ff1f8d7561b0b22baa4fbe3fd15dffe111a6b1a92fbe75 source_ref=f33ef49ae65ead2b16b114b5450c290ad20aff99 -->
+## `TRIE_DOC_FILENAME = "TRIE.md"`
+
+Filename of the generated trie documentation file written at the project root.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/docs_install:_GENERATED_NOTICE fingerprint=26b53384195b99f1af3f012cacde75b85176a680c910a7b3edace3b9366b3ea2 body_fp=a35c4172d8e966485c2b7ef2ccab69a3893e7db0b03381ffccd9c37619b51404 source_ref=f33ef49ae65ead2b16b114b5450c290ad20aff99 -->
+## `_GENERATED_NOTICE`
+
+HTML comment prepended to `TRIE.md` warning readers the file is generated and hand-edits will be overwritten.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/docs_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=328dc02e35e09141caf882fcdae75c197b86e5df7e5b5a093dde7e590cedf01c source_ref=f33ef49ae65ead2b16b114b5450c290ad20aff99 -->
+## `docs_install`
+
+Materialise `TRIE.md` at the project root and inject a pointer line into `AGENTS.md`/`CLAUDE.md` so agents discover trie's navigation tools.
+
+- **`TRIE.md`**: generated artefact, overwritten unconditionally on re-run.
+- **`AGENTS.md`/`CLAUDE.md`**: only updated if they already exist; never created.
+- Both writes are idempotent; marker fences isolate the managed block.
 <!-- trie:end -->

@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: tests/test_store.py
 file_fingerprint: afbabafdabc5fae36b75de2bc15153adc4a70c97d1b0bf6cf9079460d646fab0
-last_synced_at: '2026-05-18T13:58:11Z'
+last_synced_at: '2026-05-19T10:39:15Z'
 defines:
+- kind: module
+  qualified_name: tests/test_store:__module__
+  lines: 1-131
 - kind: function
   qualified_name: tests/test_store:store
   lines: 12-15
@@ -38,7 +41,7 @@ defines:
   qualified_name: tests/test_store:test_transaction_rolls_back_on_error
   lines: 123-130
 incoming_refs: 0
-outgoing_refs: 7
+outgoing_refs: 8
 ---
 <!-- trie:section symbol=tests/test_store:store fingerprint=c5420fff5b078bc5c2e95aff6471bdee364032edad5dee901f70ebfc07cd85eb body_fp=523177dba4cdc547dc64909b312d8ee926bb54611d2b750dfe016ad5f67a4e7d source_ref=a20694337904925106e4ac6f4c15d03a2a3e5038 -->
 ## `store(tmp_path: Path) -> Store`
@@ -106,4 +109,10 @@ Verify that `Store` used as a context manager closes and persists data, readable
 ## `test_transaction_rolls_back_on_error(store: Store)`
 
 Verify that `Store.transaction()` rolls back all changes when an exception is raised mid-transaction.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_store:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a6559c9b120ab1474d8b294dbf5dac2551c43337a84d8f47fd1aac4460842e7c source_ref=839b1a45c99e07b791659b6edeac04dc61a4910c -->
+## `tests/test_store`
+
+Test suite for `Store` persistence, covering schema versioning, file upsert/delete, symbol replacement, stats, context-manager cleanup, and transaction rollback.
 <!-- trie:end -->

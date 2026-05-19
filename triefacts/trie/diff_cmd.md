@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: trie/diff_cmd.py
 file_fingerprint: 4000181a96da75377e49dd956d62958fee83874a5a2404378edb21fb0e9d64cc
-last_synced_at: '2026-05-16T11:46:50Z'
+last_synced_at: '2026-05-19T10:40:24Z'
 defines:
+- kind: module
+  qualified_name: trie/diff_cmd:__module__
+  lines: 1-146
 - kind: class
   qualified_name: trie/diff_cmd:FileDiff
   lines: 17-22
@@ -39,4 +42,14 @@ Regenerate stale triefacts into `.trie/preview/` and return unified diffs agains
 - `budget_usd`: stops processing new files once cumulative cost exceeds this value.
 - `limit`: caps the number of diffs produced; remaining files are skipped.
 - `files_skipped_no_budget`: counts files skipped due to limit, budget, or missing source.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/diff_cmd:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=586ea30409e26fb99747b440b3174c24a8895ae6fcf275debd0614c855291e73 source_ref=6f05daac303d962947af10d1a505706948b32064 -->
+## `diff_cmd`
+
+Regenerate stale triefacts into `.trie/preview/` and produce unified diffs for review.
+
+- `FileDiff`: pairs a source path with its canonical/preview paths and diff text
+- `DiffResult`: aggregates per-file diffs, skip count, and total cost
+- `diff_project`: main entry point; respects budget, limit, and progress callbacks
 <!-- trie:end -->

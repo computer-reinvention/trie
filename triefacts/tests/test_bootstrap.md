@@ -1,9 +1,12 @@
 ---
 trie_version: 0.1.1
 source: tests/test_bootstrap.py
-file_fingerprint: 1b3cc4748e30ace4478f8a8eae2c8b18e47b0d8d1a129e149b03b7403080f397
-last_synced_at: '2026-05-16T11:23:17Z'
+file_fingerprint: 09fa3129c21296ad8624d2eb070a9f5722bfe83e469325c6b10879695276f69c
+last_synced_at: '2026-05-19T10:37:24Z'
 defines:
+- kind: module
+  qualified_name: tests/test_bootstrap:__module__
+  lines: 1-362
 - kind: class
   qualified_name: tests/test_bootstrap:FakeClient
   lines: 19-34
@@ -24,51 +27,51 @@ defines:
   lines: 64-77
 - kind: function
   qualified_name: tests/test_bootstrap:test_plan_excludes_files_with_no_documentable_symbols
-  lines: 80-101
+  lines: 80-115
 - kind: function
   qualified_name: tests/test_bootstrap:test_plan_with_unknown_model_zero_cost
-  lines: 104-113
+  lines: 118-127
 - kind: function
   qualified_name: tests/test_bootstrap:test_plan_only_files_restricts_worklist
-  lines: 116-128
+  lines: 130-142
 - kind: function
   qualified_name: tests/test_bootstrap:test_plan_only_files_empty_yields_empty_plan
-  lines: 131-141
+  lines: 145-155
 - kind: function
   qualified_name: tests/test_bootstrap:test_run_bootstrap_respects_limit
-  lines: 144-165
+  lines: 158-179
 - kind: function
   qualified_name: tests/test_bootstrap:test_run_bootstrap_respects_budget
-  lines: 168-191
+  lines: 182-205
 - kind: function
   qualified_name: tests/test_bootstrap:test_run_bootstrap_unbounded_processes_all
-  lines: 194-215
+  lines: 208-229
 - kind: function
   qualified_name: tests/test_bootstrap:test_cli_plan_makes_no_message_calls
-  lines: 218-227
+  lines: 232-241
 - kind: function
   qualified_name: tests/test_bootstrap:test_cli_plan_outside_project_errors
-  lines: 230-243
+  lines: 244-257
 - kind: function
   qualified_name: tests/test_bootstrap:test_cli_first_run_sync_requires_budget_or_limit_non_interactive
-  lines: 246-256
+  lines: 260-270
 - kind: function
   qualified_name: tests/test_bootstrap:test_cli_first_run_sync_with_limit_succeeds
-  lines: 259-266
+  lines: 273-280
 - kind: function
   qualified_name: tests/test_bootstrap:test_cli_sync_all_forces_full_pass
-  lines: 269-281
+  lines: 283-295
 - kind: function
   qualified_name: tests/test_bootstrap:test_cli_sync_rejects_file_and_all_together
-  lines: 284-289
+  lines: 298-303
 - kind: function
   qualified_name: tests/test_bootstrap:test_cli_sync_with_no_config_errors
-  lines: 292-298
+  lines: 306-312
 - kind: function
   qualified_name: tests/test_bootstrap:test_run_bootstrap_invokes_progress_callback
-  lines: 301-347
+  lines: 315-361
 incoming_refs: 0
-outgoing_refs: 27
+outgoing_refs: 34
 ---
 <!-- trie:section symbol=tests/test_bootstrap:FakeClient fingerprint=ceebf20d768a48a04e09bf88002e0bd6342f4f5d5f4aaa6f137763c496e80a99 body_fp=daf058e1b67a18e9cd6b974b1d0813763e23b80f2f21f3711df3bd2b872a3ef9 source_ref=c5f2a27d17af1fac1345ecf2d272264e44780d76 -->
 ## `FakeClient(model_id: str = "anthropic/claude-sonnet-4-6", calls: int = 0)`
@@ -205,11 +208,21 @@ Verify that `run_bootstrap` fires `on_start`/`on_done` for each processed file a
 Load config from `project`, initialise a graph `Store`, scan the project into it, and return the open store.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_bootstrap:test_plan_excludes_files_with_no_documentable_symbols fingerprint=726c876c56b82d65b082a64bb62bb92ccd91d87af9683b492c0958654b307c17 body_fp=caa31741df143c8479993a1a55ea8a55c9864ec5a253a285fa2e41e60fb7784b source_ref=d81050fda19efe01c9150c2635c3b24dff5debd3 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_plan_excludes_files_with_no_documentable_symbols fingerprint=0d85118720b7198c3af34e2584b30afada2874a67a1cf2f2a427a8a70b83dba3 body_fp=cc63f2edb43f2e312018cb18356f5190ef98e4f38c0ac6d199326eb598498ee6 source_ref=31a1f0a2e81fd7e48576cbcfda087036619073d3 -->
 ## `test_plan_excludes_files_with_no_documentable_symbols(project: Path, tmp_path: Path)`
 
-Assert that `build_plan` omits files with no parser-surfaced symbols but includes files with private (`_`-prefixed) defs.
+Assert that `build_plan` omits files with no parser-surfaced symbols but includes files with private defs and module-level constants.
 
-- `empty_module.py`: imports + constant only; no `def`/`class` → excluded.
+- `imports_only.py`: imports only, no constants/defs → excluded.
+- `constants_only.py`: module-level `NAME = value` constants → included.
 - `private.py`: contains `_hidden()` def → included.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_bootstrap:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=933299de5dc9aeaf8e5d2168692fe90804af5b80176b35ef217d716e2dfbaa0a source_ref=31a1f0a2e81fd7e48576cbcfda087036619073d3 -->
+## `tests/test_bootstrap`
+
+Test suite for `build_plan` and `run_bootstrap` bootstrap logic and the `trie plan`/`trie sync` CLI commands.
+
+- `FakeClient`: stub LLM client simulating cache-warm/cold token counts
+- `project`: fixture providing a `tmp_path` with `trie.toml` and three Python files
 <!-- trie:end -->

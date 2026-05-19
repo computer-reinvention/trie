@@ -2,8 +2,11 @@
 trie_version: 0.1.1
 source: tests/test_cost.py
 file_fingerprint: 56d003bc1c51065a50091fc9753ea5136e0956ccf0df15638afb26e1b9d064d3
-last_synced_at: '2026-05-14T17:29:31Z'
+last_synced_at: '2026-05-19T10:37:42Z'
 defines:
+- kind: module
+  qualified_name: tests/test_cost:__module__
+  lines: 1-86
 - kind: function
   qualified_name: tests/test_cost:test_get_pricing_known
   lines: 13-17
@@ -68,4 +71,10 @@ Assert that Haiku pricing yields a lower estimated cost than Sonnet for identica
 ## `test_estimate_actual_cost_matches_pricing()`
 
 Verify `estimate_actual_cost` computes USD cost correctly from token counts and per-model pricing rates.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_cost:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=1bbf2a3398fe90224c7434ae6c28ae033133e2c1be5d6e21c49e75ea532dae2c source_ref=5dfe03cdd4810107b784dfce8ae2ed82de50b669 -->
+## `tests/test_cost`
+
+Test suite for `trie.cost` pricing utilities covering lookup, cost estimation, and cache amortisation.
 <!-- trie:end -->

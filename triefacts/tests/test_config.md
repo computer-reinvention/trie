@@ -1,9 +1,12 @@
 ---
 trie_version: 0.1.1
 source: tests/test_config.py
-file_fingerprint: 2bcb482da874ab07a264159020e701c8eefa3f0880189896ae7f44f0d7bebad6
-last_synced_at: '2026-05-18T13:57:58Z'
+file_fingerprint: c962974b4922188dea273ca35c2524087d9c82d1c03a49f511b23e18f223243b
+last_synced_at: '2026-05-19T10:37:40Z'
 defines:
+- kind: module
+  qualified_name: tests/test_config:__module__
+  lines: 1-69
 - kind: function
   qualified_name: tests/test_config:test_defaults_when_empty_dict
   lines: 10-17
@@ -28,7 +31,7 @@ defines:
 incoming_refs: 0
 outgoing_refs: 8
 ---
-<!-- trie:section symbol=tests/test_config:test_defaults_when_empty_dict fingerprint=e07d66512eca607a9bd0f0421b3df024c58df86472cc0f51eee7bfd3a637c455 body_fp=4474e7d14a413f900957814b63b7780415b4cca31f59a9a5138852a3862a129c source_ref=c2c8854a973a93468da00905a2b700073a289bf7 -->
+<!-- trie:section symbol=tests/test_config:test_defaults_when_empty_dict fingerprint=2960b47d7bd353bae7a5deb10c63864988e483a9ae12abb3def93181056dc08a body_fp=4474e7d14a413f900957814b63b7780415b4cca31f59a9a5138852a3862a129c source_ref=9ae3cf8607b8195c64ecbbda358ad1a86a84bbe2 -->
 ## `test_defaults_when_empty_dict()`
 
 Assert that `Config.from_dict({})` produces correct default values for all config sections.
@@ -40,7 +43,7 @@ Assert that `Config.from_dict({})` produces correct default values for all confi
 Verify that `Config.from_dict` merges overridden sections while preserving defaults in untouched sections and untouched keys within partially-overridden sections.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_config:test_load_roundtrips_default_template fingerprint=a6001c4f5f8795eac0885db407a83136d060b5e94b6f03d3bb8d4945368db3e0 body_fp=4a6e6dcfeb3c7b5a056fc3c9b8013a3eefc59505a063ef97e16651da9652a1b5 source_ref=c2c8854a973a93468da00905a2b700073a289bf7 -->
+<!-- trie:section symbol=tests/test_config:test_load_roundtrips_default_template fingerprint=ed20ed5cdf36ed10b9e24f168c5292fa8b93c36f37f7114c5b30df86a2c14609 body_fp=4a6e6dcfeb3c7b5a056fc3c9b8013a3eefc59505a063ef97e16651da9652a1b5 source_ref=9ae3cf8607b8195c64ecbbda358ad1a86a84bbe2 -->
 ## `test_load_roundtrips_default_template(tmp_path: Path)`
 
 Verify that writing `DEFAULT_CONFIG_TOML` to disk and loading it produces correct default values.
@@ -68,4 +71,10 @@ Assert that unrecognised top-level TOML sections are silently ignored for forwar
 ## `test_unknown_keys_within_known_section_raise()`
 
 Assert that a typo within a known config section raises `TypeError`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_config:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=c5e3ffdd301fd79ee88df80de3137af460a32fda28e946740b06fcad751fdd48 source_ref=9ae3cf8607b8195c64ecbbda358ad1a86a84bbe2 -->
+## `tests/test_config`
+
+Test suite for `Config` loading, merging, file-discovery, and error-handling behaviour.
 <!-- trie:end -->

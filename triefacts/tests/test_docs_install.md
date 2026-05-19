@@ -2,9 +2,12 @@
 trie_version: 0.1.1
 source: tests/test_docs_install.py
 file_fingerprint: de7c98fcfd2eb93c13bf961ba554fc35110ea849b4c8bee8c44aa552998c9fdd
-last_synced_at: '2026-05-18T13:25:57Z'
+last_synced_at: '2026-05-19T10:37:51Z'
 description: 'Tests for `trie.docs_install`: project-local agent documentation install.'
 defines:
+- kind: module
+  qualified_name: tests/test_docs_install:__module__
+  lines: 1-421
 - kind: function
   qualified_name: tests/test_docs_install:test_install_creates_trie_md_at_project_root
   lines: 39-56
@@ -222,4 +225,10 @@ Assert that a single-target install omits the multi-harness footer from the gene
 ## `test_install_re_render_on_target_change_is_an_update(tmp_path: Path)`
 
 Assert that switching `target_names` between two installs triggers an `"updated"` action and rewrites stale tool names in `TRIE.md`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_docs_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=2481e173649016788bcc155c4daabc73d42e82c7442e4b16553ccde760a6e1ed source_ref=c71598498bc9ec5f3a1ba4c97c80ab82f4fb431f -->
+## `tests/test_docs_install`
+
+Test suite for `trie.docs_install`, covering TRIE.md materialisation, idempotency, pointer-block splicing, dry-run behaviour, and per-target tool-name rendering.
 <!-- trie:end -->

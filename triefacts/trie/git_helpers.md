@@ -2,9 +2,12 @@
 trie_version: 0.1.1
 source: trie/git_helpers.py
 file_fingerprint: 0ad427dd3e70edd0d2451be9e7c18fe1d93af86f8c3a2e0b3efba8ba83e39840
-last_synced_at: '2026-05-16T12:25:52Z'
+last_synced_at: '2026-05-19T10:40:42Z'
 description: Quiet, narrowly-scoped git operations for diff-aware regen.
 defines:
+- kind: module
+  qualified_name: trie/git_helpers:__module__
+  lines: 1-143
 - kind: function
   qualified_name: trie/git_helpers:_run_git
   lines: 32-56
@@ -64,4 +67,13 @@ Run `git <args>` from `cwd`, returning stdout bytes on success or `None` on any 
 Return the SHA of HEAD, or None if the lookup fails for any reason.
 
 - Returns None for empty repos, detached HEADs, or any git error.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/git_helpers:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=6dff4b2348ad98c82151422b031811d85dc24d60e6b8b65c95ed994467b9a08e source_ref=a120f6a20e8bfca8afcb22b8c56ed8d56778c96f -->
+## `git_helpers`
+
+Provide quiet, narrowly-scoped git operations for diff-aware section regeneration.
+
+- Returns `None` on any failure; never raises into the sync pipeline.
+- Uses content-addressed blob hashes, not commit hashes, for stamping source references.
 <!-- trie:end -->

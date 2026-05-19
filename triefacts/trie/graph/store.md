@@ -1,9 +1,18 @@
 ---
 trie_version: 0.1.1
 source: trie/graph/store.py
-file_fingerprint: f029c55fd0d2b163ac5ceff4c2280aa119855493ed83316cbd9c7ba72e836a7f
-last_synced_at: '2026-05-18T13:57:37Z'
+file_fingerprint: 38b978510c260459c605190848ec9d6247be90913fe6b132a6b547ac00564e2e
+last_synced_at: '2026-05-19T10:40:47Z'
 defines:
+- kind: module
+  qualified_name: trie/graph/store:__module__
+  lines: 1-678
+- kind: constant
+  qualified_name: trie/graph/store:SCHEMA_VERSION
+  lines: 13-13
+- kind: constant
+  qualified_name: trie/graph/store:SCHEMA_SQL
+  lines: 17-62
 - kind: class
   qualified_name: trie/graph/store:FileRecord
   lines: 66-69
@@ -18,101 +27,101 @@ defines:
   lines: 91-108
 - kind: class
   qualified_name: trie/graph/store:GrepPredicate
-  lines: 112-129
+  lines: 112-131
 - kind: class
   qualified_name: trie/graph/store:Store
-  lines: 132-675
+  lines: 134-677
 - kind: method
   qualified_name: trie/graph/store:Store.__init__
-  lines: 141-144
+  lines: 143-146
 - kind: method
   qualified_name: trie/graph/store:Store._open
-  lines: 146-167
+  lines: 148-169
 - kind: method
   qualified_name: trie/graph/store:Store.close
-  lines: 169-170
+  lines: 171-172
 - kind: method
   qualified_name: trie/graph/store:Store.__enter__
-  lines: 172-173
+  lines: 174-175
 - kind: method
   qualified_name: trie/graph/store:Store.__exit__
-  lines: 175-176
+  lines: 177-178
 - kind: method
   qualified_name: trie/graph/store:Store.transaction
-  lines: 179-185
+  lines: 181-187
 - kind: method
   qualified_name: trie/graph/store:Store.get_file
-  lines: 189-194
+  lines: 191-196
 - kind: method
   qualified_name: trie/graph/store:Store.upsert_file
-  lines: 196-207
+  lines: 198-209
 - kind: method
   qualified_name: trie/graph/store:Store.delete_file
-  lines: 209-211
+  lines: 211-213
 - kind: method
   qualified_name: trie/graph/store:Store.list_files
-  lines: 213-219
+  lines: 215-221
 - kind: method
   qualified_name: trie/graph/store:Store.replace_file_symbols
-  lines: 223-250
+  lines: 225-252
 - kind: method
   qualified_name: trie/graph/store:Store.count_symbols
-  lines: 252-263
+  lines: 254-265
 - kind: method
   qualified_name: trie/graph/store:Store.replace_all_edges
-  lines: 267-298
+  lines: 269-300
 - kind: method
   qualified_name: trie/graph/store:Store.references_in
-  lines: 300-312
+  lines: 302-314
 - kind: method
   qualified_name: trie/graph/store:Store.references_in_with_files
-  lines: 314-326
+  lines: 316-328
 - kind: method
   qualified_name: trie/graph/store:Store.qnames_in_file
-  lines: 328-334
+  lines: 330-336
 - kind: method
   qualified_name: trie/graph/store:Store.symbols_in_file_with_lines
-  lines: 336-355
+  lines: 338-357
 - kind: method
   qualified_name: trie/graph/store:Store.search_symbols
-  lines: 357-384
+  lines: 359-386
 - kind: method
   qualified_name: trie/graph/store:Store.references_out
-  lines: 386-398
+  lines: 388-400
 - kind: method
   qualified_name: trie/graph/store:Store.count_edges
-  lines: 400-401
+  lines: 402-403
 - kind: method
   qualified_name: trie/graph/store:Store.inbound_count_per_symbol
-  lines: 403-412
+  lines: 405-414
 - kind: method
   qualified_name: trie/graph/store:Store.file_ref_counts
-  lines: 414-444
+  lines: 416-446
 - kind: method
   qualified_name: trie/graph/store:Store.file_stats
-  lines: 446-468
+  lines: 448-470
 - kind: method
   qualified_name: trie/graph/store:Store.upsert_section_record
-  lines: 472-507
+  lines: 474-509
 - kind: method
   qualified_name: trie/graph/store:Store.one_liner_for
-  lines: 509-522
+  lines: 511-524
 - kind: method
   qualified_name: trie/graph/store:Store.one_liners_for
-  lines: 524-537
+  lines: 526-539
 - kind: method
   qualified_name: trie/graph/store:Store.get_symbol_detail
-  lines: 541-574
+  lines: 543-576
 - kind: method
   qualified_name: trie/graph/store:Store.grep_symbols
-  lines: 576-665
+  lines: 578-667
 - kind: method
   qualified_name: trie/graph/store:Store.all_symbol_names
-  lines: 667-670
+  lines: 669-672
 - kind: method
   qualified_name: trie/graph/store:Store.all_qualified_names
-  lines: 672-675
-incoming_refs: 41
+  lines: 674-677
+incoming_refs: 42
 outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/graph/store:FileRecord fingerprint=9e5bd64fbbf95f8eb3616b9da3d84b73687a569550e6ace513eef354bd16b1e1 body_fp=66d0f20070cb4ff0fbcc153cfb392d3aa24addf48f3b73c0f1c45f48d6b74475 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
@@ -352,12 +361,12 @@ Return `(qname, start_line, end_line)` for every symbol in `file_path`, ordered 
 - Returns empty list when the path has no recorded symbols.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/graph/store:GrepPredicate fingerprint=81b14477a69c1b71b044aa52bd9ada00b925ac3b605f705c3d35c0c08cf0b614 body_fp=e22ed0b1df3fb48731cd1a9795c30cc6365abc96b9956cfc0c34abe717443f6a source_ref=8eaf1cb4ee663c2d5e33f11838248e2dc73b76fc -->
+<!-- trie:section symbol=trie/graph/store:GrepPredicate fingerprint=bb94fc53eb9ffe605f051d331b0b74099549200f353c204750e987092d9ac0e6 body_fp=38c2f368f6947448b2f25bf6385065795fd8f4388c006bad29bda752ed058d5f source_ref=a1769a04774632716a3ce86b4dbe83e7d6023b92 -->
 ## `GrepPredicate(name_contains=None, kind=None, scope_prefix=None, scope_exclude=(), public_only=False, inbound_count_min=None, inbound_count_max=None, outbound_count_min=None, outbound_count_max=None)`
 
 Server-side filter passed to `Store.grep_symbols`; every field is optional.
 
-- `kind`: `"function"`, `"class"`, `"method"`, `"any"`, or `None`
+- `kind`: `"function"`, `"class"`, `"method"`, `"constant"`, `"module"`, `"any"`, or `None`
 - `scope_prefix`: matched as prefix against `file_path`
 - `scope_exclude`: each entry matched as prefix against `file_path` to exclude
 - `inbound_count_min/max`, `outbound_count_min/max`: inclusive edge-count bounds
@@ -371,4 +380,27 @@ Execute a predicate-driven symbol search and return ranked `SymbolDetail` result
 - `predicate`: compound filter; omitted fields are unconstrained.
 - `rank_by`: `"public_first"` (default), `"inbound_count"`, or `"alphabetical"`; unknown values fall back to `"public_first"`.
 - `limit`: maximum rows returned.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/graph/store:SCHEMA_VERSION fingerprint=a3143f53a397605d955af85dc9c565211e3a2039edbb4283decccb73b16240ca body_fp=0d8e22fd12caa719babd038e9dbccbc254b4fb0ddd94dd1b5c77caf12e41cf1a source_ref=a1769a04774632716a3ce86b4dbe83e7d6023b92 -->
+## `SCHEMA_VERSION = 2`
+
+Integer sentinel; when the stored schema version differs, the DB file is deleted and rebuilt from scratch.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/graph/store:SCHEMA_SQL fingerprint=660e8edae6c97dfc3c8bee4057fe4c56895de17e501503a702b97bdabc7584f0 body_fp=529db5264c6599c219e518b21a07b223078de3407e68237d21ba1b882a1cb7a6 source_ref=a1769a04774632716a3ce86b4dbe83e7d6023b92 -->
+## `SCHEMA_SQL: str`
+
+DDL string executed on every `Store._open` to create all tables and indexes when absent.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/graph/store:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=78a9a34d636128a6cb03c559f29d79ea4f9d7ec886ad44b9c88fcddc8aa87ead source_ref=a1769a04774632716a3ce86b4dbe83e7d6023b92 -->
+## `store`
+
+SQLite-backed store for trie's symbol graph, file fingerprints, edge relationships, and generated triefact section metadata.
+
+- `SCHEMA_VERSION`: bump to invalidate and rebuild the cache DB automatically.
+- `FileRecord`, `FileStats`, `SymbolHit`, `SymbolDetail`: frozen dataclasses for query results.
+- `GrepPredicate`: composable filter for `Store.grep_symbols`.
+- `Store`: primary interface; use as a context manager.
 <!-- trie:end -->

@@ -1,9 +1,12 @@
 ---
 trie_version: 0.1.1
 source: tests/test_mcp_install.py
-file_fingerprint: 86998d7b7de324f0550cda292e4bea1559cc9ccfc7acbbcbea2f5eb75fd0866f
-last_synced_at: '2026-05-18T13:26:26Z'
+file_fingerprint: e1a18c2ec08c0f955e531c38395344c6d88bf08c6067827badfc392063e395c6
+last_synced_at: '2026-05-19T10:38:25Z'
 defines:
+- kind: module
+  qualified_name: tests/test_mcp_install:__module__
+  lines: 1-439
 - kind: function
   qualified_name: tests/test_mcp_install:project
   lines: 19-28
@@ -80,7 +83,7 @@ defines:
   qualified_name: tests/test_mcp_install:test_cli_mcp_no_subcommand_prints_help
   lines: 420-438
 incoming_refs: 0
-outgoing_refs: 19
+outgoing_refs: 25
 ---
 <!-- trie:section symbol=tests/test_mcp_install:project fingerprint=9635d698397eed755ba54f18855a451e5f737f90ab053c81317de51f20a18b4a body_fp=ae09ec600ba8e89e4c44445846e66135344fc4e14a18a9d6fa2dc8e49187f6c0 source_ref=0e5674937bf238506b1820b0bed47b1faea9c679 -->
 ## `project(tmp_path: Path) -> Path`
@@ -242,4 +245,13 @@ Assert that a second `install` call for `opencode` with identical config produce
 ## `test_cli_mcp_no_subcommand_prints_help(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that `trie mcp` with no subcommand prints help, exits with code 2, and never starts the stdio server.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=4005c813074c6a647868a1eed12d50119c28a56192fe19f9ed2e4e91868f9a9f source_ref=fecdf0b15acb6369d3974e674cd692dff8469777 -->
+## `tests/test_mcp_install`
+
+Integration and unit tests for the `mcp_install` module and its CLI surface.
+
+- Covers `install()` correctness, idempotency, dry-run, scope routing, and per-target config shapes.
+- Exercises CLI commands `mcp install` and `mcp serve` via Typer's `CliRunner`.
 <!-- trie:end -->

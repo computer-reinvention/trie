@@ -1,10 +1,16 @@
 ---
 trie_version: 0.1.1
 source: tests/test_mcp.py
-file_fingerprint: 471627eab2e6b3eac789fd8f29934f2fd7928c1c1298efbf49aecd5355398c0f
-last_synced_at: '2026-05-18T22:48:55Z'
+file_fingerprint: d218c8963e8f6a6df5142104106456bfb95ddbe3f7ca4830f87da01c6cb6318e
+last_synced_at: '2026-05-19T10:38:21Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
+- kind: module
+  qualified_name: tests/test_mcp:__module__
+  lines: 1-515
+- kind: constant
+  qualified_name: tests/test_mcp:PROJECT_TOML
+  lines: 22-31
 - kind: class
   qualified_name: tests/test_mcp:FakeClient
   lines: 35-51
@@ -42,98 +48,101 @@ defines:
   qualified_name: tests/test_mcp:test_grep_invalid_kind_returns_error
   lines: 163-166
 - kind: function
+  qualified_name: tests/test_mcp:test_grep_accepts_constant_and_module_kinds
+  lines: 169-181
+- kind: function
   qualified_name: tests/test_mcp:test_grep_scope_prefix_filter
-  lines: 169-172
+  lines: 184-187
 - kind: function
   qualified_name: tests/test_mcp:test_grep_scope_exclude_filter
-  lines: 175-178
+  lines: 190-193
 - kind: function
   qualified_name: tests/test_mcp:test_grep_inbound_count_predicate
-  lines: 181-186
+  lines: 196-201
 - kind: function
   qualified_name: tests/test_mcp:test_grep_rank_by_inbound_count
-  lines: 189-196
+  lines: 204-211
 - kind: function
   qualified_name: tests/test_mcp:test_grep_limit_respected
-  lines: 199-203
+  lines: 214-218
 - kind: function
   qualified_name: tests/test_mcp:test_grep_empty_predicate_returns_invalid_argument
-  lines: 206-220
+  lines: 221-235
 - kind: function
   qualified_name: tests/test_mcp:test_grep_empty_predicate_rejected_regardless_of_rank_by
-  lines: 223-229
+  lines: 238-244
 - kind: function
   qualified_name: tests/test_mcp:test_grep_unknown_predicate_field_silently_ignored
-  lines: 232-235
+  lines: 247-250
 - kind: function
   qualified_name: tests/test_mcp:test_grep_invalid_predicate_returns_error
-  lines: 238-241
+  lines: 253-256
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_kind_none_when_no_name_contains
-  lines: 247-256
+  lines: 262-271
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_kind_text_match_empty_for_unseen_string
-  lines: 259-266
+  lines: 274-281
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_kind_text_match_redirects_via_body_match
-  lines: 269-287
+  lines: 284-302
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_ranks_by_inbound_count_desc
-  lines: 290-304
+  lines: 305-319
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_caps_matches_and_notes_truncation
-  lines: 307-333
+  lines: 322-348
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_omits_truncation_note_when_under_cap
-  lines: 336-344
+  lines: 351-359
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_honours_scope_prefix
-  lines: 347-362
+  lines: 362-377
 - kind: function
   qualified_name: tests/test_mcp:test_grep_normal_hits_path_omits_fallback_key
-  lines: 365-371
+  lines: 380-386
 - kind: function
   qualified_name: tests/test_mcp:test_read_returns_prose_and_neighbours
-  lines: 377-384
+  lines: 392-399
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_pointer_shape
-  lines: 387-390
+  lines: 402-405
 - kind: function
   qualified_name: tests/test_mcp:test_read_neighbour_carries_one_liner
-  lines: 393-396
+  lines: 408-411
 - kind: function
   qualified_name: tests/test_mcp:test_read_unknown_qname_returns_not_found
-  lines: 399-402
+  lines: 414-417
 - kind: function
   qualified_name: tests/test_mcp:test_read_fuzzy_suggestion_for_typo
-  lines: 405-411
+  lines: 420-426
 - kind: function
   qualified_name: tests/test_mcp:test_trace_callers_returns_topology
-  lines: 417-423
+  lines: 432-438
 - kind: function
   qualified_name: tests/test_mcp:test_trace_callees_returns_outbound
-  lines: 426-429
+  lines: 441-444
 - kind: function
   qualified_name: tests/test_mcp:test_trace_both_directions
-  lines: 432-437
+  lines: 447-452
 - kind: function
   qualified_name: tests/test_mcp:test_trace_invalid_direction_returns_error
-  lines: 440-443
+  lines: 455-458
 - kind: function
   qualified_name: tests/test_mcp:test_trace_unknown_qname_returns_not_found
-  lines: 446-449
+  lines: 461-464
 - kind: function
   qualified_name: tests/test_mcp:test_trace_depth_zero_returns_only_root
-  lines: 452-455
+  lines: 467-470
 - kind: function
   qualified_name: tests/test_mcp:test_trace_depth_clamp_adds_note
-  lines: 458-462
+  lines: 473-477
 - kind: function
   qualified_name: tests/test_mcp:test_build_server_registers_three_verbs
-  lines: 468-479
+  lines: 483-494
 - kind: function
   qualified_name: tests/test_mcp:test_build_server_wire_names_bind_to_internal_methods
-  lines: 482-499
+  lines: 497-514
 incoming_refs: 0
 outgoing_refs: 8
 ---
@@ -481,4 +490,27 @@ Assert that empty or vacuous predicates return `invalid_argument` with a usable 
 ## `test_grep_empty_predicate_rejected_regardless_of_rank_by(tools: TrieTools)`
 
 Assert that passing `rank_by` with an empty predicate still returns an `invalid_argument` error.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:PROJECT_TOML fingerprint=3f524fd58415aac9f548f19d4ad2554a2e411c44f7f8907ce1944fa2fa35a62e body_fp=0fca1d1a44f070a166493e00a2cf8698940a81923dbceeefdd59d6f53aa4a88c source_ref=c0685fb01624558013187827bb8d7c3fdadd8390 -->
+## `PROJECT_TOML: str`
+
+TOML configuration string used to initialise temporary test projects.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:test_grep_accepts_constant_and_module_kinds fingerprint=a7b0b5f6a91e85c5d7b2effde7c148be97b61ecfd7966d405518b3d26526bbed body_fp=2606698b8197b753667ca45c11843528f662a183c1817b3a6b809d3670504dc1 source_ref=c0685fb01624558013187827bb8d7c3fdadd8390 -->
+## `test_grep_accepts_constant_and_module_kinds(tools: TrieTools)`
+
+Assert that `grep` accepts `"constant"` and `"module"` as valid `kind` values without returning an `invalid_argument` error.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=fed67e9c87a965329571043d05996d114615d6b7be22cf5542b2f549fbf6a047 source_ref=c0685fb01624558013187827bb8d7c3fdadd8390 -->
+## `tests/test_mcp`
+
+Tests for the MCP tool surface (`grep`, `read`, `trace`) exercised via `TrieTools` directly.
+
+- `FakeClient`: stub model client returning fixed text and token counts
+- `project`: tmp dir fixture with `trie.toml`, `lib.py`, `app.py`
+- `populated_project`: extends `project` with scan + sync so tools have data
+- `tools`: yields a `TrieTools` instance over `populated_project`, closes on teardown
 <!-- trie:end -->

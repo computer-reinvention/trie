@@ -1,10 +1,13 @@
 ---
 trie_version: 0.1.1
 source: tests/test_triefact_metadata.py
-file_fingerprint: cbb246bc77d50bccca68c7617723e48dd6f8da7b2b32e7047937c0f361c36eed
-last_synced_at: '2026-05-16T11:23:47Z'
+file_fingerprint: 99959fb92b6ecf3e5b502b6bab7a601b2e924fa281a06b01928189f9d8d9d201
+last_synced_at: '2026-05-19T10:39:37Z'
 description: Front-matter enrichment in `sync_single_file`.
 defines:
+- kind: module
+  qualified_name: tests/test_triefact_metadata:__module__
+  lines: 1-183
 - kind: class
   qualified_name: tests/test_triefact_metadata:FakeClient
   lines: 25-40
@@ -158,4 +161,12 @@ Parse the YAML front-matter block from a triefact file and return it as a dict.
 Run `sync_single_file` on `src/alpha.py` within the project fixture, optionally with a populated `Store`, and return the resulting triefact path.
 
 - `with_store`: when `True`, scans the project graph before syncing.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_triefact_metadata:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=b1a29f8613ae7166f0f3e0cd391c981cb16c0b98959127d2cc9c35445b022a4a source_ref=b403b2dfeee9eb31ab60f58ad0b16d67ae5cfbd7 -->
+## `tests/test_triefact_metadata`
+
+Test front-matter enrichment written by `sync_single_file` into triefact Markdown files.
+
+- Covers timestamps, module-docstring description, public-symbol roster, and cross-file ref counts.
 <!-- trie:end -->

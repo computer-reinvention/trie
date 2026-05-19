@@ -1,9 +1,12 @@
 ---
 trie_version: 0.1.1
 source: tests/test_writer_sentinels.py
-file_fingerprint: e644dfe8b6ae9b4b2a3df7889ddea50b0db07fdc7d47bea43a8cf001b3704a8c
-last_synced_at: '2026-05-15T13:11:06Z'
+file_fingerprint: 74e5809d451d5068253eea90e9f919a1312c1be8a4c1f2c42d3c9859840bccae
+last_synced_at: '2026-05-19T10:39:40Z'
 defines:
+- kind: module
+  qualified_name: tests/test_writer_sentinels:__module__
+  lines: 1-338
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_empty
   lines: 10-13
@@ -215,4 +218,12 @@ Verify that a section with `source_ref=` but no `body_fp=` parses without error 
 
 - `body_fingerprint` is `None` when `body_fp=` is absent from the sentinel.
 - `source_ref` is correctly extracted despite the missing `body_fp=` field.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_writer_sentinels:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=9064b4852698027b4bceedc72d80d00d6d8969e04cba97dd248fa467f58431b7 source_ref=d943306388f3b2cb323b1e0a1db4933439815f46 -->
+## `tests/test_writer_sentinels`
+
+Test suite for `TriefactFile` parsing, rendering, mutation, and round-trip fidelity.
+
+- Covers sentinel parsing, front-matter, prose preservation, upsert, remove, and field ordering.
 <!-- trie:end -->
