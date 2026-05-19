@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](#status)
-[![Tests](https://img.shields.io/badge/tests-267%20passing-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/tests-513%20passing-brightgreen.svg)](#)
 
 trie generates a Markdown description of every source file in your project. The descriptions live in a tree that mirrors your source tree, joined by the same reference graph the code has. Edit a function and the cascade regenerates the descriptions of every caller too. Humans review English prose; agents read the same prose instead of grepping code under context pressure.
 
@@ -16,7 +16,7 @@ src/auth/middleware.py   ────►  triefacts/src/auth/middleware.md
                                   └─ § <hand-written notes>  (preserved across regen)
 ```
 
-A pre-commit gate (`trie verify`) refuses to merge when the tree drifts. The check is bidirectional — it catches both source changes that haven't propagated into triefacts and tampering with triefact bodies. An MCP server (`trie mcp serve`, registered into your agent via `trie mcp install`) exposes the tree to coding agents — Claude Code, Cursor, Codex, etc. — as a persistent, structured context layer.
+A pre-commit gate (`trie verify`) refuses to merge when the tree drifts. The check is bidirectional — it catches both source changes that haven't propagated into triefacts and tampering with triefact bodies. An MCP server (`trie mcp serve`, registered into your agent via `trie setup`) exposes the tree to coding agents — Claude Code, Cursor, Codex, opencode, etc. — as a persistent, structured context layer. The same three operations the MCP server exposes (`grep`, `read`, `trace`) are also available as `trie` CLI subcommands, so an agent that prefers shelling out gets identical structured responses without speaking MCP.
 
 > **Status:** pre-alpha · v0.1 in active development · not ready for general use.
 
@@ -148,40 +148,49 @@ uvx --from git+ssh://git@github.com/pankajgarkoti/trie trie    # ephemeral, run-
 # 2. Initialise your project
 cd /path/to/your/project
 export ANTHROPIC_API_KEY=...             # default model is anthropic/claude-sonnet-4-6
-trie init                                # writes trie.toml, scans, prompts for pre-commit hook
+trie init                                # writes trie.toml, scans, prompts to run `trie setup` next
 
-# 3. Smoke test the LLM path on a single file
+# 3. Wire up your agent end-to-end (MCP + turn hook + agent docs + tool overrides)
+trie setup                               # auto-detects opencode / claude-code / cursor / etc.
+
+# 4. Smoke test the LLM path on a single file
 trie sync --file src/some_module.py
 
-# 4. Preview the bootstrap plan + cost (free count_tokens calls, no generation)
+# 5. Preview the bootstrap plan + cost (free count_tokens calls, no generation)
 trie plan
 
-# 5. Bootstrap with a guardrail — auto-detected on first run
+# 6. Bootstrap with a guardrail — auto-detected on first run
 trie sync --limit 10                     # top-ranked 10 files
 trie sync --budget 5.00                  # OR spend at most $5
 trie sync                                # OR commit to the full plan
 
-# 6. Day-to-day: incremental cascade
+# 7. Day-to-day: incremental cascade
 trie sync                                # re-syncs stale + cascade
 trie sync --dry-run                      # preview unified diffs (makes API calls)
 
-# 7. Drift gate — fast, offline, pre-commit-friendly
+# 8. Drift gate — fast, offline, pre-commit-friendly
 trie verify
 
-# 8. Wire up your agent
-trie mcp install                         # auto-detects installed agents
+# 9. Query the graph from a shell (same envelope as the MCP wire)
+trie grep --name compute_cascade --scope-prefix src/
+trie read src/auth/middleware:require_auth
+trie trace src/graph/store:Store.replace_all_edges --direction callers --depth 2
 ```
 
 ### Recommended workflow
 
-- **First run:** `trie init` → `trie plan` (see the bill) → `trie sync --limit 10` (sample
-  the quality) → review one or two triefacts → `trie sync` to complete the bootstrap.
+- **First run:** `trie init` (says yes when it offers to run `trie setup`) → `trie plan`
+  (see the bill) → `trie sync --limit 10` (sample the quality) → review one or two
+  triefacts → `trie sync` to complete the bootstrap.
 - **After every code change:** `trie sync` regenerates exactly the stale sections plus
-  their cascade. Run it before opening a PR so reviewers see the prose change too.
+  their cascade. Run it before opening a PR so reviewers see the prose change too. (If
+  `trie setup` installed the turn-boundary hook for your agent, the agent runs
+  `trie refresh --after-turn` for you between turns.)
 - **In CI / pre-commit:** `trie verify` only — it's deterministic, offline, and
   exits non-zero on drift. Never let CI call the LLM path.
-- **For agents:** `trie mcp install` once, then forget about it. The MCP server is
-  read-only; agents query the graph, you own writes via `trie sync`.
+- **For agents:** `trie setup` once. The MCP server is read-only; agents query the
+  graph via MCP (or via `trie grep` / `trie read` / `trie trace` from a shell); only
+  `trie sync` modifies the triefact tree.
 
 ## Golden example
 
@@ -252,12 +261,18 @@ file_fingerprint: 0830b9bb…
 last_synced_at: "2026-05-08T14:21:09Z"
 description: One-line summary lifted from the module docstring.
 defines:
+  - kind: constant
+    qualified_name: src/foo:__version__
+    lines: 3-3
   - kind: function
     qualified_name: src/foo:bar
     lines: 5-12
   - kind: function
     qualified_name: src/foo:baz
     lines: 15-22
+  - kind: module
+    qualified_name: src/foo:__module__
+    lines: 1-24
 incoming_refs: 4
 outgoing_refs: 2
 ---
@@ -285,7 +300,7 @@ This prose lives between sentinels and is preserved across regeneration.
 
 - The `fingerprint=` field is a SHA-256 of the symbol's body with whitespace and comments normalized away — formatting churn doesn't trip staleness, but real changes do.
 - The `body_fp=` field is a SHA-256 of the section body itself, so the check catches manual tampering with the Markdown between sentinels.
-- The front-matter `defines` list, ref counts, and description are agent-navigation metadata: they let an agent decide whether to open a triefact at all without parsing every section.
+- The front-matter `defines` list, ref counts, and description are agent-navigation metadata: they let an agent decide whether to open a triefact at all without parsing every section. Symbol kinds are `function`, `class`, `method`, `constant` (module-level `NAME = value` bindings, including dunders like `__version__` and framework instantiations like `app = FastAPI()`), and `module` (a synthetic per-file symbol carrying any residual module-level behaviour — top-level calls, `if __name__ == "__main__":` blocks, etc.).
 - `trie sync` regenerates only the sections whose source fingerprint has drifted; everything between sentinels is preserved byte-for-byte.
 - `trie verify` compares stored fingerprints — fast, deterministic, no LLM in the loop, exits non-zero on drift.
 
@@ -317,38 +332,57 @@ repos:
 
 `trie verify` exits non-zero on any of: a source symbol whose fingerprint no longer matches its section, a public symbol with no section, a section whose body was edited between sentinels (`tampered_body`), a section pointing at a deleted symbol (`orphan`), or a missing triefact file. Failures point at the specific symbol, so you know exactly what regenerated and why.
 
-## Agent integration (MCP + turn hooks)
+## Agent integration (MCP + CLI + turn hooks + tool overrides)
 
 trie ships an MCP server so coding agents read your codebase's prose self-description as a separate, durable context layer — not chat memory, not retrieved chunks, but a structured tree they can navigate. Three verbs, exposed over stdio, that match how agents reason about a codebase: _find it_, _understand it_, _trace it_.
 
 | Tool                                    | What it returns                                                                                                                             |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `grep(predicate, rank_by?, limit=10)`  | Symbols matching a predicate (name, kind, scope, edge counts), with a one-line summary on each hit so the agent can pick without re-reading |
-| `read(qname)`                          | A symbol's prose plus one-liners for every immediate caller and callee                                                                      |
-| `trace(from_qname, direction, depth=2)`| Topology beyond one hop — signatures + one-liners across a depth-bounded graph slice                                                        |
+| `grep(predicate, rank_by?, limit=10)`   | Symbols matching a predicate (name, kind, scope, edge counts), with a one-line summary on each hit so the agent can pick without re-reading |
+| `read(qname)`                           | A symbol's prose plus one-liners for every immediate caller and callee                                                                      |
+| `trace(from_qname, direction, depth=2)` | Topology beyond one hop — signatures + one-liners across a depth-bounded graph slice                                                        |
 
-Every response carries `one_liner` fields pulled from the section body at sync time, so an agent walking the graph never has to open a triefact just to decide whether to open it. Errors return `{error: {code, message, suggestion?}}` — fuzzy-matched suggestions on `not_found` mean recovery is one round-trip, not three. The full contract lives in [`docs/agent_interface.md`](docs/agent_interface.md).
+Every response carries `one_liner` fields pulled from the section body at sync time, so an agent walking the graph never has to open a triefact just to decide whether to open it. Errors return `{error: {code, message, suggestion?}}` — fuzzy-matched suggestions on `not_found` mean recovery is one round-trip, not three. An empty predicate on `grep` is rejected with `invalid_argument` (no "list everything" mode — the agent must commit to at least one filter). The full contract lives in [`docs/agent_interface.md`](docs/agent_interface.md).
+
+The same three operations are also available as `trie` CLI subcommands, byte-equivalent JSON envelopes under `--json`, for agents that prefer shelling out:
+
+```bash
+trie grep --name compute_cascade --scope-prefix src/ --json
+trie read src/auth/middleware:require_auth --json
+trie trace src/graph/store:Store.replace_all_edges --direction both --json
+```
+
+`--kind` accepts `function | class | method | constant | module | any`. The `constant` and `module` kinds are new: trie indexes module-level `NAME = value` assignments (constants like `__version__`, `DEFAULT_TIMEOUT`, `app = FastAPI()`) and a synthetic `__module__` symbol per file carrying residual module-level behaviour (the `setup(...)` call in `setup.py`, `if __name__ == "__main__":` blocks). This is what lets an agent reading the triefact for `setup.py` actually see what the file *does* at import time, not just its three helper functions.
 
 ### One-shot setup
 
 ```bash
-trie setup --target opencode              # MCP + turn hook in one go
-trie setup --target claude-code           # MCP install + manual-hook notice
-trie setup --all --print-only             # preview both halves for every target
+trie setup --target opencode              # MCP + hook + docs + tool overrides
+trie setup --target claude-code           # MCP + docs + advisory PreToolUse hook
+trie setup --all --print-only             # preview every step for every target
+trie setup --no-overrides                 # skip the tool-override step
 ```
 
-`trie setup` does two things at once:
+`trie setup` does four things in one pass:
 
-1. **MCP server registration** — makes trie available to the agent. Same as the standalone `trie mcp install`.
-2. **Turn-boundary hook** — makes trie current with the working copy automatically. Calls `trie refresh --after-turn` whenever the agent finishes a turn (so the graph picks up edits the agent just made) and again at the start of the next turn (so it picks up edits from `git pull` or another collaborator).
+1. **MCP server registration** — makes trie available to the agent. Same as standalone `trie mcp install`.
+2. **Turn-boundary hook** — calls `trie refresh --after-turn` when the agent's session goes idle, so the graph picks up edits the agent just made.
+3. **Agent-facing docs** — writes `TRIE.md` (a usage guide for agents) and appends a one-line pointer to `AGENTS.md` / `CLAUDE.md` so the agent finds the guide on load. Tool names in the doc are rendered for the harness in question (`trie_grep` for opencode, `mcp__trie__grep` for Claude Code).
+4. **Tool overrides** — replaces the agent's built-in `grep` and `read` with wrappers that route through trie, and adds `trie_trace` as a new tool. The agent's built-in `grep` now searches the symbol graph; built-in `read` returns the triefact for paths (and routes to `trie read` for qnames) with a `show_source: true` escape hatch for raw bytes. Default on; pass `--no-overrides` to skip.
 
 Supported targets: `opencode`, `claude-code`, `claude-desktop`, `cursor`, `windsurf`, `vscode`, `codex`.
 
-**Hook automation coverage today**: only `opencode` exposes a documented per-turn event surface, so it's the only target where `trie setup` installs the hook automatically (via a plugin written to `.opencode/plugins/trie-refresh.ts`). For every other target, `trie setup` registers MCP and prints a `manual setup required` notice with the instruction you have to follow — typically "wrap the agent binary or run `trie refresh --after-turn` between sessions."
+**Automation coverage today**:
+
+- **opencode**: full coverage — MCP registration, plugin-based turn hook (`session.idle` event), `TRIE.md` + `AGENTS.md` pointer, and the full tool override (`.opencode/tools/{grep,read,trie_trace}.ts`).
+- **claude-code**: MCP registration, `TRIE.md` + `CLAUDE.md` pointer, and a non-blocking `PreToolUse` advisory hook on built-in `Grep` (Claude Code has no full tool-override surface; the hook injects a system reminder pointing at `mcp__trie__grep`). Hook automation isn't documented for per-turn events on this harness, so `trie refresh` is a manual step today.
+- **Other targets** (`claude-desktop`, `cursor`, `windsurf`, `vscode`, `codex`): MCP registration works; turn hook and tool override emit a `manual setup required` notice with the instruction to follow.
+
+`trie setup` is idempotent — re-running reports each file as `skipped` if it's already up to date, `updated` if it drifted. Safe to run after every checkout.
 
 ### Just MCP, no hooks
 
-If you want only the MCP registration (you'll handle freshness yourself):
+If you want only the MCP registration (you'll handle freshness, docs, and overrides yourself):
 
 ```bash
 trie mcp install --target claude-code     # writes <project>/.mcp.json
@@ -406,7 +440,11 @@ Hand-written prose between sentinels is still indexed by GitHub's search; only t
 - **M4** ✓ — heuristic cascade (tree-sitter imports + same-module name matching) _(the wedge)_
 - **M5** ✓ — MCP server (`trie mcp serve`) with three verbs: `grep`, `read`, `trace` (also available as `trie grep` / `trie read` / `trie trace` CLI subcommands)
 - **M6** ✓ — README golden example, packaging, `trie plan`, `.gitattributes` recipe
-- **M7** ✓ — CLI redesign: auto-detect bootstrap, streaming progress + ETA, three-level verbosity, `trie mcp install` for six agents/IDEs
+- **M7** ✓ — CLI redesign: auto-detect bootstrap, streaming progress + ETA, three-level verbosity, `trie mcp install` for seven agents/IDEs
+- **M8** ✓ — `trie setup` end-to-end: MCP + turn hook + agent-facing docs (`TRIE.md` + `AGENTS.md` pointer) in one pass
+- **M9** ✓ — tool overrides: replace the agent's built-in `grep` and `read` with wrappers that route through trie (opencode); advisory `PreToolUse` hook on built-in `Grep` (Claude Code)
+- **M10** ✓ — symbol-set expansion: `constant` (module-level `NAME = value`) and `module` (synthetic per-file behaviour) symbol kinds, so triefacts cover what files *do* at import time, not just their helper functions
+- **M11** ✓ — telemetry split: per-call `cli_call` and `mcp_call` events with surface-aware audit aggregation, including a `mode` breakdown for the `read` override (qname / triefact / source / show_source)
 - **v0.2** — SCIP precision (replace tree-sitter heuristic with `scip-python` for type-aware references), TypeScript support, vector-over-triefacts retrieval, `trie watch` daemon, rename detection in reconcile
 
 ## License
