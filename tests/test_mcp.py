@@ -166,6 +166,21 @@ def test_grep_invalid_kind_returns_error(tools: TrieTools):
     assert result["error"]["code"] == "invalid_argument"
 
 
+def test_grep_accepts_constant_and_module_kinds(tools: TrieTools):
+    """The parser now surfaces `constant` (module-level NAME = value) and
+    `module` (synthetic __module__ symbol for file-level behaviour) in
+    addition to function/class/method. The predicate validator must
+    accept both as legal `kind` values. We don't assert on hits here —
+    the fixture may or may not have constants — only that the predicate
+    is accepted (no `invalid_argument` error envelope)."""
+    for kind in ("constant", "module"):
+        result = tools.grep({"kind": kind, "name_contains": "x"})
+        # No error envelope; the call returned an envelope with hits +
+        # (optional) fallback. Whether there are hits depends on the
+        # fixture content; we only assert the predicate was parsed.
+        assert "error" not in result, f"kind={kind!r} should be accepted, got: {result}"
+
+
 def test_grep_scope_prefix_filter(tools: TrieTools):
     result = tools.grep({"scope_prefix": "lib"})
     file_paths = {h["file_pointer"].split(":")[0] for h in result["hits"]}

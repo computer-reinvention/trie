@@ -119,12 +119,30 @@ def test_methods_of_private_class_inherit_privacy(tmp_path: Path):
 
 
 def test_module_docstring_is_not_a_symbol(sample_file: Path):
+    """The module docstring feeds the file-level `description:` field; it
+    should not also be emitted as a `__module__` symbol. And the SAMPLE
+    fixture's residual after consuming defs/classes/constants is just the
+    docstring + imports (both classified as noise), so the parser must
+    not emit a `__module__` symbol either."""
     syms = extract_symbols(sample_file)
     qnames = {s.qualified_name for s in syms}
-    # No symbol should be the module docstring.
+    # The SAMPLE residual is imports + the module docstring only; no
+    # operational code at module level, so no `__module__` symbol fires.
     assert all(":__module__" not in q for q in qnames)
-    # Top-level CONSTANT and import statements aren't tracked either in v0.1.
-    assert "sample:CONSTANT" not in qnames
+
+
+def test_module_level_constants_are_indexed(sample_file: Path):
+    """The parser surfaces module-level `NAME = value` assignments as
+    `kind='constant'` symbols. Captures dunders (`__version__`, `__all__`),
+    config knobs (`DEFAULT_TIMEOUT = ...`), sentinel objects, and simple
+    framework instantiations (`app = FastAPI()`)."""
+    syms = {s.qualified_name: s for s in extract_symbols(sample_file)}
+    assert "sample:CONSTANT" in syms
+    assert syms["sample:CONSTANT"].kind == "constant"
+    assert syms["sample:CONSTANT"].is_public is True
+    # The signature line is the assignment statement itself, single-lined,
+    # so the agent can triage the constant from one glance.
+    assert "CONSTANT = 42" in syms["sample:CONSTANT"].signature
 
 
 def test_signature_includes_annotations_and_return_type(sample_file: Path):
@@ -235,3 +253,108 @@ def test_property_setter_pair_dedupes(tmp_path: Path):
     syms = extract_symbols(f)
     name_syms = [s for s in syms if s.qualified_name == "thing:Thing.name"]
     assert len(name_syms) == 1
+
+
+# ---------------------------------------------------------------------------
+# Module-level constants and the synthetic `__module__` symbol
+# ---------------------------------------------------------------------------
+
+
+def test_dunder_constants_are_public(tmp_path: Path):
+    """`__version__`, `__all__`, `__author__` start with an underscore but
+    are part of a module's documented surface — `is_public` must be True.
+    The parser uses a dunder-name check to distinguish module-API dunders
+    from private (single-leading-underscore) identifiers."""
+    f = tmp_path / "pkg.py"
+    f.write_text('__version__ = "1.2.3"\n__all__ = ["foo", "bar"]\n_internal = 42\n')
+    syms = {s.qualified_name: s for s in extract_symbols(f)}
+    assert syms["pkg:__version__"].is_public is True
+    assert syms["pkg:__all__"].is_public is True
+    # Single leading underscore is still private.
+    assert syms["pkg:_internal"].is_public is False
+
+
+def test_annotated_constants_are_indexed(tmp_path: Path):
+    """`NAME: T = value` (annotated assignment) should also produce a
+    constant symbol — the type annotation doesn't change the fact that
+    it's a module-level binding."""
+    f = tmp_path / "annotated.py"
+    f.write_text("from typing import Final\nMAX_RETRIES: Final[int] = 5\n")
+    syms = {s.qualified_name: s for s in extract_symbols(f)}
+    assert "annotated:MAX_RETRIES" in syms
+    assert syms["annotated:MAX_RETRIES"].kind == "constant"
+
+
+def test_tuple_unpacking_assignment_is_not_indexed(tmp_path: Path):
+    """`X, Y = 1, 2` has multiple targets — the "symbol name" is
+    ambiguous. The parser deliberately skips these to keep the symbol
+    table clean. Single-identifier targets remain the only constant
+    shape we recognise."""
+    f = tmp_path / "tuples.py"
+    f.write_text("X, Y = 1, 2\nZ = 3\n")
+    syms = {s.qualified_name: s for s in extract_symbols(f)}
+    # Z (single target) is in; X, Y (tuple unpacking) are not.
+    assert "tuples:Z" in syms
+    assert "tuples:X" not in syms
+    assert "tuples:Y" not in syms
+
+
+def test_module_symbol_emitted_for_setup_py_style_call(tmp_path: Path):
+    """A file like `setup.py` has a few helper functions plus a big
+    module-level `setup(...)` call. The synthetic `__module__` symbol
+    captures the residual module-level code so the LLM-generated triefact
+    can describe the file's import-time behaviour. Without this, the
+    triefact would list the helpers but say nothing about what the file
+    actually *does*."""
+    f = tmp_path / "setup.py"
+    f.write_text(
+        "from setuptools import setup\n"
+        "\n"
+        "def get_version():\n"
+        "    return '1.0.0'\n"
+        "\n"
+        "setup(name='thing', version=get_version())\n"
+    )
+    syms = {s.qualified_name: s for s in extract_symbols(f)}
+    assert "setup:__module__" in syms
+    mod = syms["setup:__module__"]
+    assert mod.kind == "module"
+    # The residual body must contain the `setup(...)` call — that's the
+    # whole point of this symbol.
+    assert "setup(" in mod.body_text
+
+
+def test_module_symbol_not_emitted_for_pure_defs_with_imports(tmp_path: Path):
+    """A file whose entire residual is imports + a module docstring +
+    function/class definitions has no module-level behaviour worth a
+    synthetic symbol. The parser must NOT emit `__module__` in this
+    case — otherwise every Python file in the project would carry an
+    extra triefact section with effectively no content."""
+    f = tmp_path / "purefuncs.py"
+    f.write_text(
+        '"""Pure-functions module."""\n'
+        "from typing import Any\n"
+        "import os\n"
+        "\n"
+        "def helper(x):\n"
+        "    return x + 1\n"
+        "\n"
+        "def other():\n"
+        "    return 0\n"
+    )
+    syms = {s.qualified_name for s in extract_symbols(f)}
+    assert "purefuncs:helper" in syms
+    assert "purefuncs:other" in syms
+    # No `__module__` — the file has no operational module-level code.
+    assert all(":__module__" not in q for q in syms)
+
+
+def test_module_symbol_emitted_for_if_main_block(tmp_path: Path):
+    """An `if __name__ == '__main__':` block is module-level behaviour —
+    code that runs when the file is executed directly. The parser
+    captures it as part of the `__module__` symbol's residual body."""
+    f = tmp_path / "script.py"
+    f.write_text("def main():\n    print('hello')\n\nif __name__ == '__main__':\n    main()\n")
+    syms = {s.qualified_name: s for s in extract_symbols(f)}
+    assert "script:__module__" in syms
+    assert "__main__" in syms["script:__module__"].body_text

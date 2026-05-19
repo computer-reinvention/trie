@@ -231,7 +231,7 @@ class TrieTools:
         Predicate fields (all optional, but at least one is required —
         an empty predicate returns an `invalid_argument` error):
         - `name_contains`: substring match against the symbol's local name (case-insensitive).
-        - `kind`: one of `"function"`, `"class"`, `"method"`, `"any"`.
+        - `kind`: one of `"function"`, `"class"`, `"method"`, `"constant"`, `"module"`, `"any"`.
         - `scope_prefix`: file-path prefix, e.g. `"trie/"` to exclude tests/vendored code.
         - `scope_exclude`: list of file-path prefixes to skip, e.g. `["tests/"]`.
         - `public_only`: bool. Restrict to symbols whose name doesn't start with `_`.
@@ -671,10 +671,17 @@ class TrieTools:
             return GrepPredicate(), err
 
         kind = predicate.get("kind")
-        if kind is not None and kind not in ("function", "class", "method", "any"):
+        if kind is not None and kind not in (
+            "function",
+            "class",
+            "method",
+            "constant",
+            "module",
+            "any",
+        ):
             return GrepPredicate(), _error(
                 "invalid_argument",
-                f"`kind` must be one of function/class/method/any, got {kind!r}.",
+                (f"`kind` must be one of function/class/method/constant/module/any, got {kind!r}."),
             )
 
         scope_exclude_raw = predicate.get("scope_exclude") or ()

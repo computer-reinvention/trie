@@ -13,7 +13,7 @@ PY_LANGUAGE = Language(tree_sitter_python.language())
 @dataclass(frozen=True)
 class Symbol:
     qualified_name: str
-    kind: str  # "function" | "class" | "method"
+    kind: str  # "function" | "class" | "method" | "constant" | "module"
     name: str
     file_path: str  # source-root-relative, e.g. "src/foo.py"
     signature: str
@@ -213,13 +213,197 @@ def strip_string_literal(raw: str) -> str:
     return s.strip()
 
 
+def _build_constant_symbol(
+    node: Node,
+    assignment_node: Node,
+    target_name: str,
+    source: bytes,
+    *,
+    module_key: str,
+    rel_file: str,
+) -> Symbol:
+    """Build a `kind='constant'` Symbol for a module-level `NAME = value` assignment.
+
+    `node` is the wrapping `expression_statement` (so the line range covers the
+    full statement including any trailing comment); `assignment_node` is the
+    inner `assignment` that holds the right-hand side.
+
+    The `signature` is the assignment statement itself, truncated if very long —
+    enough for the agent to see what was assigned without reading the body.
+    Constants don't have a meaningful "body" separate from their signature, so
+    `body_text` is also the assignment text; the body-fingerprint is computed
+    over a token-normalised copy so whitespace tweaks don't churn the
+    fingerprint.
+    """
+    statement_text = _node_text(node, source)
+    # Trim the signature line at the first newline if any (multi-line
+    # assignments stay readable in the file view; the signature card stays
+    # one line). The full statement still lives in `body_text`.
+    first_line = statement_text.split("\n", 1)[0].rstrip()
+    docstring = None
+    body_text = statement_text
+    normalized = _normalize_body_tokens(assignment_node, source)
+    is_public = not target_name.startswith("_") or _is_dunder(target_name)
+    return Symbol(
+        qualified_name=f"{module_key}:{target_name}",
+        kind="constant",
+        name=target_name,
+        file_path=rel_file,
+        signature=first_line,
+        docstring=docstring,
+        body_text=body_text,
+        body_normalized_hash=_hash(normalized),
+        signature_hash=_hash(first_line),
+        start_line=node.start_point[0] + 1,
+        end_line=node.end_point[0] + 1,
+        is_public=is_public,
+    )
+
+
+def _is_dunder(name: str) -> bool:
+    """True for `__name__`-shape identifiers (dunder, double-underscore wrapped).
+
+    Used to keep `__all__`, `__version__`, `__author__`, etc. as `is_public=True`
+    even though they start with an underscore. Dunders are part of a module's
+    documented surface, not implementation detail.
+    """
+    return name.startswith("__") and name.endswith("__") and len(name) > 4
+
+
+def _module_level_constant(node: Node, source: bytes) -> tuple[Node, str] | None:
+    """If `node` is a top-level `NAME = value` (or `NAME: T = value`) assignment,
+    return (assignment_node, name). Otherwise None.
+
+    Skips tuple unpacking (`X, Y = 1, 2`) and attribute targets (`obj.attr = ...`).
+    Those have ambiguous "symbol names" and indexing them would clutter the
+    symbol table; we only capture single-identifier targets, which covers the
+    overwhelmingly common case (module constants, dunder declarations, simple
+    framework instantiations like `app = FastAPI()`).
+    """
+    if node.type != "expression_statement":
+        return None
+    if node.named_child_count == 0:
+        return None
+    inner = node.named_children[0]
+    if inner.type != "assignment":
+        return None
+    left = inner.child_by_field_name("left")
+    if left is None or left.type != "identifier":
+        return None
+    name = _node_text(left, source)
+    if not name:
+        return None
+    return inner, name
+
+
+def _build_module_body_symbol(
+    tree_root: Node,
+    source: bytes,
+    *,
+    module_key: str,
+    rel_file: str,
+    consumed_ranges: list[tuple[int, int]],
+    noise_ranges: list[tuple[int, int]] | None = None,
+) -> Symbol | None:
+    """Build a single synthetic `kind='module'` symbol carrying the residual
+    module-level code that isn't captured by any other symbol.
+
+    `consumed_ranges` is the list of `(start_line, end_line)` for symbols
+    already extracted (functions, classes, constants). `noise_ranges` covers
+    lines that are real module-level syntax but carry no behaviour worth
+    surfacing as a symbol (imports, the module docstring). Both are
+    subtracted from the residual; the symbol is only emitted when something
+    *interesting* remains — a top-level call like `setup(...)`, an
+    `if __name__ == "__main__":` block, or some other top-level expression.
+
+    Files that are pure-defs-plus-imports get no `__module__` symbol; their
+    behaviour is captured entirely by the per-symbol sections, and the
+    overhead of generating a module-body description for "two imports and
+    nothing else" isn't worth the LLM cost.
+    """
+    total_lines = tree_root.end_point[0] + 1
+    if total_lines <= 0:
+        return None
+
+    consumed: set[int] = set()
+    for start, end in consumed_ranges:
+        consumed.update(range(start, end + 1))
+    noise: set[int] = set()
+    for start, end in noise_ranges or ():
+        noise.update(range(start, end + 1))
+
+    lines = source.decode("utf-8", errors="replace").splitlines()
+    residual_lines: list[str] = []
+    # Track which line numbers landed in `residual_lines` so we can also
+    # include adjacent imports/docstring lines back in if there's real
+    # residual content nearby (for context). Currently we drop them
+    # unconditionally — the agent gets the docstring via the file
+    # `description:` field and doesn't need to re-see imports.
+    for lineno in range(1, total_lines + 1):
+        if lineno in consumed or lineno in noise:
+            continue
+        idx = lineno - 1
+        if idx >= len(lines):
+            continue
+        line = lines[idx]
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("#"):
+            continue
+        residual_lines.append(line)
+
+    if not residual_lines:
+        return None
+
+    body_text = "\n".join(residual_lines)
+    # `signature` is a one-line summary: how many residual lines, what kinds
+    # of statement they start with. Cheap to compute and gives the agent a
+    # one-glance view of what's in there.
+    first_real = residual_lines[0].strip()
+    signature = (
+        f"module-level code ({len(residual_lines)} statements): "
+        + first_real[:100]
+        + ("…" if len(first_real) > 100 else "")
+    )
+    return Symbol(
+        qualified_name=f"{module_key}:__module__",
+        kind="module",
+        name="__module__",
+        file_path=rel_file,
+        signature=signature,
+        docstring=None,
+        body_text=body_text,
+        body_normalized_hash=_hash(body_text),
+        signature_hash=_hash(signature),
+        start_line=1,
+        end_line=total_lines,
+        is_public=True,
+    )
+
+
 def extract_symbols(
     file_path: Path,
     source_root: Path | None = None,
     *,
     source_text: str | None = None,
 ) -> list[Symbol]:
-    """Parse a Python file and return its top-level functions, classes, and class methods.
+    """Parse a Python file and return its top-level symbols.
+
+    Captures four shapes:
+
+      - `function`: module-level `def` (and async def).
+      - `class`: module-level `class`, plus each `method` defined directly inside.
+      - `constant`: module-level `NAME = value` (or `NAME: T = value`). Includes
+        dunders like `__version__` and `__all__`, and simple framework
+        instantiations like `app = FastAPI()`. Tuple-target and attribute-target
+        assignments are skipped — their symbol names are ambiguous.
+      - `module`: a single synthetic `__module__` symbol per file holding the
+        residual module-level code that isn't captured by any of the above:
+        imports, top-level `if` blocks (`if TYPE_CHECKING:`, `if __name__ == ...`),
+        top-level expression statements (`setup(...)` calls in setup.py), and
+        decorator lines. This is the "what does the file *do* at import time"
+        view that agents need but the per-symbol view drops.
 
     `source_root` controls the qualified_name prefix and the stored file_path. If None,
     defaults to the file's parent directory.
@@ -238,8 +422,21 @@ def extract_symbols(
     rel_file = str(file_path.relative_to(source_root))
 
     symbols: list[Symbol] = []
+    # Two range lists:
+    # - `consumed_ranges` tracks lines claimed by extracted symbols (functions,
+    #   classes/methods, constants). Used as the basis for the `__module__`
+    #   residual.
+    # - `noise_ranges` additionally tracks lines that are real module-level
+    #   syntax but carry no operational behaviour worth a separate symbol:
+    #   imports and the module docstring. These are subtracted from the
+    #   residual to avoid emitting a `__module__` symbol whose entire body
+    #   is `from x import y` lines.
+    consumed_ranges: list[tuple[int, int]] = []
+    noise_ranges: list[tuple[int, int]] = []
+    first_statement = True  # only the very first statement can be the module docstring
     for child in tree.root_node.named_children:
         target = _undecorate(child)
+        is_doc_or_import = False
         if target.type == "function_definition":
             symbols.append(
                 _build_symbol(
@@ -251,8 +448,52 @@ def extract_symbols(
                     kind="function",
                 )
             )
+            consumed_ranges.append((child.start_point[0] + 1, child.end_point[0] + 1))
         elif target.type == "class_definition":
-            symbols.extend(_walk_class(target, source, module_key=module_key, rel_file=rel_file))
+            class_symbols = _walk_class(target, source, module_key=module_key, rel_file=rel_file)
+            symbols.extend(class_symbols)
+            consumed_ranges.append((child.start_point[0] + 1, child.end_point[0] + 1))
+        elif target.type in ("import_statement", "import_from_statement"):
+            # Imports aren't a meaningful symbol on their own. Tag the line
+            # as noise so it doesn't make the residual body look non-empty.
+            is_doc_or_import = True
+            noise_ranges.append((child.start_point[0] + 1, child.end_point[0] + 1))
+        else:
+            # Module docstring: PEP 257 says the very first statement, if it's
+            # a bare string expression, is the module docstring. We tag it as
+            # noise here so it doesn't end up in the `__module__` body — the
+            # docstring already feeds the file-level `description:` field.
+            if (
+                first_statement
+                and target.type == "expression_statement"
+                and target.named_child_count > 0
+                and target.named_children[0].type == "string"
+            ):
+                is_doc_or_import = True
+                noise_ranges.append((child.start_point[0] + 1, child.end_point[0] + 1))
+            else:
+                # Try to interpret `child` as a module-level constant
+                # assignment. If so, emit `kind='constant'`. If not, the line
+                # range stays unclaimed and the residual goes into the
+                # `__module__` symbol below.
+                const_match = _module_level_constant(child, source)
+                if const_match is not None:
+                    assignment_node, target_name = const_match
+                    symbols.append(
+                        _build_constant_symbol(
+                            child,
+                            assignment_node,
+                            target_name,
+                            source,
+                            module_key=module_key,
+                            rel_file=rel_file,
+                        )
+                    )
+                    consumed_ranges.append((child.start_point[0] + 1, child.end_point[0] + 1))
+        if not is_doc_or_import:
+            # After the first real (non-docstring, non-import) statement, the
+            # "first statement could be the module docstring" window closes.
+            first_statement = False
 
     # Deduplicate by qualified_name. typing.@overload creates multiple defs with the
     # same name, and @property + @x.setter does too. Python requires the actual
@@ -261,4 +502,20 @@ def extract_symbols(
     deduped: dict[str, Symbol] = {}
     for sym in symbols:
         deduped[sym.qualified_name] = sym
-    return list(deduped.values())
+    result = list(deduped.values())
+
+    # Module-body symbol: everything *not* claimed by a function/class/constant
+    # extraction above AND not just imports / the module docstring (which are
+    # `noise_ranges`). Computed after dedup so the consumed_ranges from
+    # overload/setter dedup pairs only count once.
+    module_sym = _build_module_body_symbol(
+        tree.root_node,
+        source,
+        module_key=module_key,
+        rel_file=rel_file,
+        consumed_ranges=consumed_ranges,
+        noise_ranges=noise_ranges,
+    )
+    if module_sym is not None:
+        result.append(module_sym)
+    return result

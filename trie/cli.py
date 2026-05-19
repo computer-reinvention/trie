@@ -1904,7 +1904,7 @@ def grep_cmd(
         None,
         "--kind",
         "-k",
-        help="Restrict to one of: function, class, method, any.",
+        help="Restrict to one of: function, class, method, constant, module, any.",
     ),
     scope_prefix: str | None = typer.Option(
         None,
