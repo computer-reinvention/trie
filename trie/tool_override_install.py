@@ -277,8 +277,8 @@ def _render_opencode_read_override(_project_root: Path) -> str:
         _GENERATED_HEADER
         + """
 import { tool } from "@opencode-ai/plugin"
-import { readFile, stat } from "node:fs/promises"
-import { join, normalize } from "node:path"
+import { readFile, stat, appendFile } from "node:fs/promises"
+import { join, normalize, isAbsolute } from "node:path"
 
 // Conservative qname detection: an argument is a qname when it contains
 // `:` but is NOT a URL (scheme://...) and NOT a Windows drive prefix
@@ -291,6 +291,159 @@ function looksLikeQname(s: string): boolean {
   if (/^[A-Za-z]:[\\\\/]/.test(s)) return false                  // Windows drive
   return true
 }
+
+// --- Telemetry --------------------------------------------------------------
+// The read override has three code paths that don't shell out to `trie`
+// (triefact lookup, source fallthrough, show_source). Without TS-side
+// telemetry those calls would be invisible to `trie audit`, which would
+// only see the qname path. We emit `cli_call` events from here that mirror
+// the shape Python emits, so the audit aggregator buckets them the same
+// way regardless of which surface (CLI subprocess or in-process TS wrapper)
+// produced them.
+
+interface TelemetryConfig {
+  enabled: boolean
+  logPath: string | null  // absolute path to debug.jsonl, or null when off
+  captureArgs: boolean
+  captureResponses: boolean
+}
+
+// Cache the resolved config per (cwd) so we parse trie.toml at most once
+// per project root over the wrapper's lifetime. The cwd-keyed map handles
+// the unusual case of opencode being driven against multiple projects in
+// one session.
+const telemetryConfigCache = new Map<string, TelemetryConfig>()
+
+function resolveTelemetryConfig(cwd: string): TelemetryConfig {
+  const cached = telemetryConfigCache.get(cwd)
+  if (cached !== undefined) return cached
+  const cfg = computeTelemetryConfig(cwd)
+  telemetryConfigCache.set(cwd, cfg)
+  return cfg
+}
+
+function computeTelemetryConfig(cwd: string): TelemetryConfig {
+  // Defaults match Python's behaviour when no config is present: off.
+  const off: TelemetryConfig = {
+    enabled: false,
+    logPath: null,
+    captureArgs: true,
+    captureResponses: false,
+  }
+
+  // Parse trie.toml's [debug] section. Hand-rolled because we don't want
+  // to drag a TOML parser dep into the .opencode/ package just for four
+  // string/bool fields with a known schema. If the file is missing or
+  // unreadable, fall back to env-var-only mode.
+  let toml = ""
+  try {
+    toml = require("node:fs").readFileSync(join(cwd, "trie.toml"), "utf-8")
+  } catch {
+    // No trie.toml; honour TRIE_DEBUG anyway (see below).
+  }
+  const debugSection = extractTomlSection(toml, "debug")
+
+  let enabled = parseBool(debugSection["enabled"]) ?? false
+  let logPath = parseString(debugSection["log_path"]) ?? "debug.jsonl"
+  const captureArgs = parseBool(debugSection["capture_args"]) ?? true
+  const captureResponses = parseBool(debugSection["capture_responses"]) ?? false
+
+  // Env var wins (mirrors Python's precedence): `TRIE_DEBUG=1` enables
+  // with the default path; `TRIE_DEBUG=/some/path` enables with that path;
+  // `TRIE_DEBUG=0` force-disables; anything else enables at default.
+  const env = process.env.TRIE_DEBUG
+  if (env !== undefined) {
+    if (env === "0" || env === "" || env.toLowerCase() === "false") {
+      return { ...off, captureArgs, captureResponses }
+    }
+    enabled = true
+    if (env !== "1" && env.toLowerCase() !== "true") {
+      logPath = env
+    }
+  }
+
+  if (!enabled) {
+    return { ...off, captureArgs, captureResponses }
+  }
+
+  // Resolve logPath: absolute → use as-is; relative → resolve against
+  // project root (cwd). Matches what `trie/telemetry.py` does.
+  const resolvedPath = isAbsolute(logPath) ? logPath : join(cwd, logPath)
+  return { enabled: true, logPath: resolvedPath, captureArgs, captureResponses }
+}
+
+function extractTomlSection(toml: string, section: string): Record<string, string> {
+  // Minimal TOML section extractor. Walks lines; tracks the current
+  // section header; collects `key = value` pairs from `[section]`.
+  // Skips comments and blank lines. Strings, bools, and numbers come
+  // back as their raw string form so the caller can parse per-key.
+  // Doesn't handle multi-line strings, arrays, or nested tables —
+  // none of which we use in [debug].
+  const out: Record<string, string> = {}
+  let inSection = false
+  for (const raw of toml.split(/\\r?\\n/)) {
+    const line = raw.replace(/(^|\\s)#.*$/, "").trim()
+    if (line === "") continue
+    const header = /^\\[([^\\]]+)\\]$/.exec(line)
+    if (header !== null) {
+      inSection = header[1].trim() === section
+      continue
+    }
+    if (!inSection) continue
+    const kv = /^([A-Za-z_][A-Za-z0-9_]*)\\s*=\\s*(.+)$/.exec(line)
+    if (kv === null) continue
+    out[kv[1]] = kv[2].trim()
+  }
+  return out
+}
+
+function parseBool(raw: string | undefined): boolean | null {
+  if (raw === undefined) return null
+  const v = raw.toLowerCase()
+  if (v === "true") return true
+  if (v === "false") return false
+  return null
+}
+
+function parseString(raw: string | undefined): string | null {
+  if (raw === undefined) return null
+  // Strip surrounding quotes if present (single or double).
+  const m = /^["']([\\s\\S]*)["']$/.exec(raw)
+  return m !== null ? m[1] : raw
+}
+
+interface TelemetryEvent {
+  event: string
+  tool: string
+  mode: string  // "qname" | "triefact" | "source" | "show_source"
+  result_kind: "ok" | "error"
+  duration_ms: number
+  response_bytes?: number
+  args?: Record<string, unknown>
+  error?: string
+}
+
+async function emitTelemetry(cwd: string, evt: TelemetryEvent): Promise<void> {
+  // Telemetry is best-effort: any failure here (no config, no log path,
+  // permission denied, disk full, etc.) is swallowed silently. The wrapper
+  // must never crash the agent's turn over an observability concern.
+  try {
+    const cfg = resolveTelemetryConfig(cwd)
+    if (!cfg.enabled || cfg.logPath === null) return
+    const payload: Record<string, unknown> = {
+      ts: new Date().toISOString(),
+      ...evt,
+    }
+    if (!cfg.captureArgs && "args" in payload) {
+      delete payload.args
+    }
+    await appendFile(cfg.logPath, JSON.stringify(payload) + "\\n", "utf-8")
+  } catch {
+    // Swallow. Nothing we can usefully do here.
+  }
+}
+
+// --- I/O helpers ------------------------------------------------------------
 
 async function shellOutToTrie(
   flags: string[],
@@ -404,33 +557,92 @@ export default tool({
   },
   async execute(args, context) {
     const cwd = context.directory
-    const forceSource =
-      args.show_source === true ||
-      args.offset !== undefined ||
-      args.limit !== undefined
+    const started = performance.now()
 
-    if (forceSource) {
-      // Escape hatch: raw source bytes (or a line range from them).
-      return readSourceFile(cwd, args.path, args.offset, args.limit)
+    // Telemetry args: only the path and the call-shape knobs. We don't
+    // capture the full envelope arg unless the operator opts in via
+    // capture_responses (handled below).
+    const teleArgs: Record<string, unknown> = { path: args.path }
+    if (args.show_source !== undefined) teleArgs.show_source = args.show_source
+    if (args.offset !== undefined) teleArgs.offset = args.offset
+    if (args.limit !== undefined) teleArgs.limit = args.limit
+
+    let mode = "source"
+    let result: string
+    let resultKind: "ok" | "error" = "ok"
+    let errorMessage: string | undefined
+    try {
+      const forceSource =
+        args.show_source === true ||
+        args.offset !== undefined ||
+        args.limit !== undefined
+
+      if (forceSource) {
+        // Escape hatch: raw source bytes (or a line range from them).
+        // The qname path emits its own `cli_call` from the subprocess
+        // we spawn below; the in-process paths (this one + triefact +
+        // source fallthrough) emit from here.
+        mode = "show_source"
+        result = await readSourceFile(cwd, args.path, args.offset, args.limit)
+      } else if (looksLikeQname(args.path)) {
+        // Symbol mode: route to `trie read --json <qname>`. The trie CLI
+        // emits its own `cli_call` event from inside the subprocess, so
+        // we mark this mode as `qname` here but skip our own emission
+        // at the bottom to avoid double-counting.
+        mode = "qname"
+        result = await shellOutToTrie(["read", "--json", args.path], cwd)
+      } else {
+        // File-as-triefact mode: return the .md if it exists, otherwise
+        // fall through to source. Non-source files (README.md, configs,
+        // .gitignore, freshly added unsynced files) all 'just work' via
+        // the fallthrough — the override is transparent for them.
+        const triefact = await readTriefact(cwd, args.path)
+        if (triefact !== null) {
+          mode = "triefact"
+          result = triefact
+        } else {
+          mode = "source"
+          result = await readSourceFile(cwd, args.path)
+        }
+      }
+    } catch (e) {
+      resultKind = "error"
+      errorMessage = e instanceof Error ? e.message : String(e)
+      // Emit before re-throwing so we don't lose the call from telemetry.
+      // The qname path emits its own event from `trie read` — but only
+      // when that subprocess actually fires. If `shellOutToTrie` threw
+      // (e.g. trie binary missing), the subprocess never emitted, so
+      // we cover the gap by emitting here in all error cases.
+      const elapsed = Math.round(performance.now() - started)
+      await emitTelemetry(cwd, {
+        event: "cli_call",
+        tool: "read",
+        mode,
+        result_kind: "error",
+        duration_ms: elapsed,
+        args: teleArgs,
+        error: errorMessage,
+      })
+      throw e
     }
 
-    if (looksLikeQname(args.path)) {
-      // Symbol mode: route to `trie read --json <qname>`. The trie CLI
-      // returns either a success envelope (prose + callers + callees)
-      // or a structured `{error: ...}` envelope; both are returned to
-      // the agent verbatim so it can react.
-      return shellOutToTrie(["read", "--json", args.path], cwd)
+    // Successful return: emit a `cli_call` for the in-process paths.
+    // Skip emission on the qname path because `trie read` already
+    // emitted its own `cli_call` from inside the subprocess; emitting
+    // here too would double-count.
+    if (mode !== "qname") {
+      const elapsed = Math.round(performance.now() - started)
+      await emitTelemetry(cwd, {
+        event: "cli_call",
+        tool: "read",
+        mode,
+        result_kind: resultKind,
+        duration_ms: elapsed,
+        response_bytes: Buffer.byteLength(result, "utf-8"),
+        args: teleArgs,
+      })
     }
-
-    // File-as-triefact mode: return the .md if it exists, otherwise
-    // fall through to source. Non-source files (README.md, configs,
-    // .gitignore, freshly added unsynced files) all 'just work' via
-    // the fallthrough — the override is transparent for them.
-    const triefact = await readTriefact(cwd, args.path)
-    if (triefact !== null) {
-      return triefact
-    }
-    return readSourceFile(cwd, args.path)
+    return result
   },
 })
 """
