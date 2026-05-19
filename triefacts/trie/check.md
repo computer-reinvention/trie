@@ -2,7 +2,7 @@
 trie_version: 0.1.1
 source: trie/check.py
 file_fingerprint: 7f06c7053f40e5352b290eaab4c216f06e376680c60d9886afcf46daa647c6aa
-last_synced_at: '2026-05-19T10:40:02Z'
+last_synced_at: '2026-05-19T15:19:44Z'
 defines:
 - kind: module
   qualified_name: trie/check:__module__

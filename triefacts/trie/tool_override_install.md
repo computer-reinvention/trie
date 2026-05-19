@@ -1,14 +1,14 @@
 ---
 trie_version: 0.1.1
 source: trie/tool_override_install.py
-file_fingerprint: 37dbe06fddaf7b60d5fa431de1f1e4fe746c107ed19d1ab1d98c646e99fb5c0d
-last_synced_at: '2026-05-19T10:42:45Z'
+file_fingerprint: be574b484bf3e3264a150a9a224b25a025f66642e2db6e4b1f0cfda690dc7e8a
+last_synced_at: '2026-05-19T15:19:42Z'
 description: 'Tool-override installation: replace an agent''s built-in tools with
   trie wrappers.'
 defines:
 - kind: module
   qualified_name: trie/tool_override_install:__module__
-  lines: 1-1140
+  lines: 1-1462
 - kind: constant
   qualified_name: trie/tool_override_install:Action
   lines: 39-39
@@ -35,32 +35,32 @@ defines:
   lines: 130-232
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_read_override
-  lines: 235-649
+  lines: 235-971
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_trie_trace
-  lines: 652-720
+  lines: 974-1042
 - kind: function
   qualified_name: trie/tool_override_install:_render_claude_code_hooks_json
-  lines: 728-784
+  lines: 1050-1106
 - kind: constant
   qualified_name: trie/tool_override_install:TARGETS
-  lines: 793-899
+  lines: 1115-1221
 - kind: class
   qualified_name: trie/tool_override_install:ToolOverrideInstallPlan
-  lines: 908-914
+  lines: 1230-1236
 - kind: function
   qualified_name: trie/tool_override_install:install
-  lines: 917-956
+  lines: 1239-1278
 - kind: function
   qualified_name: trie/tool_override_install:apply_one
-  lines: 959-1016
+  lines: 1281-1338
 - kind: function
   qualified_name: trie/tool_override_install:_remove_obsolete
-  lines: 1019-1072
+  lines: 1341-1394
 - kind: function
   qualified_name: trie/tool_override_install:_apply_file
-  lines: 1075-1139
-incoming_refs: 26
+  lines: 1397-1461
+incoming_refs: 31
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/tool_override_install:ToolOverrideInstallError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=af02c768a0f5c0ca53ba008c51d793424e58fbb39a024793393d42518cd258dd source_ref=22af55fe3c92536b808294dbfad114aa433c76ee -->
@@ -180,15 +180,17 @@ Type alias for the set of possible per-file or per-target outcome verbs.
 Top-of-file comment block prepended to every generated `.ts` override file.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_read_override fingerprint=5d3135a0a1c4a39b2b40d8fcf0a7721e5fad1f40c0ce762abc4deb851923f2db body_fp=f371de069c3523b8c301e9a00d4fec71b06e6f657faa470b7063462dde3ead45 source_ref=cd49f981cf93dad430cf7f0808a344171fe6573a -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_read_override fingerprint=3e4371bc634714174d7e76b9f94e76c2f5f015b3db4ac0f661f3ec3cb3d12b5f body_fp=4ec7a7bc485ebe5c1ac9089cb2d86a4a1ab83e88c64fc1d39267aa2dd612f8e7 source_ref=429ffd0e344f00bc83056230f6ecab0384be6390 -->
 ## `_render_opencode_read_override(_project_root: Path) -> str`
 
-Render `.opencode/tools/read.ts`, dispatching on argument shape across three paths: qname → `trie read --json`, file path with triefact → return `.md` contents, otherwise raw source bytes.
+Render `.opencode/tools/read.ts`, dispatching on argument shape across four paths: qname → `trie read --json`, file path with triefact → compact view (default) or agent-trimmed full view (`full: true`), otherwise raw source bytes.
 
 - **qname**: string containing `:` (not a URL scheme or Windows drive) routes to `trie read`
-- **triefact**: looks up `triefacts/<stem>.md`; falls through to source if absent
-- **show_source / offset / limit**: force raw file read via `readSourceFile`
-- Emits `cli_call` telemetry events for in-process paths; skips emission on qname path to avoid double-counting with the subprocess
+- **triefact compact** (default): renders symbol manifest with signatures and first-paragraph intros via `renderCompact`
+- **triefact full** (`full: true`): strips internal frontmatter keys and section sentinels via `renderForAgent`, keeping only agent-facing keys and section bodies
+- **show_source / offset / limit**: force raw file read via `readSourceFile`; absolute paths resolved verbatim, relative paths under cwd
+- Accepts a `full` arg in telemetry capture; emits `cli_call` telemetry for in-process paths; skips emission on qname path to avoid double-counting with the subprocess
+- `readTriefact` now handles absolute paths by stripping the cwd prefix before triefact lookup; returns `null` for paths outside the project tree
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/tool_override_install:TARGETS fingerprint=1ce974ad6b0934f36a67e1d9fec6f544b144d44c35f10f05e07f8f9b35a996dd body_fp=e10c52965d036e6bbb07bc6a857374249ea8e7aadf30e1f7f5aa371d03ea078f source_ref=cd49f981cf93dad430cf7f0808a344171fe6573a -->

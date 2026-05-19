@@ -246,13 +246,17 @@ def _render_opencode_read_override(_project_root: Path) -> str:
        in mind, show me its prose and immediate neighbours" path.
 
     2. **File-as-triefact**: arg is a plain file path AND a triefact
-       exists for it at `triefacts/<path>.md`. Returns the full triefact
-       contents (YAML frontmatter + every per-symbol section body). The
-       agent gets the dense, structured "what does this file contain"
-       view trie already paid LLM cost to produce — much cheaper per
-       token than reading raw source, and usually enough to decide which
-       symbol to drill into. This is the "give me everything trie knows
-       about this file" path.
+       exists for it at `triefacts/<path>.md`. Returns either the
+       compact view (default) or an agent-trimmed full view (`full:
+       true`). The full view strips trie's internal frontmatter
+       (`trie_version`, `file_fingerprint`, `last_synced_at`, `source`)
+       and every `<!-- trie:section ... -->` / `<!-- trie:end -->`
+       sentinel — including the fingerprints they carry — keeping only
+       the agent-relevant frontmatter keys (`description`, `defines`,
+       `incoming_refs`, `outgoing_refs`) and the section bodies as
+       plain Markdown. The agent gets trie's synthesised view trie
+       already paid LLM cost to produce, with none of the machinery
+       noise.
 
     3. **Source fallthrough**: `show_source: true` OR the path has no
        triefact OR `offset`/`limit` were passed (the agent wants raw
@@ -714,6 +718,83 @@ function isDunder(name: string): boolean {
   return name.startsWith("__") && name.endsWith("__") && name.length > 4
 }
 
+// --- Full-mode triefact rendering (agent-trimmed) --------------------------
+//
+// `full: true` historically returned the raw `.md` bytes — frontmatter +
+// every sentinel with its fingerprints. None of that machinery is useful
+// to the agent. `renderForAgent` strips it down to the agent-facing
+// surface: a frontmatter block containing only the keys an agent can act
+// on (description, defines, incoming_refs, outgoing_refs) and the section
+// bodies with their `<!-- trie:section ... -->` / `<!-- trie:end -->`
+// sentinels removed. Inter-section prose is preserved verbatim.
+//
+// Kept in lockstep with Python's `trie.sync.writer.render_for_agent` —
+// the two MUST emit equivalent output for the same input so the agent
+// surface is consistent whether it goes through MCP or the read override.
+
+function renderFrontMatterForAgent(fm: FrontMatter): string {
+  // Emit only the agent-facing keys, in the order Python's helper uses
+  // (description, defines, incoming_refs, outgoing_refs). Missing keys
+  // are dropped. If nothing's left, return empty string so the caller
+  // can omit the `---/---` block entirely.
+  const lines: string[] = []
+  if (fm.description !== undefined) {
+    lines.push(`description: ${quoteYamlScalar(fm.description)}`)
+  }
+  if (fm.defines.length > 0) {
+    lines.push("defines:")
+    for (const entry of fm.defines) {
+      lines.push(`- kind: ${entry.kind}`)
+      lines.push(`  qualified_name: ${entry.qualified_name}`)
+      lines.push(`  lines: ${quoteYamlScalar(entry.lines)}`)
+    }
+  }
+  if (fm.incoming_refs !== undefined) {
+    lines.push(`incoming_refs: ${fm.incoming_refs}`)
+  }
+  if (fm.outgoing_refs !== undefined) {
+    lines.push(`outgoing_refs: ${fm.outgoing_refs}`)
+  }
+  if (lines.length === 0) return ""
+  return lines.join("\\n") + "\\n"
+}
+
+function quoteYamlScalar(value: string): string {
+  // PyYAML's safe_dump emits unquoted scalars when the value is plain
+  // (no leading sigils, no embedded special chars). For the small set
+  // of values we emit here (descriptions, qnames, line ranges), an
+  // unquoted form is safe in nearly all cases. We only single-quote
+  // when the value starts with a char YAML treats specially.
+  if (value === "") return "''"
+  const first = value[0]
+  if ("!&*?|>%@\\`#-:[]{},".includes(first)) {
+    return `'${value.replace(/'/g, "''")}'`
+  }
+  return value
+}
+
+function stripSentinels(rest: string): string {
+  // Remove both open and close sentinel lines (each on their own line)
+  // from `rest`. The regex anchors at line start/end so sentinel-shaped
+  // text inside fenced code blocks is left alone — same anchoring rule
+  // as the Python parser. Collapse any run of 3+ blank lines down to a
+  // single blank line so the output reads as continuous Markdown.
+  const openRe = /^<!--\\s*trie:section\\s+[^>]*-->[\\t ]*\\r?\\n?/gm
+  const closeRe = /^<!--\\s*trie:end\\s*-->[\\t ]*\\r?\\n?/gm
+  let out = rest.replace(openRe, "").replace(closeRe, "")
+  // Collapse runs of 3+ newlines to exactly 2 (one blank line).
+  out = out.replace(/\\n{3,}/g, "\\n\\n")
+  return out
+}
+
+function renderForAgent(triefact: string): string {
+  const { fm, rest } = parseFrontMatter(triefact)
+  const fmBlock = renderFrontMatterForAgent(fm)
+  const body = stripSentinels(rest).replace(/^\\s+/, "")
+  if (fmBlock === "") return body
+  return `---\\n${fmBlock}---\\n${body}`
+}
+
 export default tool({
   description:
     "Read source code or trie's synthesised description of it. Replaces " +
@@ -725,7 +806,8 @@ export default tool({
     "`triefacts/<path>.md`, returns a COMPACT view by default — file " +
     "description, ref counts, and one entry per symbol with its qname, kind, " +
     "lines, signature, and a first-paragraph intro. Pass `full: true` to get " +
-    "the entire triefact (every section's full prose); " +
+    "every section's full prose (with trie's internal frontmatter and " +
+    "section sentinels stripped); " +
     "(3) when `show_source: true`, or no triefact exists, or `offset`/`limit` " +
     "are passed for a line-range read, returns the raw source verbatim. " +
     "Default flow for understanding a file: read in compact mode to see " +
@@ -770,14 +852,15 @@ export default tool({
       .optional()
       .describe(
         "When `path` is a file path and a triefact exists for it, return " +
-          "the entire triefact (full YAML frontmatter + every per-symbol " +
-          "section body). Default behaviour is compact mode: file " +
-          "description, ref counts, and one entry per symbol containing " +
-          "the qname, kind, lines, signature, and first-paragraph intro. " +
-          "Use `full: true` when you actually need the complete prose " +
-          "bundle; for narrow probing, default compact mode is much " +
-          "cheaper per token. Ignored for qname-shaped paths and for " +
-          "`show_source: true` calls.",
+          "every section's full prose. Trie's internal frontmatter " +
+          "(`trie_version`, `file_fingerprint`, `last_synced_at`, " +
+          "`source`) and all section sentinels (with their fingerprints) " +
+          "are stripped; only `description`, `defines`, `incoming_refs`, " +
+          "and `outgoing_refs` survive in the frontmatter. Default " +
+          "behaviour is compact mode (one entry per symbol with qname, " +
+          "kind, lines, signature, and first-paragraph intro), which is " +
+          "much cheaper per token for narrow probing. Ignored for qname-" +
+          "shaped paths and for `show_source: true` calls.",
       ),
   },
   async execute(args, context) {
@@ -829,7 +912,12 @@ export default tool({
           // every section's prose.
           if (args.full === true) {
             mode = "triefact_full"
-            result = triefact
+            // Strip trie's internal frontmatter (trie_version,
+            // file_fingerprint, last_synced_at, source) and every
+            // sentinel (which carries fingerprints / body_fps /
+            // source_refs). Keeps only the agent-facing keys plus the
+            // section bodies. Mirrors `trie.sync.writer.render_for_agent`.
+            result = renderForAgent(triefact)
           } else {
             mode = "triefact_compact"
             result = renderCompact(triefact, args.path)

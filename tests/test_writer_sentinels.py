@@ -2,7 +2,14 @@ from __future__ import annotations
 
 import pytest
 
-from trie.sync.writer import Prose, Section, TriefactFile, hash_body
+from trie.sync.writer import (
+    AGENT_FRONT_MATTER_KEYS,
+    Prose,
+    Section,
+    TriefactFile,
+    hash_body,
+    render_for_agent,
+)
 
 # --- parsing ---
 
@@ -335,3 +342,136 @@ def test_front_matter_re_renders_in_insertion_order():
     src_idx = out.index("source")
     fp_idx = out.index("file_fingerprint")
     assert src_idx < fp_idx
+
+
+# --- render_for_agent: agent-facing trim ----------------------------------
+
+
+def _sample_triefact() -> str:
+    """A realistic triefact with both internal and agent-relevant frontmatter
+    keys plus two sentinel-wrapped sections and an inter-section prose blob.
+    Returned as a single string so tests can run it through render_for_agent
+    and inspect the trimmed output.
+    """
+    return (
+        "---\n"
+        "trie_version: 0.1.1\n"
+        "source: mod.py\n"
+        "file_fingerprint: aaaa\n"
+        "last_synced_at: '2026-05-19T10:40:19Z'\n"
+        "description: A module doing things.\n"
+        "defines:\n"
+        "- kind: function\n"
+        "  qualified_name: mod:foo\n"
+        "  lines: 1-10\n"
+        "- kind: function\n"
+        "  qualified_name: mod:bar\n"
+        "  lines: 12-20\n"
+        "incoming_refs: 3\n"
+        "outgoing_refs: 7\n"
+        "---\n"
+        "<!-- trie:section symbol=mod:foo fingerprint=ff11 body_fp=bb11 source_ref=src1 -->\n"
+        "## `foo()`\n\nFoo does foo.\n"
+        "<!-- trie:end -->\n"
+        "\n"
+        "Hand-written interlude.\n"
+        "\n"
+        "<!-- trie:section symbol=mod:bar fingerprint=ff22 body_fp=bb22 -->\n"
+        "## `bar()`\n\nBar does bar.\n"
+        "<!-- trie:end -->\n"
+    )
+
+
+def test_render_for_agent_strips_internal_frontmatter():
+    out = render_for_agent(_sample_triefact())
+    # Internal keys must not appear.
+    for key in ("trie_version", "file_fingerprint", "last_synced_at"):
+        assert key not in out
+    # `source:` is the trickiest — it could collide with the word "source"
+    # elsewhere. Check for the YAML form.
+    assert "\nsource: " not in out
+    assert "source: mod.py" not in out
+
+
+def test_render_for_agent_keeps_agent_frontmatter():
+    out = render_for_agent(_sample_triefact())
+    # Frontmatter block must still be present (we have agent-relevant keys).
+    assert out.startswith("---\n")
+    fm_end = out.index("\n---\n", 4)
+    fm_block = out[: fm_end + 5]
+    assert "description: A module doing things." in fm_block
+    assert "defines:" in fm_block
+    assert "qualified_name: mod:foo" in fm_block
+    assert "qualified_name: mod:bar" in fm_block
+    assert "incoming_refs: 3" in fm_block
+    assert "outgoing_refs: 7" in fm_block
+
+
+def test_render_for_agent_strips_sentinels_and_fingerprints():
+    out = render_for_agent(_sample_triefact())
+    # No sentinel lines at all.
+    assert "trie:section" not in out
+    assert "trie:end" not in out
+    # Therefore no fingerprints either.
+    assert "fingerprint=" not in out
+    assert "body_fp=" not in out
+    assert "source_ref=" not in out
+
+
+def test_render_for_agent_keeps_section_bodies_and_interleaved_prose():
+    out = render_for_agent(_sample_triefact())
+    # Both bodies survive.
+    assert "## `foo()`" in out
+    assert "Foo does foo." in out
+    assert "## `bar()`" in out
+    assert "Bar does bar." in out
+    # Hand-written prose between sections survives.
+    assert "Hand-written interlude." in out
+    # Bodies are separated by a blank line, not glued together.
+    foo_idx = out.index("Foo does foo.")
+    bar_idx = out.index("Bar does bar.")
+    between = out[foo_idx:bar_idx]
+    assert "\n\n" in between
+
+
+def test_render_for_agent_omits_frontmatter_when_no_agent_keys():
+    text = (
+        "---\n"
+        "trie_version: 0.1.1\n"
+        "source: mod.py\n"
+        "file_fingerprint: aaaa\n"
+        "last_synced_at: '2026-05-19T10:40:19Z'\n"
+        "---\n"
+        "<!-- trie:section symbol=mod:foo fingerprint=ff -->\n"
+        "## `foo()`\n\nbody.\n"
+        "<!-- trie:end -->\n"
+    )
+    out = render_for_agent(text)
+    # No `---/---` block at all when nothing agent-facing made it through.
+    assert not out.startswith("---")
+    assert "trie_version" not in out
+    # Body still there.
+    assert "## `foo()`" in out
+    assert "body." in out
+
+
+def test_render_for_agent_empty_input():
+    assert render_for_agent("") == ""
+
+
+def test_render_for_agent_prose_only_no_sentinels():
+    text = "# heading\n\nplain prose only.\n"
+    # No frontmatter, no sentinels — should be a passthrough modulo whitespace.
+    out = render_for_agent(text)
+    assert "# heading" in out
+    assert "plain prose only." in out
+
+
+def test_agent_front_matter_keys_constant():
+    # Lock down the agent-key set so changes are deliberate.
+    assert set(AGENT_FRONT_MATTER_KEYS) == {
+        "description",
+        "defines",
+        "incoming_refs",
+        "outgoing_refs",
+    }

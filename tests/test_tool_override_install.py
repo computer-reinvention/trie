@@ -277,6 +277,31 @@ def test_opencode_read_override_emits_compact_renderer(tmp_path: Path):
     assert "triefact_full" in body
 
 
+def test_opencode_read_override_full_mode_trims_for_agent(tmp_path: Path):
+    """`full: true` used to return the raw `.md` bytes — frontmatter +
+    every sentinel with its fingerprints. That's machinery noise to the
+    agent. The wrapper must now route full mode through `renderForAgent`,
+    which strips internal frontmatter keys (`trie_version`,
+    `file_fingerprint`, `last_synced_at`, `source`) and every
+    `<!-- trie:section ... -->` / `<!-- trie:end -->` sentinel before
+    handing the bytes back."""
+    install(
+        target_names=["opencode"],
+        print_only=False,
+        dry_run=False,
+        project_root=tmp_path,
+    )
+    body = (tmp_path / ".opencode" / "tools" / "read.ts").read_text()
+    # Helper present.
+    assert "function renderForAgent" in body
+    assert "function stripSentinels" in body
+    assert "function renderFrontMatterForAgent" in body
+    # Full mode invokes it (and does NOT pass `triefact` verbatim).
+    assert "result = renderForAgent(triefact)" in body
+    # The old "result = triefact" leak must be gone for full mode.
+    assert 'mode = "triefact_full"\n            result = triefact' not in body
+
+
 def test_opencode_trie_read_obsolete_file_removed_on_apply(tmp_path: Path):
     """Earlier versions of `trie setup --override-builtins` shipped a
     separate `.opencode/tools/trie_read.ts` add-on. The new `read.ts`

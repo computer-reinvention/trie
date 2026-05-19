@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.1
 source: trie/sync/writer.py
-file_fingerprint: fba68b4d92b0b42c4ef52ce8dcfbd05d5cecf3d04e0a3b0655d3ec43c1e2c53a
-last_synced_at: '2026-05-19T10:42:23Z'
+file_fingerprint: ca4a9cd6ea517de234826bbfe6da066e77cc73323a272510e3dc8294bb4c119a
+last_synced_at: '2026-05-19T15:19:33Z'
 defines:
 - kind: module
   qualified_name: trie/sync/writer:__module__
-  lines: 1-270
+  lines: 1-348
 - kind: constant
   qualified_name: trie/sync/writer:SECTION_OPEN_RE
   lines: 42-47
@@ -31,43 +31,49 @@ defines:
 - kind: function
   qualified_name: trie/sync/writer:extract_one_liner
   lines: 67-98
+- kind: constant
+  qualified_name: trie/sync/writer:AGENT_FRONT_MATTER_KEYS
+  lines: 106-111
 - kind: class
   qualified_name: trie/sync/writer:Section
-  lines: 102-107
+  lines: 115-120
 - kind: class
   qualified_name: trie/sync/writer:Prose
-  lines: 111-112
+  lines: 124-125
 - kind: constant
   qualified_name: trie/sync/writer:Chunk
-  lines: 115-115
+  lines: 128-128
 - kind: class
   qualified_name: trie/sync/writer:TriefactFile
-  lines: 119-269
+  lines: 132-282
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.parse
-  lines: 124-171
+  lines: 137-184
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.empty
-  lines: 174-175
+  lines: 187-188
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.get_section
-  lines: 179-183
+  lines: 192-196
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.section_qnames
-  lines: 185-186
+  lines: 198-199
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.upsert_section
-  lines: 190-217
+  lines: 203-230
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.remove_section
-  lines: 219-224
+  lines: 232-237
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile._append_section
-  lines: 226-237
+  lines: 239-250
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.render
-  lines: 241-269
-incoming_refs: 56
+  lines: 254-282
+- kind: function
+  qualified_name: trie/sync/writer:render_for_agent
+  lines: 285-347
+incoming_refs: 64
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/sync/writer:hash_body fingerprint=ab22edfb13d8ba9c75b86d2384923163f1c839f46c4a2ed06ca566491fc6f96d body_fp=ff4cc0d8d37a35d35446d795e12b6d335ea4491d8f9b3e64ac1d995839f65670 source_ref=bb3efe260f5fd45bd8f95219af0e2e36472bd19d -->
@@ -226,4 +232,20 @@ Parse, mutate, and render trie-managed Markdown files containing sentinel-delimi
 - `Section`: frozen dataclass holding parsed section metadata and body text
 - `Prose`: frozen dataclass for verbatim human-written text between sections
 - `TriefactFile`: mutable container with `parse`, `render`, and upsert/remove mutations
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/writer:AGENT_FRONT_MATTER_KEYS fingerprint=4ffdf447d675342eb7e62f591eb81f0dbe4b8236a7ecbc21145d49565aaf7fa7 body_fp=5c0b574d5cdfd4d7d0ef1e85cb5ba33a3208d998591a8ea2e6950010cc1954ca source_ref=70946c55408cf4868bdc800fa6a9d08d794637c5 -->
+## `AGENT_FRONT_MATTER_KEYS: tuple[str, ...] = ("description", "defines", "incoming_refs", "outgoing_refs")`
+
+Frontmatter keys retained when rendering a triefact for agent-facing surfaces; all other keys are dropped as trie-internal bookkeeping.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/sync/writer:render_for_agent fingerprint=092ba74e28cdec14b0df2de55c6ab0105f9f6c074da00f6bcccb774d76160d8c body_fp=d3d888f4f4f3f2749034324d4315977dddac0a4d6e3e1cdf75e695bbd036c0c6 source_ref=70946c55408cf4868bdc800fa6a9d08d794637c5 -->
+## `render_for_agent(text: str) -> str`
+
+Strip trie machinery from a triefact, returning clean Markdown for agent consumption.
+
+- Retains only `AGENT_FRONT_MATTER_KEYS` from frontmatter; omits block if none survive.
+- Removes all `<!-- trie:section … -->` / `<!-- trie:end -->` sentinels; section bodies pass through as plain Markdown.
+- Preserves inter-section prose verbatim; inserts blank-line separators between adjacent sections.
 <!-- trie:end -->
