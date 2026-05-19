@@ -35,7 +35,7 @@ def project(tmp_path: Path) -> Path:
     """Minimal valid trie project. `trie setup` only needs trie.toml to
     resolve project_root via `Config.find_and_load`."""
     (tmp_path / "trie.toml").write_text(
-        '[trie]\nversion = "0.1.1"\n'
+        '[trie]\nversion = "0.1.2"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = []\n'
         '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'

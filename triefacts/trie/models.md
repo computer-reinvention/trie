@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: trie/models.py
 file_fingerprint: eed971b1aee49803434c0744c5585a07ecf33c7018ba891ece9c67ea15a7f614
-last_synced_at: '2026-05-19T10:41:22Z'
+last_synced_at: '2026-05-19T15:24:43Z'
 defines:
 - kind: module
   qualified_name: trie/models:__module__

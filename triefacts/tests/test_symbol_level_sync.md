@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/test_symbol_level_sync.py
 file_fingerprint: 736bb3c9afd792ac4c266ce945b679b6ee2ba6a07f01278808b929341c7ce084
 last_synced_at: '2026-05-19T10:39:19Z'

@@ -214,7 +214,7 @@ After `trie sync --file src/slugify.py`, `triefacts/src/slugify.md`:
 
 ```markdown
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: src/slugify.py
 file_fingerprint: 9d4f374adc9a843c…
 last_synced_at: "2026-05-08T14:21:09Z"
@@ -255,7 +255,7 @@ A trie-managed Markdown triefact looks like this:
 
 ```markdown
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: src/foo.py
 file_fingerprint: 0830b9bb…
 last_synced_at: "2026-05-08T14:21:09Z"
@@ -311,7 +311,7 @@ Add to your `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/pankajgarkoti/trie
-    rev: v0.1.1
+    rev: v0.1.2
     hooks:
       - id: trie-verify
 ```
@@ -368,7 +368,7 @@ trie setup --no-overrides                 # skip the tool-override step
 1. **MCP server registration** — makes trie available to the agent. Same as standalone `trie mcp install`.
 2. **Turn-boundary hook** — calls `trie refresh --after-turn` when the agent's session goes idle, so the graph picks up edits the agent just made.
 3. **Agent-facing docs** — writes `TRIE.md` (a usage guide for agents) and appends a one-line pointer to `AGENTS.md` / `CLAUDE.md` so the agent finds the guide on load. Tool names in the doc are rendered for the harness in question (`trie_grep` for opencode, `mcp__trie__grep` for Claude Code).
-4. **Tool overrides** — replaces the agent's built-in `grep` and `read` with wrappers that route through trie, and adds `trie_trace` as a new tool. The agent's built-in `grep` now searches the symbol graph; built-in `read` returns the triefact for paths (and routes to `trie read` for qnames) with a `show_source: true` escape hatch for raw bytes. Default on; pass `--no-overrides` to skip.
+4. **Tool overrides** — replaces the agent's built-in `grep` and `read` with wrappers that route through trie, and adds `trie_trace` as a new tool. The agent's built-in `grep` now searches the symbol graph; built-in `read` returns a **compact triefact view** by default (file description, ref counts, and one entry per symbol with qname, kind, lines, signature, and first-paragraph intro) and routes to `trie read` for qnames. Pass `full: true` to get every section's full prose with trie's internal frontmatter (`trie_version`, `file_fingerprint`, `last_synced_at`, `source`) and all section sentinels (with their fingerprints) stripped — agents see prose, not machinery. `show_source: true` is the escape hatch back to raw bytes. Default on; pass `--no-overrides` to skip.
 
 Supported targets: `opencode`, `claude-code`, `claude-desktop`, `cursor`, `windsurf`, `vscode`, `codex`.
 
@@ -445,6 +445,7 @@ Hand-written prose between sentinels is still indexed by GitHub's search; only t
 - **M9** ✓ — tool overrides: replace the agent's built-in `grep` and `read` with wrappers that route through trie (opencode); advisory `PreToolUse` hook on built-in `Grep` (Claude Code)
 - **M10** ✓ — symbol-set expansion: `constant` (module-level `NAME = value`) and `module` (synthetic per-file behaviour) symbol kinds, so triefacts cover what files *do* at import time, not just their helper functions
 - **M11** ✓ — telemetry split: per-call `cli_call` and `mcp_call` events with surface-aware audit aggregation, including a `mode` breakdown for the `read` override (qname / triefact / source / show_source)
+- **M12** ✓ — agent-surface trim: the `read` override's full mode strips trie's internal frontmatter (`trie_version`, `file_fingerprint`, `last_synced_at`, `source`) and every section sentinel (with their fingerprints) before handing the triefact to the agent. Mirrored in `trie.sync.writer.render_for_agent` for the Python side. Agents see prose; machinery stays out of context
 - **v0.2** — SCIP precision (replace tree-sitter heuristic with `scip-python` for type-aware references), TypeScript support, vector-over-triefacts retrieval, `trie watch` daemon, rename detection in reconcile
 
 ## License

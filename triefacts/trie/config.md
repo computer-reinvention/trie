@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: trie/config.py
-file_fingerprint: 9ae7dc272ce247e7d6168935f3eeed218d1bd11dcbaecac4679fdeb61c9c773a
-last_synced_at: '2026-05-19T10:40:15Z'
+file_fingerprint: 0d55561161485e469d80188ad026c8199513be1dfc184a5320ebebec2466b9ff
+last_synced_at: '2026-05-19T15:24:07Z'
 defines:
 - kind: module
   qualified_name: trie/config:__module__
@@ -49,10 +49,10 @@ defines:
 - kind: constant
   qualified_name: trie/config:DEFAULT_CONFIG_TOML
   lines: 181-266
-incoming_refs: 143
+incoming_refs: 146
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=trie/config:TrieMeta fingerprint=e1351786d7bb1868a3ce1444012247ecfaa2f58e33b3799a2d7d5621596d9913 body_fp=fc099c55e56a7cbf7ea5a31d4965af5f5003dcad2f1ee09cc25a0896fe818bc3 source_ref=049680f42014e6367cc29b3f2c95407827b715e4 -->
+<!-- trie:section symbol=trie/config:TrieMeta fingerprint=3a9f3f9b594eb2bc004d5ab6492991cf167ef4b9ae7b65e2738917beda05b61b body_fp=fc099c55e56a7cbf7ea5a31d4965af5f5003dcad2f1ee09cc25a0896fe818bc3 source_ref=91c1f83393b4cceef8bfb88e62c64c65b755bf42 -->
 ## `TrieMeta`
 
 Dataclass holding the trie configuration version string.

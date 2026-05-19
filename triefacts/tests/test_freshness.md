@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/test_freshness.py
 file_fingerprint: cad3bdaad74c6acc7a9774080260184b0f50138c37bb2d7fce5f3696d4db47b3
 last_synced_at: '2026-05-19T10:38:00Z'

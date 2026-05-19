@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/fixtures/tiny_repo/strings.py
 file_fingerprint: 0830b9bb0e7a6ca8e4f734e7f28e3ad7abf16f56e057f617a390052217e059fd
 last_synced_at: '2026-05-14T17:31:42Z'

@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/test_mcp.py
 file_fingerprint: d218c8963e8f6a6df5142104106456bfb95ddbe3f7ca4830f87da01c6cb6318e
 last_synced_at: '2026-05-19T10:38:21Z'

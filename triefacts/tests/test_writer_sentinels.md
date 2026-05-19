@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/test_writer_sentinels.py
 file_fingerprint: e45d38ba1c000324ac0fc0b8f299335bd208a9fd00d5a3a7476092b9b833250f
 last_synced_at: '2026-05-19T15:19:30Z'

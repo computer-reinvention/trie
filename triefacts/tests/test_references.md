@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/test_references.py
 file_fingerprint: 24aa3c08899578f0fe7321610c519c21a0aaf6e5fe2a018b478f8685b94afa06
 last_synced_at: '2026-05-19T10:38:54Z'

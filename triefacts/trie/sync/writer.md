@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: trie/sync/writer.py
 file_fingerprint: ca4a9cd6ea517de234826bbfe6da066e77cc73323a272510e3dc8294bb4c119a
 last_synced_at: '2026-05-19T15:19:33Z'

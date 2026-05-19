@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/test_bootstrap.py
 file_fingerprint: 09fa3129c21296ad8624d2eb070a9f5722bfe83e469325c6b10879695276f69c
 last_synced_at: '2026-05-19T10:37:24Z'

@@ -261,7 +261,7 @@ def test_cli_refresh_when_contended_queues_and_exits_zero(
     # the child to hold the lock; the parent should never actually reach
     # the freshness gate.
     (tmp_path / "trie.toml").write_text(
-        '[trie]\nversion = "0.1.1"\n'
+        '[trie]\nversion = "0.1.2"\n'
         '[scope]\ninclude = ["src/**/*.py"]\nexclude = []\n'
         '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
@@ -339,7 +339,7 @@ def _make_minimal_trie_project(tmp_path: Path) -> None:
     import subprocess
 
     (tmp_path / "trie.toml").write_text(
-        '[trie]\nversion = "0.1.1"\n'
+        '[trie]\nversion = "0.1.2"\n'
         '[scope]\ninclude = ["src/**/*.py"]\nexclude = []\n'
         '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'

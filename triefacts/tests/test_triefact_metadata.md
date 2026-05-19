@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/test_triefact_metadata.py
 file_fingerprint: 99959fb92b6ecf3e5b502b6bab7a601b2e924fa281a06b01928189f9d8d9d201
 last_synced_at: '2026-05-19T10:39:37Z'

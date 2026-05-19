@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: trie/mcp_server.py
 file_fingerprint: 1f3fc0d338f68c38148ecdadfa48f35db534ec727fc4d51adab6091b3acfb6e3
-last_synced_at: '2026-05-19T10:41:17Z'
+last_synced_at: '2026-05-19T15:24:40Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
 - kind: module

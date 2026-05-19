@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/test_diff.py
 file_fingerprint: 6e5cc4b95c291e51c3768c866f2e22c44d4843d08880f2a34a7a1c677404c8d8
 last_synced_at: '2026-05-19T10:37:48Z'

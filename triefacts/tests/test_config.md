@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/test_config.py
-file_fingerprint: c962974b4922188dea273ca35c2524087d9c82d1c03a49f511b23e18f223243b
-last_synced_at: '2026-05-19T10:37:40Z'
+file_fingerprint: ab2f4ec56dd812bf269b73522f1b37903706c25cce64bacbd8c7216033936e80
+last_synced_at: '2026-05-19T15:24:04Z'
 defines:
 - kind: module
   qualified_name: tests/test_config:__module__
@@ -29,9 +29,9 @@ defines:
   qualified_name: tests/test_config:test_unknown_keys_within_known_section_raise
   lines: 65-68
 incoming_refs: 0
-outgoing_refs: 8
+outgoing_refs: 10
 ---
-<!-- trie:section symbol=tests/test_config:test_defaults_when_empty_dict fingerprint=2960b47d7bd353bae7a5deb10c63864988e483a9ae12abb3def93181056dc08a body_fp=4474e7d14a413f900957814b63b7780415b4cca31f59a9a5138852a3862a129c source_ref=9ae3cf8607b8195c64ecbbda358ad1a86a84bbe2 -->
+<!-- trie:section symbol=tests/test_config:test_defaults_when_empty_dict fingerprint=4074056b63de5e2a478fad3e1678a1bb80a87e6170ce3efaea444173402832a3 body_fp=4474e7d14a413f900957814b63b7780415b4cca31f59a9a5138852a3862a129c source_ref=3e8bc28037d2b7d09075a457bbb71839f3f57bbf -->
 ## `test_defaults_when_empty_dict()`
 
 Assert that `Config.from_dict({})` produces correct default values for all config sections.
@@ -43,7 +43,7 @@ Assert that `Config.from_dict({})` produces correct default values for all confi
 Verify that `Config.from_dict` merges overridden sections while preserving defaults in untouched sections and untouched keys within partially-overridden sections.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_config:test_load_roundtrips_default_template fingerprint=ed20ed5cdf36ed10b9e24f168c5292fa8b93c36f37f7114c5b30df86a2c14609 body_fp=4a6e6dcfeb3c7b5a056fc3c9b8013a3eefc59505a063ef97e16651da9652a1b5 source_ref=9ae3cf8607b8195c64ecbbda358ad1a86a84bbe2 -->
+<!-- trie:section symbol=tests/test_config:test_load_roundtrips_default_template fingerprint=09862766e0214b1097784113034f5fe29f81c8142cff315d70c8c10ede315fc4 body_fp=4a6e6dcfeb3c7b5a056fc3c9b8013a3eefc59505a063ef97e16651da9652a1b5 source_ref=3e8bc28037d2b7d09075a457bbb71839f3f57bbf -->
 ## `test_load_roundtrips_default_template(tmp_path: Path)`
 
 Verify that writing `DEFAULT_CONFIG_TOML` to disk and loading it produces correct default values.

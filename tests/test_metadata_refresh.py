@@ -63,7 +63,7 @@ class FakeClient:
 def project(tmp_path: Path) -> Path:
     """Two-module project with a cross-file edge. Used to exercise refs counts."""
     (tmp_path / "trie.toml").write_text(
-        '[trie]\nversion = "0.1.1"\n'
+        '[trie]\nversion = "0.1.2"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
         '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
