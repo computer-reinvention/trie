@@ -103,7 +103,7 @@ def test_roundtrip_with_front_matter_and_section_carrying_body_fp():
     bfp = hash_body(body)
     text = (
         "---\n"
-        "trie_version: 0.1.1\n"
+        "trie_version: 0.1.2\n"
         "source: src/foo.py\n"
         "---\n"
         "# foo.py\n\n"
@@ -355,7 +355,7 @@ def _sample_triefact() -> str:
     """
     return (
         "---\n"
-        "trie_version: 0.1.1\n"
+        "trie_version: 0.1.2\n"
         "source: mod.py\n"
         "file_fingerprint: aaaa\n"
         "last_synced_at: '2026-05-19T10:40:19Z'\n"
@@ -437,7 +437,7 @@ def test_render_for_agent_keeps_section_bodies_and_interleaved_prose():
 def test_render_for_agent_omits_frontmatter_when_no_agent_keys():
     text = (
         "---\n"
-        "trie_version: 0.1.1\n"
+        "trie_version: 0.1.2\n"
         "source: mod.py\n"
         "file_fingerprint: aaaa\n"
         "last_synced_at: '2026-05-19T10:40:19Z'\n"

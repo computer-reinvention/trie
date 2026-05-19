@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/test_e2e_sync.py
 file_fingerprint: 1bd17a7e8c5a9516e569e430f26883f881fd81546d00f45768ae8fcff3d77837
 last_synced_at: '2026-05-19T10:37:56Z'

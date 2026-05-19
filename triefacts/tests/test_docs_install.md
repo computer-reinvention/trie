@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/test_docs_install.py
 file_fingerprint: de7c98fcfd2eb93c13bf961ba554fc35110ea849b4c8bee8c44aa552998c9fdd
 last_synced_at: '2026-05-19T10:37:51Z'

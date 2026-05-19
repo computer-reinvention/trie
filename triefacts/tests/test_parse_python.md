@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/test_parse_python.py
 file_fingerprint: 7a7f5dc85073e3c01732755848109f060f12e1bedc84505a49eeda69b299bb72
 last_synced_at: '2026-05-19T10:38:47Z'

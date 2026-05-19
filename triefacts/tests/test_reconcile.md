@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/test_reconcile.py
 file_fingerprint: 7dc91301502b0b1020de1ca3ad91d222d46b212ec44363ff80993f540b6444a7
 last_synced_at: '2026-05-19T10:38:49Z'

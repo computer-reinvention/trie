@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: trie/hook_install.py
 file_fingerprint: 7340943fc0bc65b8ec0494c43ed59bb271be3a2571fc20ca736adde2f12da2bf
 last_synced_at: '2026-05-19T10:40:51Z'

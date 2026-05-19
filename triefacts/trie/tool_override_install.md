@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: trie/tool_override_install.py
 file_fingerprint: be574b484bf3e3264a150a9a224b25a025f66642e2db6e4b1f0cfda690dc7e8a
 last_synced_at: '2026-05-19T15:19:42Z'

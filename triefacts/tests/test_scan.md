@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/test_scan.py
 file_fingerprint: f794ea0f1d8f4b2ed640b04f1a12f0b40865a5ffefda17539c101bc5df04875f
 last_synced_at: '2026-05-19T10:39:05Z'

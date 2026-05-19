@@ -13,7 +13,7 @@ from trie.scan import scan_project
 def project(tmp_path: Path) -> Path:
     """A project root with a fresh trie.toml and stub source tree."""
     (tmp_path / "trie.toml").write_text(
-        '[trie]\nversion = "0.1.1"\n'
+        '[trie]\nversion = "0.1.2"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
         '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
@@ -114,7 +114,7 @@ def test_removed_file_is_cleaned_up(project: Path):
 
 def test_scan_populates_cross_file_edges(tmp_path: Path):
     (tmp_path / "trie.toml").write_text(
-        '[trie]\nversion = "0.1.1"\n'
+        '[trie]\nversion = "0.1.2"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
         '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
@@ -141,7 +141,7 @@ def test_scan_populates_cross_file_edges(tmp_path: Path):
 
 def test_scan_populates_intra_file_edges(tmp_path: Path):
     (tmp_path / "trie.toml").write_text(
-        '[trie]\nversion = "0.1.1"\n'
+        '[trie]\nversion = "0.1.2"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
         '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
@@ -162,7 +162,7 @@ def test_scan_populates_intra_file_edges(tmp_path: Path):
 
 def test_edges_rebuilt_when_file_changes(tmp_path: Path):
     (tmp_path / "trie.toml").write_text(
-        '[trie]\nversion = "0.1.1"\n'
+        '[trie]\nversion = "0.1.2"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
         '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
@@ -196,7 +196,7 @@ def test_excluded_file_treated_as_removed(project: Path):
 
     # Tighten scope: now alpha.py is excluded
     (project / "trie.toml").write_text(
-        '[trie]\nversion = "0.1.1"\n'
+        '[trie]\nversion = "0.1.2"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = ["src/alpha.py"]\n'
         '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'

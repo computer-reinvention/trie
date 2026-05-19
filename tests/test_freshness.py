@@ -81,7 +81,7 @@ class FakeClient:
 def project(tmp_path: Path) -> Path:
     """Two-module project under a real git repo with one initial commit."""
     (tmp_path / "trie.toml").write_text(
-        '[trie]\nversion = "0.1.1"\n'
+        '[trie]\nversion = "0.1.2"\n'
         '[scope]\ninclude = ["src/**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
         '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
@@ -170,7 +170,7 @@ def test_scan_mtimes_changes_after_file_edit(project: Path):
 def test_ensure_fresh_raises_outside_git(tmp_path: Path):
     """No git repo, no fallback: gate refuses to run rather than guess."""
     (tmp_path / "trie.toml").write_text(
-        '[trie]\nversion = "0.1.1"\n'
+        '[trie]\nversion = "0.1.2"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = []\n'
         '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
@@ -389,7 +389,7 @@ def test_cli_refresh_outside_git_fails(tmp_path: Path, monkeypatch: pytest.Monke
     from trie.cli import app
 
     (tmp_path / "trie.toml").write_text(
-        '[trie]\nversion = "0.1.1"\n'
+        '[trie]\nversion = "0.1.2"\n'
         '[scope]\ninclude = ["**/*.py"]\nexclude = []\n'
         '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
         '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'

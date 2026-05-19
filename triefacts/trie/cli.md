@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: trie/cli.py
 file_fingerprint: 1e6d1726fb5947408d2f03aa15de52d7710341ab9bf0848daf14bc42e3912783
-last_synced_at: '2026-05-19T15:19:53Z'
+last_synced_at: '2026-05-19T15:24:31Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
@@ -197,7 +197,7 @@ Create `trie.toml`, update `.gitignore`, optionally build the symbol graph, and 
 - Exits 1 on `InitError`; exits 2 if the write lock is contended.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:plan_cmd fingerprint=1f9525fd75f6e14df3b9d54f2f02446677e7a0ab7562b7c1f66684cca46ca390 body_fp=32fffe4d193e74de627e39221f5eb3bfaa3b7f4c96da580f43b27821eff37f29 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+<!-- trie:section symbol=trie/cli:plan_cmd fingerprint=1f9525fd75f6e14df3b9d54f2f02446677e7a0ab7562b7c1f66684cca46ca390 body_fp=32fffe4d193e74de627e39221f5eb3bfaa3b7f4c96da580f43b27821eff37f29 source_ref=829500edc233750fba9bbeef252ecab0b4d1ff64 -->
 ## `plan_cmd(ctx, model=None, all_=False)`
 
 Scan the project, surface drift, and print the worklist with estimated LLM cost before committing to a sync.
@@ -214,7 +214,7 @@ Scan the project, surface drift, and print the worklist with estimated LLM cost 
 Run an offline drift check and exit 1 if any triefact has drifted from its source.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:sync_cmd fingerprint=c08b2a86195dc0b7272c5f6c6ff6df2e7761fa27119ca2232fae50cbea7a3c51 body_fp=3d7fcfd41176e308116f3e9524eb49b108831af2aec47f7fd7b357ac838880a3 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+<!-- trie:section symbol=trie/cli:sync_cmd fingerprint=c08b2a86195dc0b7272c5f6c6ff6df2e7761fa27119ca2232fae50cbea7a3c51 body_fp=3d7fcfd41176e308116f3e9524eb49b108831af2aec47f7fd7b357ac838880a3 source_ref=829500edc233750fba9bbeef252ecab0b4d1ff64 -->
 ## `sync_cmd(ctx: typer.Context, file: Path | None, all_: bool, budget: float | None, limit: int | None, dry_run: bool, metadata_only: bool, model: str | None) -> None`
 
 Generate or refresh triefacts, auto-selecting bootstrap, incremental, single-file, dry-run, or metadata-only mode.
@@ -234,7 +234,7 @@ Generate or refresh triefacts, auto-selecting bootstrap, incremental, single-fil
 Launch the stdio MCP server; hidden from help output and invoked directly by agent-installed snippets.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:mcp_install_cmd fingerprint=2b0ec965d048ca70c51eb306977f7e7c8fd3f2b163fb3ede828618f3a9f3921c body_fp=2cc66f9f96d4842d8cc30188c10793327db51598b8fce5aa5bb261b842117677 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+<!-- trie:section symbol=trie/cli:mcp_install_cmd fingerprint=2b0ec965d048ca70c51eb306977f7e7c8fd3f2b163fb3ede828618f3a9f3921c body_fp=2cc66f9f96d4842d8cc30188c10793327db51598b8fce5aa5bb261b842117677 source_ref=829500edc233750fba9bbeef252ecab0b4d1ff64 -->
 ## `mcp_install_cmd(ctx, target, install_all, scope, print_only, dry_run)`
 
 Register `trie mcp serve` as a stdio MCP server with one or more coding agents.
@@ -319,7 +319,7 @@ Root Typer callback; sets up the `Reporter` on `ctx.obj` and handles `--version`
 - Emits a telemetry `cli` event for every subcommand invocation.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_telemetry_bootstrap fingerprint=f6f6f0318c080e04dbad6edbf345f40a4e69fcc84f49dc4d7d452fe5aa73c0cb body_fp=5321640521e297cd44691f6243ca18fec2fa0460b77d497845375a07a3dfbb71 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+<!-- trie:section symbol=trie/cli:_telemetry_bootstrap fingerprint=f6f6f0318c080e04dbad6edbf345f40a4e69fcc84f49dc4d7d452fe5aa73c0cb body_fp=5321640521e297cd44691f6243ca18fec2fa0460b77d497845375a07a3dfbb71 source_ref=829500edc233750fba9bbeef252ecab0b4d1ff64 -->
 ## `_telemetry_bootstrap(subcommand: str | None, argv_tail: list[str]) -> None`
 
 Load config (if available) to configure telemetry, then emit a `cli` event.
@@ -382,7 +382,7 @@ Render per-file drift items grouped by triefact path, with labeled reasons, at M
 - `items`: list of drift result objects with `triefact_path`, `reason`, `qualified_name`, and `source_path` attributes.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_verify_drift fingerprint=f89fbd7b24f02c1114b3df4a32ee4fb2d48667c85a33b093eb01d3f64becede3 body_fp=ef3e367c95de6ba08711713a641d033313ab831ffe560665fbc803de70c77e28 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+<!-- trie:section symbol=trie/cli:_verify_drift fingerprint=f89fbd7b24f02c1114b3df4a32ee4fb2d48667c85a33b093eb01d3f64becede3 body_fp=ef3e367c95de6ba08711713a641d033313ab831ffe560665fbc803de70c77e28 source_ref=829500edc233750fba9bbeef252ecab0b4d1ff64 -->
 ## `_verify_drift(reporter: Reporter, *, exit_on_drift: bool) -> bool`
 
 Run an offline drift check and report results; return `True` if clean, `False` if drift found.
@@ -406,7 +406,7 @@ Scan, plan, optionally confirm, then run a full bootstrap sync with streaming pe
 - Prompts for confirmation in interactive mode when neither `budget` nor `limit` is set; exits 1 in non-interactive mode.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_run_dry_run_diff fingerprint=ea340e6fb3ae76699d84d7c95cb3dbffd3a8307777a7fada12178a997f8133c5 body_fp=ac70a5ec59f69172dc697f98497c599045405973789ca078ed9484b0f1d968dd source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+<!-- trie:section symbol=trie/cli:_run_dry_run_diff fingerprint=ea340e6fb3ae76699d84d7c95cb3dbffd3a8307777a7fada12178a997f8133c5 body_fp=ac70a5ec59f69172dc697f98497c599045405973789ca078ed9484b0f1d968dd source_ref=829500edc233750fba9bbeef252ecab0b4d1ff64 -->
 ## `_run_dry_run_diff(*, reporter: Reporter, model: str | None, budget: float | None, limit: int | None) -> None`
 
 Regenerate stale triefacts into `.trie/preview/` and print unified diffs against the live tree.
@@ -415,7 +415,7 @@ Regenerate stale triefacts into `.trie/preview/` and print unified diffs against
 - `limit`: caps the number of files diffed.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_run_single_file_sync fingerprint=19a520c5b19e8901f07865a60c1613fb5dcaef9ee1c50321c6316f4baa71608c body_fp=b09e34f407e668bb1f6b55b5c55b7f0215a7009c0fd81eb63bff9049050e421d source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+<!-- trie:section symbol=trie/cli:_run_single_file_sync fingerprint=19a520c5b19e8901f07865a60c1613fb5dcaef9ee1c50321c6316f4baa71608c body_fp=b09e34f407e668bb1f6b55b5c55b7f0215a7009c0fd81eb63bff9049050e421d source_ref=829500edc233750fba9bbeef252ecab0b4d1ff64 -->
 ## `_run_single_file_sync(reporter: Reporter, file: Path, model: str | None) -> None`
 
 Sync a single source file to its triefact, writing results and token stats via the reporter.
@@ -423,7 +423,7 @@ Sync a single source file to its triefact, writing results and token stats via t
 - `model`: overrides the configured bootstrap model when provided.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_run_incremental_sync fingerprint=c0296f53afdae836d3646b2af7059167e69e09ce2828ef92af30e3df36f33e9a body_fp=22d50512b1fad776cf28d60527267edfe62e0292f68d9714cdf0ca68344b3926 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+<!-- trie:section symbol=trie/cli:_run_incremental_sync fingerprint=c0296f53afdae836d3646b2af7059167e69e09ce2828ef92af30e3df36f33e9a body_fp=22d50512b1fad776cf28d60527267edfe62e0292f68d9714cdf0ca68344b3926 source_ref=829500edc233750fba9bbeef252ecab0b4d1ff64 -->
 ## `_run_incremental_sync(*, reporter: Reporter, model: str | None, budget: float | None, limit: int | None) -> None`
 
 Load config, build a client, and run incremental cascade sync, reporting orphan removals and cost.
@@ -434,7 +434,7 @@ Load config, build a client, and run incremental cascade sync, reporting orphan 
 
 
 
-<!-- trie:section symbol=trie/cli:_run_mcp_serve fingerprint=ae7533faa0329509290b89496e7a1965bcac67339cfb61c9d2092872d3505fb6 body_fp=07eb42ce1a286e495b0cd202a9503cbd0cba66cff4cd5451e81254a12ac619a2 source_ref=577b5c634ebcbb90471bd6a1e8c66ae8c26b6a92 -->
+<!-- trie:section symbol=trie/cli:_run_mcp_serve fingerprint=ae7533faa0329509290b89496e7a1965bcac67339cfb61c9d2092872d3505fb6 body_fp=07eb42ce1a286e495b0cd202a9503cbd0cba66cff4cd5451e81254a12ac619a2 source_ref=829500edc233750fba9bbeef252ecab0b4d1ff64 -->
 ## `_run_mcp_serve() -> None`
 
 Load config from cwd and launch the stdio MCP server, exiting 1 if no config is found.
@@ -458,7 +458,7 @@ Summarise a telemetry `debug.jsonl` log; optionally compare two logs side-by-sid
 - `as_json`: print `AuditSummary` as JSON to stdout; mutually exclusive with `--compare`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_resolve_audit_log_path fingerprint=bad827442bead53f02cef4cde6dbfbf24222786901e57c0aee3d03c19918abf5 body_fp=0660b55daee64da526b9c6830a141120b802aa26aee944f9dcae8f8ab08cdfb5 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+<!-- trie:section symbol=trie/cli:_resolve_audit_log_path fingerprint=bad827442bead53f02cef4cde6dbfbf24222786901e57c0aee3d03c19918abf5 body_fp=0660b55daee64da526b9c6830a141120b802aa26aee944f9dcae8f8ab08cdfb5 source_ref=829500edc233750fba9bbeef252ecab0b4d1ff64 -->
 ## `_resolve_audit_log_path(log: Path | None, reporter: Reporter) -> Path`
 
 Resolve the `debug.jsonl` path from explicit arg, configured `log_path`, or cwd fallback.
@@ -467,7 +467,7 @@ Resolve the `debug.jsonl` path from explicit arg, configured `log_path`, or cwd 
 - Returns cwd `debug.jsonl` if no `trie.toml` is found.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:_run_metadata_only_refresh fingerprint=ab88ff6a5f8617fcb6bbcc42dae27974d38c2d4d9d9e8f5df2a4c2dcd0f4ad19 body_fp=c777944aa3562954585519eb25a905a5e76f9dcbdda8d6edda859064d837e132 source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+<!-- trie:section symbol=trie/cli:_run_metadata_only_refresh fingerprint=ab88ff6a5f8617fcb6bbcc42dae27974d38c2d4d9d9e8f5df2a4c2dcd0f4ad19 body_fp=c777944aa3562954585519eb25a905a5e76f9dcbdda8d6edda859064d837e132 source_ref=829500edc233750fba9bbeef252ecab0b4d1ff64 -->
 ## `_run_metadata_only_refresh(reporter: Reporter) -> None`
 
 Refresh every triefact's front matter from the live store without calling the LLM.
@@ -476,7 +476,7 @@ Refresh every triefact's front matter from the live store without calling the LL
 - Skips files outside `source_root`; reports changed vs already-current counts on completion.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:refresh_cmd fingerprint=95e65ccc97ba70699bc324ee65dfe871388eac222ef0b055579035abd808497d body_fp=05729acad5ed11d9e54b78144c94e261ccbcbfa92d62f8b87108a9858e2418de source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+<!-- trie:section symbol=trie/cli:refresh_cmd fingerprint=95e65ccc97ba70699bc324ee65dfe871388eac222ef0b055579035abd808497d body_fp=05729acad5ed11d9e54b78144c94e261ccbcbfa92d62f8b87108a9858e2418de source_ref=829500edc233750fba9bbeef252ecab0b4d1ff64 -->
 ## `refresh_cmd(ctx, before_turn, after_turn, model)`
 
 Bring the graph and triefacts up to date with the working tree via a freshness-gated sync.
@@ -539,7 +539,7 @@ Context manager that holds the refresh lock for a write-side command, or exits w
 - Exits code 2 (transient/retry) rather than 1 (config error) on contention.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/cli:lock_check_cmd fingerprint=b2588d0ec23978e9e8f4b7732d307584d0bad5d7227cee2cf553c7f4c21bf287 body_fp=12bc621b6c9982cc36c217189f79c16b1b6b20cec48af033f129d4cb48ed76ae source_ref=707967fd5080b111a7f84fd2714d452f946c1ea5 -->
+<!-- trie:section symbol=trie/cli:lock_check_cmd fingerprint=b2588d0ec23978e9e8f4b7732d307584d0bad5d7227cee2cf553c7f4c21bf287 body_fp=12bc621b6c9982cc36c217189f79c16b1b6b20cec48af033f129d4cb48ed76ae source_ref=829500edc233750fba9bbeef252ecab0b4d1ff64 -->
 ## `lock_check_cmd(ctx: typer.Context) -> None`
 
 Probe whether another trie process holds the project's write lock, exiting 2 if contended.

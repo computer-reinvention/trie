@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: trie/sync/incremental.py
 file_fingerprint: 4c7a99e1ffa4459b158c5183633f0aad1eb6be7c6327019a3cdf30e8c64c2def
 last_synced_at: '2026-05-19T10:42:06Z'

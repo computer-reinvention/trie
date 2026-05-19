@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/test_cascade.py
 file_fingerprint: 2a2f512fcdd9f8b06bdbc3755d72d30665fe0ec5fc94ab2b8e7a7e9e9a6f72a1
 last_synced_at: '2026-05-19T10:37:26Z'

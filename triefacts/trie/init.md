@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: trie/init.py
 file_fingerprint: 0a0f50d06e8a6f9d4f79bb977d3e2bd80e6beb28d3ea51ded39a2599aad8aeb4
-last_synced_at: '2026-05-19T10:40:57Z'
+last_synced_at: '2026-05-19T15:24:34Z'
 defines:
 - kind: module
   qualified_name: trie/init:__module__
@@ -41,7 +41,7 @@ defines:
   qualified_name: trie/init:init_project
   lines: 118-178
 incoming_refs: 29
-outgoing_refs: 0
+outgoing_refs: 1
 ---
 <!-- trie:section symbol=trie/init:InitResult fingerprint=6159e79af9587c2f4c2280d80e815af142855cae81912c12db1958bb33088be7 body_fp=c2638a39d527c3da8891ef1f9ed301f714b48dd9324f3391a5ab16e793471039 source_ref=2bb407d196526bad43f7647e409c43350e691c45 -->
 ## `InitResult`
@@ -71,7 +71,7 @@ Install a marker-fenced `trie verify` block into the git pre-commit hook, choosi
 - `"git_hook"`: hook written or appended; idempotent on repeated calls.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/init:init_project fingerprint=96c40ec7a1db079af60e0e7a3b69c77d33eb36824cd1f0838888f69fb647c494 body_fp=fa3e08cd51298ff5823d6ea74d34a6e4276240feba19bf58a3a0b02e4940c579 source_ref=2bb407d196526bad43f7647e409c43350e691c45 -->
+<!-- trie:section symbol=trie/init:init_project fingerprint=96c40ec7a1db079af60e0e7a3b69c77d33eb36824cd1f0838888f69fb647c494 body_fp=fa3e08cd51298ff5823d6ea74d34a6e4276240feba19bf58a3a0b02e4940c579 source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 -->
 ## `init_project(root: Path, *, force: bool = False, install_hooks: bool = False, run_scan: bool = True) -> InitResult`
 
 Initialise trie in `root`: write `trie.toml`, update `.gitignore`, and optionally scan the project and install pre-commit hooks.

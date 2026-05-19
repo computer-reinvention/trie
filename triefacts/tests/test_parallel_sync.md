@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.1
+trie_version: 0.1.2
 source: tests/test_parallel_sync.py
 file_fingerprint: 980b842b9b3a0aea541dcb53329d44f98c454644e3decce780b5d5f9e3ee0be6
 last_synced_at: '2026-05-19T10:38:38Z'
