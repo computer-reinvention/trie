@@ -40,13 +40,13 @@ for the full usage guide.**
 
 One repo-specific note that goes beyond the general guide:
 
-- **We dogfood.** A session where you reach for `grep` to answer a
-  code-side question is a session that didn't exercise the thing we're
-  building. `locate` handles every search inside source — including
-  literal strings and module-level constants, via the rg-backed
-  fallback. If a navigation flow feels awkward through these tools,
-  that's a signal to fix the tool, not to silently fall back to grep.
-  Note it in a session summary or open an issue.
+- **We bootstrap trie with trie.** A session where you reach for `grep`
+  to answer a code-side question is a session that didn't exercise the
+  thing we're building. `locate` handles every search inside source —
+  including literal strings and module-level constants, via the
+  rg-backed fallback. If a navigation flow feels awkward through these
+  tools, that's a signal to fix the tool, not to silently fall back to
+  grep. Note it in a session summary or open an issue.
 
 ## What's in scope
 
@@ -54,7 +54,7 @@ One repo-specific note that goes beyond the general guide:
 - Anything written to `.trie/` is gitignored cache. Safe to delete and regenerate.
 - `tmp/` is gitignored scratch space and excluded from `trie verify`. Use it freely for session notes, throwaway scripts, snapshots.
 
-## Dogfood loop
+## Bootstrapping loop
 
 trie's own repo has a `trie.toml` at the root. The hook installed by
 `trie setup` does the day-to-day work — the commands below are for

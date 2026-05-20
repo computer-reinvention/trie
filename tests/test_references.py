@@ -161,7 +161,7 @@ def test_dotted_import_attribute_access(tmp_path: Path):
 
 
 def test_from_import_submodule_attribute_resolves(tmp_path: Path):
-    """`from pkg import submod; submod.thing()` is the dogfood pattern (e.g.
+    """`from pkg import submod; submod.thing()` is the bootstrapping pattern (e.g.
     `from trie import telemetry; telemetry.emit(...)`). The submod binding lives
     in both the symbols table (existing behaviour) and the modules table (new),
     so both `submod` as a bare reference and `submod.thing` as attribute access

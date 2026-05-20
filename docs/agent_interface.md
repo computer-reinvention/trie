@@ -488,7 +488,7 @@ doesn't, and shouldn't.
 
 ## Open questions
 
-These are real, and should be answered by dogfooding, not in this doc.
+These are real, and should be answered by bootstrapping trie with trie, not in this doc.
 
 1. **Does `walk` need prose?** Spec says no, config knob exists. Run the
    eval harness with `walk_prose_at_depth = 0` and `= 1`, compare task
@@ -502,7 +502,7 @@ These are real, and should be answered by dogfooding, not in this doc.
    isn't enough.
 4. **Default `rank_by`.** `"public_first"` is the obvious default;
    `"inbound_count"` (centrality) might be better for unfamiliar
-   codebases. Config knob exists; A/B in dogfooding.
+   codebases. Config knob exists; A/B in real sessions.
 5. **Does over-specification on `locate.predicate` show up in practice?**
    The fear: agents fill in every predicate field when they only need
    one. If logs show this, the tool description needs sharpening or the

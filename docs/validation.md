@@ -251,8 +251,8 @@ recoverable friction, false negatives erode trust, which is fatal.
 ## The plan
 
 **Phase 0 — Agent-readiness (now).**
-Build the six items in _The pre-validation work, ordered_ above. Dogfood on
-trie's own repo: drive trie from an agent session and notice every friction
+Build the six items in _The pre-validation work, ordered_ above. Run trie on
+its own repo: drive trie from an agent session and notice every friction
 point. Each fix lands as a small PR.
 
 **Phase 1 — Instrumentation.**
@@ -267,7 +267,7 @@ In order of risk:
 1. **Agent A/B on a 30-task eval set** against this repo and one other
    Python repo we know well. Headline number: task success rate delta.
    Tests claim 1 — the riskiest. If it fails, the others don't matter.
-2. **MCP server call counts** in dogfood sessions. Free signal on whether
+2. **MCP server call counts** in bootstrapping sessions. Free signal on whether
    the artifact is being used at all.
 3. **Cascade precision / recall audit on 50 real commits** from any active
    repo. Tells us whether v0.2 SCIP precision is mandatory or marginal.

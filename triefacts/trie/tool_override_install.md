@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.2
 source: trie/tool_override_install.py
-file_fingerprint: be574b484bf3e3264a150a9a224b25a025f66642e2db6e4b1f0cfda690dc7e8a
-last_synced_at: '2026-05-19T15:19:42Z'
+file_fingerprint: 581d60c8e868754ca3598f05b2c20beab7f9503135ccf970dac3dc443753fa59
+last_synced_at: '2026-05-20T13:55:10Z'
 description: 'Tool-override installation: replace an agent''s built-in tools with
   trie wrappers.'
 defines:
@@ -60,7 +60,7 @@ defines:
 - kind: function
   qualified_name: trie/tool_override_install:_apply_file
   lines: 1397-1461
-incoming_refs: 31
+incoming_refs: 32
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/tool_override_install:ToolOverrideInstallError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=af02c768a0f5c0ca53ba008c51d793424e58fbb39a024793393d42518cd258dd source_ref=22af55fe3c92536b808294dbfad114aa433c76ee -->
@@ -180,7 +180,7 @@ Type alias for the set of possible per-file or per-target outcome verbs.
 Top-of-file comment block prepended to every generated `.ts` override file.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_read_override fingerprint=3e4371bc634714174d7e76b9f94e76c2f5f015b3db4ac0f661f3ec3cb3d12b5f body_fp=4ec7a7bc485ebe5c1ac9089cb2d86a4a1ab83e88c64fc1d39267aa2dd612f8e7 source_ref=429ffd0e344f00bc83056230f6ecab0384be6390 -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_read_override fingerprint=ffe463adc332d1f0f88803fa18b58ae49c3b0e654de8c52d6130ffd38a1cfc29 body_fp=4ec7a7bc485ebe5c1ac9089cb2d86a4a1ab83e88c64fc1d39267aa2dd612f8e7 source_ref=082e391d615a10c181c6c5dfd3e2f7cbf1e330ca -->
 ## `_render_opencode_read_override(_project_root: Path) -> str`
 
 Render `.opencode/tools/read.ts`, dispatching on argument shape across four paths: qname → `trie read --json`, file path with triefact → compact view (default) or agent-trimmed full view (`full: true`), otherwise raw source bytes.

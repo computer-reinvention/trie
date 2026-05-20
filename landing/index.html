@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>A Tale of Two Searches — trie</title>
+    <meta
+      name="description"
+      content="A scroll-down adventure. Same question, same answer, two very different journeys through a codebase — one with trie, one without."
+    />
+    <link rel="stylesheet" href="./style.css" />
+    <script>
+      // Apply the saved/preferred theme before paint so there's no flash.
+      (function () {
+        try {
+          var saved = localStorage.getItem("trie-theme");
+          var prefersLight =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: light)").matches;
+          var theme = saved || (prefersLight ? "light" : "dark");
+          if (theme === "light") {
+            document.documentElement.setAttribute("data-theme", "light");
+          }
+        } catch (_) {
+          /* localStorage blocked — fall through to dark default */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <!-- progress bar -->
+    <div class="progress">
+      <div class="progress__bar" id="progressBar"></div>
+    </div>
+
+    <!-- theme toggle -->
+    <button
+      type="button"
+      class="theme-toggle"
+      id="themeToggle"
+      aria-label="Toggle light / dark theme"
+      title="Toggle theme"
+    >
+      <!-- moon: shown in dark mode -->
+      <svg
+        class="icon-moon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+      </svg>
+      <!-- sun: shown in light mode -->
+      <svg
+        class="icon-sun"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="4" />
+        <line x1="12" y1="2" x2="12" y2="4" />
+        <line x1="12" y1="20" x2="12" y2="22" />
+        <line x1="2" y1="12" x2="4" y2="12" />
+        <line x1="20" y1="12" x2="22" y2="12" />
+        <line x1="4.93" y1="4.93" x2="6.34" y2="6.34" />
+        <line x1="17.66" y1="17.66" x2="19.07" y2="19.07" />
+        <line x1="4.93" y1="19.07" x2="6.34" y2="17.66" />
+        <line x1="17.66" y1="6.34" x2="19.07" y2="4.93" />
+      </svg>
+    </button>
+
+    <!-- floating chapter marker -->
+    <div class="chapter" id="chapter">
+      <span class="chapter__dot"></span>
+      <span class="chapter__label" id="chapterLabel">prologue</span>
+    </div>
+
+    <!-- ───────────────────────────────── HERO ─────────────────────────────── -->
+    <section class="scene scene--hero" data-chapter="prologue">
+      <div class="stars" aria-hidden="true"></div>
+      <div class="hero">
+        <div class="hero__kicker">a scroll-down adventure</div>
+        <h1 class="hero__title">
+          A Tale of <span class="ink ink--red">Two</span> Searches.
+        </h1>
+        <p class="hero__sub">
+          Same question. Same answer. Two very different journeys through a
+          codebase.
+        </p>
+        <div class="hero__scroll">
+          <span>scroll</span>
+          <div class="hero__arrow"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────────── THE QUESTION ─────────────────────────── -->
+    <section class="scene scene--question" data-chapter="the question">
+      <div class="card card--question reveal">
+        <div class="card__tag">the question</div>
+        <h2>
+          If someone <span class="strike">deletes a function</span> from a
+          <code>.py</code> file and runs <code>trie sync</code>…
+        </h2>
+        <p class="big">
+          …what happens to the section for that symbol in the triefact?
+        </p>
+
+        <div class="options">
+          <div class="option reveal">
+            <span class="option__num">1</span>
+            <div>
+              <strong>The section stays.</strong>
+              <p>The triefact lies to you. Ghosts in the docs.</p>
+            </div>
+          </div>
+          <div class="option reveal">
+            <span class="option__num">2</span>
+            <div>
+              <strong>The section is removed.</strong>
+              <p>The triefact tracks the source faithfully.</p>
+            </div>
+          </div>
+          <div class="option reveal">
+            <span class="option__num">3</span>
+            <div>
+              <strong>The whole triefact is deleted.</strong>
+              <p>Too aggressive. One symbol shouldn't take the file.</p>
+            </div>
+          </div>
+        </div>
+
+        <p class="note reveal">
+          An agent has to find out. Two agents, actually.
+        </p>
+      </div>
+    </section>
+
+    <!-- ────────────────────────── TWO PATHS DIVERGE ───────────────────────── -->
+    <section class="scene scene--diverge" data-chapter="two paths">
+      <h2 class="scene__heading reveal">
+        Two agents. Same repo. Same goal. Fresh context.
+      </h2>
+      <div class="diverge">
+        <div class="diverge__col diverge__col--slow reveal">
+          <div class="diverge__badge">agent A</div>
+          <h3>without <code>trie</code></h3>
+          <p>
+            Just <code>glob</code>, <code>bash</code>, <code>read</code>,
+            <code>grep</code>. The way you'd do it before the loop existed.
+          </p>
+          <div class="diverge__count">
+            <span class="diverge__num" data-count="11">0</span>
+            <span class="diverge__lbl">tool calls ahead</span>
+          </div>
+        </div>
+        <div class="diverge__vs">vs.</div>
+        <div class="diverge__col diverge__col--fast reveal">
+          <div class="diverge__badge diverge__badge--fast">agent B</div>
+          <h3>with <code>trie</code></h3>
+          <p>
+            <code>trie_grep</code>, <code>trie_read</code>,
+            <code>trie_trace</code> — the self-hosted loop.
+          </p>
+          <div class="diverge__count">
+            <span class="diverge__num diverge__num--fast" data-count="3"
+              >0</span
+            >
+            <span class="diverge__lbl">tool calls ahead</span>
+          </div>
+        </div>
+      </div>
+      <p class="diverge__hint reveal">
+        Keep scrolling. Watch them work in parallel.
+      </p>
+    </section>
+
+    <!-- ──────────────────────────── THE RACE ──────────────────────────────── -->
+    <section class="scene scene--race" data-chapter="the race">
+      <div class="race">
+        <!-- sticky headers row -->
+        <div class="race__head race__head--slow">
+          <span class="lane__icon">🐢</span>
+          <span>agent A · without trie</span>
+        </div>
+        <div class="race__divider race__divider--head" aria-hidden="true"></div>
+        <div class="race__head race__head--fast">
+          <span class="lane__icon">⚡</span>
+          <span>agent B · with trie</span>
+        </div>
+
+        <!-- vertical divider line, spans all data rows -->
+        <div class="race__divider" aria-hidden="true">
+          <div class="race__pulse"></div>
+        </div>
+
+        <!-- ─────────────── ROW 1 ─────────────── -->
+        <article class="call reveal" data-tool="glob">
+          <header>
+            <span class="call__n">01</span>
+            <span class="call__tool">glob</span>
+            <span class="call__cost">+1</span>
+          </header>
+          <pre class="call__args">pattern: "src/trie/**/*.py"</pre>
+          <div class="call__out call__out--miss">
+            <strong>No files found.</strong>
+            <span class="muted">…wrong layout. Guess invalidated.</span>
+          </div>
+        </article>
+
+        <article class="call call--fast reveal" data-tool="trie_grep">
+          <header>
+            <span class="call__n">01</span>
+            <span class="call__tool">trie_grep</span>
+            <span class="call__cost call__cost--good">precise</span>
+          </header>
+          <pre class="call__args">
+{
+  name_contains: "sync",
+  kind: "function",
+  scope_prefix: "trie/"
+}</pre
+          >
+          <div class="call__out call__out--hit">
+            7 ranked hits. Top result:
+            <code>trie/sync/single_file:sync_single_file</code>
+            @ <code>single_file.py:238</code>
+            <span class="badge">inbound=35</span>
+            <p class="one-liner">
+              <em
+                >"…upserting sections for all parser-surfaced symbols
+                <strong>and removing stale ones</strong>."</em
+              >
+            </p>
+          </div>
+        </article>
+
+        <!-- ─────────────── ROW 2 ─────────────── -->
+        <article class="call reveal" data-tool="bash">
+          <header>
+            <span class="call__n">02</span>
+            <span class="call__tool">bash</span>
+            <span class="call__cost">+1</span>
+          </header>
+          <pre class="call__args">$ ls src/trie/ 2&gt;&amp;1 || ls -la</pre>
+          <div class="call__out call__out--noise">
+            69 lines of directory output.
+            <span class="muted"
+              >The package is flat at <code>trie/</code>, not under
+              <code>src/</code>.</span
+            >
+          </div>
+        </article>
+
+        <article class="call call--fast reveal" data-tool="trie_grep">
+          <header>
+            <span class="call__n">02</span>
+            <span class="call__tool">trie_grep</span>
+            <span class="call__cost call__cost--good">precise</span>
+          </header>
+          <pre class="call__args">
+{
+  name_contains: "remove",
+  scope_prefix: "trie/sync"
+}</pre
+          >
+          <div class="call__out call__out--hit">
+            2 hits, both relevant:
+            <ul>
+              <li>
+                <code>remove_orphan_triefacts</code> — file-level cleanup.
+              </li>
+              <li>
+                <code>TriefactFile.remove_section</code> — symbol-level surgery.
+              </li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- ─────────────── ROW 3 ─────────────── -->
+        <article class="call reveal" data-tool="bash">
+          <header>
+            <span class="call__n">03</span>
+            <span class="call__tool">bash</span>
+            <span class="call__cost">+1</span>
+          </header>
+          <pre class="call__args">$ ls trie/</pre>
+          <div class="call__out">
+            Listed 24 entries. Spotted <code>sync/</code>, <code>parse/</code>,
+            <code>graph/</code>.
+          </div>
+        </article>
+
+        <article
+          class="call call--fast call--final reveal"
+          data-tool="trie_read"
+        >
+          <header>
+            <span class="call__n">03</span>
+            <span class="call__tool">trie_read</span>
+            <span class="call__cost call__cost--good">surgical</span>
+          </header>
+          <pre class="call__args">
+qname: trie/sync/single_file:sync_single_file</pre
+          >
+          <div class="call__out call__out--hit">
+            <p>Prose, signature, callers, callees — all returned.</p>
+            <p>In the <strong>callers</strong> list, one name lights up:</p>
+            <div class="smoking-gun">
+              <span class="smoking-gun__file">tests/test_e2e_sync</span>
+              <span class="smoking-gun__symbol">
+                test_resync_removes_section_when_symbol_deleted
+              </span>
+            </div>
+            <p class="muted">
+              A test whose name <em>is</em> the answer. No file opened.
+            </p>
+          </div>
+        </article>
+
+        <!-- ─────────────── ROW 4 ─────────────── -->
+        <article class="call reveal" data-tool="bash">
+          <header>
+            <span class="call__n">04</span>
+            <span class="call__tool">bash</span>
+            <span class="call__cost">+1</span>
+          </header>
+          <pre class="call__args">$ ls trie/sync/ trie/parse/ trie/graph/</pre>
+          <div class="call__out">
+            File inventory acquired. <em>No code read yet.</em>
+          </div>
+        </article>
+
+        <div class="waiting waiting--first reveal">
+          <div class="waiting__badge">
+            <span class="waiting__check">✓</span>
+            <span>answer found</span>
+          </div>
+          <div class="waiting__sub">in 3 calls</div>
+          <div class="waiting__hint muted">agent A is still scrolling…</div>
+        </div>
+
+        <!-- ─────────────── ROW 5 ─────────────── -->
+        <article class="call reveal" data-tool="read">
+          <header>
+            <span class="call__n">05</span>
+            <span class="call__tool">read</span>
+            <span class="call__cost">+1</span>
+          </header>
+          <pre class="call__args">trie/sync/reconcile.py</pre>
+          <div class="call__out">
+            60 lines. Two functions: <code>find_orphan_triefacts</code>,
+            <code>remove_orphan_triefacts</code>. <em>File-level</em> cleanup —
+            not symbol-level. Doesn't answer the question.
+          </div>
+        </article>
+
+        <div class="waiting reveal">
+          <div class="waiting__dot"></div>
+          <div class="waiting__dot"></div>
+          <div class="waiting__dot"></div>
+        </div>
+
+        <!-- ─────────────── ROW 6 ─────────────── -->
+        <article class="call reveal" data-tool="read">
+          <header>
+            <span class="call__n">06</span>
+            <span class="call__tool">read</span>
+            <span class="call__cost">+1</span>
+          </header>
+          <pre class="call__args">trie/sync/writer.py</pre>
+          <div class="call__out">
+            347 lines. Found the surgical primitive:
+            <code>TriefactFile.remove_section(qname)</code>. The machinery
+            exists.
+            <em>But does anything call it for stale symbols?</em>
+          </div>
+        </article>
+
+        <div class="waiting reveal">
+          <div class="waiting__dot"></div>
+          <div class="waiting__dot"></div>
+          <div class="waiting__dot"></div>
+        </div>
+
+        <!-- ─────────────── ROW 7 ─────────────── -->
+        <article class="call reveal" data-tool="read">
+          <header>
+            <span class="call__n">07</span>
+            <span class="call__tool">read</span>
+            <span class="call__cost">+1</span>
+          </header>
+          <pre class="call__args">trie/sync/single_file.py</pre>
+          <div class="call__out call__out--hit">
+            492 lines. Buried near the bottom:
+            <pre class="code">
+current_qnames = {s.qualified_name for s in target_symbols}
+for stale_qname in list(triefact.section_qnames()):
+    if stale_qname not in current_qnames:
+        triefact.remove_section(stale_qname)
+        sections_removed += 1</pre
+            >
+            <strong>The orphan sweep.</strong>
+          </div>
+        </article>
+
+        <div class="waiting waiting--callout reveal">
+          <div class="waiting__quote">
+            agent A just opened a 492-line file
+            <br /><span class="muted"
+              >to find what trie returned in a one-liner.</span
+            >
+          </div>
+        </div>
+
+        <!-- ─────────────── ROW 8 ─────────────── -->
+        <article class="call reveal" data-tool="grep">
+          <header>
+            <span class="call__n">08</span>
+            <span class="call__tool">grep</span>
+            <span class="call__cost">+1</span>
+          </header>
+          <pre class="call__args">
+pattern: sections_removed|remove_section|stale_qname…
+path:    tests/</pre
+          >
+          <div class="call__out">
+            10 matches across 5 files. Promising names buried in regex output.
+          </div>
+        </article>
+
+        <div class="waiting reveal">
+          <div class="waiting__dot"></div>
+          <div class="waiting__dot"></div>
+          <div class="waiting__dot"></div>
+        </div>
+
+        <!-- ─────────────── ROW 9 ─────────────── -->
+        <article class="call reveal" data-tool="grep">
+          <header>
+            <span class="call__n">09</span>
+            <span class="call__tool">grep</span>
+            <span class="call__cost">+1</span>
+          </header>
+          <pre class="call__args">
+pattern: stale|orphan|removed_from_source|…
+path:    tests/</pre
+          >
+          <div class="call__out call__out--noise">
+            69 matches. Output truncated at 50 KB.
+            <span class="muted"
+              >A lot of <code>stale</code> hits are about
+              <em>install</em> staleness, not symbols.</span
+            >
+          </div>
+        </article>
+
+        <div class="waiting reveal">
+          <div class="waiting__dot"></div>
+          <div class="waiting__dot"></div>
+          <div class="waiting__dot"></div>
+        </div>
+
+        <!-- ─────────────── ROW 10 ─────────────── -->
+        <article class="call reveal" data-tool="read">
+          <header>
+            <span class="call__n">10</span>
+            <span class="call__tool">read</span>
+            <span class="call__cost">+1</span>
+          </header>
+          <pre class="call__args">tests/test_e2e_sync.py  (slice)</pre>
+          <div class="call__out call__out--hit">
+            <code>test_resync_removes_section_when_symbol_deleted</code>. Writes
+            two functions, syncs, deletes one, resyncs, asserts
+            <code>sections_removed == 1</code>.
+          </div>
+        </article>
+
+        <div class="waiting waiting--callout reveal">
+          <div class="waiting__quote">
+            same test name.
+            <br /><span class="muted"
+              >trie surfaced it from the callers list 7 calls ago.</span
+            >
+          </div>
+        </div>
+
+        <!-- ─────────────── ROW 11 ─────────────── -->
+        <article class="call reveal" data-tool="read">
+          <header>
+            <span class="call__n">11</span>
+            <span class="call__tool">read</span>
+            <span class="call__cost">+1</span>
+          </header>
+          <pre class="call__args">tests/test_parallel_sync.py  (slice)</pre>
+          <div class="call__out">
+            Parity assertion: serial vs parallel agree on
+            <code>sections_removed</code>. Behaviour is concurrency-safe.
+          </div>
+        </article>
+
+        <div class="waiting waiting--last reveal">
+          <div class="waiting__badge waiting__badge--strong">
+            <span class="waiting__check">✓</span>
+            <span>still done</span>
+          </div>
+          <div class="waiting__sub muted">8 calls ago.</div>
+        </div>
+
+        <!-- totals -->
+        <div class="lane__total reveal">
+          <div class="lane__total__num">11</div>
+          <div class="lane__total__lbl">tool calls</div>
+          <div class="lane__total__sub">
+            4 orientation · 3 file reads · 2 greps · 2 test slices
+          </div>
+        </div>
+
+        <div class="lane__total lane__total--fast reveal">
+          <div class="lane__total__num">3</div>
+          <div class="lane__total__lbl">tool calls</div>
+          <div class="lane__total__sub">
+            1 orient · 1 confirm primitive · 1 deep read
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── THE REVEAL ───────────────────────────────── -->
+    <section class="scene scene--reveal" data-chapter="the reveal">
+      <div class="reveal-card reveal">
+        <div class="reveal-card__tag">same answer</div>
+        <h2>Yes. <span class="muted">The section is removed.</span></h2>
+        <p>
+          <code>sync_single_file</code> calls <code>extract_symbols</code>,
+          diffs the live symbol set against the triefact's existing sections,
+          and sweeps the orphans via <code>TriefactFile.remove_section</code>.
+          Human prose between sentinels survives by construction.
+        </p>
+      </div>
+
+      <div class="scoreboard">
+        <div class="score score--slow reveal">
+          <div class="score__lane">without trie</div>
+          <div class="score__big">11</div>
+          <div class="score__lbl">tool calls</div>
+          <ul class="score__list">
+            <li>4 calls just to find where source lives</li>
+            <li>3 whole files read into context</li>
+            <li>69-match grep output, truncated at 50&nbsp;KB</li>
+            <li>Found the test by reading filenames in regex output</li>
+          </ul>
+        </div>
+
+        <div class="score score--fast reveal">
+          <div class="score__lane score__lane--fast">with trie</div>
+          <div class="score__big">3</div>
+          <div class="score__lbl">tool calls</div>
+          <ul class="score__list">
+            <li>Symbol-level queries, not file-level</li>
+            <li>One-liners returned <em>with</em> the search results</li>
+            <li>Callers list named the regression test directly</li>
+            <li>Inbound count flagged the hub function instantly</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="ratio reveal">
+        <div class="ratio__big">3.6×</div>
+        <div class="ratio__lbl">fewer calls</div>
+        <p class="muted">
+          And the calls trie does make return <em>structured answers</em>, not
+          pages of bytes to skim.
+        </p>
+      </div>
+    </section>
+
+    <!-- ────────────────────── WHY IT WORKS ────────────────────────────────── -->
+    <section class="scene scene--why" data-chapter="why it works">
+      <h2 class="scene__heading reveal">Why the trie path is shorter.</h2>
+
+      <div class="why">
+        <div class="why__card reveal">
+          <div class="why__num">①</div>
+          <h3>It indexes <em>symbols</em>, not bytes.</h3>
+          <p>
+            <code>grep</code> sees lines. <code>trie_grep</code> sees functions,
+            classes, methods — with their qnames, signatures, one-liners, and
+            inbound/outbound edge counts ranked by centrality.
+          </p>
+          <div class="why__example">
+            <span class="why__example__tag">grep</span>
+            <pre>
+Found 69 matches across 12 files…
+(Output capped at 50 KB.)</pre
+            >
+          </div>
+          <div class="why__example why__example--fast">
+            <span class="why__example__tag why__example__tag--fast"
+              >trie_grep</span
+            >
+            <pre>
+sync_single_file  inbound=35  ⭐
+"…upserting sections for all parser-
+ surfaced symbols and removing stale
+ ones."</pre
+            >
+          </div>
+        </div>
+
+        <div class="why__card reveal">
+          <div class="why__num">②</div>
+          <h3>One-liners come <em>with</em> the search.</h3>
+          <p>
+            Every hit ships with a generated synopsis. You don't have to open
+            the file to learn what the function does — the question "is this the
+            right symbol?" is answered in the result row.
+          </p>
+        </div>
+
+        <div class="why__card reveal">
+          <div class="why__num">③</div>
+          <h3>Callers list = the answer's table of contents.</h3>
+          <p>
+            <code>trie_read</code> returns prose <em>plus</em> every immediate
+            caller and callee with their own one-liners. Looking for a
+            regression test? It's in the callers list, named after the behaviour
+            you're investigating.
+          </p>
+          <div class="smoking-gun smoking-gun--inline">
+            <span class="smoking-gun__file">tests/test_e2e_sync</span>
+            <span class="smoking-gun__symbol">
+              test_resync_removes_section_when_symbol_deleted
+            </span>
+          </div>
+        </div>
+
+        <div class="why__card reveal">
+          <div class="why__num">④</div>
+          <h3>Hubs declare themselves.</h3>
+          <p>
+            <code>inbound_count=35</code> on the top hit isn't decoration — it's
+            a structural signal that this is <em>the</em> place where per-file
+            sync logic lives. The agent skips three speculative reads because
+            the graph already said so.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────── THE LOOP ─────────────────────────────────────── -->
+    <section class="scene scene--loop" data-chapter="the loop">
+      <div class="loop reveal">
+        <h2>The bootstrapping loop.</h2>
+        <p class="loop__sub">trie indexes itself with trie.</p>
+
+        <div class="loop__diagram">
+          <div class="loop__node">edit code</div>
+          <div class="loop__arrow">→</div>
+          <div class="loop__node">end-of-turn hook</div>
+          <div class="loop__arrow">→</div>
+          <div class="loop__node">trie refresh</div>
+          <div class="loop__arrow">→</div>
+          <div class="loop__node loop__node--accent">graph stays honest</div>
+          <div class="loop__arrow">→</div>
+          <div class="loop__node">next agent turn</div>
+          <div class="loop__arrow loop__arrow--wrap">↩</div>
+        </div>
+
+        <p class="loop__note">
+          Every turn, the hook picks up exactly the files just edited and stamps
+          the graph. The MCP queries the <em>next</em> agent runs reflect
+          reality — not yesterday's snapshot, not a stale index.
+        </p>
+      </div>
+    </section>
+
+    <!-- ───────────────────── OUTRO ────────────────────────────────────────── -->
+    <section class="scene scene--outro" data-chapter="outro">
+      <div class="outro reveal">
+        <h2>Same answer.</h2>
+        <h2 class="ink ink--red">Different cost.</h2>
+        <p>
+          Eleven calls or three. Bytes-of-output skimming or one-liner-ranked
+          hits. Filename guessing or callers-list smoking guns.
+        </p>
+        <p class="big">
+          The shape of the search changes when your tools understand the shape
+          of the code.
+        </p>
+
+        <div class="signoff">
+          <code>trie locate</code> · <code>trie explain</code> ·
+          <code>trie walk</code>
+        </div>
+
+        <div class="hero__scroll hero__scroll--up">
+          <div class="hero__arrow hero__arrow--up"></div>
+          <span>back to top</span>
+        </div>
+      </div>
+    </section>
+
+    <script src="./story.js"></script>
+  </body>
+</html>

@@ -1,14 +1,14 @@
 ---
 trie_version: 0.1.2
 source: tests/test_tool_override_install.py
-file_fingerprint: 2434d77108e67662bceaebe70f8a470f397676ea48919c117a0d334a5379a899
-last_synced_at: '2026-05-19T15:19:22Z'
+file_fingerprint: 346fad9b9250a9d6a0398ad25390458f163590878239a13322828d0fa1dd5c94
+last_synced_at: '2026-05-20T13:54:54Z'
 description: 'Tests for `trie.tool_override_install`: replacing agent built-in tools
   with trie wrappers.'
 defines:
 - kind: module
   qualified_name: tests/test_tool_override_install:__module__
-  lines: 1-609
+  lines: 1-645
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_install_creates_three_override_files
   lines: 39-60
@@ -19,73 +19,76 @@ defines:
   qualified_name: tests/test_tool_override_install:test_opencode_files_carry_generated_notice
   lines: 80-93
 - kind: function
+  qualified_name: tests/test_tool_override_install:test_opencode_rendered_files_have_balanced_backticks_per_line
+  lines: 96-129
+- kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_read_override_dispatches_on_qname_path_or_show_source
-  lines: 101-122
+  lines: 137-158
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_read_override_advertises_show_source_arg
-  lines: 125-138
+  lines: 161-174
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_read_override_qname_detection_excludes_urls_and_drives
-  lines: 141-159
+  lines: 177-195
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_read_override_emits_telemetry_from_typescript
-  lines: 162-192
+  lines: 198-228
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_read_override_appends_telemetry_atomically
-  lines: 195-212
+  lines: 231-248
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_read_override_handles_absolute_paths
-  lines: 215-236
+  lines: 251-272
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_read_override_advertises_full_arg
-  lines: 239-255
+  lines: 275-291
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_read_override_emits_compact_renderer
-  lines: 258-277
+  lines: 294-313
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_read_override_full_mode_trims_for_agent
-  lines: 280-302
+  lines: 316-338
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_trie_read_obsolete_file_removed_on_apply
-  lines: 305-330
+  lines: 341-366
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_obsolete_cleanup_is_noop_on_fresh_install
-  lines: 333-348
+  lines: 369-384
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_install_is_idempotent_on_identical_content
-  lines: 356-381
+  lines: 392-417
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_install_updates_on_drift
-  lines: 384-409
+  lines: 420-445
 - kind: function
   qualified_name: tests/test_tool_override_install:test_claude_code_install_creates_advisory_hook
-  lines: 417-444
+  lines: 453-480
 - kind: function
   qualified_name: tests/test_tool_override_install:test_claude_code_hook_does_not_deny_grep
-  lines: 447-461
+  lines: 483-497
 - kind: function
   qualified_name: tests/test_tool_override_install:test_unsupported_harnesses_emit_needs_manual_setup
-  lines: 473-491
+  lines: 509-527
 - kind: function
   qualified_name: tests/test_tool_override_install:test_install_for_opencode_and_claude_code_in_one_pass
-  lines: 499-512
+  lines: 535-548
 - kind: function
   qualified_name: tests/test_tool_override_install:test_print_only_does_not_write_anything
-  lines: 520-541
+  lines: 556-577
 - kind: function
   qualified_name: tests/test_tool_override_install:test_dry_run_does_not_write_when_file_already_correct
-  lines: 544-564
+  lines: 580-600
 - kind: function
   qualified_name: tests/test_tool_override_install:test_install_with_empty_target_names_raises
-  lines: 572-579
+  lines: 608-615
 - kind: function
   qualified_name: tests/test_tool_override_install:test_install_with_unknown_target_raises
-  lines: 582-596
+  lines: 618-632
 - kind: function
   qualified_name: tests/test_tool_override_install:test_apply_one_uses_needs_manual_setup_for_targets_with_no_files
-  lines: 599-608
+  lines: 635-644
 incoming_refs: 0
-outgoing_refs: 28
+outgoing_refs: 29
 ---
 <!-- trie:section symbol=tests/test_tool_override_install:test_opencode_install_creates_three_override_files fingerprint=311a913081b132222ae5933948bfc573701ad85a62aeaea33e46eb3141571d36 body_fp=738af83cbeb707dcda25021772677ed76f88d66c6495cbfc619a109956a3cfc4 source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
 ## `test_opencode_install_creates_three_override_files(tmp_path: Path)`
@@ -272,4 +275,13 @@ Assert that `full: true` mode routes through `renderForAgent`, stripping interna
 - Checks for `renderForAgent`, `stripSentinels`, and `renderFrontMatterForAgent` helpers.
 - Verifies `result = renderForAgent(triefact)` call site exists.
 - Verifies the raw `result = triefact` leak pattern is absent for full mode.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_rendered_files_have_balanced_backticks_per_line fingerprint=b10d440c635ed2b7ce7200e27f8521ed5f0d6f0882f993a7fcac8addd399ab04 body_fp=231d983706b3c3561272b29f9b51870304f72d736690c9ac90444ce072e297ef source_ref=768573ad34b38438e73a322470e24aaed565093e -->
+## `test_opencode_rendered_files_have_balanced_backticks_per_line(tmp_path: Path)`
+
+Regression-guard: assert every `//` comment line in all three rendered `.ts` files has an even backtick count.
+
+- Odd count in a comment opens a stray JS template literal, causing bun parse failure.
+- Root cause guarded against: unescaped `\n` in Python renderer splitting a single-line comment.
 <!-- trie:end -->
