@@ -7,9 +7,10 @@ current with the working copy without the agent (or the user) having to
 remember.
 
 Coverage today is intentionally narrow: opencode is the only agent with a
-documented event API we can wire into (`session.idle`). For every other
-agent we know about, this module returns a `needs_manual_setup` result
-that surfaces the instructions a human has to follow.
+documented event API we can wire into (`session.status` with idle status;
+the older `session.idle` event was deprecated upstream on 2025-11-17). For
+every other agent we know about, this module returns a `needs_manual_setup`
+result that surfaces the instructions a human has to follow.
 
 The shape mirrors `mcp_install` so `trie setup` can present one unified
 report. Each `HookTarget` describes:
@@ -56,6 +57,21 @@ class HookApplyResult:
 
 
 @dataclass(frozen=True)
+class HookSupportFile:
+    """A secondary file written alongside the primary plugin file.
+
+    Used for runtime scaffolding the hook depends on but doesn't itself
+    contain — e.g. the `.opencode/package.json` that lets opencode's bun
+    install pin `@opencode-ai/plugin` cleanly. Reported in the apply result
+    via `detail` but doesn't appear as a separate `HookApplyResult`; this is
+    intentionally a quiet, hook-internal concern.
+    """
+
+    relative_path: tuple[str, ...]
+    render_contents: Callable[[Path], str]
+
+
+@dataclass(frozen=True)
 class HookTarget:
     """Static description of an agent's turn-boundary hook surface.
 
@@ -63,6 +79,11 @@ class HookTarget:
     `relative_path`. When `None`, the target is known but doesn't have an
     automatable hook story — `apply_one` returns `needs_manual_setup` so the
     user knows to wire it themselves.
+
+    `support_files` is for ancillary files the hook's runtime depends on
+    (e.g. `.opencode/package.json`). They're written transparently as part
+    of `apply_one` and are subject to the same idempotency rules as the
+    primary file.
     """
 
     name: str
@@ -73,10 +94,11 @@ class HookTarget:
     relative_path: tuple[str, ...] | None = None
     render_contents: Callable[[Path], str] | None = None
     manual_instructions: str = ""
+    support_files: tuple[HookSupportFile, ...] = ()
 
 
 # ---------------------------------------------------------------------------
-# opencode: plugin-based turn hook via the `session.idle` event.
+# opencode: plugin-based turn hook via the `session.status` event (idle status).
 # ---------------------------------------------------------------------------
 
 
@@ -87,9 +109,14 @@ def _render_opencode_plugin(_project_root: Path) -> str:
     """Render the opencode plugin file that fires `trie refresh --after-turn`
     every time an agent session goes idle.
 
-    The plugin listens for the `session.idle` event (documented in opencode's
-    plugin reference) and shells out to the global `trie` binary. The hook
-    runs in fire-and-await fashion: opencode pauses for the duration before
+    The plugin listens for `session.status` with `status.type === "idle"`
+    (documented in opencode's plugin reference) and shells out to the global
+    `trie` binary. opencode also still emits a deprecated `session.idle` event;
+    we ignore it to avoid double-firing — `session.status` is the future-proof
+    surface (the legacy event was marked deprecated in upstream commit
+    bdfa213c on 2025-11-17).
+
+    The hook runs fire-and-await: opencode pauses for the duration before
     moving on, which is the right tradeoff during eval runs where we'd rather
     the next turn see a fresh graph than start fast and look stale.
 
@@ -102,23 +129,68 @@ def _render_opencode_plugin(_project_root: Path) -> str:
 // when an opencode session goes idle, keeping the graph + triefact tree in
 // sync with edits the agent made during the turn.
 //
+// We listen for `session.status` with status.type === "idle" — the
+// `session.idle` event was deprecated upstream (commit bdfa213c, 2025-11-17)
+// and listening for both would double-fire the refresh.
+//
 // See https://opencode.ai/docs/plugins for the plugin API.
 
 import type { Plugin } from "@opencode-ai/plugin"
 
-export const TrieRefresh: Plugin = async ({ $, directory }) => {
+const TrieRefreshPlugin: Plugin = async ({ $, directory }) => {
   return {
     event: async ({ event }) => {
-      if (event.type === "session.idle") {
-        try {
-          await $`trie refresh --after-turn`.cwd(directory).quiet()
-        } catch {
-          // Swallow errors. trie refresh logs to debug.jsonl on failure; the
-          // plugin throwing would noisy-up the opencode TUI for problems the
-          // user can diagnose via `trie audit` later.
-        }
+      if (event.type !== "session.status") return
+      if ((event as any).properties?.status?.type !== "idle") return
+      try {
+        await $`trie refresh --after-turn`.cwd(directory).quiet()
+      } catch {
+        // Swallow errors. trie refresh logs to debug.jsonl on failure; the
+        // plugin throwing would noisy-up the opencode TUI for problems the
+        // user can diagnose via `trie audit` later.
       }
     },
+  }
+}
+
+// opencode v1.x prefers a default-exported PluginModule object ({ id, server }).
+// Named exports (the v0 shape) still work via the legacy loader, but the v1
+// shape is what the loader looks for first and is required for path plugins
+// since `resolvePluginId` mandates an explicit id.
+export default {
+  id: "trie-refresh",
+  server: TrieRefreshPlugin,
+}
+"""
+
+
+def _render_opencode_package_json(_project_root: Path) -> str:
+    """Render `.opencode/package.json` pinning `@opencode-ai/plugin`.
+
+    Without this file, opencode runs `bun install` against the `.opencode/`
+    directory at startup and tries to add `@opencode-ai/plugin` with a version
+    derived from the running opencode build. For dev/source builds (or any
+    stale state where the version resolves to `"local"`), bun writes
+    `"@opencode-ai/plugin": "local"` into the generated package.json, the next
+    install fails ("No matching version found for @opencode-ai/plugin@local"),
+    and every `.opencode/tools/*.ts` import that pulls from `@opencode-ai/plugin`
+    dies with ERR_MODULE_NOT_FOUND. The user-visible symptom is that opencode
+    sessions become silently unresponsive (see anomalyco/opencode#28286 and
+    #27676).
+
+    Shipping a known-good baseline pinned to `"latest"` pre-empts opencode's
+    broken auto-pin: arborist will overwrite our `"latest"` with the running
+    opencode version, which is a real published version and resolves cleanly.
+
+    We declare it as a `dependencies` entry (not `peerDependencies`) so bun's
+    arborist treats it as the canonical install target.
+    """
+    return """{
+  "//": "Auto-generated by `trie setup`. Do not hand-edit — opencode rewrites this on every startup. The pin pre-empts the @opencode-ai/plugin@local resolution failure that silently kills tool overrides; see https://github.com/anomalyco/opencode/issues/28286.",
+  "name": "trie-opencode-overrides",
+  "private": true,
+  "dependencies": {
+    "@opencode-ai/plugin": "latest"
   }
 }
 """
@@ -136,6 +208,18 @@ TARGETS: dict[str, HookTarget] = {
         display_name="opencode",
         relative_path=(".opencode", "plugins", _OPENCODE_PLUGIN_FILENAME),
         render_contents=_render_opencode_plugin,
+        support_files=(
+            # opencode runs `bun install` against `.opencode/` at startup and
+            # tries to add `@opencode-ai/plugin`. If a stale `package.json`
+            # pins it to `"local"` (the dev-build sentinel), every subsequent
+            # install fails and tool-override `.ts` files die with
+            # ERR_MODULE_NOT_FOUND, silently breaking the session. Shipping
+            # our own baseline pre-empts that.
+            HookSupportFile(
+                relative_path=(".opencode", "package.json"),
+                render_contents=_render_opencode_package_json,
+            ),
+        ),
     ),
     "claude-code": HookTarget(
         name="claude-code",
@@ -312,12 +396,21 @@ def apply_one(
                 detail=f"could not read existing hook file: {exc}",
             )
         if current == contents:
+            # Still pass through the support-file writer: a user upgrading
+            # trie from a release that predates `support_files` (or one that
+            # had a manually-deleted `.opencode/package.json`) needs the
+            # baseline package.json to land even when the plugin itself is
+            # already up to date.
+            support_notes = _apply_support_files(target.support_files, project_root)
+            detail = "hook already installed with the same contents"
+            if support_notes:
+                detail = f"{detail}; {'; '.join(support_notes)}"
             return HookApplyResult(
                 target=target.name,
                 action="skipped",
                 path=target_path,
                 contents=contents,
-                detail="hook already installed with the same contents",
+                detail=detail,
             )
 
     if dry_run:
@@ -330,9 +423,45 @@ def apply_one(
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
     target_path.write_text(contents)
+
+    support_notes = _apply_support_files(target.support_files, project_root)
+    detail = "; ".join(support_notes) if support_notes else ""
+
     return HookApplyResult(
         target=target.name,
         action="updated" if existed_before else "created",
         path=target_path,
         contents=contents,
+        detail=detail,
     )
+
+
+def _apply_support_files(
+    files: tuple[HookSupportFile, ...],
+    project_root: Path,
+) -> list[str]:
+    """Write each support file with the same created/updated/skipped semantics
+    as the primary hook file, returning short human-readable notes.
+
+    Failures to write a single support file are noted but don't propagate;
+    the primary hook is the gating contract and we don't want a missing
+    `.opencode/package.json` write permission to mask a successful plugin
+    install. Issues become visible through trie's own telemetry and the
+    notes returned here.
+    """
+    notes: list[str] = []
+    for support in files:
+        path = project_root.joinpath(*support.relative_path)
+        rel = "/".join(support.relative_path)
+        contents = support.render_contents(project_root)
+        try:
+            if path.exists() and path.read_text() == contents:
+                notes.append(f"{rel}: up to date")
+                continue
+            path.parent.mkdir(parents=True, exist_ok=True)
+            existed = path.exists()
+            path.write_text(contents)
+            notes.append(f"{rel}: {'updated' if existed else 'created'}")
+        except OSError as exc:
+            notes.append(f"{rel}: write failed ({exc})")
+    return notes

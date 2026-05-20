@@ -65,9 +65,67 @@ def test_opencode_hook_creates_plugin_file(project: Path):
     assert result.path == expected_path
     assert expected_path.exists()
     contents = expected_path.read_text()
-    # Key wiring: the plugin listens for session.idle and runs trie refresh.
-    assert "session.idle" in contents
+    # Key wiring: the plugin listens for `session.status` with idle status
+    # (the new non-deprecated event) and runs trie refresh.
+    assert "session.status" in contents
+    assert '"idle"' in contents
     assert "trie refresh --after-turn" in contents
+    # The plugin MUST default-export a PluginModule shape with `id`. opencode's
+    # v1 loader (`readV1Plugin`) requires path plugins to carry an `id`, and
+    # the legacy named-export path is being phased out.
+    assert "export default" in contents
+    assert '"trie-refresh"' in contents
+    # The package.json baseline must land alongside the plugin to pre-empt
+    # opencode's `@opencode-ai/plugin@local` resolution failure.
+    pkg_json = project / ".opencode" / "package.json"
+    assert pkg_json.exists()
+    data = json.loads(pkg_json.read_text())
+    assert data["dependencies"]["@opencode-ai/plugin"]
+
+
+def test_opencode_hook_writes_package_json_to_unblock_bun_install(project: Path):
+    """opencode runs `bun install` against `.opencode/` at startup; without a
+    baseline `package.json`, an older opencode build could leave the directory
+    pinned to `@opencode-ai/plugin@local` which then fails to resolve and
+    silently breaks every prompt (anomalyco/opencode#28286). We ship a known-
+    good baseline pointing at the `"latest"` tag — opencode's arborist will
+    overwrite the version with the running opencode version on first install,
+    which is a real published version and resolves cleanly.
+    """
+    install(
+        target_names=["opencode"],
+        install_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    pkg_json = project / ".opencode" / "package.json"
+    assert pkg_json.exists()
+    data = json.loads(pkg_json.read_text())
+    assert data["dependencies"]["@opencode-ai/plugin"] == "latest"
+
+
+def test_opencode_hook_package_json_is_idempotent(project: Path):
+    """A second run with the same support file content reports nothing
+    surprising — the package.json contents are stable and we don't keep
+    rewriting them."""
+    install(
+        target_names=["opencode"],
+        install_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    pkg_path = project / ".opencode" / "package.json"
+    before = pkg_path.read_text()
+    install(
+        target_names=["opencode"],
+        install_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    assert pkg_path.read_text() == before
 
 
 def test_opencode_hook_is_idempotent(project: Path):
@@ -105,7 +163,7 @@ def test_opencode_hook_updates_when_contents_changed(project: Path):
         project_root=project,
     )
     assert plan.results[0].action == "updated"
-    assert "session.idle" in plugin_path.read_text()
+    assert "session.status" in plugin_path.read_text()
 
 
 def test_print_only_writes_no_files(project: Path):
@@ -118,7 +176,7 @@ def test_print_only_writes_no_files(project: Path):
     )
     assert plan.results[0].action == "preview"
     # Contents are still returned so the caller can render them.
-    assert "session.idle" in plan.results[0].contents
+    assert "session.status" in plan.results[0].contents
     # But nothing landed on disk.
     assert not (project / ".opencode").exists()
 
@@ -211,7 +269,9 @@ def test_cli_setup_opencode_writes_both_files(project: Path, monkeypatch: pytest
     # Hook plugin written.
     hook_path = project / ".opencode" / "plugins" / "trie-refresh.ts"
     assert hook_path.exists()
-    assert "session.idle" in hook_path.read_text()
+    assert "session.status" in hook_path.read_text()
+    # And the package.json baseline that lets `@opencode-ai/plugin` resolve.
+    assert (project / ".opencode" / "package.json").exists()
 
 
 def test_cli_setup_claude_code_does_mcp_and_warns_about_hook(
@@ -236,7 +296,7 @@ def test_cli_setup_print_only_writes_nothing(project: Path, monkeypatch: pytest.
     assert not (project / "opencode.json").exists()
     assert not (project / ".opencode").exists()
     # But the preview text should reach the user.
-    assert "session.idle" in result.output
+    assert "session.status" in result.output
 
 
 def test_cli_setup_target_and_all_mutex(project: Path, monkeypatch: pytest.MonkeyPatch):
