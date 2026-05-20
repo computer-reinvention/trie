@@ -1,0 +1,50 @@
+name: deploy landing to github pages
+
+# Publishes the static site under `landing/` to GitHub Pages.
+# Runs on every push to main that touches the landing assets, plus a
+# manual trigger from the Actions tab for one-off republishes.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "landing/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+# A single in-flight deployment per ref is enough; cancel older runs so
+# the freshest commit is the one that lands on pages.
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: configure pages
+        uses: actions/configure-pages@v5
+
+      - name: upload landing/ as pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./landing
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

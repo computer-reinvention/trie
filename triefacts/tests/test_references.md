@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.2
 source: tests/test_references.py
-file_fingerprint: 24aa3c08899578f0fe7321610c519c21a0aaf6e5fe2a018b478f8685b94afa06
-last_synced_at: '2026-05-19T10:38:54Z'
+file_fingerprint: 2fdf44916f20a130ea326a24211998cb1e4938e538a0ba45d36ee96cd481d6a7
+last_synced_at: '2026-05-20T13:54:44Z'
 defines:
 - kind: module
   qualified_name: tests/test_references:__module__
@@ -160,7 +160,7 @@ Assert that `import foo as f; f.bar()` resolves the reference target to `foo:bar
 Assert that `import foo.bar` followed by `foo.bar.baz()` resolves to the target qname `foo/bar:baz`.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_references:test_from_import_submodule_attribute_resolves fingerprint=4779064a355c55a1b4e3262f650c10a0b45cdb543b6373f1358902ce134755fe body_fp=17ff51e48a4e33a298795064a99678502582dacbeda3840e0e00b0fae5029b30 source_ref=5a91a8c60b5e6b0f8348157ccb0c571d36a3d8a6 -->
+<!-- trie:section symbol=tests/test_references:test_from_import_submodule_attribute_resolves fingerprint=a9288b10b5a0ce3cf43d26aff94d869565c99035ad41a67a8e2e9e758fa7bc2a body_fp=17ff51e48a4e33a298795064a99678502582dacbeda3840e0e00b0fae5029b30 source_ref=cfc6a4f3993d1a1359e67c4f055e983eff884192 -->
 ## `test_from_import_submodule_attribute_resolves(tmp_path: Path)`
 
 Assert that `from pkg import submod; submod.thing()` emits both bare-symbol and module-attribute candidate edges.

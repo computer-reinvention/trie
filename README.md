@@ -2,7 +2,7 @@
 
 > **Your codebase, in prose. Kept in sync with the code by a reference-graph cascade.**
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Source available](https://img.shields.io/badge/source-available-blue.svg)](#license)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](#status)
 [![Tests](https://img.shields.io/badge/tests-513%20passing-brightgreen.svg)](#)
@@ -450,4 +450,6 @@ Hand-written prose between sentinels is still indexed by GitHub's search; only t
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+trie is open source — the code is here to read, audit, and learn from — but it is **not** an open-contribution project. Pull requests and patches from outside the core team will not be accepted. Please don't open one; it'll be closed unread.
+
+The underlying technology is **patented**. No license, express or implied, is granted by the publication of this source. If you want to use trie in a commercial setting, or build on its design, get in touch first.

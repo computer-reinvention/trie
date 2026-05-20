@@ -38,8 +38,9 @@ default_depth = 1
 hub_symbol_threshold = 20
 
 [debug]
-# Append-only JSONL telemetry for trie's own operations. We're dogfooding and
-# actively investigating regen quality, so this is on by default in this repo.
+# Append-only JSONL telemetry for trie's own operations. We bootstrap trie
+# with trie and are actively investigating regen quality, so this is on by
+# default here.
 # Override per-invocation with TRIE_DEBUG=0 (force off) or TRIE_DEBUG=/path.jsonl
 # (force on, custom path). See trie/telemetry.py for the event schema.
 enabled = true
