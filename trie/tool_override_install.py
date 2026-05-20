@@ -567,7 +567,7 @@ interface FrontMatter {
 }
 
 function parseFrontMatter(triefact: string): { fm: FrontMatter; rest: string } {
-  // The writer always emits a `---\n<yaml>\n---\n` block at the very start
+  // The writer always emits a `---\\n<yaml>\\n---\\n` block at the very start
   // of the file. We hand-parse the slice — only flat scalars and one
   // list-of-objects (`defines`) appear in this schema, so a TOML parser
   // or a YAML dep is overkill. Anything we don't recognise lands in the

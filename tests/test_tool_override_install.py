@@ -93,6 +93,42 @@ def test_opencode_files_carry_generated_notice(tmp_path: Path):
         assert "Do not hand-edit" in body
 
 
+def test_opencode_rendered_files_have_balanced_backticks_per_line(tmp_path: Path):
+    """Regression guard for a class of bug where a Python-side single-
+    backslash `\\n` inside a TypeScript single-line comment expands to a real
+    newline. The result splits a `// ...` line in two: the second half loses
+    its leading `//`, the parser treats it as code, and bun fails with
+    "Expected ';' but found ..." — opencode then can't load `read.ts` and
+    the entire session silently dies (no tool registration → no responses).
+
+    The narrow invariant that catches the bug class: in any rendered `.ts`
+    file, no comment line (starts with `//`) may carry an unterminated
+    backtick. Either the line has zero backticks, or an even count. If a
+    comment line ever opens an unmatched backtick, the next line(s) get
+    swallowed as a JS template literal.
+    """
+    install(
+        target_names=["opencode"],
+        print_only=False,
+        dry_run=False,
+        project_root=tmp_path,
+    )
+    for fname in ("grep.ts", "read.ts", "trie_trace.ts"):
+        body = (tmp_path / ".opencode" / "tools" / fname).read_text()
+        for lineno, line in enumerate(body.splitlines(), 1):
+            stripped = line.lstrip()
+            if not stripped.startswith("//"):
+                continue
+            count = stripped.count("`")
+            assert count % 2 == 0, (
+                f"{fname}:{lineno} has an unbalanced backtick in a comment "
+                f"({count} backticks). This opens a stray template literal "
+                f"that breaks bun's parser. Likely cause: an unescaped `\\n` "
+                f"in the Python renderer split a single-line comment in two. "
+                f"Line: {line!r}"
+            )
+
+
 # ---------------------------------------------------------------------------
 # opencode `read.ts` override behaviour
 # ---------------------------------------------------------------------------
