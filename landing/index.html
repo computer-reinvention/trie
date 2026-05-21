@@ -683,6 +683,384 @@ sync_single_file  inbound=35  ⭐
       </div>
     </section>
 
+    <!-- ─────────────────── MANIFESTO · INTRO ──────────────────────────────── -->
+    <section class="scene scene--manifesto" data-chapter="manifesto">
+      <div class="manifesto">
+        <div class="manifesto__kicker reveal">
+          the thing nobody says about coding agents
+        </div>
+        <h2 class="manifesto__claim reveal">
+          Code is the <span class="ink--red">executable</span> form of intent.
+          <br />Not the <span class="ink--green">explanatory</span> form.
+        </h2>
+        <p class="manifesto__lead reveal">
+          Every time an agent reads <code>cascade.py</code> to answer
+          <em>"what does this do and why,"</em> it's reconstructing intent
+          from <code>for</code> loops and variable names — under context
+          pressure, with the wrong abstraction. That's where hallucinations
+          come from. Not a lack of intelligence. The wrong artifact.
+        </p>
+        <blockquote class="manifesto__pull reveal">
+          Code is prose constrained by rules necessary to make it
+          comprehensible to machines made of molten sand.
+        </blockquote>
+        <p class="manifesto__thesis reveal">
+          The codebase should describe itself in
+          <span class="ink--green">prose</span>, kept in sync
+          <em>by construction</em>, as the primary artifact both humans and
+          agents work against.
+        </p>
+        <p class="manifesto__thesis manifesto__thesis--coda reveal">
+          Code becomes the executable form of the prose, not its source of
+          truth.
+        </p>
+        <div class="manifesto__handoff reveal">
+          <span>this changes things</span>
+          <div class="hero__arrow"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────── MANIFESTO · THE FOUR RINGS ─────────────────────── -->
+    <!--
+      Scroll-driven scene. The left column is sticky: a ripple diagram of
+      four concentric rings around the prose artifact. The right column
+      scrolls past with one "step" per ring; each step has its own
+      illustration that visualises the ring's specific point. As a step
+      enters the active band of the viewport, JS adds .is-active-N to
+      the scene wrapper, which lights the corresponding band on the
+      diagram and plays the step's illustration.
+    -->
+    <section class="scene scene--rings" data-chapter="four rings">
+      <div class="rings-header reveal">
+        <div class="rings-header__kicker">what happens</div>
+        <h2 class="rings-header__title">
+          Four rings of effect,<br />
+          outward from the artifact.
+        </h2>
+      </div>
+
+      <div class="rings-layout" id="ringsLayout">
+        <!-- ─── STICKY DIAGRAM ─── -->
+        <div class="rings-stage">
+          <div class="rings-stage__inner">
+            <svg viewBox="0 0 600 600" class="ripple" aria-hidden="true">
+              <!-- the four ripple bands -->
+              <circle cx="300" cy="300" r="285" class="ripple__ring ripple__ring--4" />
+              <circle cx="300" cy="300" r="225" class="ripple__ring ripple__ring--3" />
+              <circle cx="300" cy="300" r="165" class="ripple__ring ripple__ring--2" />
+              <circle cx="300" cy="300" r="105" class="ripple__ring ripple__ring--1" />
+
+              <!-- a "stone" — the prose artifact at the centre -->
+              <circle cx="300" cy="300" r="48" class="ripple__core" />
+              <text x="300" y="296" class="ripple__core-lbl">prose</text>
+              <text x="300" y="314" class="ripple__core-lbl ripple__core-lbl--sub">artifact</text>
+
+              <!--
+                ring labels, floating ~18px outside each band's upper arc.
+                circles are at r = 105 / 165 / 225 / 285 around y=300, so
+                the upper arc is at y = 195 / 135 / 75 / 15. We sit each
+                label ~18px above that for breathing room.
+              -->
+              <text x="300" y="177" class="ripple__lbl ripple__lbl--1">① navigation</text>
+              <text x="300" y="117" class="ripple__lbl ripple__lbl--2">② synthesis</text>
+              <text x="300" y="57"  class="ripple__lbl ripple__lbl--3">③ authorship</text>
+              <text x="300" y="-3"  class="ripple__lbl ripple__lbl--4">④ vibes</text>
+            </svg>
+            <div class="rings-stage__caption">
+              <span class="rings-stage__active-num">①</span>
+              <span class="rings-stage__active-title">navigation becomes nature</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── SCROLL STEPS ─── -->
+        <div class="rings-steps">
+
+          <!-- ═══ RING 1 ═══════════════════════════════════════════════ -->
+          <article class="ring-step" data-ring="1">
+            <div class="ring-step__head">
+              <span class="ring-step__num">①</span>
+              <span class="ring-step__band">ring one</span>
+            </div>
+            <h3 class="ring-step__title">Navigation becomes nature.</h3>
+            <p class="ring-step__body">
+              Agents stop grepping. They join paragraphs. Cross-file changes
+              stop being <em>"open six files and reconstruct the call graph
+              in context window."</em> They become <em>"walk the graph,
+              read the section, change the code."</em> Reading the codebase
+              stops being an act of reconstruction. The artifact already
+              speaks the language of intent.
+            </p>
+
+            <!-- illustration: grep noise collapses into a clean graph -->
+            <div class="illo illo--grep-to-graph" aria-hidden="true">
+              <div class="illo__panel illo__panel--before">
+                <div class="illo__tag illo__tag--bad">grep "sync"</div>
+                <div class="grep-noise">
+                  <div class="grep-line"><span class="grep-line__path">single_file.py:23</span><span class="grep-line__hit">def sync_single_file(path…</span></div>
+                  <div class="grep-line"><span class="grep-line__path">cascade.py:118</span><span class="grep-line__hit">_sync_parents(symbol_qname…</span></div>
+                  <div class="grep-line"><span class="grep-line__path">cli.py:401</span><span class="grep-line__hit">"sync-locking",</span></div>
+                  <div class="grep-line"><span class="grep-line__path">writer.py:88</span><span class="grep-line__hit"># keep sync with sentinel…</span></div>
+                  <div class="grep-line"><span class="grep-line__path">tests/test_e2e_sync.py:7</span><span class="grep-line__hit">def test_resync_removes…</span></div>
+                  <div class="grep-line grep-line--more">…64 more matches across 9 files. Output truncated at 50 KB.</div>
+                </div>
+              </div>
+              <div class="illo__arrow">→</div>
+              <div class="illo__panel illo__panel--after">
+                <div class="illo__tag illo__tag--good">trie_grep "sync"</div>
+                <svg class="graph-mini" viewBox="0 0 260 200" aria-hidden="true">
+                  <!-- edges -->
+                  <line x1="130" y1="60"  x2="60"  y2="140" class="graph-mini__edge" />
+                  <line x1="130" y1="60"  x2="200" y2="140" class="graph-mini__edge" />
+                  <line x1="60"  y1="140" x2="130" y2="60"  class="graph-mini__edge graph-mini__edge--back" />
+                  <!-- hub node -->
+                  <g class="graph-mini__node graph-mini__node--hub">
+                    <circle cx="130" cy="60" r="22" />
+                    <text x="130" y="64">sync_single_file</text>
+                    <text x="130" y="92" class="graph-mini__badge">inbound 35</text>
+                  </g>
+                  <!-- callees / callers -->
+                  <g class="graph-mini__node">
+                    <circle cx="60" cy="140" r="16" />
+                    <text x="60" y="144">extract_symbols</text>
+                  </g>
+                  <g class="graph-mini__node">
+                    <circle cx="200" cy="140" r="16" />
+                    <text x="200" y="144">remove_section</text>
+                  </g>
+                </svg>
+              </div>
+            </div>
+          </article>
+
+          <!-- ═══ RING 2 ═══════════════════════════════════════════════ -->
+          <article class="ring-step" data-ring="2">
+            <div class="ring-step__head">
+              <span class="ring-step__num">②</span>
+              <span class="ring-step__band">ring two</span>
+            </div>
+            <h3 class="ring-step__title">The bigger picture becomes the starting point.</h3>
+            <p class="ring-step__body">
+              The first move stops being <em>"let me find the function"</em>
+              and becomes <em>"let me understand the shape of this."</em>
+              Blast-radius. Why-is-this-the-way-it-is. Architecture
+              archaeology. The value is in the
+              <strong>synthesis</strong>, not the lookup. Synthesis becomes
+              the default move.
+            </p>
+
+            <!-- illustration: blast-radius pulse from one node to callers -->
+            <div class="illo illo--blast" aria-hidden="true">
+              <div class="illo__caption">
+                <span class="illo__tag illo__tag--good">change return type of <code>parse_symbol()</code></span>
+                <span class="illo__sub">trie walks the callers. 3 of 7 actually care.</span>
+              </div>
+              <svg class="blast" viewBox="0 0 600 320">
+                <!-- ripple pulse circles emanating from the centre node -->
+                <circle cx="300" cy="160" r="40"  class="blast__pulse blast__pulse--1" />
+                <circle cx="300" cy="160" r="40"  class="blast__pulse blast__pulse--2" />
+                <circle cx="300" cy="160" r="40"  class="blast__pulse blast__pulse--3" />
+
+                <!-- edges to 7 callers -->
+                <line x1="300" y1="160" x2="80"  y2="60"  class="blast__edge blast__edge--cares blast__edge--c1"/>
+                <line x1="300" y1="160" x2="170" y2="40"  class="blast__edge blast__edge--dim  blast__edge--c2"/>
+                <line x1="300" y1="160" x2="430" y2="40"  class="blast__edge blast__edge--cares blast__edge--c3"/>
+                <line x1="300" y1="160" x2="520" y2="60"  class="blast__edge blast__edge--dim  blast__edge--c4"/>
+                <line x1="300" y1="160" x2="520" y2="260" class="blast__edge blast__edge--dim  blast__edge--c5"/>
+                <line x1="300" y1="160" x2="380" y2="290" class="blast__edge blast__edge--cares blast__edge--c6"/>
+                <line x1="300" y1="160" x2="80"  y2="260" class="blast__edge blast__edge--dim  blast__edge--c7"/>
+
+                <!-- centre node -->
+                <g class="blast__centre">
+                  <circle cx="300" cy="160" r="30" />
+                  <text x="300" y="164">parse_symbol</text>
+                </g>
+
+                <!-- caller nodes -->
+                <g class="blast__node blast__node--cares blast__node--c1">
+                  <circle cx="80"  cy="60"  r="20" />
+                  <text x="80"  y="64">load_triefact</text>
+                  <text x="80"  y="94" class="blast__verdict">breaks</text>
+                </g>
+                <g class="blast__node blast__node--dim   blast__node--c2">
+                  <circle cx="170" cy="40"  r="20" />
+                  <text x="170" y="44">render_sig</text>
+                </g>
+                <g class="blast__node blast__node--cares blast__node--c3">
+                  <circle cx="430" cy="40"  r="20" />
+                  <text x="430" y="44">cascade_walk</text>
+                  <text x="430" y="14" class="blast__verdict">breaks</text>
+                </g>
+                <g class="blast__node blast__node--dim   blast__node--c4">
+                  <circle cx="520" cy="60"  r="20" />
+                  <text x="520" y="64">format_qname</text>
+                </g>
+                <g class="blast__node blast__node--dim   blast__node--c5">
+                  <circle cx="520" cy="260" r="20" />
+                  <text x="520" y="264">log_event</text>
+                </g>
+                <g class="blast__node blast__node--cares blast__node--c6">
+                  <circle cx="380" cy="290" r="20" />
+                  <text x="380" y="294">graph_upsert</text>
+                  <text x="380" y="320" class="blast__verdict">breaks</text>
+                </g>
+                <g class="blast__node blast__node--dim   blast__node--c7">
+                  <circle cx="80"  cy="260" r="20" />
+                  <text x="80"  y="264">audit_row</text>
+                </g>
+              </svg>
+            </div>
+          </article>
+
+          <!-- ═══ RING 3 ═══════════════════════════════════════════════ -->
+          <article class="ring-step" data-ring="3">
+            <div class="ring-step__head">
+              <span class="ring-step__num">③</span>
+              <span class="ring-step__band">ring three</span>
+            </div>
+            <h3 class="ring-step__title">Code, again.</h3>
+            <p class="ring-step__body">
+              The artifact people reach for inverts. The artifact people
+              argue about inverts. PR review inverts: you review
+              <strong>intent</strong>. The diff is just confirmation that
+              the change matches its description. Code stops being the
+              thing under discussion and becomes the thing under
+              generation.
+            </p>
+
+            <!-- illustration: code diff fades, prose diff flips in -->
+            <div class="illo illo--diff-flip" aria-hidden="true">
+              <div class="diff-stack">
+                <div class="diff diff--code">
+                  <div class="illo__label">before · review the code</div>
+                  <pre class="diff__pre"><span class="diff__minus">-    if symbol.kind == "function":</span>
+<span class="diff__minus">-        rank = 1.0</span>
+<span class="diff__plus">+    if symbol.kind in HUB_KINDS:</span>
+<span class="diff__plus">+        rank = compute_centrality(symbol)</span>
+     graph.upsert(symbol, rank=rank)
+<span class="diff__minus">-    return graph</span>
+<span class="diff__plus">+    return graph.compact()</span></pre>
+                  <div class="diff__verdict diff__verdict--bad">
+                    looks plausible. is it correct? open six callers.
+                  </div>
+                </div>
+
+                <div class="diff diff--prose">
+                  <div class="illo__label illo__label--good">after · review the intent</div>
+                  <div class="diff__prose-body">
+                    <p>
+                      Hub symbols (classes, modules, high-fan-in functions)
+                      <span class="prose-strike">are ranked with a flat
+                      score of 1.0,</span>
+                      <span class="prose-add">now carry a centrality score
+                      from their inbound edge count.</span>
+                    </p>
+                    <p>
+                      The graph
+                      <span class="prose-strike">is returned as-is</span>
+                      <span class="prose-add">is compacted before return so
+                      downstream consumers see a stable adjacency.</span>
+                    </p>
+                  </div>
+                  <div class="diff__verdict diff__verdict--good">
+                    the question is "do we want this?", not "did they wire it right?"
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- ═══ RING 4 ═══════════════════════════════════════════════ -->
+          <article class="ring-step ring-step--vibes" data-ring="4">
+            <div class="ring-step__head">
+              <span class="ring-step__num">④</span>
+              <span class="ring-step__band">ring four · the destination</span>
+            </div>
+            <h3 class="ring-step__title">Vibes, again.</h3>
+            <p class="ring-step__body">
+              The executable form stops being the primary surface for human
+              work. We don't read it. We don't write it directly. We
+              <strong>shape</strong> the system at a level above it, and
+              the code conforms. The IDE goes away. Changes are made by
+              gesture. The barrier to contributing to a large unfamiliar
+              system collapses from three months of reading code to an
+              afternoon of exploring the prose and graph.
+            </p>
+
+            <!-- illustration: file tree dissolves into a constellation -->
+            <div class="illo illo--dissolve" aria-hidden="true">
+              <div class="dissolve">
+                <!-- file tree (fading out) -->
+                <div class="dissolve__tree">
+                  <div class="tree__line"><span class="tree__icon">▾</span> trie/</div>
+                  <div class="tree__line tree__line--in"><span class="tree__icon">▾</span> sync/</div>
+                  <div class="tree__line tree__line--in2">single_file.py</div>
+                  <div class="tree__line tree__line--in2">reconcile.py</div>
+                  <div class="tree__line tree__line--in2">writer.py</div>
+                  <div class="tree__line tree__line--in"><span class="tree__icon">▾</span> graph/</div>
+                  <div class="tree__line tree__line--in2">cascade.py</div>
+                  <div class="tree__line tree__line--in2">edges.py</div>
+                  <div class="tree__line tree__line--in"><span class="tree__icon">▸</span> parse/</div>
+                  <div class="tree__line tree__line--in"><span class="tree__icon">▸</span> mcp/</div>
+                  <div class="illo__label">reading the code</div>
+                </div>
+
+                <div class="dissolve__arrow">⇢</div>
+
+                <!-- constellation (fading in) -->
+                <div class="dissolve__constel">
+                  <svg class="dissolve__graph" viewBox="0 0 320 240" aria-hidden="true">
+                    <!-- background field of faint connection lines -->
+                    <line x1="60"  y1="60"  x2="160" y2="40"  class="constel__edge"/>
+                    <line x1="160" y1="40"  x2="260" y2="80"  class="constel__edge"/>
+                    <line x1="60"  y1="60"  x2="100" y2="140" class="constel__edge"/>
+                    <line x1="100" y1="140" x2="200" y2="120" class="constel__edge"/>
+                    <line x1="200" y1="120" x2="260" y2="80"  class="constel__edge"/>
+                    <line x1="100" y1="140" x2="80"  y2="220" class="constel__edge"/>
+                    <line x1="200" y1="120" x2="240" y2="210" class="constel__edge"/>
+                    <line x1="80"  y1="220" x2="180" y2="240" class="constel__edge"/>
+                    <line x1="180" y1="240" x2="240" y2="210" class="constel__edge"/>
+                    <line x1="160" y1="40"  x2="200" y2="120" class="constel__edge constel__edge--strong"/>
+
+                    <!-- nodes, sized by hub-ness -->
+                    <circle cx="160" cy="40"  r="9"  class="constel__node constel__node--hub" />
+                    <circle cx="200" cy="120" r="10" class="constel__node constel__node--hub" />
+                    <circle cx="60"  cy="60"  r="5"  class="constel__node" />
+                    <circle cx="260" cy="80"  r="6"  class="constel__node" />
+                    <circle cx="100" cy="140" r="5"  class="constel__node" />
+                    <circle cx="80"  cy="220" r="5"  class="constel__node" />
+                    <circle cx="180" cy="240" r="6"  class="constel__node" />
+                    <circle cx="240" cy="210" r="5"  class="constel__node" />
+                  </svg>
+                  <div class="illo__label illo__label--good">shaping the system</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ring-step__close">
+              Every design decision passes the test:
+              <em>does this still make sense in a future where humans stop
+              reading code?</em>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- "all or nothing" — collapsed to a single closing strip -->
+      <div class="not-strip reveal">
+        <span class="not-strip__lbl">trie is not</span>
+        <span class="strike">better docs.</span>
+        <span class="strike">comments.</span>
+        <span class="strike">AI-generated docs.</span>
+        <span class="strike">smarter search.</span>
+        <span class="strike">a replacement for reading code.</span>
+        <span class="not-strip__coda">
+          it is a parallel artifact in the language of intent.
+        </span>
+      </div>
+    </section>
+
     <!-- ───────────────────── OUTRO ────────────────────────────────────────── -->
     <section class="scene scene--outro" data-chapter="outro">
       <div class="outro reveal">

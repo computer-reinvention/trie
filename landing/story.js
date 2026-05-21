@@ -86,6 +86,65 @@ const countUpObserver = new IntersectionObserver(
 );
 document.querySelectorAll('[data-count]').forEach((el) => countUpObserver.observe(el));
 
+// ───────────────────────── rings: scroll-driven activation ──────────
+// Each .ring-step on the page lives next to a sticky ripple diagram.
+// We pick the step whose centre is closest to the viewport centre and:
+//   (a) mark it .is-active (so its body un-fades + its illustration plays)
+//   (b) set data-active-ring on .rings-layout so the matching band on
+//       the diagram lights up and the caption under it updates.
+const ringsLayout = document.getElementById('ringsLayout');
+if (ringsLayout) {
+  const ringSteps = ringsLayout.querySelectorAll('.ring-step');
+  const captionNum = ringsLayout.querySelector('.rings-stage__active-num');
+  const captionTitle = ringsLayout.querySelector('.rings-stage__active-title');
+
+  const ringMeta = {
+    1: { num: '①', title: 'navigation becomes nature' },
+    2: { num: '②', title: 'the bigger picture becomes the start' },
+    3: { num: '③', title: 'code, again — review inverts' },
+    4: { num: '④', title: 'vibes — code as surface dissolves' },
+  };
+
+  let currentActive = null;
+
+  function updateActiveRing() {
+    // Find the ring-step whose centre is closest to the viewport centre.
+    const vh = window.innerHeight;
+    const target = vh / 2;
+    let best = null;
+    let bestDist = Infinity;
+    ringSteps.forEach((step) => {
+      const r = step.getBoundingClientRect();
+      // Only consider steps that overlap the viewport at all.
+      if (r.bottom < 0 || r.top > vh) return;
+      const centre = r.top + r.height / 2;
+      const dist = Math.abs(centre - target);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = step;
+      }
+    });
+
+    if (!best || best === currentActive) return;
+    if (currentActive) currentActive.classList.remove('is-active');
+    best.classList.add('is-active');
+    currentActive = best;
+
+    const ring = best.dataset.ring;
+    ringsLayout.setAttribute('data-active-ring', ring);
+    const meta = ringMeta[ring];
+    if (meta) {
+      if (captionNum) captionNum.textContent = meta.num;
+      if (captionTitle) captionTitle.textContent = meta.title;
+    }
+  }
+
+  window.addEventListener('scroll', updateActiveRing, { passive: true });
+  window.addEventListener('resize', updateActiveRing);
+  // initial pass once layout has settled
+  requestAnimationFrame(updateActiveRing);
+}
+
 // ───────────────────────── back-to-top click ─────────────────────────
 const upScroll = document.querySelector('.hero__scroll--up');
 if (upScroll) {
