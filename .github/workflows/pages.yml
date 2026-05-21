@@ -31,7 +31,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: configure pages
+        # enablement: true lets the action turn Pages on for the repo
+        # itself on the first run, so the workflow self-heals if Pages
+        # ever gets disabled in repo settings.
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: upload landing/ as pages artifact
         uses: actions/upload-pages-artifact@v3
