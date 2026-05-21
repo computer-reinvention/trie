@@ -1,8 +1,12 @@
 name: deploy landing to github pages
 
-# Publishes the static site under `landing/` to GitHub Pages.
-# Runs on every push to main that touches the landing assets, plus a
-# manual trigger from the Actions tab for one-off republishes.
+# Publishes the static site under `landing/` to the public org-pages repo
+# `computer-reinvention/computer-reinvention.github.io`, which serves the
+# root site at https://computer-reinvention.github.io/.
+#
+# Auth: a write-scoped SSH deploy key on the public repo. The matching
+# private key lives in this repo's Actions secrets as PAGES_DEPLOY_KEY.
+# That key can do exactly one thing: git-push to the public repo.
 
 on:
   push:
@@ -20,36 +24,55 @@ concurrency:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
+      - name: checkout trie (sparse landing/)
         uses: actions/checkout@v4
-
-      - name: configure pages
-        # enablement: true lets the action turn Pages on for the repo
-        # itself on the first run, so the workflow self-heals if Pages
-        # ever gets disabled in repo settings.
-        uses: actions/configure-pages@v5
         with:
-          enablement: true
+          sparse-checkout: |
+            landing
+          sparse-checkout-cone-mode: false
 
-      - name: upload landing/ as pages artifact
-        uses: actions/upload-pages-artifact@v3
+      # Load the deploy key into the agent for this job. The deploy-key
+      # action sets up SSH for github.com and ensures git uses it for
+      # any push to the matching repo.
+      - name: load deploy key
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          path: ./landing
+          ssh-private-key: ${{ secrets.PAGES_DEPLOY_KEY }}
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: deploy
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: sync landing/ to public pages repo
+        # We clone the public repo, mirror the current landing/ contents
+        # over its working tree (preserving .git), and push only if there
+        # is an actual diff. The commit message points back at the trie
+        # commit that triggered this run so the public history is traceable.
+        env:
+          SRC_SHA: ${{ github.sha }}
+          SRC_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          DEST_DIR="$RUNNER_TEMP/site"
+          git clone --depth 1 git@github.com:computer-reinvention/computer-reinvention.github.io.git "$DEST_DIR"
+
+          # Wipe the destination tree (except .git) and copy landing/ over it.
+          # rsync with --delete would also work but requires --exclude=.git;
+          # find+rm is explicit and obvious.
+          find "$DEST_DIR" -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          cp -R landing/. "$DEST_DIR"/
+
+          cd "$DEST_DIR"
+          git config user.name  "trie-pages-deploy"
+          git config user.email "trie-pages-deploy@users.noreply.github.com"
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "no changes to publish; skipping push."
+            exit 0
+          fi
+
+          git commit -m "deploy: ${SRC_REPO}@${SRC_SHA}"
+          git push origin HEAD:main
