@@ -12,6 +12,7 @@ from trie.mcp_install import (
     MCPInstallError,
     install,
     trie_server_snippet,
+    uninstall,
 )
 
 
@@ -436,3 +437,289 @@ def test_cli_mcp_no_subcommand_prints_help(project: Path, monkeypatch: pytest.Mo
     assert "install" in result.output
     # And critically, the server must NOT have been started.
     assert "root" not in captured
+
+
+# ---------------------------------------------------------------------------
+# Uninstall: inverse of install. Drops the `trie` entry from each target's
+# config file, leaving the file (and other servers under the same key)
+# alone.
+# ---------------------------------------------------------------------------
+
+
+def test_uninstall_removes_trie_entry(project: Path):
+    """Install then uninstall: the `trie` key under `mcpServers` is gone
+    from the config file, but the file still exists and is valid JSON."""
+    install(
+        target_names=["claude-code"],
+        scope="project",
+        install_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    config = project / ".mcp.json"
+    assert "trie" in json.loads(config.read_text())["mcpServers"]
+
+    plan = uninstall(
+        target_names=["claude-code"],
+        scope="project",
+        uninstall_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    assert len(plan.results) == 1
+    r = plan.results[0]
+    assert r.action == "removed"
+    assert r.path == config
+    # File still exists; trie key gone.
+    assert config.exists()
+    data = json.loads(config.read_text())
+    # `mcpServers` was emptied → dropped entirely so the config stays tidy.
+    assert "mcpServers" not in data
+    # The snippet that was removed is reported back for the user's audit trail.
+    assert r.snippet["args"] == ["mcp", "serve"]
+
+
+def test_uninstall_preserves_other_servers(project: Path):
+    """Uninstall must touch only the `trie` key. Other MCP servers
+    registered alongside trie stay put. This is the load-bearing
+    invariant: agents have their own integrations; uninstall must not
+    nuke them."""
+    config = project / ".mcp.json"
+    config.write_text(
+        json.dumps(
+            {
+                "mcpServers": {
+                    "trie": {"command": "trie", "args": ["mcp", "serve"]},
+                    "other-tool": {"command": "other", "args": ["serve"]},
+                },
+                "unrelated_top_level_key": "preserve-me",
+            },
+            indent=2,
+        )
+        + "\n"
+    )
+
+    plan = uninstall(
+        target_names=["claude-code"],
+        scope="project",
+        uninstall_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    assert plan.results[0].action == "removed"
+
+    data = json.loads(config.read_text())
+    # `mcpServers` survives because `other-tool` is still in it.
+    assert "trie" not in data["mcpServers"]
+    assert "other-tool" in data["mcpServers"]
+    assert data["unrelated_top_level_key"] == "preserve-me"
+
+
+def test_uninstall_when_not_installed_is_skipped(project: Path):
+    """Uninstalling from a target where trie was never registered: the
+    config file may not even exist. Either way, the result is `skipped`
+    with a detail explaining what we saw — never an error."""
+    plan = uninstall(
+        target_names=["claude-code"],
+        scope="project",
+        uninstall_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    r = plan.results[0]
+    assert r.action == "skipped"
+    assert "no config file" in r.detail.lower()
+
+
+def test_uninstall_when_config_has_no_trie_key_is_skipped(project: Path):
+    """Config file exists with other servers, but no `trie` entry. We
+    must not touch the file; the result is `skipped` with a clear
+    detail."""
+    config = project / ".mcp.json"
+    config.write_text(
+        json.dumps(
+            {"mcpServers": {"other-tool": {"command": "other"}}},
+            indent=2,
+        )
+        + "\n"
+    )
+    plan = uninstall(
+        target_names=["claude-code"],
+        scope="project",
+        uninstall_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    r = plan.results[0]
+    assert r.action == "skipped"
+    assert "trie not registered" in r.detail.lower()
+    # The other server is still there, byte-for-byte.
+    data = json.loads(config.read_text())
+    assert data["mcpServers"]["other-tool"]["command"] == "other"
+
+
+def test_uninstall_dry_run_does_not_modify_file(project: Path):
+    """`--dry-run` returns a `preview` action and writes nothing."""
+    install(
+        target_names=["claude-code"],
+        scope="project",
+        install_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    config = project / ".mcp.json"
+    before = config.read_text()
+
+    plan = uninstall(
+        target_names=["claude-code"],
+        scope="project",
+        uninstall_all=False,
+        print_only=False,
+        dry_run=True,
+        project_root=project,
+    )
+    assert plan.results[0].action == "preview"
+    # File is byte-identical.
+    assert config.read_text() == before
+
+
+def test_uninstall_print_only_does_not_modify_file(project: Path):
+    """`--print-only` is the same as dry-run for uninstall: render the
+    plan, write nothing."""
+    install(
+        target_names=["claude-code"],
+        scope="project",
+        install_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    config = project / ".mcp.json"
+    before = config.read_text()
+
+    plan = uninstall(
+        target_names=["claude-code"],
+        scope="project",
+        uninstall_all=False,
+        print_only=True,
+        dry_run=False,
+        project_root=project,
+    )
+    assert plan.results[0].action == "preview"
+    assert config.read_text() == before
+
+
+def test_uninstall_all_targets(project: Path):
+    """`uninstall_all=True` walks every target in the registry. Each
+    target that supports project scope and was previously registered
+    comes back `removed`; the rest come back `skipped`."""
+    # Install for two targets that support project scope.
+    install(
+        target_names=["claude-code", "opencode"],
+        scope="project",
+        install_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+
+    plan = uninstall(
+        target_names=None,
+        scope="project",
+        uninstall_all=True,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    # All registered targets were walked.
+    assert {t for t in plan.target_names} == set(TARGETS.keys())
+    # The two we installed are removed; the rest are skipped.
+    by_target = {r.target: r for r in plan.results}
+    assert by_target["claude-code"].action == "removed"
+    assert by_target["opencode"].action == "removed"
+    # Targets that don't support project scope come back skipped with the
+    # scope-mismatch detail.
+    assert by_target["claude-desktop"].action == "skipped"
+
+
+def test_uninstall_unknown_target_raises():
+    """Symmetric with install: unknown slugs raise `MCPInstallError`
+    immediately, not silently skipped."""
+    with pytest.raises(MCPInstallError, match="unknown target"):
+        uninstall(
+            target_names=["not-a-real-agent"],
+            scope="project",
+            uninstall_all=False,
+            print_only=False,
+            dry_run=False,
+            project_root=Path("/tmp/anywhere"),
+        )
+
+
+def test_uninstall_invalid_json_returns_error(project: Path):
+    """A corrupt config file produces an `error` result, not a crash.
+    The file is left untouched so the user can fix it by hand."""
+    config = project / ".mcp.json"
+    config.write_text("{this is not valid json")
+    plan = uninstall(
+        target_names=["claude-code"],
+        scope="project",
+        uninstall_all=False,
+        print_only=False,
+        dry_run=False,
+        project_root=project,
+    )
+    r = plan.results[0]
+    assert r.action == "error"
+    assert "not valid json" in r.detail.lower()
+    # File untouched.
+    assert config.read_text() == "{this is not valid json"
+
+
+# --- CLI surface ---
+
+
+def test_cli_mcp_uninstall_round_trips(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """End-to-end: `trie mcp install` then `trie mcp uninstall` returns
+    the config file to a trie-free state. The CLI surface stays in sync
+    with the library surface."""
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+    install_result = runner.invoke(app, ["mcp", "install", "--target", "claude-code"])
+    assert install_result.exit_code == 0, install_result.output
+    assert (project / ".mcp.json").exists()
+
+    uninstall_result = runner.invoke(app, ["mcp", "uninstall", "--target", "claude-code"])
+    assert uninstall_result.exit_code == 0, uninstall_result.output
+    assert "removed" in uninstall_result.output.lower()
+    data = json.loads((project / ".mcp.json").read_text())
+    assert "mcpServers" not in data
+
+
+def test_cli_mcp_uninstall_rejects_target_and_all_together(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """`--target` and `--all` are mutually exclusive on uninstall, same
+    as install."""
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["mcp", "uninstall", "--target", "claude-code", "--all"])
+    assert result.exit_code == 1
+    assert "mutually exclusive" in result.output
+
+
+def test_cli_mcp_help_lists_uninstall(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """The `trie mcp` help screen must mention `uninstall` so users can
+    discover the command without reading the source."""
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["mcp"])
+    # no_args_is_help → exit 2 with help on stdout.
+    assert result.exit_code == 2
+    assert "uninstall" in result.output

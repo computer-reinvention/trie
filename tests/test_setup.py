@@ -356,7 +356,7 @@ def test_cli_setup_installs_overrides_by_default(project: Path, monkeypatch: pyt
     # All three opencode override files landed.
     assert (project / ".opencode" / "tools" / "grep.ts").exists()
     assert (project / ".opencode" / "tools" / "read.ts").exists()
-    assert (project / ".opencode" / "tools" / "trie_trace.ts").exists()
+    assert (project / ".opencode" / "tools" / "trace.ts").exists()
 
 
 def test_cli_setup_no_overrides_flag_skips_overrides(
@@ -375,7 +375,7 @@ def test_cli_setup_no_overrides_flag_skips_overrides(
     # But no override files.
     assert not (project / ".opencode" / "tools" / "grep.ts").exists()
     assert not (project / ".opencode" / "tools" / "read.ts").exists()
-    assert not (project / ".opencode" / "tools" / "trie_trace.ts").exists()
+    assert not (project / ".opencode" / "tools" / "trace.ts").exists()
 
 
 def test_cli_setup_print_only_previews_overrides_without_writing(
@@ -391,7 +391,7 @@ def test_cli_setup_print_only_previews_overrides_without_writing(
     # The per-file preview lines must appear in the report.
     assert "grep.ts" in result.output
     assert "read.ts" in result.output
-    assert "trie_trace.ts" in result.output
+    assert "trace.ts" in result.output
     # But the disk is untouched.
     assert not (project / ".opencode" / "tools").exists()
 

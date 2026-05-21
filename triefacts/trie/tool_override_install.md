@@ -1,14 +1,14 @@
 ---
 trie_version: 0.1.2
 source: trie/tool_override_install.py
-file_fingerprint: 581d60c8e868754ca3598f05b2c20beab7f9503135ccf970dac3dc443753fa59
-last_synced_at: '2026-05-20T13:55:10Z'
+file_fingerprint: d1acad128e8b5154572754006d28ae82b5e3d0f5ff229788593e43aeb6a5a155
+last_synced_at: '2026-05-21T16:15:17Z'
 description: 'Tool-override installation: replace an agent''s built-in tools with
   trie wrappers.'
 defines:
 - kind: module
   qualified_name: trie/tool_override_install:__module__
-  lines: 1-1462
+  lines: 1-1467
 - kind: constant
   qualified_name: trie/tool_override_install:Action
   lines: 39-39
@@ -37,29 +37,29 @@ defines:
   qualified_name: trie/tool_override_install:_render_opencode_read_override
   lines: 235-971
 - kind: function
-  qualified_name: trie/tool_override_install:_render_opencode_trie_trace
-  lines: 974-1042
+  qualified_name: trie/tool_override_install:_render_opencode_trace
+  lines: 974-1043
 - kind: function
   qualified_name: trie/tool_override_install:_render_claude_code_hooks_json
-  lines: 1050-1106
+  lines: 1051-1107
 - kind: constant
   qualified_name: trie/tool_override_install:TARGETS
-  lines: 1115-1221
+  lines: 1116-1226
 - kind: class
   qualified_name: trie/tool_override_install:ToolOverrideInstallPlan
-  lines: 1230-1236
+  lines: 1235-1241
 - kind: function
   qualified_name: trie/tool_override_install:install
-  lines: 1239-1278
+  lines: 1244-1283
 - kind: function
   qualified_name: trie/tool_override_install:apply_one
-  lines: 1281-1338
+  lines: 1286-1343
 - kind: function
   qualified_name: trie/tool_override_install:_remove_obsolete
-  lines: 1341-1394
+  lines: 1346-1399
 - kind: function
   qualified_name: trie/tool_override_install:_apply_file
-  lines: 1397-1461
+  lines: 1402-1466
 incoming_refs: 32
 outgoing_refs: 0
 ---
@@ -69,7 +69,7 @@ outgoing_refs: 0
 Raised when tool-override installation fails due to invalid input or configuration.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/tool_override_install:FileToWrite fingerprint=383a49688caede199d9b7e9b5c07440b2af24a2a5077a4866f0b1560b845b1da body_fp=59e422c89b6290d8070b194d823d394ce66109763885c4abab4e8abd4e46e43b source_ref=cd49f981cf93dad430cf7f0808a344171fe6573a -->
+<!-- trie:section symbol=trie/tool_override_install:FileToWrite fingerprint=d1463a335d153224df4e0fbe524be20b78d6d8091a383d10a9790a3b0e2a7bc7 body_fp=59e422c89b6290d8070b194d823d394ce66109763885c4abab4e8abd4e46e43b source_ref=5d931542c10f2ce2e4395f2c3ec71ccd50f59873 -->
 ## `FileToWrite`
 
 Describe one file an override target must write to disk, with its render function and human-readable label.
@@ -117,11 +117,7 @@ Render the `.opencode/tools/grep.ts` file that replaces opencode's built-in `gre
 
 
 
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_trie_trace fingerprint=3bc12307a5afa6daeb4daab60835363783b9d4fc1fa7de70dd3e60b306bb21df body_fp=900b76cc9fbdd0f0af2903b8b6a3260db104fe173331813ff3daab255d7d6d62 source_ref=cd49f981cf93dad430cf7f0808a344171fe6573a -->
-## `_render_opencode_trie_trace(_project_root: Path) -> str`
 
-Render `.opencode/tools/trie_trace.ts`, adding `trie_trace` as a new agent tool for call-graph traversal.
-<!-- trie:end -->
 
 <!-- trie:section symbol=trie/tool_override_install:_render_claude_code_hooks_json fingerprint=2b004e51b57a5be1e5d0181eb5239d9e0484ae53fc4b78e3acda4c59131e21ed body_fp=2c2db52cd3cddb7e36276c6e9e96b47c06e2ffff1818d6dffe1d05f4176562ed source_ref=22af55fe3c92536b808294dbfad114aa433c76ee -->
 ## `_render_claude_code_hooks_json(_project_root: Path) -> str`
@@ -193,14 +189,14 @@ Render `.opencode/tools/read.ts`, dispatching on argument shape across four path
 - `readTriefact` now handles absolute paths by stripping the cwd prefix before triefact lookup; returns `null` for paths outside the project tree
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/tool_override_install:TARGETS fingerprint=1ce974ad6b0934f36a67e1d9fec6f544b144d44c35f10f05e07f8f9b35a996dd body_fp=e10c52965d036e6bbb07bc6a857374249ea8e7aadf30e1f7f5aa371d03ea078f source_ref=cd49f981cf93dad430cf7f0808a344171fe6573a -->
+<!-- trie:section symbol=trie/tool_override_install:TARGETS fingerprint=963ca82ce9f9d336ddbf04281e5bf55396f0ae64fb330735e6de17c19a3a7bda body_fp=e1de28ea10e6d9f4657404c9b4f9c3ba7984cb0d6b835c5e894c5b139fd59483 source_ref=5d931542c10f2ce2e4395f2c3ec71ccd50f59873 -->
 ## `TARGETS: dict[str, ToolOverrideTarget]`
 
 Registry mapping target slug to its `ToolOverrideTarget` descriptor for all known agent harnesses.
 
 - Keys must match slugs in `trie.mcp_install.TARGETS`; `install()` validates against this dict.
 - Targets without an automatable override path (`claude-desktop`, `cursor`, `windsurf`, `vscode`, `codex`) have empty `files` and carry `manual_instructions` instead.
-- `opencode` entry includes `obsolete_files` to drop `trie_read.ts` from prior installs.
+- `opencode` entry includes `obsolete_files` to drop both `trie_read.ts` and `trie_trace.ts` from prior installs; the trace tool is now written as `trace.ts`.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/tool_override_install:_remove_obsolete fingerprint=2c10eaaf6621f765d84ecc5d05ce22304e2c4d73c09fd8511dafcf9069194641 body_fp=b1adad5ee10a4acd0c89c2df84eae7af3f30604a3103748e51f6a29cb0281d93 source_ref=cd49f981cf93dad430cf7f0808a344171fe6573a -->
@@ -221,4 +217,12 @@ Replace an agent's built-in tools with trie wrappers, making trie the default se
 - opencode: overrides `grep` and `read`, adds `trie_trace` via `.opencode/tools/*.ts`
 - claude-code: installs a `PreToolUse` advisory hook nudging toward `mcp__trie__grep`
 - other harnesses: return `needs_manual_setup` with human-readable instructions
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_trace fingerprint=ce945f489d5cb4dbc4732d15308848aef90edc88d35414fb87f5e2bc5d31a510 body_fp=ad459713c93af2887a7202b82e7ecabfc70362070bb73206d05eb58620c33fc6 source_ref=5d931542c10f2ce2e4395f2c3ec71ccd50f59873 -->
+## `_render_opencode_trace(_project_root: Path) -> str`
+
+Render `.opencode/tools/trace.ts`, adding `trie trace` as a new `trace` tool in opencode without overriding any built-in.
+
+- Returns a TypeScript source string for a custom opencode tool that shells out to `trie trace --json`.
 <!-- trie:end -->

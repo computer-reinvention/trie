@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.2
 source: trie/mcp_install.py
-file_fingerprint: 56228de014b2f19f9f9eec8251ccab7ad10bb8e6567965a22c8a5551ab2e9210
-last_synced_at: '2026-05-19T10:41:07Z'
+file_fingerprint: 3274caf171669677e3e1cfd8c02be982d8b17c3daac2299cea7bf1cd9eda9a84
+last_synced_at: '2026-05-21T16:18:33Z'
 defines:
 - kind: module
   qualified_name: trie/mcp_install:__module__
-  lines: 1-344
+  lines: 1-512
 - kind: constant
   qualified_name: trie/mcp_install:Scope
   lines: 11-11
@@ -61,7 +61,16 @@ defines:
 - kind: function
   qualified_name: trie/mcp_install:_apply_one
   lines: 271-343
-incoming_refs: 23
+- kind: class
+  qualified_name: trie/mcp_install:UninstallPlan
+  lines: 353-365
+- kind: function
+  qualified_name: trie/mcp_install:uninstall
+  lines: 368-430
+- kind: function
+  qualified_name: trie/mcp_install:_uninstall_one
+  lines: 433-511
+incoming_refs: 32
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/mcp_install:MCPInstallError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=050f6cc2d8f14a693693a9be4f79ee7bbd4aaf1d6c651837debdd37f83a634a4 source_ref=e7fbffcaf68e6e36cbeb989e0bd314b39f586cda -->
@@ -186,10 +195,10 @@ Build the JSON value registered for this target under `snippet_key.trie`.
 Type alias for the two installation scopes: project-level or user-level config.
 <!-- trie:end -->
 
-<!-- trie:section symbol=trie/mcp_install:Action fingerprint=03abe0d9a9f55bacd9af247ac370a3359e892a9cc531f7c6123593afcbcd3922 body_fp=1e4427fa24e7093b87a2abe612fa6e24f710cc2d8d31d2abe9920676eb86b00b source_ref=ea97a5335fa14a0f02bd9dd07e89a2745ea03a45 -->
-## `Action = Literal["created", "updated", "skipped", "preview", "error"]`
+<!-- trie:section symbol=trie/mcp_install:Action fingerprint=1c60756f67dd341e644d4277839371345319686f7c9ddcef385cf46f6e8cc4a5 body_fp=24e6bbb1b3c56eefa35e62e662031a296c0807e577606cc053eaff71d813a79b source_ref=6b04051d96622258266e38c4d8fc0905613a34ce -->
+## `Action = Literal["created", "updated", "removed", "skipped", "preview", "error"]`
 
-Type alias for the outcome of a single MCP config apply operation.
+Type alias for the outcome of a single MCP config apply or uninstall operation.
 <!-- trie:end -->
 
 <!-- trie:section symbol=trie/mcp_install:SnippetFactory fingerprint=93c2a5173f07fcf25ba5724d0f0ae74f5ec427a1b364965f613ba2a6d9d59eb3 body_fp=b57d4f3a2db38fbfa5c89eb5ee00303136139c8867bb9adb2e0e555109c01b2c source_ref=ea97a5335fa14a0f02bd9dd07e89a2745ea03a45 -->
@@ -216,4 +225,31 @@ Register the trie MCP server into coding-agent JSON config files (Claude Code, C
 - `MCPTarget`: frozen dataclass describing one agent's config schema and file paths
 - `Scope`: `"project"` or `"user"` — controls which config path is written
 - `Action`: outcome tag on each `ApplyResult` (`created`, `updated`, `skipped`, `preview`, `error`)
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_install:UninstallPlan fingerprint=19af140e47feb1a80ad4e54e24c332499233c87da1cf175a2e7ec07ac50519b4 body_fp=9a5bfb00a99319ed70aed505645b0f3cbf1d366826d180ab0227fcbb14d661c3 source_ref=6b04051d96622258266e38c4d8fc0905613a34ce -->
+## `UninstallPlan`
+
+Aggregate result of an `uninstall` call across one or more targets, mirroring `InstallPlan` field-for-field.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_install:uninstall fingerprint=f0ed02e01f9b7af425811ae3bcaa2a0e897458d2641f1b17d8f3439cdf43b6fb body_fp=4c4d659c639061a02f9fa9df683e691373ab800b34b7db7bc563159f5508c854 source_ref=6b04051d96622258266e38c4d8fc0905613a34ce -->
+## `uninstall(*, target_names: list[str] | None, scope: Scope, uninstall_all: bool, print_only: bool, dry_run: bool, project_root: Path) -> UninstallPlan`
+
+Remove the trie MCP server registration from one or more agent config files.
+
+- `uninstall_all`: when `True`, targets every known agent regardless of detection.
+- `target_names`: explicit list; raises `MCPInstallError` for unknown names.
+- Auto-detects via `target.detect()` when both `target_names` and `uninstall_all` are falsy.
+- `print_only` / `dry_run`: both produce `"preview"` results without writing.
+- Missing file or absent `trie` key yields `"skipped"`; successful removal yields `"removed"`.
+<!-- trie:end -->
+
+<!-- trie:section symbol=trie/mcp_install:_uninstall_one fingerprint=3c5c7cd363ffa80b387090dd6004c96ea2578c45a32ddf8fdb53851e97e079f5 body_fp=8e21c2f5fe0db573953b52955207bbeb31441028b5ed280700935b96f0d6840a source_ref=6b04051d96622258266e38c4d8fc0905613a34ce -->
+## `_uninstall_one(target: MCPTarget, project_root: Path, scope: Scope, print_only: bool, dry_run: bool) -> ApplyResult`
+
+Remove the `trie` entry from one target's JSON config file, leaving other keys untouched.
+
+- `action` is `skipped` if file missing or no `trie` key; `error` on invalid JSON; `preview` for dry-run/print-only; `removed` on success.
+- Drops `snippet_key` entirely if removing `trie` leaves it empty.
 <!-- trie:end -->

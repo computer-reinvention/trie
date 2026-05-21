@@ -451,15 +451,19 @@ through trie. When that's the case:
     freshly added unsynced files) → falls through to source
     automatically; the override is transparent for non-source paths.
 
-- **`trie_trace`** is added as a new tool (no built-in collision)
-  exposing `trie_trace` for graph traversal.
+- **`trace`** is added as a new tool (no built-in collision) exposing
+  `trie_trace` for graph traversal. Note: the custom-tool name is bare
+  `trace`, while opencode's MCP auto-prefix produces `trie_trace` from
+  the same underlying server method. Both are available; prefer the
+  bare custom tool — it's the one the override layer adds and the
+  shorter name.
 
 - Other harnesses get an advisory hook (Claude Code) or `mcp__trie__*`
   via MCP only — the built-in tools still work, but the agent is
   nudged toward the trie versions on every call.
 
 The override is opt-in via `trie setup --override-builtins` and the
-generated wrapper files at `.opencode/tools/{grep,read,trie_trace}.ts`
+generated wrapper files at `.opencode/tools/{grep,read,trace}.ts`
 carry a "do not hand-edit" header — re-running setup overwrites them,
 deleting them opts back out.
 

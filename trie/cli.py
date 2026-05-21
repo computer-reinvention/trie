@@ -39,8 +39,9 @@ from trie.hook_install import (
 )
 from trie.init import InitError, init_project
 from trie.mcp_install import TARGETS as MCP_TARGETS
-from trie.mcp_install import InstallPlan, MCPInstallError
+from trie.mcp_install import InstallPlan, MCPInstallError, UninstallPlan
 from trie.mcp_install import install as mcp_run_install
+from trie.mcp_install import uninstall as mcp_run_uninstall
 from trie.mcp_server import TrieTools
 from trie.mcp_server import run_stdio as run_mcp_stdio
 from trie.models import make_client
@@ -1344,7 +1345,7 @@ def setup_cmd(
         help=(
             "Skip the tool-override step. By default, `setup` replaces the "
             "agent's built-in `grep` and `read` with wrappers that route "
-            "through trie (and adds `trie_trace`). Pass --no-overrides to "
+            "through trie (and adds `trace`). Pass --no-overrides to "
             "install MCP + hook + docs only and leave the agent's built-ins "
             "alone."
         ),
@@ -1360,7 +1361,7 @@ def setup_cmd(
       3. The agent-facing docs (TRIE.md + AGENTS.md pointer), with tool
          names rendered for the harness in question.
       4. Custom tool wrappers that replace the agent's built-in `grep` and
-         `read` with calls to `trie grep` / `trie read`, plus `trie_trace`
+         `read` with calls to `trie grep` / `trie read`, plus `trace`
          as a new tool. This makes the agent reach for trie reflexively —
          the built-ins literally route through trie instead of opencode's
          regex-over-files search. Pass `--no-overrides` to skip this step.
@@ -1546,8 +1547,8 @@ def _render_override_target_block(reporter: Reporter, result: object) -> None:
     """Render a single target's tool-override install outcome.
 
     Tool overrides can write multiple files per target (e.g. opencode writes
-    `grep.ts` plus `trie_read.ts` plus `trie_trace.ts`), so we render a
-    summary line then list each file's outcome indented underneath. Manual-
+    `grep.ts` plus `read.ts` plus `trace.ts`), so we render a summary line
+    then list each file's outcome indented underneath. Manual-
     setup notices for unsupported harnesses get the same treatment as the
     hook line so users have one consistent visual style.
     """
@@ -2086,7 +2087,10 @@ def trace_cmd(
 
 mcp_app = typer.Typer(
     name="mcp",
-    help="MCP server: install for an agent (`install`), or serve over stdio (`serve`).",
+    help=(
+        "MCP server: install for an agent (`install`), remove from an agent "
+        "(`uninstall`), or serve over stdio (`serve`)."
+    ),
     no_args_is_help=True,
 )
 app.add_typer(mcp_app, name="mcp")
@@ -2196,6 +2200,108 @@ def _render_install_plan(reporter: Reporter, plan: InstallPlan) -> None:
             reporter.success(f"{target_label}: created {r.path}")
         elif r.action == "updated":
             reporter.success(f"{target_label}: updated {r.path}")
+        elif r.action == "skipped":
+            reporter.info(f"  [dim]⊘[/dim] {target_label}: {r.detail or 'skipped'}")
+        elif r.action == "error":
+            reporter.error(f"{target_label}: {r.detail}")
+
+
+@mcp_app.command("uninstall")
+def mcp_uninstall_cmd(
+    ctx: typer.Context,
+    target: list[str] | None = typer.Option(
+        None,
+        "--target",
+        "-t",
+        help=(
+            "Uninstall from a specific agent. Repeat the flag for multiple targets. "
+            f"Known: {', '.join(MCP_TARGETS)}."
+        ),
+    ),
+    uninstall_all: bool = typer.Option(
+        False,
+        "--all",
+        help="Uninstall from every known target. Skips per-target detection.",
+    ),
+    scope: str = typer.Option(
+        "project",
+        "--scope",
+        help="Uninstall scope: 'project' (the current project's config files) or 'user' (~/.<agent>/...).",
+        case_sensitive=False,
+    ),
+    print_only: bool = typer.Option(
+        False,
+        "--print-only",
+        help="Print what would be removed without writing any files.",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Show what would change without writing.",
+    ),
+) -> None:
+    """Remove the trie MCP server registration from one or more coding agents.
+
+    The inverse of `trie mcp install`. Removes the `trie` entry from each
+    target's MCP config file and drops the surrounding `mcpServers` (or
+    equivalent) key if it becomes empty. Other servers under the same key
+    are left untouched. The config file itself is never deleted — agents
+    own that file; we only own our entry inside it.
+    """
+    reporter = _get_reporter(ctx)
+
+    if target and uninstall_all:
+        reporter.error("--target and --all are mutually exclusive")
+        raise typer.Exit(code=1)
+
+    scope_norm = scope.lower()
+    if scope_norm not in ("project", "user"):
+        reporter.error("--scope must be 'project' or 'user'")
+        raise typer.Exit(code=1)
+
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+    _ = config
+
+    try:
+        plan = mcp_run_uninstall(
+            target_names=target,
+            scope=scope_norm,  # type: ignore[arg-type]
+            uninstall_all=uninstall_all,
+            print_only=print_only,
+            dry_run=dry_run,
+            project_root=project_root,
+        )
+    except MCPInstallError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    _render_uninstall_plan(reporter, plan)
+
+    if any(r.action == "error" for r in plan.results):
+        raise typer.Exit(code=1)
+
+
+def _render_uninstall_plan(reporter: Reporter, plan: UninstallPlan) -> None:
+    """Render the uninstall plan in the same shape as the install renderer.
+
+    Mirrors `_render_install_plan` action-for-action, with `removed`
+    swapped in where install reports `created`/`updated`. Skipped cases
+    carry a `detail` explaining why (no config file, no trie entry,
+    scope unsupported) so the user sees which targets were no-ops.
+    """
+    import json
+
+    for r in plan.results:
+        target_label = MCP_TARGETS[r.target].display_name
+        if r.action == "preview":
+            reporter.info(f"\n[bold cyan]{target_label}[/bold cyan] → {r.path}")
+            reporter.console.print(json.dumps(r.snippet, indent=2))
+        elif r.action == "removed":
+            reporter.success(f"{target_label}: removed trie entry from {r.path}")
         elif r.action == "skipped":
             reporter.info(f"  [dim]⊘[/dim] {target_label}: {r.detail or 'skipped'}")
         elif r.action == "error":
