@@ -5,7 +5,7 @@ name: deploy landing to github pages
 # root site at https://computer-reinvention.github.io/.
 #
 # Auth: a write-scoped SSH deploy key on the public repo. The matching
-# private key lives in this repo's Actions secrets as PAGES_DEPLOY_KEY.
+# private key lives in this repo's Actions secrets as PAGES_DEPLOY_SSH.
 # That key can do exactly one thing: git-push to the public repo.
 
 on:
@@ -42,7 +42,7 @@ jobs:
       - name: load deploy key
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.PAGES_DEPLOY_KEY }}
+          ssh-private-key: ${{ secrets.PAGES_DEPLOY_SSH }}
 
       - name: sync landing/ to public pages repo
         # We clone the public repo, mirror the current landing/ contents
