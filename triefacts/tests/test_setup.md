@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.2
 source: tests/test_setup.py
-file_fingerprint: 4007b65150fb6a76d61d6bee3ea71991be335e0471d9c249a6b989f7c0fba376
-last_synced_at: '2026-05-20T13:54:49Z'
+file_fingerprint: 74afc5c78144081a1dc5cf2e5558b722e581f9e2210f7a16235921d56771050f
+last_synced_at: '2026-05-21T16:15:00Z'
 description: End-to-end tests for `trie setup` and the underlying hook installer.
 defines:
 - kind: module
@@ -189,7 +189,7 @@ Assert that re-running `trie setup opencode` leaves MCP and hook files byte-iden
 
 
 
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_print_only_previews_overrides_without_writing fingerprint=b1ebb850f2e5e3fc8e38f0ea33e3f01a120ba0cf72ada1eea7fe5434b290adca body_fp=aa6ef5ba4eec29945c18ef46756df8f3c0ef62f5ea52b75337a575aca37d69b2 source_ref=83d461b20e1178bd609db26de2df4ee987163495 -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_print_only_previews_overrides_without_writing fingerprint=b2b7d3bfa3e33477b09d67e0f0ed933e298ae48f5c6bf6700facae32bba41c37 body_fp=aa6ef5ba4eec29945c18ef46756df8f3c0ef62f5ea52b75337a575aca37d69b2 source_ref=caa568cb12b31347df8233d53f172247519eec3f -->
 ## `test_cli_setup_print_only_previews_overrides_without_writing(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert `--print-only` shows all three override filenames in output without writing any files to disk.
@@ -205,15 +205,15 @@ Assert `--print-only` shows all three override filenames in output without writi
 Verify that re-running `trie setup` (without `--override-builtins`) skips unchanged override files and reports "skipped".
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_installs_overrides_by_default fingerprint=356d4f89b98b08b5ad78e8145c1c4b0ca434fd5bc6b5183834d8d468756a6b62 body_fp=c739266b3cb17198298509c091616bba1c5bc25a9ebcaaf8a86bcba2ef01c789 source_ref=83d461b20e1178bd609db26de2df4ee987163495 -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_installs_overrides_by_default fingerprint=3139f012c627cf725a25314148943accc9cdf52cbd35ee213b0c64c3777149da body_fp=a8866e43a8d29cd86dc0571e05f6d0aab7bfe0e7b3c557e758095ef409c3e577 source_ref=caa568cb12b31347df8233d53f172247519eec3f -->
 ## `test_cli_setup_installs_overrides_by_default(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that `trie setup --target opencode` installs all three opencode tool-override files without any opt-in flag.
 
-- Checks `.opencode/tools/grep.ts`, `read.ts`, and `trie_trace.ts` all exist after invocation.
+- Checks `.opencode/tools/grep.ts`, `read.ts`, and `trace.ts` all exist after invocation.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_no_overrides_flag_skips_overrides fingerprint=1152208439be12d21551f9408466b790ab8560619d9c19f535fe9217e89e951b body_fp=02094ee306f9e0bbcca539f5ef0e3a5361dc8d9e8bfdd49fd3ce2ac645ebe3b5 source_ref=83d461b20e1178bd609db26de2df4ee987163495 -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_no_overrides_flag_skips_overrides fingerprint=2e133c35352ef660067a8a0bad4c13d767ae4b31db6866b0a9df9424e7cfa879 body_fp=02094ee306f9e0bbcca539f5ef0e3a5361dc8d9e8bfdd49fd3ce2ac645ebe3b5 source_ref=caa568cb12b31347df8233d53f172247519eec3f -->
 ## `test_cli_setup_no_overrides_flag_skips_overrides(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Verify that `--no-overrides` skips `.opencode/tools/` override files while MCP, hook, and docs steps still complete.

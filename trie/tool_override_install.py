@@ -11,8 +11,8 @@ The interception story differs per harness:
   A custom tool whose filename matches a built-in name takes precedence over
   the built-in. We override `grep` (symbol-aware search) and `read`
   (triefact-first dispatch on qname vs path with a `show_source` escape
-  hatch), and add `trie_trace` as a new tool for graph traversal (no
-  built-in collision).
+  hatch), and add `trace` as a new tool for graph traversal (no built-in
+  collision).
 - **Claude Code** has no tool-override surface. The closest mechanism is a
   `PreToolUse` hook that fires before each built-in tool call and can emit a
   `systemMessage` Claude sees on its next turn. We use it for advisory
@@ -48,9 +48,9 @@ class FileToWrite:
     """One file an override target needs on disk.
 
     A target may need several files: e.g. opencode needs `grep.ts` and
-    `read.ts` (built-in overrides) plus `trie_trace.ts` (addition). Each
-    is rendered independently with its own idempotency check, so a
-    partial failure on one file doesn't roll back the others.
+    `read.ts` (built-in overrides) plus `trace.ts` (addition). Each is
+    rendered independently with its own idempotency check, so a partial
+    failure on one file doesn't roll back the others.
     """
 
     relative_path: tuple[str, ...]
@@ -115,7 +115,7 @@ class ToolOverrideTarget:
 
 
 # ---------------------------------------------------------------------------
-# opencode: override `grep` and `read`, add `trie_trace`.
+# opencode: override `grep` and `read`, add `trace`.
 # ---------------------------------------------------------------------------
 
 
@@ -971,13 +971,14 @@ export default tool({
     )
 
 
-def _render_opencode_trie_trace(_project_root: Path) -> str:
-    """Render `.opencode/tools/trie_trace.ts` — exposes `trie trace` to the agent.
+def _render_opencode_trace(_project_root: Path) -> str:
+    """Render `.opencode/tools/trace.ts` — exposes `trie trace` to the agent.
 
-    No built-in collision; this is purely additive. Gives the agent a
-    direct tool entry for "trace the call graph from a symbol N hops out"
-    instead of relying on the MCP-namespaced `mcp__trie__trace` (which is
-    longer to type and visually noisy).
+    No built-in collision; this is purely additive. Custom tools in
+    opencode are named by file basename with no prefix, so this lands as
+    a bare `trace` tool — distinct from the MCP-side `trie_trace` that
+    opencode auto-prefixes from the trie MCP server. The custom tool
+    wins on naming clarity for agents that have both surfaces.
     """
     return (
         _GENERATED_HEADER
@@ -1120,7 +1121,7 @@ TARGETS: dict[str, ToolOverrideTarget] = {
             "Override built-in `grep` (routes to `trie grep`) and `read` "
             "(triefact-first: qname → `trie read`, path → triefact .md, "
             "with a `show_source: true` escape hatch for raw bytes). Also "
-            "add `trie_trace` for graph traversal. The agent gets trie's "
+            "add `trace` for graph traversal. The agent gets trie's "
             "synthesised view by default and falls through to source only "
             "when it asks explicitly."
         ),
@@ -1139,17 +1140,21 @@ TARGETS: dict[str, ToolOverrideTarget] = {
                 ),
             ),
             FileToWrite(
-                relative_path=(".opencode", "tools", "trie_trace.ts"),
-                render=_render_opencode_trie_trace,
-                description="add `trie_trace` (trace the call graph)",
+                relative_path=(".opencode", "tools", "trace.ts"),
+                render=_render_opencode_trace,
+                description="add `trace` (trace the call graph)",
             ),
         ),
         # Earlier versions of `trie setup --override-builtins` shipped a
-        # separate `trie_read.ts` add-on; the new `read.ts` override
-        # subsumes it (qname-shaped paths route to `trie read` automatically).
-        # Drop the stale file on apply so users don't see two tools that do
-        # the same thing.
-        obsolete_files=((".opencode", "tools", "trie_read.ts"),),
+        # separate `trie_read.ts` add-on (the new `read.ts` override
+        # subsumes it) and a prefixed `trie_trace.ts` (renamed to
+        # `trace.ts` so the custom tool name matches the verb, since
+        # opencode doesn't auto-prefix custom tools the way it does MCP
+        # tools). Drop both on apply so users don't see duplicate tools.
+        obsolete_files=(
+            (".opencode", "tools", "trie_read.ts"),
+            (".opencode", "tools", "trie_trace.ts"),
+        ),
     ),
     "claude-code": ToolOverrideTarget(
         name="claude-code",

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Literal
 
 Scope = Literal["project", "user"]
-Action = Literal["created", "updated", "skipped", "preview", "error"]
+Action = Literal["created", "updated", "removed", "skipped", "preview", "error"]
 
 SnippetFactory = Callable[[Path], dict]
 
@@ -340,4 +340,172 @@ def _apply_one(
         action="updated" if existed_before else "created",
         path=config_path,
         snippet=snippet,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Uninstall: inverse of `install`. Drops the `trie` key from each target's
+# config and leaves everything else alone.
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class UninstallPlan:
+    """Aggregate result of an `uninstall` call across one or more targets.
+
+    Mirrors `InstallPlan` field-for-field; kept as a separate type so the
+    install / uninstall sides can diverge in the future without breaking
+    each other's callers and so call sites read clearly when grepped.
+    """
+
+    target_names: list[str]
+    scope: Scope
+    print_only: bool
+    dry_run: bool
+    results: list[ApplyResult] = field(default_factory=list)
+
+
+def uninstall(
+    *,
+    target_names: list[str] | None,
+    scope: Scope,
+    uninstall_all: bool,
+    print_only: bool,
+    dry_run: bool,
+    project_root: Path,
+) -> UninstallPlan:
+    """Remove the trie MCP server registration from one or more targets.
+
+    The inverse of `install`. For each target:
+
+      - file missing → `skipped` with detail "no config file at <path>"
+      - file present, no `trie` key under `snippet_key` → `skipped` with
+        detail "trie not registered in this config"
+      - file present, `trie` key present → remove it; report `removed`.
+        If removing leaves `snippet_key` empty, drop the key too so the
+        config file stays tidy. We never delete the file itself —
+        agents own that file; we only own the `trie` entry inside it.
+
+    Auto-detect mirrors `install`: `target.detect()` decides which
+    targets are candidates when neither `--target` nor `--all` is given.
+    Targets that are detected but have no `trie` entry just come back
+    `skipped` — the "no-op uninstall" case.
+    """
+    if uninstall_all:
+        chosen = list(TARGETS.values())
+    elif target_names:
+        chosen = []
+        for name in target_names:
+            if name not in TARGETS:
+                raise MCPInstallError(f"unknown target: {name!r}. Known: {', '.join(TARGETS)}")
+            chosen.append(TARGETS[name])
+    else:
+        chosen = [t for t in TARGETS.values() if t.detect()]
+        if not chosen:
+            raise MCPInstallError(
+                "no agents detected on this system. Pass --target NAME or --all "
+                f"(known: {', '.join(TARGETS)})."
+            )
+
+    plan = UninstallPlan(
+        target_names=[t.name for t in chosen],
+        scope=scope,
+        print_only=print_only,
+        dry_run=dry_run,
+    )
+
+    for target in chosen:
+        if not target.supports(scope):
+            plan.results.append(
+                ApplyResult(
+                    target=target.name,
+                    action="skipped",
+                    path=None,
+                    snippet={},
+                    detail=f"does not support {scope} scope",
+                )
+            )
+            continue
+        plan.results.append(_uninstall_one(target, project_root, scope, print_only, dry_run))
+    return plan
+
+
+def _uninstall_one(
+    target: MCPTarget,
+    project_root: Path,
+    scope: Scope,
+    print_only: bool,
+    dry_run: bool,
+) -> ApplyResult:
+    """Remove the `trie` entry from one target's config file.
+
+    Same parse-and-merge dance as `_apply_one` in reverse: read JSON,
+    delete the `trie` key under `snippet_key`, drop `snippet_key` if it
+    becomes empty, write back. We never touch other servers under the
+    same key — those are the agent's other MCP integrations and out of
+    scope for trie's uninstall.
+    """
+    config_path = target.config_path(project_root, scope)
+
+    if not config_path.exists():
+        return ApplyResult(
+            target=target.name,
+            action="skipped",
+            path=config_path,
+            snippet={},
+            detail=f"no config file at {config_path}",
+        )
+
+    raw = config_path.read_text()
+    try:
+        data = json.loads(raw) if raw.strip() else {}
+    except json.JSONDecodeError as exc:
+        return ApplyResult(
+            target=target.name,
+            action="error",
+            path=config_path,
+            snippet={},
+            detail=f"existing config is not valid JSON: {exc}",
+        )
+    if not isinstance(data, dict):
+        return ApplyResult(
+            target=target.name,
+            action="error",
+            path=config_path,
+            snippet={},
+            detail="existing config root is not a JSON object",
+        )
+
+    servers = data.get(target.snippet_key)
+    if not isinstance(servers, dict) or "trie" not in servers:
+        return ApplyResult(
+            target=target.name,
+            action="skipped",
+            path=config_path,
+            snippet={},
+            detail="trie not registered in this config",
+        )
+
+    removed_snippet = servers["trie"]
+
+    if print_only or dry_run:
+        return ApplyResult(
+            target=target.name,
+            action="preview",
+            path=config_path,
+            snippet=removed_snippet,
+            detail="would remove the trie entry",
+        )
+
+    del servers["trie"]
+    if not servers:
+        # Don't leave an empty `mcpServers: {}` behind — drop the key.
+        del data[target.snippet_key]
+
+    config_path.write_text(json.dumps(data, indent=2) + "\n")
+    return ApplyResult(
+        target=target.name,
+        action="removed",
+        path=config_path,
+        snippet=removed_snippet,
     )

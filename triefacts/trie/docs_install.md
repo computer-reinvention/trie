@@ -2,7 +2,7 @@
 trie_version: 0.1.2
 source: trie/docs_install.py
 file_fingerprint: 778f367d7e715af47295fd5d06403d79910ec87e94a14d3813afc9b7c1b3bd90
-last_synced_at: '2026-05-19T10:40:33Z'
+last_synced_at: '2026-05-21T16:18:54Z'
 description: Project-local agent documentation install.
 defines:
 - kind: module
@@ -72,7 +72,7 @@ defines:
   qualified_name: trie/docs_install:install
   lines: 381-433
 incoming_refs: 24
-outgoing_refs: 0
+outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/docs_install:DocsInstallError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=2487fc8e7b3ce809af62d04325d9b5017a0ddd33d7e9f88137e4352318897ee5 source_ref=b224274904f934dc347f86e766330c0b17478f24 -->
 ## `DocsInstallError`

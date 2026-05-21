@@ -1,14 +1,14 @@
 ---
 trie_version: 0.1.2
 source: tests/test_tool_override_install.py
-file_fingerprint: 346fad9b9250a9d6a0398ad25390458f163590878239a13322828d0fa1dd5c94
-last_synced_at: '2026-05-20T13:54:54Z'
+file_fingerprint: aaaca2be5678fb32fa10e924d5f23584684a6378d6a32e0b49f8b7f685e23c04
+last_synced_at: '2026-05-21T16:15:05Z'
 description: 'Tests for `trie.tool_override_install`: replacing agent built-in tools
   with trie wrappers.'
 defines:
 - kind: module
   qualified_name: tests/test_tool_override_install:__module__
-  lines: 1-645
+  lines: 1-671
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_install_creates_three_override_files
   lines: 39-60
@@ -52,48 +52,51 @@ defines:
   qualified_name: tests/test_tool_override_install:test_opencode_trie_read_obsolete_file_removed_on_apply
   lines: 341-366
 - kind: function
+  qualified_name: tests/test_tool_override_install:test_opencode_trie_trace_obsolete_file_removed_on_apply
+  lines: 369-392
+- kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_obsolete_cleanup_is_noop_on_fresh_install
-  lines: 369-384
+  lines: 395-410
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_install_is_idempotent_on_identical_content
-  lines: 392-417
+  lines: 418-443
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_install_updates_on_drift
-  lines: 420-445
+  lines: 446-471
 - kind: function
   qualified_name: tests/test_tool_override_install:test_claude_code_install_creates_advisory_hook
-  lines: 453-480
+  lines: 479-506
 - kind: function
   qualified_name: tests/test_tool_override_install:test_claude_code_hook_does_not_deny_grep
-  lines: 483-497
+  lines: 509-523
 - kind: function
   qualified_name: tests/test_tool_override_install:test_unsupported_harnesses_emit_needs_manual_setup
-  lines: 509-527
+  lines: 535-553
 - kind: function
   qualified_name: tests/test_tool_override_install:test_install_for_opencode_and_claude_code_in_one_pass
-  lines: 535-548
+  lines: 561-574
 - kind: function
   qualified_name: tests/test_tool_override_install:test_print_only_does_not_write_anything
-  lines: 556-577
+  lines: 582-603
 - kind: function
   qualified_name: tests/test_tool_override_install:test_dry_run_does_not_write_when_file_already_correct
-  lines: 580-600
+  lines: 606-626
 - kind: function
   qualified_name: tests/test_tool_override_install:test_install_with_empty_target_names_raises
-  lines: 608-615
+  lines: 634-641
 - kind: function
   qualified_name: tests/test_tool_override_install:test_install_with_unknown_target_raises
-  lines: 618-632
+  lines: 644-658
 - kind: function
   qualified_name: tests/test_tool_override_install:test_apply_one_uses_needs_manual_setup_for_targets_with_no_files
-  lines: 635-644
+  lines: 661-670
 incoming_refs: 0
 outgoing_refs: 29
 ---
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_install_creates_three_override_files fingerprint=311a913081b132222ae5933948bfc573701ad85a62aeaea33e46eb3141571d36 body_fp=738af83cbeb707dcda25021772677ed76f88d66c6495cbfc619a109956a3cfc4 source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_install_creates_three_override_files fingerprint=5ff4d3747405fe6b20a6c5476863e10ba3cab61068d573b1af527d9441e4a005 body_fp=cc2eaee07fb7fd235c881d049ead295eb3273a3add4a196f7cbd3aba9e5eba79 source_ref=506b04fbcac824ebe487a347172246e35d3ecd62 -->
 ## `test_opencode_install_creates_three_override_files(tmp_path: Path)`
 
-Assert that `install` for `"opencode"` creates exactly `grep.ts`, `read.ts`, and `trie_trace.ts` under `.opencode/tools/` on disk.
+Assert that `install` for `"opencode"` creates exactly `grep.ts`, `read.ts`, and `trace.ts` under `.opencode/tools/` on disk.
 <!-- trie:end -->
 
 <!-- trie:section symbol=tests/test_tool_override_install:test_opencode_grep_override_routes_to_trie_grep fingerprint=9b92fd6651c9482e1e72bd7ff09a21b279bb5082bbfc5c07aedfef80081bedc5 body_fp=d2f8fb18c439b5742c7894737bbfb700197d2389d17b59bfad7bfacf35c8c397 source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
@@ -104,7 +107,7 @@ Assert that the rendered `grep.ts` override shells out to `trie grep --json` via
 - Checks spawn command string, not full file equality, allowing template evolution.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_files_carry_generated_notice fingerprint=1ed4d58adc054245f9c7dee187d956a8dafd22a56e3756934931e69dea854d51 body_fp=2ef89e767c43d69f1969000a12999acf912a85903b07291f1f2f907715919def source_ref=54386ad27ee9ad47292dd0874f810771cab61305 -->
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_files_carry_generated_notice fingerprint=931d1963484293165d869cff6a475b7e1d05914d8997dda1eaf105ae35b037c2 body_fp=2ef89e767c43d69f1969000a12999acf912a85903b07291f1f2f907715919def source_ref=506b04fbcac824ebe487a347172246e35d3ecd62 -->
 ## `test_opencode_files_carry_generated_notice(tmp_path: Path)`
 
 Assert all three opencode override files contain the auto-generated header and "Do not hand-edit" notice.
@@ -277,11 +280,19 @@ Assert that `full: true` mode routes through `renderForAgent`, stripping interna
 - Verifies the raw `result = triefact` leak pattern is absent for full mode.
 <!-- trie:end -->
 
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_rendered_files_have_balanced_backticks_per_line fingerprint=b10d440c635ed2b7ce7200e27f8521ed5f0d6f0882f993a7fcac8addd399ab04 body_fp=231d983706b3c3561272b29f9b51870304f72d736690c9ac90444ce072e297ef source_ref=768573ad34b38438e73a322470e24aaed565093e -->
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_rendered_files_have_balanced_backticks_per_line fingerprint=c22887ae666f1fc4d321d98ed8f41a4dfc374393f6e4860b7221b77820fca28c body_fp=231d983706b3c3561272b29f9b51870304f72d736690c9ac90444ce072e297ef source_ref=506b04fbcac824ebe487a347172246e35d3ecd62 -->
 ## `test_opencode_rendered_files_have_balanced_backticks_per_line(tmp_path: Path)`
 
 Regression-guard: assert every `//` comment line in all three rendered `.ts` files has an even backtick count.
 
 - Odd count in a comment opens a stray JS template literal, causing bun parse failure.
 - Root cause guarded against: unescaped `\n` in Python renderer splitting a single-line comment.
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_trie_trace_obsolete_file_removed_on_apply fingerprint=1e6177df323fce1c409ce9b59f17140642922fad4f84cf0e0083388b293e4581 body_fp=78890cc3ce542150b3159564e07d92844c1db96c3e9997b174a8b9dc396483c2 source_ref=506b04fbcac824ebe487a347172246e35d3ecd62 -->
+## `test_opencode_trie_trace_obsolete_file_removed_on_apply(tmp_path: Path)`
+
+Assert that a pre-existing stale `.opencode/tools/trie_trace.ts` is deleted and reported as `updated` when `install` runs.
+
+- `trie_trace.ts`: legacy name superseded by `trace.ts`; must not survive re-install.
 <!-- trie:end -->
