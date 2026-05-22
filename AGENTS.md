@@ -81,11 +81,6 @@ hook is doing its job.
 
 ## Shipping
 
-```bash
-uv build
-uv tool install --force ./dist/trie-0.1.2-py3-none-any.whl
-```
-
 `scripts/ship.sh "<msg>"` commits, pushes to `origin/main`, and reinstalls the global `uv tool`. It pushes — don't run it casually.
 
 ## Git hygiene
@@ -94,7 +89,8 @@ uv tool install --force ./dist/trie-0.1.2-py3-none-any.whl
 - Commit messages follow `type(scope): subject` — see `git log` for the in-repo style.
 - `trie verify` is the pre-commit gate; it refuses commits when the triefact tree drifts.
 
-
 <!-- trie:docs (added by `trie setup`) -->
+
 **trie is installed in this project.** Read [TRIE.md](TRIE.md) for the navigation tools (`trie_grep`, `trie_read`, `trie_trace`) — use them instead of grep for code search.
+
 <!-- end trie:docs -->
