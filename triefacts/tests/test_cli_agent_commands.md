@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.2
 source: tests/test_cli_agent_commands.py
-file_fingerprint: e0da36f1427b3c8b7b65d8b077ac1892657b07f9f87bc5ce21cd4f5ffe335e78
-last_synced_at: '2026-05-19T10:37:36Z'
+file_fingerprint: c8b0fe3d831eba8a48b9e521c6ccf3fcadf924d81628bd3b9d09aff196a67fd9
+last_synced_at: '2026-05-23T23:45:19Z'
 description: 'Tests for the agent-facing CLI subcommands: `trie grep`, `trie read`,
   `trie trace`.'
 defines:
@@ -90,187 +90,159 @@ defines:
 incoming_refs: 0
 outgoing_refs: 26
 ---
-<!-- trie:section symbol=tests/test_cli_agent_commands:FakeClient fingerprint=57cb0d9af6bb40fa692b1e07a745ebc033aa599c53105b31098873c4ee475f36 body_fp=c586a59ff7ac1ee8d6255eeefe8ff7ccdcca1e084ce42536bb2d25440373ab3f source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `FakeClient(model_id: str = "fake/test", body: str = "## generated\n\nGenerated description.\n")`
-
-Stub LLM client returning fixed text for use in fixture-level sync calls.
-
-- `body`: the exact Markdown string returned by every `generate` call.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:FakeClient.generate fingerprint=a28c91031810d416f079e2d7a57f5ed7651bd8c3315cf78d1ec869c3b812915e body_fp=30ce9124ebb65e6f596b9729b0e56e75c16b28875fd59126d557d9d63703e744 source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `FakeClient.generate(self, _req: GenerationRequest) -> GenerationResponse`
-
-Return a hardcoded `GenerationResponse` with `self.body` as text, ignoring the request.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:FakeClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=0cc8e4c60852ed2343ba12efc7686b2f040b2c6b012d45e134249772b72c93f1 source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `count_tokens(self, _req: GenerationRequest) -> int`
-
-Return a fixed token count of 100 for any request.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:populated_project fingerprint=b5db4105294b249e057601fb6357b88650bc0c7a1b1d3573458f847b457673dc body_fp=aba0c8e72c7597e02883a67d7d841c8906b9aaaaa2f73c3ed93ca3d502d386e4 source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `populated_project(tmp_path: Path) -> Path`
-
-Build a two-file project with scanned graph and synced triefacts under `tmp_path`.
-
-- Returns `tmp_path` after writing `trie.toml`, `lib.py`, `app.py`, scanning, and syncing both files with `FakeClient`.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_with_name_returns_human_readable_table fingerprint=ceec71ef4ae8ab9dc6b463b4e086f20ff34717425879326053e4192406f8d74e body_fp=c385faa85f974f7cb825f07ab99dc24b4464d28ba814c810e1f660f910ac9583 source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `test_grep_with_name_returns_human_readable_table(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `trie grep --name slugify` without `--json` renders a Rich table containing the symbol's qname and one-liner.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_with_json_is_byte_equivalent_to_mcp_envelope fingerprint=fd27bdb9ab6125b23dd77bd49513fbb7a7494243f50e9bafa33ccd3b581547f9 body_fp=e4f00206844e13d7a90346ee72ec7de8e5c807a54135a72313f5f7e428ac1131 source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `test_grep_with_json_is_byte_equivalent_to_mcp_envelope(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `trie grep --json` produces a structurally valid MCP `grep` envelope with the expected hit fields.
-
-- `populated_project`: fixture providing a synced two-file project at a temp path.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_predicate_json_overrides_via_flags fingerprint=79c5d2628d08dc80b9bd6eb493e147c9e85e1e70332ab1a09244ca9062a5c569 body_fp=a6d88944629f32460dfba392a85bfcb8d69d6169c7f2fe0252031085b4ae3f34 source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `test_grep_predicate_json_overrides_via_flags(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Verify that `--predicate` JSON and additional CLI flags combine correctly to filter grep results.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_invalid_predicate_json_exits_2 fingerprint=759099aaa7ff8a970783fe1c5d39d184b5690d06e8512053c3f5251cbb4f40dc body_fp=56898061764a4153c5a1c4e3a6cccc172a189dfd21525c32a414b941fb411a14 source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `test_grep_invalid_predicate_json_exits_2(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that malformed JSON in `--predicate` exits with code 2 and emits "not valid JSON".
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_no_matches_shows_fallback_envelope fingerprint=60206eb0f994a8b178b3bc8ee290427d7110a4c3e7d5e67b1d20a0ac53b47f1f body_fp=0052f4add81197bc79708d2ed848b28558bf33e6b2abbc5dd675ec67605b9007 source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `test_grep_no_matches_shows_fallback_envelope(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `trie grep --name` with no matching symbol exits 0 and renders a `text_match_empty` fallback envelope.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_text_match_fallback_renders_candidates fingerprint=87da0a6f67a8bf9736cf56bc6cbc7184e64472382cc2c34902fb6e2210fbc308 body_fp=44eba6e9e134855d387ebaa782c5afc93cf37b99cb6ce28ff70d21c636ddc17a source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `test_grep_text_match_fallback_renders_candidates(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `trie grep --name <text>` renders a candidate table when the query matches a symbol's body but not its name.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_read_known_qname_prints_prose_and_neighbours fingerprint=86adc7ba3e51042f0d573c5335c91041c1831526afd830ae2258a43c4edaa71f body_fp=f6f734a01a0463edf246222d8708bcbe40dfcb3d7e72e398e779f5c7b838d042 source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `test_read_known_qname_prints_prose_and_neighbours(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `trie read <qname>` outputs the symbol's prose body and its caller's qname.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_read_unknown_qname_exits_1_with_suggestion fingerprint=7cd18ff86b8641d73abf355721a190d506e7f8e5b284dca0ffe0a2555e6771a8 body_fp=d899feb012df757d04aec456de1fb5d743fb94989c662cede82c7e1738ef1614 source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `test_read_unknown_qname_exits_1_with_suggestion(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `trie read` with a misspelled qname exits 1 and prints the MCP envelope's suggestion.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_read_json_emits_envelope fingerprint=25b624dddcbc27e4aebdc236a8ff3844594190666ad1c86eea4ca9f7319e473a body_fp=c66923a611142dd4d8d6cd391795cb8817a5c34e2e368a659edc218ab517d309 source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `test_read_json_emits_envelope(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `trie read <qname> --json` emits a structured MCP-equivalent envelope with `qname`, `prose`, `callers`, and `callees`.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_trace_callers_renders_topology fingerprint=e3024c73193838b4b73e014afc26d5406537704d7faa7650b922c10ffc3ed96d body_fp=a11b18fbe8f0c3c77f3d99706371411dd82b8989ff5fbac7446f88e13add787e source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `test_trace_callers_renders_topology(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `trie trace --direction callers` renders the root symbol and its callers in human-readable output.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_trace_json_shape_matches_mcp fingerprint=37ba15dd22c955d0f2e08198cf147fa0b727373366b0aed681970b8fa0cb4f36 body_fp=12ef7e048fd62830b6dc749ba953c502b85317595b17c9a50f99b44410499d4c source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `test_trace_json_shape_matches_mcp(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `trie trace --json` emits a root/nodes/edges envelope identical in shape to the MCP `trace` tool.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_trace_unknown_qname_exits_1 fingerprint=41e7adebd8254e71dbd4a61e666624407824c5f8b731cbecbaa32d59745f66da body_fp=d120d344b5915f8654f36f0fb33a66d962347f8ab9f65f4736956bd6e1fbd736 source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `test_trace_unknown_qname_exits_1(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `trie trace` exits 1 with a `not_found` error when given an unrecognised qname.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_trace_invalid_direction_exits_1 fingerprint=9eba8f0d0997a6fc3413f24b13fb4ec96c6ce6098692e496d14968c5591b9406 body_fp=8fa22ed85556ce0620746c4ecb277f16ae11934c390b2bed6d798e8ff01335cf source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `test_trace_invalid_direction_exits_1(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that an unsupported `--direction` value produces an `invalid_argument` envelope and exits 1.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_without_trie_toml_exits_1_with_clean_error fingerprint=7ae44aa39d88737da05fb452d0f77c60d500554b9e98acc9ac44df14b3285517 body_fp=0c5e3d8537bc6af3b1bb6a34b29fbfc72a40120c0c65c09075d8bb08a7502a63 source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `test_grep_without_trie_toml_exits_1_with_clean_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `trie grep` exits 1 with a clean `trie.toml` error when no config file exists.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_read_without_trie_toml_exits_1 fingerprint=c2e555d1c7bc5d2c145c9095f3da8575f9ca6d382c78e10517f32f8a9933b3a8 body_fp=6881305aad6a1c9067f00c872d40410f2d827553f196dafbf7a3c279814798df source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `test_read_without_trie_toml_exits_1(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert `trie read` exits 1 with a `trie.toml` message when no config file exists.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_trace_without_trie_toml_exits_1 fingerprint=e215ddf739c940699fec8f589a5a2d21ef060f7b7e362f9538939d1e6ed41c25 body_fp=9e5eb64757d03a1dc994b0078bcd4572d57f743f5b6f7c2a0f4e4453be06b117 source_ref=8f2353097fd37581bdc7a99a316a16fdca4ea9e8 -->
-## `test_trace_without_trie_toml_exits_1(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert `trie trace` exits 1 with a `trie.toml` message when no config file exists.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_with_no_flags_exits_with_invalid_argument fingerprint=1fa4926a1140b7863c3c9783481b4a3b5b1de3c07e6319aa0d30e0206993e799 body_fp=a1198db29d0848e8cf532be35e954140d244d857f58c76b375cf78ad0e266f7f source_ref=3adab019d9e144c5db17f26244278c46468d7a08 -->
-## `test_grep_with_no_flags_exits_with_invalid_argument(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `trie grep` with no filter flags exits 1 with an `invalid_argument` envelope naming a usable filter.
-
-- Exit code 1 signals a tool error, not a CLI usage error (exit 2).
-- Output must contain `name_contains` or `scope_prefix` as a hint.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:PROJECT_TOML fingerprint=e9c7735b60c9b4e2a539d27c21376b8f0df51a16c1349855a9eec287b1183875 body_fp=3006fd6ccd22083fcb5bd9365720d8eb45fa6c045a6f100b66c24802c11e3f3d source_ref=f346d63ed161793d9941b393fb28468f324bb4ce -->
-## `PROJECT_TOML: str`
-
-TOML config string used to bootstrap the test project's `trie.toml` file.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:_read_jsonl_events fingerprint=125817628eb1f7fc15e2a61035b6350edd8094f965da770e92e1a44a6c4c4177 body_fp=f97f5e3f6ef38e6e7150d1469a0a6a9810dd5c35e42607d78886c21e87fc6dd2 source_ref=f346d63ed161793d9941b393fb28468f324bb4ce -->
-## `_read_jsonl_events(path: Path) -> list[dict]`
-
-Parse a JSONL file and return one dict per non-empty line.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_emits_cli_call_event_not_mcp_call fingerprint=2c8f3798fc6d1622c87a523234e10d289743d7e2c64c7db1c89ffa8ffbb08344 body_fp=560d8af525515a756edf8f26d7c646e4070a8c6ec92140b3f6b5094a318a8ff5 source_ref=f346d63ed161793d9941b393fb28468f324bb4ce -->
-## `test_grep_emits_cli_call_event_not_mcp_call(populated_project, monkeypatch, tmp_path)`
-
-Assert that `trie grep` emits a `cli_call` telemetry event and never emits `mcp_call` or `mcp_server_start`.
-
-- `TRIE_DEBUG` env var is set to a tmp JSONL path to capture telemetry output.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_read_and_trace_also_emit_cli_call_events fingerprint=2555d2ce32fdcaeb3949422c08eb0431136ddb0de27b6d41f1efcb1ca0f16932 body_fp=7de714012a9f802815e0f76f3f47fd12e76e22523a145ad0233b07bc1866c9e9 source_ref=f346d63ed161793d9941b393fb28468f324bb4ce -->
-## `test_read_and_trace_also_emit_cli_call_events(populated_project, monkeypatch, tmp_path)`
-
-Verify that `trie read` and `trie trace` each emit a `cli_call` event (not `mcp_call`) when invoked via the CLI.
-
-- `log_path`: JSONL telemetry file written via `TRIE_DEBUG` env var.
-- Asserts both `"read"` and `"trace"` appear in `cli_call` event `tool` fields.
-- Asserts zero `mcp_call` events are emitted.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:test_cli_call_event_carries_duration_and_result_fields fingerprint=8bce6b8bf33876350ff2cc7019b5bf67715c081f34bf9c6124f2bf72d7f63572 body_fp=b044b9f412916ad18290b4c4be31c6d23fe0870f0782a19eac77d9a5d64270cb source_ref=f346d63ed161793d9941b393fb28468f324bb4ce -->
-## `test_cli_call_event_carries_duration_and_result_fields(populated_project: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path)`
-
-Assert that `cli_call` telemetry events include `duration_ms`, `result_kind`, `result_count`, and `response_bytes` fields.
-
-- `TRIE_DEBUG` env var routes telemetry to a temp JSONL file for inspection.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_cli_agent_commands:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=0107664b30db87a2ddeadbb2dbc077eebda9eb6b57d574cb2ea80f794db73d12 source_ref=f346d63ed161793d9941b393fb28468f324bb4ce -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=66f04576c3a67474b50e6d0f5c37020c298d61571c056d3aa695f1c00042b341 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
 ## `tests/test_cli_agent_commands`
 
-Test suite for the agent-facing CLI subcommands `trie grep`, `trie read`, and `trie trace`.
+Integration tests for the agent-facing CLI subcommands `trie grep`, `trie read`, and `trie trace`.
 
-- Verifies `--json` output matches the MCP tool envelope structure
-- Verifies human-readable (Rich) output for default invocations
-- Verifies exit code 1 for tool errors, exit code 2 for predicate-parse errors
-- Verifies missing `trie.toml` produces a clean error, not a stack trace
-- Verifies `cli_call` telemetry events (not `mcp_call`) are emitted
+- Verifies `--json` output is structurally equivalent to MCP tool envelopes.
+- Covers exit codes: 0 (success), 1 (tool error / missing config), 2 (bad CLI input).
+- Asserts CLI invocations emit `cli_call` telemetry events, never `mcp_call`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:PROJECT_TOML fingerprint=e9c7735b60c9b4e2a539d27c21376b8f0df51a16c1349855a9eec287b1183875 body_fp=d1d45a91d6cf78fc5da0e1233fcc418ecf7bc97b8b3859a16e0fdc22b2009241 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `PROJECT_TOML: str`
+
+TOML string used to create `trie.toml` in test fixtures.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:FakeClient fingerprint=57cb0d9af6bb40fa692b1e07a745ebc033aa599c53105b31098873c4ee475f36 body_fp=c82a331b4b3964278d9f27969162752c22e8780c6549f01fb2806f4c1f83f226 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `FakeClient`
+
+Stub AI client for tests; returns a fixed `body` string from `generate` and a constant token count from `count_tokens`.
+
+- `body`: the Markdown text returned as `GenerationResponse.text`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:FakeClient.generate fingerprint=a28c91031810d416f079e2d7a57f5ed7651bd8c3315cf78d1ec869c3b812915e body_fp=d60ebc8693003167dacec6df491f967b98de2b104dd4b791a0167f7d78c093f2 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `FakeClient.generate(self, _req: GenerationRequest) -> GenerationResponse`
+
+Return a hardcoded `GenerationResponse` using `FakeClient.body` as the generated text.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:FakeClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=77d3b6347ca7e880748f4deac8ccf865d4c9661ed1e5f1c6dd3979573067d702 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `FakeClient.count_tokens(self, _req: GenerationRequest) -> int`
+
+Always return 100 from `FakeClient` without calling a real model.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:populated_project fingerprint=b5db4105294b249e057601fb6357b88650bc0c7a1b1d3573458f847b457673dc body_fp=251d66bf231a0b0cb0f6e533529cfec3db8aa88f1ca286a8825383359f039209 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `populated_project(tmp_path: Path) -> Path`
+
+Create a temporary project with `lib.py` and `app.py` scanned, synced, and stored in a graph database.
+
+- Returns `tmp_path` with `trie.toml`, source files, and a populated `.trie/graph.db`.
+- `lib:slugify` and `app:make_url` are both synced with `FakeClient`-generated triefacts.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_with_name_returns_human_readable_table fingerprint=ceec71ef4ae8ab9dc6b463b4e086f20ff34717425879326053e4192406f8d74e body_fp=16e3787524516fc27aa290d498b207b91128682aff3abd834afa27b49795c0e3 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_grep_with_name_returns_human_readable_table(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie grep --name slugify` without `--json` renders a Rich table containing the qname and one-liner.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_with_json_is_byte_equivalent_to_mcp_envelope fingerprint=fd27bdb9ab6125b23dd77bd49513fbb7a7494243f50e9bafa33ccd3b581547f9 body_fp=34963d40d3a65b91703eef6a292c814df12fce6376422e15f5d3464c53d92a67 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_grep_with_json_is_byte_equivalent_to_mcp_envelope(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie grep --json` returns a `hits` envelope with the same fields an MCP `grep` call would produce.
+
+- Checks for `qname`, `signature`, `file_pointer`, `one_liner`, `is_public`, `kind`, `inbound_count`, `outbound_count` on every hit.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_predicate_json_overrides_via_flags fingerprint=79c5d2628d08dc80b9bd6eb493e147c9e85e1e70332ab1a09244ca9062a5c569 body_fp=4e9f5d1e6ac268f2e0db2c8ad0e41d8dba11586ae6e5269796f6389d8adf0462 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_grep_predicate_json_overrides_via_flags(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Verify that `--predicate` JSON and individual flag filters compose correctly on `trie grep`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_invalid_predicate_json_exits_2 fingerprint=759099aaa7ff8a970783fe1c5d39d184b5690d06e8512053c3f5251cbb4f40dc body_fp=ebcbc32b3470077b6ee095d7d9477d60fca38ed555ea25e94a2ebc6cd3e11df0 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_grep_invalid_predicate_json_exits_2(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that malformed JSON passed to `--predicate` exits with code 2, distinct from tool-side errors (exit 1).
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_no_matches_shows_fallback_envelope fingerprint=60206eb0f994a8b178b3bc8ee290427d7110a4c3e7d5e67b1d20a0ac53b47f1f body_fp=4270dc432feaacef00294c1a99c12687079916075a10d1637e53d1b5bb0d2759 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_grep_no_matches_shows_fallback_envelope(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie grep --name` with no symbol matches exits 0 and renders a `text_match_empty` fallback envelope.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_with_no_flags_exits_with_invalid_argument fingerprint=1fa4926a1140b7863c3c9783481b4a3b5b1de3c07e6319aa0d30e0206993e799 body_fp=878bd6e3fc52dcad53ceb1c607f4891d5f3021c6e7f52e87a745988bafcf71c9 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_grep_with_no_flags_exits_with_invalid_argument(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie grep` with no filter flags exits 1 with an `invalid_argument` envelope naming usable filters.
+
+- `exit_code == 1`: tool-level error, not CLI usage error (which would be 2).
+- Output must contain `name_contains` or `scope_prefix` as a next-step hint.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_text_match_fallback_renders_candidates fingerprint=87da0a6f67a8bf9736cf56bc6cbc7184e64472382cc2c34902fb6e2210fbc308 body_fp=d62526728d0fab8492ef5954b1853667880b1507096a051a16a65a20ab1d0ff1 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_grep_text_match_fallback_renders_candidates(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie grep --name` with a body-only match triggers the text-match fallback and renders candidate symbols.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_read_known_qname_prints_prose_and_neighbours fingerprint=86adc7ba3e51042f0d573c5335c91041c1831526afd830ae2258a43c4edaa71f body_fp=73c95ec4a9815e8a2bf411355e026f11b7de5959338a8dc2c6ae61c54e6a0cca source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_read_known_qname_prints_prose_and_neighbours(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie read lib:slugify` outputs the qname, prose body, and caller `app:make_url`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_read_unknown_qname_exits_1_with_suggestion fingerprint=7cd18ff86b8641d73abf355721a190d506e7f8e5b284dca0ffe0a2555e6771a8 body_fp=c00992d128476bff20c990172147fb2128b346c357187b2875b8c4a2341955b8 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_read_unknown_qname_exits_1_with_suggestion(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie read` with an unknown qname exits 1 and prints a corrective suggestion.
+
+- Invokes `read lib:slugfy` (deliberate typo of `lib:slugify`).
+- Expects `not_found` in output and either the close match or `grep(` hint.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_read_json_emits_envelope fingerprint=25b624dddcbc27e4aebdc236a8ff3844594190666ad1c86eea4ca9f7319e473a body_fp=833d7068af60fc729b084d90088f5e343522a601d558dcb0cf3cd9c17490f50c source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_read_json_emits_envelope(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie read --json` emits a complete MCP `read` envelope with `qname`, `prose`, `callers`, and `callees`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_trace_callers_renders_topology fingerprint=e3024c73193838b4b73e014afc26d5406537704d7faa7650b922c10ffc3ed96d body_fp=130f96199a40da35d03a1fc97a4e6bb4122963357414593c670db825c770f234 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_trace_callers_renders_topology(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie trace --direction callers` human output includes the root symbol and its caller.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_trace_json_shape_matches_mcp fingerprint=37ba15dd22c955d0f2e08198cf147fa0b727373366b0aed681970b8fa0cb4f36 body_fp=6cbff11cbaf2a6c54a95295be54b0ff083fe08adb2123bd636694e08a2897246 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_trace_json_shape_matches_mcp(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie trace --json` emits the same `root`/`nodes`/`edges` envelope shape as the MCP `trace` tool.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_trace_unknown_qname_exits_1 fingerprint=41e7adebd8254e71dbd4a61e666624407824c5f8b731cbecbaa32d59745f66da body_fp=85e5f0071721b4c16b247fb8ef6567123a08960241e5102698b2ff243b0161e2 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_trace_unknown_qname_exits_1(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie trace` exits 1 with a `not_found` envelope when given an unknown qname.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_trace_invalid_direction_exits_1 fingerprint=9eba8f0d0997a6fc3413f24b13fb4ec96c6ce6098692e496d14968c5591b9406 body_fp=847dd1724bc3c1705769ced78cf14b520bd3d1034b61fc2f665fbd4a266d2005 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_trace_invalid_direction_exits_1(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that an unsupported `--direction` value produces an `invalid_argument` envelope with exit code 1.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_without_trie_toml_exits_1_with_clean_error fingerprint=7ae44aa39d88737da05fb452d0f77c60d500554b9e98acc9ac44df14b3285517 body_fp=9eef9f06c7fdfe09bc5df59687b9a28fd8d9235134ba1bc2fa06ebce04209178 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_grep_without_trie_toml_exits_1_with_clean_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert `trie grep` exits 1 with a clean `trie.toml` error when no config file exists.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_read_without_trie_toml_exits_1 fingerprint=c2e555d1c7bc5d2c145c9095f3da8575f9ca6d382c78e10517f32f8a9933b3a8 body_fp=7dd51bf86ca809cc8e81790a25de3e5bc76a3eb5e04bcabfca6ddbcdcbfc27c7 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_read_without_trie_toml_exits_1(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert `trie read` exits 1 with a `trie.toml` error message when no config file exists.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_trace_without_trie_toml_exits_1 fingerprint=e215ddf739c940699fec8f589a5a2d21ef060f7b7e362f9538939d1e6ed41c25 body_fp=7ed2439474bbab3af1f92f40704142bb1a1e9341bbc65047f331afa34438e17c source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_trace_without_trie_toml_exits_1(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert `trie trace` exits 1 with a clean `trie.toml` error when no config file is present.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:_read_jsonl_events fingerprint=125817628eb1f7fc15e2a61035b6350edd8094f965da770e92e1a44a6c4c4177 body_fp=c021fbd1f1088f32254f92c016f5e0b901b1e57f4ad2c39e5776dcf8d7342fb1 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `_read_jsonl_events(path: Path) -> list[dict]`
+
+Parse every non-empty line of a JSONL file into a list of dicts.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_grep_emits_cli_call_event_not_mcp_call fingerprint=2c8f3798fc6d1622c87a523234e10d289743d7e2c64c7db1c89ffa8ffbb08344 body_fp=2a2ea040dd2e015537a92b0acebb48bc7ad2cb1c96739c962931b63412be8016 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_grep_emits_cli_call_event_not_mcp_call(populated_project: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path)`
+
+Assert that `trie grep` emits a `cli_call` telemetry event and never `mcp_call` or `mcp_server_start`.
+
+- `TRIE_DEBUG`: set to a tmp JSONL path to capture telemetry for inspection.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_read_and_trace_also_emit_cli_call_events fingerprint=2555d2ce32fdcaeb3949422c08eb0431136ddb0de27b6d41f1efcb1ca0f16932 body_fp=be75e41bd752bccf8fd6290ce6efc873bb47a4466e7b8cb542070e22ecb9ac59 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_read_and_trace_also_emit_cli_call_events(populated_project: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path)`
+
+Assert that `trie read` and `trie trace` each emit a `cli_call` event and zero `mcp_call` events.
+
+- `TRIE_DEBUG`: set to a tmp JSONL path to capture telemetry output.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_cli_call_event_carries_duration_and_result_fields fingerprint=8bce6b8bf33876350ff2cc7019b5bf67715c081f34bf9c6124f2bf72d7f63572 body_fp=def8db32098596980a23419e6e1ed1eb4894cab67e07efd1ded8531c0e96a937 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+## `test_cli_call_event_carries_duration_and_result_fields(populated_project: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path)`
+
+Assert that a `cli_call` telemetry event from `trie grep` includes `duration_ms`, `result_kind`, `result_count`, and `response_bytes`.
 <!-- trie:end -->

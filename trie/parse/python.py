@@ -24,6 +24,8 @@ class Symbol:
     start_line: int  # 1-indexed
     end_line: int  # 1-indexed inclusive
     is_public: bool
+    parent_class: str | None = None  # set for methods; the unqualified class name
+    decorators: tuple[str, ...] = ()  # decorator lines, e.g. ("@classmethod",)
 
 
 def _make_parser() -> Parser:
@@ -97,6 +99,7 @@ def _build_symbol(
     parent: str | None,
     kind: str,
     parent_is_private: bool = False,
+    decorators: tuple[str, ...] = (),
 ) -> Symbol:
     name_node = node.child_by_field_name("name")
     name = _node_text(name_node, source) if name_node else "<anon>"
@@ -120,7 +123,25 @@ def _build_symbol(
         start_line=node.start_point[0] + 1,
         end_line=node.end_point[0] + 1,
         is_public=is_public,
+        parent_class=parent,
+        decorators=decorators,
     )
+
+
+def _extract_decorators(node: Node, source: bytes) -> tuple[str, ...]:
+    """Return decorator lines from a `decorated_definition` node, e.g. `("@classmethod",)`.
+
+    Returns an empty tuple when `node` is not a `decorated_definition` or carries no
+    decorator children. Each entry is the verbatim decorator text with leading whitespace
+    stripped — enough for the LLM prompt to see `@property` or `@dataclass(frozen=True)`.
+    """
+    if node.type != "decorated_definition":
+        return ()
+    decorators: list[str] = []
+    for child in node.named_children:
+        if child.type == "decorator":
+            decorators.append(_node_text(child, source).strip())
+    return tuple(decorators)
 
 
 def _undecorate(node: Node) -> Node:
@@ -132,7 +153,14 @@ def _undecorate(node: Node) -> Node:
     return node
 
 
-def _walk_class(class_node: Node, source: bytes, *, module_key: str, rel_file: str) -> list[Symbol]:
+def _walk_class(
+    class_node: Node,
+    source: bytes,
+    *,
+    module_key: str,
+    rel_file: str,
+    class_decorators: tuple[str, ...] = (),
+) -> list[Symbol]:
     """Emit the class symbol plus method symbols (one level deep).
 
     Methods of a private class (`_Foo`) inherit the private flag — they are implementation
@@ -149,12 +177,14 @@ def _walk_class(class_node: Node, source: bytes, *, module_key: str, rel_file: s
             rel_file=rel_file,
             parent=None,
             kind="class",
+            decorators=class_decorators,
         )
     ]
     body = class_node.child_by_field_name("body")
     if body is None:
         return syms
     for child in body.named_children:
+        method_decorators = _extract_decorators(child, source)
         target = _undecorate(child)
         if target.type == "function_definition":
             syms.append(
@@ -166,6 +196,7 @@ def _walk_class(class_node: Node, source: bytes, *, module_key: str, rel_file: s
                     parent=class_name,
                     kind="method",
                     parent_is_private=class_is_private,
+                    decorators=method_decorators,
                 )
             )
     return syms
@@ -435,6 +466,7 @@ def extract_symbols(
     noise_ranges: list[tuple[int, int]] = []
     first_statement = True  # only the very first statement can be the module docstring
     for child in tree.root_node.named_children:
+        top_decorators = _extract_decorators(child, source)
         target = _undecorate(child)
         is_doc_or_import = False
         if target.type == "function_definition":
@@ -446,11 +478,18 @@ def extract_symbols(
                     rel_file=rel_file,
                     parent=None,
                     kind="function",
+                    decorators=top_decorators,
                 )
             )
             consumed_ranges.append((child.start_point[0] + 1, child.end_point[0] + 1))
         elif target.type == "class_definition":
-            class_symbols = _walk_class(target, source, module_key=module_key, rel_file=rel_file)
+            class_symbols = _walk_class(
+                target,
+                source,
+                module_key=module_key,
+                rel_file=rel_file,
+                class_decorators=top_decorators,
+            )
             symbols.extend(class_symbols)
             consumed_ranges.append((child.start_point[0] + 1, child.end_point[0] + 1))
         elif target.type in ("import_statement", "import_from_statement"):
@@ -502,7 +541,9 @@ def extract_symbols(
     deduped: dict[str, Symbol] = {}
     for sym in symbols:
         deduped[sym.qualified_name] = sym
-    result = list(deduped.values())
+    # Sort by start_line so the result list is in source order regardless of dict
+    # insertion order (which can be disrupted by the last-wins dedup above).
+    result = sorted(deduped.values(), key=lambda s: s.start_line)
 
     # Module-body symbol: everything *not* claimed by a function/class/constant
     # extraction above AND not just imports / the module docstring (which are

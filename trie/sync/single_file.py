@@ -244,6 +244,7 @@ def sync_single_file(
     dest_triefact_path: Path | None = None,
     store: Store | None = None,
     symbols_to_regen: set[str] | None = None,
+    force: bool = False,
 ) -> FileSyncResult:
     """Generate or refresh the triefact file for a single Python source file.
 
@@ -280,6 +281,11 @@ def sync_single_file(
     (default 4). The plan/generate/apply split means the triefact and store are only
     mutated on the calling thread; only `generate_section` (a network round-trip) runs
     in parallel. Setting concurrency to 1 yields fully deterministic serial execution.
+
+    `force` skips the diff-aware path entirely for every symbol: previous source and
+    previous prose are ignored so all sections are regenerated cold. Use this when the
+    existing prose is known to be wrong and you want a fresh LLM pass regardless of
+    whether the source has changed.
     """
     source_path = source_path.resolve()
     project_root = project_root.resolve()
@@ -373,10 +379,16 @@ def sync_single_file(
             # the git blob), and previous *prose* (from the existing section). Either
             # missing → cold-write. We reconstruct signature+body the same way generator
             # does for current_source so the two blocks are directly comparable.
-            prev_source = (
-                f"{prev_sym.signature}:\n{prev_sym.body_text}" if prev_sym is not None else None
-            )
-            prev_prose = prev_section.body if prev_section is not None else None
+            # `force=True` bypasses the diff-aware path entirely: both are set to None
+            # so every symbol gets a fresh cold-write regardless of history.
+            if force:
+                prev_source = None
+                prev_prose = None
+            else:
+                prev_source = (
+                    f"{prev_sym.signature}:\n{prev_sym.body_text}" if prev_sym is not None else None
+                )
+                prev_prose = prev_section.body if prev_section is not None else None
             jobs.append(
                 _SymbolJob(symbol=sym, previous_source=prev_source, previous_prose=prev_prose)
             )
@@ -446,6 +458,13 @@ def sync_single_file(
             if stale_qname not in current_qnames:
                 triefact.remove_section(stale_qname)
                 sections_removed += 1
+
+        # Re-sort section chunks into source-line order so the triefact mirrors the
+        # source file layout.  Symbols added incrementally across multiple syncs
+        # would otherwise accumulate at the end of the file regardless of where
+        # they appear in source.
+        start_line_by_qname = {s.qualified_name: s.start_line for s in target_symbols}
+        triefact.sort_sections(start_line_by_qname)
 
         front_matter: dict[str, object] = {
             "trie_version": __version__,

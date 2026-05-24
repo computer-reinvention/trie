@@ -2,7 +2,7 @@
 trie_version: 0.1.2
 source: tests/test_init.py
 file_fingerprint: e2a72c51fe1f6c7144b6c823ed90adfd1fec4a364d2a34324f3f9196a5a28861
-last_synced_at: '2026-05-19T10:38:17Z'
+last_synced_at: '2026-05-23T23:25:04Z'
 defines:
 - kind: module
   qualified_name: tests/test_init:__module__
@@ -121,236 +121,201 @@ defines:
 incoming_refs: 0
 outgoing_refs: 39
 ---
-<!-- trie:section symbol=tests/test_init:python_project fingerprint=3c46e839304076e37baaf33fc2ba0f6ef1d265bd95d3c382ef38e43bab36600e body_fp=0b5748d6ee0c9d175a9a3e74674e120ab0847abcd2baacdf694c4843ff5b9d74 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=0c0e05b67525022c46a3ade1f7f009ff794ba8a982b3447ce1f8f4786cffab4a source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
+## `tests/test_init`
+
+Test suite for `trie.init` project initialisation, gitignore management, pre-commit hook installation, and related CLI commands.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_init:python_project fingerprint=3c46e839304076e37baaf33fc2ba0f6ef1d265bd95d3c382ef38e43bab36600e body_fp=d4e2862bc5c2216ec3a2ffc4c782480937013509c4811fa85587d15e27907c5f source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `python_project(tmp_path: Path) -> Path`
 
-Pytest fixture that creates a minimal `pyproject.toml` in a temp directory and returns the path.
+Pytest fixture providing a temporary directory with a minimal `pyproject.toml`.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:empty_dir fingerprint=55e26967baf902dc0a8bf6551bb7512f4710c8d3dde4d3799903becb872bb499 body_fp=6d00dc6648976d2b7a181773ca6eccd73403068155c975dd17656f0eedebefea source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:empty_dir fingerprint=55e26967baf902dc0a8bf6551bb7512f4710c8d3dde4d3799903becb872bb499 body_fp=ee9c04c6de06ff71b2643568d39ce79682cba70efedf37ba8b8d1e01ceb86f67 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `empty_dir(tmp_path: Path) -> Path`
 
-Return an empty temporary directory as a pytest fixture.
+Pytest fixture providing a temporary empty directory.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_detect_pyproject fingerprint=4c45a248121bb657bbe48576422a5307631c19c084c34cf9e80982c99e328c01 body_fp=1bd24598a8e290f16f3c5674cf3bf17ff105c984019a59120df4d342f6197797 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_detect_pyproject fingerprint=4c45a248121bb657bbe48576422a5307631c19c084c34cf9e80982c99e328c01 body_fp=4da36578ddce649297e12b877b778b42cb3f603dbaa2772eec449902d7be396d source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_detect_pyproject(python_project: Path)`
 
-Assert `_detect_python_project` returns `["pyproject.toml"]` for a directory containing `pyproject.toml`.
+Assert `_detect_python_project` returns `["pyproject.toml"]` when a `pyproject.toml` exists.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_detect_loose_py_files fingerprint=e90cdfa099c11d1f477d766305d7201bf4a4ae4a439fc5a43f834e3c302f33fd body_fp=f8cd25374df7c1433c4c6a39be46f49dcf64428c144e7c5a195dc7fc9d354ff8 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_detect_loose_py_files fingerprint=e90cdfa099c11d1f477d766305d7201bf4a4ae4a439fc5a43f834e3c302f33fd body_fp=9e674888c5bece4c1618514779b2abe511d52f13df6d30db46f091ce7f55f0da source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_detect_loose_py_files(empty_dir: Path)`
 
-Assert `_detect_python_project` returns `["*.py files"]` when the root directory contains a `.py` file.
+Assert that `_detect_python_project` returns `["*.py files"]` when the directory contains a top-level `.py` file.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_detect_one_level_deep_py_files fingerprint=8e52c90d54d44272aa2d159ebcbe0b63f110f5a0cf04f2ce64c285af0910e156 body_fp=397b39a836f23d6b65eea14a40ccfc5ec37f81d701c655db6bdd14a800c9c468 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_detect_one_level_deep_py_files fingerprint=8e52c90d54d44272aa2d159ebcbe0b63f110f5a0cf04f2ce64c285af0910e156 body_fp=b5e36e3a5c0caaa1c25e3a3fe2592fb877f4d82ee930864c78249f4b4f0b83cf source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_detect_one_level_deep_py_files(empty_dir: Path)`
 
-Verify `_detect_python_project` recognises `*.py` files nested one directory deep.
+Verify `_detect_python_project` detects `*.py` files nested one directory deep.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_detect_returns_empty_for_non_python fingerprint=6d714012a2bcfdf712ad18a26ab684641daeadc4190d82e25a4d928b35712006 body_fp=a95a0485a6e08d48de97435c7389c77120327493047a7fdf2ca55d07319488b8 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_detect_returns_empty_for_non_python fingerprint=6d714012a2bcfdf712ad18a26ab684641daeadc4190d82e25a4d928b35712006 body_fp=a95a0485a6e08d48de97435c7389c77120327493047a7fdf2ca55d07319488b8 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_detect_returns_empty_for_non_python(empty_dir: Path)`
 
 Assert `_detect_python_project` returns an empty list for a directory containing only non-Python files.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_gitignore_creates_when_missing fingerprint=1f4d87462de9b7bdbf611d8698fbc43a86738f978ad30b887af2b4918de50e0d body_fp=c323081dbdb674952eba79e003d3544180fc04a938f180d4ec5181ccc5b265d4 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_gitignore_creates_when_missing fingerprint=1f4d87462de9b7bdbf611d8698fbc43a86738f978ad30b887af2b4918de50e0d body_fp=308d0011ac4c75d7bbd640c47048e4e219aec68d8b62acb821606f09d505631a source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_gitignore_creates_when_missing(empty_dir: Path)`
 
-Assert `_ensure_gitignore_entry` creates a new `.gitignore` containing `GITIGNORE_LINE` when none exists.
+Assert `_ensure_gitignore_entry` creates a new `.gitignore` containing `.trie/\n` when no file exists.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_gitignore_appends_when_missing_line fingerprint=4edfb60332c83003e3f23a8568441be9d3849cda4943852a54e390bcb4d8c58b body_fp=f05f4fbc00a8b6f0a78b5446dfbd93c4e9de4f96d28bf169eb962aa47c3c9ef4 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_gitignore_appends_when_missing_line fingerprint=4edfb60332c83003e3f23a8568441be9d3849cda4943852a54e390bcb4d8c58b body_fp=d7d2d1c9c97efd4c7c68b307516a534efd6890cd1b55303e9bdf1a7868eba7ed source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_gitignore_appends_when_missing_line(empty_dir: Path)`
 
-Assert `_ensure_gitignore_entry` appends the trie line to an existing `.gitignore` that lacks it.
+Verify `_ensure_gitignore_entry` appends `.trie/` to an existing `.gitignore` that lacks it.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_gitignore_no_dup_when_already_present fingerprint=d23d183ba7712f789eb3b07c2286b3c2e05a3bcca0e617da249f0fc190106b2a body_fp=7d74a1173faedd78f63f80c9b46b30e6e97fa84e80a0a8a6a7d3fce65ff588b8 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_gitignore_no_dup_when_already_present fingerprint=d23d183ba7712f789eb3b07c2286b3c2e05a3bcca0e617da249f0fc190106b2a body_fp=bf418e5be0b904173e5ba1777ee74a0ce0ed1c503c5abd5d9157a2a264b0e34f source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_gitignore_no_dup_when_already_present(empty_dir: Path)`
 
-Assert `_ensure_gitignore_entry` returns `False` and does not duplicate `.trie/` when the line already exists.
+Assert `_ensure_gitignore_entry` returns `False` and writes no duplicate when the entry already exists.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_gitignore_treats_trailing_slash_as_match fingerprint=4a4f76bafbcc8df0cee594ca8deb071b79390b606e9a0905f9a0b675a6f6d04e body_fp=4a699988f8f7f56c3145bd3b99d5c049e0cd3caa44509a90d47f1f0dcf6fdbcd source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_gitignore_treats_trailing_slash_as_match fingerprint=4a4f76bafbcc8df0cee594ca8deb071b79390b606e9a0905f9a0b675a6f6d04e body_fp=6f8d45a46595692777d4e9b3347257ad6bff15d1ca00b90bebc1b7bfc68bb2c4 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_gitignore_treats_trailing_slash_as_match(empty_dir: Path)`
 
-Verify that `.trie` without a trailing slash is treated as already matching, preventing a duplicate entry.
+Verify `_ensure_gitignore_entry` treats `.trie` (no trailing slash) as an existing match for `.trie/`.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_gitignore_handles_no_trailing_newline fingerprint=a48d6e36ac66a29e6f7efd70a5ab6c8e0c3b9d55dfc47cc523e3309e2450d809 body_fp=8e7f4413c72bc5688e1b336c1cc410f86e2a42bf315957a3d47b685e9f161035 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_gitignore_handles_no_trailing_newline fingerprint=a48d6e36ac66a29e6f7efd70a5ab6c8e0c3b9d55dfc47cc523e3309e2450d809 body_fp=3c543cec0c4d96f43819a2a963686d819c3b1729641dc6561bfd885250f6b3bb source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_gitignore_handles_no_trailing_newline(empty_dir: Path)`
 
-Verify `_ensure_gitignore_entry` correctly appends the trie entry when the existing `.gitignore` lacks a trailing newline.
+Verify `_ensure_gitignore_entry` correctly appends to a `.gitignore` file that lacks a trailing newline.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_init_happy_path fingerprint=b86a107b08f2025c14debb7d7fcc47cd753ee00c4e932ef900f9e4658da5f5ea body_fp=cb63d77fa2aab75da8fc618b05db0f7c587aab4919877f6960910e96a18ae67e source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_init_happy_path fingerprint=b86a107b08f2025c14debb7d7fcc47cd753ee00c4e932ef900f9e4658da5f5ea body_fp=658aa80a172800249cfdcfd645089160e539c7ef8af7843c5d4f2bf14eb05aa6 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_init_happy_path(python_project: Path)`
 
-Verify `init_project` writes config, creates `.gitignore`, and reports detected markers on a valid Python project.
+Verify `init_project` writes `trie.toml`, updates `.gitignore`, and reports correct detection markers on a valid Python project.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_init_errors_on_non_python_without_force fingerprint=175132ec9ad82aad871956f864eec5c66355d6bfcebbc0592e4b02b5f5d7f764 body_fp=71533317b0f24808e7c029083c6dac76ad5664556d37a98500d255bdb4da9f12 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_init_errors_on_non_python_without_force fingerprint=175132ec9ad82aad871956f864eec5c66355d6bfcebbc0592e4b02b5f5d7f764 body_fp=caef84ddf91442641efda82d4daf6710b588de6ebac80e4c471f99ca4f987e1f source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_init_errors_on_non_python_without_force(empty_dir: Path)`
 
-Assert `init_project` raises `InitError` when the directory contains no Python files and `force` is not set.
+Assert `init_project` raises `InitError` when the directory contains no Python markers and `force` is not set.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_init_force_overrides_detection fingerprint=0e7743bfb02091b186cbf1edf0fc412e9e29c88784df204666aae28d8c8bb074 body_fp=83b25ebfc8b171cda0de4e2be99971fb3e76be98f9a49804f9e0a8ee6917338f source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_init_force_overrides_detection fingerprint=0e7743bfb02091b186cbf1edf0fc412e9e29c88784df204666aae28d8c8bb074 body_fp=83b25ebfc8b171cda0de4e2be99971fb3e76be98f9a49804f9e0a8ee6917338f source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_init_force_overrides_detection(empty_dir: Path)`
 
 Verify that `init_project` with `force=True` succeeds in a non-Python directory.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_init_refuses_overwrite fingerprint=4db7660d8bf07488f7c772980015a065889b8921f1a8506c75e14a2e81f53e5e body_fp=d8f962b7d7df3b9790656a98a9bbab6f857f74a9d982dea84313165d39f824bf source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_init_refuses_overwrite fingerprint=4db7660d8bf07488f7c772980015a065889b8921f1a8506c75e14a2e81f53e5e body_fp=62d4cb6a8b625db6e4bdc72bb40a920f2ca9a8c3e92ffe1fc79c22a40c8a2875 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_init_refuses_overwrite(python_project: Path)`
 
-Assert that `init_project` raises `InitError` matching "already exists" when called twice on the same directory without `force`.
+Assert `init_project` raises `InitError` when `trie.toml` already exists.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_init_force_overwrites fingerprint=866270164c88e6e1aef038e336204617c2de1b1a8802e7cf03b6cf441bf3154b body_fp=29cf7fc58acddbffc9d3a1efbde1b4b82866413667bf8303f47ce80c88276e0f source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_init_force_overwrites fingerprint=866270164c88e6e1aef038e336204617c2de1b1a8802e7cf03b6cf441bf3154b body_fp=29cf7fc58acddbffc9d3a1efbde1b4b82866413667bf8303f47ce80c88276e0f source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_init_force_overwrites(python_project: Path)`
 
 Verify that `init_project` with `force=True` overwrites a tampered `trie.toml` with valid content.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_cli_init_runs fingerprint=ab2e32568377a6f65e5c360ea9ccde1d62a1277e3573a0fa790303b8041b7693 body_fp=94131f33858974724a32bef9d50a4603acd46268d2462e24518cd47f3ebcbab9 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_cli_init_runs fingerprint=ab2e32568377a6f65e5c360ea9ccde1d62a1277e3573a0fa790303b8041b7693 body_fp=ab57f3367afee873e80e9060258e3071bc4723371e1b139077088cd282fb3b69 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_cli_init_runs(python_project: Path)`
 
-Verify the `init` CLI command succeeds and writes `trie.toml` for a valid Python project.
+Verify the `init` CLI command exits 0, prints "wrote", and creates `trie.toml` in a Python project directory.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_cli_init_errors_on_existing fingerprint=fa25600301629b323b3d18996e88cc8d48dabf1eb750a8da0d4483f05140b0e0 body_fp=27eb0c56569a844be09451f2a8185e68877c0058ed51e54956292fc2e7afcf4f source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_cli_init_errors_on_existing fingerprint=fa25600301629b323b3d18996e88cc8d48dabf1eb750a8da0d4483f05140b0e0 body_fp=f629a4fbd7b8b6293fedc9efbe95e608e294e49fda8fcee9253140f8ab8fd0fb source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_cli_init_errors_on_existing(python_project: Path)`
 
-Assert the CLI exits with code 1 and reports "already exists" when `trie.toml` is already present.
+Assert the `init` CLI exits with code 1 and prints "already exists" when `trie.toml` is already present.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_cli_init_force_succeeds fingerprint=9b36865c88174666eda6c668b5ba26711e69b69ebb8305200bae925c8c8d6fa5 body_fp=e7eb4d0ebca4190d4559e5b6ee6d57c580c59752a42527c98585a441d020fa76 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_cli_init_force_succeeds fingerprint=9b36865c88174666eda6c668b5ba26711e69b69ebb8305200bae925c8c8d6fa5 body_fp=eb2e7d05f8987ca1c6b12a08ba1275851f68b1223d58ec4f5c01868cb8ca8ae3 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_cli_init_force_succeeds(python_project: Path)`
 
-Verify the CLI `init --force` flag exits successfully when `trie.toml` already exists.
+Verify that `trie init --force` exits successfully when `trie.toml` already exists.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_init_runs_scan_by_default fingerprint=24955c7d7458436caac101a5e0c66a9444c6863571676384b0315562ff202e97 body_fp=bfbd3f68c2c3b3b0fe8df4831d74dcce351903ef6c836b065db2edf971f7aa52 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_init_runs_scan_by_default fingerprint=24955c7d7458436caac101a5e0c66a9444c6863571676384b0315562ff202e97 body_fp=3d8b84f6c92378b470b44bf45801ef1a64cfa793803d27f06656a644ddaba459 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_init_runs_scan_by_default(python_project: Path)`
 
-Verify that `init_project` runs a scan by default, populating scan stats and creating `graph.db`.
+Assert that `init_project` scans Python files and writes `graph.db` by default.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_init_no_scan_skips_graph_db fingerprint=8a43923d811342cd52c6745b26f45fe229f5ef19c7f24d1f2de59b0c7fdfc80d body_fp=1452bb05688457c2ea505c7aa059820e39fb857ae95481bf22ec46d1a1b9473f source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_init_no_scan_skips_graph_db fingerprint=8a43923d811342cd52c6745b26f45fe229f5ef19c7f24d1f2de59b0c7fdfc80d body_fp=1fb039d4c07649aafb279879a25679a49725a406fb3fe9b2d9029e4ccc9b8ba3 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_init_no_scan_skips_graph_db(python_project: Path)`
 
-Assert that `init_project` with `run_scan=False` skips scanning and leaves no `graph.db` file.
+Verify that `init_project` with `run_scan=False` skips the scan and leaves `graph.db` uncreated.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_install_hook_writes_new_pre_commit_when_git_repo fingerprint=b18c0c04fcf836bcab6ffd1e5ab09560a6380646800a7832ec95a5287ec39fdf body_fp=c52a73ff85e4e626f9d1964b8499a7696a1db18bf45f160710d849779571c07c source_ref=ab16924db54b3f9d76dc63bc9d79de874868af04 -->
+<!-- trie:section symbol=tests/test_init:test_install_hook_writes_new_pre_commit_when_git_repo fingerprint=b18c0c04fcf836bcab6ffd1e5ab09560a6380646800a7832ec95a5287ec39fdf body_fp=be2808d6bc74d05ff8cc8ccdd807536a102e118b126c749766652544a7c92191 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_install_hook_writes_new_pre_commit_when_git_repo(python_project: Path)`
 
-Verify `install_pre_commit_hook` creates an executable pre-commit hook containing `lock-check` before `verify`, with marker, in a new `.git` repo.
-<!-- trie:end -->
+Assert `install_pre_commit_hook` creates an executable `pre-commit` hook containing both trie commands in correct order.
 
-<!-- trie:section symbol=tests/test_init:test_install_hook_appends_to_existing_pre_commit fingerprint=ab1aa18038215b7dde8e92f583a36876384f058fd046a737eb33efc13757f132 body_fp=b34abf9620c4097c1a161d2fdbb21f1e54998ddb5f6be813f804a76faf7aa43f source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+- `lock-check` must appear before `verify` in the written hook file.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_init:test_install_hook_appends_to_existing_pre_commit fingerprint=ab1aa18038215b7dde8e92f583a36876384f058fd046a737eb33efc13757f132 body_fp=fc62404217e7017116f4bd56529d224442d5f11ef23d1b6870a626f130080bbb source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_install_hook_appends_to_existing_pre_commit(python_project: Path)`
 
-Verify that `install_pre_commit_hook` appends trie's hook marker to an existing pre-commit file without removing prior content.
+Verify that `install_pre_commit_hook` appends trie's hook content to an existing `pre-commit` file without removing prior content.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_install_hook_idempotent fingerprint=932f9f174cf0d9107b44558c658efcda9a1f2f0d3d2957e5cac9a264d035a6ed body_fp=60ad3db1356c866bf787d10bec586f9b7798b73746e3aeac864215d0015f2eb6 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_install_hook_idempotent fingerprint=932f9f174cf0d9107b44558c658efcda9a1f2f0d3d2957e5cac9a264d035a6ed body_fp=62fc2c55cafcbe34ec28dc5fe98a99ca39165ac02f9fc430551a5a277cd11b6a source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_install_hook_idempotent(python_project: Path)`
 
-Verify that calling `install_pre_commit_hook` twice returns `installed=False` on the second call without error.
+Verify that calling `install_pre_commit_hook` twice returns `installed=False` on the second call.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_install_hook_skips_when_pre_commit_framework_present fingerprint=8d3cba0514be0b0dcc8b782d996547f4ec7455d48a6444a185182945288ef03f body_fp=9cbea3cce58fd4a1ace2e9a7c09b6ef81c8ad85befb98f782130f312f3c70650 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_install_hook_skips_when_pre_commit_framework_present fingerprint=8d3cba0514be0b0dcc8b782d996547f4ec7455d48a6444a185182945288ef03f body_fp=796889187454d58ad1774709975bf55dd015ee14ad5bc2d1501b7031bb1ec94e source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_install_hook_skips_when_pre_commit_framework_present(python_project: Path)`
 
-Assert `install_pre_commit_hook` skips installation when `.pre-commit-config.yaml` exists, returning `(False, "framework", None)`.
+Assert that `install_pre_commit_hook` skips installation and returns `strategy="framework"` when `.pre-commit-config.yaml` exists.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_install_hook_skips_when_not_a_git_repo fingerprint=e1ec9ca6657e1a57abc01cfc0df3ecf1b8a7372169be2bb262b0e43ecb25796b body_fp=08cb4fffeec1faea1bd60772f8701044c071a5150119fbf3c15a8d5ff2934bb6 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_install_hook_skips_when_not_a_git_repo fingerprint=e1ec9ca6657e1a57abc01cfc0df3ecf1b8a7372169be2bb262b0e43ecb25796b body_fp=340f21fd5fbbc9fa65e9af394c201e65ad9382e36b83a9d19ec595c017678fb7 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_install_hook_skips_when_not_a_git_repo(python_project: Path)`
 
-Assert that `install_pre_commit_hook` returns `(False, "none", None)` when no `.git` directory exists.
+Assert `install_pre_commit_hook` returns `(False, "none", None)` when no `.git` directory exists.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_init_project_install_hooks_in_git_repo fingerprint=5716a2dfe4f721afce56185d6a4fcb00e454fd33a736f545854f7e6dd2024baa body_fp=ae377eca1d317b89d0284f27aaa6f02ac021913c0426227b3a72c21ff47e3381 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_init_project_install_hooks_in_git_repo fingerprint=5716a2dfe4f721afce56185d6a4fcb00e454fd33a736f545854f7e6dd2024baa body_fp=f479c2a6eea4ea30f12dbe5e07bfac8893c670afe2265f848b64df06db3e02d9 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_init_project_install_hooks_in_git_repo(python_project: Path)`
 
-Verify that `init_project` with `install_hooks=True` installs a pre-commit git hook in a git repo.
+Assert that `init_project` with `install_hooks=True` installs a git pre-commit hook in a valid git repository.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_init_project_default_does_not_install_hooks fingerprint=08c6aa12b1373f0efa90b2986a651f58d0f606eaa21bd74e09c181faaf89465c body_fp=671b973ad7783a6dbaef4371f8a019a6d8e50dab0d6cd89c3402297cb727ce09 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_init_project_default_does_not_install_hooks fingerprint=08c6aa12b1373f0efa90b2986a651f58d0f606eaa21bd74e09c181faaf89465c body_fp=fa6ae53b84294b8a81f7745d4c6f18f2406d15108dd236fbe13f2db870a6cf18 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_init_project_default_does_not_install_hooks(python_project: Path)`
 
-Assert that `init_project` without `install_hooks=True` leaves hooks uninstalled and sets strategy to `"skipped"`.
+Assert that `init_project` skips hook installation when `install_hooks` is not passed.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_cli_init_install_hooks_flag_in_git_repo fingerprint=39007456c6905639e7e061e74c3a64caa550090cb28f73e42319da4cadc04756 body_fp=58da47deda7c1c84186b44f215587e5e8bfba248e7430d37d8cdc272a3550b60 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_cli_init_install_hooks_flag_in_git_repo fingerprint=39007456c6905639e7e061e74c3a64caa550090cb28f73e42319da4cadc04756 body_fp=8b0432770c26984f4e6988584f2f6b300febcf676f3f0ea688c89b5741168f14 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_cli_init_install_hooks_flag_in_git_repo(python_project: Path)`
 
-Verify that `trie init --install-hooks` writes a pre-commit hook file and reports success in a git repo.
+Verify that `trie init --install-hooks` writes a `pre-commit` hook and prints confirmation in a git repo.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_cli_init_no_install_hooks_flag_skips fingerprint=3bcfccd46e0dbd0a09ec4459c018efd346d2d22b19bafbab699ef7f53576b401 body_fp=777493fafa6145d1fb108a6b4e79e930bbe55f2f7f9bfd3fb6e43aa681d3ef35 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_cli_init_no_install_hooks_flag_skips fingerprint=3bcfccd46e0dbd0a09ec4459c018efd346d2d22b19bafbab699ef7f53576b401 body_fp=6488b08b54c09aaf45cae37720e9ad369673044dd837c8a1e28839175a6ae8c3 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_cli_init_no_install_hooks_flag_skips(python_project: Path)`
 
-Assert that `--no-install-hooks` skips pre-commit hook installation, leaving no hook file on disk.
+Assert that `--no-install-hooks` causes the CLI `init` command to skip writing the pre-commit hook file.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_cli_init_framework_path_prints_snippet fingerprint=e3019388f23b97c17694c0277d5da5a0966c051b358a4d2556b544878b189455 body_fp=633a79a8de3207aff81e3f9f36fe0f2928d233d013376e5beff475492b26a684 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_cli_init_framework_path_prints_snippet fingerprint=e3019388f23b97c17694c0277d5da5a0966c051b358a4d2556b544878b189455 body_fp=bdc884c818a02e208b81ad9aea5cd745daf916ded1dba592840008ac7c6e7bc3 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_cli_init_framework_path_prints_snippet(python_project: Path)`
 
-Assert the CLI prints a `trie-verify` snippet and `.pre-commit-config.yaml` reference when the pre-commit framework is detected.
+Assert that `trie init --install-hooks` prints a `.pre-commit-config.yaml` snippet when a pre-commit framework config is detected.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_cli_init_non_interactive_skips_prompt fingerprint=1a209efb2677a41cc6651c35e4407517de6d2cc3b87c511bfb0ea3b7b999385f body_fp=82cef1fef96a0adf6f22e4edafd78a9e7632eb3f23f64e79de1776c79eb74e44 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_cli_init_non_interactive_skips_prompt fingerprint=1a209efb2677a41cc6651c35e4407517de6d2cc3b87c511bfb0ea3b7b999385f body_fp=95ba1bcfb68cce1932a5c877bedb5e8cd70b77dd41697569b8222b87d07cb211 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_cli_init_non_interactive_skips_prompt(python_project: Path)`
 
-Assert that `trie init` completes without blocking when no `--install-hooks` flag is given in a non-interactive environment.
+Assert that `trie init` exits cleanly without blocking on an interactive prompt in a non-TTY environment.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_cli_init_prints_scan_summary fingerprint=b7d2cd4f6fb563c5b409eb18edff4cfe29ddb0ea702ca49ab2ce7d4da427919b body_fp=86d822a960688d9681f8f97b2ef249061bf44a02fd229f7d2cb80791997f5da2 source_ref=317972724bb6a7134623c85cb88c1b5e6573c462 -->
+<!-- trie:section symbol=tests/test_init:test_cli_init_prints_scan_summary fingerprint=b7d2cd4f6fb563c5b409eb18edff4cfe29ddb0ea702ca49ab2ce7d4da427919b body_fp=2f97935d711d69da364bcfed0529734fb2ea8be6dfdcd292afeeed6aedae7be0 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_cli_init_prints_scan_summary(python_project: Path)`
 
-Assert that `trie init` prints a scan summary containing "scanned" and "symbols" after indexing a Python file.
+Assert the `trie init` CLI output contains scan summary words "scanned" and "symbols".
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_cli_init_prints_setup_instruction_in_next_steps fingerprint=36b504ae41a1d76a4264c78b120d4ab32417d40a29c041fd7b8b98b83f4c4014 body_fp=55c2bd259dd2bf4d77dde1cc6900f69e901f40241a01b387f7ee9d3fb090d755 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
+<!-- trie:section symbol=tests/test_init:test_cli_init_prints_setup_instruction_in_next_steps fingerprint=36b504ae41a1d76a4264c78b120d4ab32417d40a29c041fd7b8b98b83f4c4014 body_fp=757276979af73ffa308f182ad70d47445669559e1673f27eca28c0571fb8cd8c source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_cli_init_prints_setup_instruction_in_next_steps(python_project: Path)`
 
-Assert that `trie init` always prints a "Next steps:" block containing `trie setup`, even in non-TTY environments.
+Assert that `trie init` always prints `trie setup` in the "Next steps:" output block.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_cli_init_does_not_run_setup_in_non_interactive_env fingerprint=932d32e892605ad53ea8a369e542e2db3929656966e8dcba24c5046317966fc0 body_fp=374d40db34bde5bcec5f2280b2cad2eb633dd89e547c0779730d0c7ff45c9bf9 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
+<!-- trie:section symbol=tests/test_init:test_cli_init_does_not_run_setup_in_non_interactive_env fingerprint=932d32e892605ad53ea8a369e542e2db3929656966e8dcba24c5046317966fc0 body_fp=310778f74256b7e45193ee98f0bbb28ccbf71849d7b479b851ec3cd8034adb57 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_cli_init_does_not_run_setup_in_non_interactive_env(python_project: Path)`
 
-Assert that `trie init` in a non-TTY environment never auto-invokes `trie setup` or writes MCP config files.
+Assert that `trie init` in a non-TTY environment never invokes `trie setup` or writes MCP config files.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_cli_init_runs_setup_when_user_accepts_prompt fingerprint=4fc6f3632b51dadbf4b6aa8d4dc094ff81e0779ee67530c414bb6f9da2d60e01 body_fp=e283e3af6af148861dff915f5e693d0a93a6a40aac6fc63c6d9aadf0e7fcdc9b source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
+<!-- trie:section symbol=tests/test_init:test_cli_init_runs_setup_when_user_accepts_prompt fingerprint=4fc6f3632b51dadbf4b6aa8d4dc094ff81e0779ee67530c414bb6f9da2d60e01 body_fp=4399ac2bb7dd5bde9bc6daa47505052a21cd88d3921434e05f44e391693366a2 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_cli_init_runs_setup_when_user_accepts_prompt(python_project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that accepting the interactive setup prompt triggers the `trie setup` banner in CLI output.
+Assert that accepting the interactive setup prompt triggers `trie setup` by verifying the "Running `trie setup`" banner appears in output.
 
-- `monkeypatch`: patches `trie.cli._is_interactive` to return `True`, simulating a TTY.
-- `--no-install-hooks`: prevents the hooks prompt from consuming the `"y\n"` input.
+- `_is_interactive` is patched to `True` to simulate a TTY environment.
+- Uses `--no-install-hooks` so the single `"y\n"` input targets only the setup prompt.
+- Asserts on banner text only; exit code is not checked due to host-dependent tool availability.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:test_cli_init_does_not_run_setup_when_user_declines_prompt fingerprint=2b88a1a18da864f17d833277406db5bf219c9e374d807aafa36d720cb4263986 body_fp=40fb184458e0777ab3bc4fab87092642ea626952f974ec191b7b21c0864485a8 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
+<!-- trie:section symbol=tests/test_init:test_cli_init_does_not_run_setup_when_user_declines_prompt fingerprint=2b88a1a18da864f17d833277406db5bf219c9e374d807aafa36d720cb4263986 body_fp=3d8c8f6317794bc33a854a17c9581a6c1e4f6a08395acf0244a03688654f78a2 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `test_cli_init_does_not_run_setup_when_user_declines_prompt(python_project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that declining the setup prompt suppresses `trie setup` invocation while the instruction still appears in Next steps.
+Assert that declining the setup prompt suppresses `trie setup` invocation while keeping the "Next steps" instruction.
 
-- `input="n\n"`: simulates user declining the interactive setup prompt.
-- `--no-install-hooks`: prevents the pre-commit prompt from consuming the input.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_init:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=938fe13d6ea6ea4ffe599a0dbfe37b3bbc9fc1885db89c152322a82980b1a44d source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
-## `tests/test_init`
-
-Test suite for `trie.init` and related CLI commands covering project detection, gitignore management, config writing, scanning, and pre-commit hook installation.
+- `monkeypatch`: patches `trie.cli._is_interactive` to simulate a TTY session.
 <!-- trie:end -->

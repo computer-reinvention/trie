@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.2
 source: tests/test_bootstrap.py
-file_fingerprint: 09fa3129c21296ad8624d2eb070a9f5722bfe83e469325c6b10879695276f69c
-last_synced_at: '2026-05-19T10:37:24Z'
+file_fingerprint: e5591c507fcc5cb637c3842a9f56816b1abffd56c88bdf226e350a15f229dcdf
+last_synced_at: '2026-05-23T23:48:01Z'
 defines:
 - kind: module
   qualified_name: tests/test_bootstrap:__module__
@@ -73,156 +73,128 @@ defines:
 incoming_refs: 0
 outgoing_refs: 34
 ---
-<!-- trie:section symbol=tests/test_bootstrap:FakeClient fingerprint=ceebf20d768a48a04e09bf88002e0bd6342f4f5d5f4aaa6f137763c496e80a99 body_fp=daf058e1b67a18e9cd6b974b1d0813763e23b80f2f21f3711df3bd2b872a3ef9 source_ref=c5f2a27d17af1fac1345ecf2d272264e44780d76 -->
-## `FakeClient(model_id: str = "anthropic/claude-sonnet-4-6", calls: int = 0)`
+<!-- trie:section symbol=tests/test_bootstrap:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=e630b9cb8e2680065d055b7dca9ade95e635eef0774e5a5c0a7209a7676129e3 source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
+## `tests/test_bootstrap`
 
-Stub LLM client that records call counts and returns fixed token/cost responses for bootstrap tests.
+Integration tests for `build_plan` and `run_bootstrap`, plus CLI-level tests for `trie plan` and `trie sync`.
 
-- `generate`: increments `calls`; alternates between cache-creation and cache-read token counts.
-- `count_tokens`: always returns 100 without incrementing `calls`.
+- `FakeClient`: stub LLM client returning fixed token counts and toggling cache hit/miss on second call.
+- `project`: pytest fixture providing a `tmp_path` with a valid `trie.toml` and three `.py` files of varying size.
 <!-- trie:end -->
+<!-- trie:section symbol=tests/test_bootstrap:FakeClient fingerprint=ceebf20d768a48a04e09bf88002e0bd6342f4f5d5f4aaa6f137763c496e80a99 body_fp=155ff9e876dfa86578f0aa190c4cca5acc5dae333c9fe6dc79ffa4c135e9c8c1 source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
+## `FakeClient`
 
-<!-- trie:section symbol=tests/test_bootstrap:FakeClient.generate fingerprint=0ec0ae0f8e2a0f963b8fce2f3ad02a0c976b2d5a22a7ce046b9d55c8c9687d30 body_fp=31805384e22771545ffe97300d042048cfa0cd56d7b9f2983e6b59491cf8c47b source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
-## `generate(self, _req: GenerationRequest) -> GenerationResponse`
+Test double for an LLM client that tracks `generate` call count and returns a fixed `GenerationResponse`.
 
-Return a synthetic `GenerationResponse`, alternating cache-creation and cache-read tokens on first vs. subsequent calls.
-
-- `calls`: incremented each invocation to toggle cache token fields.
+- `calls`: incremented on each `generate` invocation; used to toggle cache token fields.
+- First `generate` call sets `cache_creation_input_tokens=500`; subsequent calls set `cache_read_input_tokens=500`.
+- `count_tokens`: always returns `100` without network I/O.
 <!-- trie:end -->
+<!-- trie:section symbol=tests/test_bootstrap:FakeClient.generate fingerprint=0ec0ae0f8e2a0f963b8fce2f3ad02a0c976b2d5a22a7ce046b9d55c8c9687d30 body_fp=9d23f38a2354f66b8d6029b0e0c3c7c1659eacf781d07dcf50ecf759e6f8f4ae source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
+## `FakeClient.generate(self, _req: GenerationRequest) -> GenerationResponse`
 
-<!-- trie:section symbol=tests/test_bootstrap:FakeClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=9d067b772e73f67b1bb1b8cb6fc3a256c95035c670c6695fa426a36018030c0b source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
-## `count_tokens(_req: GenerationRequest) -> int`
-
-Return a fixed token count of 100 for any request.
+Increment `FakeClient.calls` and return a fixed `GenerationResponse`, simulating cache-creation on call 1 and cache-read on subsequent calls.
 <!-- trie:end -->
+<!-- trie:section symbol=tests/test_bootstrap:FakeClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=698f7944e4c721c392db1b12412d045778464b705ef0cd93e058707001dc8ab1 source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
+## `FakeClient.count_tokens(self, _req: GenerationRequest) -> int`
 
-<!-- trie:section symbol=tests/test_bootstrap:project fingerprint=d5b12d48473fa51307a94d93e57a02093f21289d05d6fad7419855f2579e4068 body_fp=eec260563cea725971a62cdef59be814a2e803086b23fb9f4a285af78aff36d1 source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+Always return 100 from `FakeClient`, simulating a token-count probe without a real API call.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_bootstrap:project fingerprint=d5b12d48473fa51307a94d93e57a02093f21289d05d6fad7419855f2579e4068 body_fp=e03ccc5bde877a147f3aeb0f9712dedf8b0387921d1eb28431b8aa42b617cf6d source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
 ## `project(tmp_path: Path) -> Path`
 
-Pytest fixture that creates a minimal trie project with `trie.toml` and three Python source files of varying size/symbol count.
-<!-- trie:end -->
+Pytest fixture that creates a minimal trie project with `trie.toml` and three Python files of varying size/symbol count.
 
-<!-- trie:section symbol=tests/test_bootstrap:test_plan_ranks_higher_score_first fingerprint=971668a5894eb518048310526504c351c58b5e22ec45f05a1b7253959aba477f body_fp=a233c134172fc91cf9225e415aff3bb9e649162a36fb4e7562bc51832119dd59 source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+- `small.py`: 1 function, 2 LOC
+- `medium.py`: 3 functions, small bodies
+- `large.py`: 2 functions, one with ~50 statements
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_bootstrap:_scanned_store fingerprint=be2171d309873933c9dd828dece87833bd3c117974cc17e64314491077d352a8 body_fp=24ac4360219361341f573e5789a1c319cf8a147e80e8db894a2301c5b074230e source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
+## `_scanned_store(project: Path) -> Store`
+
+Load config, initialise a `Store`, scan the project into it, and return the open store.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_bootstrap:test_plan_ranks_higher_score_first fingerprint=971668a5894eb518048310526504c351c58b5e22ec45f05a1b7253959aba477f body_fp=c2b0df2346342e77e389418010cb9a99e93f497632767cd6603edc238d226455 source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
 ## `test_plan_ranks_higher_score_first(project: Path)`
 
-Assert that `build_plan` orders files by descending LOC×symbol-count score, with pricing populated.
+Assert that `build_plan` orders items by descending LOC×symbol-count score and sets a positive known cost.
 <!-- trie:end -->
+<!-- trie:section symbol=tests/test_bootstrap:test_plan_excludes_files_with_no_documentable_symbols fingerprint=0d85118720b7198c3af34e2584b30afada2874a67a1cf2f2a427a8a70b83dba3 body_fp=bc6ab0adcc632612da362014aefa5af61c3f57b674fd853571c64523ba7165b6 source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
+## `test_plan_excludes_files_with_no_documentable_symbols(project: Path, tmp_path: Path)`
 
+Assert that `build_plan` omits files with no parser-surfaced symbols while including constants and underscore-prefixed defs.
 
-
-<!-- trie:section symbol=tests/test_bootstrap:test_plan_with_unknown_model_zero_cost fingerprint=9cb25e13e4a98b51e03583f7d0300be59ea8cecf99b02408f98582488b3299c5 body_fp=1ed5391b8839797f01507d031ebead435f8f9cf03ca9918b8389df4220dd805b source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+- `imports_only.py`: excluded — only import statements, parser surfaces nothing.
+- `constants_only.py`: included — module-level `NAME = value` yields a `constant` symbol.
+- `private.py`: included — leading-underscore defs are not filtered.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_bootstrap:test_plan_with_unknown_model_zero_cost fingerprint=9cb25e13e4a98b51e03583f7d0300be59ea8cecf99b02408f98582488b3299c5 body_fp=25bc97cf54b83bd8571a46c955752b1ad21005c0415fb18a9e911d50420ffe8a source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
 ## `test_plan_with_unknown_model_zero_cost(project: Path)`
 
-Assert that `build_plan` with an unrecognised model sets `pricing_known=False` and `total_estimated_cost==0.0`.
+Assert that `build_plan` sets `pricing_known=False` and `total_estimated_cost=0.0` for an unrecognised model ID.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_bootstrap:test_plan_only_files_restricts_worklist fingerprint=1e790399a7417b3db08abac3e4c578a011ce29851fd16e568690708bc1c58f40 body_fp=c5c89408a2c7ba0af89d3ba189d8232da8057e08518a22e93bd264ed5dd8b1eb source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_plan_only_files_restricts_worklist fingerprint=1e790399a7417b3db08abac3e4c578a011ce29851fd16e568690708bc1c58f40 body_fp=37de3246a94296573f5c4a1bbb70cf70058a14f344b2c6dd9838cc834dcc6202 source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
 ## `test_plan_only_files_restricts_worklist(project: Path)`
 
-Verify that `only_files` restricts `build_plan` output to exactly the specified file paths.
+Assert that `build_plan` with `only_files` returns a plan containing exactly the specified files.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_bootstrap:test_plan_only_files_empty_yields_empty_plan fingerprint=5424dcad92c82bf1eda8fb269944d30a867a399394de6d341b41e5faa2d00908 body_fp=c3788d201f03cae17a7a705243122fd0d44b7a68fd368184a3414ed8d33d2b7a source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_plan_only_files_empty_yields_empty_plan fingerprint=5424dcad92c82bf1eda8fb269944d30a867a399394de6d341b41e5faa2d00908 body_fp=c3788d201f03cae17a7a705243122fd0d44b7a68fd368184a3414ed8d33d2b7a source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
 ## `test_plan_only_files_empty_yields_empty_plan(project: Path)`
 
 Assert that passing an empty `only_files` set to `build_plan` produces a plan with no items and zero estimated cost.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_bootstrap:test_run_bootstrap_respects_limit fingerprint=7de8861ef77af322d07b4952145ffdf148a821f4ec4706ce27e6e011ffa57a76 body_fp=aa38696556b523bdef5608923cc8b87d962e3d129af63134c27e0916e3939041 source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_run_bootstrap_respects_limit fingerprint=7de8861ef77af322d07b4952145ffdf148a821f4ec4706ce27e6e011ffa57a76 body_fp=28be67ee5fa9055e04937e6c57a09f58344248774ff1357dde6502804aa14156 source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
 ## `test_run_bootstrap_respects_limit(project: Path)`
 
-Verify that `run_bootstrap` stops after processing exactly `limit` files and records the remainder as budget-skipped.
+Assert that `run_bootstrap` stops after `limit=2` files and reports the remainder as skipped.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_bootstrap:test_run_bootstrap_respects_budget fingerprint=212829569c689d43cbb5a59833c28923a364e80704d7be3c66f6924e5ef0435f body_fp=811136ef71df2a18fa61e7ba8e64fabc81280f8f9fe58ac65298b1b56dfd9c12 source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_run_bootstrap_respects_budget fingerprint=212829569c689d43cbb5a59833c28923a364e80704d7be3c66f6924e5ef0435f body_fp=06f9fa00f834c9e96c12a27988e265d807cf51c975969c2b5f9b30a2495f9bb9 source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
 ## `test_run_bootstrap_respects_budget(project: Path)`
 
-Assert that a tiny `budget_usd` caps generation to fewer than all files but at least one.
-
-- `budget_usd=0.0001`: intentionally small to trigger mid-run budget exhaustion.
+Assert that `run_bootstrap` stops processing files once a tiny `budget_usd` is exhausted, syncing fewer than the full plan.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_bootstrap:test_run_bootstrap_unbounded_processes_all fingerprint=872b56bed5737b6a766200f7e71b75e8437693aae7e0a70cf5aa69d9ff1cd742 body_fp=0a4ea326aae1ee08b7a234bbf0a497e46c21bf69dc95b396b85134240b71981a source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_run_bootstrap_unbounded_processes_all fingerprint=872b56bed5737b6a766200f7e71b75e8437693aae7e0a70cf5aa69d9ff1cd742 body_fp=ea2ff41e55331d4b5c38741c3f19ebe3d88f07c2b871a4a2d61ca48cfb8871c5 source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
 ## `test_run_bootstrap_unbounded_processes_all(project: Path)`
 
-Verify that `run_bootstrap` with no budget or limit processes every file in the plan.
+Assert that `run_bootstrap` with no budget and no limit syncs every file in the plan.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_bootstrap:test_cli_plan_makes_no_message_calls fingerprint=d225090e9f287c90f59210995c95d3e449567bdc5d4ccc428a9130c0960f7330 body_fp=8572c3397f8a53cab709e707c22ee072b9c642c11dad83fff02b8acf841a733d source_ref=c5f2a27d17af1fac1345ecf2d272264e44780d76 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_cli_plan_makes_no_message_calls fingerprint=d225090e9f287c90f59210995c95d3e449567bdc5d4ccc428a9130c0960f7330 body_fp=b4ce05115b450a61ff0f33cc09557cd0a28b4d7b5240068d3689c2b0d56210c4 source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
 ## `test_cli_plan_makes_no_message_calls(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `trie plan` calls `count_tokens` but never calls `generate` on the injected client.
-
-- `project`: temp project fixture with `trie.toml` and Python source files.
-- Verifies exit code 0 and `"plan for"` in output.
+Assert that `trie plan` exits successfully and never invokes `generate` on the client.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_bootstrap:test_cli_plan_outside_project_errors fingerprint=68f003153534954db66fa1f239582223794f2233a90e3e18933617e113148631 body_fp=1109d277b52754dc3a974a4ae9115d49712d3d22e876d133bfbe97dee79ec79d source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_cli_plan_outside_project_errors fingerprint=68f003153534954db66fa1f239582223794f2233a90e3e18933617e113148631 body_fp=7fef420ff4f52812715e828e528b0d42e76b0e3b7ca8618dc6f6cbed07b33b57 source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
 ## `test_cli_plan_outside_project_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `trie plan` exits with code 1 and never constructs a client when no `trie.toml` is found.
+Assert `trie plan` exits with code 1 and never constructs a client when no `trie.toml` is found.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_bootstrap:test_cli_first_run_sync_requires_budget_or_limit_non_interactive fingerprint=c176cbf44d1f8ffa33d4a17b559ffeffe7015a4b129cc030212027dd9c181d30 body_fp=83e08da9ac915f519d9efb396dae8dfecde560b7aa62146db6abb1e975fac75f source_ref=c5f2a27d17af1fac1345ecf2d272264e44780d76 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_cli_first_run_sync_requires_budget_or_limit_non_interactive fingerprint=c176cbf44d1f8ffa33d4a17b559ffeffe7015a4b129cc030212027dd9c181d30 body_fp=4d162fe3445f94d27ac3825a71addb31ca087c23528f6171df2e82d237e3a095 source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
 ## `test_cli_first_run_sync_requires_budget_or_limit_non_interactive(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `trie sync` on a fresh project exits with code 1 when no `--budget` or `--limit` flag is provided.
+Assert that `trie sync` on a fresh project without `--budget` or `--limit` exits with code 1 and prompts for a cap.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_bootstrap:test_cli_first_run_sync_with_limit_succeeds fingerprint=9f99e521eba3b2b27410a062f94a8584e852b31e35a7a608b0e12db4102d0fba body_fp=536339d88ffbbe09c350a1a4174629982acac38b3b2ec383a4ec554662b81610 source_ref=c5f2a27d17af1fac1345ecf2d272264e44780d76 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_cli_first_run_sync_with_limit_succeeds fingerprint=9f99e521eba3b2b27410a062f94a8584e852b31e35a7a608b0e12db4102d0fba body_fp=f4aace3891a8cfc9f2c9f5d1848f48747566efd5779429ef6946d4e3d83ece05 source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
 ## `test_cli_first_run_sync_with_limit_succeeds(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `trie sync --limit 1` succeeds on a fresh project with no existing triefacts.
+Assert that `trie sync --limit 1` exits successfully on a first-run project with no existing triefacts.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_bootstrap:test_cli_sync_all_forces_full_pass fingerprint=d56ba3ef3b5d05f041df15ead42c9f087f79e118cdb43561fc1affec3453fe14 body_fp=29d1e4520c1a4be1ac857fec1fb4c04acf5d15a3c97dd03b7a5027a46d2c9258 source_ref=c5f2a27d17af1fac1345ecf2d272264e44780d76 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_cli_sync_all_forces_full_pass fingerprint=d56ba3ef3b5d05f041df15ead42c9f087f79e118cdb43561fc1affec3453fe14 body_fp=4f8269cad4f050499e615388d607bfd0dd3f48485efa32349b00c78de27d7f22 source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
 ## `test_cli_sync_all_forces_full_pass(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `trie sync --all` runs the bootstrap path even when triefacts already exist.
+Assert that `trie sync --all` triggers the full bootstrap path even when triefacts already exist.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_bootstrap:test_cli_sync_rejects_file_and_all_together fingerprint=01e55c9bfae3ee3f4a73b7419afbdbbac4c84a28c5e67be6c163ed78e93b93ec body_fp=76b2fb6638ea47134c4eeb58b47ca252a91676a6f7a9e559d8ce2804a8639643 source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_cli_sync_rejects_file_and_all_together fingerprint=01e55c9bfae3ee3f4a73b7419afbdbbac4c84a28c5e67be6c163ed78e93b93ec body_fp=49e51cb23ebd5ca9f608527d79f608883957b2635fb14da74cd9e09532e97e5a source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
 ## `test_cli_sync_rejects_file_and_all_together(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that passing `--file` and `--all` together exits with code 1 and reports mutual exclusivity.
+Assert that `trie sync --file <path> --all` exits with code 1 and reports mutual exclusivity.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_bootstrap:test_cli_sync_with_no_config_errors fingerprint=cd5d41cc3092e94d8b52e820f690b72a42c756589e877899f50dba42c729deff body_fp=ad77fa85fe213c5107488cf8422118050e8bcaed5ebcc0ec31f37771475d9da5 source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_cli_sync_with_no_config_errors fingerprint=cd5d41cc3092e94d8b52e820f690b72a42c756589e877899f50dba42c729deff body_fp=fc8bce5d88b93b46c9889a3130e4cdf84995ecc18ab82bf634bca7a5be4e9483 source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
 ## `test_cli_sync_with_no_config_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `trie sync` in a directory without `trie.toml` exits with code 1 and mentions `trie.toml`.
+Assert that `trie sync` in a directory without `trie.toml` exits with code 1 and mentions `trie.toml` in output.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_bootstrap:test_run_bootstrap_invokes_progress_callback fingerprint=6b44eba3f1833129fb1d37020e9e32268580ac28ad495377d1f8003868565e45 body_fp=c623bb5461c6491dd274ac73715a9f8fd352ff98a0d87a382814a33ec8567995 source_ref=295b134de94b596d598954dbd34017d13b93f383 -->
+<!-- trie:section symbol=tests/test_bootstrap:test_run_bootstrap_invokes_progress_callback fingerprint=6b44eba3f1833129fb1d37020e9e32268580ac28ad495377d1f8003868565e45 body_fp=b3dcb4a7a30cfbee1f7b6c6dae95944c985823e6286aa35dea2cc7d12cdebd4e source_ref=04a669302ff19f1e43c1d31e0f7c26035a7a0f63 -->
 ## `test_run_bootstrap_invokes_progress_callback(project: Path)`
 
-Verify that `run_bootstrap` fires `on_start`/`on_done` for each processed file and `on_skip` with reason `"limit reached"` for files cut by `limit`.
-
-- `starts`: asserted to equal `limit` (2) entries.
-- `skips`: asserted to equal `len(plan.items) - 2`, each with reason `"limit reached"`.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_bootstrap:_scanned_store fingerprint=be2171d309873933c9dd828dece87833bd3c117974cc17e64314491077d352a8 body_fp=b866baf8b0f0da0e2c1ed73fe582834631116b216fac7d64fa7001b5a456b868 source_ref=d81050fda19efe01c9150c2635c3b24dff5debd3 -->
-## `_scanned_store(project: Path) -> Store`
-
-Load config from `project`, initialise a graph `Store`, scan the project into it, and return the open store.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_bootstrap:test_plan_excludes_files_with_no_documentable_symbols fingerprint=0d85118720b7198c3af34e2584b30afada2874a67a1cf2f2a427a8a70b83dba3 body_fp=cc63f2edb43f2e312018cb18356f5190ef98e4f38c0ac6d199326eb598498ee6 source_ref=31a1f0a2e81fd7e48576cbcfda087036619073d3 -->
-## `test_plan_excludes_files_with_no_documentable_symbols(project: Path, tmp_path: Path)`
-
-Assert that `build_plan` omits files with no parser-surfaced symbols but includes files with private defs and module-level constants.
-
-- `imports_only.py`: imports only, no constants/defs → excluded.
-- `constants_only.py`: module-level `NAME = value` constants → included.
-- `private.py`: contains `_hidden()` def → included.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_bootstrap:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=933299de5dc9aeaf8e5d2168692fe90804af5b80176b35ef217d716e2dfbaa0a source_ref=31a1f0a2e81fd7e48576cbcfda087036619073d3 -->
-## `tests/test_bootstrap`
-
-Test suite for `build_plan` and `run_bootstrap` bootstrap logic and the `trie plan`/`trie sync` CLI commands.
-
-- `FakeClient`: stub LLM client simulating cache-warm/cold token counts
-- `project`: fixture providing a `tmp_path` with `trie.toml` and three Python files
+Verify that `run_bootstrap` calls `on_start`/`on_done` for each processed file and `on_skip` (with reason `"limit reached"`) for each file cut by the limit.
 <!-- trie:end -->

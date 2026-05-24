@@ -229,6 +229,30 @@ class TriefactFile:
                 return
         self._append_section(new)
 
+    def sort_sections(self, start_line_by_qname: dict[str, int]) -> None:
+        """Reorder Section chunks to match source-line order.
+
+        `start_line_by_qname` maps each qualified_name to its `start_line` in the
+        current source. Sections whose qname is absent from the map (e.g. legacy
+        hand-written sections) are placed at the end, preserving their relative order.
+
+        Whitespace-only Prose chunks (the `\\n\\n` separators inserted by
+        `_append_section`) are dropped — `render()` recreates them. Non-whitespace
+        Prose (hand-written content between sections) is preserved at the front,
+        before the first section, where it was originally placed by the author.
+        """
+        content_prose: list[Prose] = [
+            c for c in self.chunks if isinstance(c, Prose) and c.text.strip()
+        ]
+        sections = [c for c in self.chunks if isinstance(c, Section)]
+        sections.sort(
+            key=lambda s: (
+                start_line_by_qname.get(s.qualified_name, 10**9),
+                s.qualified_name,
+            )
+        )
+        self.chunks = content_prose + sections  # type: ignore[assignment]
+
     def remove_section(self, qualified_name: str) -> bool:
         for i, c in enumerate(self.chunks):
             if isinstance(c, Section) and c.qualified_name == qualified_name:
@@ -258,10 +282,16 @@ class TriefactFile:
             parts.append("---\n")
             parts.append(yaml_text)
             parts.append("---\n")
+        prev_was_section = False
         for c in self.chunks:
             if isinstance(c, Prose):
                 parts.append(c.text)
+                prev_was_section = False
             else:
+                # Ensure consecutive sections are separated by a blank line so
+                # each sentinel starts on its own line (required by the parser).
+                if prev_was_section:
+                    parts.append("\n")
                 # Always emit body_fp on render. If a parsed legacy section is being
                 # rewritten unchanged, hash the current body so future checks can verify it.
                 body_fp = (
@@ -279,6 +309,7 @@ class TriefactFile:
                 if not c.body.endswith("\n"):
                     parts.append("\n")
                 parts.append(SECTION_CLOSE)
+                prev_was_section = True
         return "".join(parts)
 
 

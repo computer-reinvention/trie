@@ -2,7 +2,7 @@
 trie_version: 0.1.2
 source: trie/git_helpers.py
 file_fingerprint: 0ad427dd3e70edd0d2451be9e7c18fe1d93af86f8c3a2e0b3efba8ba83e39840
-last_synced_at: '2026-05-19T10:40:42Z'
+last_synced_at: '2026-05-23T23:53:48Z'
 description: Quiet, narrowly-scoped git operations for diff-aware regen.
 defines:
 - kind: module
@@ -26,54 +26,50 @@ defines:
 incoming_refs: 17
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=trie/git_helpers:is_git_repo fingerprint=675fb860d9da412270ab09ed63e85801dd9f4b3cdba59b53ef8e5ab821a7cf5f body_fp=5511a78edcda1ca1e60ff08f46e4671529420d6584a5965df5f30d19f43602ea source_ref=dbf6fc45f22045181a4f474e363792eb03ff7011 -->
-## `is_git_repo(path: Path) -> bool`
-
-Return `True` if `path` lies inside a git working tree.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/git_helpers:compute_blob_hash fingerprint=afcadc5bcb6bfdf267b316dd72280d4ca940d06468c430a28dee2d9a0e494747 body_fp=c0a9ef15356a8b6d924c1a5ed90a7df18e90f70206ee6faeb5234d63be9aac27 source_ref=eb5f10acce02fe703d0fb96cc4ef4d1429d7695d -->
-## `compute_blob_hash(file_path: Path, *, max_bytes: int | None = None) -> str | None`
-
-Compute the git blob hash for `file_path`'s working-tree content without writing to `.git/objects`.
-
-- Returns `None` if the file is unreadable, git is unavailable, the file is outside a git repo, or the file exceeds `max_bytes`.
-- `max_bytes=None` (default) imposes no size limit; when set, skips git entirely for oversized files.
-- Hash is 40 chars (SHA-1) or 64 chars (SHA-256); anything else returns `None`.
-- Runs from the file's directory so `autocrlf`/attribute rules match commit-time behaviour.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/git_helpers:retrieve_blob fingerprint=8b3c6cd56c34017360f6f9bf3b730b3b9f63220fc40741ff0c91268a7f80a116 body_fp=ad78d7eed1980fde6489a518eeeb0837a44591037c356cb28e9ab376c6612cd7 source_ref=dbf6fc45f22045181a4f474e363792eb03ff7011 -->
-## `retrieve_blob(repo_root: Path, blob_hash: str) -> str | None`
-
-Fetch and decode a git blob by its content-addressed hash; returns `None` if unreachable or malformed.
-
-- `blob_hash`: must be a 40- or 64-character hex string; anything else returns `None` immediately.
-- Returns decoded UTF-8 text with `replace` error handling for binary content.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/git_helpers:_run_git fingerprint=f24bcb15562c359a607a98f1f189a2041a915a24878e60ce8bb1715db27d4d56 body_fp=4eb87ce9d155d002327837dd6af7e404ba753420c10b58940cd56d8d083eb4ad source_ref=dbf6fc45f22045181a4f474e363792eb03ff7011 -->
-## `_run_git(args: list[str], *, cwd: Path, input_bytes: bytes | None = None) -> bytes | None`
-
-Run `git <args>` from `cwd`, returning stdout bytes on success or `None` on any failure.
-
-- `input_bytes`: piped to stdin if provided.
-- Returns `None` on non-zero exit, timeout, missing binary, or OS error.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/git_helpers:current_head fingerprint=1163f4b6594e57f166e08145c0d383952b0e6eb6a09f729fe3c5ca2d2ee6fb8b body_fp=5be8470cc13660ac119f379ac8b136a40049e33b7b733210932c632c8b49a9af source_ref=a120f6a20e8bfca8afcb22b8c56ed8d56778c96f -->
-## `current_head(repo_root: Path) -> str | None`
-
-Return the SHA of HEAD, or None if the lookup fails for any reason.
-
-- Returns None for empty repos, detached HEADs, or any git error.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/git_helpers:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=6dff4b2348ad98c82151422b031811d85dc24d60e6b8b65c95ed994467b9a08e source_ref=a120f6a20e8bfca8afcb22b8c56ed8d56778c96f -->
-## `git_helpers`
+<!-- trie:section symbol=trie/git_helpers:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=24f948b40a2205a8fbce12ff8f6d00c684d36ff4d83a5ced78cb960130eb6ef1 source_ref=a120f6a20e8bfca8afcb22b8c56ed8d56778c96f -->
+## `trie/git_helpers`
 
 Provide quiet, narrowly-scoped git operations for diff-aware section regeneration.
 
 - Returns `None` on any failure; never raises into the sync pipeline.
-- Uses content-addressed blob hashes, not commit hashes, for stamping source references.
+- Uses content-addressed blob hashes stamped into section sentinels for change detection.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/git_helpers:_run_git fingerprint=f24bcb15562c359a607a98f1f189a2041a915a24878e60ce8bb1715db27d4d56 body_fp=3225a685078bbb18a458a72d45aade8919e83fad333747e691d60dc3abee0fc3 source_ref=a120f6a20e8bfca8afcb22b8c56ed8d56778c96f -->
+## `_run_git(args: list[str], *, cwd: Path, input_bytes: bytes | None = None) -> bytes | None`
+
+Run `git <args>` from `cwd`, returning stdout bytes on success or `None` on any failure.
+
+- `input_bytes`: piped to stdin; pass `None` for commands that take no input.
+- Returns `None` on non-zero exit, timeout (5 s), missing git binary, or `OSError`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/git_helpers:is_git_repo fingerprint=675fb860d9da412270ab09ed63e85801dd9f4b3cdba59b53ef8e5ab821a7cf5f body_fp=814908aa0b2368c1e104f0a85bc608ecfdc4abd11b1fec4c151ca8e8ee2732b3 source_ref=a120f6a20e8bfca8afcb22b8c56ed8d56778c96f -->
+## `is_git_repo(path: Path) -> bool`
+
+Return `True` if `path` is inside a git working tree, `False` otherwise.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/git_helpers:current_head fingerprint=1163f4b6594e57f166e08145c0d383952b0e6eb6a09f729fe3c5ca2d2ee6fb8b body_fp=40ad72513a0e7bacbce2336ea309b1197200ea67a15bf94ce788b2813481e96c source_ref=a120f6a20e8bfca8afcb22b8c56ed8d56778c96f -->
+## `current_head(repo_root: Path) -> str | None`
+
+Return the commit SHA at HEAD for the given repo root, or `None` on any failure.
+
+- Returns `None` for empty repos, unresolvable detached HEAD, or git errors.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/git_helpers:compute_blob_hash fingerprint=afcadc5bcb6bfdf267b316dd72280d4ca940d06468c430a28dee2d9a0e494747 body_fp=0ed1c9f0bc5c43ecacad4f96f6d9841d3e0ed6a229af6ce65a41951d1c7821a8 source_ref=a120f6a20e8bfca8afcb22b8c56ed8d56778c96f -->
+## `compute_blob_hash(file_path: Path, *, max_bytes: int | None = None) -> str | None`
+
+Compute the git blob hash for a working-tree file without writing it to `.git/objects`.
+
+- `max_bytes`: files exceeding this size return `None` without invoking git.
+- Returns `None` if the file is unreadable, git is unavailable, or the path is outside a git repo.
+- Requires a git repo: hashes computed outside one are unretrievable and silently omitted.
+- Returns a 40-char (SHA-1) or 64-char (SHA-256) hex string, or `None` for unexpected output.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/git_helpers:retrieve_blob fingerprint=8b3c6cd56c34017360f6f9bf3b730b3b9f63220fc40741ff0c91268a7f80a116 body_fp=5f3bd2d8800cd873c72f4a362618db28fe2a8859369ce44b8e7f3635026dd85c source_ref=a120f6a20e8bfca8afcb22b8c56ed8d56778c96f -->
+## `retrieve_blob(repo_root: Path, blob_hash: str) -> str | None`
+
+Fetch and decode a git blob by its SHA hash, returning `None` if unreachable or malformed.
+
+- `blob_hash`: must be 40 (SHA-1) or 64 (SHA-256) hex chars; anything else returns `None`.
+- Returns `None` if the blob was never committed, the hash is invalid, or git fails.
+- Binary content is decoded UTF-8 with `replace`; callers must validate if strict round-tripping is needed.
 <!-- trie:end -->

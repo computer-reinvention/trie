@@ -675,3 +675,79 @@ class Store:
         """All qualified names. Used to suggest near-misses on explain/walk not-found."""
         rows = self._conn.execute("SELECT qualified_name FROM symbols").fetchall()
         return [row[0] for row in rows]
+
+    def find_paths(
+        self,
+        from_qname: str,
+        to_qname: str,
+        *,
+        max_depth: int = 6,
+        hub_threshold: int = 20,
+        max_paths: int = 3,
+    ) -> list[list[str]]:
+        """BFS path-finding between two symbols following callee edges (src → dst).
+
+        Returns a list of paths (each path is an ordered list of qnames from `from_qname`
+        to `to_qname`). At most `max_paths` shortest paths are returned; an empty list
+        means no path was found within `max_depth` hops.
+
+        Hub symbols (inbound count > `hub_threshold`) are skipped during expansion — the
+        same guard used by the cascade — to prevent paths that route through utility hubs
+        like a shared config object.
+
+        The search follows *callee* edges (from_qname calls something, that calls something
+        else, …). To find paths in the other direction the caller should swap the arguments.
+        """
+        if from_qname == to_qname:
+            return [[from_qname]]
+
+        inbound_counts: dict[str, int] = {}
+        for row in self._conn.execute(
+            "SELECT s.qualified_name, COUNT(*) FROM edges e "
+            "JOIN symbols s ON s.id = e.dst_symbol_id "
+            "GROUP BY s.qualified_name"
+        ):
+            inbound_counts[row[0]] = int(row[1])
+
+        # BFS; frontier carries (current_qname, path_so_far)
+        from collections import deque
+
+        found: list[list[str]] = []
+        # visited tracks qnames we have already *started* a path through, but we allow
+        # the same node on different paths (different routes). We use a per-path visited
+        # set instead to allow the top-N distinct paths.
+        initial: deque[tuple[str, list[str]]] = deque([(from_qname, [from_qname])])
+
+        # Track globally-seen (qname, depth) to avoid re-expanding the same node at the
+        # same or greater depth — avoids exponential blowup while still finding multiple paths.
+        globally_seen: dict[str, int] = {from_qname: 0}
+
+        while initial and len(found) < max_paths:
+            qname, path = initial.popleft()
+            depth = len(path) - 1
+            if depth >= max_depth:
+                continue
+
+            # Skip hub expansion (but allow the start node regardless).
+            if qname != from_qname and inbound_counts.get(qname, 0) > hub_threshold:
+                continue
+
+            callees = self.references_out(qname)
+            for callee in callees:
+                if callee in path:
+                    # Cycle — skip.
+                    continue
+                new_path = [*path, callee]
+                if callee == to_qname:
+                    found.append(new_path)
+                    if len(found) >= max_paths:
+                        break
+                    continue
+                new_depth = len(new_path) - 1
+                prev = globally_seen.get(callee)
+                if prev is not None and prev <= new_depth:
+                    continue
+                globally_seen[callee] = new_depth
+                initial.append((callee, new_path))
+
+        return found

@@ -15,7 +15,7 @@ Format (exactly):
 - Line 1: `## \\`<signature>\\`` — the level-2 heading is the symbol's signature in backticks. No name on a separate line, no extra prose on this line.
 - Then ONE blank line.
 - Then ONE sentence (≤ 25 words) stating what the symbol does. Imperative mood, no hedging, no filler. Example: "Compute the cascade closure for a set of changed files." NOT "This function might be used to..."
-- Optionally append a single bulleted list ONLY when a parameter, return value, or raised exception has semantics that aren't obvious from the type / name. One bullet per item, ≤ 12 words each. Skip the list entirely when the signature speaks for itself.
+- Optionally append a single bulleted list ONLY when a parameter, return value, raised exception, or (for classes/dataclasses) field has semantics that aren't obvious from the type / name. One bullet per item, ≤ 12 words each. Skip the list entirely when the signature speaks for itself.
 - Do NOT include a "Description", "Parameters", "Returns", or "Examples" header. Do NOT include code examples — the source is one click away.
 - Do NOT mention the file name, module name, or surrounding context. The triefact already carries that metadata.
 
@@ -24,6 +24,10 @@ Hard rules:
 - State what is observable in the source. Do not invent types, callers, or behaviour.
 - Use a technical, present-tense voice. No marketing language. No "this function" / "this class" — name the thing if you must, or omit the subject.
 - Trivial accessors, dunder methods, and one-line forwards: a single sentence is sufficient. No bullets. No expanded prose. Brevity over completeness.
+- For methods and properties: always name the owning class in the prose (e.g. "Close the `Store` connection." not "Close the connection."). This is the only place the class relationship is visible.
+- For `@property` methods: describe them as attributes, not as callable functions. Do not say "Return X" — say what X is.
+- For `@classmethod` / `@staticmethod`: make clear they are called on the class, not an instance.
+- For class symbols: do NOT add any `##` sub-headings for methods inside the class body. Each method has its own separate section — do not duplicate it. You may reference method names in bullet points but never as Markdown headings.
 """
 
 # Diff-aware regeneration rubric. Prepended to the user message when we have both
@@ -82,11 +86,44 @@ def build_cached_context(ctx: FileGenerationContext) -> str:
     )
 
 
+def _symbol_context_clause(symbol: Symbol) -> str:
+    """Return a human-readable clause describing the symbol's kind and class membership.
+
+    Examples:
+      "a function"
+      "a method of class `Store`"
+      "a @property of class `McpCallStats`"
+      "a @classmethod of class `Greeter`"
+    """
+    if symbol.kind == "method" and symbol.parent_class:
+        # Surface the most semantically significant decorator (property, classmethod,
+        # staticmethod, abstractmethod) so the LLM knows how the method is called.
+        significant = {
+            "@property",
+            "@classmethod",
+            "@staticmethod",
+            "@abstractmethod",
+        }
+        label = next(
+            (d for d in symbol.decorators if d.split("(")[0] in significant),
+            None,
+        )
+        if label:
+            return f"a {label} of class `{symbol.parent_class}`"
+        return f"a method of class `{symbol.parent_class}`"
+    if symbol.kind == "class" and symbol.decorators:
+        dec_str = " ".join(symbol.decorators)
+        return f"a class (decorated with {dec_str})"
+    return f"a {symbol.kind}"
+
+
 def _build_request(symbol: Symbol) -> str:
+    context = _symbol_context_clause(symbol)
+    source_block = _symbol_source(symbol)
     return (
         f"Write the Markdown body for the symbol `{symbol.qualified_name}` "
-        f"(a {symbol.kind} named `{symbol.name}` defined at lines "
-        f"{symbol.start_line}-{symbol.end_line}).\n\n"
+        f"({context}, lines {symbol.start_line}-{symbol.end_line}).\n\n"
+        f"<source>\n{source_block}\n</source>\n\n"
         f"Output the Markdown body only — no front-matter, no sentinels, no surrounding commentary."
     )
 
@@ -110,11 +147,11 @@ def _build_diff_aware_request(
     signature and the body (so the LLM can see signature-level changes like new
     parameters); this function does not synthesise them from the Symbol object.
     """
+    context = _symbol_context_clause(symbol)
     return (
         f"{DIFF_AWARE_RUBRIC}\n"
         f"Symbol: `{symbol.qualified_name}` "
-        f"(a {symbol.kind} named `{symbol.name}` defined at lines "
-        f"{symbol.start_line}-{symbol.end_line} in the current file).\n\n"
+        f"({context}, lines {symbol.start_line}-{symbol.end_line} in the current file).\n\n"
         f"<previous_source>\n{previous_source}\n</previous_source>\n\n"
         f"<previous_prose>\n{previous_prose}\n</previous_prose>\n\n"
         f"<current_source>\n{current_source}\n</current_source>\n\n"
@@ -125,14 +162,18 @@ def _build_diff_aware_request(
 
 
 def _symbol_source(symbol: Symbol) -> str:
-    """Reconstruct `<signature>:\\n<body>` for a Symbol.
+    """Reconstruct the full decorated source block for a Symbol: decorators + signature + body.
 
-    The Symbol's `body_text` excludes the signature. For diff-aware prompts we want
-    both so the LLM can see signature-level changes (new parameter, changed default,
-    new return type). Joining them with the same colon that Python source uses keeps
-    the block readable as Python.
+    The Symbol's `body_text` excludes the signature and decorators. For diff-aware prompts
+    we want the complete block so the LLM can see decorator changes (e.g. `@property` added)
+    as well as signature-level changes (new parameter, changed return type). Decorators are
+    joined with newlines and prepended before the `signature:\nbody` pair.
     """
-    return f"{symbol.signature}:\n{symbol.body_text}"
+    parts: list[str] = []
+    if symbol.decorators:
+        parts.extend(symbol.decorators)
+    parts.append(f"{symbol.signature}:\n{symbol.body_text}")
+    return "\n".join(parts)
 
 
 def generate_section(

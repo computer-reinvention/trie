@@ -2,7 +2,7 @@
 trie_version: 0.1.2
 source: trie/telemetry.py
 file_fingerprint: 139de3396f21b6ea7bf609a055d7cee08a071a4fae7439e93e65104014d2b6fe
-last_synced_at: '2026-05-19T10:42:34Z'
+last_synced_at: '2026-05-23T23:51:49Z'
 description: Append-only JSONL telemetry for trie's own operations.
 defines:
 - kind: module
@@ -71,161 +71,136 @@ defines:
 - kind: function
   qualified_name: trie/telemetry:reset_for_tests
   lines: 253-261
-incoming_refs: 30
+incoming_refs: 46
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=trie/telemetry:configure fingerprint=3d7526358fbe30bf4a41e3bfcc6b5c89580f453b6f8c407595d25483a1214caf body_fp=859ffc13888898ef833937b73f46c2032d9b90d237f097162e027dbe58a1ddd7 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `configure(cfg: Debug, project_root: Path) -> None`
-
-Apply `[debug]` config from `trie.toml` process-wide; forces re-resolution on the next emit.
-
-- `cfg`: supplies `log_to_stderr`, `capture_args`, `capture_responses`, `redact_keys`; `TRIE_DEBUG` env var still overrides enable/path.
-- Calling multiple times is safe; re-opens log file if path changed.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:is_enabled fingerprint=d642b8f5ca8a8a7555eb9f8c0a66632811aa43c8020ba7c0350a01ef08d96548 body_fp=316d23cd52586adfaeb57b506529d68f67331456f70f0c2364722e43a894cb37 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `is_enabled() -> bool`
-
-Return whether telemetry is active for this process, triggering lazy resolution if needed.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:capture_args fingerprint=660c1bcba0896e7c441a5403f1ad313a838a7a14dc22699b2d5c918fdd0ab6ed body_fp=759757e69abd676c50e438ec541e08a57100a9c44158cec39fec4c411cdf321e source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `capture_args() -> bool`
-
-Return whether MCP tool arguments should be included in telemetry events.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:capture_responses fingerprint=acea27da4d13a7d809beb946585c7624b46364240bc9ae35d0124ce705b143f3 body_fp=fb0fa9bc40165f94bd4a8dc63d3ad5bbe78e3901b69fc1bd140b54ccf6b214ce source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `capture_responses() -> bool`
-
-Return whether full MCP response bodies should be captured rather than just sizes.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:emit fingerprint=fb39e43c1ddece91be45d130799d2e85fe3d8d926af7d96147100187e17a06f1 body_fp=7a40819a61a397e57b4578e3492b4fe75929fe2922de550b6b9619a51e9e54fb source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `emit(event: str, **fields: Any) -> None`
-
-Append one JSONL event to the telemetry log; silent no-op when disabled.
-
-- `event`: short event-type name (e.g. `"scan"`, `"cli"`).
-- `ts` and `event` fields are stamped automatically; all other fields come from `**fields`.
-- Non-JSON-serialisable values (Path, datetime) are stringified via `default=str`.
-- Redactions defined in config are applied before writing.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:timed fingerprint=adf66e22e173e164a803b841f555fc7823acccc234c7aac8df2e0f8edc481bc2 body_fp=0fa0a211e54a567a23f9be8d749c0d1bc587c642af05ec2569ff94760db6f816 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `timed(event: str, **fields: Any) -> Iterator[dict[str, Any]]`
-
-Context manager that emits `event` on exit with elapsed `duration_ms` automatically appended.
-
-- Yields a mutable dict; caller adds fields learned inside the block.
-- On exception, adds `error` (exception class name) before emitting.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:reset_for_tests fingerprint=f4cbaa364efb9c47aa27e981e77bb54fa7f851375bc3e0e4c4315c99c17769b3 body_fp=ec508a422d93aca4ef11e4ace6bbffe05de0226158f88bc9cfb93db1812e6f0a source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `reset_for_tests() -> None`
-
-Reset all process-level telemetry state to defaults, closing any open log file.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:_resolve fingerprint=2b823d46e6a7cc0c7cfc52d279a833200768631f198ede261bfc2994067a27dc body_fp=34a09b9566ee7ebc7207a0d04bf2032cec6ad74679c75a0715c108687b4f48e0 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `_resolve() -> None`
-
-Resolve whether telemetry is enabled and open the log file, reading `TRIE_DEBUG` env var then `cfg.enabled`; idempotent unless `configure()` reset `_resolved`.
-
-- `TRIE_DEBUG=0/false/no/off`: disables telemetry immediately.
-- `TRIE_DEBUG=1/true/yes/on`: enables, writing to default path.
-- `TRIE_DEBUG=<path>`: enables, writing to that path.
-- Subsequent calls are no-ops while `_resolved` is `True`.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:_open fingerprint=d2382bca32b3053880c2f7e6d30f328b5cda996fc590dec5752861d2b1a3cb7d body_fp=ac4bf49c72a09aae3cfb6d0844e8ae17eba3669acd7855cb0d40990061ab3edf source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `_open(path: Path) -> None`
-
-Open the append-mode log file at `path`; disables telemetry and prints to stderr on `OSError`.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:_close fingerprint=171eb098b8d920cbcff51070df2295d2cf8c29c8e46aa8158c069b3d486e31c4 body_fp=929e80a9313a76e664bfc57bf91b89b3a0dc1d762e999541ec21c558152aa87b source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `_close() -> None`
-
-Flush and close the open log file handle, setting `_file` to `None`; silently swallows `OSError`.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:_apply_redactions fingerprint=d72a6e1ff48f56b4aebf8d4fa8033bd30739a0ccc8d9a88fd5cce437939ac442 body_fp=71872cd3721ffe9638b8e9c29a9deafb2465784556226992c09a787320a318ce source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `_apply_redactions(record: dict[str, Any]) -> dict[str, Any]`
-
-Replace values at `_redact_keys` paths with `"<redacted>"` in-place, then return the record.
-
-- Dotted key strings (e.g. `"a.b"`) navigate into nested dicts.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:_DEFAULT_FILENAME fingerprint=9a55f4f84be667ae97ac1a341d080e215f879fba1717c412b86e8be00d921548 body_fp=82f4fc3835a8303eeece6c861e9f33600202fdab40f9e85f0b736892fe093f11 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `_DEFAULT_FILENAME = "debug.jsonl"`
-
-Default log filename used when no path is specified in config or env var.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:_cfg fingerprint=f803a03ddbedf169fed3b561490db8ebf2c25cb36f6f6925e575472fd5a4e569 body_fp=e7ad71523c31ef9f93eaf1f3186b311198c4e06ff9fd11a1701f94fd4da06d43 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `_cfg: Debug | None = None`
-
-Holds the process-wide `Debug` config; `None` until `configure()` is called.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:_project_root fingerprint=7f1404a6ae2c27aa098d65beb4a5ec00e484dda4224db1c3e0531d94f989f5e4 body_fp=8c4b519359deda04eebe8d8f332e3696a158d73af595bab75ee1f2ce74c0e421 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `_project_root: Path | None = None`
-
-Stores the project root path set by `configure()`; used to resolve relative log paths.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:_file fingerprint=f80c5dc793cb1be2813736697260ba3e49782620ce68eb959bb8dcc77c2b5c4c body_fp=b7d28a1eb63fcb1549b81c6e694732b404629f83cfe3aca2da1a0fe6e12da3a7 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `_file: IO[str] | None`
-
-Holds the open log file handle; `None` until the first emit resolves and opens it.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:_resolved fingerprint=4a21f07148902d26342f7f14c95bf97c09277efe7d1c8af024a200aa306e900b body_fp=30aafed792a366269e085e3bd1351f7ea64819d67e432a3bada152cd5df57e2e source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `_resolved: bool = False`
-
-Tracks whether telemetry enable/path resolution has run for this process; reset to `False` by `configure()` to force re-resolution.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:_enabled fingerprint=a4a7acc6d0e8418ce4f4bee46dc2a6528bf2533f2fb58c10da89b6e3ab11cd96 body_fp=5e40d6c0b3e42c28006e370bc0289c2587956d41d0d69fa21a3f583ed4deb69c source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `_enabled: bool = False`
-
-Process-wide flag; `True` when telemetry is active and the log file is open.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:_log_to_stderr fingerprint=c2a4b91a3b5aacafcf5c68ebdfca09c9c3dd10928bb36485e00a429d7c641321 body_fp=e37877748dea07a21505d7b0418bf89fc1bf77f139b489983b05135be95a4cd5 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `_log_to_stderr: bool = False`
-
-Controls whether each emitted event is also printed to stderr.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:_capture_args fingerprint=9d9dcc1072cfa01be373db7e7616a95ba37a9705f456cc7703fe9712c186b6f6 body_fp=38677ea0a4d10faa97491b3c0183352a5886cb9078fedb05230c40511aaec799 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `_capture_args: bool = True`
-
-Controls whether MCP tool arguments are included in emitted telemetry events.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:_capture_responses fingerprint=18d89ca3817c4b9efae98046148b77f3d349be60bbe5bbe5af4e8e31b87208f5 body_fp=d9c5ea846166e30ad35ff6bf1677d371906dfce8c246bb8f84824c5f6211f91b source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `_capture_responses: bool = False`
-
-Process-wide flag controlling whether full MCP response bodies are captured in telemetry events.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:_redact_keys fingerprint=a71082ab8e3ad2ceea716fd06a5efffe0bfa80f926db07fb76c16be4195e8e00 body_fp=ca6a878e88d98e73c8a30868591d0f8861ee6f665af586576be2f695f7cf4d77 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
-## `_redact_keys: tuple[str, ...] = ()`
-
-Stores dot-separated key paths whose values are replaced with `"<redacted>"` before writing each event.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/telemetry:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=646aa0b6766078d13228ca0659b9b8620970c9c26249c7a46959d71ee7f83dc3 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+<!-- trie:section symbol=trie/telemetry:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=25568a31db0e83797b30d5d5ee39eba3b1d635213621cf05cd6e01696148cd26 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
 ## `telemetry`
 
-Append-only JSONL telemetry for trie's own operations, enabled via `TRIE_DEBUG` env var or `[debug]` config block.
+Provide append-only JSONL telemetry for trie's internal operations, controlled via `TRIE_DEBUG` env var or `[debug]` config block.
 
-- `emit(event, **fields)` — write a single timestamped event line
-- `timed(event, **fields)` — context manager; auto-adds `duration_ms` and optional `error`
-- `configure(cfg, project_root)` — apply config after `Config.find_and_load`; env var wins for enable/path
-- `is_enabled()` — cheap process-wide check; triggers lazy resolution on first call
-- File opened lazily on first emit, flushed on `atexit`; failures are silent, never propagate
+- `emit(event, **fields)`: writes one timestamped event; silent when disabled
+- `timed(event, **fields)`: context manager; auto-captures `duration_ms` and `error`
+- `configure(cfg, project_root)`: applies `trie.toml` settings process-wide
+- `is_enabled()`, `capture_args()`, `capture_responses()`: cheap state queries
+- Log file opened lazily on first emit; flushed on `atexit`; never raises into caller
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:_DEFAULT_FILENAME fingerprint=9a55f4f84be667ae97ac1a341d080e215f879fba1717c412b86e8be00d921548 body_fp=d404dbaf02e3cf3e07c279865b1afffd9d1d7e019497106816a14c5c231722c3 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_DEFAULT_FILENAME = "debug.jsonl"`
+
+Default log filename used when no explicit path is configured.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:_cfg fingerprint=f803a03ddbedf169fed3b561490db8ebf2c25cb36f6f6925e575472fd5a4e569 body_fp=2b065b2787795cf6f8c18ddc5bc2a47625ec420ddf59fb67afe4e7de523778a7 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_cfg: Debug | None = None`
+
+Process-wide `Debug` config; set by `configure()`, read by `_resolve()`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:_project_root fingerprint=7f1404a6ae2c27aa098d65beb4a5ec00e484dda4224db1c3e0531d94f989f5e4 body_fp=49d2ec6d8d284605e2a63fe61f109b8cb4d747afa694faa93e035c262e63fc74 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_project_root: Path | None = None`
+
+Process-wide project root used to resolve relative log paths; set by `configure()`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:_file fingerprint=f80c5dc793cb1be2813736697260ba3e49782620ce68eb959bb8dcc77c2b5c4c body_fp=e99bd02555049d24e33aa24da7a7a859ae115107ad9c3938f6ffd302cb043324 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_file: IO[str] | None = None`
+
+Open log file handle; `None` until the first emit triggers lazy open.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:_resolved fingerprint=4a21f07148902d26342f7f14c95bf97c09277efe7d1c8af024a200aa306e900b body_fp=ee5d3cf26838881c6b4cba2feb597eb6c708091a872fc17f11181a7d2c0e26b0 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_resolved: bool = False`
+
+Flag indicating whether telemetry enable/path resolution has been performed for this process; reset to `False` by `configure()` to force re-resolution.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:_enabled fingerprint=a4a7acc6d0e8418ce4f4bee46dc2a6528bf2533f2fb58c10da89b6e3ab11cd96 body_fp=9fd1ee9a556f99604862be64a0dc2f05bd6b28db42bacd1c0b54184108158ed8 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_enabled: bool = False`
+
+Process-wide flag indicating whether telemetry emission is currently active.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:_log_to_stderr fingerprint=c2a4b91a3b5aacafcf5c68ebdfca09c9c3dd10928bb36485e00a429d7c641321 body_fp=7c586b10daf0a92b5d33eb8a8547c0a9cbe91decfdc24fecf1e4fa5603c2ce32 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_log_to_stderr: bool = False`
+
+Process-wide flag controlling whether emitted events are also printed to stderr.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:_capture_args fingerprint=9d9dcc1072cfa01be373db7e7616a95ba37a9705f456cc7703fe9712c186b6f6 body_fp=d1196f1397901a1f01452498f4729965262ebdd7e8ffd0b58eb9e6855d9305dc source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_capture_args: bool = True`
+
+Process-wide flag controlling whether MCP tool arguments are included in emitted events.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:_capture_responses fingerprint=18d89ca3817c4b9efae98046148b77f3d349be60bbe5bbe5af4e8e31b87208f5 body_fp=cd7674e718bbea6dc69c8f1b405d0fbc03ce55a9c412567b4458afd5aa3b895f source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_capture_responses: bool = False`
+
+Process-wide flag controlling whether full MCP response bodies are captured.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:_redact_keys fingerprint=a71082ab8e3ad2ceea716fd06a5efffe0bfa80f926db07fb76c16be4195e8e00 body_fp=ce83bb5142fabd2a3339e43f8fb95beb80b0fca317f7f16629f2bf34fc6c0b9f source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_redact_keys: tuple[str, ...]`
+
+Process-wide list of dotted-path keys whose values are replaced with `"<redacted>"` before writing.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:configure fingerprint=3d7526358fbe30bf4a41e3bfcc6b5c89580f453b6f8c407595d25483a1214caf body_fp=09561270b37919e9eee68a19416c521301f15967ac4941f3885df2c4ca62bcf7 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `configure(cfg: Debug, project_root: Path) -> None`
+
+Apply process-wide telemetry settings from a loaded `trie.toml` `[debug]` block.
+
+- `TRIE_DEBUG` env var still overrides enable/path after this call.
+- Safe to call repeatedly; forces re-resolution on next emit.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:_resolve fingerprint=2b823d46e6a7cc0c7cfc52d279a833200768631f198ede261bfc2994067a27dc body_fp=d608b6531423f4e937675f6ce606a39a43caec35d8da6d2bdeb75ecec8398cbe source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_resolve() -> None`
+
+Resolve process-wide telemetry enable state and log path, then open the log file; idempotent after first call.
+
+- `TRIE_DEBUG` env var takes priority over `_cfg.enabled`; any non-boolean value is treated as a file path.
+- Resets `_enabled`, `_log_to_stderr`, `_capture_args`, `_capture_responses`, `_redact_keys` globals.
+- Subsequent calls are no-ops unless `configure()` cleared `_resolved`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:_open fingerprint=d2382bca32b3053880c2f7e6d30f328b5cda996fc590dec5752861d2b1a3cb7d body_fp=5e8c9033a148983644f25d0841e8126bcd8d7267c0e6d84796debb7c3c0218fa source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_open(path: Path) -> None`
+
+Open the telemetry log file for line-buffered append, disabling telemetry silently on `OSError`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:_close fingerprint=171eb098b8d920cbcff51070df2295d2cf8c29c8e46aa8158c069b3d486e31c4 body_fp=e87bac1081e43149118b778e8d22a023e755fe941f5b936f00ed72a5ff4277ba source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_close() -> None`
+
+Flush and close the open telemetry log file, suppressing `OSError`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:is_enabled fingerprint=d642b8f5ca8a8a7555eb9f8c0a66632811aa43c8020ba7c0350a01ef08d96548 body_fp=5b5f73df7f296cb4864a58d336d78bb11f2154a146500c9105bc89775c4615a6 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `is_enabled() -> bool`
+
+Indicates whether telemetry is enabled for the current process.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:capture_args fingerprint=660c1bcba0896e7c441a5403f1ad313a838a7a14dc22699b2d5c918fdd0ab6ed body_fp=4fdbb96f9818817bb15182c62a864d636c1a16ec94e44bc84a7cb8a41673e008 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `capture_args() -> bool`
+
+Whether MCP tool arguments should be included in emitted telemetry events.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:capture_responses fingerprint=acea27da4d13a7d809beb946585c7624b46364240bc9ae35d0124ce705b143f3 body_fp=3a64f8bcce0c86b8d9c7df7f36dd7abfb1a9c29593c692222c948524e5531df2 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `capture_responses() -> bool`
+
+Whether full MCP response bodies should be captured rather than only their sizes.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:_apply_redactions fingerprint=d72a6e1ff48f56b4aebf8d4fa8033bd30739a0ccc8d9a88fd5cce437939ac442 body_fp=fc2b03f719709dc10168435a6603be78c7df45cf7018d3eed6d4c513d678ca53 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `_apply_redactions(record: dict[str, Any]) -> dict[str, Any]`
+
+Replace values at `_redact_keys` paths with `"<redacted>"`, supporting dotted keys for nested dicts.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:emit fingerprint=fb39e43c1ddece91be45d130799d2e85fe3d8d926af7d96147100187e17a06f1 body_fp=5520b35c848f9440ffc2a37d5c8a36eae2f1a54e1b44a8eac08c00839af9797a source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `emit(event: str, **fields: Any) -> None`
+
+Append one JSONL telemetry event to the log; silent no-op when disabled.
+
+- `event`: string label identifying the event type (e.g. `"scan"`, `"cli"`).
+- `ts` and `event` are auto-stamped; non-JSON-native values are stringified via `default=str`.
+- Errors during write print to stderr and never propagate.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:timed fingerprint=adf66e22e173e164a803b841f555fc7823acccc234c7aac8df2e0f8edc481bc2 body_fp=58b43396b24b213c0f79434dd64ff8feb81c5b247902446e42b145379bca1896 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `timed(event: str, **fields: Any) -> Iterator[dict[str, Any]]`
+
+Emit a telemetry event with automatic `duration_ms` on block exit.
+
+- Yields a mutable dict; caller adds fields during the block before emission.
+- On exception, adds `error` (exception class name) and re-raises.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/telemetry:reset_for_tests fingerprint=f4cbaa364efb9c47aa27e981e77bb54fa7f851375bc3e0e4c4315c99c17769b3 body_fp=9e1f422b5a703b072ca1b59116fa382ae9d4a36c49c7178e22579496f77d6f46 source_ref=cf002b82dfc49d9b31513e0a29c2f60d2fe0c63d -->
+## `reset_for_tests() -> None`
+
+Reset all process-wide telemetry state and close any open log file.
 <!-- trie:end -->
