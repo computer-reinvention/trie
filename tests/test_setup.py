@@ -254,17 +254,16 @@ def test_apply_one_returns_needs_manual_setup_for_render_none(project: Path):
 # ---------------------------------------------------------------------------
 
 
-def test_cli_setup_opencode_writes_both_files(project: Path, monkeypatch: pytest.MonkeyPatch):
+def test_cli_setup_opencode_writes_hook_and_overrides_by_default(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
     monkeypatch.chdir(project)
     runner = CliRunner()
     result = runner.invoke(app, ["setup", "--target", "opencode"])
     assert result.exit_code == 0, result.output
 
-    # MCP config written.
-    mcp_path = project / "opencode.json"
-    assert mcp_path.exists()
-    mcp_data = json.loads(mcp_path.read_text())
-    assert "trie" in mcp_data["mcp"]
+    # MCP config NOT written by default.
+    assert not (project / "opencode.json").exists()
 
     # Hook plugin written.
     hook_path = project / ".opencode" / "plugins" / "trie-refresh.ts"
@@ -274,14 +273,44 @@ def test_cli_setup_opencode_writes_both_files(project: Path, monkeypatch: pytest
     assert (project / ".opencode" / "package.json").exists()
 
 
-def test_cli_setup_claude_code_does_mcp_and_warns_about_hook(
-    project: Path, monkeypatch: pytest.MonkeyPatch
-):
-    """Agents without hook automation: MCP succeeds, hook warns. Exit code
-    stays 0 because manual-setup isn't a failure."""
+def test_cli_setup_opencode_with_mcp_writes_mcp(project: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["setup", "--target", "opencode", "--with-mcp"])
+    assert result.exit_code == 0, result.output
+
+    # MCP config written when --with-mcp is passed.
+    mcp_path = project / "opencode.json"
+    assert mcp_path.exists()
+    mcp_data = json.loads(mcp_path.read_text())
+    assert "trie" in mcp_data["mcp"]
+
+    # Hook plugin also written.
+    hook_path = project / ".opencode" / "plugins" / "trie-refresh.ts"
+    assert hook_path.exists()
+    assert "session.status" in hook_path.read_text()
+    assert (project / ".opencode" / "package.json").exists()
+
+
+def test_cli_setup_claude_code_warns_about_hook(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """Agents without hook automation: hook warns. Exit code stays 0 because
+    manual-setup isn't a failure. MCP is NOT written by default."""
     monkeypatch.chdir(project)
     runner = CliRunner()
     result = runner.invoke(app, ["setup", "--target", "claude-code"])
+    assert result.exit_code == 0, result.output
+
+    assert not (project / ".mcp.json").exists()
+    assert "manual setup required" in result.output
+
+
+def test_cli_setup_claude_code_with_mcp_writes_mcp_and_warns_about_hook(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """With --with-mcp: MCP succeeds, hook warns. Exit code stays 0."""
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["setup", "--target", "claude-code", "--with-mcp"])
     assert result.exit_code == 0, result.output
 
     assert (project / ".mcp.json").exists()
@@ -323,14 +352,12 @@ def test_cli_setup_idempotent_second_run(project: Path, monkeypatch: pytest.Monk
     first = runner.invoke(app, ["setup", "--target", "opencode"])
     assert first.exit_code == 0, first.output
 
-    # Capture both file contents.
-    mcp_before = (project / "opencode.json").read_text()
+    # Capture hook file content (MCP is not written by default).
     hook_before = (project / ".opencode" / "plugins" / "trie-refresh.ts").read_text()
 
     second = runner.invoke(app, ["setup", "--target", "opencode"])
     assert second.exit_code == 0, second.output
 
-    assert (project / "opencode.json").read_text() == mcp_before
     assert (project / ".opencode" / "plugins" / "trie-refresh.ts").read_text() == hook_before
 
 
@@ -346,8 +373,8 @@ def test_cli_setup_idempotent_second_run(project: Path, monkeypatch: pytest.Monk
 
 def test_cli_setup_installs_overrides_by_default(project: Path, monkeypatch: pytest.MonkeyPatch):
     """Bare `trie setup --target opencode` installs the override files
-    without any opt-in flag or prompt. This is the new default — the user
-    gets the full setup (MCP + hook + docs + overrides) in one invocation."""
+    without any opt-in flag or prompt. The user gets hook + docs + overrides
+    in one invocation; MCP requires --with-mcp."""
     monkeypatch.chdir(project)
     runner = CliRunner()
     result = runner.invoke(app, ["setup", "--target", "opencode"])
@@ -362,15 +389,14 @@ def test_cli_setup_installs_overrides_by_default(project: Path, monkeypatch: pyt
 def test_cli_setup_no_overrides_flag_skips_overrides(
     project: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    """`--no-overrides` is the single explicit opt-out for users who want
-    MCP + hook + docs without the tool-override step. MCP files still land;
-    only `.opencode/tools/` stays empty."""
+    """`--no-overrides` skips the tool-override step. Hook + docs still run;
+    MCP is still skipped by default; only `.opencode/tools/` stays empty."""
     monkeypatch.chdir(project)
     runner = CliRunner()
     result = runner.invoke(app, ["setup", "--target", "opencode", "--no-overrides"])
     assert result.exit_code == 0, result.output
-    # MCP + hook + docs still ran; only overrides were skipped.
-    assert (project / "opencode.json").exists()
+    # Hook + docs still ran; MCP was not written (no --with-mcp).
+    assert not (project / "opencode.json").exists()
     assert (project / ".opencode" / "plugins" / "trie-refresh.ts").exists()
     # But no override files.
     assert not (project / ".opencode" / "tools" / "grep.ts").exists()

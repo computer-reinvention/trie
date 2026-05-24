@@ -2,7 +2,7 @@
 trie_version: 0.1.2
 source: trie/freshness.py
 file_fingerprint: 6ba5cf8f15f23143c865e5e361d1a37583fea064fb26b107a3f97bb650a25b76
-last_synced_at: '2026-05-19T10:40:39Z'
+last_synced_at: '2026-05-23T23:50:14Z'
 description: 'Freshness gate: keep the graph + triefact tree current with respect
   to disk and HEAD.'
 defines:
@@ -57,136 +57,116 @@ defines:
 incoming_refs: 23
 outgoing_refs: 7
 ---
-<!-- trie:section symbol=trie/freshness:NotAGitRepoError fingerprint=09b365bfefd9d9b9a72c8c2e217dd31472401ec1d021a77332672cf7cbf20bf4 body_fp=424ffac6ee9e652161e4317f2d53955d99f30d80ee331e91014c6501eaf4d9d4 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
-## `class NotAGitRepoError(RuntimeError)`
+<!-- trie:section symbol=trie/freshness:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a88d62b97e640fee727338aacaedfc5767175a396e71f789ca7fb05f2d82c1c0 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+## `trie/freshness`
 
-Raised when the freshness gate is invoked outside a git repository.
+Keep the graph and triefact tree current with respect to disk and HEAD between agent turns and sessions.
+
+- `ensure_fresh_before_turn`: cheap probe at turn start; detects pulled commits or inter-turn edits
+- `ensure_fresh_after_turn`: sweep at turn end; detects files the agent just edited
+- `run_incremental` (LLM path) fires only on `mtimes_moved`; `no_stamp`/`head_moved` rebuild graph cheaply without LLM
+- Stamp file at `.trie/graph.head` records HEAD SHA and per-file mtimes; missing or malformed stamp forces full refresh
 <!-- trie:end -->
+<!-- trie:section symbol=trie/freshness:STAMP_FILENAME fingerprint=aac8741000f280bd63bac926ffebec9cbf71b4495987943f78ec277e1b576db7 body_fp=fe66fc96fc1c7365d6d20ebbff4990c172e5b5ef9deea143d2794c20f95f6fdb source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+## `STAMP_FILENAME = "graph.head"`
 
-<!-- trie:section symbol=trie/freshness:Stamp fingerprint=d1c55e5f7ac5b2b0f6e9a0f41a992c489b4bbd86c991d1319339a611fd2464a0 body_fp=b49c24477ff0c57caf283c666d38e7602ec86de77cb1fdcec072b4402b07bc9a source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+Filename of the stamp file written under `.trie/`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/freshness:NotAGitRepoError fingerprint=09b365bfefd9d9b9a72c8c2e217dd31472401ec1d021a77332672cf7cbf20bf4 body_fp=7d5beda7fc1aba8e970cee002c19cb915ce102f4687e1cfb50965b417665db9f source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+## `NotAGitRepoError`
+
+Raised by the freshness gate when the project root is not inside a git repository.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/freshness:Stamp fingerprint=d1c55e5f7ac5b2b0f6e9a0f41a992c489b4bbd86c991d1319339a611fd2464a0 body_fp=769e7ce86ee5d7e0c1bf02d3ac377d6dc82163758ae26adbbc421986e8c6450e source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
 ## `Stamp(head: str, mtimes: dict[str, float])`
 
-Immutable record of one graph refresh: the git HEAD SHA and per-file mtimes at that moment.
+Frozen dataclass recording the git HEAD SHA and per-file mtimes captured at the last graph refresh.
 
-- **`head`**: commit SHA the graph was built against.
-- **`mtimes`**: maps source-relative path → `os.stat` mtime for every in-scope file.
-- **`from_json`**: returns `None` for malformed input; caller treats that as missing stamp.
-<!-- trie:end -->
+- `head`: commit SHA the graph was built against
+- `mtimes`: `{source-rel-path: mtime}` for every in-scope file at refresh time
 
-<!-- trie:section symbol=trie/freshness:Stamp.to_json fingerprint=ce47e4e6daa8f0c4a250b20134274e9fbfd02aaf9ede1cb7bf37ca91c7410a99 body_fp=c9e88634a681f69714b18e1c4355aa2e3e46dfd13cb038d83d5f5f498be7eb56 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
 ## `Stamp.to_json(self) -> dict[str, Any]`
 
-Serialize the stamp to a JSON-compatible dict.
-<!-- trie:end -->
+Serialise a `Stamp` to a JSON-compatible dict.
 
-<!-- trie:section symbol=trie/freshness:Stamp.from_json fingerprint=57f4bdcd743fa83a9a5d1df0b2bc7f61f2e798e6aad8a7a1a0c2241a0cf7b47f body_fp=0af8ccf48e68ecb45761f3e008d32083438de112f72c9c7569b99372017c2048 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
 ## `Stamp.from_json(cls, raw: dict[str, Any]) -> Stamp | None`
 
-Construct a `Stamp` from a parsed JSON dict, returning `None` if the dict is malformed or missing required fields.
-
-- `raw`: must contain `"head"` (str) and `"mtimes"` (dict) keys.
-- Returns `None` on schema mismatch; caller treats this identically to a missing stamp.
+Construct a `Stamp` from a parsed JSON dict on the class, returning `None` if the dict is malformed or missing required fields.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/freshness:Stamp.to_json fingerprint=ce47e4e6daa8f0c4a250b20134274e9fbfd02aaf9ede1cb7bf37ca91c7410a99 body_fp=3bdcf7da56a3424951ceb38a1546c05ebada7ce91db2ba696d3d7efcac6b7f23 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+## `Stamp.to_json(self) -> dict[str, Any]`
 
+Serialize a `Stamp` to a JSON-compatible dict.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/freshness:Stamp.from_json fingerprint=57f4bdcd743fa83a9a5d1df0b2bc7f61f2e798e6aad8a7a1a0c2241a0cf7b47f body_fp=99efa29c041eeb3899188da6f40e44fe741342231c065255ebcecf02239e5db3 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+## `Stamp.from_json(cls, raw: dict[str, Any]) -> Stamp | None`
+
+Construct a `Stamp` from a parsed JSON dict, returning `None` on any malformed input.
+
+- `raw`: must contain `"head"` (str) and `"mtimes"` (dict); any other shape returns `None`.
+- Numeric mtime values are coerced to `float`; non-numeric entries are silently dropped.
+<!-- trie:end -->
 <!-- trie:section symbol=trie/freshness:stamp_path fingerprint=80a07e0294097d8da88cd2e3f54676211897796b445097ef0264fc4d82acc379 body_fp=eaf2eff5df02c47b910f43111dbe1b2e1580138cf2866253aa31f1f01b3809c7 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
 ## `stamp_path(project_root: Path) -> Path`
 
 Return the conventional `.trie/graph.head` stamp file path for the given project root.
 <!-- trie:end -->
-
-<!-- trie:section symbol=trie/freshness:read_stamp fingerprint=21f5bc02e5c0a58c5b7dfbbdc12acc2571b335eb41f9160f8fe794c01380e1f9 body_fp=42d40f3f6e5b50bae55b3e57a9920e893d25a8501b8bac23402f6c4bf99bb602 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+<!-- trie:section symbol=trie/freshness:read_stamp fingerprint=21f5bc02e5c0a58c5b7dfbbdc12acc2571b335eb41f9160f8fe794c01380e1f9 body_fp=c9cd68728d9322c6e7185bedacfb57f37ec01c23bcc93a1a529ce217083806db source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
 ## `read_stamp(project_root: Path) -> Stamp | None`
 
-Return the recorded stamp, or `None` if the stamp file is missing or unreadable.
-
-- Any failure (missing file, bad JSON, wrong schema) collapses to `None`, triggering a full refresh.
+Read and parse the stamp file from `project_root`, returning `None` on any failure.
 <!-- trie:end -->
-
-<!-- trie:section symbol=trie/freshness:write_stamp fingerprint=3191fba827b0de10432e3d06820239627570d6d361596c9d3abcd01940ccd5d4 body_fp=99a85fd2b22443cc799b5d3128c229b2515e8be8af3dd1098c3e230056f1fc04 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+<!-- trie:section symbol=trie/freshness:write_stamp fingerprint=3191fba827b0de10432e3d06820239627570d6d361596c9d3abcd01940ccd5d4 body_fp=91bb78d577302298757fe5e397d185111993bdeb881cbeb6c79c1c57a2037bf9 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
 ## `write_stamp(project_root: Path, stamp: Stamp) -> None`
 
-Write a `Stamp` to disk atomically using a write-then-rename strategy.
-
-- Prevents partial writes from leaving a corrupt stamp on disk.
+Persist a `Stamp` to `.trie/graph.head` atomically via write-then-rename.
 <!-- trie:end -->
-
-<!-- trie:section symbol=trie/freshness:scan_mtimes fingerprint=bcf189563877e5a915ba69067f3a2d7adf79275e2404d31d4c0507334bd2d3c3 body_fp=54866cb839f41e5ce16896aed1d37b90715550389a0d8ab5bf30a5d7528a0237 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+<!-- trie:section symbol=trie/freshness:scan_mtimes fingerprint=bcf189563877e5a915ba69067f3a2d7adf79275e2404d31d4c0507334bd2d3c3 body_fp=a852a927b3a880af2f714995197d5a4003aedb0adde4b03cf9b63ca306d4873d source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
 ## `scan_mtimes(project_root: Path, config: Config) -> dict[str, float]`
 
-Return `{source-rel-path: mtime}` for every in-scope file under the configured source root.
-
-- Uses `os.stat`, not file reads — cheap for the common no-change path.
-- Files not relative to `source_root` or missing at stat time are silently skipped.
+Return `{source-relative-path: mtime}` for every in-scope file under the configured source root, using `os.stat` without reading file bytes.
 <!-- trie:end -->
-
-<!-- trie:section symbol=trie/freshness:_require_git fingerprint=166feea2e74bf1d5b8f9f739d158f1b9adadb6c127a9c2e746f8f4d11a5f0cb7 body_fp=96ecd5710318f4d69574545f822f47033718185b0a13d6c0bdcd13f90a907e7e source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+<!-- trie:section symbol=trie/freshness:_require_git fingerprint=166feea2e74bf1d5b8f9f739d158f1b9adadb6c127a9c2e746f8f4d11a5f0cb7 body_fp=03c8f5c17149eb91da6dcf5d7a0eef5cf7368729b21205f00d1c1159551efe1d source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
 ## `_require_git(project_root: Path) -> str`
 
-Return the current HEAD SHA, raising `NotAGitRepoError` if the directory is not a git repo or has no commits.
+Return the current HEAD SHA, or raise `NotAGitRepoError` if the path is not a git repo or has no commits.
 <!-- trie:end -->
-
-<!-- trie:section symbol=trie/freshness:_mtimes_differ fingerprint=2389c54fdae5ee854c5b80798bf3c260d7ac0ce740a8ae1f711ad01fb1e9b551 body_fp=21747347cdbbc3e66c14f02ac61c3008f8bceaa2225adf75cf04cbaca2584ea9 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+<!-- trie:section symbol=trie/freshness:_mtimes_differ fingerprint=2389c54fdae5ee854c5b80798bf3c260d7ac0ce740a8ae1f711ad01fb1e9b551 body_fp=4e8841630d9d414d82598e3a9955dc0789220c5159d4b562ccb4de364f56424b source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
 ## `_mtimes_differ(a: dict[str, float], b: dict[str, float]) -> bool`
 
-Return `True` if two mtime maps disagree on any key or value.
-
-- Detects additions, removals, and modifications as drift.
-- Uses exact float equality; safe because values come from `os.stat` on the same filesystem.
+Return `True` if two mtime maps differ by any key or value, treating additions, deletions, and modifications as drift.
 <!-- trie:end -->
-
-<!-- trie:section symbol=trie/freshness:FreshnessResult fingerprint=8af5e0b2de5104af0d7073dfc753b7f6805d4e4c4ba1333149d51e6ef4a7f2a5 body_fp=31df6453a2d392a9fff89e1afb44cb30649d8ec048752f6fed451ace6d4bd805 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+<!-- trie:section symbol=trie/freshness:FreshnessResult fingerprint=8af5e0b2de5104af0d7073dfc753b7f6805d4e4c4ba1333149d51e6ef4a7f2a5 body_fp=f886a41e37122f9f4328a02589ee09b24826e3100c5023aa5c53ee2f8637da0d source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
 ## `FreshnessResult`
 
-Frozen dataclass capturing the outcome of an `ensure_fresh_before_turn` or `ensure_fresh_after_turn` call.
+Immutable outcome record returned by `ensure_fresh_before_turn` and `ensure_fresh_after_turn`.
 
-- `refreshed`: `True` only when `run_incremental` or `scan_project` was actually invoked.
+- `refreshed`: `True` only when `run_incremental` or `scan_project` was invoked.
 - `reason`: one of `no_stamp`, `head_moved`, `mtimes_moved`, `unchanged`.
-- `incremental`: populated only on `mtimes_moved`; `None` for all other reasons.
+- `head`: git SHA at the time of the check.
+- `incremental`: populated only on `mtimes_moved` refresh; `None` otherwise.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/freshness:ensure_fresh_before_turn fingerprint=290aa05b8d0d6759bf13117ee5bb21bae127af9708276c98d21a06dfabb4548c body_fp=3f565d4d4bf3409c26fa258b2ed17f6ef0af7efc6c3cb85b8ada6c9b9aef5f02 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+## `ensure_fresh_before_turn(*, project_root, config, store, client, progress=None) -> FreshnessResult`
 
-<!-- trie:section symbol=trie/freshness:ensure_fresh_before_turn fingerprint=290aa05b8d0d6759bf13117ee5bb21bae127af9708276c98d21a06dfabb4548c body_fp=64fcd48dcd7ca438a8b5d557ec92d4f37ede941ab1fe6215b77797e1035ea249 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
-## `ensure_fresh_before_turn(*, project_root: Path, config: Config, store: Store, client: ModelClient, progress: ProgressCallback | None = None) -> FreshnessResult`
+Probe graph freshness at agent turn start, triggering incremental sync only when HEAD or mtimes have drifted.
 
-Probe graph freshness at agent turn start, refreshing only when HEAD or mtimes have drifted.
-
-- `refreshed=False` when nothing changed; no I/O beyond stat and stamp read.
-- `no_stamp`/`head_moved`: rebuilds graph via `scan_project`, skips LLM.
-- `mtimes_moved`: runs full `run_incremental` including LLM-backed prose sync.
-- Raises `NotAGitRepoError` if the project root is not a git repository.
+- `reason="no_stamp"` or `"head_moved"`: rebuilds graph via `scan_project`, no LLM spend.
+- `reason="mtimes_moved"`: runs full `run_incremental` including LLM triefact sync.
+- `reason="unchanged"`: returns immediately without touching graph or store.
 <!-- trie:end -->
-
-<!-- trie:section symbol=trie/freshness:ensure_fresh_after_turn fingerprint=2a5af9c6a7ef7da3ef3df8784b3650da6731f86f613bc48facb72b3d8bc0d0dc body_fp=dff1d7c09cb73a585b1e4df4efbe643b8a928683dafd4d5bf5b0efb2f5275365 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+<!-- trie:section symbol=trie/freshness:ensure_fresh_after_turn fingerprint=2a5af9c6a7ef7da3ef3df8784b3650da6731f86f613bc48facb72b3d8bc0d0dc body_fp=ec59d848e476febd83da24aaecf4d0fb1d40ef5e031ba4084361b77e43d59aa6 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
 ## `ensure_fresh_after_turn(*, project_root: Path, config: Config, store: Store, client: ModelClient, progress: ProgressCallback | None = None) -> FreshnessResult`
 
-Run the HEAD/mtime freshness check after an agent turn completes, picking up files the agent just edited.
-
-- Delegates entirely to `_ensure_fresh`; see `ensure_fresh_before_turn` for branch semantics.
+Run a HEAD/mtime freshness check after an agent turn, capturing files the agent just edited.
 <!-- trie:end -->
-
-<!-- trie:section symbol=trie/freshness:_ensure_fresh fingerprint=9cd5bb51c0c2f61fcc7445e251bbafefc7fa2745eb3f050ba41b5e55b4df903c body_fp=c655cd64007734d33d548f1b674fa84fb8b6f77ba5a5f2fc4a449d21755bd7db source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+<!-- trie:section symbol=trie/freshness:_ensure_fresh fingerprint=9cd5bb51c0c2f61fcc7445e251bbafefc7fa2745eb3f050ba41b5e55b4df903c body_fp=174a0b73fa82c5252adb828c66de206b6987136a2a56480206272959993b366a source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
 ## `_ensure_fresh(*, project_root, config, store, client, progress, trigger) -> FreshnessResult`
 
-Shared implementation backing both `ensure_fresh_before_turn` and `ensure_fresh_after_turn`; branches on stamp state to decide whether and how to refresh.
+Determine staleness reason and run the appropriate refresh, writing an updated stamp on any change.
 
-- `trigger`: telemetry label only; does not affect logic.
-- `no_stamp` / `head_moved`: rebuilds graph via `scan_project`, no LLM.
-- `mtimes_moved`: runs full `run_incremental` (graph + triefact prose, LLM as needed).
-- `unchanged`: returns immediately without I/O or LLM calls.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/freshness:STAMP_FILENAME fingerprint=aac8741000f280bd63bac926ffebec9cbf71b4495987943f78ec277e1b576db7 body_fp=9f17a4fdc4005fca371706a1454b4d629fda232eedc4ed20c66321a0ebd87100 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
-## `STAMP_FILENAME = "graph.head"`
-
-Filename of the per-checkout freshness stamp stored under `.trie/`.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/freshness:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=f7bee85abbb8ccbe9217945fce1258fb1b42256711dfa06f94a2538e0f9c54cc source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
-## `freshness`
-
-Keep the dependency graph and triefact tree current with respect to disk and HEAD across agent turns and `git pull` events.
-
-- `ensure_fresh_before_turn`: cheap probe at turn start; detects HEAD or mtime drift.
-- `ensure_fresh_after_turn`: sweep at turn end; catches files the agent just edited.
-- Both delegate to `_ensure_fresh`, which calls `run_incremental` only for local edits (`mtimes_moved`); other stale states rebuild the graph without invoking the LLM.
-- Stamp file at `.trie/graph.head` records HEAD SHA and per-file mtimes; missing or malformed stamp triggers a full refresh.
+- `trigger`: telemetry label only; does not affect branching logic.
+- `no_stamp` / `head_moved`: runs `scan_project` only; LLM never invoked.
+- `mtimes_moved`: runs `run_incremental`, which may invoke the LLM for prose regen.
+- `unchanged`: returns immediately without touching the graph or stamp.
 <!-- trie:end -->

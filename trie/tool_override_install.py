@@ -141,9 +141,8 @@ def _render_opencode_grep_override(_project_root: Path) -> str:
     doesn't have to relearn the call shape: `pattern` is the substring to
     search for (mapped to trie's `name_contains` predicate), `path` becomes
     `scope_prefix`, `include` is rejected (trie's scope is config-driven,
-    not per-call). The wrapper shells out to `trie grep --json` and returns
-    the envelope verbatim so the agent gets the same structured response it
-    would get over MCP.
+    not per-call). The wrapper shells out to `trie grep` and returns the
+    plain-text output directly — no JSON parsing, no format overhead.
 
     `Bun.spawn` is what's used by the existing `trie-refresh.ts` plugin in
     this directory, so we know the runtime supports it. Errors from `trie`
@@ -158,8 +157,9 @@ export default tool({
   description:
     "Search for symbols and source-body text via trie. Replaces opencode's " +
     "built-in grep with a symbol-aware search that returns signatures, " +
-    "one-liners, and call-graph metrics — and falls back to ripgrep against " +
-    "indexed source bodies when the query doesn't match a symbol name.",
+    "one-liners, and call-graph metrics as plain text — and falls back to " +
+    "ripgrep against indexed source bodies when the query doesn't match a " +
+    "symbol name.",
   args: {
     pattern: tool.schema
       .string()
@@ -199,7 +199,7 @@ export default tool({
       .describe("Maximum number of hits to return. Defaults to 10."),
   },
   async execute(args, context) {
-    const flags: string[] = ["grep", "--json", "--name", args.pattern]
+    const flags: string[] = ["grep", "--name", args.pattern]
     if (args.path) flags.push("--scope-prefix", args.path)
     if (args.kind) flags.push("--kind", args.kind)
     if (args.public_only) flags.push("--public-only")
@@ -240,7 +240,7 @@ def _render_opencode_read_override(_project_root: Path) -> str:
 
     1. **Symbol read (qname)**: arg looks like a qname
        (`path/to/file:Name` — contains `:`, not a URL scheme, not a
-       Windows drive prefix). Routes to `trie read --json <qname>` and
+       Windows drive prefix).     Routes to `trie read <qname>` and
        returns the standard trie envelope: signature, prose, source
        pointer, callers, callees. This is the "I have a specific symbol
        in mind, show me its prose and immediate neighbours" path.
@@ -894,12 +894,12 @@ export default tool({
         mode = "show_source"
         result = await readSourceFile(cwd, args.path, args.offset, args.limit)
       } else if (looksLikeQname(args.path)) {
-        // Symbol mode: route to `trie read --json <qname>`. The trie CLI
-        // emits its own `cli_call` event from inside the subprocess, so
-        // we mark this mode as `qname` here but skip our own emission
-        // at the bottom to avoid double-counting.
+        // Symbol mode: route to `trie read <qname>`. The trie CLI emits
+        // its own `cli_call` event from inside the subprocess, so we mark
+        // this mode as `qname` here but skip our own emission at the bottom
+        // to avoid double-counting.
         mode = "qname"
-        result = await shellOutToTrie(["read", "--json", args.path], cwd)
+        result = await shellOutToTrie(["read", args.path], cwd)
       } else {
         // File-as-triefact mode: return the .md if it exists, otherwise
         // fall through to source. Non-source files (README.md, configs,
@@ -1017,7 +1017,7 @@ export default tool({
       ),
   },
   async execute(args, context) {
-    const flags: string[] = ["trace", "--json", args.qname]
+    const flags: string[] = ["trace", args.qname]
     if (args.direction) flags.push("--direction", args.direction)
     if (args.depth !== undefined) flags.push("--depth", String(args.depth))
 
@@ -1037,6 +1037,302 @@ export default tool({
     throw new Error(
       `trie trace failed (exit ${code}): ${stderr.trim() || "no stderr"}`,
     )
+  },
+})
+"""
+    )
+
+
+# ---------------------------------------------------------------------------
+# opencode: 8 new extended tools.
+# ---------------------------------------------------------------------------
+
+
+def _render_opencode_grep_str(_project_root: Path) -> str:
+    return (
+        _GENERATED_HEADER
+        + """
+import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description:
+    "Search source bodies with a full regex and get back the enclosing symbols. " +
+    "Unlike the symbol-name grep, this searches raw source text and attributes " +
+    "each matched line to its enclosing symbol. Use when you know a literal " +
+    "string or pattern that should appear in the code rather than in a symbol name.",
+  args: {
+    regexp: tool.schema
+      .string()
+      .describe("Regex pattern to search source bodies with (ripgrep syntax, case-insensitive)."),
+  },
+  async execute(args, context) {
+    const proc = Bun.spawn(["trie", "grep-str", args.regexp], {
+      cwd: context.directory,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+    if (code === 0 || code === 1) return stdout || "(no matches)"
+    throw new Error(`trie grep-str failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+  },
+})
+"""
+    )
+
+
+def _render_opencode_grep_entry_points(_project_root: Path) -> str:
+    return (
+        _GENERATED_HEADER
+        + """
+import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description:
+    "Find architectural entry points (high-inbound public symbols) whose triefact " +
+    "prose matches a topic or concept. Use when orienting in an unfamiliar codebase " +
+    "or looking for the main path that handles something.",
+  args: {
+    query: tool.schema
+      .string()
+      .describe("Topic or concept to match against symbol prose (e.g. 'authentication', 'error handling')."),
+  },
+  async execute(args, context) {
+    const proc = Bun.spawn(["trie", "grep-entry-points", args.query], {
+      cwd: context.directory,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+    if (code === 0 || code === 1) return stdout || "(no entry points found)"
+    throw new Error(`trie grep-entry-points failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+  },
+})
+"""
+    )
+
+
+def _render_opencode_grep_symbol(_project_root: Path) -> str:
+    return (
+        _GENERATED_HEADER
+        + """
+import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description:
+    "Fuzzy symbol name lookup. Returns the best-matching symbol plus a list of " +
+    "similar symbols. Better than grep for typo-tolerance and discovering related " +
+    "symbols in one call. Use when you have a rough name but not the exact qname.",
+  args: {
+    sym: tool.schema
+      .string()
+      .describe("Symbol name or fragment to fuzzy-match (e.g. 'compute_casc', 'slugify')."),
+  },
+  async execute(args, context) {
+    const proc = Bun.spawn(["trie", "grep-symbol", args.sym], {
+      cwd: context.directory,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+    if (code === 0 || code === 1) return stdout || "(no match)"
+    throw new Error(`trie grep-symbol failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+  },
+})
+"""
+    )
+
+
+def _render_opencode_grep_symbol_neighbours(_project_root: Path) -> str:
+    return (
+        _GENERATED_HEADER
+        + """
+import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description:
+    "Fuzzy symbol lookup plus trimmed triefact metadata for the best match's " +
+    "immediate callers and callees. One round trip for the symbol and its " +
+    "neighbourhood. Use when you want to orient around a symbol without a " +
+    "separate read call.",
+  args: {
+    sym: tool.schema
+      .string()
+      .describe("Symbol name or fragment to fuzzy-match."),
+  },
+  async execute(args, context) {
+    const proc = Bun.spawn(["trie", "grep-symbol-neighbours", args.sym], {
+      cwd: context.directory,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+    if (code === 0 || code === 1) return stdout || "(no match)"
+    throw new Error(`trie grep-symbol-neighbours failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+  },
+})
+"""
+    )
+
+
+def _render_opencode_explain_symbol(_project_root: Path) -> str:
+    return (
+        _GENERATED_HEADER
+        + """
+import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description:
+    "Full prose for a symbol plus a joined narrative that weaves together the " +
+    "prose of its callers and callees. Use when you want to deeply understand a " +
+    "symbol and how it fits into the system — not just its own docstring but the " +
+    "story of what calls it and what it calls.",
+  args: {
+    sym: tool.schema
+      .string()
+      .describe("Symbol qname (e.g. 'trie/sync/cascade:compute_cascade') or name fragment."),
+  },
+  async execute(args, context) {
+    const proc = Bun.spawn(["trie", "explain-symbol", args.sym], {
+      cwd: context.directory,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+    if (code === 0 || code === 1) return stdout || "(no prose)"
+    throw new Error(`trie explain-symbol failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+  },
+})
+"""
+    )
+
+
+def _render_opencode_explain_symbol_refs(_project_root: Path) -> str:
+    return (
+        _GENERATED_HEADER
+        + """
+import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description:
+    "Explain how a symbol is used — callers only, with their prose. Use when you " +
+    "want to understand the call sites of a symbol: who uses it, in what context, " +
+    "and with what intent. Skips the symbol's own prose and focuses on the usage story.",
+  args: {
+    sym: tool.schema
+      .string()
+      .describe("Symbol qname or name fragment to look up callers for."),
+  },
+  async execute(args, context) {
+    const proc = Bun.spawn(["trie", "explain-symbol-refs", args.sym], {
+      cwd: context.directory,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+    if (code === 0 || code === 1) return stdout || "(no callers)"
+    throw new Error(`trie explain-symbol-refs failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+  },
+})
+"""
+    )
+
+
+def _render_opencode_trace_flow(_project_root: Path) -> str:
+    return (
+        _GENERATED_HEADER
+        + """
+import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description:
+    "Find call chain(s) between two symbols. Returns the shortest path(s) " +
+    "following callee edges. If no path exists within the search depth, says so " +
+    "clearly. Use to verify that one symbol can reach another, or to find the " +
+    "execution path between an entry point and a deep utility.",
+  args: {
+    symbol1: tool.schema
+      .string()
+      .describe("Starting symbol — qname or name fragment (e.g. 'run_incremental')."),
+    symbol2: tool.schema
+      .string()
+      .describe("Target symbol — qname or name fragment (e.g. 'Store.upsert_section_record')."),
+  },
+  async execute(args, context) {
+    const proc = Bun.spawn(["trie", "trace-flow", args.symbol1, args.symbol2], {
+      cwd: context.directory,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+    if (code === 0 || code === 1) return stdout || "(no path found)"
+    throw new Error(`trie trace-flow failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+  },
+})
+"""
+    )
+
+
+def _render_opencode_explain_flow(_project_root: Path) -> str:
+    return (
+        _GENERATED_HEADER
+        + """
+import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description:
+    "Trace the call chain between two symbols and narrate each step with prose. " +
+    "Use when you want to understand not just that a path exists but what each " +
+    "step in the chain actually does — the story of the execution flow from entry " +
+    "to target.",
+  args: {
+    symbol1: tool.schema
+      .string()
+      .describe("Starting symbol — qname or name fragment."),
+    symbol2: tool.schema
+      .string()
+      .describe("Target symbol — qname or name fragment."),
+  },
+  async execute(args, context) {
+    const proc = Bun.spawn(["trie", "explain-flow", args.symbol1, args.symbol2], {
+      cwd: context.directory,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+    if (code === 0 || code === 1) return stdout || "(no path found)"
+    throw new Error(`trie explain-flow failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
   },
 })
 """
@@ -1118,12 +1414,13 @@ TARGETS: dict[str, ToolOverrideTarget] = {
         name="opencode",
         display_name="opencode",
         summary=(
-            "Override built-in `grep` (routes to `trie grep`) and `read` "
-            "(triefact-first: qname → `trie read`, path → triefact .md, "
-            "with a `show_source: true` escape hatch for raw bytes). Also "
-            "add `trace` for graph traversal. The agent gets trie's "
-            "synthesised view by default and falls through to source only "
-            "when it asks explicitly."
+            "Override built-in `grep` and `read`, add `trace`, and install "
+            "8 extended tools: `grep_str` (regex over source), "
+            "`grep_entry_points` (hub discovery by topic), `grep_symbol` "
+            "(fuzzy name lookup), `grep_symbol_neighbours` (symbol + "
+            "neighbourhood), `explain_symbol` (full prose + narrative), "
+            "`explain_symbol_refs` (usage story), `trace_flow` (call chain "
+            "between two symbols), `explain_flow` (narrated execution path)."
         ),
         files=(
             FileToWrite(
@@ -1143,6 +1440,46 @@ TARGETS: dict[str, ToolOverrideTarget] = {
                 relative_path=(".opencode", "tools", "trace.ts"),
                 render=_render_opencode_trace,
                 description="add `trace` (trace the call graph)",
+            ),
+            FileToWrite(
+                relative_path=(".opencode", "tools", "grep_str.ts"),
+                render=_render_opencode_grep_str,
+                description="add `grep_str` (regex search over source bodies)",
+            ),
+            FileToWrite(
+                relative_path=(".opencode", "tools", "grep_entry_points.ts"),
+                render=_render_opencode_grep_entry_points,
+                description="add `grep_entry_points` (find hubs matching a topic)",
+            ),
+            FileToWrite(
+                relative_path=(".opencode", "tools", "grep_symbol.ts"),
+                render=_render_opencode_grep_symbol,
+                description="add `grep_symbol` (fuzzy symbol name lookup)",
+            ),
+            FileToWrite(
+                relative_path=(".opencode", "tools", "grep_symbol_neighbours.ts"),
+                render=_render_opencode_grep_symbol_neighbours,
+                description="add `grep_symbol_neighbours` (symbol + immediate neighbours)",
+            ),
+            FileToWrite(
+                relative_path=(".opencode", "tools", "explain_symbol.ts"),
+                render=_render_opencode_explain_symbol,
+                description="add `explain_symbol` (full prose + reference narrative)",
+            ),
+            FileToWrite(
+                relative_path=(".opencode", "tools", "explain_symbol_refs.ts"),
+                render=_render_opencode_explain_symbol_refs,
+                description="add `explain_symbol_refs` (callers-only usage story)",
+            ),
+            FileToWrite(
+                relative_path=(".opencode", "tools", "trace_flow.ts"),
+                render=_render_opencode_trace_flow,
+                description="add `trace_flow` (find call chains between two symbols)",
+            ),
+            FileToWrite(
+                relative_path=(".opencode", "tools", "explain_flow.ts"),
+                render=_render_opencode_explain_flow,
+                description="add `explain_flow` (narrated execution path between two symbols)",
             ),
         ),
         # Earlier versions of `trie setup --override-builtins` shipped a

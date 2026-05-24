@@ -114,6 +114,24 @@ class Mcp:
     grep_fallback_max_files: int = 200
     grep_fallback_match_limit: int = 30
 
+    # fuzzy matching (rapidfuzz-based, applied across grep / grep_symbol /
+    # grep_entry_points / grep_str fallback)
+    #   - fuzzy_cutoff: minimum rapidfuzz WRatio score (0-100) for a hit to
+    #     be included in any fuzzy result list. 45 is looser than the old
+    #     difflib default of 60 and better handles short-name typos.
+    #   - fuzzy_prose_pre_filter: minimum score a symbol must reach on name
+    #     or one_liner alone before we read its triefact prose from disk.
+    #     Guards against O(N) disk reads on large repos.
+    #   - fuzzy_prose_window: characters of prose body fed to the scorer.
+    #     Extends the old hardcoded 500-char limit.
+    #   - fuzzy_prose_weight: multiplier applied to the prose-derived score
+    #     before taking max with name/one_liner score, so a prose-only match
+    #     ranks slightly below a name match of the same raw ratio.
+    fuzzy_cutoff: float = 45.0
+    fuzzy_prose_pre_filter: float = 30.0
+    fuzzy_prose_window: int = 2000
+    fuzzy_prose_weight: float = 0.6
+
     # read
     read_neighbour_one_liner_max_chars: int = 120
     read_max_neighbours_per_direction: int = 0  # 0 = unlimited
@@ -121,7 +139,9 @@ class Mcp:
 
     # trace
     trace_max_depth: int = 5
-    trace_hub_threshold: int = 20  # mirrors Cascade.hub_symbol_threshold
+    trace_hub_threshold: int = (
+        10_000_000  # effectively unlimited; raise to disable hub skipping in trace_flow / trace
+    )
     trace_max_nodes: int = 200
     trace_prose_at_depth: int = 0  # 0 = no prose on trace
     trace_prose_budget: int = 10

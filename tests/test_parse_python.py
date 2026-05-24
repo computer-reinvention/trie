@@ -349,6 +349,61 @@ def test_module_symbol_not_emitted_for_pure_defs_with_imports(tmp_path: Path):
     assert all(":__module__" not in q for q in syms)
 
 
+def test_method_has_parent_class(sample_file: Path):
+    syms = _by_qname(extract_symbols(sample_file))
+    assert syms["sample:Greeter.__init__"].parent_class == "Greeter"
+    assert syms["sample:Greeter.hello"].parent_class == "Greeter"
+    assert syms["sample:Greeter.make"].parent_class == "Greeter"
+
+
+def test_function_has_no_parent_class(sample_file: Path):
+    syms = _by_qname(extract_symbols(sample_file))
+    assert syms["sample:public_fn"].parent_class is None
+
+
+def test_class_has_no_parent_class(sample_file: Path):
+    syms = _by_qname(extract_symbols(sample_file))
+    assert syms["sample:Greeter"].parent_class is None
+
+
+def test_decorator_captured_on_method(sample_file: Path):
+    syms = _by_qname(extract_symbols(sample_file))
+    assert "@classmethod" in syms["sample:Greeter.make"].decorators
+
+
+def test_decorator_captured_on_class(sample_file: Path):
+    syms = _by_qname(extract_symbols(sample_file))
+    assert "@dataclass" in syms["sample:Decorated"].decorators
+
+
+def test_undecorated_method_has_empty_decorators(sample_file: Path):
+    syms = _by_qname(extract_symbols(sample_file))
+    assert syms["sample:Greeter.hello"].decorators == ()
+
+
+def test_property_decorator_captured(tmp_path: Path):
+    f = tmp_path / "p.py"
+    f.write_text("class Foo:\n    @property\n    def val(self) -> int:\n        return 1\n")
+    syms = _by_qname(extract_symbols(f))
+    assert "@property" in syms["p:Foo.val"].decorators
+    assert syms["p:Foo.val"].parent_class == "Foo"
+
+
+def test_symbols_sorted_by_start_line(tmp_path: Path):
+    f = tmp_path / "order.py"
+    f.write_text(
+        "class A:\n"
+        "    @overload\n"
+        "    def go(self) -> int: ...\n"
+        "    def go(self): return 1\n"
+        "\n"
+        "def standalone(): pass\n"
+    )
+    syms = extract_symbols(f)
+    lines = [s.start_line for s in syms]
+    assert lines == sorted(lines), f"Symbols not in source order: {lines}"
+
+
 def test_module_symbol_emitted_for_if_main_block(tmp_path: Path):
     """An `if __name__ == '__main__':` block is module-level behaviour —
     code that runs when the file is executed directly. The parser

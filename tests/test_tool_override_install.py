@@ -36,10 +36,10 @@ from trie.tool_override_install import (
 # ---------------------------------------------------------------------------
 
 
-def test_opencode_install_creates_three_override_files(tmp_path: Path):
-    """opencode install lands grep.ts, read.ts, trace.ts under
-    `.opencode/tools/`. Two override built-ins (`grep`, `read`) and one
-    addition (`trace`) materialise in one apply pass."""
+def test_opencode_install_creates_override_files(tmp_path: Path):
+    """opencode install lands all tool files under `.opencode/tools/`.
+    The 3 original overrides/additions plus the 8 new extended tools
+    all materialise in one apply pass."""
     plan = install(
         target_names=["opencode"],
         print_only=False,
@@ -51,20 +51,34 @@ def test_opencode_install_creates_three_override_files(tmp_path: Path):
     assert result.target == "opencode"
     assert result.action == "created"
     written_paths = {f.relative_path for f in result.files if f.action == "created"}
-    assert written_paths == {
+    # The 3 original tools must still be present.
+    for expected in (
         ".opencode/tools/grep.ts",
         ".opencode/tools/read.ts",
         ".opencode/tools/trace.ts",
-    }
+    ):
+        assert expected in written_paths, f"missing {expected}"
+    # The 8 new extended tools must also be present.
+    for expected in (
+        ".opencode/tools/grep_str.ts",
+        ".opencode/tools/grep_entry_points.ts",
+        ".opencode/tools/grep_symbol.ts",
+        ".opencode/tools/grep_symbol_neighbours.ts",
+        ".opencode/tools/explain_symbol.ts",
+        ".opencode/tools/explain_symbol_refs.ts",
+        ".opencode/tools/trace_flow.ts",
+        ".opencode/tools/explain_flow.ts",
+    ):
+        assert expected in written_paths, f"missing {expected}"
     for rel in written_paths:
         assert (tmp_path / rel).exists()
 
 
 def test_opencode_grep_override_routes_to_trie_grep(tmp_path: Path):
-    """`grep.ts` must shell out to `trie grep --json` so the agent's grep
-    calls actually hit the trie CLI. We assert on the spawn command, not
-    full file equality, so the rendered template can evolve without
-    breaking this contract."""
+    """`grep.ts` must shell out to `trie grep` so the agent's grep calls
+    actually hit the trie CLI. We assert on the spawn command, not full
+    file equality, so the rendered template can evolve without breaking
+    this contract."""
     install(
         target_names=["opencode"],
         print_only=False,
@@ -72,9 +86,10 @@ def test_opencode_grep_override_routes_to_trie_grep(tmp_path: Path):
         project_root=tmp_path,
     )
     body = (tmp_path / ".opencode" / "tools" / "grep.ts").read_text()
-    assert 'Bun.spawn(["trie"' in body or 'Bun.spawn(["trie"' in body
+    assert 'Bun.spawn(["trie"' in body
     assert '"grep"' in body
-    assert '"--json"' in body
+    # plain-text output; no --json flag needed
+    assert '"--json"' not in body
 
 
 def test_opencode_files_carry_generated_notice(tmp_path: Path):
@@ -147,9 +162,10 @@ def test_opencode_read_override_dispatches_on_qname_path_or_show_source(tmp_path
         project_root=tmp_path,
     )
     body = (tmp_path / ".opencode" / "tools" / "read.ts").read_text()
-    # Mode 1: qname routing
+    # Mode 1: qname routing — plain-text output, no --json
     assert "looksLikeQname" in body
-    assert '"read", "--json"' in body
+    assert '"read"' in body
+    assert '"--json"' not in body
     # Mode 2: triefact-by-path lookup
     assert "readTriefact" in body
     assert "triefacts" in body

@@ -3,12 +3,9 @@
   "mcp": {
     "trie": {
       "type": "local",
-      "command": [
-        "trie",
-        "mcp",
-        "serve"
-      ],
+      "command": ["trie", "mcp", "serve"],
       "enabled": true
     }
-  }
+  },
+  "lsp": true
 }

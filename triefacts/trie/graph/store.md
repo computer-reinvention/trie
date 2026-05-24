@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.2
 source: trie/graph/store.py
-file_fingerprint: 38b978510c260459c605190848ec9d6247be90913fe6b132a6b547ac00564e2e
-last_synced_at: '2026-05-19T10:40:47Z'
+file_fingerprint: 6593e996c60d4e2609b2841a8b32acac646e52f3a32c1c92218c2051147894fa
+last_synced_at: '2026-05-23T23:22:48Z'
 defines:
 - kind: module
   qualified_name: trie/graph/store:__module__
-  lines: 1-678
+  lines: 1-754
 - kind: constant
   qualified_name: trie/graph/store:SCHEMA_VERSION
   lines: 13-13
@@ -30,7 +30,7 @@ defines:
   lines: 112-131
 - kind: class
   qualified_name: trie/graph/store:Store
-  lines: 134-677
+  lines: 134-753
 - kind: method
   qualified_name: trie/graph/store:Store.__init__
   lines: 143-146
@@ -121,286 +121,264 @@ defines:
 - kind: method
   qualified_name: trie/graph/store:Store.all_qualified_names
   lines: 674-677
-incoming_refs: 42
+- kind: method
+  qualified_name: trie/graph/store:Store.find_paths
+  lines: 679-753
+incoming_refs: 49
 outgoing_refs: 2
 ---
-<!-- trie:section symbol=trie/graph/store:FileRecord fingerprint=9e5bd64fbbf95f8eb3616b9da3d84b73687a569550e6ace513eef354bd16b1e1 body_fp=66d0f20070cb4ff0fbcc153cfb392d3aa24addf48f3b73c0f1c45f48d6b74475 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
+<!-- trie:section symbol=trie/graph/store:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=df19a7d92687c892c51d630679ee2dabd6fccb2ff46be566c0076aac8e7c9ed8 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `store`
+
+SQLite-backed store for trie's symbol graph, file fingerprints, and triefact section metadata.
+
+- `SCHEMA_VERSION`: bump to wipe and rebuild the regenerable `.trie/` cache
+- `SCHEMA_SQL`: defines `files`, `symbols`, `edges`, and `triefact_sections` tables
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:SCHEMA_VERSION fingerprint=a3143f53a397605d955af85dc9c565211e3a2039edbb4283decccb73b16240ca body_fp=49297254e2b98df03a8f9272b537d2d92920fe38cc7cb90ac46ca0399860ab00 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `SCHEMA_VERSION = 2`
+
+Integer sentinel compared against `schema_version` table on open; mismatch drops and rebuilds the DB.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:SCHEMA_SQL fingerprint=660e8edae6c97dfc3c8bee4057fe4c56895de17e501503a702b97bdabc7584f0 body_fp=545b1e59563f4098780f26015ac0f58d98260130b865d913e0e7f95345f39569 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `SCHEMA_SQL`
+
+SQLite DDL string that creates all five core tables and their indexes on first connect.
+
+- `schema_version`: holds `SCHEMA_VERSION`; mismatch triggers DB wipe and rebuild.
+- `files`: per-file fingerprint and scan timestamp; primary key is path.
+- `symbols`: one row per parsed symbol; cascades deletes to `edges` and `triefact_sections`.
+- `edges`: directed symbol-reference pairs; both FKs cascade on symbol delete.
+- `triefact_sections`: cached generated-section metadata keyed by `(triefact_path, symbol_id)`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:FileRecord fingerprint=9e5bd64fbbf95f8eb3616b9da3d84b73687a569550e6ace513eef354bd16b1e1 body_fp=e71b6c2fadb3adafc914d3af550c9545f7ffebbfa485fe78febaf64e5f8a842b source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
 ## `FileRecord(path: str, fingerprint: str, last_scanned_at: int)`
 
-Frozen dataclass representing a row from the `files` table.
-<!-- trie:end -->
+Immutable record representing a scanned file row from the `files` table.
 
-<!-- trie:section symbol=trie/graph/store:FileStats fingerprint=c724d544428a38f276d944f8e7e7b5ad7459d6b1a250e18b87c7d3031e7a4b40 body_fp=02d0787e8a2a78a87a9af72ee772781705289502a12848e4394599db77e11e46 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `FileStats`
+- `last_scanned_at`: Unix timestamp of the most recent scan.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:FileStats fingerprint=c724d544428a38f276d944f8e7e7b5ad7459d6b1a250e18b87c7d3031e7a4b40 body_fp=fa8faddb4a150158d41c557e962ca1d41912a9b7eeb85f7ed8ea68cd964ae21f source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `FileStats(path: str, total_symbols: int, public_symbols: int)`
 
 Immutable per-file symbol count record returned by `Store.file_stats`.
 
-- `total_symbols`: count of all symbols regardless of visibility
-- `public_symbols`: count of `is_public = 1` symbols only
+- `public_symbols`: always equals `total_symbols`; preserved for API stability.
 <!-- trie:end -->
-
-<!-- trie:section symbol=trie/graph/store:SymbolHit fingerprint=c97f130190c9d3e96d5d1b0be1314de0ae372cc1d5256f00b330cad27aac1b3e body_fp=9d60094abe38a42c1cacc9b0f987f8c61742937ba2217bc1ab806d1ee8ff6622 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
+<!-- trie:section symbol=trie/graph/store:SymbolHit fingerprint=c97f130190c9d3e96d5d1b0be1314de0ae372cc1d5256f00b330cad27aac1b3e body_fp=d4c7d50d7e0ae3ae0433d42c253e9f05306cf1495118b76af64d640e8b6b3319 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
 ## `SymbolHit`
 
-Frozen dataclass representing a lightweight symbol search result.
+Immutable summary record returned by `Store.search_symbols`.
 
-- `is_public`: derived from the `is_public` integer column, stored as `bool`
-- `signature`: `None` when the symbol has no signature recorded
+- `kind`: one of `"function"`, `"class"`, `"method"`, `"constant"`, `"module"`
 <!-- trie:end -->
-
-<!-- trie:section symbol=trie/graph/store:SymbolDetail fingerprint=79b8fb53099949838219ec9a398c584ec95ec2bad4f37021becc742118d59a63 body_fp=7c98fa7f3740b17671ab6d4d9f8d09652b84c253f80b622fc8dffe7295ca7c0a source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
+<!-- trie:section symbol=trie/graph/store:SymbolDetail fingerprint=79b8fb53099949838219ec9a398c584ec95ec2bad4f37021becc742118d59a63 body_fp=31a8a9c0d247000d371ec7aad4b6af671bb6d8a9a65f77ab89baefcd4256b3b6 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
 ## `SymbolDetail`
 
-Frozen dataclass holding full per-symbol data with graph edge counts and cached one-liner for a single DB roundtrip.
+Frozen dataclass carrying full symbol metadata, edge counts, and cached one-liner for a single DB roundtrip.
 
-- `inbound_count`: number of edges where this symbol is the target.
-- `outbound_count`: number of edges where this symbol is the source.
-- `one_liner`: empty string when no triefact section exists yet.
+- `one_liner`: empty string when no triefact section has been generated yet.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:GrepPredicate fingerprint=bb94fc53eb9ffe605f051d331b0b74099549200f353c204750e987092d9ac0e6 body_fp=f17b231b67864c154d77ecb6f0e90438bbd11b6ef083a1677e89aa4012e4efcd source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `GrepPredicate`
 
+Server-side filter passed to `Store.grep_symbols`; all fields optional, omitted means no filter on that dimension.
 
-
-<!-- trie:section symbol=trie/graph/store:Store fingerprint=3e47a5ec09de60800ea885806dfe43a0a77128037d3e062bf2b7903ac6c1ec9f body_fp=bf65225536c6d20ff0c87335ace1798a7d668859f5af19308b7fdddfff9939f2 source_ref=8eaf1cb4ee663c2d5e33f11838248e2dc73b76fc -->
-## `Store(db_path: Path)`
-
-SQLite-backed store for trie's symbol graph, file fingerprints, edges, and cached triefact sections.
-
-- `db_path`: path to the SQLite file; parent directories are created automatically.
-- Stale schema (version mismatch) causes the DB file to be deleted and rebuilt on open.
-- Use as a context manager to ensure `close()` is called.
+- `kind`: one of `"function"`, `"class"`, `"method"`, `"constant"`, `"module"`, `"any"`, or `None`
+- `scope_prefix`: matched as a prefix against `file_path`
+- `scope_exclude`: each entry matched as a prefix against `file_path`; matching files excluded
+- `inbound_count_min` / `inbound_count_max`: inclusive bounds on inbound edge count
+- `outbound_count_min` / `outbound_count_max`: inclusive bounds on outbound edge count
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store fingerprint=c667d42041ba28c56365ffa0ac474f390cc456c47d03f09c7ea0693dbc064aa7 body_fp=a313830ec51d254f13712d2182fde07242b7681aba00bcc90eadd4b3039d3b7f source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `class Store`
 
-<!-- trie:section symbol=trie/graph/store:Store.close fingerprint=a913f96235959366c1550f3902f93fb0cb6321b2a3dd492c780b5af0ba6b8e7b body_fp=3c968b282b4cec11f7e100fef24fd94bd6236359ef4715ea4108e5c6db9becb1 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `close(self) -> None`
+SQLite-backed persistence for trie's symbol graph, file fingerprints, and triefact section metadata.
 
-Close the underlying SQLite connection.
+- `db_path`: path to the SQLite file; parent directories are created on init.
+- On open, stale schema versions cause the DB file to be deleted and rebuilt from scratch.
+- Use as a context manager; `close()` is called on exit.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.__init__ fingerprint=cbc4e30ba48edc9d8f65e1c5cbfcf9b29a9e2a9889581d7100fd1678981276b9 body_fp=ea90579aed35396efc8cf5031bddc512c7607e37fa2669ae0c861b812d99a580 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.__init__(self, db_path: Path) -> None`
 
-<!-- trie:section symbol=trie/graph/store:Store.transaction fingerprint=92d85419eab7f0eb88451072a4fe4fd3da121109143afd8912055c863389d51b body_fp=b3dce50e8d9e8f59538e95d3a1de8daf50b76a32ba6a3e2e8a55b952f562630b source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `transaction(self) -> Iterator[sqlite3.Connection]`
-
-Yield the connection within a commit/rollback transaction boundary.
+Initialize the `Store`, creating parent directories and opening the SQLite connection.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store._open fingerprint=1840acd2bf92663690f9ecd8c1a418eb53e4525df3070283393ae5fb73deed99 body_fp=068068d579edcf366278d09f5f7322f7da3784d22d9ffcae1c9e4128d6d59d4a source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store._open(self) -> None`
 
-<!-- trie:section symbol=trie/graph/store:Store.get_file fingerprint=eb7697a3a025059d896bd28c96b0f208e7ee3dc597aa5702581ea24d86dcb5de body_fp=440d8a5e08b380cc81a666c3d6d63376fbafebb6dfd15292ad3fd0ada0280d3e source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `get_file(self, path: str) -> FileRecord | None`
-
-Return the `FileRecord` for the given path, or `None` if not tracked.
+Open the SQLite connection, drop and recreate the database if the schema version is stale, then apply `SCHEMA_SQL`.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.close fingerprint=a913f96235959366c1550f3902f93fb0cb6321b2a3dd492c780b5af0ba6b8e7b body_fp=e1f769608951af7a4dad2163ae0ef5f716b724ab720222f4dc365bd6912895ad source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.close() -> None`
 
-<!-- trie:section symbol=trie/graph/store:Store.upsert_file fingerprint=6d8542fa2fb58dc7c77adab00e96758e35a7b4106aca18f02c39064c1ff2eeb6 body_fp=b0553e214a1fdb31e8e337cf2a7165dbaf820a88a38d71580b9cb0818b45bebc source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `upsert_file(self, *, path: str, fingerprint: str, now: int | None = None) -> None`
-
-Insert or update a file record, setting `last_scanned_at` to `now` or the current epoch second.
+Close the `Store`'s SQLite connection.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.__enter__ fingerprint=9f210cb9718c0e2ccf1afd3e1a8f2d55beb6c6390abbe06ed35fdd33a7172f7f body_fp=ad6b960971a2e22529189c34122dcc09f473f0fe3e6a8e6c899b428d804bc4a8 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.__enter__(self) -> Store`
 
-<!-- trie:section symbol=trie/graph/store:Store.delete_file fingerprint=3cc0d8d1dfff6afab640378b3cec46ac06299bab51b118ae1e695914bcdb5e9d body_fp=0d9d648b074bb572d04e9df7af2d91cce08ea866422c59832fb3a37a722899b9 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `delete_file(path: str) -> None`
-
-Delete the file record for `path` and commit immediately.
+Return the `Store` instance to support context-manager usage.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.__exit__ fingerprint=67b1b6b146522ac7c8bdfff45bab8a41537d8e61231b937b0475a712971729e7 body_fp=ad75b8ca65bfd6543cd22fd738d7c67488fb6a80d79f2fda066ab2dd68b3c280 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.__exit__(self, *_args: object) -> None`
 
-<!-- trie:section symbol=trie/graph/store:Store.list_files fingerprint=0ad09ddc7d8033f74e03712636d0159e4ad107c8be9c4d803563162dc7be55c5 body_fp=4294221590b393f9f894949bef5f966f14d007c80d4c03abe04c7b0e0b870f2e source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `list_files(self) -> list[FileRecord]`
-
-Return all file records ordered by path.
+Close the `Store` connection when exiting a context manager block.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.transaction fingerprint=92d85419eab7f0eb88451072a4fe4fd3da121109143afd8912055c863389d51b body_fp=b19d855b1fd936c49408025922131e2969e73ba02010545f7d4b5968cb912ba8 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.transaction(self) -> Iterator[sqlite3.Connection]`
 
-<!-- trie:section symbol=trie/graph/store:Store.replace_file_symbols fingerprint=d8e44858ebcda72ec803e6d2d297bdbbd2658509fa3f8bcbbd924b106093881c body_fp=60f9ae5e3e894516571d9a53ec0e82f8a6024b0a90daa632fe72666aa9d959a9 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `replace_file_symbols(self, file_path: str, symbols: list[Symbol]) -> None`
-
-Atomically delete and re-insert all symbols for a given file within a single transaction.
+Yield the `Store` connection inside a transaction, committing on success or rolling back and re-raising on exception.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.get_file fingerprint=eb7697a3a025059d896bd28c96b0f208e7ee3dc597aa5702581ea24d86dcb5de body_fp=894e48a3d96c7e60c1f66bf923ed7f897f5400273e722c0bd19724ee2f171a6f source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.get_file(self, path: str) -> FileRecord | None`
 
-<!-- trie:section symbol=trie/graph/store:Store.count_symbols fingerprint=2580fe16b3b00ec0a0343c0d528630dd899ab90e6d1a008d340e1aa6c5d92002 body_fp=1820db297a73f40e9620a01f3a3f31913c3d58f05434b0d7dd1d3873d6560606 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `count_symbols(self, *, file_path: str | None = None, public_only: bool = False) -> int`
-
-Count symbols in the store, optionally filtered by file and/or visibility.
+Look up a `Store` file record by exact path, returning `None` if not found.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.upsert_file fingerprint=6d8542fa2fb58dc7c77adab00e96758e35a7b4106aca18f02c39064c1ff2eeb6 body_fp=3c5da72d96097a01efb91a457866463ecaf2d15fa996272e130951d78b449300 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.upsert_file(*, path: str, fingerprint: str, now: int | None = None) -> None`
 
-<!-- trie:section symbol=trie/graph/store:Store.replace_all_edges fingerprint=f723b23ba6b913c951a282870d919431f131b8e31d304ccf18880dc9d37bfe93 body_fp=1c78186320813d3d405646883f2329b4d0f85294a357fa99aef5c0030914c55a source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `replace_all_edges(self, references_by_file: dict[str, list[Reference]]) -> int`
+Insert or update a file record in the `Store`, committing immediately.
 
-Wipe the edges table, resolve references against current symbols, and insert new edges atomically.
-
-- **`references_by_file`**: keyed by file path; values are resolved reference lists.
-- Unresolvable or self-referential edges are silently dropped.
-- Returns count of edges actually inserted.
+- `now`: Unix timestamp override; defaults to `int(time.time())`.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.delete_file fingerprint=3cc0d8d1dfff6afab640378b3cec46ac06299bab51b118ae1e695914bcdb5e9d body_fp=123de327c8e9aca2bbbc017166bdacfc95d94c450d20b930502f37a012006f89 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.delete_file(self, path: str) -> None`
 
-<!-- trie:section symbol=trie/graph/store:Store.references_in fingerprint=a64405c25c8effa2d37a933ece61b1b112c7cc2bc999fd7d05000ede0188ddc7 body_fp=2fcf4bc8111ccfa8bdf0798403e9832658e4986dc3611310b7cd9b2fad094486 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `references_in(self, qualified_name: str) -> list[str]`
-
-Return all `qualified_name` strings of symbols that reference the given symbol via inbound edges.
+Delete the `Store` file record for `path` and commit.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.list_files fingerprint=0ad09ddc7d8033f74e03712636d0159e4ad107c8be9c4d803563162dc7be55c5 body_fp=f7c850dc3be51253d27b7ae5837b24ca4ecc23d98a80c087293d2eba89bcb437 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.list_files(self) -> list[FileRecord]`
 
-<!-- trie:section symbol=trie/graph/store:Store.references_in_with_files fingerprint=773412d3d4e3f39ea3f1a7f9a058c6cf53d88e3ec7a563822446a9c4e2f271fe body_fp=3ed7a5ca9fd05056bf0ec77ff98d33edc0cbb5083598b0ea58b0445e91d31063 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `references_in_with_files(self, qualified_name: str) -> list[tuple[str, str]]`
+Return all `FileRecord` rows from the `Store`, ordered by path.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.replace_file_symbols fingerprint=d8e44858ebcda72ec803e6d2d297bdbbd2658509fa3f8bcbbd924b106093881c body_fp=c738098792fd79c19ec4d895233ad54c941b4231bb38b41e4db52c73c277417b source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.replace_file_symbols(self, file_path: str, symbols: list[Symbol]) -> None`
+
+Atomically delete and re-insert all `Store` symbol rows for a given file within a single transaction.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.count_symbols fingerprint=2580fe16b3b00ec0a0343c0d528630dd899ab90e6d1a008d340e1aa6c5d92002 body_fp=5bdcb91085775b5207b64a51a91c2c83e596812e0686d991a61d8a8726a69737 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.count_symbols(self, *, file_path: str | None = None, public_only: bool = False) -> int`
+
+Count symbols in the `Store`, optionally filtered by file and/or public visibility.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.replace_all_edges fingerprint=f723b23ba6b913c951a282870d919431f131b8e31d304ccf18880dc9d37bfe93 body_fp=80660e7ebb923ac8dec041dc51b573d7a5208a4c496d0098bf314c5f893b6aac source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.replace_all_edges(self, references_by_file: dict[str, list[Reference]]) -> int`
+
+Atomically wipe and rebuild the `edges` table from a per-file reference map, returning the number of edges inserted.
+
+- `references_by_file`: keyed by file path; values are resolved `Reference` objects.
+- Self-edges and references to unknown qualified names are silently dropped.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.references_in fingerprint=a64405c25c8effa2d37a933ece61b1b112c7cc2bc999fd7d05000ede0188ddc7 body_fp=bbfde003b1262c59cbe1d7e76a6bdddd076eb16bfd79a0872d513d023f73c769 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.references_in(self, qualified_name: str) -> list[str]`
+
+Return all `qualified_name` strings of symbols that have an outbound edge targeting `qualified_name`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.references_in_with_files fingerprint=773412d3d4e3f39ea3f1a7f9a058c6cf53d88e3ec7a563822446a9c4e2f271fe body_fp=e026973bef338cdbe99b84392bf19cc71c05bb611e98fc53ffa10900ad244ad7 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.references_in_with_files(self, qualified_name: str) -> list[tuple[str, str]]`
 
 Return `(src_qname, src_file_path)` pairs for every symbol that references `qualified_name`.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.qnames_in_file fingerprint=0345839c8b81209c9f8e501ba0bbd84b97b79bcdffd157276f2c5f9433f1bf53 body_fp=f0ca6cacd84a525727f675939e7854189d58b48363471391f82392e3071f22e3 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.qnames_in_file(self, file_path: str) -> list[str]`
 
-<!-- trie:section symbol=trie/graph/store:Store.qnames_in_file fingerprint=0345839c8b81209c9f8e501ba0bbd84b97b79bcdffd157276f2c5f9433f1bf53 body_fp=03fcdaa2a35dc8cb4f625092defafc94e96e570ce5ef8179dbcb7e004a8fb5db source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `qnames_in_file(self, file_path: str) -> list[str]`
-
-Return qualified names of all symbols defined in `file_path`, ordered by source line.
+Return all qualified names of symbols defined in `file_path`, ordered by start line.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.symbols_in_file_with_lines fingerprint=6c50f1692f561e61d68233e23f1452068b7dc5151923fcf1a75c9e9f32d8fc97 body_fp=bd29d791132a2af9e209260c6ff131ac20830415a2adcb5b24f1204df43dde21 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.symbols_in_file_with_lines(self, file_path: str) -> list[tuple[str, int, int]]`
 
-<!-- trie:section symbol=trie/graph/store:Store.search_symbols fingerprint=843fc4a051517ce70282ea2a98897dd8f7258793682bd113ad354a6fc4c517f6 body_fp=412151ce56e60b7a4b0d171718757f9848919045356f629e86b9d0cd708b685d source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `search_symbols(self, name_pattern: str, *, limit: int = 50) -> list[SymbolHit]`
+Return `(qname, start_line, end_line)` for every symbol in `file_path`, ordered by start line.
 
-Case-insensitive substring search on symbol local names; returns up to `limit` hits ordered by visibility then qualified name.
-
-- `name_pattern`: matched as `%pattern%` against the `name` column, not the qualified name.
+- Returns `[]` when the file is unknown or has no recorded symbols.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.search_symbols fingerprint=843fc4a051517ce70282ea2a98897dd8f7258793682bd113ad354a6fc4c517f6 body_fp=ded6ac8d363a81a923f20a15399a110f948ef04cb68409140b7617475cde8147 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.search_symbols(self, name_pattern: str, *, limit: int = 50) -> list[SymbolHit]`
 
-<!-- trie:section symbol=trie/graph/store:Store.references_out fingerprint=a6810cd7afde7caf6868995ebd2d05049eb7e7d1f292600fc55fed2112ad0138 body_fp=496acb9b03ca20394931eabf115b28ed4ad9cf6e664e7d22331137ce62138ea4 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `references_out(self, qualified_name: str) -> list[str]`
+Case-insensitively search `Store` symbols by local name, returning up to `limit` `SymbolHit` results ordered public-first.
 
-Return all qualified names of symbols that `qualified_name` references outbound.
+- `name_pattern`: substring matched against `name` (local part), not `qualified_name`.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.references_out fingerprint=a6810cd7afde7caf6868995ebd2d05049eb7e7d1f292600fc55fed2112ad0138 body_fp=8f9c049d224d32b9701b2ea10f2963101e050868e5445fd589489097b63891a7 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.references_out(self, qualified_name: str) -> list[str]`
 
-<!-- trie:section symbol=trie/graph/store:Store.count_edges fingerprint=dd4f0506260e96b70c2e6c1cf90803909315a59857fe188eb5f56d47f7d9d49d body_fp=ec351bfea121c9091ce085750c5a9723db5a00731a8ce7e5df37e3cbd88e5210 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `count_edges(self) -> int`
-
-Return the total number of edges in the `edges` table.
+Return all qualified names that `qualified_name` references (outbound edges).
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.count_edges fingerprint=dd4f0506260e96b70c2e6c1cf90803909315a59857fe188eb5f56d47f7d9d49d body_fp=58c891ad677790e75b31d8f73f31133c08bd5ce46da4c87d4d6b7ce739688cfb source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.count_edges(self) -> int`
 
-<!-- trie:section symbol=trie/graph/store:Store.inbound_count_per_symbol fingerprint=d02ef2425e589304c3c468f57c53c886dd73de83d538963d490f437f8fdb19c2 body_fp=4d2d2c3214df55e9e5123d359b376259fd47a5da5f5c1cbb1e9b91baf3f823c6 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `inbound_count_per_symbol(self) -> dict[str, int]`
-
-Return a mapping of every symbol's `qualified_name` to its inbound edge count.
+Return the total number of rows in the `Store` edges table.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.inbound_count_per_symbol fingerprint=d02ef2425e589304c3c468f57c53c886dd73de83d538963d490f437f8fdb19c2 body_fp=fa634196f55fd2ff22b86db6cb4831087b7b2532a7246ed2601780b1946db685 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.inbound_count_per_symbol(self) -> dict[str, int]`
 
-<!-- trie:section symbol=trie/graph/store:Store.file_ref_counts fingerprint=c91d16db66c8427e33861dc7b12859ce10573b7accd08ebfe18b42eaff7c8c62 body_fp=696ea34bfccf7a94140721fb92e6cd82d5eeed7453f6c25eb290d63334b36929 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `file_ref_counts(self, file_path: str) -> tuple[int, int]`
-
-Return `(inbound, outbound)` cross-file edge counts for a given file, excluding intra-file edges.
+Return a mapping of every symbol's qualified name to its inbound edge count.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.file_ref_counts fingerprint=c91d16db66c8427e33861dc7b12859ce10573b7accd08ebfe18b42eaff7c8c62 body_fp=4a1597f8d924ae36429b2877c245d46d62aa766ef1d5a12233c3d50a359c30ef source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.file_ref_counts(self, file_path: str) -> tuple[int, int]`
 
-<!-- trie:section symbol=trie/graph/store:Store.file_stats fingerprint=818ee47e02de6186ac43c3deb53c5ddc50df1980e52047b405fca30d50d264d6 body_fp=fe9ced4621dd1697950410e17189eb3cdb6319a7d0b5f1a3f8b8df8c2b4c11c7 source_ref=aef35014ee7ba97f7bb5ee8252255be994acfdac -->
-## `file_stats(self) -> list[FileStats]`
+Return cross-file `(inbound, outbound)` edge counts for a `Store` file path, excluding intra-file edges.
 
-Return per-file symbol counts joined from `files` and `symbols`, with `public_symbols` set equal to `total_symbols` for all files.
-
-- `public_symbols`: always equals `total_symbols`; the distinct public count is no longer computed.
+- **inbound**: edges from symbols in *other* files targeting symbols in `file_path`
+- **outbound**: edges from symbols in `file_path` targeting symbols in *other* files
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.file_stats fingerprint=818ee47e02de6186ac43c3deb53c5ddc50df1980e52047b405fca30d50d264d6 body_fp=58b8371ba9fdb059f6807f953f8867193a7a574c264d801039492490229ac87c source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.file_stats(self) -> list[FileStats]`
 
-<!-- trie:section symbol=trie/graph/store:Store.upsert_section_record fingerprint=c0ed5ba8a45dd21c6a60068fbc428a85bfe91bc62951744e0c93ca03042bdd96 body_fp=7d0845a8ce7f98909060be44c5eca6cbee509a0d905ec2ff5fec6e41b31ec76c source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `upsert_section_record(self, *, triefact_path: str, symbol_qname: str, section_fingerprint: str, one_liner: str, now: int | None = None) -> None`
+Return per-file symbol counts for all tracked files, used by the bootstrap ranker.
 
-Insert or update a `triefact_sections` row, linking a generated section to its symbol.
-
-- `symbol_qname`: silently skipped if not found in `symbols` (deleted/renamed symbol).
-- `now`: Unix timestamp; defaults to `int(time.time())`.
+- `public_symbols`: legacy field; always equals `total_symbols` — all scanned symbols are counted.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.upsert_section_record fingerprint=c0ed5ba8a45dd21c6a60068fbc428a85bfe91bc62951744e0c93ca03042bdd96 body_fp=32a9910cde83940afc4039c26d245c3fe8895e29a47ee514701e0fda0955aad1 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.upsert_section_record(*, triefact_path, symbol_qname, section_fingerprint, one_liner, now=None) -> None`
 
-<!-- trie:section symbol=trie/graph/store:Store.one_liner_for fingerprint=1f204b6ac59d246ef09d1541e51816e9a3261e8bcd10c625cb2b426a5c5dbaaa body_fp=2ca37524618426a38984ee105e1b5a187135a40a5ce1fe97460ef7be1c075c2e source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `one_liner_for(self, qualified_name: str) -> str`
+Insert or update a `triefact_sections` row linking a generated section to its symbol; silently no-ops if the symbol no longer exists.
 
-Return the cached one-liner for a symbol, or `''` if no triefact section exists.
+- `now`: Unix timestamp override; defaults to `int(time.time())`.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.one_liner_for fingerprint=1f204b6ac59d246ef09d1541e51816e9a3261e8bcd10c625cb2b426a5c5dbaaa body_fp=4069322568cd9e9c0b2f6077838330e6471ef0ca1a8ac6fe5f35484c16767c5a source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.one_liner_for(self, qualified_name: str) -> str`
 
-<!-- trie:section symbol=trie/graph/store:Store.one_liners_for fingerprint=41fe88c62a162851d437d2e65cd15c753d88bdc5f4d13d59609b2ab4f92550b4 body_fp=8e58990e7081bd658af84a31146df2a49f8fb2b9663d5f2786de3d399519fd22 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `one_liners_for(self, qnames: list[str]) -> dict[str, str]`
-
-Batch-fetch cached one-liners for multiple qualified names.
-
-- Returns only entries found in the DB; missing qnames are absent from the result.
+Return the cached one-liner string for a symbol, or `''` if no triefact section exists.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.one_liners_for fingerprint=41fe88c62a162851d437d2e65cd15c753d88bdc5f4d13d59609b2ab4f92550b4 body_fp=1376b17f9bf2bb106e42c8a78ae5cd1e072f6a10afac2d5248ed4b6e67dfef1d source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.one_liners_for(self, qnames: list[str]) -> dict[str, str]`
 
-<!-- trie:section symbol=trie/graph/store:Store.get_symbol_detail fingerprint=035c308d0bc43eb38d36a7245a821ffa036ba178cbd25c058ef045f1d485d90d body_fp=3da726177373e4410ad842775e59c85e71ca036a3f6cb72e3ce68be5145985fc source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `get_symbol_detail(self, qualified_name: str) -> SymbolDetail | None`
+Batch-fetch cached one-liners from `Store` for multiple qualified names in one query.
 
-Return full `SymbolDetail` for one symbol including inbound/outbound edge counts and cached one-liner, or `None` if not found.
+- Returns only entries that exist; missing qnames are absent from the result dict.
+- Empty string substituted for `NULL` one-liner values.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.get_symbol_detail fingerprint=035c308d0bc43eb38d36a7245a821ffa036ba178cbd25c058ef045f1d485d90d body_fp=a987125a0b97980edaeee5adda276ef850f7ec0ec98001df207237427e1e8a0b source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.get_symbol_detail(self, qualified_name: str) -> SymbolDetail | None`
 
+Fetch a fully-populated `SymbolDetail` for one symbol by qualified name, including edge counts and cached one-liner, in a single query.
 
-
-<!-- trie:section symbol=trie/graph/store:Store.all_symbol_names fingerprint=fd7275a10e4d910bbe493d3316de5e7e152c08eabc201043b81db9d247002f65 body_fp=c5c948306f096e398e8896567ea1426bcb3c09b4cc982c3d453d3a9ce2b66b34 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `all_symbol_names(self) -> list[str]`
-
-Return all distinct local symbol names for fuzzy-match suggestions on not-found queries.
+- `qualified_name`: exact match against `symbols.qualified_name`; returns `None` if not found.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.grep_symbols fingerprint=83b17a895d0060e7833abe22296476ad93ea93e488e0fd8bccb18773bec91068 body_fp=80f55b1b0947061129675a91e4fc741eb73f009e6465448ad87173d0cb9f0d35 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.grep_symbols(self, predicate: GrepPredicate, *, rank_by: str = "public_first", limit: int = 10) -> list[SymbolDetail]`
 
-<!-- trie:section symbol=trie/graph/store:Store.all_qualified_names fingerprint=81e36419552fcadd1ffbad7e8109246d3055e765019c0633cfcabdafa0ad9eff body_fp=e8f38ca923e4cde4350dc281bd890af4ede0e25d00714ba5806360b1349c4b87 source_ref=63d2e770fe7d46f83042110fb3bb5403fb9b9d04 -->
-## `all_qualified_names(self) -> list[str]`
+Query `Store` symbols using a `GrepPredicate` filter, returning up to `limit` `SymbolDetail` results.
 
-Return every qualified symbol name in the database.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/graph/store:Store.__init__ fingerprint=cbc4e30ba48edc9d8f65e1c5cbfcf9b29a9e2a9889581d7100fd1678981276b9 body_fp=ee4be1a173be0da98881aa3cab05cd4dde05853e5691d349f495586782dab2fd source_ref=aef35014ee7ba97f7bb5ee8252255be994acfdac -->
-## `Store.__init__(self, db_path: Path) -> None`
-
-Open or create the SQLite database at `db_path`, initialising the schema and dropping stale versions.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/graph/store:Store._open fingerprint=1840acd2bf92663690f9ecd8c1a418eb53e4525df3070283393ae5fb73deed99 body_fp=226094a7201d3de1c2ebbad53e6be972c9ae2ee30528221cd7ba0c2162ebd585 source_ref=aef35014ee7ba97f7bb5ee8252255be994acfdac -->
-## `_open(self) -> None`
-
-Open the SQLite connection, detect a stale schema version, nuke and recreate the DB if stale, then apply `SCHEMA_SQL` and record the current version.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/graph/store:Store.__enter__ fingerprint=9f210cb9718c0e2ccf1afd3e1a8f2d55beb6c6390abbe06ed35fdd33a7172f7f body_fp=8f144d8f59958372f7043f35f597c38d5e459da2eda5e89bf2c40427413e5bc9 source_ref=aef35014ee7ba97f7bb5ee8252255be994acfdac -->
-## `Store.__enter__(self) -> Store`
-
-Return `self` to support use as a context manager.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/graph/store:Store.__exit__ fingerprint=67b1b6b146522ac7c8bdfff45bab8a41537d8e61231b937b0475a712971729e7 body_fp=757f4b526a63273903bb78c3e05916c1337a73aba75e3355c816501c3d0db310 source_ref=aef35014ee7ba97f7bb5ee8252255be994acfdac -->
-## `__exit__(self, *_args: object) -> None`
-
-Close the store connection when exiting the context manager.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/graph/store:Store.symbols_in_file_with_lines fingerprint=6c50f1692f561e61d68233e23f1452068b7dc5151923fcf1a75c9e9f32d8fc97 body_fp=2a5400049acefd959d2d6ceb60c1543714f3239b956b5216b8e6514df4d99096 source_ref=6da877cab7a13b55f8c9b77428537bc9a241cac7 -->
-## `symbols_in_file_with_lines(self, file_path: str) -> list[tuple[str, int, int]]`
-
-Return `(qname, start_line, end_line)` for every symbol in `file_path`, ordered by `start_line`.
-
-- Returns empty list when the path has no recorded symbols.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/graph/store:GrepPredicate fingerprint=bb94fc53eb9ffe605f051d331b0b74099549200f353c204750e987092d9ac0e6 body_fp=38c2f368f6947448b2f25bf6385065795fd8f4388c006bad29bda752ed058d5f source_ref=a1769a04774632716a3ce86b4dbe83e7d6023b92 -->
-## `GrepPredicate(name_contains=None, kind=None, scope_prefix=None, scope_exclude=(), public_only=False, inbound_count_min=None, inbound_count_max=None, outbound_count_min=None, outbound_count_max=None)`
-
-Server-side filter passed to `Store.grep_symbols`; every field is optional.
-
-- `kind`: `"function"`, `"class"`, `"method"`, `"constant"`, `"module"`, `"any"`, or `None`
-- `scope_prefix`: matched as prefix against `file_path`
-- `scope_exclude`: each entry matched as prefix against `file_path` to exclude
-- `inbound_count_min/max`, `outbound_count_min/max`: inclusive edge-count bounds
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/graph/store:Store.grep_symbols fingerprint=83b17a895d0060e7833abe22296476ad93ea93e488e0fd8bccb18773bec91068 body_fp=fc615b217cb87a71c4bea3a7b6c92b5e8e849b8ba99b34c3732cacc2b3f55d11 source_ref=8eaf1cb4ee663c2d5e33f11838248e2dc73b76fc -->
-## `grep_symbols(self, predicate: GrepPredicate, *, rank_by: str = "public_first", limit: int = 10) -> list[SymbolDetail]`
-
-Execute a predicate-driven symbol search and return ranked `SymbolDetail` results.
-
-- `predicate`: compound filter; omitted fields are unconstrained.
 - `rank_by`: `"public_first"` (default), `"inbound_count"`, or `"alphabetical"`; unknown values fall back to `"public_first"`.
-- `limit`: maximum rows returned.
+- `predicate`: all fields are optional; omitted fields apply no filter.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.all_symbol_names fingerprint=fd7275a10e4d910bbe493d3316de5e7e152c08eabc201043b81db9d247002f65 body_fp=a56ee588e9fdbe5fd8db0427f4d381769fcfad357bab3ad4870339ae2467b0d0 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.all_symbol_names(self) -> list[str]`
 
-<!-- trie:section symbol=trie/graph/store:SCHEMA_VERSION fingerprint=a3143f53a397605d955af85dc9c565211e3a2039edbb4283decccb73b16240ca body_fp=0d8e22fd12caa719babd038e9dbccbc254b4fb0ddd94dd1b5c77caf12e41cf1a source_ref=a1769a04774632716a3ce86b4dbe83e7d6023b92 -->
-## `SCHEMA_VERSION = 2`
-
-Integer sentinel; when the stored schema version differs, the DB file is deleted and rebuilt from scratch.
+Return all distinct local symbol names from the `Store` for fuzzy-match suggestions.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.all_qualified_names fingerprint=81e36419552fcadd1ffbad7e8109246d3055e765019c0633cfcabdafa0ad9eff body_fp=4ad80f02e28f3e5ef689ce1d06079e187ce0a85f82e67fecd371741129943251 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.all_qualified_names(self) -> list[str]`
 
-<!-- trie:section symbol=trie/graph/store:SCHEMA_SQL fingerprint=660e8edae6c97dfc3c8bee4057fe4c56895de17e501503a702b97bdabc7584f0 body_fp=529db5264c6599c219e518b21a07b223078de3407e68237d21ba1b882a1cb7a6 source_ref=a1769a04774632716a3ce86b4dbe83e7d6023b92 -->
-## `SCHEMA_SQL: str`
-
-DDL string executed on every `Store._open` to create all tables and indexes when absent.
+Return all qualified symbol names from the `Store`, used to suggest near-misses on not-found lookups.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.find_paths fingerprint=1e0bfe75b333b57d1f17f2fd413879fcc9f8615e5c9313a5804159d4e9eaa1b9 body_fp=2f0541623432520b03898991297d54f2db1c61310b75132810fec1a06acfa7cb source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+## `Store.find_paths(self, from_qname: str, to_qname: str, *, max_depth: int = 6, hub_threshold: int = 20, max_paths: int = 3) -> list[list[str]]`
 
-<!-- trie:section symbol=trie/graph/store:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=78a9a34d636128a6cb03c559f29d79ea4f9d7ec886ad44b9c88fcddc8aa87ead source_ref=a1769a04774632716a3ce86b4dbe83e7d6023b92 -->
-## `store`
+BFS over callee edges in the `Store` graph, returning up to `max_paths` shortest qname-sequences from `from_qname` to `to_qname`.
 
-SQLite-backed store for trie's symbol graph, file fingerprints, edge relationships, and generated triefact section metadata.
-
-- `SCHEMA_VERSION`: bump to invalidate and rebuild the cache DB automatically.
-- `FileRecord`, `FileStats`, `SymbolHit`, `SymbolDetail`: frozen dataclasses for query results.
-- `GrepPredicate`: composable filter for `Store.grep_symbols`.
-- `Store`: primary interface; use as a context manager.
+- `hub_threshold`: symbols with inbound count above this are skipped during expansion.
+- `max_depth`: paths exceeding this hop count are abandoned.
+- Returns `[]` when no path exists within bounds; `[[from_qname]]` when source equals destination.
 <!-- trie:end -->

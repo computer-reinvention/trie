@@ -426,7 +426,10 @@ def plan_cmd(
     # `plan` runs `scan_project` on the full-bootstrap branch, which writes
     # to the graph store. Even on the incremental branch it locks reads to a
     # consistent snapshot of the SQLite database. Guard the whole command.
-    with _acquire_write_lock_or_exit(project_root, reporter, "plan"), Store(db_path) as store:
+    with (
+        _acquire_write_lock_or_exit(project_root, reporter, "plan"),
+        Store(db_path) as store,
+    ):
         if use_incremental:
             with reporter.status("computing incremental worklist…"):
                 worklist = compute_incremental_worklist(
@@ -624,7 +627,10 @@ def refresh_cmd(
             reporter.success(f"{mode_label}: another refresh is running; queued for tail pass.")
             return
 
-        with Store(db_path) as store, _progress_callback(reporter, label="refreshing") as cb:
+        with (
+            Store(db_path) as store,
+            _progress_callback(reporter, label="refreshing") as cb,
+        ):
             try:
                 result = runner(
                     project_root=project_root,
@@ -966,6 +972,15 @@ def sync_cmd(
         "--model",
         help="Override the configured model, e.g. 'anthropic/claude-sonnet-4-6'.",
     ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help=(
+            "Force cold regeneration for every symbol in the file, bypassing the "
+            "diff-aware path. Only valid with --file. Use when existing prose is "
+            "known to be wrong and a full fresh LLM pass is needed."
+        ),
+    ),
 ) -> None:
     """Generate or refresh trie triefacts.
 
@@ -983,6 +998,9 @@ def sync_cmd(
     reporter = _get_reporter(ctx)
     if file is not None and all_:
         reporter.error("--file and --all are mutually exclusive")
+        raise typer.Exit(code=1)
+    if force and file is None:
+        reporter.error("--force requires --file")
         raise typer.Exit(code=1)
     if metadata_only and (
         file is not None or all_ or dry_run or budget is not None or limit is not None
@@ -1007,7 +1025,7 @@ def sync_cmd(
             return
 
         if file is not None:
-            _run_single_file_sync(reporter, file, model)
+            _run_single_file_sync(reporter, file, model, force=force)
             return
 
         if dry_run:
@@ -1163,7 +1181,9 @@ def _run_dry_run_diff(
     )
 
 
-def _run_single_file_sync(reporter: Reporter, file: Path, model: str | None) -> None:
+def _run_single_file_sync(
+    reporter: Reporter, file: Path, model: str | None, force: bool = False
+) -> None:
     if not file.exists():
         reporter.error(f"{file} does not exist")
         raise typer.Exit(code=1)
@@ -1178,9 +1198,12 @@ def _run_single_file_sync(reporter: Reporter, file: Path, model: str | None) -> 
     client = make_client(model_id, sync_cfg=config.sync)
     db_path = project_root / ".trie" / "graph.db"
 
-    with Store(db_path) as store, reporter.status(f"generating triefact for [cyan]{file}[/cyan]…"):
+    with (
+        Store(db_path) as store,
+        reporter.status(f"generating triefact for [cyan]{file}[/cyan]…"),
+    ):
         result = sync_single_file(
-            file, project_root=project_root, config=config, client=client, store=store
+            file, project_root=project_root, config=config, client=client, store=store, force=force
         )
 
     reporter.success(f"wrote {result.triefact_path}")
@@ -1346,31 +1369,40 @@ def setup_cmd(
             "Skip the tool-override step. By default, `setup` replaces the "
             "agent's built-in `grep` and `read` with wrappers that route "
             "through trie (and adds `trace`). Pass --no-overrides to "
-            "install MCP + hook + docs only and leave the agent's built-ins "
-            "alone."
+            "install hook + docs only and leave the agent's built-ins alone."
+        ),
+    ),
+    with_mcp: bool = typer.Option(
+        False,
+        "--with-mcp",
+        help=(
+            "Also register the trie MCP server for each target "
+            "(same as `trie mcp install`). Off by default — the hook and "
+            "tool overrides are sufficient for most setups."
         ),
     ),
 ) -> None:
-    """Wire trie into an agent end-to-end: MCP + hook + docs + tool overrides.
+    """Wire trie into an agent: hook + tool overrides + docs (MCP optional).
 
-    For each detected (or specified) target, this runs four installs:
+    For each detected (or specified) target, this runs three installs by
+    default:
 
-      1. The MCP server registration (same as `trie mcp install`).
-      2. A turn-boundary hook that calls `trie refresh --after-turn` so the
+      1. A turn-boundary hook that calls `trie refresh --after-turn` so the
          graph and triefact tree stay current with the agent's edits.
-      3. The agent-facing docs (TRIE.md + AGENTS.md pointer), with tool
-         names rendered for the harness in question.
-      4. Custom tool wrappers that replace the agent's built-in `grep` and
-         `read` with calls to `trie grep` / `trie read`, plus `trace`
-         as a new tool. This makes the agent reach for trie reflexively —
-         the built-ins literally route through trie instead of opencode's
-         regex-over-files search. Pass `--no-overrides` to skip this step.
+      2. Custom tool wrappers that replace the agent's built-in `grep` and
+         `read` with calls to `trie grep` / `trie read`, plus `trace` and
+         the explain/grep-str family as new tools. Pass `--no-overrides` to
+         skip this step and leave the agent's built-ins alone.
+      3. The agent-facing docs (TRIE.md + AGENTS.md pointer).
+
+    Pass `--with-mcp` to also register the MCP server (same as
+    `trie mcp install`). This is off by default because the tool overrides
+    already give the agent full access to trie without the MCP layer.
 
     Re-running `setup` is safe: every step is idempotent (existing files
     that match what we'd write are reported as `skipped`; drift is
     overwritten). Agents without an automatable hook or override surface
-    still get MCP registered, plus a clear `needs_manual_setup` notice
-    explaining what to wire by hand.
+    emit a clear `needs_manual_setup` notice explaining what to wire by hand.
     """
     reporter = _get_reporter(ctx)
 
@@ -1389,28 +1421,30 @@ def setup_cmd(
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
-    # MCP install.
-    try:
-        mcp_plan = mcp_run_install(
-            target_names=target,
-            scope=scope_norm,  # type: ignore[arg-type]
-            install_all=install_all,
-            print_only=print_only,
-            dry_run=dry_run,
-            project_root=project_root,
-        )
-    except MCPInstallError as exc:
-        reporter.error(str(exc))
-        raise typer.Exit(code=1) from exc
+    # MCP install — opt-in only via --with-mcp.
+    mcp_plan: InstallPlan | None = None
+    if with_mcp:
+        try:
+            mcp_plan = mcp_run_install(
+                target_names=target,
+                scope=scope_norm,  # type: ignore[arg-type]
+                install_all=install_all,
+                print_only=print_only,
+                dry_run=dry_run,
+                project_root=project_root,
+            )
+        except MCPInstallError as exc:
+            reporter.error(str(exc))
+            raise typer.Exit(code=1) from exc
 
-    # Hook install runs against the same target slugs MCP just resolved, so
-    # auto-detection and --target / --all stay consistent. Pass the resolved
-    # names explicitly to avoid running detection a second time and risking
-    # divergence between the two halves.
+    # Hook install. When MCP ran we reuse its resolved target names so
+    # auto-detection stays consistent across both steps. When MCP is
+    # skipped the hook installer does its own detection (or honours
+    # --target / --all directly).
     try:
         hook_plan = hook_run_install(
-            target_names=mcp_plan.target_names,
-            install_all=False,
+            target_names=mcp_plan.target_names if mcp_plan else target,
+            install_all=install_all if not mcp_plan else False,
             print_only=print_only,
             dry_run=dry_run,
             project_root=project_root,
@@ -1419,19 +1453,22 @@ def setup_cmd(
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
+    # Resolved target names for all subsequent steps come from whichever
+    # installer ran first (MCP if --with-mcp, otherwise hook).
+    resolved_targets = mcp_plan.target_names if mcp_plan else hook_plan.target_names
+
     # Docs install: write TRIE.md and refresh the pointer block in any
     # existing AGENTS.md / CLAUDE.md so agents discover the navigation
     # tools without the user having to author docs by hand. We pass the
-    # MCP target slugs through so the doc can bake in harness-specific
-    # tool names (e.g. `mcp__trie__grep` for Claude Code, `trie_grep`
-    # for opencode). The first target wins for the body; the rest land
-    # in a footer that names tool aliases under the other harnesses.
+    # resolved target slugs through so the doc can bake in harness-specific
+    # tool names. The first target wins for the body; the rest land in a
+    # footer that names tool aliases under the other harnesses.
     try:
         docs_plan = docs_run_install(
             project_root=project_root,
             print_only=print_only,
             dry_run=dry_run,
-            target_names=mcp_plan.target_names,
+            target_names=resolved_targets,
         )
     except DocsInstallError as exc:
         reporter.error(str(exc))
@@ -1441,14 +1478,14 @@ def setup_cmd(
     # with wrappers that call trie (opencode), or installs an advisory
     # PreToolUse hook (Claude Code). Other harnesses have no automated
     # path and emit a `needs_manual_setup` notice. Default on; the user
-    # opts out with `--no-overrides`. No prompt — re-running `setup` is
-    # idempotent, so an accidental install is one `--no-overrides` rerun
-    # away from a clean state.
+    # opts out with `--no-overrides`. Re-running `setup` is idempotent,
+    # so an accidental install is one `--no-overrides` rerun away from a
+    # clean state.
     override_plan: ToolOverrideInstallPlan | None = None
-    if mcp_plan.target_names and not no_overrides:
+    if resolved_targets and not no_overrides:
         try:
             override_plan = tool_override_run_install(
-                target_names=mcp_plan.target_names,
+                target_names=resolved_targets,
                 print_only=print_only,
                 dry_run=dry_run,
                 project_root=project_root,
@@ -1459,8 +1496,8 @@ def setup_cmd(
 
     _render_setup_plan(reporter, mcp_plan, hook_plan, docs_plan, override_plan)
 
-    # Surface a non-zero exit if any half hit an error so CI/scripts react.
-    mcp_errors = any(r.action == "error" for r in mcp_plan.results)
+    # Surface a non-zero exit if any step hit an error so CI/scripts react.
+    mcp_errors = any(r.action == "error" for r in mcp_plan.results) if mcp_plan else False
     hook_errors = any(r.action == "error" for r in hook_plan.results)
     docs_errors = any(r.action == "error" for r in docs_plan.results)
     override_errors = (
@@ -1472,22 +1509,22 @@ def setup_cmd(
 
 def _render_setup_plan(
     reporter: Reporter,
-    mcp_plan: InstallPlan,
+    mcp_plan: InstallPlan | None,
     hook_plan: HookInstallPlan,
     docs_plan: DocsInstallPlan,
     override_plan: ToolOverrideInstallPlan | None = None,
 ) -> None:
-    """Print one merged report: per-target MCP + hook + override lines, plus a docs section.
+    """Print one merged report: per-target hook + override lines (+ MCP if run), plus a docs section.
 
-    Each target gets a header with its MCP, hook, and (optional) tool-override
-    install outcomes grouped beneath. Manual-setup notes are emitted under
-    the relevant line so the user can copy them out of their terminal
-    directly. Docs install is target-independent (one TRIE.md per project),
-    so it gets its own section at the end.
+    Each target gets a header with its hook, optional MCP, and optional
+    tool-override install outcomes grouped beneath. Manual-setup notes are
+    emitted under the relevant line so the user can copy them out of their
+    terminal directly. Docs install is target-independent (one TRIE.md per
+    project), so it gets its own section at the end.
     """
     import json
 
-    mcp_by_target = {r.target: r for r in mcp_plan.results}
+    mcp_by_target = {r.target: r for r in mcp_plan.results} if mcp_plan else {}
     hook_by_target = {r.target: r for r in hook_plan.results}
     override_by_target = {r.target: r for r in override_plan.results} if override_plan else {}
     targets = sorted(
@@ -2078,6 +2115,184 @@ def trace_cmd(
     finally:
         tools.close()
     _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_trace)
+
+
+# ---------------------------------------------------------------------------
+# Extended agent tools: grep_str, grep_entry_points, grep_symbol,
+# grep_symbol_and_neighbours, explain_symbol, explain_symbol_references,
+# trace_flow, explain_flow
+# ---------------------------------------------------------------------------
+
+
+def _print_plain(envelope: dict[str, object], reporter: Reporter) -> None:
+    """Generic plain-text renderer for the extended tools.
+
+    Walks the envelope recursively and prints it in a readable form.
+    Lists render as bullet items; nested dicts render indented. This keeps
+    the CLI output human-readable without requiring a custom renderer per
+    tool.
+    """
+    import json as _json
+
+    err = envelope.get("error")
+    if isinstance(err, dict):
+        _render_error_envelope(err, reporter)
+        return
+    reporter.console.print(_json.dumps(envelope, indent=2, default=str))
+
+
+@app.command("grep-str")
+def grep_str_cmd(
+    ctx: typer.Context,
+    regexp: str = typer.Argument(..., help="Regex pattern to search source bodies with."),
+) -> None:
+    """Search source bodies with a regex; attribute hits to enclosing symbols.
+
+    Example:
+      trie grep-str 'raise.*Error'
+    """
+    reporter = _get_reporter(ctx)
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.grep_str(regexp)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+
+
+@app.command("grep-entry-points")
+def grep_entry_points_cmd(
+    ctx: typer.Context,
+    query: str = typer.Argument(..., help="Topic or concept to match against symbol prose."),
+) -> None:
+    """Find architectural entry points whose triefact prose matches a topic.
+
+    Example:
+      trie grep-entry-points 'authentication'
+    """
+    reporter = _get_reporter(ctx)
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.grep_entry_points(query)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+
+
+@app.command("grep-symbol")
+def grep_symbol_cmd(
+    ctx: typer.Context,
+    sym: str = typer.Argument(..., help="Symbol name or fragment to fuzzy-match."),
+) -> None:
+    """Fuzzy symbol name lookup: best match + similar symbols.
+
+    Example:
+      trie grep-symbol compute_casc
+    """
+    reporter = _get_reporter(ctx)
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.grep_symbol(sym)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+
+
+@app.command("grep-symbol-neighbours")
+def grep_symbol_neighbours_cmd(
+    ctx: typer.Context,
+    sym: str = typer.Argument(..., help="Symbol name or fragment to fuzzy-match."),
+) -> None:
+    """Fuzzy symbol lookup + trimmed metadata for immediate callers/callees.
+
+    Example:
+      trie grep-symbol-neighbours sync_single_file
+    """
+    reporter = _get_reporter(ctx)
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.grep_symbol_and_neighbours(sym)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+
+
+@app.command("explain-symbol")
+def explain_symbol_cmd(
+    ctx: typer.Context,
+    sym: str = typer.Argument(..., help="Symbol qname or name fragment to explain."),
+) -> None:
+    """Full prose + joined narrative story of a symbol's references.
+
+    Example:
+      trie explain-symbol compute_cascade
+    """
+    reporter = _get_reporter(ctx)
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.explain_symbol(sym)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+
+
+@app.command("explain-symbol-refs")
+def explain_symbol_refs_cmd(
+    ctx: typer.Context,
+    sym: str = typer.Argument(..., help="Symbol qname or name fragment."),
+) -> None:
+    """Explain how a symbol is used — callers only, with their prose.
+
+    Example:
+      trie explain-symbol-refs slugify
+    """
+    reporter = _get_reporter(ctx)
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.explain_symbol_references(sym)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+
+
+@app.command("trace-flow")
+def trace_flow_cmd(
+    ctx: typer.Context,
+    symbol1: str = typer.Argument(..., help="Starting symbol qname or name."),
+    symbol2: str = typer.Argument(..., help="Target symbol qname or name."),
+) -> None:
+    """Find call chain(s) between two symbols.
+
+    Example:
+      trie trace-flow sync_single_file Store.upsert_section_record
+    """
+    reporter = _get_reporter(ctx)
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.trace_flow(symbol1, symbol2)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+
+
+@app.command("explain-flow")
+def explain_flow_cmd(
+    ctx: typer.Context,
+    symbol1: str = typer.Argument(..., help="Starting symbol qname or name."),
+    symbol2: str = typer.Argument(..., help="Target symbol qname or name."),
+) -> None:
+    """Trace the call chain between two symbols and narrate each step.
+
+    Example:
+      trie explain-flow sync_single_file Store.upsert_section_record
+    """
+    reporter = _get_reporter(ctx)
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.explain_flow(symbol1, symbol2)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
 
 
 # ---------------------------------------------------------------------------

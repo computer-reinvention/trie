@@ -1,14 +1,14 @@
 ---
 trie_version: 0.1.2
 source: trie/tool_override_install.py
-file_fingerprint: d1acad128e8b5154572754006d28ae82b5e3d0f5ff229788593e43aeb6a5a155
-last_synced_at: '2026-05-21T16:15:17Z'
+file_fingerprint: 3b34bace4cd8bd0f17cd30f9cfdb4448b4f688e54e2386d2c8ecbc3e88f5560b
+last_synced_at: '2026-05-23T23:20:42Z'
 description: 'Tool-override installation: replace an agent''s built-in tools with
   trie wrappers.'
 defines:
 - kind: module
   qualified_name: trie/tool_override_install:__module__
-  lines: 1-1467
+  lines: 1-1804
 - kind: constant
   qualified_name: trie/tool_override_install:Action
   lines: 39-39
@@ -40,189 +40,234 @@ defines:
   qualified_name: trie/tool_override_install:_render_opencode_trace
   lines: 974-1043
 - kind: function
+  qualified_name: trie/tool_override_install:_render_opencode_grep_str
+  lines: 1051-1084
+- kind: function
+  qualified_name: trie/tool_override_install:_render_opencode_grep_entry_points
+  lines: 1087-1119
+- kind: function
+  qualified_name: trie/tool_override_install:_render_opencode_grep_symbol
+  lines: 1122-1154
+- kind: function
+  qualified_name: trie/tool_override_install:_render_opencode_grep_symbol_neighbours
+  lines: 1157-1190
+- kind: function
+  qualified_name: trie/tool_override_install:_render_opencode_explain_symbol
+  lines: 1193-1226
+- kind: function
+  qualified_name: trie/tool_override_install:_render_opencode_explain_symbol_refs
+  lines: 1229-1261
+- kind: function
+  qualified_name: trie/tool_override_install:_render_opencode_trace_flow
+  lines: 1264-1300
+- kind: function
+  qualified_name: trie/tool_override_install:_render_opencode_explain_flow
+  lines: 1303-1339
+- kind: function
   qualified_name: trie/tool_override_install:_render_claude_code_hooks_json
-  lines: 1051-1107
+  lines: 1347-1403
 - kind: constant
   qualified_name: trie/tool_override_install:TARGETS
-  lines: 1116-1226
+  lines: 1412-1563
 - kind: class
   qualified_name: trie/tool_override_install:ToolOverrideInstallPlan
-  lines: 1235-1241
+  lines: 1572-1578
 - kind: function
   qualified_name: trie/tool_override_install:install
-  lines: 1244-1283
+  lines: 1581-1620
 - kind: function
   qualified_name: trie/tool_override_install:apply_one
-  lines: 1286-1343
+  lines: 1623-1680
 - kind: function
   qualified_name: trie/tool_override_install:_remove_obsolete
-  lines: 1346-1399
+  lines: 1683-1736
 - kind: function
   qualified_name: trie/tool_override_install:_apply_file
-  lines: 1402-1466
-incoming_refs: 32
+  lines: 1739-1803
+incoming_refs: 33
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=trie/tool_override_install:ToolOverrideInstallError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=af02c768a0f5c0ca53ba008c51d793424e58fbb39a024793393d42518cd258dd source_ref=22af55fe3c92536b808294dbfad114aa433c76ee -->
+<!-- trie:section symbol=trie/tool_override_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=6b4ac288d16a333f4d9d4479d5fcfc8d4f416cf4515026f9efe7cf3d624b51d4 source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+## `trie/tool_override_install`
+
+Replace an agent's built-in tools with trie wrappers by writing override files into the project root.
+
+- `TARGETS`: registry of `ToolOverrideTarget` entries keyed by harness slug (`"opencode"`, `"claude-code"`, etc.)
+- opencode: overrides `grep` and `read`, adds `trace` and 8 extended tools under `.opencode/tools/`
+- claude-code: installs a `PreToolUse` advisory hook under `.claude/hooks/`; all other harnesses return `needs_manual_setup`
+- `Action`: literal set of per-file outcomes — `"created"`, `"updated"`, `"skipped"`, `"preview"`, `"error"`, `"needs_manual_setup"`
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:Action fingerprint=6d5466b453e0912edae50fab1848c782530de9137450b5c33b3682dc80488f21 body_fp=6b65b8f074e125f4b5401efe85c4c999b76090020c367c758490d8a1465f3bae source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+## `Action = Literal["created", "updated", "skipped", "preview", "error", "needs_manual_setup"]`
+
+Type alias for the outcome of a single file or target install operation.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:ToolOverrideInstallError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=41af9937735bcb59bbad70e486ac45768dace73d6176816e23ddb2df743e8763 source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
 ## `ToolOverrideInstallError`
 
-Raised when tool-override installation fails due to invalid input or configuration.
+Raised by `install` when target names are missing or unknown.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:FileToWrite fingerprint=d1463a335d153224df4e0fbe524be20b78d6d8091a383d10a9790a3b0e2a7bc7 body_fp=a4917e24f8abcbcc1b60bf31c502db2dcb06443285c59f2da9b0f1a7bf16c454 source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+## `FileToWrite(relative_path, render, description)`
 
-<!-- trie:section symbol=trie/tool_override_install:FileToWrite fingerprint=d1463a335d153224df4e0fbe524be20b78d6d8091a383d10a9790a3b0e2a7bc7 body_fp=59e422c89b6290d8070b194d823d394ce66109763885c4abab4e8abd4e46e43b source_ref=5d931542c10f2ce2e4395f2c3ec71ccd50f59873 -->
-## `FileToWrite`
+Describe one file an override target needs written to disk.
 
-Describe one file an override target must write to disk, with its render function and human-readable label.
-
-- `relative_path`: tuple of path segments joined at write time
-- `render`: called with `project_root`; returns the file's full text content
+- `relative_path`: path segments joined against the project root at write time.
+- `render`: called with the project root to produce the file's text content.
+- `description`: short human-readable label used in install reports.
 <!-- trie:end -->
-
-<!-- trie:section symbol=trie/tool_override_install:ToolOverrideApplyResult fingerprint=7cddfb44189be40c0f69532eed1cb7932f69fa3fd6d833f65a5666f956fb18e4 body_fp=d44db69f394daa7095a6a8d0a196a58fa4acc23e31a10be91bb04e95ae9b9098 source_ref=22af55fe3c92536b808294dbfad114aa433c76ee -->
+<!-- trie:section symbol=trie/tool_override_install:ToolOverrideApplyResult fingerprint=7cddfb44189be40c0f69532eed1cb7932f69fa3fd6d833f65a5666f956fb18e4 body_fp=b46703ce950e5dc79dd5bf21624227aa4efa3ac74612cf5339ef187559ebf85e source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
 ## `ToolOverrideApplyResult`
 
-Holds the outcome of installing all override files for one target.
+Immutable outcome of installing override files for one agent target.
 
-- `action`: summarises across files — `"error"` if any errored, `"skipped"` if all skipped, else highest-energy change.
-- `files`: per-file results for CLI reporting.
-- `detail`: populated on `"error"` or `"needs_manual_setup"` outcomes.
+- `action`: rolls up per-file results; precedence is `error` > `created`/`updated` > `skipped`.
+- `files`: per-file breakdown for CLI reporting.
+- `detail`: human-readable note, populated on `needs_manual_setup` or errors.
 <!-- trie:end -->
-
-<!-- trie:section symbol=trie/tool_override_install:ToolOverrideFileResult fingerprint=95c3d41b7de9da2d5f20aaa8a72438d7c4bcf3c67de66f8868b3e533a58b4243 body_fp=096cd8aad342052cc7c2cef27735c85b6ea3defc7d8fe042e1953eb1edbcb2d1 source_ref=22af55fe3c92536b808294dbfad114aa433c76ee -->
+<!-- trie:section symbol=trie/tool_override_install:ToolOverrideFileResult fingerprint=95c3d41b7de9da2d5f20aaa8a72438d7c4bcf3c67de66f8868b3e533a58b4243 body_fp=cb382c923ce2fe407d9e833e08b36d66e1323a708f716e2bcca45d7d8e9208e2 source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
 ## `ToolOverrideFileResult`
 
 Per-file outcome inside a `ToolOverrideApplyResult.files` list.
 
-- `action`: one of `created`, `updated`, `skipped`, `preview`, `error`, `needs_manual_setup`
-- `path`: resolved `Path` on disk, or `None` if unavailable
-- `detail`: error message, preview contents, or skip reason
+- `action`: one of `"created"`, `"updated"`, `"skipped"`, `"preview"`, `"error"`, `"needs_manual_setup"`
+- `path`: absolute path on disk; `None` when not yet resolved
+- `detail`: human-readable elaboration, e.g. error message or preview contents
 <!-- trie:end -->
-
-<!-- trie:section symbol=trie/tool_override_install:ToolOverrideTarget fingerprint=b964401eaed7403ce2d98e9a483745ee19a1868524d0784dc5a3f5dc20b794fc body_fp=4583e9304b6a6b94b4db57f43b79147f475a6e7ddfe543b48d873b97a194fe55 source_ref=cd49f981cf93dad430cf7f0808a344171fe6573a -->
+<!-- trie:section symbol=trie/tool_override_install:ToolOverrideTarget fingerprint=b964401eaed7403ce2d98e9a483745ee19a1868524d0784dc5a3f5dc20b794fc body_fp=35ea20bdc77dde28e3b68bbfd068b55dfd6bb2d12de86641eaa832bbdabd7d74 source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
 ## `ToolOverrideTarget`
 
-Describe one agent's tool-override surface and the files needed to activate it.
+Immutable descriptor for one agent's tool-override surface, consumed by `apply_one`.
 
-- `files`: empty tuple means no automated path; `apply_one` returns `needs_manual_setup`.
-- `obsolete_files`: paths deleted on apply if present; missing files are silently skipped.
+- `files`: override files to write; empty means no automatable path → `needs_manual_setup`.
+- `obsolete_files`: path tuples deleted on apply to clean up stale files from prior installs.
 - `manual_instructions`: shown to the user when `files` is empty.
-- `summary`: one-line consent prompt shown before writing any files.
+- `summary`: one-line consent prompt shown during `trie setup`.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_GENERATED_HEADER fingerprint=9dee807c69fc07fab72c6209e764e2323da49f8dcd319a9c54481dbecbb5889a body_fp=79ccf434b6fc0d443be86752b6ffe2730340b8800ae5220bd2f77f10e8ea1c45 source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+## `_GENERATED_HEADER`
 
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_override fingerprint=d4fe781eb2476743b45b91913cd2af575d6c596c783b14cb4838b22252517ad7 body_fp=f10f1a38d56df00d70428acde6e05742f0c3d7bbf574dc9ab035e38f6ba61c49 source_ref=22af55fe3c92536b808294dbfad114aa433c76ee -->
+TypeScript file header prepended to every generated `.opencode/tools/*.ts` override file.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_override fingerprint=ae1bb9a2dfb2e20aa6ee58d36a1acc2044aada27b0475972e707f9af1f84c2ec body_fp=96a7a8061b16f277332aa117703cb6845106e0f33242897221d8b927ea4033b2 source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
 ## `_render_opencode_grep_override(_project_root: Path) -> str`
 
-Render the `.opencode/tools/grep.ts` file that replaces opencode's built-in `grep` with a trie-backed symbol search tool.
+Render the `.opencode/tools/grep.ts` file that replaces opencode's built-in `grep` with a symbol-aware trie wrapper.
+
+- Returns TypeScript source; filename collision causes opencode to prefer this tool over its built-in.
+- `pattern` maps to `name_contains`; falls back to ripgrep over source bodies on no symbol match.
+- `path` maps to `scope_prefix`; `include` is unsupported (scope is config-driven).
 <!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_read_override fingerprint=ffe463adc332d1f0f88803fa18b58ae49c3b0e654de8c52d6130ffd38a1cfc29 body_fp=acf64de65b9b685677b305883d40709ac2d348503ea0c69b026b93914b09f3c4 source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+## `_render_opencode_read_override(_project_root: Path) -> str`
 
+Render `.opencode/tools/read.ts`, a triefact-first override of opencode's built-in `read` tool.
 
+- **qname path**: detects `path/to/file:Name` shape, shells out to `trie read <qname>`.
+- **triefact path**: loads `triefacts/<stem>.md`; returns compact symbol manifest by default or agent-trimmed full prose when `full: true`.
+- **source fallthrough**: used when `show_source: true`, `offset`/`limit` present, or no triefact exists.
+- Emits `cli_call` telemetry events for in-process paths (qname path delegates emission to the `trie` subprocess).
+- Non-default `triefacts.root` silently falls through to source.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_trace fingerprint=33f21409112cc93e5bd7b1ea55ec2806b431a24243d780acd9aa0425eb300959 body_fp=bd347a8ad1190d6da4f9c908c9adca864091c149602eaeb4f0538c017ab3a1ff source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+## `_render_opencode_trace(_project_root: Path) -> str`
 
+Render `.opencode/tools/trace.ts`, a purely additive custom tool that exposes `trie trace` as a bare `trace` tool in opencode.
 
+- No built-in collision; file basename `trace` is distinct from MCP-prefixed `trie_trace`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_str fingerprint=58319bb302d242e7793e07fbc486394d9929f9b77d2e5b4c7b67871c72313bbb body_fp=8b3ce12f3acab3a6f2135cda4ad1adb16b7012a85cff2fed986bde85eed3662e source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+## `_render_opencode_grep_str(_project_root: Path) -> str`
 
-<!-- trie:section symbol=trie/tool_override_install:_render_claude_code_hooks_json fingerprint=2b004e51b57a5be1e5d0181eb5239d9e0484ae53fc4b78e3acda4c59131e21ed body_fp=2c2db52cd3cddb7e36276c6e9e96b47c06e2ffff1818d6dffe1d05f4176562ed source_ref=22af55fe3c92536b808294dbfad114aa433c76ee -->
+Render `.opencode/tools/grep_str.ts`, a tool that searches raw source bodies by regex and attributes matches to enclosing symbols.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_entry_points fingerprint=c103f37b0731a78f4946f00df70aa0a7c59469865fa179bcc49b4f126a9be390 body_fp=4466d7fc62fb89093716b9667604179a0ceb7dd2c33a9501f911434b9c62a5ba source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+## `_render_opencode_grep_entry_points(_project_root: Path) -> str`
+
+Render `.opencode/tools/grep_entry_points.ts`, a custom tool that shells out to `trie grep-entry-points` to find high-inbound public symbols matching a topic.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_symbol fingerprint=5fe0f8a345b92f4e74ab8594f01138a2ca9465f62424c8cca778c6243f42bdcd body_fp=8669aafeb567229dca3f95a4375d7796ddce55fdd26b7bab96e3e1716a833e6d source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+## `_render_opencode_grep_symbol(_project_root: Path) -> str`
+
+Render `.opencode/tools/grep_symbol.ts`, a fuzzy symbol-name lookup tool wrapping `trie grep-symbol`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_symbol_neighbours fingerprint=fd4dd9c1438e507552610e6b0b7208cd5eda44be46f6fe56f3ac96de1bda926b body_fp=27352294596417f6d940448b7d3bff1eeccf09b565394127205190df8912da97 source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+## `_render_opencode_grep_symbol_neighbours(_project_root: Path) -> str`
+
+Render `.opencode/tools/grep_symbol_neighbours.ts`, which shells out to `trie grep-symbol-neighbours` for fuzzy symbol lookup plus immediate caller/callee metadata.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_explain_symbol fingerprint=3d74449df7ba7f3d9b5fa4b53a18b86d658841f1dd02f5df48c5b229f9eea361 body_fp=b74effcec2e1e175136030cac2aa18ad73c3bf37d390882d6ba678ed3325cbbd source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+## `_render_opencode_explain_symbol(_project_root: Path) -> str`
+
+Render `.opencode/tools/explain_symbol.ts`, which shells out to `trie explain-symbol` for full symbol prose plus a caller/callee narrative.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_explain_symbol_refs fingerprint=ccf063b124b1693e10748b1ce8eab31574140cd313a5456a07f70effd3ac958d body_fp=e69ce797ef4cd16db4664b18132a04e217a92211268ebaef047c29b0c63c43ad source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+## `_render_opencode_explain_symbol_refs(_project_root: Path) -> str`
+
+Render `.opencode/tools/explain_symbol_refs.ts`, a tool that shells out to `trie explain-symbol-refs` to narrate a symbol's callers.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_trace_flow fingerprint=27e2f63229308ef7da4fbbe00d2462f2457e8587819484054e13f589be0db140 body_fp=6ca89b9b72eb917ba7647ccb86aab7b75a40f2d60d98bc1f2832bfb75df3d918 source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+## `_render_opencode_trace_flow(_project_root: Path) -> str`
+
+Render `.opencode/tools/trace_flow.ts`, a custom tool that finds shortest call chain(s) between two symbols via `trie trace-flow`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_explain_flow fingerprint=60bc58f220fddf22d79fc3b0feb7c064f81546e80a928f6c04fd14cf7cbd70b0 body_fp=01f5f551fbab49246a34a297e08c3f91581e4ac0ec454600ce150843723ee14c source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+## `_render_opencode_explain_flow(_project_root: Path) -> str`
+
+Render `.opencode/tools/explain_flow.ts`, an opencode custom tool that shells out to `trie explain-flow` to narrate the call chain between two symbols.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_render_claude_code_hooks_json fingerprint=2b004e51b57a5be1e5d0181eb5239d9e0484ae53fc4b78e3acda4c59131e21ed body_fp=8f98a136fdaa84b7442e48d37b71a10905d9d3f89801c62c6dbf96e87044da5c source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
 ## `_render_claude_code_hooks_json(_project_root: Path) -> str`
 
-Render `.claude/hooks/trie-tools.json`, a `PreToolUse` advisory hook that nudges Claude toward `mcp__trie__grep` when it reaches for built-in `Grep`.
+Render `.claude/hooks/trie-tools.json`, a Claude Code `PreToolUse` advisory hook that nudges the model toward `mcp__trie__grep` when it invokes built-in `Grep`.
 
-- Does not block the built-in call; emits a `systemMessage` only.
-- Output is a JSON string with a trailing newline.
+- Emits a `systemMessage` via `echo`; does not block the original `Grep` call.
+- Only intercepts `Grep`; `Read` and `Glob` are left unhooked.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:TARGETS fingerprint=295ef083f6bacd559b89e23f06d4246b2ea275129558e6a81272d4fb3420ae82 body_fp=be70f21746701e0b31852079bfdd9c5d2d5937f957d9ed1817daa0d4016e9a8b source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+## `TARGETS: dict[str, ToolOverrideTarget]`
 
-<!-- trie:section symbol=trie/tool_override_install:ToolOverrideInstallPlan fingerprint=83ec1a61df42535b35c8b51fedbfbfc45086f0e5962ba7c40558117b34de29df body_fp=2dc2be28cbeaeb67793f4a6fd0e29bc3f45a0607effdb4951babad3ce1ec6862 source_ref=22af55fe3c92536b808294dbfad114aa433c76ee -->
+Registry mapping agent slug to its `ToolOverrideTarget` definition, keyed by the same names used in `mcp_install.TARGETS`.
+
+- `"opencode"`: 11 files — overrides `grep`/`read`, adds `trace` plus 8 extended tools; obsoletes `trie_read.ts`/`trie_trace.ts`.
+- `"claude-code"`: 1 file — advisory `PreToolUse` hook nudging toward `mcp__trie__grep`.
+- All other entries: no files; `apply_one` returns `needs_manual_setup` with `manual_instructions`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:ToolOverrideInstallPlan fingerprint=83ec1a61df42535b35c8b51fedbfbfc45086f0e5962ba7c40558117b34de29df body_fp=3c80948ef55ed294f84915374407ec7d6200aef7bce5e24a0755db639161b82f source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
 ## `ToolOverrideInstallPlan`
 
 Aggregate result of a full `install` call across one or more targets.
-<!-- trie:end -->
 
-<!-- trie:section symbol=trie/tool_override_install:install fingerprint=d1450ff3c792844aaa780cfdb60ec25d3403dafdee9b932957ea583841beaf10 body_fp=23720cff65117d87bf3627951850ba81fbb5754821a946a49ae741f61ca34f2b source_ref=22af55fe3c92536b808294dbfad114aa433c76ee -->
+- `results`: per-target `ToolOverrideApplyResult` instances, populated by `install`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:install fingerprint=d1450ff3c792844aaa780cfdb60ec25d3403dafdee9b932957ea583841beaf10 body_fp=9f0e96f443a4b3af0ff9be3cbf6b45d938d415721d1465912fe0e77bbd37db7b source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
 ## `install(*, target_names: list[str] | None, print_only: bool, dry_run: bool, project_root: Path) -> ToolOverrideInstallPlan`
 
-Apply tool-override files for one or more explicitly named targets, raising `ToolOverrideInstallError` on unknown names or empty input.
+Apply tool-override files for each named target, returning a plan with per-target results.
 
-- `target_names`: required; no implicit "all targets" expansion.
-- `print_only`: renders content without writing; results carry `"preview"` action.
-- `dry_run`: checks disk state without writing; results carry `"preview"` action.
+- `target_names`: required; raises `ToolOverrideInstallError` if empty or contains unknown names.
+- `print_only`: preview content without writing to disk.
+- `dry_run`: report prospective changes without writing to disk.
 <!-- trie:end -->
-
-<!-- trie:section symbol=trie/tool_override_install:apply_one fingerprint=ba92586faae5c98a3f4a5228889bd4a297381515308bc99e0afaba467e97047f body_fp=89da4427ac742c3537afdcf56ca20d69844309df3338e622642d69ce3d5be52e source_ref=cd49f981cf93dad430cf7f0808a344171fe6573a -->
+<!-- trie:section symbol=trie/tool_override_install:apply_one fingerprint=ba92586faae5c98a3f4a5228889bd4a297381515308bc99e0afaba467e97047f body_fp=c3f4ecc6033c1c6bcd66a871a721b066b072aed69d39b992a4d9eb007ef6ef2e source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
 ## `apply_one(target: ToolOverrideTarget, project_root: Path, print_only: bool, dry_run: bool, *, scope: Scope = "project") -> ToolOverrideApplyResult`
 
-Install or preview every override file for one `ToolOverrideTarget`, returning a per-file and aggregate result.
+Install or preview every override file for a single `ToolOverrideTarget`, cleans up obsolete files, and returns an aggregated result.
 
-- `scope`: accepted for API symmetry; currently unused.
-- Returns `needs_manual_setup` immediately if `target.files` is empty.
-- After writing new files, removes any paths listed in `target.obsolete_files` via `_remove_obsolete`.
-- Top-level `action` summarises file results by precedence: `error` > `created` > `updated` > `preview` > `skipped`.
+- `scope`: accepted for API symmetry but unused; files always land under the project.
+- Returns `needs_manual_setup` immediately when `target.files` is empty.
+- Top-level `action` reflects highest-precedence per-file outcome: `error` > `created` > `updated` > `preview` > `skipped`.
 <!-- trie:end -->
-
-<!-- trie:section symbol=trie/tool_override_install:_apply_file fingerprint=a55304ab263ea6f60e2d442ead639c43d89f3b54e65dda158b61cb687f3febf3 body_fp=7fada6f6e3c8f7958eae3b3a33a4e89c55e80ca45e9ef83dbb20be3d8b6a0283 source_ref=22af55fe3c92536b808294dbfad114aa433c76ee -->
-## `_apply_file(spec: FileToWrite, project_root: Path, print_only: bool, dry_run: bool) -> ToolOverrideFileResult`
-
-Materialise one override file on disk with idempotency, dry-run, and print-only guards.
-
-- `spec` — provides the target path segments, renderer, and description.
-- Returns `skipped` if file exists with identical contents; `preview` if `print_only` or `dry_run`; `error` on unreadable existing file; else `created` or `updated`.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/tool_override_install:Action fingerprint=6d5466b453e0912edae50fab1848c782530de9137450b5c33b3682dc80488f21 body_fp=1922a7ee9f5f29f8c2eb06478d570b909133433d28dcbb8483bb6c97f7fead58 source_ref=cd49f981cf93dad430cf7f0808a344171fe6573a -->
-## `Action = Literal["created", "updated", "skipped", "preview", "error", "needs_manual_setup"]`
-
-Type alias for the set of possible per-file or per-target outcome verbs.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/tool_override_install:_GENERATED_HEADER fingerprint=9dee807c69fc07fab72c6209e764e2323da49f8dcd319a9c54481dbecbb5889a body_fp=39fce4cf2c89ea6ffd1f3a2caf602eff1d020d9c2f55cb6f9628b3dc5fac9c3d source_ref=cd49f981cf93dad430cf7f0808a344171fe6573a -->
-## `_GENERATED_HEADER`
-
-Top-of-file comment block prepended to every generated `.ts` override file.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_read_override fingerprint=ffe463adc332d1f0f88803fa18b58ae49c3b0e654de8c52d6130ffd38a1cfc29 body_fp=4ec7a7bc485ebe5c1ac9089cb2d86a4a1ab83e88c64fc1d39267aa2dd612f8e7 source_ref=082e391d615a10c181c6c5dfd3e2f7cbf1e330ca -->
-## `_render_opencode_read_override(_project_root: Path) -> str`
-
-Render `.opencode/tools/read.ts`, dispatching on argument shape across four paths: qname → `trie read --json`, file path with triefact → compact view (default) or agent-trimmed full view (`full: true`), otherwise raw source bytes.
-
-- **qname**: string containing `:` (not a URL scheme or Windows drive) routes to `trie read`
-- **triefact compact** (default): renders symbol manifest with signatures and first-paragraph intros via `renderCompact`
-- **triefact full** (`full: true`): strips internal frontmatter keys and section sentinels via `renderForAgent`, keeping only agent-facing keys and section bodies
-- **show_source / offset / limit**: force raw file read via `readSourceFile`; absolute paths resolved verbatim, relative paths under cwd
-- Accepts a `full` arg in telemetry capture; emits `cli_call` telemetry for in-process paths; skips emission on qname path to avoid double-counting with the subprocess
-- `readTriefact` now handles absolute paths by stripping the cwd prefix before triefact lookup; returns `null` for paths outside the project tree
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/tool_override_install:TARGETS fingerprint=963ca82ce9f9d336ddbf04281e5bf55396f0ae64fb330735e6de17c19a3a7bda body_fp=e1de28ea10e6d9f4657404c9b4f9c3ba7984cb0d6b835c5e894c5b139fd59483 source_ref=5d931542c10f2ce2e4395f2c3ec71ccd50f59873 -->
-## `TARGETS: dict[str, ToolOverrideTarget]`
-
-Registry mapping target slug to its `ToolOverrideTarget` descriptor for all known agent harnesses.
-
-- Keys must match slugs in `trie.mcp_install.TARGETS`; `install()` validates against this dict.
-- Targets without an automatable override path (`claude-desktop`, `cursor`, `windsurf`, `vscode`, `codex`) have empty `files` and carry `manual_instructions` instead.
-- `opencode` entry includes `obsolete_files` to drop both `trie_read.ts` and `trie_trace.ts` from prior installs; the trace tool is now written as `trace.ts`.
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/tool_override_install:_remove_obsolete fingerprint=2c10eaaf6621f765d84ecc5d05ce22304e2c4d73c09fd8511dafcf9069194641 body_fp=b1adad5ee10a4acd0c89c2df84eae7af3f30604a3103748e51f6a29cb0281d93 source_ref=cd49f981cf93dad430cf7f0808a344171fe6573a -->
+<!-- trie:section symbol=trie/tool_override_install:_remove_obsolete fingerprint=2c10eaaf6621f765d84ecc5d05ce22304e2c4d73c09fd8511dafcf9069194641 body_fp=894c958656cb0aae13a9c49525570b5ff9a00fd6e631947a9700c294c2fc1c34 source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
 ## `_remove_obsolete(relative_path: tuple[str, ...], project_root: Path, print_only: bool, dry_run: bool) -> ToolOverrideFileResult`
 
-Delete an obsolete override file left by a prior `trie setup` version, or report skipped/preview if absent or in dry-run mode.
+Delete an obsolete override file left by a prior `trie setup` version, returning a per-file result.
 
-- `relative_path`: path segments joined against `project_root` to locate the file.
-- Returns `action="updated"` when the file is removed, `"skipped"` when absent, `"preview"` in dry-run/print-only mode, `"error"` on `OSError`.
+- `relative_path`: path segments joined under `project_root` to locate the file.
+- Returns `skipped` if absent, `preview` for dry-run/print-only, `updated` on successful deletion, `error` on `OSError`.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_apply_file fingerprint=a55304ab263ea6f60e2d442ead639c43d89f3b54e65dda158b61cb687f3febf3 body_fp=568d3600221564fd90c15df41e4d0347fbbfe9897794d19ab9fa08f88a787b5c source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+## `_apply_file(spec: FileToWrite, project_root: Path, print_only: bool, dry_run: bool) -> ToolOverrideFileResult`
 
-<!-- trie:section symbol=trie/tool_override_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=99a1027719819282265fdafac8cb3b41fd3034267f97bcb9569e4c12eb697681 source_ref=cd49f981cf93dad430cf7f0808a344171fe6573a -->
-## `tool_override_install`
-
-Replace an agent's built-in tools with trie wrappers, making trie the default search and read path.
-
-- `TARGETS`: registry of `ToolOverrideTarget` entries keyed by harness slug (`opencode`, `claude-code`, etc.)
-- opencode: overrides `grep` and `read`, adds `trie_trace` via `.opencode/tools/*.ts`
-- claude-code: installs a `PreToolUse` advisory hook nudging toward `mcp__trie__grep`
-- other harnesses: return `needs_manual_setup` with human-readable instructions
-<!-- trie:end -->
-
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_trace fingerprint=ce945f489d5cb4dbc4732d15308848aef90edc88d35414fb87f5e2bc5d31a510 body_fp=ad459713c93af2887a7202b82e7ecabfc70362070bb73206d05eb58620c33fc6 source_ref=5d931542c10f2ce2e4395f2c3ec71ccd50f59873 -->
-## `_render_opencode_trace(_project_root: Path) -> str`
-
-Render `.opencode/tools/trace.ts`, adding `trie trace` as a new `trace` tool in opencode without overriding any built-in.
-
-- Returns a TypeScript source string for a custom opencode tool that shells out to `trie trace --json`.
+Materialise one override file with idempotency: skip if unchanged, overwrite if different, preview without writing if `print_only` or `dry_run`.
 <!-- trie:end -->

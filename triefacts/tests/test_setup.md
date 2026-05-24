@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.2
 source: tests/test_setup.py
-file_fingerprint: 74afc5c78144081a1dc5cf2e5558b722e581f9e2210f7a16235921d56771050f
-last_synced_at: '2026-05-21T16:15:00Z'
+file_fingerprint: 244a847eb74b1fec37989630a6a0fae7753c0029ae79eaec5c613e288c824d99
+last_synced_at: '2026-05-23T23:45:39Z'
 description: End-to-end tests for `trie setup` and the underlying hook installer.
 defines:
 - kind: module
   qualified_name: tests/test_setup:__module__
-  lines: 1-436
+  lines: 1-462
 - kind: function
   qualified_name: tests/test_setup:project
   lines: 34-45
@@ -45,204 +45,188 @@ defines:
   qualified_name: tests/test_setup:test_apply_one_returns_needs_manual_setup_for_render_none
   lines: 241-249
 - kind: function
-  qualified_name: tests/test_setup:test_cli_setup_opencode_writes_both_files
-  lines: 257-274
+  qualified_name: tests/test_setup:test_cli_setup_opencode_writes_hook_and_overrides_by_default
+  lines: 257-273
 - kind: function
-  qualified_name: tests/test_setup:test_cli_setup_claude_code_does_mcp_and_warns_about_hook
-  lines: 277-288
+  qualified_name: tests/test_setup:test_cli_setup_opencode_with_mcp_writes_mcp
+  lines: 276-292
+- kind: function
+  qualified_name: tests/test_setup:test_cli_setup_claude_code_warns_about_hook
+  lines: 295-304
+- kind: function
+  qualified_name: tests/test_setup:test_cli_setup_claude_code_with_mcp_writes_mcp_and_warns_about_hook
+  lines: 307-317
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_print_only_writes_nothing
-  lines: 291-299
+  lines: 320-328
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_target_and_all_mutex
-  lines: 302-307
+  lines: 331-336
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_invalid_scope
-  lines: 310-315
+  lines: 339-344
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_idempotent_second_run
-  lines: 318-334
+  lines: 347-361
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_installs_overrides_by_default
-  lines: 347-359
+  lines: 374-386
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_no_overrides_flag_skips_overrides
-  lines: 362-378
+  lines: 389-404
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_print_only_previews_overrides_without_writing
-  lines: 381-396
+  lines: 407-422
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_claude_code_creates_advisory_hook_by_default
-  lines: 399-414
+  lines: 425-440
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_override_idempotent_on_second_run
-  lines: 417-435
+  lines: 443-461
 incoming_refs: 0
-outgoing_refs: 26
+outgoing_refs: 28
 ---
-<!-- trie:section symbol=tests/test_setup:project fingerprint=1f83c1fd82d36d3db04107648fc45b8a7541a7d15408974e22c21bda26a413b5 body_fp=ad646ff0bf22ebca2cb69d0e9f0ee1edbb6a6d7703170f9588696f6619e2a7e7 source_ref=eae88ef26c089f711012aa225c1debacb734217c -->
+<!-- trie:section symbol=tests/test_setup:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=3d9123c15ea1bce7f754ad9181a5c24014eedc63b0a3089b7f34d09e24190b6d source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
+## `tests/test_setup`
+
+End-to-end tests for `trie setup` CLI and the `hook_install` module.
+
+- `project` fixture: tmp dir with minimal `trie.toml` satisfying `Config.find_and_load`
+- Covers: file creation, idempotency, `--print-only`/`--dry-run`, manual-setup targets, CLI flags, tool-override install
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_setup:project fingerprint=1f83c1fd82d36d3db04107648fc45b8a7541a7d15408974e22c21bda26a413b5 body_fp=28bafac5057b2f988f348b15d6df74f9f104a8e2285bfb92c0cd80d0ec448389 source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `project(tmp_path: Path) -> Path`
 
-Pytest fixture that creates a minimal `trie.toml` in a temp directory and returns its path.
+Pytest fixture that creates a minimal `trie.toml` in a temp directory and returns it as the project root.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_setup:test_opencode_hook_creates_plugin_file fingerprint=fc94d480e290261b1fe2896b887d8b2dad458d4ad585c77f7a6e67594d0f2a0b body_fp=79abe08f92ae6a3fab1e08c1c75dc51cf9a6feb0e2755c1d2d36fc62505e1d53 source_ref=9ab1903672c6e8c734747e2990ed26be4fc16a93 -->
+<!-- trie:section symbol=tests/test_setup:test_opencode_hook_creates_plugin_file fingerprint=fc94d480e290261b1fe2896b887d8b2dad458d4ad585c77f7a6e67594d0f2a0b body_fp=85c4df03f27a5fe8cfeae2657297d2b493aec26f085e933a51ed60cc90648cbe source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_opencode_hook_creates_plugin_file(project: Path)`
 
-Verify that `install` for the `opencode` target creates the plugin file with correct wiring on disk.
+Verify that `install` for the `opencode` target writes a valid `trie-refresh.ts` plugin and a `package.json` baseline.
 
-- `project`: tmp directory with a valid `trie.toml`; file must not pre-exist.
-- Asserts plugin uses `session.status`/`"idle"` event, `export default` with `"trie-refresh"` id, and a `package.json` baseline with `@opencode-ai/plugin` dependency.
+- Asserts `action == "created"` and file exists at `.opencode/plugins/trie-refresh.ts`.
+- Checks plugin uses `session.status`/`"idle"` event and `trie refresh --after-turn`.
+- Checks plugin has `export default` with `"trie-refresh"` id (v1 loader requirement).
+- Checks `.opencode/package.json` exists with `@opencode-ai/plugin` dependency.
 <!-- trie:end -->
+<!-- trie:section symbol=tests/test_setup:test_opencode_hook_writes_package_json_to_unblock_bun_install fingerprint=150974fe71aa8f4eec1092d0f7e58e0c3a57a1466717becd48df75f5138a2fe1 body_fp=f03f9310848da0b47c4118c9092cf38c860ddc11e5d36bbfc47516915302f48f source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
+## `test_opencode_hook_writes_package_json_to_unblock_bun_install(project: Path)`
 
-<!-- trie:section symbol=tests/test_setup:test_opencode_hook_is_idempotent fingerprint=990c68bf415c67aada411639b45df589b73ff3095d81a16c682c41c8bb03e798 body_fp=bba7f33cfca4ce1433bb7363de92868978589c4de3daef254b5239ffcf87a299 source_ref=eae88ef26c089f711012aa225c1debacb734217c -->
+Assert that `install` writes `.opencode/package.json` with `@opencode-ai/plugin` pinned to `"latest"`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_setup:test_opencode_hook_package_json_is_idempotent fingerprint=7b393b32f63bb44b824d36e8aa3788c0150b480f0506a6403216f88a96f0f2e1 body_fp=8c8f8cc8a492264bec2a6a477e3a9c9c24daf7c5c48e6a6c329b13ae49e9e9cf source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
+## `test_opencode_hook_package_json_is_idempotent(project: Path)`
+
+Assert that a second `install` call leaves `.opencode/package.json` byte-for-byte unchanged.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_setup:test_opencode_hook_is_idempotent fingerprint=990c68bf415c67aada411639b45df589b73ff3095d81a16c682c41c8bb03e798 body_fp=da41d74adbd4a91326ed47cdbc9b56c5120a3d770782bd433d9acc3f11159096 source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_opencode_hook_is_idempotent(project: Path)`
 
-Assert that a second `install` call for opencode returns `action == "skipped"` when the file already matches expected contents.
+Assert that a second `install` call for `opencode` reports `"skipped"` when the plugin file already matches.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_setup:test_opencode_hook_updates_when_contents_changed fingerprint=16c13d1ad1551ecdb8e569a7f01c798765f464f0fac1ac0c5d706b8987d29bc5 body_fp=0fde6ed32f5750c7455f2d004987b3824d9447b3e49adf7bbf0b18d03ecd6bdc source_ref=9ab1903672c6e8c734747e2990ed26be4fc16a93 -->
+<!-- trie:section symbol=tests/test_setup:test_opencode_hook_updates_when_contents_changed fingerprint=16c13d1ad1551ecdb8e569a7f01c798765f464f0fac1ac0c5d706b8987d29bc5 body_fp=9692757d8c087393512c49b95541b52321aa0ff0ab325c4fe9e3ca05e3cb4161 source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_opencode_hook_updates_when_contents_changed(project: Path)`
 
-Assert that a stale plugin file is overwritten and the action is `"updated"`.
+Assert that `install` overwrites a stale or hand-edited `trie-refresh.ts` plugin file with correct contents, reporting action `"updated"`.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_setup:test_print_only_writes_no_files fingerprint=f4ff1972983e259adbd54ea679d5a6967b4d0507c47cc401ab2b6a2c3cf0e3c0 body_fp=ccda917f491b32feb0485ac1560abba3c6b5cd82225284a4610d55e65efba113 source_ref=9ab1903672c6e8c734747e2990ed26be4fc16a93 -->
+<!-- trie:section symbol=tests/test_setup:test_print_only_writes_no_files fingerprint=f4ff1972983e259adbd54ea679d5a6967b4d0507c47cc401ab2b6a2c3cf0e3c0 body_fp=042ba869d9437bd744eb1d5dfd65ff25198c2569e662ef24edd01c3865b01dbc source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_print_only_writes_no_files(project: Path)`
 
-Assert that `print_only=True` returns a `"preview"` action with contents but writes no files to disk.
+Assert that `install` with `print_only=True` returns a `"preview"` action with contents but writes no files to disk.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_setup:test_dry_run_writes_no_files fingerprint=a143c463520454fbd073ae45f77963a03b5ba91f65e6ac4691022307e2caaf32 body_fp=61ea96b75fcb209598ebada72361dd0d4f2b8405e3d7f680d3fac5ea352a77a6 source_ref=eae88ef26c089f711012aa225c1debacb734217c -->
+<!-- trie:section symbol=tests/test_setup:test_dry_run_writes_no_files fingerprint=a143c463520454fbd073ae45f77963a03b5ba91f65e6ac4691022307e2caaf32 body_fp=53d23e1514afb280388f639dc1330042b94e7b1b1b3c0cce07583bbd5822d38b source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_dry_run_writes_no_files(project: Path)`
 
-Assert that `dry_run=True` produces a `"preview"` action and writes no files to disk.
+Assert that `install` with `dry_run=True` returns action `"preview"` and writes no files to disk.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_setup:test_claude_code_hook_is_manual_setup fingerprint=a8ace2daa3934f5c10dd65a38b09bbac037bbf420577839aab85faebe680da5f body_fp=c8b19be06d2a027719218331195a56d8c7a4e0cc6a904c66471ef355c06e6e5d source_ref=eae88ef26c089f711012aa225c1debacb734217c -->
+<!-- trie:section symbol=tests/test_setup:test_claude_code_hook_is_manual_setup fingerprint=a8ace2daa3934f5c10dd65a38b09bbac037bbf420577839aab85faebe680da5f body_fp=9a613cfc093edaf0dc5b12ca8b474b8663bc5ae4035734205879d94ac5938a0b source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_claude_code_hook_is_manual_setup(project: Path)`
 
-Assert that `install` for `claude-code` returns `needs_manual_setup` with `trie refresh` instructions instead of writing a file.
+Assert that `install` returns `needs_manual_setup` (not an error or stub file) for the `claude-code` target, with `detail` containing `"trie refresh"`.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_setup:test_unknown_target_raises fingerprint=b996901d4154a592929d95841b43d8430c072ac3d703a97266a8b5c4234ad90b body_fp=1c7937d3e4f81df3fdb899af55ea007c6be87501d4cb42e0a8df44d353ea03d8 source_ref=eae88ef26c089f711012aa225c1debacb734217c -->
+<!-- trie:section symbol=tests/test_setup:test_unknown_target_raises fingerprint=b996901d4154a592929d95841b43d8430c072ac3d703a97266a8b5c4234ad90b body_fp=6392c2012149725cce62e97c8bf68107c4cb7394f87fec66a5778bbe48505d24 source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_unknown_target_raises(project: Path)`
 
-Assert that `install` raises `HookInstallError` when given an unrecognised target name.
+Assert that `install` raises `HookInstallError` matching "unknown hook target" when given an unrecognised target name.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_setup:test_install_all_covers_every_target fingerprint=65b44f9f93cdc70987d9b72ed2f8154b496d4438c69b5b08bfdaed8142fff5a6 body_fp=2c77fd73181789d07d9d2fbbe138908e52c553fceac278f6f96660ec9eac32d1 source_ref=eae88ef26c089f711012aa225c1debacb734217c -->
+<!-- trie:section symbol=tests/test_setup:test_install_all_covers_every_target fingerprint=65b44f9f93cdc70987d9b72ed2f8154b496d4438c69b5b08bfdaed8142fff5a6 body_fp=6d88fc00fb244dc77f650efa83a18da8235d39553220415d8a3212dcf5c262cb source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_install_all_covers_every_target(project: Path)`
 
-Verify that `install_all=True` produces results for every registered target in `TARGETS`.
+Assert that `install_all=True` produces exactly one result per entry in `TARGETS`.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_setup:test_apply_one_returns_needs_manual_setup_for_render_none fingerprint=90abc01ee67a98b22e5174ecbf38accc7f8eb7650f4914d15cc4e7b6842010c0 body_fp=1b5b0c2bea9893796b84f4d7d6e8d8a9e77d74ac637ce3a16a50f6f620817466 source_ref=eae88ef26c089f711012aa225c1debacb734217c -->
+<!-- trie:section symbol=tests/test_setup:test_apply_one_returns_needs_manual_setup_for_render_none fingerprint=90abc01ee67a98b22e5174ecbf38accc7f8eb7650f4914d15cc4e7b6842010c0 body_fp=ce85ef9ee83d559e22d6d7bf66668ec77f2ad04fc5a88b0554c9547a386edb42 source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_apply_one_returns_needs_manual_setup_for_render_none(project: Path)`
 
-Assert that `apply_one` returns a `needs_manual_setup` result for any `HookTarget` with no `render_contents`.
-
-- `project`: fixture providing a minimal trie project root.
+Verify that `apply_one` returns a `needs_manual_setup` `HookApplyResult` when the target has no `render_contents`.
 <!-- trie:end -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_opencode_writes_hook_and_overrides_by_default fingerprint=572621477207cb95c3abc357b2201db81033977c79b53c7f2d85df4fa9e2301b body_fp=74e9f2639d37b1deef2df3da45803cbc55f91eea83a6aab51eb3098f31b5cac3 source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
+## `test_cli_setup_opencode_writes_hook_and_overrides_by_default(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_opencode_writes_both_files fingerprint=248b29b548d5689c673c4e1bb49ca3795c4fbaeb7caf6b5b5b49bf63f54921b8 body_fp=939a78df660e8553136e94583cb653cb9394a2616ef4eceb38370f7629f2d147 source_ref=9ab1903672c6e8c734747e2990ed26be4fc16a93 -->
-## `test_cli_setup_opencode_writes_both_files(project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Verify `trie setup --target opencode` writes the MCP config, hook plugin, and `package.json` baseline files.
+Assert `trie setup --target opencode` writes the hook plugin and `package.json` without writing MCP config.
 <!-- trie:end -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_opencode_with_mcp_writes_mcp fingerprint=7345fdd2c5fdff0e1078271d030d8f51f5adffa6090726dbbfe5752e914b099f body_fp=b342662cd5bb9458f630031158d8ea031b455086b2cf0351557952f1491104ee source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
+## `test_cli_setup_opencode_with_mcp_writes_mcp(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_claude_code_does_mcp_and_warns_about_hook fingerprint=51526b5cf3bd1dce60b48f4f40eb26eee596f61f0622ea4d8945beca74259a68 body_fp=51a92e55a8928d7e667947cdc30735b7fcdf3d6b49f55dccc3a45ab667434858 source_ref=eae88ef26c089f711012aa225c1debacb734217c -->
-## `test_cli_setup_claude_code_does_mcp_and_warns_about_hook(project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Verify that `trie setup --target claude-code` writes MCP config and emits a manual-setup warning without failing.
-
-- `project`: tmp directory containing a minimal `trie.toml`.
+Assert that `trie setup --target opencode --with-mcp` writes both `opencode.json` MCP config and the hook plugin file.
 <!-- trie:end -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_claude_code_warns_about_hook fingerprint=47bccdb5ba3e9f3e7f093d38b452f268e74cb23b522780d3e427823fed4fcf60 body_fp=c41ed3cb404aa372e552a9ba57c826d4e640b9649d5b45ef0c03e43c1fc5cd66 source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
+## `test_cli_setup_claude_code_warns_about_hook(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_print_only_writes_nothing fingerprint=0ae794aaa478e7f364ff59256049d6077fa8dd1b4b65f356984718fd8902fd56 body_fp=d2a61bee3557799b082574e5d86f605f4b9a4de3a9d45b52341b567db5b2789f source_ref=9ab1903672c6e8c734747e2990ed26be4fc16a93 -->
+Assert that `trie setup --target claude-code` exits 0, emits a manual-setup warning, and writes no MCP config.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_claude_code_with_mcp_writes_mcp_and_warns_about_hook fingerprint=0422dee9ed6c040f17f09e839cca7e523b710314601fbe1090c581dc6c957466 body_fp=1d7d922f480d2113313b2725d34e899171262142ea22380ccdcf6b4086f8744c source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
+## `test_cli_setup_claude_code_with_mcp_writes_mcp_and_warns_about_hook(project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie setup --target claude-code --with-mcp` writes `.mcp.json`, warns about manual hook setup, and exits 0.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_print_only_writes_nothing fingerprint=0ae794aaa478e7f364ff59256049d6077fa8dd1b4b65f356984718fd8902fd56 body_fp=90b04740ee5e0283c771b34dbf0237d08c9475403ac54c40e184f60cd542c44a source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_cli_setup_print_only_writes_nothing(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `trie setup --print-only` writes no files but prints preview content including `session.status`.
+Verify `trie setup --print-only` writes no files but still prints preview content to output.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_target_and_all_mutex fingerprint=5b719a0905f62f2b711acb341172ce5f2aeb84e6c1814917e8213465d811d8d6 body_fp=008989d375ff5cc9ec78acbbae8a3eb5792d5b883d3d4f8822fe7d3fd806e02f source_ref=eae88ef26c089f711012aa225c1debacb734217c -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_target_and_all_mutex fingerprint=5b719a0905f62f2b711acb341172ce5f2aeb84e6c1814917e8213465d811d8d6 body_fp=008989d375ff5cc9ec78acbbae8a3eb5792d5b883d3d4f8822fe7d3fd806e02f source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_cli_setup_target_and_all_mutex(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that passing `--target` and `--all` together exits with code 1 and reports mutual exclusivity.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_invalid_scope fingerprint=0ae4df086b2c9d0f965e0c4788fd03182fca2adf1cf4ab29fe7a0d6e296eb426 body_fp=4b6d43fd7dfc55baea60d83513fe4dc3adf151d42b8ca3cacb9572c230ebd250 source_ref=eae88ef26c089f711012aa225c1debacb734217c -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_invalid_scope fingerprint=0ae4df086b2c9d0f965e0c4788fd03182fca2adf1cf4ab29fe7a0d6e296eb426 body_fp=aba2bc078e35f5398dc5c35886f3a039e46c9ee2888384a66d08528c1de822a1 source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_cli_setup_invalid_scope(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `trie setup` exits with code 1 and mentions "scope" when given an unsupported `--scope` value.
+Assert `trie setup` exits 1 and reports a scope error when given an unsupported `--scope` value.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_idempotent_second_run fingerprint=6786ef89771693ca5d491db1b534d622da55d95415f845c57a6126c441fdbd64 body_fp=52a5830570d3bdaa1d89c7ce5b8068f69c52d27e579870237465e95f220862d0 source_ref=eae88ef26c089f711012aa225c1debacb734217c -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_idempotent_second_run fingerprint=7c3d67f6169a8d980d23d0f443fdece2159b421050a9b0bbcfc1e32d6505411c body_fp=0dced88e31ee520fe7957b26d3b91db8c16f6b6319283f038127a149f0a7ce55 source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_cli_setup_idempotent_second_run(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that re-running `trie setup opencode` leaves MCP and hook files byte-identical.
+Assert that a second `trie setup --target opencode` invocation leaves hook files unchanged.
 <!-- trie:end -->
-
-
-
-
-
-
-
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_print_only_previews_overrides_without_writing fingerprint=b2b7d3bfa3e33477b09d67e0f0ed933e298ae48f5c6bf6700facae32bba41c37 body_fp=aa6ef5ba4eec29945c18ef46756df8f3c0ef62f5ea52b75337a575aca37d69b2 source_ref=caa568cb12b31347df8233d53f172247519eec3f -->
-## `test_cli_setup_print_only_previews_overrides_without_writing(project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert `--print-only` shows all three override filenames in output without writing any files to disk.
-
-- `project`: temporary directory with a minimal `trie.toml`.
-<!-- trie:end -->
-
-
-
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_override_idempotent_on_second_run fingerprint=cf1b1f9d9fccd3a9e0b4c3cf87f6ee2ca5cc89a9f55e88d2b2228fd0ac05c34c body_fp=8caf075be48efa04b0e4683a5b397781a27c040e2aa9955f432f70b1bd08da62 source_ref=83d461b20e1178bd609db26de2df4ee987163495 -->
-## `test_cli_setup_override_idempotent_on_second_run(project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Verify that re-running `trie setup` (without `--override-builtins`) skips unchanged override files and reports "skipped".
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_installs_overrides_by_default fingerprint=3139f012c627cf725a25314148943accc9cdf52cbd35ee213b0c64c3777149da body_fp=a8866e43a8d29cd86dc0571e05f6d0aab7bfe0e7b3c557e758095ef409c3e577 source_ref=caa568cb12b31347df8233d53f172247519eec3f -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_installs_overrides_by_default fingerprint=e258c0885e6ad03ef7fe1c0b31f8b70c91c56d1dce2605f8e6718950a68f26dc body_fp=5530cd9ec76ec56db3d5d8e04e18955faff922e0d9ef3023cebe04f88d22eea6 source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_cli_setup_installs_overrides_by_default(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `trie setup --target opencode` installs all three opencode tool-override files without any opt-in flag.
+Assert that `trie setup --target opencode` writes all three tool override files without any opt-in flag.
 
-- Checks `.opencode/tools/grep.ts`, `read.ts`, and `trace.ts` all exist after invocation.
+- Verifies `grep.ts`, `read.ts`, and `trace.ts` exist under `.opencode/tools/`.
 <!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_no_overrides_flag_skips_overrides fingerprint=2e133c35352ef660067a8a0bad4c13d767ae4b31db6866b0a9df9424e7cfa879 body_fp=02094ee306f9e0bbcca539f5ef0e3a5361dc8d9e8bfdd49fd3ce2ac645ebe3b5 source_ref=caa568cb12b31347df8233d53f172247519eec3f -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_no_overrides_flag_skips_overrides fingerprint=8407ca1665d3efe3daa1a6907fcd302c1f1d4c33ce1c05f3fe318822ead89243 body_fp=9eb40bd1d57bd09c8b1681faa32a39a8c78ce2216f3972465b004a82e12920b4 source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_cli_setup_no_overrides_flag_skips_overrides(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Verify that `--no-overrides` skips `.opencode/tools/` override files while MCP, hook, and docs steps still complete.
-<!-- trie:end -->
+Assert that `--no-overrides` prevents tool override files while hook install still runs.
 
-<!-- trie:section symbol=tests/test_setup:test_cli_setup_claude_code_creates_advisory_hook_by_default fingerprint=22a9eac169969fc08042af9f7177daab246cabac72da267aac8b7c515ce3a647 body_fp=684eea9c84edfef7b8c17b4fa432e79187c110779e33c12becc15d237dd15a1e source_ref=83d461b20e1178bd609db26de2df4ee987163495 -->
+- Hook plugin and MCP are unaffected; `.opencode/tools/` remains absent.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_print_only_previews_overrides_without_writing fingerprint=b2b7d3bfa3e33477b09d67e0f0ed933e298ae48f5c6bf6700facae32bba41c37 body_fp=05fa0f457f8d4b39a69742e52d814c2800e6f97f6be0afec40e941884c5ae665 source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
+## `test_cli_setup_print_only_previews_overrides_without_writing(project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `--print-only` outputs override file previews for all three opencode tools without writing any files to disk.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_claude_code_creates_advisory_hook_by_default fingerprint=22a9eac169969fc08042af9f7177daab246cabac72da267aac8b7c515ce3a647 body_fp=70ada2c65e039f43be42113f00b4ce1c7aadb5a1d4cfa9c12ee359810211f852 source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_cli_setup_claude_code_creates_advisory_hook_by_default(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Verify that `trie setup --target claude-code` writes a PreToolUse hook file referencing `mcp__trie__grep` by default, without any opt-in flag.
+Assert that `trie setup --target claude-code` writes a PreToolUse hook file referencing `mcp__trie__grep` by default.
 
-- `project`: temporary directory with a minimal `trie.toml`.
+- `hook_path`: `.claude/hooks/trie-tools.json` must exist and contain `mcp__trie__grep`.
 <!-- trie:end -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_override_idempotent_on_second_run fingerprint=cf1b1f9d9fccd3a9e0b4c3cf87f6ee2ca5cc89a9f55e88d2b2228fd0ac05c34c body_fp=eead2730d42577aa637e90c9b5b09b2a6edd086ddd5f81f846c44955823f2977 source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
+## `test_cli_setup_override_idempotent_on_second_run(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-<!-- trie:section symbol=tests/test_setup:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a54abe81712a48ef5929396818127feb4d47ee6e411d706f516647c7740c5d4e source_ref=83d461b20e1178bd609db26de2df4ee987163495 -->
-## `tests/test_setup`
-
-End-to-end tests for `trie setup`, `hook_install.install`, and `apply_one` covering creation, idempotency, dry-run, manual-setup notices, and CLI behaviour.
-
-- `project` fixture: minimal `trie.toml` in `tmp_path`, returned as `Path`.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_setup:test_opencode_hook_writes_package_json_to_unblock_bun_install fingerprint=150974fe71aa8f4eec1092d0f7e58e0c3a57a1466717becd48df75f5138a2fe1 body_fp=2a0832f73cc542da622d728af11e073564966b03ee61fda9ee481e284ce9e36c source_ref=9ab1903672c6e8c734747e2990ed26be4fc16a93 -->
-## `test_opencode_hook_writes_package_json_to_unblock_bun_install(project: Path)`
-
-Verify that `install` writes `.opencode/package.json` with `@opencode-ai/plugin` pinned to `"latest"`.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/test_setup:test_opencode_hook_package_json_is_idempotent fingerprint=7b393b32f63bb44b824d36e8aa3788c0150b480f0506a6403216f88a96f0f2e1 body_fp=8c8f8cc8a492264bec2a6a477e3a9c9c24daf7c5c48e6a6c329b13ae49e9e9cf source_ref=9ab1903672c6e8c734747e2990ed26be4fc16a93 -->
-## `test_opencode_hook_package_json_is_idempotent(project: Path)`
-
-Assert that a second `install` call leaves `.opencode/package.json` byte-for-byte unchanged.
+Assert that a second `trie setup --target opencode` run skips unchanged override files and reports `skipped`.
 <!-- trie:end -->

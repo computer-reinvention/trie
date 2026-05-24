@@ -4,6 +4,8 @@ Read-only. Speaks MCP over stdio so an agent harness (Claude Code, Codex, etc.) 
 it as a subprocess and consult the triefact tree as context separate from its own
 conversation memory.
 
+## Core tools (basis-vector set)
+
 Three verbs match the cognitive moves an agent makes when navigating an unfamiliar
 codebase:
 
@@ -12,7 +14,21 @@ codebase:
   neighbours (callers + callees).
 - `trace(from_qname, direction, depth=2)` — trace the graph topology beyond one hop.
 
-The same three operations are also exposed as CLI subcommands (`trie grep`,
+## Extended toolset (agent-ergonomic wrappers)
+
+Eight additional tools wrap the core in shapes that match how agents already think:
+
+- `grep_str(regexp)` — regex search across source bodies; hits attributed to symbols.
+- `grep_entry_points(regexp)` — find architectural hubs whose prose matches a topic.
+- `grep_symbol(sym)` — fuzzy symbol name lookup: best match + similar symbols.
+- `grep_symbol_and_neighbours(sym)` — like grep_symbol but includes trimmed neighbour
+  metadata for immediate callers + callees.
+- `explain_symbol(sym)` — full prose + joined narrative story across references.
+- `explain_symbol_references(sym)` — only explain how the symbol is *used* (callers side).
+- `trace_flow(symbol1, symbol2)` — find call chain(s) between two symbols.
+- `explain_flow(symbol1, symbol2)` — trace_flow + prose of each node joined as a story.
+
+The same three core operations are also exposed as CLI subcommands (`trie grep`,
 `trie read`, `trie trace`) so an agent that prefers shelling out can do
 everything the MCP can without changing protocols. Both surfaces share
 the same `TrieTools` methods underneath, so behaviour, knobs, and error
@@ -39,7 +55,6 @@ Example agent wiring (Claude Code's mcp_servers config):
 
 from __future__ import annotations
 
-import difflib
 import json
 import shutil
 import subprocess
@@ -48,6 +63,8 @@ from pathlib import Path
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
+from rapidfuzz import fuzz as _fuzz
+from rapidfuzz import process as _process
 
 from trie import telemetry
 from trie.config import Config, Mcp
@@ -122,11 +139,55 @@ def _symbol_summary(detail: SymbolDetail, *, one_liner_max: int) -> dict[str, An
 
 def _close_qname_matches(qname: str, candidates: list[str], *, n: int = 3) -> list[str]:
     """Fuzzy-match `qname` against the known set. Used for `not_found` suggestions."""
-    return difflib.get_close_matches(qname, candidates, n=n, cutoff=0.6)
+    hits = _process.extract(qname, candidates, scorer=_fuzz.WRatio, limit=n, score_cutoff=45)
+    return [h[0] for h in hits]
 
 
 def _close_name_matches(name: str, candidates: list[str], *, n: int = 3) -> list[str]:
-    return difflib.get_close_matches(name, candidates, n=n, cutoff=0.6)
+    hits = _process.extract(name, candidates, scorer=_fuzz.WRatio, limit=n, score_cutoff=45)
+    return [h[0] for h in hits]
+
+
+def _fuzzy_score(query: str, text: str) -> float:
+    """Return a 0-100 rapidfuzz WRatio score, short-circuiting to 100.0 on exact substring.
+
+    Used as the single scoring primitive across all fuzzy paths. Exact substring wins
+    unconditionally so that a query like "slugify" always matches a symbol named
+    "slugify_strict" with a perfect score before the ratio path even runs.
+    """
+    if not text:
+        return 0.0
+    if query.lower() in text.lower():
+        return 100.0
+    return _fuzz.WRatio(query, text)
+
+
+def _score_sym(
+    query: str,
+    sym: SymbolDetail,
+    *,
+    prose: str = "",
+    prose_weight: float = 0.6,
+) -> float:
+    """Composite relevance score for `sym` against `query` (0-100).
+
+    Scoring layers, highest wins:
+      1. Local symbol name          — weight 1.0  (most precise signal)
+      2. Cached one_liner           — weight 0.8  (free DB column)
+      3. Triefact prose body        — weight `prose_weight` (default 0.6; caller controls
+                                       whether to supply prose to keep disk reads lazy)
+
+    Taking the max rather than averaging means a strong name match isn't dragged down
+    by a weak prose match, and a prose-only match is always slightly discounted relative
+    to an equally-strong name match.
+    """
+    local_name = (
+        sym.qualified_name.split(":")[-1] if ":" in sym.qualified_name else sym.qualified_name
+    )
+    name_score = _fuzzy_score(query, local_name)
+    liner_score = _fuzzy_score(query, sym.one_liner or "") * 0.8
+    prose_score = _fuzzy_score(query, prose[:2000]) * prose_weight if prose else 0.0
+    return max(name_score, liner_score, prose_score)
 
 
 def _predicate_is_empty(pred: GrepPredicate) -> bool:
@@ -255,13 +316,17 @@ class TrieTools:
         ```
         On empty hits, `fallback.kind` is one of:
         - `"none"`: predicate had no `name_contains` for the fallback to search on.
-        - `"text_match_empty"`: the query string appears in no in-scope source body.
+        - `"text_match_empty"`: the query string appears in no in-scope source body
+          and fuzzy matching also found nothing above the cutoff.
         - `"text_match"`: a string search against in-scope source bodies found
           candidate symbols; `matches` is the ranked list (by `inbound_count`
           desc) capped at `grep_fallback_match_limit`. Even when the underlying
           string match was very broad, we always return the top-ranked
           candidates so the agent can triangulate from data rather than refine
           blindly.
+        - `"fuzzy_prose"`: no exact match anywhere, but rapidfuzz found symbols
+          whose name, one_liner, or triefact prose is close enough; `matches`
+          is sorted by relevance score descending.
 
         Errors (bad predicate shape, etc.) still return `{"error": {...}}`.
         """
@@ -304,6 +369,17 @@ class TrieTools:
             capped_limit = min(max(1, limit), self.mcp_cfg.grep_max_limit)
 
             hits = self.store.grep_symbols(pred_obj, rank_by=rank, limit=capped_limit)
+
+            # When a name query is present, re-sort the SQL hits by relevance
+            # so the closest fuzzy match surfaces first within the rank_by bucket.
+            # Score on name + one_liner only — no disk reads on the primary path.
+            if pred_obj.name_contains and hits:
+                query_str = pred_obj.name_contains
+                hits = sorted(
+                    hits,
+                    key=lambda h: -_score_sym(query_str, h),
+                )
+
             one_liner_cap = self.mcp_cfg.grep_one_liner_max_chars
             hit_dicts = [
                 {
@@ -381,6 +457,11 @@ class TrieTools:
         # of matches either way.
         rg_hits = self._text_match_in_scope(query)
         if not rg_hits:
+            # Exact-string search found nothing — try fuzzy scoring across
+            # all symbol names and one_liners as a last resort.
+            fuzzy_fallback = self._fuzzy_prose_fallback(query, pred)
+            if fuzzy_fallback:
+                return fuzzy_fallback
             return {
                 "kind": "text_match_empty",
                 "query": query,
@@ -425,8 +506,10 @@ class TrieTools:
 
         if not candidates:
             # Text-search found symbols, but none survived the predicate's
-            # other filters. That's still useful signal: the agent's scope
-            # restrictions are excluding what the substring would point to.
+            # other filters. Try fuzzy fallback before giving up.
+            fuzzy_fallback = self._fuzzy_prose_fallback(query, pred)
+            if fuzzy_fallback:
+                return fuzzy_fallback
             return {
                 "kind": "text_match_empty",
                 "query": query,
@@ -474,6 +557,84 @@ class TrieTools:
             "unique_symbols": len(per_symbol),
             "matches": matches,
             "note": note,
+        }
+
+    def _fuzzy_prose_fallback(self, query: str, pred: GrepPredicate) -> dict[str, Any] | None:
+        """Fuzzy-score all in-scope symbols against `query` using name + one_liner +
+        prose, returning a `fuzzy_prose` fallback envelope if any clear enough.
+
+        Called when both SQL name-match and ripgrep body-match return nothing.
+        Uses the same `_score_sym` primitive as `grep_entry_points` so scoring
+        semantics are consistent across every search surface.
+
+        Returns `None` when no candidate clears `fuzzy_cutoff`, so the caller
+        can fall through to a `text_match_empty` response.
+        """
+        cutoff = self.mcp_cfg.fuzzy_cutoff
+        pre_filter = self.mcp_cfg.fuzzy_prose_pre_filter
+        prose_weight = self.mcp_cfg.fuzzy_prose_weight
+        match_limit = self.mcp_cfg.grep_fallback_match_limit
+
+        # Walk all symbols in the store; apply predicate filters before scoring
+        # to keep the loop as tight as possible.
+        all_syms = self.store.grep_symbols(
+            GrepPredicate(
+                scope_prefix=pred.scope_prefix,
+                scope_exclude=pred.scope_exclude,
+                public_only=pred.public_only,
+                kind=pred.kind,
+            ),
+            rank_by="public_first",
+            limit=self.mcp_cfg.grep_max_limit * 10,  # broad sweep
+        )
+
+        scored: list[tuple[float, SymbolDetail]] = []
+        for sym in all_syms:
+            local_name = (
+                sym.qualified_name.split(":")[-1]
+                if ":" in sym.qualified_name
+                else sym.qualified_name
+            )
+            pre_score = max(
+                _fuzzy_score(query, local_name),
+                _fuzzy_score(query, sym.one_liner or "") * 0.8,
+            )
+            prose = ""
+            if pre_score >= pre_filter:
+                prose, _ = self._prose_for(sym)
+            score = _score_sym(query, sym, prose=prose, prose_weight=prose_weight)
+            if score >= cutoff:
+                scored.append((score, sym))
+
+        if not scored:
+            return None
+
+        scored.sort(key=lambda x: (-x[0], x[1].inbound_count))
+        capped = scored[:match_limit]
+        one_liner_cap = self.mcp_cfg.grep_one_liner_max_chars
+        matches = [
+            {
+                "qname": sym.qualified_name,
+                "signature": sym.signature or "",
+                "file_pointer": f"{sym.file_path}:{sym.start_line}",
+                "one_liner": _truncate(sym.one_liner, one_liner_cap),
+                "is_public": sym.is_public,
+                "kind": sym.kind,
+                "inbound_count": sym.inbound_count,
+                "outbound_count": sym.outbound_count,
+                "score": round(score, 1),
+            }
+            for score, sym in capped
+        ]
+        return {
+            "kind": "fuzzy_prose",
+            "query": query,
+            "matches": matches,
+            "note": (
+                f"No exact name or body match for {query!r}. "
+                "These symbols were found by fuzzy-matching name, one_liner, "
+                "and triefact prose. Ranked by relevance score descending."
+            ),
         }
 
     def _text_match_in_scope(self, query: str) -> dict[str, list[int]]:
@@ -989,6 +1150,637 @@ class TrieTools:
                 tele_ctx["response"] = result
             return result
 
+    # --- extended toolset --------------------------------------------------
+
+    def grep_str(self, regexp: str) -> dict[str, Any]:
+        """Search source bodies with a regex; attribute matched lines to their enclosing symbols.
+
+        Unlike `grep` (which searches symbol names), this searches the raw source text using
+        ripgrep with full regex support, then maps each matched line back to the smallest
+        enclosing symbol. Returns a flat list of symbol hits with signature and one-liner —
+        no JSON envelope, just what the agent needs to act.
+
+        Returns `{hits: [{qname, signature, file_pointer, one_liner, match_count}]}`.
+        """
+        tele_args = {"regexp": regexp} if telemetry.capture_args() else {}
+        with telemetry.timed(self.event_name, tool="grep_str", args=tele_args) as tele_ctx:
+            if not regexp or not regexp.strip():
+                tele_ctx["result_kind"] = "error"
+                return _error("invalid_argument", "`regexp` must be a non-empty string.")
+
+            proc = __import__("subprocess").run(
+                [
+                    self.rg_path,
+                    "--json",
+                    "--line-number",
+                    "--ignore-case",
+                    "--no-messages",
+                    "--",
+                    regexp,
+                    str(self.src_root),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if proc.returncode not in (0, 1):
+                tele_ctx["result_kind"] = "error"
+                return _error(
+                    "internal", f"rg failed (exit {proc.returncode}): {proc.stderr.strip()}"
+                )
+
+            import json as _json
+
+            scope_set: set[str] = set()
+            for abs_path in __import__("trie.scope", fromlist=["discover_files"]).discover_files(
+                self.root, self.config.scope
+            ):
+                if abs_path.is_relative_to(self.src_root):
+                    scope_set.add(str(abs_path.relative_to(self.src_root)))
+
+            rg_hits: dict[str, list[int]] = {}
+            src_root_str = str(self.src_root)
+            for raw_line in proc.stdout.splitlines():
+                if not raw_line:
+                    continue
+                try:
+                    event = _json.loads(raw_line)
+                except _json.JSONDecodeError:
+                    continue
+                if event.get("type") != "match":
+                    continue
+                data = event.get("data") or {}
+                path_obj = data.get("path") or {}
+                abs_path_str = path_obj.get("text")
+                lineno = data.get("line_number")
+                if not isinstance(abs_path_str, str) or not isinstance(lineno, int):
+                    continue
+                if not abs_path_str.startswith(src_root_str):
+                    continue
+                rel = abs_path_str[len(src_root_str) :].lstrip("/")
+                if rel not in scope_set:
+                    continue
+                rg_hits.setdefault(rel, []).append(lineno)
+
+            per_symbol = self._attribute_text_matches_to_symbols(rg_hits)
+            if not per_symbol:
+                # rg found nothing — try fuzzy scoring against symbol names and
+                # one_liners using the regexp string as the query.  This handles
+                # the common case where the user typed a function name slightly
+                # wrong (e.g. "slugufy") or used a description rather than an
+                # exact identifier.
+                cutoff = self.mcp_cfg.fuzzy_cutoff
+                pre_filter = self.mcp_cfg.fuzzy_prose_pre_filter
+                prose_weight = self.mcp_cfg.fuzzy_prose_weight
+                all_syms = self.store.grep_symbols(
+                    GrepPredicate(),
+                    rank_by="public_first",
+                    limit=self.mcp_cfg.grep_max_limit * 10,
+                )
+                scored_str: list[tuple[float, SymbolDetail]] = []
+                for sym in all_syms:
+                    local_name = (
+                        sym.qualified_name.split(":")[-1]
+                        if ":" in sym.qualified_name
+                        else sym.qualified_name
+                    )
+                    pre_score = max(
+                        _fuzzy_score(regexp, local_name),
+                        _fuzzy_score(regexp, sym.one_liner or "") * 0.8,
+                    )
+                    prose = ""
+                    if pre_score >= pre_filter:
+                        prose, _ = self._prose_for(sym)
+                    score = _score_sym(regexp, sym, prose=prose, prose_weight=prose_weight)
+                    if score >= cutoff:
+                        scored_str.append((score, sym))
+
+                tele_ctx["result_kind"] = "ok"
+                tele_ctx["result_count"] = 0
+                if not scored_str:
+                    return {
+                        "hits": [],
+                        "note": f"No matches for {regexp!r} in any indexed symbol body.",
+                    }
+                scored_str.sort(key=lambda x: (-x[0], x[1].inbound_count))
+                one_liner_cap = self.mcp_cfg.grep_one_liner_max_chars
+                fuzzy_hits = [
+                    {
+                        "qname": sym.qualified_name,
+                        "signature": sym.signature or "",
+                        "file_pointer": f"{sym.file_path}:{sym.start_line}",
+                        "one_liner": _truncate(sym.one_liner, one_liner_cap),
+                        "score": round(score, 1),
+                    }
+                    for score, sym in scored_str[:10]
+                ]
+                return {
+                    "hits": [],
+                    "fallback": {
+                        "kind": "fuzzy_one_liner",
+                        "matches": fuzzy_hits,
+                        "note": (
+                            f"No regex matches for {regexp!r}. "
+                            "These symbols were found by fuzzy-matching the "
+                            "pattern against symbol names, one_liners, and "
+                            "triefact prose. Ranked by relevance score descending."
+                        ),
+                    },
+                }
+
+            candidates = sorted(
+                ((self.store.get_symbol_detail(q), c) for q, c in per_symbol.items()),
+                key=lambda x: (
+                    -(x[0].inbound_count if x[0] else 0),
+                    x[0].qualified_name if x[0] else "",
+                ),
+            )
+            one_liner_cap = self.mcp_cfg.grep_one_liner_max_chars
+            hits = [
+                {
+                    "qname": d.qualified_name,
+                    "signature": d.signature or "",
+                    "file_pointer": f"{d.file_path}:{d.start_line}",
+                    "one_liner": _truncate(d.one_liner, one_liner_cap),
+                    "match_count": count,
+                }
+                for d, count in candidates
+                if d is not None
+            ]
+            result: dict[str, Any] = {"hits": hits}
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["result_count"] = len(hits)
+            tele_ctx["response_bytes"] = len(_json.dumps(result, default=str))
+            return result
+
+    def grep_entry_points(self, query: str) -> dict[str, Any]:
+        """Find architectural entry points (high inbound-count public symbols) whose
+        triefact prose fuzzy-matches `query`.
+
+        Use this when orienting in an unfamiliar codebase or looking for the main
+        path that handles a concept.
+
+        Hits are sorted by **descending relevance score first, then ascending
+        inbound-count** — so the most focused/niche entry point for the concept
+        ranks above a sprawling utility hub with the same relevance. This gives
+        both "closest textual match" and "lowest inbound" simultaneously: you see
+        the most specific match at the top rather than the most-wired one.
+
+        Returns `{hits: [{qname, signature, file_pointer, one_liner, inbound_count,
+        prose_snippet, score}]}`.
+        """
+        tele_args = {"query": query} if telemetry.capture_args() else {}
+        with telemetry.timed(self.event_name, tool="grep_entry_points", args=tele_args) as tele_ctx:
+            if not query or not query.strip():
+                tele_ctx["result_kind"] = "error"
+                return _error("invalid_argument", "`query` must be a non-empty string.")
+
+            # Pull public hubs as the candidate pool.
+            pred = GrepPredicate(public_only=True, inbound_count_min=2)
+            candidates = self.store.grep_symbols(
+                pred, rank_by="inbound_count", limit=self.mcp_cfg.grep_max_limit
+            )
+
+            cutoff = self.mcp_cfg.fuzzy_cutoff
+            pre_filter = self.mcp_cfg.fuzzy_prose_pre_filter
+            prose_weight = self.mcp_cfg.fuzzy_prose_weight
+
+            scored: list[tuple[float, Any, str]] = []
+            for sym in candidates:
+                # First pass: score on name + one_liner only (no disk I/O).
+                local_name = (
+                    sym.qualified_name.split(":")[-1]
+                    if ":" in sym.qualified_name
+                    else sym.qualified_name
+                )
+                name_score = _fuzzy_score(query, local_name)
+                liner_score = _fuzzy_score(query, sym.one_liner or "") * 0.8
+                pre_score = max(name_score, liner_score)
+
+                # Lazy prose read: only pay disk cost if pre-filter clears.
+                prose = ""
+                if pre_score >= pre_filter:
+                    prose, _ = self._prose_for(sym)
+
+                score = _score_sym(query, sym, prose=prose, prose_weight=prose_weight)
+                if score < cutoff:
+                    continue
+                scored.append((score, sym, prose))
+
+            # Primary sort: relevance DESC; secondary: inbound_count ASC so the
+            # most focused/niche entry point floats above sprawling hubs at
+            # the same relevance level — achieving "closest match + lowest inbound"
+            # in a single sorted list.
+            scored.sort(key=lambda x: (-x[0], x[1].inbound_count))
+
+            one_liner_cap = self.mcp_cfg.grep_one_liner_max_chars
+            hits = []
+            for score, sym, prose in scored[:20]:
+                prose_snippet = prose[:300].rstrip()
+                if len(prose) > 300:
+                    prose_snippet += "…"
+                hits.append(
+                    {
+                        "qname": sym.qualified_name,
+                        "signature": sym.signature or "",
+                        "file_pointer": f"{sym.file_path}:{sym.start_line}",
+                        "one_liner": _truncate(sym.one_liner, one_liner_cap),
+                        "inbound_count": sym.inbound_count,
+                        "prose_snippet": prose_snippet,
+                        "score": round(score, 1),
+                    }
+                )
+
+            result: dict[str, Any] = {"hits": hits}
+            if not hits:
+                result["note"] = f"No entry-point symbols found matching {query!r}."
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["result_count"] = len(hits)
+            return result
+
+    def grep_symbol(self, sym: str) -> dict[str, Any]:
+        """Fuzzy symbol name lookup. Returns the best-matching symbol's full metadata
+        plus a `similar` list of other close matches.
+
+        Uses rapidfuzz WRatio scoring across symbol names, one_liners, and (lazily)
+        triefact prose bodies so typos, partial names, and conceptual descriptions all
+        resolve correctly. Each result carries a `score` field (0-100) so callers can
+        see why a symbol ranked first.
+
+        Use when you have a rough name but aren't sure of the exact qname. Better than
+        `grep` for typo-tolerance and for discovering related symbols in one call.
+
+        Returns `{match: {qname, kind, signature, file_pointer, one_liner, inbound_count,
+        outbound_count, score}, similar: [...]}`.
+        """
+        tele_args = {"sym": sym} if telemetry.capture_args() else {}
+        with telemetry.timed(self.event_name, tool="grep_symbol", args=tele_args) as tele_ctx:
+            if not sym or not sym.strip():
+                tele_ctx["result_kind"] = "error"
+                return _error("invalid_argument", "`sym` must be a non-empty string.")
+
+            cutoff = self.mcp_cfg.fuzzy_cutoff
+            pre_filter = self.mcp_cfg.fuzzy_prose_pre_filter
+            prose_weight = self.mcp_cfg.fuzzy_prose_weight
+
+            # --- Phase 1: substring SQL hit -----------------------------------
+            # Pull up to 20 candidates via the fast SQL LIKE path, then
+            # re-rank by rapidfuzz score so the closest match leads.
+            sql_hits = self.store.grep_symbols(
+                GrepPredicate(name_contains=sym), rank_by="public_first", limit=20
+            )
+
+            # --- Phase 2: fuzzy name fallback ---------------------------------
+            # When SQL finds nothing, ask rapidfuzz to find close names from
+            # the full symbol roster. Cutoff 45 (vs old difflib 0.6 ≈ 60) to
+            # catch short-name typos better.
+            if not sql_hits:
+                all_names = self.store.all_symbol_names()
+                close_hits = _process.extract(
+                    sym, all_names, scorer=_fuzz.WRatio, limit=10, score_cutoff=cutoff
+                )
+                if not close_hits:
+                    tele_ctx["result_kind"] = "error"
+                    return _error(
+                        "not_found",
+                        f"No symbol matching {sym!r}.",
+                        "Use grep_str to search source bodies instead.",
+                    )
+                sql_hits = []
+                for name, _score, _idx in close_hits:
+                    sql_hits.extend(
+                        self.store.grep_symbols(
+                            GrepPredicate(name_contains=name), rank_by="public_first", limit=3
+                        )
+                    )
+
+            # --- Phase 3: prose augmentation + final scoring ------------------
+            # Score each candidate with name + one_liner first (free).
+            # Lazily read prose for those that clear the pre-filter.
+            scored: list[tuple[float, SymbolDetail]] = []
+            seen: set[str] = set()
+            for h in sql_hits:
+                if h.qualified_name in seen:
+                    continue
+                seen.add(h.qualified_name)
+                local_name = (
+                    h.qualified_name.split(":")[-1] if ":" in h.qualified_name else h.qualified_name
+                )
+                pre_score = max(
+                    _fuzzy_score(sym, local_name),
+                    _fuzzy_score(sym, h.one_liner or "") * 0.8,
+                )
+                prose = ""
+                if pre_score >= pre_filter:
+                    prose, _ = self._prose_for(h)
+                score = _score_sym(sym, h, prose=prose, prose_weight=prose_weight)
+                scored.append((score, h))
+
+            scored.sort(key=lambda x: -x[0])
+
+            one_liner_cap = self.mcp_cfg.grep_one_liner_max_chars
+
+            def _sym_dict(d: SymbolDetail, s: float) -> dict[str, Any]:
+                return {
+                    "qname": d.qualified_name,
+                    "kind": d.kind,
+                    "signature": d.signature or "",
+                    "file_pointer": f"{d.file_path}:{d.start_line}",
+                    "one_liner": _truncate(d.one_liner, one_liner_cap),
+                    "inbound_count": d.inbound_count,
+                    "outbound_count": d.outbound_count,
+                    "score": round(s, 1),
+                }
+
+            best_score, best = scored[0]
+            result: dict[str, Any] = {
+                "match": _sym_dict(best, best_score),
+                "similar": [_sym_dict(h, s) for s, h in scored[1:10]],
+            }
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["result_count"] = len(scored)
+            return result
+
+    def grep_symbol_and_neighbours(self, sym: str) -> dict[str, Any]:
+        """Like `grep_symbol` but also returns trimmed triefact metadata for the
+        best match's immediate callers and callees.
+
+        Use when you want to orient around a symbol without making a separate
+        `read` call — one round trip for the symbol + its neighbourhood.
+
+        Returns `{match: {...}, similar: [...], callers: [...], callees: [...]}`.
+        """
+        tele_args = {"sym": sym} if telemetry.capture_args() else {}
+        with telemetry.timed(
+            self.event_name, tool="grep_symbol_and_neighbours", args=tele_args
+        ) as tele_ctx:
+            base = self.grep_symbol(sym)
+            if "error" in base:
+                tele_ctx["result_kind"] = "error"
+                return base
+
+            best_qname: str = base["match"]["qname"]
+            callers_raw = self.store.references_in(best_qname)
+            callees_raw = self.store.references_out(best_qname)
+            callers, _ = self._neighbour_summaries(callers_raw)
+            callees, _ = self._neighbour_summaries(callees_raw)
+            result: dict[str, Any] = {**base, "callers": callers, "callees": callees}
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["result_count"] = 1
+            return result
+
+    def explain_symbol(self, sym: str) -> dict[str, Any]:
+        """Full prose for a symbol plus a joined narrative story that weaves together
+        the prose of its callers and callees into a single readable explanation.
+
+        Use when you want to deeply understand a symbol and how it fits into the
+        system — not just its own docstring but the story of what calls it and
+        what it calls.
+
+        Returns `{qname, signature, source_pointer, prose, story, callers, callees, notes?}`.
+        """
+        tele_args = {"sym": sym} if telemetry.capture_args() else {}
+        with telemetry.timed(self.event_name, tool="explain_symbol", args=tele_args) as tele_ctx:
+            # Resolve sym to a qname if needed.
+            detail = self.store.get_symbol_detail(sym)
+            if detail is None:
+                # Try fuzzy resolution.
+                base = self.grep_symbol(sym)
+                if "error" in base:
+                    tele_ctx["result_kind"] = "error"
+                    return _error(
+                        "not_found", f"No symbol matching {sym!r}.", self._suggest_for_qname(sym)
+                    )
+                sym = base["match"]["qname"]
+                detail = self.store.get_symbol_detail(sym)
+                if detail is None:
+                    tele_ctx["result_kind"] = "error"
+                    return _error(
+                        "not_found",
+                        f"No symbol with qualified name {sym!r}.",
+                        self._suggest_for_qname(sym),
+                    )
+
+            prose, prose_notes = self._prose_for(detail)
+            callers_raw = self.store.references_in(detail.qualified_name)
+            callees_raw = self.store.references_out(detail.qualified_name)
+            callers, _ = self._neighbour_summaries(callers_raw)
+            callees, _ = self._neighbour_summaries(callees_raw)
+
+            # Build a joined narrative story.
+            story_parts: list[str] = []
+            if callees_raw:
+                callee_lines: list[str] = []
+                for q in callees_raw[:5]:
+                    d = self.store.get_symbol_detail(q)
+                    if d is None:
+                        continue
+                    p, _ = self._prose_for(d)
+                    snippet = p.split("\n\n")[0].strip() if p else d.one_liner
+                    if snippet:
+                        callee_lines.append(f"- **{d.qualified_name}**: {snippet}")
+                if callee_lines:
+                    story_parts.append("**Calls into:**\n" + "\n".join(callee_lines))
+            if callers_raw:
+                caller_lines: list[str] = []
+                for q in callers_raw[:5]:
+                    d = self.store.get_symbol_detail(q)
+                    if d is None:
+                        continue
+                    p, _ = self._prose_for(d)
+                    snippet = p.split("\n\n")[0].strip() if p else d.one_liner
+                    if snippet:
+                        caller_lines.append(f"- **{d.qualified_name}**: {snippet}")
+                if caller_lines:
+                    story_parts.append("**Called by:**\n" + "\n".join(caller_lines))
+
+            story = "\n\n".join(story_parts) if story_parts else ""
+
+            out: dict[str, Any] = {
+                "qname": detail.qualified_name,
+                "signature": detail.signature or "",
+                "source_pointer": f"{detail.file_path}:{detail.start_line}-{detail.end_line}",
+                "prose": prose,
+                "story": story,
+                "callers": callers,
+                "callees": callees,
+            }
+            if prose_notes:
+                out["notes"] = prose_notes
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["prose_chars"] = len(prose)
+            tele_ctx["story_chars"] = len(story)
+            return out
+
+    def explain_symbol_references(self, sym: str) -> dict[str, Any]:
+        """Explain how a symbol is used — callers only, with their prose.
+
+        Use when you want to understand the call sites of a symbol: who uses it,
+        in what context, and with what intent. Skips the symbol's own prose and
+        focuses entirely on the usage story.
+
+        Returns `{qname, signature, source_pointer, usage_story, callers}`.
+        """
+        tele_args = {"sym": sym} if telemetry.capture_args() else {}
+        with telemetry.timed(
+            self.event_name, tool="explain_symbol_references", args=tele_args
+        ) as tele_ctx:
+            detail = self.store.get_symbol_detail(sym)
+            if detail is None:
+                base = self.grep_symbol(sym)
+                if "error" in base:
+                    tele_ctx["result_kind"] = "error"
+                    return _error(
+                        "not_found", f"No symbol matching {sym!r}.", self._suggest_for_qname(sym)
+                    )
+                sym = base["match"]["qname"]
+                detail = self.store.get_symbol_detail(sym)
+                if detail is None:
+                    tele_ctx["result_kind"] = "error"
+                    return _error(
+                        "not_found",
+                        f"No symbol with qualified name {sym!r}.",
+                        self._suggest_for_qname(sym),
+                    )
+
+            callers_raw = self.store.references_in(detail.qualified_name)
+            callers, _ = self._neighbour_summaries(callers_raw)
+
+            usage_lines: list[str] = []
+            for q in callers_raw[:8]:
+                d = self.store.get_symbol_detail(q)
+                if d is None:
+                    continue
+                p, _ = self._prose_for(d)
+                snippet = p.split("\n\n")[0].strip() if p else d.one_liner
+                if snippet:
+                    usage_lines.append(
+                        f"**{d.qualified_name}** ({d.file_path}:{d.start_line}): {snippet}"
+                    )
+
+            usage_story = (
+                "\n\n".join(usage_lines)
+                if usage_lines
+                else f"No documented callers of `{detail.qualified_name}`."
+            )
+
+            result: dict[str, Any] = {
+                "qname": detail.qualified_name,
+                "signature": detail.signature or "",
+                "source_pointer": f"{detail.file_path}:{detail.start_line}-{detail.end_line}",
+                "usage_story": usage_story,
+                "callers": callers,
+            }
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["callers_count"] = len(callers)
+            return result
+
+    def trace_flow(self, symbol1: str, symbol2: str) -> dict[str, Any]:
+        """Find call chain(s) between two symbols.
+
+        Returns the shortest path(s) from `symbol1` to `symbol2` following callee edges.
+        If no path exists within the search depth, returns an empty paths list with a note.
+        Hub symbols are skipped during expansion (same guard as the cascade).
+
+        Returns `{from_qname, to_qname, paths: [[qname, ...], ...], notes?}`.
+        """
+        tele_args = {"symbol1": symbol1, "symbol2": symbol2} if telemetry.capture_args() else {}
+        with telemetry.timed(self.event_name, tool="trace_flow", args=tele_args) as tele_ctx:
+            # Resolve both symbols — accept fuzzy names.
+            def _resolve(sym: str) -> tuple[str | None, dict[str, Any] | None]:
+                detail = self.store.get_symbol_detail(sym)
+                if detail is not None:
+                    return detail.qualified_name, None
+                base = self.grep_symbol(sym)
+                if "error" in base:
+                    return None, _error(
+                        "not_found", f"No symbol matching {sym!r}.", self._suggest_for_qname(sym)
+                    )
+                return base["match"]["qname"], None
+
+            qname1, err = _resolve(symbol1)
+            if err:
+                tele_ctx["result_kind"] = "error"
+                return err
+            qname2, err = _resolve(symbol2)
+            if err:
+                tele_ctx["result_kind"] = "error"
+                return err
+
+            paths = self.store.find_paths(
+                qname1,  # type: ignore[arg-type]
+                qname2,  # type: ignore[arg-type]
+                max_depth=self.mcp_cfg.trace_max_depth,
+                hub_threshold=self.mcp_cfg.trace_hub_threshold,
+                max_paths=3,
+            )
+
+            notes: list[str] = []
+            if not paths:
+                notes.append(
+                    f"No call chain found from {qname1!r} to {qname2!r} within "
+                    f"depth {self.mcp_cfg.trace_max_depth}. The symbols may be "
+                    "unrelated, or the path may route through a hub symbol that "
+                    "was skipped. Try swapping the arguments to search the reverse direction."
+                )
+
+            result: dict[str, Any] = {
+                "from_qname": qname1,
+                "to_qname": qname2,
+                "paths": paths,
+            }
+            if notes:
+                result["notes"] = notes
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["paths_count"] = len(paths)
+            return result
+
+    def explain_flow(self, symbol1: str, symbol2: str) -> dict[str, Any]:
+        """Find call chain(s) between two symbols and join the prose of each node
+        in the path into a readable execution narrative.
+
+        Use when you want to understand not just that a path exists but what each
+        step in the chain actually does — the story of the execution flow from
+        entry to target.
+
+        Returns `{from_qname, to_qname, paths: [{chain: [qname,...], narrative: str}], notes?}`.
+        """
+        tele_args = {"symbol1": symbol1, "symbol2": symbol2} if telemetry.capture_args() else {}
+        with telemetry.timed(self.event_name, tool="explain_flow", args=tele_args) as tele_ctx:
+            flow = self.trace_flow(symbol1, symbol2)
+            if "error" in flow:
+                tele_ctx["result_kind"] = "error"
+                return flow
+
+            paths_with_narrative: list[dict[str, Any]] = []
+            for path in flow.get("paths", []):
+                steps: list[str] = []
+                for qname in path:
+                    detail = self.store.get_symbol_detail(qname)
+                    if detail is None:
+                        steps.append(f"**{qname}** — (no symbol detail)")
+                        continue
+                    prose, _ = self._prose_for(detail)
+                    snippet = prose.split("\n\n")[0].strip() if prose else detail.one_liner
+                    loc = f"{detail.file_path}:{detail.start_line}"
+                    if snippet:
+                        steps.append(f"**{qname}** ({loc})\n{snippet}")
+                    else:
+                        steps.append(f"**{qname}** ({loc}) — no prose yet; run `trie sync`.")
+                narrative = "\n\n→ ".join(steps)
+                paths_with_narrative.append({"chain": path, "narrative": narrative})
+
+            result: dict[str, Any] = {
+                "from_qname": flow["from_qname"],
+                "to_qname": flow["to_qname"],
+                "paths": paths_with_narrative,
+            }
+            if "notes" in flow:
+                result["notes"] = flow["notes"]
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["paths_count"] = len(paths_with_narrative)
+            return result
+
     # --- helpers -----------------------------------------------------------
 
     def _suggest_for_qname(self, qname: str) -> str | None:
@@ -1030,6 +1822,14 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     server.tool(name="grep")(tools.grep)
     server.tool(name="read")(tools.read)
     server.tool(name="trace")(tools.trace)
+    server.tool(name="grep_str")(tools.grep_str)
+    server.tool(name="grep_entry_points")(tools.grep_entry_points)
+    server.tool(name="grep_symbol")(tools.grep_symbol)
+    server.tool(name="grep_symbol_and_neighbours")(tools.grep_symbol_and_neighbours)
+    server.tool(name="explain_symbol")(tools.explain_symbol)
+    server.tool(name="explain_symbol_references")(tools.explain_symbol_references)
+    server.tool(name="trace_flow")(tools.trace_flow)
+    server.tool(name="explain_flow")(tools.explain_flow)
     return server, tools
 
 
