@@ -5,132 +5,164 @@
 A guide for coding agents working in a project that has trie installed.
 
 trie indexes source code into a graph of symbols and references, attaches
-prose to each public symbol, and exposes three navigation tools over MCP:
-`mcp__trie__grep`, `mcp__trie__read`, and `mcp__trie__trace`. This document is how to use them well.
+prose to each public symbol, and exposes **eleven navigation tools** over
+MCP. This document is how to use them well.
 
-If you take one thing from this guide: **`mcp__trie__grep` is the right tool for
+If you take one thing from this guide: **`trie_grep` is the right tool for
 every code-side search.** Reach for it before the shell's `rg`/grep,
 before file reads, before any other text-search tool. The reasons are
 below.
 
-> Naming note: `mcp__trie__grep`, `mcp__trie__read`, and `mcp__trie__trace` are MCP tools served
-> by the trie process — not the shell utilities of similar names. When
-> this guide refers to the shell utilities, it says so explicitly:
-> "shell `rg`", "shell `grep`", "shell `cat`". Plain `mcp__trie__grep` /
-> `mcp__trie__read` / `mcp__trie__trace` always means the MCP tool.
+> Naming note: `trie_grep`, `trie_read`, `trie_trace`, etc. are MCP tools served
+> by the trie process — not shell utilities. When this guide refers to
+> shell utilities, it says so explicitly: "shell `rg`", "shell `grep`",
+> "shell `cat`". Plain `trie_grep` / `trie_read` always means the MCP tool.
 
 ---
 
-## The three tools
+## The eleven tools
 
 ```
-mcp__trie__grep(predicate, rank_by?, limit?)    →  find symbols (and substrings)
-mcp__trie__read(qname)                          →  understand a symbol + immediate context
-mcp__trie__trace(from_qname, direction, depth?) →  follow the call graph farther
+trie_grep                      Find symbols (and substrings) by predicate
+trie_read                      Understand a symbol + its callers/callees
+trie_trace                     Follow the call graph outward by BFS
+trie_grep_str                  Regex search of source bodies
+trie_grep_entry_points         Find architectural entry points by topic
+trie_grep_symbol               Fuzzy symbol name lookup
+trie_grep_symbol_and_neighbours  Fuzzy lookup + immediate neighbours
+trie_explain_symbol            Full prose narrative weaving callers + callees
+trie_explain_symbol_references  Usage narrative from callers' prose only
+trie_trace_flow                Find call chain(s) between two symbols
+trie_explain_flow              Trace + narrate each step of the chain
 ```
-
-Every navigation question decomposes into a short chain of these. You
-almost never need more than three calls to answer a question about an
-unfamiliar codebase.
 
 ---
 
-## `mcp__trie__grep` — your code search
+## Tool categories
 
-**Use `mcp__trie__grep` for every search inside source code, full stop.** It
-does strictly more than the shell's grep:
+### grep family — code search
 
-1. **Symbol-name matches** return signatures, file pointers, one-liner
-   summaries, public/private flags, and inbound/outbound edge counts.
-   You pick the right symbol from prose, not from line numbers.
+**`trie_grep`** is the workhorse. It searches by predicate (name substring,
+kind, scope, inbound/outbound count, public-only) and falls back to
+ripgrep against indexed source bodies when no symbol name matches.
+See [Predicate fields](#predicate-fields) for the full query syntax.
 
-2. **Literal-string searches** that don't match a symbol name still
-   work — `mcp__trie__grep` falls back to ripgrep against indexed source bodies
-   and **attributes each match to the smallest enclosing symbol**.
-   Instead of `lib.py:47`, you get `pkg/module:function_name` plus its
-   signature, one-liner, and centrality in the call graph.
+**`trie_grep_str`** searches source bodies with a regex pattern and
+attributes each match to the smallest enclosing symbol. Use when you
+know a literal string or pattern rather than a symbol name.
 
-3. **Structural queries** — find hubs, leaves, public-only symbols,
-   most-referenced functions — without writing custom scripts.
+**`trie_grep_entry_points`** finds public, high-inbound symbols whose
+triefact prose fuzzy-matches a topic or concept. Use for orienting in
+an unfamiliar codebase: *"authentication"*, *"error handling"*, *"config
+loading"*.
 
-The response is one envelope. When `hits` is non-empty, you found
-symbols by name. When `hits` is empty, the `fallback` carries the
-string-search result:
+**`trie_grep_symbol`** fuzzy-matches a symbol name fragment and returns the
+best match plus up to 9 similar alternatives. Use when you have a rough
+name but not the exact qname — typo-tolerant.
 
-```json
-{
-  "hits": [ /* symbol-name matches, if any */ ],
-  "fallback": {           // present only when hits is empty
-    "kind": "text_match" | "text_match_empty" | "none",
-    "matches": [ /* ranked enclosing symbols */ ],
-    "match_count": 47,
-    "unique_symbols": 12,
-    "note": "..."
-  }
-}
+**`trie_grep_symbol_and_neighbours`** does the same fuzzy lookup but also
+returns immediate caller/callee summaries in one round trip. Use for
+orienting around an uncertain target without a follow-up read.
+
+### read — understanding one symbol
+
+```
+trie_read(qname)
 ```
 
-The same dispatch in both cases: scan the symbols, pick the one whose
-`one_liner` matches what you wanted, follow up with `mcp__trie__read` or
-`mcp__trie__trace`.
+Returns the symbol's signature, full prose, source pointer, and every
+caller and callee with their one-liners. One round trip for the whole
+one-hop neighbourhood.
 
-### Predicate fields
+The key property: **callers and callees come back with one-liners.**
+You don't need a follow-up call to know "what does that caller do?"
+The one-sentence summary is in the response.
 
-Build your query as one nested object. **At least one filter field is
-required.** An empty predicate (no fields, or only `name_contains: ""`
-/ `kind: "any"`) is rejected with an `invalid_argument` error — there's
-no "list everything" mode, because the result would be the
-alphabetically-first N public symbols, which is useful to nobody. Pick
-a filter; the rest of the fields are optional. Most queries use one or
-two.
+### trace family — following topology
+
+**`trie_trace`** walks the call graph via BFS from a starting symbol.
+Returns `{root, nodes{}, edges[], truncated_at[]}`. Direction is
+`"callers"`, `"callees"`, or `"both"`. Hubs (very-high-inbound symbols)
+cap expansion and are listed in `truncated_at`.
+
+**`trie_trace_flow`** finds the shortest call chain(s) between two symbols
+by following callee edges. Returns each path as a sequence of qnames.
+If no path exists within the search depth, says so clearly.
+
+**`trie_explain_flow`** does the same path search but enriches each step
+with the symbol's prose narrative. Use when you want the story of the
+execution flow from entry to target.
+
+### explain family — deep understanding
+
+**`trie_explain_symbol`** returns the full triefact prose for a symbol plus
+a woven narrative that joins the prose of its callers and callees. Use
+when you want to deeply understand a symbol and how it fits into the
+system.
+
+**`trie_explain_symbol_references`** returns the usage story — callers'
+prose only, skipping the symbol's own prose. Use when you want to
+understand how a symbol is used, by whom, and in what context.
+
+---
+
+## Predicate fields
+
+Build your `trie_grep` query as one nested object.
+
+**At least one filter field is required.** An empty predicate is
+rejected — there's no "list everything" mode because the result would
+be the alphabetically-first N public symbols.
 
 ```python
 # Find by name substring (case-insensitive, local name only)
-mcp__trie__grep({ "name_contains": "compute_cascade" })
+trie_grep({ "name_contains": "compute_cascade" })
 
-# Restrict to a path prefix — "in trie/ but not tests/"
-mcp__trie__grep({ "name_contains": "cascade", "scope_prefix": "trie/" })
+# Restrict to a path prefix
+trie_grep({ "name_contains": "cascade", "scope_prefix": "trie/" })
 
 # Exclude paths
-mcp__trie__grep({ "name_contains": "config", "scope_exclude": ["tests/", "vendor/"] })
+trie_grep({ "name_contains": "config", "scope_exclude": ["tests/", "vendor/"] })
 
 # Filter by symbol kind
-mcp__trie__grep({ "kind": "class", "scope_prefix": "trie/" })
+trie_grep({ "kind": "class", "scope_prefix": "trie/" })
 # kind: "function" | "class" | "method" | "constant" | "module" | "any"
-#   - constant: module-level `NAME = value` (e.g. `__version__`, `DEFAULT_TIMEOUT`)
-#   - module:   synthetic `__module__` symbol carrying file-level behaviour
-#               (the `setup(...)` call in setup.py, the `if __name__ == "__main__":`
-#               block, top-level framework instantiations like `app = FastAPI()`).
+#   - constant: module-level `NAME = value`
+#   - module:   synthetic `__module__` symbol for file-level behaviour
 
-# Only public symbols (no leading underscore)
-mcp__trie__grep({ "name_contains": "store", "public_only": true })
+# Only public symbols
+trie_grep({ "name_contains": "store", "public_only": true })
 
 # Hubs (most-called) or leaves (uncalled)
-mcp__trie__grep({ "inbound_count": { "min": 20 } })          # hubs
-mcp__trie__grep({ "outbound_count": { "max": 0 } })          # leaves
-mcp__trie__grep({ "inbound_count": { "min": 5, "max": 15 } }) # mid-tier
+trie_grep({ "inbound_count": { "min": 20 } })          # hubs
+trie_grep({ "outbound_count": { "max": 0 } })          # leaves
+trie_grep({ "inbound_count": { "min": 5, "max": 15 } }) # mid-tier
 ```
 
-### Ranking
+---
+
+## Ranking
 
 ```python
-mcp__trie__grep({ ... }, rank_by="public_first")    # default; public symbols first
-mcp__trie__grep({ ... }, rank_by="inbound_count")   # most-referenced first
-mcp__trie__grep({ ... }, rank_by="alphabetical")    # by qname
+trie_grep({ ... }, rank_by="public_first")    # default; public symbols first
+trie_grep({ ... }, rank_by="inbound_count")   # most-referenced first
+trie_grep({ ... }, rank_by="alphabetical")    # by qname
 ```
 
 `rank_by="inbound_count"` is the **architectural orientation
 primitive**. First call to make in an unfamiliar codebase:
 
 ```python
-mcp__trie__grep({ "scope_prefix": "src/", "public_only": true },
+trie_grep({ "scope_prefix": "src/", "public_only": true },
      rank_by="inbound_count", limit=10)
 # → the 10 most-referenced public symbols. The architectural skyline.
 ```
 
-### What you get back
+---
 
-Each hit (whether in `hits` or in `fallback.matches`) carries:
+## Return shapes
+
+### `trie_grep` — symbol-name matches
 
 ```json
 {
@@ -145,133 +177,102 @@ Each hit (whether in `hits` or in `fallback.matches`) carries:
 }
 ```
 
-The `one_liner` is the first sentence of the symbol's prose. **Use it
-to triage without opening files.** This is the single most valuable
-field on the response.
+### `trie_grep` — fallback (text matches)
 
-### Fallback responses
-
-When `hits` is empty, the `fallback.kind` tells you what happened:
-
-- **`"text_match"`** — the literal string appears in source bodies.
-  `matches` is a ranked list of enclosing symbols, capped at 30
-  (configurable via `grep_fallback_match_limit`). `match_count` and
-  `unique_symbols` tell you how many candidates exist beyond the cap;
-  if `matches.length` is less than `unique_symbols`, the note
-  explains. Ranking is by `inbound_count` descending — hub symbols
-  first.
-
-- **`"text_match_empty"`** — neither symbol names nor source bodies
-  contain the query. Likely a typo or a name that doesn't exist in
-  this project.
-
-- **`"none"`** — the predicate had no `name_contains` for the fallback
-  to search on. Add a name substring or relax other filters.
-
----
-
-## `mcp__trie__read` — understanding one symbol
-
-```
-mcp__trie__read(qname)
+```json
+{
+  "hits": [],
+  "fallback": {
+    "kind": "text_match" | "text_match_empty" | "none",
+    "matches": [ /* ranked enclosing symbols */ ],
+    "match_count": 47,
+    "unique_symbols": 12,
+    "note": "..."
+  }
+}
 ```
 
-Use this **after `mcp__trie__grep`**, once you know which symbol you want to
-understand.
+### `trie_read`
 
-```python
-mcp__trie__read("trie/sync/cascade:compute_cascade")
+```json
+{
+  "signature": "...",
+  "prose": "...",
+  "source_pointer": "...",
+  "callers": [ /* { qname, signature, one_liner } */ ],
+  "callees": [ /* same shape */ ],
+  "notes": "..."       // present only when there's something to flag
+}
 ```
 
-Returns:
-
-- **`signature`** — verbatim.
-- **`prose`** — the full triefact section body for this symbol.
-- **`source_pointer`** — `path:start_line-end_line`.
-- **`callers`** — every symbol that calls this one, with `qname`,
-  `signature`, and `one_liner`.
-- **`callees`** — every symbol this one calls, same shape.
-- **`notes`** — present only when there's something to flag
-  (incomplete resolution, hub-capping, missing triefact).
-
-The key property: **callers and callees come back with one-liners.**
-You don't need a follow-up call to know "what does that caller do?"
-The one-sentence summary is in the response. One round trip for the
-whole one-hop neighbourhood.
-
-### Qnames
-
-trie uses `path/to/file:LocalName` for top-level symbols and
-`path/to/file:ClassName.method` for methods. Drop the `.py` extension;
-use forward slashes regardless of OS.
-
-When `mcp__trie__grep`, `mcp__trie__read`, or `mcp__trie__trace` returns a `qname`, pass it
-straight back. Round-trip without rewriting.
-
----
-
-## `mcp__trie__trace` — following topology
-
-```
-mcp__trie__trace(from_qname, direction, depth?)
-```
-
-When one hop (which `mcp__trie__read` already gives you) isn't enough, use
-`mcp__trie__trace` to walk the call graph farther.
-
-```python
-# What calls this, transitively, two hops out?
-mcp__trie__trace("trie/sync/cascade:compute_cascade",
-      direction="callers", depth=2)
-
-# What does this end up calling, two hops down?
-mcp__trie__trace("trie/sync/incremental:run_incremental",
-      direction="callees", depth=2)
-
-# Blast radius and dependencies in one call
-mcp__trie__trace("trie/graph/store:Store.replace_all_edges",
-      direction="both", depth=2)
-```
-
-### Return shape
+### `trie_trace`
 
 ```json
 {
   "root": { "qname": "...", "signature": "...", "one_liner": "..." },
-  "nodes": {
-    "qname1": { "signature": "...", "one_liner": "..." },
-    "qname2": { "signature": "...", "one_liner": "..." }
-  },
-  "edges": [
-    { "from": "qname1", "to": "qname2", "direction": "in" }
-  ],
-  "truncated_at": ["hub_qname"]   // present when expansion stopped at hubs
+  "nodes": { "qname1": { "signature": "...", "one_liner": "..." }, ... },
+  "edges": [ { "from": "qname1", "to": "qname2", "direction": "in" } ],
+  "truncated_at": ["hub_qname"]
 }
 ```
 
-`direction` on each edge is **relative to the root**: `"in"` means
-caller-side, `"out"` means callee-side. With `direction="both"`, the
-edge tags let you reconstruct topology from one call.
+### `trie_grep_symbol`
 
-Nodes come back as a `{qname: data}` map. When the same symbol is
-reached through multiple paths, it appears once in `nodes` and the
-multiple edges in `edges` make the shared dependency obvious.
+```json
+{
+  "best": { "qname": "...", "one_liner": "..." },
+  "similar": [ /* up to 9 alternatives */ ],
+  "note": "..."
+}
+```
 
-### When `mcp__trie__trace` stops
+### `trie_trace_flow` / `trie_explain_flow`
 
-Expansion halts at **hub symbols** (those with very high inbound
-count). Hubs are listed in `truncated_at`. The rationale: hubs are
-usually framework code or shared utilities; expanding through them
-floods the result with irrelevant nodes. To see a hub's neighbourhood,
-query it directly with another `mcp__trie__trace` call.
+```json
+{
+  "paths_found": 2,
+  "paths": [
+    [ "qname1", "qname2", "qname3" ],
+    [ "qname1", "qname4", "qname3" ]
+  ],
+  "narratives": [ /* explain_flow only — one per path */ ]
+}
+```
 
-### `mcp__trie__trace` doesn't carry prose
+### `trie_explain_symbol` / `trie_explain_symbol_references`
 
-Only signatures and one-liners. When a specific node matters, follow
-up with `mcp__trie__read(qname)` for the full prose plus immediate neighbours.
+```json
+{
+  "symbol": { "qname": "...", "prose": "..." },
+  "narrative": "...",
+  "callers": [ /* with prose */ ],
+  "callees": [ /* with prose */ ]
+}
+```
 
-This is intentional. `mcp__trie__trace` is about topology; `mcp__trie__read` is about
-substance. The verb split keeps each response focused.
+### `trie_grep_symbol_and_neighbours`
+
+Merged grep response with callers + callees under the match.
+
+---
+
+## Errors
+
+Every error response:
+
+```json
+{
+  "error": {
+    "code": "not_found" | "invalid_argument" | "out_of_scope" | "internal",
+    "message": "...",
+    "suggestion": "..."
+  }
+}
+```
+
+The `suggestion` field is load-bearing. When you get a not-found, the
+suggestion will usually point you at the closest matching qname or
+suggest a broader `trie_grep` query.
 
 ---
 
@@ -280,279 +281,253 @@ substance. The verb split keeps each response focused.
 **"What does `compute_cascade` do?"**
 
 ```python
-mcp__trie__read("trie/sync/cascade:compute_cascade")
+trie_read("trie/sync/cascade:compute_cascade")
 # → one call. Prose + immediate neighbours with one-liners.
 ```
 
-**"Where is the cascade logic?"** (you know the term, not the qname)
+**"Where is the cascade logic?"**
 
 ```python
-mcp__trie__grep({ "name_contains": "cascade", "scope_prefix": "trie/" })
-# → pick the right qname from one_liners
-mcp__trie__read(that_qname)
-# → two calls.
+trie_grep({ "name_contains": "cascade", "scope_prefix": "trie/" })
+# → pick the right qname from one_liners, then trie_read(that_qname).
 ```
 
 **"What's the blast radius of refactoring `Store.replace_all_edges`?"**
 
 ```python
-mcp__trie__trace("trie/graph/store:Store.replace_all_edges",
+trie_trace("trie/graph/store:Store.replace_all_edges",
       direction="callers", depth=2)
 # → full topology of what transitively reaches this method.
-mcp__trie__read(qname) on any node that looks worth understanding deeper.
 ```
 
 **"Where do I start in this codebase?"**
 
 ```python
-mcp__trie__grep({ "scope_prefix": "src/", "public_only": true },
+trie_grep({ "scope_prefix": "src/", "public_only": true },
      rank_by="inbound_count", limit=10)
 # → the 10 most-referenced public symbols. The architectural skyline.
-mcp__trie__read on the two or three that look load-bearing.
-```
-
-**"What do functions A and B have in common?"**
-
-```python
-mcp__trie__trace("...:A", direction="callers", depth=1)
-mcp__trie__trace("...:B", direction="callers", depth=1)
-# → intersect the node sets in your own reasoning.
 ```
 
 **"Find hubs that aren't in tests"**
 
 ```python
-mcp__trie__grep({ "inbound_count": { "min": 20 }, "scope_exclude": ["tests/"] },
+trie_grep({ "inbound_count": { "min": 20 }, "scope_exclude": ["tests/"] },
      rank_by="inbound_count")
-# → one call. Aggregate questions are just predicates.
 ```
 
-**"Where is the string 'rate limited' used?"** (a literal, not a name)
+**"Where is the string 'rate limited' used?"**
 
 ```python
-mcp__trie__grep({ "name_contains": "rate limited" })
-# → hits empty; fallback.kind == "text_match" + matches attributed to enclosing
-#   symbols. Better than raw shell grep: symbol context, not file:line.
+trie_grep_str("rate limited")
+# → matches attributed to enclosing symbols with one-liners.
 ```
 
-**"Where is `MAX_RETRIES` referenced?"** (a module-level constant)
+**"I vaguely remember a function called `compute_casc...`."**
 
 ```python
-mcp__trie__grep({ "name_contains": "MAX_RETRIES" })
-# → no symbol named MAX_RETRIES, but the fallback finds it in source bodies
-#   and points at the enclosing functions/methods that use it.
+trie_grep_symbol("compute_casc")
+# → fuzzy match returns best + similar alternatives.
 ```
 
-**"Every call site that passes `db_path` positionally"** (a usage pattern)
+**"What's that function around `compute_casc` connected to?"**
 
 ```python
-mcp__trie__grep({ "name_contains": "db_path" })
-# → fallback returns enclosing symbols ranked by centrality; check the
-#   bodies of the top results.
+trie_grep_symbol_and_neighbours("compute_casc")
+# → fuzzy match + immediate callers/callees in one round trip.
 ```
+
+**"How does `load_config` reach `read_file`?"**
+
+```python
+trie_trace_flow("load_config", "read_file")
+# → the call chains between them.
+```
+
+**"Walk me through how `handle_request` gets to the database."**
+
+```python
+trie_explain_flow("handle_request", "query_db")
+# → each path step narrated with prose.
+```
+
+**"Tell me everything about `Store.replace_all_edges`."**
+
+```python
+trie_explain_symbol("Store.replace_all_edges")
+# → full prose + woven narrative of callers and callees.
+```
+
+**"Who calls `acquire_lock` and why?"**
+
+```python
+trie_explain_symbol_references("acquire_lock")
+# → callers' prose only. The usage story.
+```
+
+**"What are the main entry points into the auth system?"**
+
+```python
+trie_grep_entry_points("authentication")
+# → high-inbound public symbols whose prose mentions auth.
+```
+
+---
+
+## Qnames
+
+trie uses `path/to/file:LocalName` for top-level symbols and
+`path/to/file:ClassName.method` for methods. Drop the `.py` extension;
+use forward slashes regardless of OS.
+
+When any tool returns a `qname`, pass it straight back to another tool.
+Round-trip without rewriting.
 
 ---
 
 ## What NOT to do
 
-- **Don't reach for the shell's `rg` or grep on source code.** You
-  lose symbol attribution and graph context. `mcp__trie__grep` handles every
-  case where you'd reach for shell grep on source files — symbol-name
-  searches, literal-string searches, constants, usage patterns.
-
-- **Don't call `mcp__trie__read` repeatedly to traverse a graph.** That's what
-  `mcp__trie__trace` is for. `mcp__trie__read` is heavier (full prose); use it when you
-  actually want to understand a symbol.
-
-- **Don't paginate `mcp__trie__grep`.** There's no page parameter. If results
-  overflow `limit`, **narrow the predicate** (add `scope_prefix`,
-  tighten `name_contains`, restrict `kind`). When the fallback returns
-  fewer than `unique_symbols` matches, the response's note explains
-  how to see different candidates.
-
-- **Don't over-specify the predicate.** Pick one or two fields.
-  Filling in every field usually means you're guessing — start broad,
-  narrow from results.
-
-- **Don't manually parse triefact files.** `mcp__trie__read` returns the
-  section body for the symbol you asked about, directly.
-
+- **Don't reach for shell `rg` or grep on source code.** You lose
+  symbol attribution and graph context. `trie_grep` / `trie_grep_str` handle
+  every case.
+- **Don't call `trie_read` repeatedly to traverse a graph.** Use `trie_trace`
+  instead. `trie_read` is heavier (full prose); use it when you actually
+  want to understand a symbol.
+- **Don't paginate `trie_grep`.** No page parameter exists. If results
+  overflow `limit`, **narrow the predicate**.
+- **Don't over-specify the predicate.** Pick one or two fields. Start
+  broad, narrow from results.
+- **Don't manually parse triefact files.** `trie_read` returns the section
+  body directly.
 - **Don't worry about whether a triefact exists.** If a symbol has no
-  prose yet, `mcp__trie__read` still returns the signature, callers, and
-  callees from the graph; `prose` is empty and `notes` says so.
+  prose yet, `trie_read` still returns signature, callers, and callees;
+  `prose` is empty and `notes` says so.
 
 ---
 
 ## CLI equivalents
 
-Every operation above is also available as a `trie` CLI subcommand, so
-an agent that prefers shelling out can do the full set of trie
-operations from the command line. The CLI calls the same code the MCP
-server registers, so the JSON output under `--json` is
-byte-equivalent to the wire response. Use whichever surface fits the
-agent's current call style.
+Every MCP tool is also available as a `trie` CLI subcommand. The CLI
+calls the same code; `--json` output is byte-equivalent to the wire
+response.
+
+**Output modes by command:**
+
+| Human-readable (pass `--json` for machine) | JSON-only (always machine-readable) |
+|---|---|
+| `trie grep`, `trie read`, `trie trace` | `trie grep-str`, `trie grep-entry-points` |
+| | `trie grep-symbol`, `trie grep-symbol-neighbours` |
+| | `trie explain-symbol`, `trie explain-symbol-refs` |
+| | `trie trace-flow`, `trie explain-flow` |
 
 ```
-trie grep   [--name STR] [--kind K] [--scope-prefix P] [--public-only]
-            [--inbound-min N] [--inbound-max N] [--outbound-min N]
-            [--outbound-max N] [--rank-by RANK] [--limit N]
-            [--predicate JSON] [--json]
-trie read   <qname> [--json]
-trie trace  <qname> [--direction callers|callees|both] [--depth N] [--json]
+trie grep         [--name STR] [--kind K] [--scope-prefix P]
+                  [--scope-exclude P] [--public-only]
+                  [--inbound-min N] [--inbound-max N]
+                  [--outbound-min N] [--outbound-max N]
+                  [--rank-by RANK] [--limit N]
+                  [--predicate JSON] [--json]
+
+trie read         <qname> [--json]
+
+trie trace        <qname> [--direction callers|callees|both]
+                  [--depth N] [--json]
+
+trie grep-str     <regexp>
+trie grep-entry-points  <query>
+trie grep-symbol  <sym>
+trie grep-symbol-neighbours <sym>
+trie explain-symbol      <sym>
+trie explain-symbol-refs <sym>
+trie trace-flow          <sym1> <sym2>
+trie explain-flow        <sym1> <sym2>
 ```
 
-CLI-specific behaviour worth knowing:
+CLI-specific behaviour:
+- **Human-readable commands** (grep, read, trace) output Rich tables /
+  structured prose by default. Pass `--json` for the raw MCP envelope.
+- **JSON-only commands** always output JSON; they accept no `--json` flag.
+- **Exit codes**: `0` on success, `1` on tool error, `2` on argument errors.
+- **The same project is targeted** as the MCP server — both find
+  `trie.toml` by walking up from the current directory.
 
-- **Default output is human-readable** (Rich-rendered tables for
-  `grep`, structured prose for `read`, an edge list for `trace`).
-  Pass `--json` for the raw envelope an agent would consume.
-- **Exit codes**: `0` on success (including empty hits with a
-  fallback envelope), `1` when the tool returns an error envelope
-  (`{"error": ...}`), `2` on CLI-level argument errors (e.g.
-  malformed `--predicate` JSON).
-- **The same project is targeted as the MCP server**: `trie` walks up
-  from the current directory looking for `trie.toml`. There's no
-  ambient project state to keep in sync between CLI and MCP — they're
-  one process configuration away from each other.
-
-Examples:
+Management subcommands:
 
 ```
-trie grep --name compute_cascade --scope-prefix trie/
-trie grep --predicate '{"name_contains": "store", "kind": "class"}' --json
-trie read trie/sync/cascade:compute_cascade
-trie trace trie/graph/store:Store.replace_all_edges --direction both
+trie init         [--force] [--no-install-hooks] [--no-scan]
+trie plan         [--model MODEL]
+trie sync         [--file PATH] [--all] [--dry-run] [--budget USD]
+                  [--limit N] [--model MODEL] [--metadata-only] [--force]
+trie verify
+trie refresh      [--before-turn] [--after-turn]
+trie lock-check
+trie audit        [--log PATH] [--compare PATH] [--as-json]
+trie setup        [--target NAME] [--all] [--scope project|user]
+                  [--print-only] [--dry-run] [--no-overrides] [--with-mcp]
+
+trie mcp serve
+trie mcp install  [--target NAME] [--all] [--scope project|user]
+trie mcp uninstall [--target NAME] [--all] [--scope project|user]
 ```
 
 ---
 
 ## Built-in tool overrides
 
-If `trie setup --override-builtins` was run for this project, the
-agent's built-in `grep` and `read` may already be wrappers that route
-through trie. When that's the case:
+If `trie setup --target opencode` was run, the agent's built-in tools
+may already route through trie:
 
-- **`grep`**: calling the agent's built-in `grep` (whatever its prefix
-  in the current harness) **is the same as calling `mcp__trie__grep`** — the
-  wrapper passes the pattern to trie's predicate and returns the same
-  envelope.
+| Built-in | Override behaviour |
+|---|---|
+| **`grep`** | Routes through `trie grep` — symbol-predicate search with fallback. |
+| **`read`** | Qname-shaped paths → `trie read`; plain file paths → compact triefact view; `show_source: true` → raw source bytes. |
+| **`trace`** | Added as bare `trace` tool for graph traversal. |
+| **`grep_str`**, **`grep_entry_points`**, **`grep_symbol`**, **`grep_symbol_and_neighbours`** | Custom tools wrapping the corresponding CLI. |
+| **`explain_symbol`**, **`explain_symbol_references`** | Custom tools for deep symbol understanding. |
+| **`trace_flow`**, **`explain_flow`** | Custom tools for inter-symbol path finding. |
 
-- **`read`**: the override dispatches on the argument shape:
-  - **Qname-shaped path** (`path/to/file:Name`) → routes to `mcp__trie__read`
-    and returns the symbol's prose plus its callers/callees.
-  - **Plain file path** (`src/foo.py`) → returns the full triefact at
-    `triefacts/<path>.md` (YAML frontmatter + every per-symbol prose
-    section). This is the dense "what does this file contain" view —
-    much cheaper per token than reading raw source.
-  - **`show_source: true`** (or passing `offset` / `limit`) → falls
-    through to raw source bytes. Use this right before editing when
-    you need exact lines, not trie's synthesised description.
-  - **No triefact exists** (markdown files, configs, .gitignore,
-    freshly added unsynced files) → falls through to source
-    automatically; the override is transparent for non-source paths.
-
-- **`trace`** is added as a new tool (no built-in collision) exposing
-  `mcp__trie__trace` for graph traversal. Note: the custom-tool name is bare
-  `trace`, while opencode's MCP auto-prefix produces `trie_trace` from
-  the same underlying server method. Both are available; prefer the
-  bare custom tool — it's the one the override layer adds and the
-  shorter name.
-
-- Other harnesses get an advisory hook (Claude Code) or `mcp__trie__*`
-  via MCP only — the built-in tools still work, but the agent is
-  nudged toward the trie versions on every call.
-
-The override is opt-in via `trie setup --override-builtins` and the
-generated wrapper files at `.opencode/tools/{grep,read,trace}.ts`
-carry a "do not hand-edit" header — re-running setup overwrites them,
-deleting them opts back out.
-
-If the override isn't installed, all of the above still works through
-the trie MCP server and the `trie` CLI; the agent just has to invoke
-them explicitly rather than getting them via the built-in surface.
-
----
-
-## When to actually use shell `rg` / grep
-
-After all of the above, the remaining cases for the shell utilities:
-
-- **Non-code files**: markdown, logs (`debug.jsonl`), commit messages,
-  CHANGELOG, config files trie's scope doesn't cover.
-
-That's it. Everything in indexed source code goes through `mcp__trie__grep`.
+When the override isn't installed, all tools work through the trie MCP
+server (prefixed as `trie_grep`, `trie_read`, etc.) and the `trie` CLI.
 
 ---
 
 ## Edge cases and limitations
 
 **Dynamic dispatch isn't always resolved.** If a function calls
-`handlers[name]()` where `handlers` is built at runtime, the static
-analyzer can't follow which functions get called. trie flags this with
-a `notes` field on the symbol's `mcp__trie__read` response: *"callees may be
-incomplete: this function dispatches via handlers[name]()"*. The
-`notes` field is authoritative — when present, it's the truth about
-what the analyzer couldn't see.
+`handlers[name]()`, the static analyzer may not follow which functions
+get called. trie flags this with a `notes` field on the symbol's
+`trie_read` response.
 
-**Hub symbols cap `mcp__trie__trace` depth.** Symbols above the configured
-inbound threshold appear as leaves in `mcp__trie__trace` (listed in
-`truncated_at`). To see the hub's neighbourhood, query it directly.
+**Hub symbols cap `trie_trace` depth.** Symbols above the configured
+inbound threshold appear as leaves listed in `truncated_at`. Query the
+hub directly to see its neighbourhood.
 
-**Stale graph.** If `trie` is set up with a turn-boundary refresh
-hook, the graph stays current automatically. If not, the graph
-reflects the last `trie sync` or `trie refresh`. Symbols added or
-removed since then are absent or stale; `mcp__trie__grep` won't find them and
-`mcp__trie__read` will return "not found" errors. Run `trie refresh` to bring
-the graph up to date.
+**Stale graph.** If trie's turn-boundary refresh hook is installed, the
+graph stays current. If not, run `trie refresh` to bring it up to date.
 
-**Module-level data (constants, globals) isn't indexed as separate
-symbols.** A top-level `MAX_RETRIES = 5` isn't its own entry in the
-symbol table; `mcp__trie__grep({ name_contains: "MAX_RETRIES" })` finds it via
-the fallback (returning the enclosing functions that reference it),
-not as a direct symbol hit.
+**Module-level constants aren't indexed as separate symbols.**
+`MAX_RETRIES = 5` isn't its own symbol-table entry; `trie_grep` finds it
+via the fallback, not as a direct symbol hit.
 
 ---
 
-## Errors
+## When to actually use shell `rg` / grep
 
-Every error response has one shape:
-
-```json
-{
-  "error": {
-    "code": "not_found" | "invalid_argument" | "out_of_scope" | "internal",
-    "message": "...",
-    "suggestion": "..."     // present when there's something concrete to try
-  }
-}
-```
-
-The `suggestion` field is load-bearing. When you get a not-found, the
-suggestion will usually point you at the closest matching qname or
-suggest a broader `mcp__trie__grep` query. Use it.
-
-`invalid_argument` shows up for two common cases beyond malformed types:
-an empty `mcp__trie__grep` predicate (at least one filter field is required —
-see the Predicate fields section above) and an unrecognised `direction`
-on `mcp__trie__trace`. The suggestion field names the valid options in each
-case.
+Non-code files: markdown, logs (`debug.jsonl`), commit messages,
+config files trie's scope doesn't cover. That's it.
 
 ---
 
 ## TL;DR
 
-- **Always start with `mcp__trie__grep`.** It handles every code-side search —
-  symbol names, literal strings, structural filters, usage patterns.
-- **`mcp__trie__read` for one symbol + its neighbours.** Drill in once you know
+- **`trie_grep`** for every code-side search — symbol names, literal strings,
+  structural filters, usage patterns.
+- **`trie_read`** for one symbol + its neighbours. Drill in once you know
   the qname.
-- **`mcp__trie__trace` for graph topology beyond one hop.**
-- The shell's `rg`/grep is for non-code files. Logs, markdown, commit
-  messages. That's the entire remaining surface.
-
----
-
-## Tool names under other installed harnesses
-
-The names above are rendered for **Claude Code**. This project is also wired for other agent harnesses, which prefix MCP tool names differently. If you are one of the agents below, use these names instead:
-
-- **opencode**: `trie_grep`, `trie_read`, `trie_trace`
+- **`trie_trace`** / **`trie_trace_flow`** for graph topology beyond one hop.
+- **`trie_explain_symbol`** / **`trie_explain_symbol_references`** for deep
+  understanding.
+- **`trie_grep_entry_points`** to orient in an unfamiliar codebase.
+- **`trie_grep_symbol`** / **`trie_grep_symbol_and_neighbours`** for fuzzy name
+  discovery.
+- **`trie_grep_str`** for literal/pattern searches in source bodies.
+- Shell `rg`/grep for non-code files only.
