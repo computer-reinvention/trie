@@ -133,38 +133,54 @@ def _load_trie_doc_body() -> str:
         ) from exc
 
 
-def _render_tool_names(target_name: str | None) -> tuple[str, str, str]:
-    """Resolve the rendered `grep`/`read`/`trace` names for `target_name`.
+ALL_TOOL_NAMES = (
+    "grep",
+    "read",
+    "trace",
+    "grep_str",
+    "grep_entry_points",
+    "grep_symbol",
+    "grep_symbol_and_neighbours",
+    "explain_symbol",
+    "explain_symbol_references",
+    "trace_flow",
+    "explain_flow",
+)
+
+CORE_TOOL_NAMES = ("grep", "read", "trace")
+
+
+def _render_tool_names(
+    target_name: str | None,
+    tool_names: tuple[str, ...] = ALL_TOOL_NAMES,
+) -> tuple[str, ...]:
+    """Resolve the rendered tool names for `target_name`.
 
     Each MCPTarget carries a `tool_name_format` string with a `{tool}`
-    placeholder; we substitute the three canonical tool names and return
-    the trio. When `target_name` is None or unknown, fall back to the
+    placeholder; we substitute each canonical tool name and return the
+    full tuple. When `target_name` is None or unknown, fall back to the
     bare names (no harness prefix) so the doc still reads sensibly — the
     agent will still find the tools via tool listing, the names in the
     doc just won't carry a harness-specific prefix.
     """
     target = MCP_TARGETS.get(target_name) if target_name else None
     fmt = target.tool_name_format if target is not None else "{tool}"
-    return fmt.format(tool="grep"), fmt.format(tool="read"), fmt.format(tool="trace")
+    return tuple(fmt.format(tool=t) for t in tool_names)
 
 
 def _render_trie_doc_body(target_name: str | None, additional_targets: list[str]) -> str:
     """Render TRIE.md with tool names baked in for `target_name`.
 
-    Substitutes the `«grep»`, `«read»`, `«trace»` placeholders in the
-    template with the harness-specific tool names. When other targets are
-    also installed, appends a footer listing each one's equivalent tool
-    names so an agent running through any of the wired harnesses can
-    still resolve the tools — without forcing us to write multiple doc
-    files.
+    Substitutes all `«tool_name»` placeholders in the template with the
+    harness-specific tool names. When other targets are also installed,
+    appends a footer listing each one's equivalent tool names so an agent
+    running through any of the wired harnesses can still resolve the tools
+    — without forcing us to write multiple doc files.
     """
-    grep_name, read_name, trace_name = _render_tool_names(target_name)
+    names = dict(zip(ALL_TOOL_NAMES, _render_tool_names(target_name), strict=True))
     body = _load_trie_doc_body()
-    body = (
-        body.replace("«grep»", grep_name)
-        .replace("«read»", read_name)
-        .replace("«trace»", trace_name)
-    )
+    for placeholder_suffix, rendered in names.items():
+        body = body.replace(f"«{placeholder_suffix}»", rendered)
     if additional_targets:
         body += _multi_target_footer(target_name, additional_targets)
     return body
@@ -200,8 +216,8 @@ def _multi_target_footer(primary: str | None, additional: list[str]) -> str:
         target = MCP_TARGETS.get(slug)
         if target is None:
             continue
-        grep_name, read_name, trace_name = _render_tool_names(slug)
-        lines.append(f"- **{target.display_name}**: `{grep_name}`, `{read_name}`, `{trace_name}`")
+        names = _render_tool_names(slug)
+        lines.append(f"- **{target.display_name}**: `{'`, `'.join(names)}`")
     lines.append("")
     return "\n".join(lines)
 
@@ -272,7 +288,7 @@ def _pointer_block_for(target_name: str | None) -> str:
     via MCP. When `target_name` is None or unknown, falls back to the
     bare names.
     """
-    grep_name, read_name, trace_name = _render_tool_names(target_name)
+    grep_name, read_name, trace_name = _render_tool_names(target_name, tool_names=CORE_TOOL_NAMES)
     line = _pointer_line(grep_name, read_name, trace_name)
     return f"{POINTER_MARKER}\n{line}\n{POINTER_END_MARKER}\n"
 
