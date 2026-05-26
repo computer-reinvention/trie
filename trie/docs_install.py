@@ -149,6 +149,11 @@ ALL_TOOL_NAMES = (
 
 CORE_TOOL_NAMES = ("grep", "read", "trace")
 
+# Target names whose tool overrides expose bare tool names directly
+# (no MCP prefix). Currently only opencode's custom-tools API supports
+# replacing built-in tools with bare-name wrappers.
+_BARE_NAME_TARGETS = frozenset({"opencode"})
+
 
 def _render_tool_names(
     target_name: str | None,
@@ -156,13 +161,16 @@ def _render_tool_names(
 ) -> tuple[str, ...]:
     """Resolve the rendered tool names for `target_name`.
 
-    Each MCPTarget carries a `tool_name_format` string with a `{tool}`
-    placeholder; we substitute each canonical tool name and return the
-    full tuple. When `target_name` is None or unknown, fall back to the
-    bare names (no harness prefix) so the doc still reads sensibly — the
-    agent will still find the tools via tool listing, the names in the
-    doc just won't carry a harness-specific prefix.
+    Targets with full tool overrides (opencode) expose bare tool names
+    (`grep`, `read`, `trace`, ...). Targets without overrides use the
+    MCP naming convention from `MCPTarget.tool_name_format` (e.g.
+    `mcp__trie__grep` for Claude Code). When `target_name` is None or
+    unknown, fall back to bare names — the agent will still find the
+    tools via tool listing even when the doc name doesn't carry a
+    harness-specific prefix.
     """
+    if target_name and target_name in _BARE_NAME_TARGETS:
+        return tuple(tool_names)  # bare names — overrides expose them directly
     target = MCP_TARGETS.get(target_name) if target_name else None
     fmt = target.tool_name_format if target is not None else "{tool}"
     return tuple(fmt.format(tool=t) for t in tool_names)

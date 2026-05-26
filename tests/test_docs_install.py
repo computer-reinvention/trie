@@ -304,11 +304,10 @@ def test_install_for_claude_code_uses_mcp_double_underscore_prefix(tmp_path: Pat
     assert "«grep»" not in body
 
 
-def test_install_for_opencode_uses_single_underscore_prefix(tmp_path: Path):
-    """opencode prefixes MCP tools with `<server-name>_<tool>`. Confirmed
-    from opencode.ai/docs/mcp-servers ("MCP server tools are registered with
-    server name as prefix"). The trie server's name is `trie`, so tools
-    become `trie_grep`, `trie_read`, `trie_trace`."""
+def test_install_for_opencode_uses_bare_tool_names(tmp_path: Path):
+    """opencode has full tool overrides that expose bare names (`grep`,
+    `read`, `trace`), so TRIE.md should use those instead of MCP-prefixed
+    names like `trie_grep`."""
     install(
         project_root=tmp_path,
         print_only=False,
@@ -316,9 +315,10 @@ def test_install_for_opencode_uses_single_underscore_prefix(tmp_path: Path):
         target_names=["opencode"],
     )
     body = (tmp_path / TRIE_DOC_FILENAME).read_text(encoding="utf-8")
-    assert "trie_grep" in body
-    assert "trie_read" in body
-    assert "trie_trace" in body
+    assert "trie_grep" not in body
+    assert "`grep`" in body or "grep(" in body
+    assert "`read`" in body or "read(" in body
+    assert "`trace`" in body or "trace(" in body
     assert "«grep»" not in body
 
 
@@ -374,9 +374,9 @@ def test_install_multiple_targets_renders_primary_in_body_and_footer_for_rest(
     assert "mcp__trie__grep" in body
     # Footer names the opencode aliases.
     assert "Tool names under other installed harnesses" in body
-    assert "trie_grep" in body
-    assert "trie_read" in body
-    assert "trie_trace" in body
+    assert "`grep`" in body or "grep(" in body
+    assert "`read`" in body or "read(" in body
+    assert "`trace`" in body or "trace(" in body
 
 
 def test_install_single_target_omits_multi_target_footer(tmp_path: Path):
