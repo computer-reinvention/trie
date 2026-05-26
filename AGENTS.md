@@ -90,5 +90,5 @@ hook is doing its job.
 - `trie verify` is the pre-commit gate; it refuses commits when the triefact tree drifts.
 
 <!-- trie:docs (added by `trie setup`) -->
-**trie is installed in this project.** Read [TRIE.md](TRIE.md) for the navigation tools (`mcp__trie__grep`, `mcp__trie__read`, `mcp__trie__trace`) — use them instead of grep for code search.
+**trie is installed in this project.** Read [TRIE.md](TRIE.md) for the navigation tools (`grep`, `read`, `trace`) — use them instead of grep for code search.
 <!-- end trie:docs -->
