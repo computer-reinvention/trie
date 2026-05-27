@@ -4,13 +4,13 @@ import sqlite3
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from trie.parse.python import Symbol
 from trie.parse.references import Reference
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 # All schema is created if not present. The DB is a regenerable cache under .trie/;
 # bumping SCHEMA_VERSION blows it away and triggers a re-scan on next connect.
@@ -59,6 +59,17 @@ CREATE TABLE IF NOT EXISTS triefact_sections (
     PRIMARY KEY (triefact_path, symbol_id)
 );
 CREATE INDEX IF NOT EXISTS idx_sections_symbol ON triefact_sections(symbol_id);
+
+CREATE TABLE IF NOT EXISTS patches (
+    id INTEGER PRIMARY KEY,
+    symbol_id INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
+    note TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_patches_symbol ON patches(symbol_id);
+CREATE INDEX IF NOT EXISTS idx_patches_session ON patches(session_id);
 """
 
 
@@ -106,6 +117,8 @@ class SymbolDetail:
     inbound_count: int
     outbound_count: int
     one_liner: str  # "" when no triefact section exists
+    pending_patches: list[dict] = field(default_factory=list)
+    pending_patch_count: int = 0
 
 
 @dataclass(frozen=True)
@@ -542,6 +555,140 @@ class Store:
         ).fetchall()
         return {row[0]: (row[1] or "") for row in rows}
 
+    # --- patch ops ---
+
+    def add_patch(
+        self,
+        qname: str,
+        note: str,
+        reason: str,
+        session_id: str,
+    ) -> int:
+        """Add a new patch row for the given symbol qname.
+
+        Returns the new patch id, or raises KeyError if qname is not found.
+        """
+        row = self._conn.execute(
+            "SELECT id FROM symbols WHERE qualified_name = ? LIMIT 1",
+            (qname,),
+        ).fetchone()
+        if row is None:
+            raise KeyError(f"qname {qname!r} has no symbol_id; symbol may not exist")
+        symbol_id = int(row[0])
+        now = int(time.time())
+        cur = self._conn.execute(
+            """INSERT INTO patches (symbol_id, note, reason, session_id, created_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (symbol_id, note, reason, session_id, now),
+        )
+        self._conn.commit()
+        assert cur.lastrowid is not None, "INSERT of patch should produce a rowid"
+        return int(cur.lastrowid)
+
+    def get_patches_for_qname(self, qname: str) -> list[dict]:
+        """Return all pending patches for the given symbol as dicts."""
+        row = self._conn.execute(
+            "SELECT id FROM symbols WHERE qualified_name = ? LIMIT 1",
+            (qname,),
+        ).fetchone()
+        if row is None:
+            return []
+        symbol_id = int(row[0])
+        return self._get_patches_by_symbol_id(symbol_id)
+
+    def _get_patches_by_symbol_id(self, symbol_id: int) -> list[dict]:
+        rows = self._conn.execute(
+            "SELECT id, note, reason, session_id, created_at FROM patches WHERE symbol_id = ? ORDER BY id",
+            (symbol_id,),
+        ).fetchall()
+        return [
+            {
+                "id": int(r[0]),
+                "note": r[1],
+                "reason": r[2],
+                "session_id": r[3],
+                "created_at": int(r[4]),
+            }
+            for r in rows
+        ]
+
+    def get_all_patches_grouped(self) -> dict[int, list[dict]]:
+        """Return all pending patches grouped by symbol_id.
+
+        Result maps symbol_id -> list of patch dicts.
+        """
+        rows = self._conn.execute(
+            """SELECT id, symbol_id, note, reason, session_id, created_at
+               FROM patches ORDER BY symbol_id, id"""
+        ).fetchall()
+        result: dict[int, list[dict]] = {}
+        for r in rows:
+            sid = int(r[1])
+            result.setdefault(sid, []).append(
+                {
+                    "id": int(r[0]),
+                    "note": r[2],
+                    "reason": r[3],
+                    "session_id": r[4],
+                    "created_at": int(r[5]),
+                }
+            )
+        return result
+
+    def delete_patches(
+        self,
+        *,
+        qname: str | None = None,
+        session_id: str | None = None,
+        all: bool = False,
+    ) -> int:
+        """Delete patches matching the given criteria. Returns number of deleted rows.
+
+        At least one of qname / session_id / all must be set.
+        """
+        if all:
+            count = self._conn.execute("DELETE FROM patches").rowcount
+            self._conn.commit()
+            return count
+        if qname is not None:
+            row = self._conn.execute(
+                "SELECT id FROM symbols WHERE qualified_name = ? LIMIT 1",
+                (qname,),
+            ).fetchone()
+            if row is None:
+                return 0
+            symbol_id = int(row[0])
+            count = self._conn.execute(
+                "DELETE FROM patches WHERE symbol_id = ?", (symbol_id,)
+            ).rowcount
+            self._conn.commit()
+            return count
+        if session_id is not None:
+            count = self._conn.execute(
+                "DELETE FROM patches WHERE session_id = ?", (session_id,)
+            ).rowcount
+            self._conn.commit()
+            return count
+        return 0
+
+    def get_patched_qnames(self) -> list[str]:
+        """Return all qnames that have at least one pending patch."""
+        rows = self._conn.execute(
+            """SELECT DISTINCT s.qualified_name
+               FROM patches p
+               JOIN symbols s ON s.id = p.symbol_id
+               ORDER BY s.qualified_name"""
+        ).fetchall()
+        return [r[0] for r in rows]
+
+    def patch_count_for_symbol(self, symbol_id: int) -> int:
+        """Return the number of pending patches for the given symbol_id."""
+        row = self._conn.execute(
+            "SELECT COUNT(*) FROM patches WHERE symbol_id = ?",
+            (symbol_id,),
+        ).fetchone()
+        return int(row[0]) if row else 0
+
     # --- symbol detail / locate ---
 
     def get_symbol_detail(self, qualified_name: str) -> SymbolDetail | None:
@@ -565,6 +712,7 @@ class Store:
         ).fetchone()
         if row is None:
             return None
+        patches = self.get_patches_for_qname(qualified_name)
         return SymbolDetail(
             qualified_name=row[0],
             name=row[1],
@@ -577,6 +725,8 @@ class Store:
             inbound_count=int(row[8]),
             outbound_count=int(row[9]),
             one_liner=row[10] or "",
+            pending_patches=patches,
+            pending_patch_count=len(patches),
         )
 
     def grep_symbols(
@@ -636,6 +786,7 @@ class Store:
             order = "s.is_public DESC, s.qualified_name"
 
         where_sql = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+        patch_subq = "(SELECT COUNT(*) FROM patches WHERE symbol_id = s.id)"
         sql = f"""
             SELECT
                 s.qualified_name, s.name, s.kind, s.file_path,
@@ -645,7 +796,8 @@ class Store:
                 COALESCE(
                     (SELECT one_liner FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
                     ''
-                ) AS one_liner
+                ) AS one_liner,
+                {patch_subq} AS patch_count
             FROM symbols s
             {where_sql}
             ORDER BY {order}
@@ -666,6 +818,7 @@ class Store:
                 inbound_count=int(row[8]),
                 outbound_count=int(row[9]),
                 one_liner=row[10] or "",
+                pending_patch_count=int(row[11]),
             )
             for row in rows
         ]

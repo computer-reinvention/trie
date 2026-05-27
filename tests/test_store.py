@@ -128,3 +128,182 @@ def test_transaction_rolls_back_on_error(store: Store):
     rec = store.get_file("x.py")
     assert rec is not None
     assert rec.fingerprint == "v1"
+
+
+# --- patch ops ---
+
+
+def test_patches_table_exists(store: Store):
+    """Patches schema is created by SCHEMA_SQL."""
+    table_count = store._conn.execute(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='patches'"
+    ).fetchone()[0]
+    assert table_count == 1
+
+
+def test_add_patch_creates_row(store: Store, tmp_path: Path):
+    src = tmp_path / "a.py"
+    src.write_text("def greet():\n    return 'hello'\n")
+    syms = extract_symbols(src)
+    store.upsert_file(path="a.py", fingerprint="x")
+    store.replace_file_symbols("a.py", syms)
+
+    pid = store.add_patch("a:greet", "change return value", "test", "sess1")
+    assert isinstance(pid, int) and pid > 0
+
+
+def test_add_patch_unknown_qname_raises(store: Store):
+    with pytest.raises(KeyError):
+        store.add_patch("nonexistent:foo", "note", "reason", "sess1")
+
+
+def test_get_patches_for_qname(store: Store, tmp_path: Path):
+    src = tmp_path / "a.py"
+    src.write_text("def greet():\n    return 'hello'\n")
+    syms = extract_symbols(src)
+    store.upsert_file(path="a.py", fingerprint="x")
+    store.replace_file_symbols("a.py", syms)
+
+    store.add_patch("a:greet", "note1", "reason1", "sess1")
+    store.add_patch("a:greet", "note2", "reason2", "sess1")
+
+    patches = store.get_patches_for_qname("a:greet")
+    assert len(patches) == 2
+    assert patches[0]["note"] == "note1"
+    assert patches[1]["note"] == "note2"
+
+
+def test_get_patches_for_unknown_qname_returns_empty(store: Store):
+    assert store.get_patches_for_qname("no/such:sym") == []
+
+
+def test_get_all_patches_grouped(store: Store, tmp_path: Path):
+    src = tmp_path / "a.py"
+    src.write_text("def greet():\n    return 'hello'\n\ndef farewell():\n    return 'bye'\n")
+    syms = extract_symbols(src)
+    store.upsert_file(path="a.py", fingerprint="x")
+    store.replace_file_symbols("a.py", syms)
+
+    store.add_patch("a:greet", "note1", "r1", "s1")
+    store.add_patch("a:farewell", "note2", "r2", "s1")
+
+    grouped = store.get_all_patches_grouped()
+    assert len(grouped) == 2
+    all_notes = [p["note"] for plist in grouped.values() for p in plist]
+    assert set(all_notes) == {"note1", "note2"}
+
+
+def test_patch_count_for_symbol(store: Store, tmp_path: Path):
+    src = tmp_path / "a.py"
+    src.write_text("def greet():\n    return 'hello'\n")
+    syms = extract_symbols(src)
+    store.upsert_file(path="a.py", fingerprint="x")
+    store.replace_file_symbols("a.py", syms)
+
+    store.add_patch("a:greet", "n1", "r1", "s1")
+    sym_id = store._conn.execute(
+        "SELECT id FROM symbols WHERE qualified_name = ?", ("a:greet",)
+    ).fetchone()[0]
+    assert store.patch_count_for_symbol(sym_id) == 1
+
+
+def test_delete_patches_by_qname(store: Store, tmp_path: Path):
+    src = tmp_path / "a.py"
+    src.write_text("def greet():\n    return 'hello'\n")
+    syms = extract_symbols(src)
+    store.upsert_file(path="a.py", fingerprint="x")
+    store.replace_file_symbols("a.py", syms)
+
+    store.add_patch("a:greet", "n1", "r1", "s1")
+    assert len(store.get_patches_for_qname("a:greet")) == 1
+    store.delete_patches(qname="a:greet")
+    assert len(store.get_patches_for_qname("a:greet")) == 0
+
+
+def test_delete_patches_all(store: Store, tmp_path: Path):
+    src = tmp_path / "a.py"
+    src.write_text("def greet():\n    return 'hello'\n")
+    syms = extract_symbols(src)
+    store.upsert_file(path="a.py", fingerprint="x")
+    store.replace_file_symbols("a.py", syms)
+
+    store.add_patch("a:greet", "n1", "r1", "s1")
+    count = store.delete_patches(all=True)
+    assert count >= 1
+    assert len(store.get_patches_for_qname("a:greet")) == 0
+
+
+def test_delete_patches_by_session(store: Store, tmp_path: Path):
+    src = tmp_path / "a.py"
+    src.write_text("def greet():\n    return 'hello'\n")
+    syms = extract_symbols(src)
+    store.upsert_file(path="a.py", fingerprint="x")
+    store.replace_file_symbols("a.py", syms)
+
+    store.add_patch("a:greet", "n1", "r1", "ses_x")
+    store.add_patch("a:greet", "n2", "r2", "ses_y")
+    assert len(store.get_patches_for_qname("a:greet")) == 2
+    store.delete_patches(session_id="ses_x")
+    patches = store.get_patches_for_qname("a:greet")
+    assert len(patches) == 1
+    assert patches[0]["session_id"] == "ses_y"
+
+
+def test_get_patched_qnames(store: Store, tmp_path: Path):
+    src = tmp_path / "a.py"
+    src.write_text("def greet():\n    return 'hello'\n")
+    syms = extract_symbols(src)
+    store.upsert_file(path="a.py", fingerprint="x")
+    store.replace_file_symbols("a.py", syms)
+
+    assert store.get_patched_qnames() == []
+    store.add_patch("a:greet", "n1", "r1", "s1")
+    assert store.get_patched_qnames() == ["a:greet"]
+
+
+def test_get_symbol_detail_includes_patches(store: Store, tmp_path: Path):
+    src = tmp_path / "a.py"
+    src.write_text("def greet():\n    return 'hello'\n")
+    syms = extract_symbols(src)
+    store.upsert_file(path="a.py", fingerprint="x")
+    store.replace_file_symbols("a.py", syms)
+
+    detail = store.get_symbol_detail("a:greet")
+    assert detail is not None
+    assert detail.pending_patches == []
+    assert detail.pending_patch_count == 0
+
+    store.add_patch("a:greet", "my note", "my reason", "s1")
+    detail2 = store.get_symbol_detail("a:greet")
+    assert detail2 is not None
+    assert len(detail2.pending_patches) == 1
+    assert detail2.pending_patches[0]["note"] == "my note"
+    assert detail2.pending_patch_count == 1
+
+
+def test_grep_symbols_includes_patch_count(store: Store, tmp_path: Path):
+    from trie.graph.store import GrepPredicate
+
+    src = tmp_path / "a.py"
+    src.write_text("def greet():\n    return 'hello'\n")
+    syms = extract_symbols(src)
+    store.upsert_file(path="a.py", fingerprint="x")
+    store.replace_file_symbols("a.py", syms)
+
+    store.add_patch("a:greet", "n1", "r1", "s1")
+    hits = store.grep_symbols(GrepPredicate(name_contains="greet"))
+    assert len(hits) == 1
+    assert hits[0].pending_patch_count == 1
+
+
+def test_patches_cascaded_on_symbol_delete(store: Store, tmp_path: Path):
+    src = tmp_path / "a.py"
+    src.write_text("def greet():\n    return 'hello'\n")
+    syms = extract_symbols(src)
+    store.upsert_file(path="a.py", fingerprint="x")
+    store.replace_file_symbols("a.py", syms)
+
+    store.add_patch("a:greet", "n1", "r1", "s1")
+    store.replace_file_symbols("a.py", [])  # Remove the symbol
+    remaining = store.get_patches_for_qname("a:greet")
+    assert remaining == []

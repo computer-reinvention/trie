@@ -391,6 +391,7 @@ class TrieTools:
                     "kind": h.kind,
                     "inbound_count": h.inbound_count,
                     "outbound_count": h.outbound_count,
+                    "pending_patch_count": h.pending_patch_count,
                 }
                 for h in hits
             ]
@@ -535,6 +536,7 @@ class TrieTools:
                 "kind": d.kind,
                 "inbound_count": d.inbound_count,
                 "outbound_count": d.outbound_count,
+                "pending_patch_count": d.pending_patch_count,
                 "text_match_hits_in_body": body_hits,
             }
             for d, body_hits in capped
@@ -921,6 +923,8 @@ class TrieTools:
                 "callers": callers,
                 "callees": callees,
             }
+            if detail.pending_patches:
+                out["pending_patches"] = detail.pending_patches
             if notes:
                 out["notes"] = notes
             tele_ctx["result_kind"] = "ok"
@@ -1056,16 +1060,21 @@ class TrieTools:
             hub_threshold = self.mcp_cfg.trace_hub_threshold
             one_liner_cap = self.mcp_cfg.read_neighbour_one_liner_max_chars
 
+            patched_qnames: set[str] = set(self.store.get_patched_qnames())
+
             def add_node(detail: SymbolDetail) -> bool:
                 """Register a node if it fits under max_nodes. False on capacity hit."""
                 if detail.qualified_name in nodes:
                     return True
                 if len(nodes) >= max_nodes:
                     return False
-                nodes[detail.qualified_name] = {
+                qn = detail.qualified_name
+                nodes[qn] = {
                     "signature": detail.signature or "",
                     "one_liner": _truncate(detail.one_liner, one_liner_cap),
                 }
+                if qn in patched_qnames:
+                    nodes[qn]["has_pending_patches"] = True
                 return True
 
             add_node(root_detail)
@@ -1136,6 +1145,8 @@ class TrieTools:
                 "nodes": nodes,
                 "edges": edges,
             }
+            if root_detail.qualified_name in patched_qnames:
+                result["root"]["has_pending_patches"] = True
             if truncated_at:
                 result["truncated_at"] = truncated_at
             if notes:

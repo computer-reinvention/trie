@@ -35,6 +35,7 @@ PROJECT_TOML = (
     '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
     '[models]\nbootstrap = "anthropic/claude-sonnet-4-6"\n'
     'cascade = "anthropic/claude-sonnet-4-6"\n'
+    'edits = "anthropic/claude-sonnet-4-6"\n'
     "[cascade]\ndefault_depth = 1\nhub_symbol_threshold = 20\n"
 )
 
@@ -485,3 +486,105 @@ def test_cli_call_event_carries_duration_and_result_fields(
     assert ev["result_kind"] == "ok"
     assert "result_count" in ev
     assert "response_bytes" in ev
+
+
+# ── trie patch CLI tests ──────────────────────────────────────────────
+
+
+def test_patch_list_empty(populated_project: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(populated_project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["patch", "list"])
+    assert result.exit_code == 0
+    assert "no pending patches" in result.output
+
+
+def test_patch_create_and_list(populated_project: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(populated_project)
+    runner = CliRunner()
+
+    result = runner.invoke(
+        app, ["patch", "create", "lib:slugify", "--note", "add unicode support", "--reason", "i18n"]
+    )
+    assert result.exit_code == 0
+    assert "patch #" in result.output
+    assert "posted" in result.output
+
+    list_result = runner.invoke(app, ["patch", "list"])
+    assert list_result.exit_code == 0
+    assert "lib:slugify" in list_result.output
+
+
+def test_patch_create_unknown_symbol(populated_project: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(populated_project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["patch", "create", "nosuch:foo", "--note", "x", "--reason", "y"])
+    assert result.exit_code == 1
+    assert "not found" in result.output
+
+
+def test_patch_preview(populated_project: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(populated_project)
+    runner = CliRunner()
+
+    runner.invoke(
+        app, ["patch", "create", "lib:slugify", "--note", "add unicode", "--reason", "i18n"]
+    )
+    result = runner.invoke(app, ["patch", "preview"])
+    assert result.exit_code == 0
+    assert "lib:slugify" in result.output
+
+
+def test_patch_preview_empty(populated_project: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(populated_project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["patch", "preview"])
+    assert result.exit_code == 0
+    assert "no pending patches" in result.output
+
+
+def test_patch_drop_by_qname(populated_project: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(populated_project)
+    runner = CliRunner()
+
+    runner.invoke(app, ["patch", "create", "lib:slugify", "--note", "x", "--reason", "y"])
+    list1 = runner.invoke(app, ["patch", "list"])
+    assert "lib:slugify" in list1.output
+
+    drop = runner.invoke(app, ["patch", "drop", "--qname", "lib:slugify"])
+    assert drop.exit_code == 0
+
+    list2 = runner.invoke(app, ["patch", "list"])
+    assert "no pending patches" in list2.output
+
+
+def test_patch_drop_all(populated_project: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(populated_project)
+    runner = CliRunner()
+
+    runner.invoke(app, ["patch", "create", "lib:slugify", "--note", "x", "--reason", "y"])
+    drop = runner.invoke(app, ["patch", "drop", "--all"])
+    assert drop.exit_code == 0
+
+    list2 = runner.invoke(app, ["patch", "list"])
+    assert "no pending patches" in list2.output
+
+
+def test_patch_drop_no_args(populated_project: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(populated_project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["patch", "drop"])
+    assert result.exit_code == 1
+    assert "specify" in result.output
+
+
+def test_patch_help(populated_project: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(populated_project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["patch", "--help"])
+    assert result.exit_code == 0
+    assert "create" in result.output
+    assert "apply" in result.output
+    assert "preview" in result.output
+    assert "list" in result.output
+    assert "drop" in result.output

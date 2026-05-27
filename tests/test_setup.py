@@ -42,7 +42,15 @@ def project(tmp_path: Path) -> Path:
         'cascade = "anthropic/claude-sonnet-4-6"\n'
         "[cascade]\ndefault_depth = 1\nhub_symbol_threshold = 20\n"
     )
-    return tmp_path
+    yield tmp_path
+    # Cleanup any residue that may have leaked outside tmp_path
+    for p in (Path.cwd(), Path.home()):
+        (p / ".mcp.json").unlink(missing_ok=True)
+        claude = p / ".claude"
+        if claude.exists():
+            import shutil
+
+            shutil.rmtree(claude, ignore_errors=True)
 
 
 # ---------------------------------------------------------------------------

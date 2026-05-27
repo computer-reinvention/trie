@@ -23,6 +23,7 @@ from trie.docs_install import (
 from trie.docs_install import (
     install as docs_run_install,
 )
+from trie.edits.apply import apply_patches, preview_patches
 from trie.freshness import (
     FreshnessResult,
     NotAGitRepoError,
@@ -2293,6 +2294,198 @@ def explain_flow_cmd(
     finally:
         tools.close()
     _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+
+
+# ---------------------------------------------------------------------------
+# trie patch — fire-and-forget edit notes
+# ---------------------------------------------------------------------------
+
+
+patch_app = typer.Typer(
+    name="patch",
+    help="Post, preview, apply, list, or drop edit patches against symbols.",
+    no_args_is_help=True,
+)
+app.add_typer(patch_app, name="patch")
+
+
+@patch_app.command("create")
+def patch_create_cmd(
+    ctx: typer.Context,
+    qname: str = typer.Argument(..., help="Qualified name of the symbol to patch."),
+    note: str = typer.Option(..., "--note", "-n", help="Implementation change note."),
+    reason: str = typer.Option(
+        "", "--reason", "-r", help="Why the cascade needs to know about this change."
+    ),
+) -> None:
+    """Post a fire-and-forget edit patch against a symbol."""
+    reporter = _get_reporter(ctx)
+    try:
+        _config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    import uuid
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        session_id = uuid.uuid4().hex[:12]
+        patch_id = store.add_patch(qname, note, reason, session_id)
+    except KeyError:
+        reporter.error(f"symbol {qname!r} not found in the graph")
+        raise typer.Exit(code=1) from None
+    finally:
+        store.close()
+
+    reporter.success(f"patch #{patch_id} posted for {qname}")
+
+
+@patch_app.command("apply")
+def patch_apply_cmd(
+    ctx: typer.Context,
+    model: str | None = typer.Option(
+        None,
+        "--model",
+        help="Override the configured edit model for this apply run.",
+    ),
+) -> None:
+    """Merge all patches, generate source+prose, cascade, and commit."""
+    reporter = _get_reporter(ctx)
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    model_id = model or config.models.edits
+    client = make_client(model_id)
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        result = apply_patches(store, config, client, project_root)
+    finally:
+        store.close()
+
+    if result["ok"]:
+        reporter.success(
+            f"applied {result['applied']} symbols, "
+            f"{result['failed']} failed, "
+            f"{result['skipped']} skipped"
+        )
+    else:
+        reporter.error(
+            f"apply failed: {result['error']} "
+            f"(applied {result['applied']}, "
+            f"failed {result['failed']})"
+        )
+        raise typer.Exit(code=1)
+
+
+@patch_app.command("preview")
+def patch_preview_cmd(ctx: typer.Context) -> None:
+    """Show what --apply would do without executing it."""
+    reporter = _get_reporter(ctx)
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        result = preview_patches(store, config)
+    finally:
+        store.close()
+
+    if result["total_patches"] == 0:
+        reporter.info("no pending patches")
+        return
+
+    from rich.table import Table
+
+    table = Table(title="Patch Preview")
+    table.add_column("Symbol", style="cyan")
+    table.add_column("Patches", style="magenta")
+    table.add_column("Cascade", style="yellow")
+
+    for qname in result["patched_list"]:
+        cascade_str = "yes" if qname in result.get("cascade_list", []) else "no"
+        table.add_row(qname, "1", cascade_str)
+
+    reporter.console.print(table)
+    reporter.info(
+        f"{result['total_patches']} patches across {result['patched_symbols']} symbols, "
+        f"{result['cascade_symbols']} cascaded neighbours"
+    )
+
+
+@patch_app.command("list")
+def patch_list_cmd(ctx: typer.Context) -> None:
+    """List all pending patches."""
+    reporter = _get_reporter(ctx)
+    try:
+        _config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        qnames = store.get_patched_qnames()
+        if not qnames:
+            reporter.info("no pending patches")
+            return
+
+        from rich.table import Table
+
+        table = Table(title="Pending Patches")
+        table.add_column("QName", style="cyan")
+        table.add_column("Patches", style="magenta")
+
+        for qname in qnames:
+            patches = store.get_patches_for_qname(qname)
+            table.add_row(qname, str(len(patches)))
+
+        reporter.console.print(table)
+    finally:
+        store.close()
+
+
+@patch_app.command("drop")
+def patch_drop_cmd(
+    ctx: typer.Context,
+    qname: str | None = typer.Option(
+        None, "--qname", "-q", help="Drop patches for a specific symbol."
+    ),
+    session_id: str | None = typer.Option(
+        None, "--session", "-s", help="Drop patches for a specific session."
+    ),
+    all: bool = typer.Option(False, "--all", "-a", help="Drop all patches."),
+) -> None:
+    """Drop pending patches for a symbol, session, or everything."""
+    reporter = _get_reporter(ctx)
+    try:
+        _config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        if qname:
+            count = store.delete_patches(qname=qname)
+        elif session_id:
+            count = store.delete_patches(session_id=session_id)
+        elif all:
+            count = store.delete_patches(all=True)
+        else:
+            reporter.error("specify --qname, --session, or --all")
+            raise typer.Exit(code=1)
+    finally:
+        store.close()
+
+    reporter.success(f"dropped {count} patch(es)")
 
 
 # ---------------------------------------------------------------------------
