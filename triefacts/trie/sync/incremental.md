@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.2
 source: trie/sync/incremental.py
-file_fingerprint: 4c7a99e1ffa4459b158c5183633f0aad1eb6be7c6327019a3cdf30e8c64c2def
+file_fingerprint: 18680eeb2367dfd90b76da693ed45e23a5f2458fb15fa47a2da4cca100b9af06
 last_synced_at: '2026-05-24T00:25:26Z'
 defines:
 - kind: module
   qualified_name: trie/sync/incremental:__module__
-  lines: 1-277
+  lines: 1-285
 - kind: class
   qualified_name: trie/sync/incremental:IncrementalWorklist
   lines: 19-51
@@ -18,9 +18,9 @@ defines:
   lines: 66-142
 - kind: function
   qualified_name: trie/sync/incremental:run_incremental
-  lines: 145-276
+  lines: 145-284
 incoming_refs: 19
-outgoing_refs: 9
+outgoing_refs: 11
 ---
 <!-- trie:section symbol=trie/sync/incremental:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8b7d1eb492e35680875ff812049bdbfad96048d597c588c3e5ad7e97c657a6fa source_ref=75fad555723fb0d9fdc38c5f729779434c0a4951 -->
 ## `trie/sync/incremental`

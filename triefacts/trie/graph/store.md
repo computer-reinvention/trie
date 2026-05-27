@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.2
 source: trie/graph/store.py
-file_fingerprint: 6593e996c60d4e2609b2841a8b32acac646e52f3a32c1c92218c2051147894fa
+file_fingerprint: 30101619ce5ae822efc0c597fa7ef4876560390b5543d373ebaeea0b624ccffe
 last_synced_at: '2026-05-23T23:22:48Z'
 defines:
 - kind: module
   qualified_name: trie/graph/store:__module__
-  lines: 1-754
+  lines: 1-758
 - kind: constant
   qualified_name: trie/graph/store:SCHEMA_VERSION
   lines: 13-13
@@ -30,7 +30,7 @@ defines:
   lines: 112-131
 - kind: class
   qualified_name: trie/graph/store:Store
-  lines: 134-753
+  lines: 134-757
 - kind: method
   qualified_name: trie/graph/store:Store.__init__
   lines: 143-146
@@ -68,62 +68,65 @@ defines:
   qualified_name: trie/graph/store:Store.count_symbols
   lines: 254-265
 - kind: method
+  qualified_name: trie/graph/store:Store.count_section_records
+  lines: 267-269
+- kind: method
   qualified_name: trie/graph/store:Store.replace_all_edges
-  lines: 269-300
+  lines: 273-304
 - kind: method
   qualified_name: trie/graph/store:Store.references_in
-  lines: 302-314
+  lines: 306-318
 - kind: method
   qualified_name: trie/graph/store:Store.references_in_with_files
-  lines: 316-328
+  lines: 320-332
 - kind: method
   qualified_name: trie/graph/store:Store.qnames_in_file
-  lines: 330-336
+  lines: 334-340
 - kind: method
   qualified_name: trie/graph/store:Store.symbols_in_file_with_lines
-  lines: 338-357
+  lines: 342-361
 - kind: method
   qualified_name: trie/graph/store:Store.search_symbols
-  lines: 359-386
+  lines: 363-390
 - kind: method
   qualified_name: trie/graph/store:Store.references_out
-  lines: 388-400
+  lines: 392-404
 - kind: method
   qualified_name: trie/graph/store:Store.count_edges
-  lines: 402-403
+  lines: 406-407
 - kind: method
   qualified_name: trie/graph/store:Store.inbound_count_per_symbol
-  lines: 405-414
+  lines: 409-418
 - kind: method
   qualified_name: trie/graph/store:Store.file_ref_counts
-  lines: 416-446
+  lines: 420-450
 - kind: method
   qualified_name: trie/graph/store:Store.file_stats
-  lines: 448-470
+  lines: 452-474
 - kind: method
   qualified_name: trie/graph/store:Store.upsert_section_record
-  lines: 474-509
+  lines: 478-513
 - kind: method
   qualified_name: trie/graph/store:Store.one_liner_for
-  lines: 511-524
+  lines: 515-528
 - kind: method
   qualified_name: trie/graph/store:Store.one_liners_for
-  lines: 526-539
+  lines: 530-543
 - kind: method
   qualified_name: trie/graph/store:Store.get_symbol_detail
-  lines: 543-576
+  lines: 547-580
 - kind: method
   qualified_name: trie/graph/store:Store.grep_symbols
-  lines: 578-667
+  lines: 582-671
 - kind: method
   qualified_name: trie/graph/store:Store.all_symbol_names
-  lines: 669-672
+  lines: 673-676
 - kind: method
   qualified_name: trie/graph/store:Store.all_qualified_names
-  lines: 674-677
+  lines: 678-681
 - kind: method
   qualified_name: trie/graph/store:Store.find_paths
-  lines: 679-753
+  lines: 683-757
 incoming_refs: 49
 outgoing_refs: 2
 ---

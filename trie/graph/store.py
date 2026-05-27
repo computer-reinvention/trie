@@ -264,6 +264,10 @@ class Store:
             sql += " WHERE " + " AND ".join(clauses)
         return int(self._conn.execute(sql, params).fetchone()[0])
 
+    def count_section_records(self) -> int:
+        """Return the number of rows in ``triefact_sections``."""
+        return int(self._conn.execute("SELECT COUNT(*) FROM triefact_sections").fetchone()[0])
+
     # --- edge ops ---
 
     def replace_all_edges(self, references_by_file: dict[str, list[Reference]]) -> int:

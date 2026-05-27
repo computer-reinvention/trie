@@ -1,44 +1,47 @@
 ---
 trie_version: 0.1.2
 source: trie/sync/single_file.py
-file_fingerprint: c4dc72e69dfe4526bef69ee8a7c97c831edfa71481d6e4be294f20606d9f0450
+file_fingerprint: 54a07bbf9727d0d286d4fe611ddedc7633e285d065b0489452a370d87701e381
 last_synced_at: '2026-05-24T00:25:09Z'
 defines:
 - kind: module
   qualified_name: trie/sync/single_file:__module__
-  lines: 1-512
+  lines: 1-576
+- kind: function
+  qualified_name: trie/sync/single_file:backfill_section_records
+  lines: 25-53
 - kind: class
   qualified_name: trie/sync/single_file:FileSyncResult
-  lines: 25-36
+  lines: 57-68
 - kind: class
   qualified_name: trie/sync/single_file:MetadataRefreshResult
-  lines: 40-48
+  lines: 72-80
 - kind: class
   qualified_name: trie/sync/single_file:_SymbolJob
-  lines: 52-62
+  lines: 84-94
 - kind: function
   qualified_name: trie/sync/single_file:_file_fingerprint
-  lines: 65-66
+  lines: 97-98
 - kind: function
   qualified_name: trie/sync/single_file:_triefact_path_for
-  lines: 69-73
+  lines: 101-105
 - kind: function
   qualified_name: trie/sync/single_file:_file_description
-  lines: 76-91
+  lines: 108-123
 - kind: function
   qualified_name: trie/sync/single_file:_build_defines
-  lines: 94-107
+  lines: 126-139
 - kind: function
   qualified_name: trie/sync/single_file:_resolve_previous_symbols
-  lines: 110-155
+  lines: 142-187
 - kind: function
   qualified_name: trie/sync/single_file:refresh_triefact_metadata
-  lines: 158-235
+  lines: 190-284
 - kind: function
   qualified_name: trie/sync/single_file:sync_single_file
-  lines: 238-511
-incoming_refs: 53
-outgoing_refs: 18
+  lines: 287-575
+incoming_refs: 55
+outgoing_refs: 22
 ---
 <!-- trie:section symbol=trie/sync/single_file:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=d8b1c6b223f88b270332763746c5067180410153e3fef8e9073fa9e7f611e8bd source_ref=34057e5d9c5ee57019bcfb44216c4b3de34127e1 -->
 ## `single_file`
