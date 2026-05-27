@@ -1,7 +1,7 @@
 ---
 trie_version: 0.1.2
 source: tests/test_docs_install.py
-file_fingerprint: de7c98fcfd2eb93c13bf961ba554fc35110ea849b4c8bee8c44aa552998c9fdd
+file_fingerprint: 612d52ed0d41bd1438627a21efab404e22edca595ae18169882a7c75b143b312
 last_synced_at: '2026-05-23T23:47:07Z'
 description: 'Tests for `trie.docs_install`: project-local agent documentation install.'
 defines:
@@ -60,7 +60,7 @@ defines:
   qualified_name: tests/test_docs_install:test_install_for_claude_code_uses_mcp_double_underscore_prefix
   lines: 283-304
 - kind: function
-  qualified_name: tests/test_docs_install:test_install_for_opencode_uses_single_underscore_prefix
+  qualified_name: tests/test_docs_install:test_install_for_opencode_uses_bare_tool_names
   lines: 307-322
 - kind: function
   qualified_name: tests/test_docs_install:test_install_unknown_target_falls_back_to_bare_names
@@ -78,7 +78,7 @@ defines:
   qualified_name: tests/test_docs_install:test_install_re_render_on_target_change_is_an_update
   lines: 397-420
 incoming_refs: 0
-outgoing_refs: 22
+outgoing_refs: 49
 ---
 <!-- trie:section symbol=tests/test_docs_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=be31889d9307a928b431c85ec2179a0b7fc02cc64dd301737f5ad47822fb1334 source_ref=c71598498bc9ec5f3a1ba4c97c80ab82f4fb431f -->
 ## `tests/test_docs_install`

@@ -17,7 +17,7 @@ defines:
   qualified_name: trie/diff_cmd:diff_project
   lines: 32-145
 incoming_refs: 6
-outgoing_refs: 5
+outgoing_refs: 6
 ---
 <!-- trie:section symbol=trie/diff_cmd:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=e1fbbc068efeb21a773ba682d164a15db8e5ebb5b4dd6b23d26ea101e8006a9b source_ref=6f05daac303d962947af10d1a505706948b32064 -->
 ## `trie/diff_cmd`

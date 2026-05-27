@@ -119,7 +119,7 @@ defines:
   qualified_name: tests/test_init:test_cli_init_does_not_run_setup_when_user_declines_prompt
   lines: 362-381
 incoming_refs: 0
-outgoing_refs: 39
+outgoing_refs: 46
 ---
 <!-- trie:section symbol=tests/test_init:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=0c0e05b67525022c46a3ade1f7f009ff794ba8a982b3447ce1f8f4786cffab4a source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
 ## `tests/test_init`

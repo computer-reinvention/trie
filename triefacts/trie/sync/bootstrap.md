@@ -23,7 +23,7 @@ defines:
   qualified_name: trie/sync/bootstrap:run_bootstrap
   lines: 136-205
 incoming_refs: 16
-outgoing_refs: 13
+outgoing_refs: 14
 ---
 <!-- trie:section symbol=trie/sync/bootstrap:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=2c44ad2129410e5f78f3ce0090cea7f8ed4f87735d12047f806bab3d04a258b8 source_ref=6fa7f487ae550d9e0cbd13df58df2357ddc4b78a -->
 ## `trie/sync/bootstrap`

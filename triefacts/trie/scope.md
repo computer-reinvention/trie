@@ -10,7 +10,7 @@ defines:
 - kind: function
   qualified_name: trie/scope:discover_files
   lines: 8-35
-incoming_refs: 15
+incoming_refs: 16
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/scope:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=9c0e0c64b1647e95fa0c1fdbbe48dc795c8958288462341511671e06a0a2759c source_ref=f8a23f982fb02a3a1ba2e235a94683e1984a2cd4 -->

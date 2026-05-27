@@ -34,7 +34,7 @@ defines:
 - kind: constant
   qualified_name: trie/sync/progress:NULL_PROGRESS
   lines: 35-35
-incoming_refs: 3
+incoming_refs: 6
 outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/sync/progress:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=9f208cb996d74b196fbe52e68b55fe07baf530fb0763756eb0eb9c19ad0f1244 source_ref=3711cd8c6acb475bbd3b2400719e537dec17211d -->

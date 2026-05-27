@@ -32,7 +32,7 @@ defines:
 - kind: function
   qualified_name: trie/refresh_lock:try_acquire
   lines: 121-175
-incoming_refs: 20
+incoming_refs: 22
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/refresh_lock:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=27f03d3cac54145eb834ac9c046a7198eff58dc15f7544a5f7713d7af30518fb source_ref=6b6fb8bf76ce617c5f239ce25cd25d4c0c1b377d -->

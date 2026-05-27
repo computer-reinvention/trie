@@ -1,45 +1,45 @@
 ---
 trie_version: 0.1.2
 source: trie/sync/generator.py
-file_fingerprint: 489b23566c702a31779ddc39c9eb0e5cd556f54f118d3e253202927e369a5f97
+file_fingerprint: ca705d29b24d698ceabe28d1ebfbfdef52a31f6bfaa45efaa15fb849c9041d1b
 last_synced_at: '2026-05-23T23:51:59Z'
 defines:
 - kind: module
   qualified_name: trie/sync/generator:__module__
-  lines: 1-232
+  lines: 1-233
 - kind: constant
   qualified_name: trie/sync/generator:SYSTEM_PROMPT
-  lines: 9-30
+  lines: 9-31
 - kind: constant
   qualified_name: trie/sync/generator:DIFF_AWARE_RUBRIC
-  lines: 36-57
+  lines: 37-58
 - kind: class
   qualified_name: trie/sync/generator:FileGenerationContext
-  lines: 61-63
+  lines: 62-64
 - kind: constant
   qualified_name: trie/sync/generator:RegenMode
-  lines: 66-66
+  lines: 67-67
 - kind: class
   qualified_name: trie/sync/generator:GeneratedSection
-  lines: 70-77
+  lines: 71-78
 - kind: function
   qualified_name: trie/sync/generator:build_cached_context
-  lines: 80-85
+  lines: 81-86
 - kind: function
   qualified_name: trie/sync/generator:_symbol_context_clause
-  lines: 88-116
+  lines: 89-117
 - kind: function
   qualified_name: trie/sync/generator:_build_request
-  lines: 119-127
+  lines: 120-128
 - kind: function
   qualified_name: trie/sync/generator:_build_diff_aware_request
-  lines: 130-160
+  lines: 131-161
 - kind: function
   qualified_name: trie/sync/generator:_symbol_source
-  lines: 163-175
+  lines: 164-176
 - kind: function
   qualified_name: trie/sync/generator:generate_section
-  lines: 178-231
+  lines: 179-232
 incoming_refs: 28
 outgoing_refs: 1
 ---

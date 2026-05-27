@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.2
 source: trie/docs_install.py
-file_fingerprint: 778f367d7e715af47295fd5d06403d79910ec87e94a14d3813afc9b7c1b3bd90
+file_fingerprint: e92285ce3493f87f3d5a6772eae8325e51c0f782be2cf982ed8ee205d3fd0b5d
 last_synced_at: '2026-05-23T23:49:23Z'
 description: Project-local agent documentation install.
 defines:
 - kind: module
   qualified_name: trie/docs_install:__module__
-  lines: 1-434
+  lines: 1-458
 - kind: constant
   qualified_name: trie/docs_install:Action
   lines: 35-35
@@ -47,31 +47,40 @@ defines:
 - kind: function
   qualified_name: trie/docs_install:_load_trie_doc_body
   lines: 118-133
+- kind: constant
+  qualified_name: trie/docs_install:ALL_TOOL_NAMES
+  lines: 136-148
+- kind: constant
+  qualified_name: trie/docs_install:CORE_TOOL_NAMES
+  lines: 150-150
+- kind: constant
+  qualified_name: trie/docs_install:_BARE_NAME_TARGETS
+  lines: 155-155
 - kind: function
   qualified_name: trie/docs_install:_render_tool_names
-  lines: 136-148
+  lines: 158-176
 - kind: function
   qualified_name: trie/docs_install:_render_trie_doc_body
-  lines: 151-170
+  lines: 179-194
 - kind: function
   qualified_name: trie/docs_install:_multi_target_footer
-  lines: 173-206
+  lines: 197-230
 - kind: function
   qualified_name: trie/docs_install:_write_trie_doc
-  lines: 209-264
+  lines: 233-288
 - kind: function
   qualified_name: trie/docs_install:_pointer_block_for
-  lines: 267-277
+  lines: 291-301
 - kind: function
   qualified_name: trie/docs_install:_apply_pointer
-  lines: 280-346
+  lines: 304-370
 - kind: function
   qualified_name: trie/docs_install:_splice_pointer_block
-  lines: 349-378
+  lines: 373-402
 - kind: function
   qualified_name: trie/docs_install:install
-  lines: 381-433
-incoming_refs: 24
+  lines: 405-457
+incoming_refs: 51
 outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/docs_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8a002f73a29a7d431eda685263724e52b6c22535a04357839bfc48c712a4301c source_ref=f33ef49ae65ead2b16b114b5450c290ad20aff99 -->
