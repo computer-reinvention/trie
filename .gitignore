@@ -11,6 +11,11 @@ debug.*.jsonl
 # without adding source-of-truth.
 .opencode/
 
+# Claude Code config (created by `trie mcp install --target claude-code`
+# or `trie setup --target claude-code --with-mcp`).
+.claude/
+.mcp.json
+
 # Python
 __pycache__/
 *.py[cod]

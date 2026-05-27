@@ -33,6 +33,7 @@ class Triefacts:
 class Models:
     bootstrap: str = "anthropic/claude-sonnet-4-6"
     cascade: str = "anthropic/claude-sonnet-4-6"
+    edits: str = "anthropic/claude-sonnet-4-6"
 
 
 @dataclass
@@ -229,6 +230,7 @@ source_root = "."
 # DEEPSEEK_API_BASE / OPENAI_API_KEY env vars set, or use --model on the CLI.
 bootstrap = "anthropic/claude-sonnet-4-6"
 cascade = "anthropic/claude-sonnet-4-6"
+edits = "anthropic/claude-sonnet-4-6"
 
 [cascade]
 # Default reference-graph traversal depth on incremental sync.
