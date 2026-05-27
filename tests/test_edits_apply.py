@@ -1,10 +1,19 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from trie.edits.apply import (
     _build_dependency_subgraph,
+    _build_working_set,
+    _compile_check,
+    _get_file_paths_for_qnames,
+    _source_span,
+    _write_source_span,
+    preview_patches,
     tarjan_scc,
     topo_sort_sccs,
 )
+from trie.graph.store import Store
 
 
 def _edges_to_adj(edges: list[tuple[str, str]]) -> dict[str, set[str]]:
@@ -130,3 +139,99 @@ class TestBuildDependencySubgraph:
         store.references_out = lambda qn: set()
         sub = _build_dependency_subgraph({"A", "B"}, store)
         assert sub == {"A": set(), "B": set()}
+
+
+# --- helper: _get_file_paths_for_qnames ---
+
+
+class TestGetFilePathsForQNames:
+    def test_returns_sorted_full_paths(self):
+        store = type("FakeStore2", (), {})()
+        store.get_symbol_detail = lambda qn: type("Detail", (), {"file_path": f"src/{qn}.py"})()
+        result = _get_file_paths_for_qnames(["B", "A"], store)
+        assert result == ["src/A.py", "src/B.py"]
+
+    def test_skips_missing_symbols(self):
+        store = type("FakeStore3", (), {})()
+        store.get_symbol_detail = lambda qn: (
+            type("Detail", (), {"file_path": "src/exists.py"})() if qn == "exists" else None
+        )
+        result = _get_file_paths_for_qnames(["exists", "missing"], store)
+        assert result == ["src/exists.py"]
+
+
+# --- helper: _build_working_set ---
+
+
+class TestBuildWorkingSet:
+    def test_empty_patched_qnames(self):
+        store = type("FakeStore4", (), {})()
+        store.get_symbol_detail = lambda qn: None
+        result = _build_working_set([], store, cascade_depth=1, hub_threshold=20)
+        assert result == set()
+
+    def test_patched_qnames_not_in_store(self):
+        store = type("FakeStore5", (), {})()
+        store.get_symbol_detail = lambda qn: None
+        result = _build_working_set(["missing:foo"], store, cascade_depth=1, hub_threshold=20)
+        assert result == {"missing:foo"}
+
+
+# --- helpers: _source_span / _write_source_span ---
+
+
+class TestSourceSpan:
+    def test_reads_correct_lines(self, tmp_path: Path):
+        f = tmp_path / "mod.py"
+        f.write_text("a\nb\nc\nd\ne\n")
+        span = _source_span(str(f), 2, 4, tmp_path)
+        assert span == "b\nc\nd\n"
+        assert _source_span(str(f), 1, 1, tmp_path) == "a\n"
+
+    def test_out_of_bounds_returns_empty(self, tmp_path: Path):
+        f = tmp_path / "mod.py"
+        f.write_text("a\nb\n")
+        assert _source_span(str(f), 10, 12, tmp_path) == ""
+
+
+class TestWriteSourceSpan:
+    def test_replaces_in_place(self, tmp_path: Path):
+        f = tmp_path / "mod.py"
+        f.write_text("a\nb\nc\nd\ne\n")
+        _write_source_span(str(f), 2, 4, "X\nY\n", tmp_path)
+        assert f.read_text() == "a\nX\nY\ne\n"
+
+    def test_appends_when_end_past_file(self, tmp_path: Path):
+        f = tmp_path / "mod.py"
+        f.write_text("a\n")
+        _write_source_span(str(f), 2, 2, "b\n", tmp_path)
+        assert f.read_text() == "a\nb\n"
+
+
+# --- helper: _compile_check ---
+
+
+class TestCompileCheck:
+    def test_valid_python(self):
+        assert _compile_check("def foo():\n    return 1\n") is True
+
+    def test_syntax_error(self):
+        assert _compile_check("def foo(:\n") is False
+
+    def test_empty_source(self):
+        assert _compile_check("") is True
+
+
+# --- preview_patches ---
+
+
+class TestPreviewPatches:
+    def test_no_patches(self, tmp_path: Path):
+        store = Store(tmp_path / ".trie" / "graph.db")
+        from trie.config import Config
+
+        config = Config()
+        result = preview_patches(store, config)
+        assert result["total_patches"] == 0
+        assert result["patched_symbols"] == 0
+        store.close()

@@ -60,8 +60,13 @@ def merge_notes(
             line = line.removeprefix("* ").strip()
         elif line.startswith("<bullet>"):
             line = line.removeprefix("<bullet>").strip()
-        merged_notes.append(line)
-        merged_reasons.append("merged")
+        if " — " in line:
+            note, _, reason = line.partition(" — ")
+            merged_notes.append(note.strip())
+            merged_reasons.append(reason.strip())
+        else:
+            merged_notes.append(line)
+            merged_reasons.append("merged")
     return merged_notes, merged_reasons
 
 

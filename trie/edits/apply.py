@@ -11,6 +11,7 @@ from trie.config import Config
 from trie.graph.store import Store
 from trie.models import ModelClient
 from trie.parse.python import extract_symbols
+from trie.scan import file_fingerprint
 from trie.sync.cascade import compute_cascade
 from trie.sync.writer import TriefactFile
 
@@ -190,11 +191,15 @@ def _write_source_span(
 ) -> None:
     """Replace the source span for a symbol on disk."""
     full_path = src_root / file_path
-    lines = full_path.read_text().splitlines(keepends=True)
+    original = full_path.read_text()
+    lines = original.splitlines(keepends=True)
     before = lines[: start_line - 1]
     after = lines[end_line:]
-    lines = [*before, new_source, *after]
-    full_path.write_text("".join(lines))
+    result = "".join([*before, new_source, *after])
+    # Preserve trailing newline if the original file had one
+    if original.endswith("\n") and not result.endswith("\n"):
+        result += "\n"
+    full_path.write_text(result)
 
 
 def _read_prose(
@@ -236,16 +241,12 @@ def _write_prose(
     text = triefact_path.read_text() if triefact_path.exists() else ""
     tf = TriefactFile.parse(text) if text else TriefactFile.empty()
 
-    from trie.sync.writer import Section
-
-    section = Section(
+    tf.upsert_section(
         qualified_name=qname,
         fingerprint=section_fingerprint,
         body=new_prose,
-        body_fingerprint=None,
         source_ref=source_ref,
     )
-    tf.upsert_section(section)
     with contextlib.suppress(TypeError, ValueError):
         tf.sort_sections({})
     triefact_path.write_text(tf.render() + "\n")
@@ -292,15 +293,38 @@ def _process_symbol(
     if not _compile_check(new_source):
         return False
 
+    # Write the new source to disk
     _write_source_span(detail.file_path, detail.start_line, detail.end_line, new_source, src_root)
-    _write_prose(qname, detail.file_path, new_prose, "patch-" + str(now), triefacts_root, src_root)
 
-    # Re-parse the file and update the store
+    # Re-parse to get the body-normalized hash for the section fingerprint
     file_path_obj = src_root / detail.file_path
     try:
         text = file_path_obj.read_text()
-        symbols = extract_symbols(Path(detail.file_path), src_root, source_text=text)
+        symbols = extract_symbols(file_path_obj, src_root, source_text=text)
+    except Exception:
+        return False
+
+    # Use the actual body hash as the section fingerprint so staleness checks work
+    sym = next((s for s in symbols if s.qualified_name == qname), None)
+    section_fp = sym.body_normalized_hash if sym else ("patch-" + str(now))
+
+    _write_prose(qname, detail.file_path, new_prose, section_fp, triefacts_root, src_root)
+
+    try:
         store.replace_file_symbols(detail.file_path, symbols)
+        fp = file_fingerprint(text)
+        store.upsert_file(path=detail.file_path, fingerprint=fp)
+    except Exception:
+        return False
+
+    # Update the triefact frontmatter file_fingerprint to match new source
+    rel_md = Path(detail.file_path).with_suffix(".md")
+    triefact_path = triefacts_root / rel_md
+    try:
+        tf_text = triefact_path.read_text()
+        tf = TriefactFile.parse(tf_text)
+        tf.front_matter["file_fingerprint"] = fp
+        triefact_path.write_text(tf.render() + "\n")
     except Exception:
         return False
 
@@ -336,21 +360,46 @@ def _process_cascaded(
     if not _compile_check(new_source):
         return False
 
+    if new_source == old_source and new_prose.strip() == old_prose.strip():
+        return True
+
     _write_source_span(detail.file_path, detail.start_line, detail.end_line, new_source, src_root)
+
+    # Re-parse to get the body-normalized hash for section fingerprint
+    file_path_obj = src_root / detail.file_path
+    try:
+        text = file_path_obj.read_text()
+        symbols = extract_symbols(file_path_obj, src_root, source_text=text)
+    except Exception:
+        return False
+
+    sym = next((s for s in symbols if s.qualified_name == qname), None)
+    section_fp = sym.body_normalized_hash if sym else ("cascade-" + str(int(time.time())))
+
     _write_prose(
         qname,
         detail.file_path,
         new_prose,
-        "cascade-" + str(int(time.time())),
+        section_fp,
         triefacts_root,
         src_root,
     )
 
-    file_path_obj = src_root / detail.file_path
     try:
-        text = file_path_obj.read_text()
-        symbols = extract_symbols(Path(detail.file_path), src_root, source_text=text)
         store.replace_file_symbols(detail.file_path, symbols)
+        fp = file_fingerprint(text)
+        store.upsert_file(path=detail.file_path, fingerprint=fp)
+    except Exception:
+        return False
+
+    # Update the triefact frontmatter file_fingerprint to match new source
+    rel_md = Path(detail.file_path).with_suffix(".md")
+    triefact_path = triefacts_root / rel_md
+    try:
+        tf_text = triefact_path.read_text()
+        tf = TriefactFile.parse(tf_text)
+        tf.front_matter["file_fingerprint"] = fp
+        triefact_path.write_text(tf.render() + "\n")
     except Exception:
         return False
 
@@ -422,8 +471,6 @@ def apply_patches(
 
     try:
         for scc in ordered:
-            # Collect all notes available from callees in this SCC
-            # For each node, find which callees have patches (are in patches_by_qname)
             for qname in scc:
                 if qname in patched_qnames:
                     ok = _process_symbol(
@@ -435,6 +482,8 @@ def apply_patches(
                         triefacts_root,
                         now,
                     )
+                    if ok:
+                        applied += 1
                 elif qname in cascaded_qnames:
                     callee_notes: list[tuple[str, str]] = []
                     for callee in graph.get(qname, set()):
@@ -450,6 +499,8 @@ def apply_patches(
                             src_root,
                             triefacts_root,
                         )
+                        if ok:
+                            applied += 1
                     else:
                         ok = True
                         skipped += 1
@@ -458,7 +509,6 @@ def apply_patches(
                     skipped += 1
 
                 if ok:
-                    applied += 1
                     processed_qnames.add(qname)
                 else:
                     failed.append(qname)
