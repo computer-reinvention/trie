@@ -45,6 +45,7 @@ from trie.scan import scan_project
 from trie.scope import discover_files
 from trie.sync.incremental import IncrementalResult, run_incremental
 from trie.sync.progress import ProgressCallback
+from trie.sync.single_file import backfill_section_records
 
 STAMP_FILENAME = "graph.head"
 
@@ -315,6 +316,8 @@ def _ensure_fresh(
             tele["previous_head"] = stamp.head
 
         if reason == "unchanged":
+            if store.count_section_records() < store.count_symbols():
+                backfill_section_records(project_root, config, store)
             return FreshnessResult(refreshed=False, reason=reason, head=head, incremental=None)
 
         if reason == "mtimes_moved":
@@ -340,6 +343,8 @@ def _ensure_fresh(
         # drift introduced by the new code is the user's call to address with
         # `trie sync` when they're ready to spend.
         scan_result = scan_project(project_root=project_root, config=config, store=store)
+        if store.count_section_records() < store.count_symbols():
+            backfill_section_records(project_root, config, store)
         write_stamp(project_root, Stamp(head=head, mtimes=current_mtimes))
         tele["files_scanned"] = scan_result.files_total
         tele["symbols_total"] = scan_result.symbols_total

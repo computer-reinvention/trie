@@ -1,61 +1,61 @@
 ---
 trie_version: 0.1.2
 source: trie/freshness.py
-file_fingerprint: 6ba5cf8f15f23143c865e5e361d1a37583fea064fb26b107a3f97bb650a25b76
+file_fingerprint: 2cfbe2407b5c12abfef2c8810d2e08554beed0757be02240a4f1dd954b355b9a
 last_synced_at: '2026-05-23T23:50:14Z'
 description: 'Freshness gate: keep the graph + triefact tree current with respect
   to disk and HEAD.'
 defines:
 - kind: module
   qualified_name: trie/freshness:__module__
-  lines: 1-348
+  lines: 1-353
 - kind: constant
   qualified_name: trie/freshness:STAMP_FILENAME
-  lines: 49-49
+  lines: 50-50
 - kind: class
   qualified_name: trie/freshness:NotAGitRepoError
-  lines: 52-60
+  lines: 53-61
 - kind: class
   qualified_name: trie/freshness:Stamp
-  lines: 64-93
+  lines: 65-94
 - kind: method
   qualified_name: trie/freshness:Stamp.to_json
-  lines: 76-77
+  lines: 77-78
 - kind: method
   qualified_name: trie/freshness:Stamp.from_json
-  lines: 80-93
+  lines: 81-94
 - kind: function
   qualified_name: trie/freshness:stamp_path
-  lines: 96-98
+  lines: 97-99
 - kind: function
   qualified_name: trie/freshness:read_stamp
-  lines: 101-116
+  lines: 102-117
 - kind: function
   qualified_name: trie/freshness:write_stamp
-  lines: 119-129
+  lines: 120-130
 - kind: function
   qualified_name: trie/freshness:scan_mtimes
-  lines: 132-151
+  lines: 133-152
 - kind: function
   qualified_name: trie/freshness:_require_git
-  lines: 154-170
+  lines: 155-171
 - kind: function
   qualified_name: trie/freshness:_mtimes_differ
-  lines: 173-185
+  lines: 174-186
 - kind: class
   qualified_name: trie/freshness:FreshnessResult
-  lines: 189-201
+  lines: 190-202
 - kind: function
   qualified_name: trie/freshness:ensure_fresh_before_turn
-  lines: 204-233
+  lines: 205-234
 - kind: function
   qualified_name: trie/freshness:ensure_fresh_after_turn
-  lines: 236-263
+  lines: 237-264
 - kind: function
   qualified_name: trie/freshness:_ensure_fresh
-  lines: 266-347
+  lines: 267-352
 incoming_refs: 23
-outgoing_refs: 7
+outgoing_refs: 8
 ---
 <!-- trie:section symbol=trie/freshness:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a88d62b97e640fee727338aacaedfc5767175a396e71f789ca7fb05f2d82c1c0 source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
 ## `trie/freshness`

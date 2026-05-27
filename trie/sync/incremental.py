@@ -12,7 +12,7 @@ from trie.scan import scan_project
 from trie.sync.cascade import compute_cascade
 from trie.sync.progress import NULL_PROGRESS, ProgressCallback
 from trie.sync.reconcile import find_orphan_triefacts
-from trie.sync.single_file import FileSyncResult, sync_single_file
+from trie.sync.single_file import FileSyncResult, backfill_section_records, sync_single_file
 
 
 @dataclass(frozen=True)
@@ -177,6 +177,8 @@ def run_incremental(
         orphan.unlink()
 
     if not worklist.affected_files:
+        if store.count_section_records() < store.count_symbols():
+            backfill_section_records(project_root, config, store)
         return IncrementalResult(
             files_synced=0,
             files_skipped_no_budget=0,
@@ -263,6 +265,12 @@ def run_incremental(
             )
             actual_cost += file_cost
         cb.on_done(rel, result, actual_cost)
+
+    # Backfill any missing triefact_sections records. This ensures the
+    # one-liner cache is populated even when sources were synced by an
+    # older version that didn't store section metadata.
+    if store.count_section_records() < store.count_symbols():
+        backfill_section_records(project_root, config, store)
 
     return IncrementalResult(
         files_synced=len(sync_results),
