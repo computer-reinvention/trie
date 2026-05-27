@@ -348,8 +348,14 @@ def test_cli_init_runs_setup_when_user_accepts_prompt(
     depends on what's installed on the test host (a developer running
     `pytest` locally with opencode on PATH will see setup succeed; CI
     will see it error). The banner is the only platform-independent
-    signal that init transitioned into the auto-setup branch."""
+    signal that init transitioned into the auto-setup branch.
+
+    Note: `monkeypatch.chdir(python_project)` so that the inner
+    `trie setup` call resolves `project_root` to `tmp_path` via
+    `Config.find_and_load(Path.cwd())` rather than finding the trie
+    repo's own `trie.toml` and writing TRIE.md / AGENTS.md there."""
     monkeypatch.setattr("trie.cli._is_interactive", lambda: True)
+    monkeypatch.chdir(python_project)
     runner = CliRunner()
     result = runner.invoke(
         app,
