@@ -29,7 +29,7 @@ defines:
   qualified_name: tests/test_cost:test_estimate_actual_cost_matches_pricing
   lines: 70-85
 incoming_refs: 0
-outgoing_refs: 7
+outgoing_refs: 12
 ---
 <!-- trie:section symbol=tests/test_cost:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=dc858d17916b365adfeb96badffa0e20a68aa1b19cb64ec9c996d005e47ba178 source_ref=5dfe03cdd4810107b784dfce8ae2ed82de50b669 -->
 ## `tests/test_cost`

@@ -76,7 +76,7 @@ defines:
 - kind: function
   qualified_name: trie/sync/writer:render_for_agent
   lines: 316-378
-incoming_refs: 64
+incoming_refs: 67
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/sync/writer:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=ebb5aeafa4ad18ffb202486b304972673f59767993e26e76f115ba12bf8df3f7 source_ref=7779abbc571fd9eb4f6d6cdcb9583c2521743028 -->

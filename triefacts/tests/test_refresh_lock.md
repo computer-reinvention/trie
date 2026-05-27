@@ -63,7 +63,7 @@ defines:
   qualified_name: tests/test_refresh_lock:test_cli_plan_when_contended_exits_two
   lines: 496-538
 incoming_refs: 0
-outgoing_refs: 17
+outgoing_refs: 19
 ---
 <!-- trie:section symbol=tests/test_refresh_lock:__module__ fingerprint=e898e798072bf5c540959d26eaadc8cccfdbc85d6e9a0dcc06ceaa5812d960e9 body_fp=023f1ff370324498657623e8120077a01e4007afdec34a512ec74f2a504b4933 source_ref=a247889420e6c77627c6b64724dd207c13c8bf27 -->
 ## `tests/test_refresh_lock`

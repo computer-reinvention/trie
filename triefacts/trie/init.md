@@ -40,7 +40,7 @@ defines:
 - kind: function
   qualified_name: trie/init:init_project
   lines: 118-178
-incoming_refs: 29
+incoming_refs: 36
 outgoing_refs: 1
 ---
 <!-- trie:section symbol=trie/init:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=6a7c8120c961f3a8e796d75d5cf20cfafc8391159a20a859ee056bb01fd6f77e source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 -->
