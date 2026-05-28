@@ -61,35 +61,18 @@ export function useGraphPopulation(opencodePort: number | null): void {
       appStore.setGraphLoading(true, "Connecting to trie graph…")
 
       try {
-        // 1. Fetch all symbols via the dedicated all-symbols endpoint.
-        //    Retry with backoff — trie MCP may not be connected immediately
-        //    after opencode starts.
-        let hits: SymbolHit[] = []
-        const MAX_RETRIES = 10
-        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-          if (cancelled) return
-          try {
-            const res = await graphClient.allSymbols({ rank_by: "inbound_count", limit: 5000 })
-            if (res && Array.isArray(res.hits) && res.hits.length > 0) {
-              hits = res.hits
-              break
-            }
-            console.warn(`[graph] allSymbols attempt ${attempt + 1}: no hits yet`, res)
-          } catch (err) {
-            console.warn(`[graph] allSymbols attempt ${attempt + 1} failed:`, err)
-          }
-          if (attempt < MAX_RETRIES - 1) {
-            appStore.setGraphLoading(true, `Waiting for trie MCP… (${attempt + 1}/${MAX_RETRIES})`)
-            await new Promise((r) => setTimeout(r, 1500 + attempt * 500))
-          }
-        }
+        // 1. Fetch all symbols. The server-side handler waits for trie MCP
+        //    to be connected before responding, so this is a single blocking call.
+        appStore.setGraphLoading(true, "Connecting to trie graph…")
+        const res = await graphClient.allSymbols({ rank_by: "inbound_count", limit: 5000 })
+        if (cancelled) return
 
-        if (hits.length === 0) {
+        if (!res || !Array.isArray(res.hits) || res.hits.length === 0) {
+          console.error("[graph] allSymbols returned no hits:", res)
           appStore.setGraphLoading(false)
-          console.warn("[graph] No symbols after retries — trie MCP not connected.")
           return
         }
-        if (cancelled) return
+        const hits = res.hits
 
         appStore.setGraphLoading(
           true,
