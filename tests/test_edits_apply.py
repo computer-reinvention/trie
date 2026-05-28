@@ -4,8 +4,8 @@ from pathlib import Path
 
 from trie.edits.apply import (
     _build_dependency_subgraph,
-    _build_working_set,
     _compile_check,
+    _expand_callers,
     _get_file_paths_for_qnames,
     _source_span,
     _write_source_span,
@@ -160,21 +160,35 @@ class TestGetFilePathsForQNames:
         assert result == ["src/exists.py"]
 
 
-# --- helper: _build_working_set ---
+# --- helper: _expand_callers ---
 
 
-class TestBuildWorkingSet:
-    def test_empty_patched_qnames(self):
+class FakeRow:
+    def fetchone(self):
+        return None
+
+
+class FakeConn:
+    def execute(self, sql, params):
+        return FakeRow()
+
+
+class TestExpandCallers:
+    def test_empty_seeds(self):
+        """No seeds → empty working set."""
         store = type("FakeStore4", (), {})()
-        store.get_symbol_detail = lambda qn: None
-        result = _build_working_set([], store, cascade_depth=1, hub_threshold=20)
+        store.references_in = lambda qn: []
+        store._conn = FakeConn()
+        result = _expand_callers([], store, cascade_depth=1, hub_threshold=20)
         assert result == set()
 
-    def test_patched_qnames_not_in_store(self):
+    def test_seeds_not_in_store(self):
+        """Seeds that don't exist in store produce no callers."""
         store = type("FakeStore5", (), {})()
-        store.get_symbol_detail = lambda qn: None
-        result = _build_working_set(["missing:foo"], store, cascade_depth=1, hub_threshold=20)
-        assert result == {"missing:foo"}
+        store.references_in = lambda qn: []
+        store._conn = FakeConn()
+        result = _expand_callers(["missing:foo"], store, cascade_depth=1, hub_threshold=20)
+        assert result == set()
 
 
 # --- helpers: _source_span / _write_source_span ---

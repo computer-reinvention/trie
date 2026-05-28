@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import contextlib
+import subprocess
 import time
 import uuid
 from collections import deque
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from pathlib import Path
 from typing import Any
 
@@ -12,10 +14,15 @@ from trie.graph.store import Store
 from trie.models import ModelClient
 from trie.parse.python import extract_symbols
 from trie.scan import file_fingerprint
-from trie.sync.cascade import compute_cascade
 from trie.sync.writer import TriefactFile
 
-from .infer import infer_source_and_prose, merge_notes
+from .infer import (
+    _build_caller_summaries,
+    _read_prose,
+    infer_source_and_prose,
+    merge_notes,
+    pre_filter_batch,
+)
 
 
 def _get_file_paths_for_qnames(
@@ -31,23 +38,42 @@ def _get_file_paths_for_qnames(
     return sorted(files)
 
 
-def _build_working_set(
-    patched_qnames: list[str],
+def _expand_callers(
+    seed_qnames: list[str],
     store: Store,
     cascade_depth: int,
     hub_threshold: int,
 ) -> set[str]:
-    seeded_files = _get_file_paths_for_qnames(patched_qnames, store)
-    if not seeded_files:
-        return set(patched_qnames)
+    """BFS from seed symbols through caller edges within `cascade_depth`.
 
-    result = compute_cascade(
-        changed_files=seeded_files,
-        store=store,
-        depth=cascade_depth,
-        hub_threshold=hub_threshold,
-    )
-    working = set(patched_qnames) | result.cascaded_qnames
+    Returns the set of reachable caller qnames (does NOT include seeds).
+    Stops expanding through symbols with inbound > hub_threshold.
+    """
+    working: set[str] = set()
+    frontier: list[str] = list(seed_qnames)
+    visited: set[str] = set(seed_qnames)
+
+    for _ in range(cascade_depth):
+        next_frontier: list[str] = []
+        for qn in frontier:
+            # Hub guard — don't expand through hubs
+            row = store._conn.execute(
+                "SELECT COUNT(*) FROM edges WHERE dst_symbol_id = ("
+                "SELECT id FROM symbols WHERE qualified_name = ? LIMIT 1"
+                ")",
+                (qn,),
+            ).fetchone()
+            if row and int(row[0]) > hub_threshold:
+                continue
+            for caller in store.references_in(qn):
+                if caller not in visited:
+                    visited.add(caller)
+                    working.add(caller)
+                    next_frontier.append(caller)
+        if not next_frontier:
+            break
+        frontier = next_frontier
+
     return working
 
 
@@ -138,13 +164,11 @@ def topo_sort_sccs(
     Builds a DAG of super-nodes from the SCCs, then runs Kahn's algorithm
     on the reversed edges (callee -> caller) so callees sort first.
     """
-    # Map qname -> scc_index
     qname_to_scc: dict[str, int] = {}
     for idx, scc in enumerate(sccs):
         for qn in scc:
             qname_to_scc[qn] = idx
 
-    # Build super-node DAG: edge from callee super-node to caller super-node
     super_in_degree: list[int] = [0] * len(sccs)
     super_adj: list[set[int]] = [set() for _ in range(len(sccs))]
     for v, callees in graph.items():
@@ -152,11 +176,9 @@ def topo_sort_sccs(
         for c in callees:
             c_scc = qname_to_scc[c]
             if v_scc != c_scc and v_scc not in super_adj[c_scc]:
-                # v calls c, so c is callee -> edge from c_scc to v_scc
                 super_adj[c_scc].add(v_scc)
                 super_in_degree[v_scc] += 1
 
-    # Kahn's on super-nodes
     queue: deque[int] = deque(i for i in range(len(sccs)) if super_in_degree[i] == 0)
     ordered: list[int] = []
     while queue:
@@ -196,28 +218,9 @@ def _write_source_span(
     before = lines[: start_line - 1]
     after = lines[end_line:]
     result = "".join([*before, new_source, *after])
-    # Preserve trailing newline if the original file had one
     if original.endswith("\n") and not result.endswith("\n"):
         result += "\n"
     full_path.write_text(result)
-
-
-def _read_prose(
-    qname: str,
-    file_path: str,
-    triefacts_root: Path,
-) -> str:
-    """Read the triefact prose body for a symbol. Returns '' if not found."""
-    rel_md = Path(file_path).with_suffix(".md")
-    triefact_path = triefacts_root / rel_md
-    if not triefact_path.exists():
-        return ""
-    text = triefact_path.read_text()
-    tf = TriefactFile.parse(text)
-    section = tf.get_section(qname)
-    if section is None:
-        return ""
-    return section.body
 
 
 def _write_prose(
@@ -232,7 +235,6 @@ def _write_prose(
     rel_md = Path(file_path).with_suffix(".md")
     triefact_path = triefacts_root / rel_md
 
-    # Compute source_ref from current file content
     full_source_path = src_root / file_path
     from trie.git_helpers import compute_blob_hash
 
@@ -262,148 +264,86 @@ def _compile_check(source: str) -> bool:
         return False
 
 
-def _process_symbol(
+def _process_one(
     qname: str,
-    patches: list[dict],
-    store: Store,
+    store_path: Path,
     client: ModelClient,
     src_root: Path,
     triefacts_root: Path,
-    now: int,
-) -> bool:
-    """Process one symbol: merge notes, infer source+prose, validate, write."""
-    detail = store.get_symbol_detail(qname)
-    if detail is None:
-        return False
+) -> tuple[bool, bool]:
+    """Process one symbol: merge notes → generate source+prose → write.
 
-    merged_notes, merged_reasons = merge_notes(client, patches)
-    if not merged_notes:
-        return True
+    Cascade notes are already posted to the store by the upfront batch
+    pre-filter, so this just merges all patches (agent + cascade) and
+    regenerates. Opens a dedicated Store per call (thread-safe).
 
-    old_source = _source_span(detail.file_path, detail.start_line, detail.end_line, src_root)
-    old_prose = _read_prose(qname, detail.file_path, triefacts_root)
-
+    Returns (ok, changed).
+    """
+    store = Store(store_path)
     try:
-        new_source, new_prose = infer_source_and_prose(
-            client, old_source, old_prose, merged_notes, merged_reasons
-        )
-    except ValueError:
-        return False
+        detail = store.get_symbol_detail(qname)
+        if detail is None:
+            return (True, False)
 
-    if not _compile_check(new_source):
-        return False
+        patches = store.get_patches_for_qname(qname)
+        if not patches:
+            return (True, False)
 
-    # Write the new source to disk
-    _write_source_span(detail.file_path, detail.start_line, detail.end_line, new_source, src_root)
+        old_source = _source_span(detail.file_path, detail.start_line, detail.end_line, src_root)
+        old_prose = _read_prose(qname, detail.file_path, triefacts_root)
 
-    # Re-parse to get the body-normalized hash for the section fingerprint
-    file_path_obj = src_root / detail.file_path
-    try:
-        text = file_path_obj.read_text()
-        symbols = extract_symbols(file_path_obj, src_root, source_text=text)
-    except Exception:
-        return False
+        merged_notes, merged_reasons = merge_notes(client, patches)
+        if not merged_notes:
+            return (True, False)
 
-    # Use the actual body hash as the section fingerprint so staleness checks work
-    sym = next((s for s in symbols if s.qualified_name == qname), None)
-    section_fp = sym.body_normalized_hash if sym else ("patch-" + str(now))
+        try:
+            new_source, new_prose = infer_source_and_prose(
+                client, old_source, old_prose, merged_notes, merged_reasons
+            )
+        except ValueError:
+            return (False, False)
 
-    _write_prose(qname, detail.file_path, new_prose, section_fp, triefacts_root, src_root)
+        if not _compile_check(new_source):
+            return (False, False)
 
-    try:
-        store.replace_file_symbols(detail.file_path, symbols)
-        fp = file_fingerprint(text)
-        store.upsert_file(path=detail.file_path, fingerprint=fp)
-    except Exception:
-        return False
+        # Write source
+        _write_source_span(detail.file_path, detail.start_line, detail.end_line, new_source, src_root)
 
-    # Update the triefact frontmatter file_fingerprint to match new source
-    rel_md = Path(detail.file_path).with_suffix(".md")
-    triefact_path = triefacts_root / rel_md
-    try:
-        tf_text = triefact_path.read_text()
-        tf = TriefactFile.parse(tf_text)
-        tf.front_matter["file_fingerprint"] = fp
-        triefact_path.write_text(tf.render() + "\n")
-    except Exception:
-        return False
+        # Re-parse to get body hash for section fingerprint
+        file_path_obj = src_root / detail.file_path
+        try:
+            text = file_path_obj.read_text()
+            symbols = extract_symbols(file_path_obj, src_root, source_text=text)
+        except Exception:
+            return (False, False)
 
-    return True
+        sym = next((s for s in symbols if s.qualified_name == qname), None)
+        now_int = int(time.time())
+        section_fp = sym.body_normalized_hash if sym else ("patch-" + str(now_int))
 
+        _write_prose(qname, detail.file_path, new_prose, section_fp, triefacts_root, src_root)
 
-def _process_cascaded(
-    qname: str,
-    callee_notes: list[tuple[str, str]],
-    store: Store,
-    client: ModelClient,
-    src_root: Path,
-    triefacts_root: Path,
-) -> bool:
-    """Process a cascaded (unpatched) neighbour with callee context."""
-    detail = store.get_symbol_detail(qname)
-    if detail is None:
-        return True
+        try:
+            store.replace_file_symbols(detail.file_path, symbols)
+            fp = file_fingerprint(text)
+            store.upsert_file(path=detail.file_path, fingerprint=fp)
+        except Exception:
+            return (False, False)
 
-    notes = [n for n, _ in callee_notes]
-    reasons = [r for _, r in callee_notes]
+        # Update triefact frontmatter
+        rel_md = Path(detail.file_path).with_suffix(".md")
+        triefact_path = triefacts_root / rel_md
+        try:
+            tf_text = triefact_path.read_text()
+            tf = TriefactFile.parse(tf_text)
+            tf.front_matter["file_fingerprint"] = fp
+            triefact_path.write_text(tf.render() + "\n")
+        except Exception:
+            return (False, False)
 
-    old_source = _source_span(detail.file_path, detail.start_line, detail.end_line, src_root)
-    old_prose = _read_prose(qname, detail.file_path, triefacts_root)
-
-    try:
-        new_source, new_prose = infer_source_and_prose(
-            client, old_source, old_prose, notes, reasons
-        )
-    except ValueError:
-        return False
-
-    if not _compile_check(new_source):
-        return False
-
-    if new_source == old_source and new_prose.strip() == old_prose.strip():
-        return True
-
-    _write_source_span(detail.file_path, detail.start_line, detail.end_line, new_source, src_root)
-
-    # Re-parse to get the body-normalized hash for section fingerprint
-    file_path_obj = src_root / detail.file_path
-    try:
-        text = file_path_obj.read_text()
-        symbols = extract_symbols(file_path_obj, src_root, source_text=text)
-    except Exception:
-        return False
-
-    sym = next((s for s in symbols if s.qualified_name == qname), None)
-    section_fp = sym.body_normalized_hash if sym else ("cascade-" + str(int(time.time())))
-
-    _write_prose(
-        qname,
-        detail.file_path,
-        new_prose,
-        section_fp,
-        triefacts_root,
-        src_root,
-    )
-
-    try:
-        store.replace_file_symbols(detail.file_path, symbols)
-        fp = file_fingerprint(text)
-        store.upsert_file(path=detail.file_path, fingerprint=fp)
-    except Exception:
-        return False
-
-    # Update the triefact frontmatter file_fingerprint to match new source
-    rel_md = Path(detail.file_path).with_suffix(".md")
-    triefact_path = triefacts_root / rel_md
-    try:
-        tf_text = triefact_path.read_text()
-        tf = TriefactFile.parse(tf_text)
-        tf.front_matter["file_fingerprint"] = fp
-        triefact_path.write_text(tf.render() + "\n")
-    except Exception:
-        return False
-
-    return True
+        return (True, True)
+    finally:
+        store.close()
 
 
 def apply_patches(
@@ -412,24 +352,28 @@ def apply_patches(
     client: ModelClient,
     project_root: Path,
 ) -> dict[str, Any]:
-    """Apply all pending patches.
+    """Apply all pending patches with upfront batch cascade expansion.
+
+    Before any symbol is processed, the full cascade DAG is expanded
+    statically (call-graph BFS, no LLMs). Then a single batch pre-filter
+    call (or batch_size calls) judges all callee→caller relationships,
+    and cascade notes are posted to the store. All symbols are then
+    processed in a dependency-aware parallel scheduler — the cascade
+    notes are consumed alongside agent patches in the same pass.
 
     Returns a dict with keys: ok (bool), applied (int), failed (int),
-    skipped (int), error (str|None).
+    error (str|None).
     """
     src_root: Path = (project_root / config.triefacts.source_root).resolve()
     triefacts_root: Path = (project_root / config.triefacts.root).resolve()
-    cascade_depth = config.cascade.default_depth
-    hub_threshold = config.cascade.hub_symbol_threshold
     session_id = uuid.uuid4().hex[:12]
-    now = int(time.time())
 
-    # 1. Read all patches grouped by symbol_id
+    # 1. Read all patches
     grouped = store.get_all_patches_grouped()
     if not grouped:
-        return {"ok": True, "applied": 0, "failed": 0, "skipped": 0, "error": None}
+        return {"ok": True, "applied": 0, "failed": 0, "error": None}
 
-    # Resolve symbol_ids to qnames and merge notes
+    # Resolve symbol_ids to qnames
     patches_by_qname: dict[str, list[dict]] = {}
     for sym_id, patch_list in grouped.items():
         row = store._conn.execute(
@@ -442,20 +386,71 @@ def apply_patches(
 
     patched_qnames = list(patches_by_qname.keys())
 
-    # 2. Compute cascade working set
-    working_qnames = _build_working_set(patched_qnames, store, cascade_depth, hub_threshold)
-    cascaded_qnames = working_qnames - set(patched_qnames)
+    # 2. Build working set: seeds + transitive callers within depth
+    working = _expand_callers(
+        patched_qnames,
+        store,
+        config.cascade.default_depth,
+        config.cascade.hub_symbol_threshold,
+    )
+    all_qnames: set[str] = set(patched_qnames) | working
 
-    # 3. Build dependency subgraph
-    graph = _build_dependency_subgraph(working_qnames, store)
-
-    # 4. SCC contraction + topological sort
+    # 3. SCC contraction + topological sort
+    graph = _build_dependency_subgraph(all_qnames, store)
     sccs = tarjan_scc(graph)
-    ordered = topo_sort_sccs(graph, sccs)
+    scc_order = topo_sort_sccs(graph, sccs)
+    flat_order: list[str] = [q for scc in scc_order for q in scc]
+
+    if not flat_order:
+        return {"ok": True, "applied": 0, "failed": 0, "error": None}
+
+    # 4. Upfront batch cascade expansion + pre-filter
+    # Build callee pairs for every seed symbol that has callers in the working set
+    callee_pairs: list[tuple[str, str, list[dict], list[tuple[str, str]]]] = []
+    for qn in patched_qnames:
+        callers_raw = store.references_in(qn)
+        if not callers_raw:
+            continue
+        callers = _build_caller_summaries(callers_raw, store, triefacts_root)
+        if not callers:
+            continue
+        detail = store.get_symbol_detail(qn)
+        if detail is None:
+            continue
+        old_prose = _read_prose(qn, detail.file_path, triefacts_root)
+        patches = patches_by_qname.get(qn, [])
+        notes_reasons = [(p["note"], p["reason"]) for p in patches]
+        callee_pairs.append((qn, old_prose, callers, notes_reasons))
+
+    if callee_pairs:
+        cascade_results = pre_filter_batch(
+            client, callee_pairs, batch_size=8,
+        )
+        # Post cascade notes to store
+        posted_qnames: set[str] = set()
+        for caller_qn, note, reason in cascade_results:
+            if note is None or reason is None:
+                continue
+            with contextlib.suppress(KeyError):
+                store.add_patch(caller_qn, note, reason, "cascade")
+                posted_qnames.add(caller_qn)
+        # Expand working set to include cascade targets and re-sort
+        if posted_qnames:
+            extra_cascade = list(posted_qnames - all_qnames)
+            if extra_cascade:
+                extra_expanded = _expand_callers(
+                    extra_cascade,
+                    store,
+                    config.cascade.default_depth,
+                    config.cascade.hub_symbol_threshold,
+                )
+                all_qnames |= set(extra_cascade) | extra_expanded
+                graph = _build_dependency_subgraph(all_qnames, store)
+                sccs = tarjan_scc(graph)
+                scc_order = topo_sort_sccs(graph, sccs)
+                flat_order = [q for scc in scc_order for q in scc]
 
     # 5. Git stash
-    import subprocess
-
     stash_msg = f"trie-patch-apply-{session_id}"
     subprocess.run(
         ["git", "stash", "push", "-m", stash_msg],
@@ -464,122 +459,121 @@ def apply_patches(
         check=False,
     )
 
-    applied = 0
-    failed: list[str] = []
-    skipped = 0
-    processed_qnames: set[str] = set()
-
-    try:
-        for scc in ordered:
-            for qname in scc:
-                if qname in patched_qnames:
-                    ok = _process_symbol(
-                        qname,
-                        patches_by_qname[qname],
-                        store,
-                        client,
-                        src_root,
-                        triefacts_root,
-                        now,
-                    )
-                    if ok:
-                        applied += 1
-                elif qname in cascaded_qnames:
-                    callee_notes: list[tuple[str, str]] = []
-                    for callee in graph.get(qname, set()):
-                        if callee in patches_by_qname:
-                            cnotes, creasons = merge_notes(client, patches_by_qname[callee])
-                            callee_notes.extend(zip(cnotes, creasons, strict=False))
-                    if callee_notes:
-                        ok = _process_cascaded(
-                            qname,
-                            callee_notes,
-                            store,
-                            client,
-                            src_root,
-                            triefacts_root,
-                        )
-                        if ok:
-                            applied += 1
-                    else:
-                        ok = True
-                        skipped += 1
-                else:
-                    ok = True
-                    skipped += 1
-
-                if ok:
-                    processed_qnames.add(qname)
-                else:
-                    failed.append(qname)
-
-            # If any symbol in the SCC failed, abort
-            if failed:
-                break
-
-        if not failed:
-            # Delete applied patches from DB
-            for qname in patched_qnames:
-                if qname in processed_qnames:
-                    store.delete_patches(qname=qname)
-
-            # Run trie verify
-            verify = subprocess.run(
-                ["trie", "verify"],
-                cwd=project_root,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-
-            if verify.returncode == 0:
-                subprocess.run(
-                    ["git", "add", "-A"],
-                    cwd=project_root,
-                    capture_output=True,
-                    check=False,
-                )
-                subprocess.run(
-                    ["git", "commit", "-m", f"feat(edits): batch apply {applied} patches"],
-                    cwd=project_root,
-                    capture_output=True,
-                    check=False,
-                )
-            else:
-                # Rollback
-                subprocess.run(
-                    ["git", "stash", "pop"],
-                    cwd=project_root,
-                    capture_output=True,
-                    check=False,
-                )
-                return {
-                    "ok": False,
-                    "applied": applied - len(failed),
-                    "failed": len(failed),
-                    "skipped": skipped,
-                    "error": f"trie verify failed after applying {applied} symbols",
-                }
-        else:
-            subprocess.run(
-                ["git", "stash", "pop"],
-                cwd=project_root,
-                capture_output=True,
-                check=False,
-            )
-
-    except Exception as exc:
+    def _rollback() -> None:
         subprocess.run(
             ["git", "stash", "pop"],
             cwd=project_root,
             capture_output=True,
             check=False,
         )
+
+    def _success_commit(applied_count: int) -> None:
+        verify = subprocess.run(
+            ["trie", "verify"],
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if verify.returncode == 0:
+            subprocess.run(
+                ["git", "add", "-A"],
+                cwd=project_root,
+                capture_output=True,
+                check=False,
+            )
+            subprocess.run(
+                ["git", "commit", "-m", f"feat(edits): batch apply {applied_count} patches"],
+                cwd=project_root,
+                capture_output=True,
+                check=False,
+            )
+        else:
+            _rollback()
+            raise RuntimeError(
+                f"trie verify failed after applying {applied_count} symbols"
+            )
+
+    applied = 0
+    failed: list[str] = []
+    processed: set[str] = set()
+
+    # 5. Parallel dependency-aware scheduler
+    try:
+        with ThreadPoolExecutor(max_workers=config.sync.concurrency) as pool:
+            pending = set(flat_order)
+            futures: dict[Future, str] = {}
+
+            while pending or futures:
+                # Submit symbols whose callees are all processed
+                ready: list[str] = []
+                still_pending: list[str] = []
+                for qname in pending:
+                    callees = graph.get(qname, set())
+                    if all(c in processed for c in callees):
+                        ready.append(qname)
+                    else:
+                        still_pending.append(qname)
+                pending = set(still_pending)
+
+                for qname in ready:
+                    f = pool.submit(
+                        _process_one,
+                        qname,
+                        store.db_path,
+                        client,
+                        src_root,
+                        triefacts_root,
+                    )
+                    futures[f] = qname
+
+                if not futures:
+                    break
+
+                # Wait for first completion
+                done, _ = wait(futures, return_when=FIRST_COMPLETED)
+                for f in done:
+                    f_qname = futures.pop(f)
+                    try:
+                        ok, changed = f.result()
+                    except Exception:
+                        failed.append(f_qname)
+                        _rollback()
+                        return {
+                            "ok": False,
+                            "applied": applied,
+                            "failed": len(failed),
+                            "error": f"exception processing {f_qname}",
+                        }
+
+                    if not ok:
+                        failed.append(f_qname)
+                        _rollback()
+                        return {
+                            "ok": False,
+                            "applied": applied,
+                            "failed": len(failed),
+                            "error": f"failed to process {f_qname}",
+                        }
+
+                    if changed:
+                        applied += 1
+
+                    # Consume agent patches for this symbol
+                    store.delete_patches(qname=f_qname)
+                    processed.add(f_qname)
+
+            if not failed:
+                _success_commit(applied)
+            else:
+                _rollback()
+
+    except Exception as exc:
+        _rollback()
         return {
             "ok": False,
             "applied": applied,
             "failed": len(failed) or 1,
-            "skipped": skipped,
             "error": str(exc),
         }
 
@@ -587,7 +581,6 @@ def apply_patches(
         "ok": not failed,
         "applied": applied,
         "failed": len(failed),
-        "skipped": skipped,
         "error": None,
     }
 
@@ -607,19 +600,18 @@ def preview_patches(store: Store, config: Config) -> dict[str, Any]:
 
     patched_qnames = list(patches_by_qname.keys())
 
-    # Compute cascade
-    working_qnames = _build_working_set(
+    working = _expand_callers(
         patched_qnames,
         store,
         config.cascade.default_depth,
         config.cascade.hub_symbol_threshold,
     )
-    cascaded = working_qnames - set(patched_qnames)
+    cascaded = sorted(working - set(patched_qnames))
 
     return {
         "total_patches": sum(len(v) for v in patches_by_qname.values()),
         "patched_symbols": len(patched_qnames),
         "patched_list": sorted(patched_qnames),
         "cascade_symbols": len(cascaded),
-        "cascade_list": sorted(cascaded),
+        "cascade_list": cascaded,
     }

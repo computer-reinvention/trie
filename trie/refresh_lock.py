@@ -51,15 +51,31 @@ from typing import IO
 LOCK_FILENAME = "refresh.lock"
 QUEUED_FILENAME = "refresh.queued"
 
-
-def lock_path(project_root: Path) -> Path:
-    """Conventional location of the refresh lock file under `.trie/`."""
-    return project_root / ".trie" / LOCK_FILENAME
+LOCK_NAMES: set[str] = set()
 
 
-def queued_path(project_root: Path) -> Path:
-    """Conventional location of the queued sentinel under `.trie/`."""
-    return project_root / ".trie" / QUEUED_FILENAME
+def _register_lock_name(name: str) -> None:
+    """Register a lock name so we can validate it."""
+    LOCK_NAMES.add(name)
+
+
+_register_lock_name("refresh")
+
+
+def lock_path(project_root: Path, name: str = "refresh") -> Path:
+    """Conventional location of a lock file under `.trie/`.
+
+    `name` determines the filename: `refresh` → `refresh.lock`, `apply` → `apply.lock`.
+    """
+    return project_root / ".trie" / f"{name}.lock"
+
+
+def queued_path(project_root: Path, name: str = "refresh") -> Path:
+    """Conventional location of the queued sentinel under `.trie/`.
+
+    `name` determines the filename: `refresh` → `refresh.queued`, `apply` → `apply.queued`.
+    """
+    return project_root / ".trie" / f"{name}.queued"
 
 
 @dataclass
@@ -74,52 +90,44 @@ class LockHolder:
 
     project_root: Path
     acquired: bool
+    name: str = "refresh"
     _fd: IO[bytes] | None = None
 
     def mark_queued(self) -> None:
-        """Signal to the lock holder that another refresh is wanted.
+        """Signal to the lock holder that another operation is wanted.
 
-        Idempotent: writing the sentinel twice is the same as once. We do
-        not store metadata about the queueing caller because the holder's
-        tail pass picks up *whatever* state the filesystem is in when it
-        re-checks — there is nothing useful to coordinate.
-
-        Safe to call on either side of the lock (active holders writing
-        their own sentinel mid-refresh would just trigger their own tail
-        pass; harmless), but in practice only the contested side calls it.
+        Idempotent: writing the sentinel twice is the same as once.
         """
         if not self.acquired:
-            path = queued_path(self.project_root)
+            path = queued_path(self.project_root, self.name)
             path.parent.mkdir(parents=True, exist_ok=True)
             path.touch()
 
     def consume_queued(self) -> bool:
         """Check-and-clear the queued sentinel.
 
-        Used by the holder at the tail of its refresh: if another process
-        signalled a refresh while we were busy, we run one more pass and
-        consume the flag. Returns False (no further pass needed) otherwise.
-
-        The check-and-clear is non-atomic across separate processes, but we
-        only call it while holding the exclusive flock, so no other process
-        can be racing the same path.
+        Used by the holder at the tail of its operation: if another process
+        signalled while we were busy, run one more pass and consume the flag.
         """
         if not self.acquired:
             return False
-        path = queued_path(self.project_root)
+        path = queued_path(self.project_root, self.name)
         if not path.exists():
             return False
         try:
             path.unlink()
         except FileNotFoundError:
-            # Lost a race with ourselves somehow — treat as already-consumed.
             return False
         return True
 
 
 @contextmanager
-def try_acquire(project_root: Path) -> Iterator[LockHolder]:
-    """Try to acquire the exclusive refresh lock without blocking.
+def try_acquire(project_root: Path, name: str = "refresh") -> Iterator[LockHolder]:
+    """Try to acquire the exclusive lock without blocking.
+
+    `name` determines the lock file: `apply` → `apply.lock`, `refresh` → `refresh.lock`.
+    Each named lock is independent — acquiring `apply.lock` does not conflict with
+    `refresh.lock`.
 
     Yields a `LockHolder` whose `acquired` flag tells the caller whether it
     won the race. On exit:
@@ -133,7 +141,8 @@ def try_acquire(project_root: Path) -> Iterator[LockHolder]:
     us an inode to lock against. Re-creating it every run would race on
     inode swaps under load.
     """
-    path = lock_path(project_root)
+    _register_lock_name(name)
+    path = lock_path(project_root, name=name)
     path.parent.mkdir(parents=True, exist_ok=True)
 
     # `os.open` rather than `open()` so we control the exact flags. The file
@@ -149,13 +158,13 @@ def try_acquire(project_root: Path) -> Iterator[LockHolder]:
             # also lands here; same treatment.
             if exc.errno in (errno.EAGAIN, errno.EWOULDBLOCK):
                 os.close(fd)
-                yield LockHolder(project_root=project_root, acquired=False, _fd=None)
+                yield LockHolder(project_root=project_root, acquired=False, name=name, _fd=None)
                 return
             os.close(fd)
             raise
         # Wrap fd in an IO-ish handle for the dataclass type; we don't actually
         # read or write through it. Using `os.fdopen` would buffer; we want raw.
-        holder = LockHolder(project_root=project_root, acquired=True, _fd=None)
+        holder = LockHolder(project_root=project_root, acquired=True, name=name, _fd=None)
         try:
             yield holder
         finally:

@@ -164,67 +164,118 @@ Pending: 4 symbols, 3 applied, 1 failed — rolled back to pre-apply state
 ## Cascade ordering
 
 The `--apply` pipeline processes symbols in topological order so downstream
-regeneration always has the freshest upstream source.
+regeneration always has the freshest upstream source. Cascade is **reactive**:
+only callers of changed callees are considered, and only if the LLM judges
+they need updating.
 
-### Ordering algorithm
+### Cascade pipeline
 
-1. **Build the working set** = {patched symbols} ∪ {neighbours reachable via
-   inbound edges within `cascade.default_depth` hops} (same BFS as
-   `compute_cascade`).
+1. **Working set** = {patched symbols}. Cascade is built lazily via
+   `_expand_callers()` — BFS on caller edges from each patched symbol up to
+   `cascade.default_depth` hops. Hub symbols (inbound > `trace_hub_threshold`)
+   are not expanded further.
 
-2. **Build the subgraph**: edges between working-set symbols from the `edges`
-   table. Direction: caller → callee.
+2. **Topological sort** of the working set: callee before caller. SCC
+   contraction from the earlier design was removed — the cascade model is
+   simpler and cycles are rare enough to handle via the single-pass approach.
 
-3. **Contract SCCs** (mutual recursion, re-exports). Symbols in a cycle are
-   regenerated in a single LLM call with all their old sources + patches as
-   context. No ordering within the cycle.
+3. **Parallel execution** via `ThreadPoolExecutor` (concurrency from
+   `config.sync.concurrency`). A symbol is submitted when all its callee-
+   dependencies are finished. Each worker calls `_process_one()`.
 
-4. **Topological sort** the DAG of super-nodes: callee before caller.
+### `_process_one()` — per-symbol pipeline
 
-5. **Apply in that order**:
-   - Patched symbols: `infer_source_and_prose(old_source, old_prose, notes, reasons)`
-     → writes new_source + new_prose
-   - Unpatched neighbours: same call with callee's notes as context
-     → writes new_source if call site changed, prose may stay unchanged
-   - After each symbol: write source, write triefact section, update
-     fingerprint, re-parse for downstream steps
+Each symbol in the working set goes through a single function:
 
-### Cascade context for unpatched neighbours
+1. **Merge notes**: collect all patches for this symbol (both agent patches
+   and cascade notes from callees) and merge via LLM prompt.
+2. **Generate source + prose**: `infer_source_and_prose(old_source, old_prose,
+   merged_notes, merged_reasons)` → `(new_source, new_prose)`.
+3. **Write source** to disk.
+4. **Write triefact section**: body = `new_prose`, `body_fp` = hash(new_prose),
+   section fingerprint = sha256(new_source).
+5. **Re-parse** so downstream steps see the freshest symbol data.
+6. **Signature + prose gate**: if `old_signature == new_signature` and
+   `hash(old_prose) == hash(new_prose)`, the contract is unchanged and cascade
+   is skipped entirely for all callers.
+7. **Pre-filter cascade** (if gate didn't skip): call
+   `pre_filter_cascade(client, callee_qname, caller_summaries, new_prose)`
+   once. The LLM sees all callers simultaneously and returns per-caller
+   SKIP or NOTE with implementation note + reason. This replaces the per-caller
+   LLM call from the earlier design.
 
-A neighbour that wasn't patched directly receives the callee's merged notes
-as context:
+### Pre-filter cascade call
 
+`infer.pre_filter_cascade()` does one LLM call per changed callee (not per
+caller). The prompt includes:
+
+- **callee qname** and **new prose** (the updated purpose)
+- **signature** and **old one-liner** for each caller
+- Each caller's **existing caller-side prose** (what it says about this callee)
+  from the triefact section body
+- The **cascade.reason** from the implementation note that triggered the change
+
+The LLM returns `"[SKIP]"` for callers that don't need updating, or
+`"[NOTE] <implementation note> -- <reason (from cascade)>"` for callers that
+do. Callers that need updating get a new "cascade" patch posted to the store
+with `session_id="cascade"`.
+
+### Config
+
+```toml
+[cascade]
+default_depth = 2            # BFS depth for caller expansion
+max_judgments = 50           # max pre-filter LLM calls per apply run;
+                             # beyond this, remaining unjudged callers
+                             # get a conservative blanket note.
+
+[sync]
+concurrency = 4               # shared with sync pipeline; also controls
+                              # how many patch workers run in parallel
 ```
 
-Old prose: {neighbour's existing prose}
-Notes: {callee's merged notes}
-Old source: {neighbour's source span}
+### What changed from the earlier design
 
-```
-
-The LLM sees: "this function's purpose didn't change, but a function it calls
-did. Update the call site if needed."
+| Aspect              | Earlier                          | Now                                                        |
+|---------------------|----------------------------------|------------------------------------------------------------|
+| Cascade direction   | Bidirectional (file-level)       | Caller-edge only (call graph)                              |
+| Per-caller decision | Always regenerated               | LLM-gated via `pre_filter_cascade`                         |
+| LLM calls per cycle | 1 per caller                     | 1 per changed callee (collapsed)                           |
+| Processing          | Sequential topo walk             | Dependency-aware parallel executor                         |
+| SCC contraction     | Yes (cycles)                     | Removed (single pass, no fixpoint)                         |
+| Merge               | Separate merge step per symbol   | Inline in `_process_one`                                   |
 
 ## The apply pipeline (`trie patch --apply`)
 
 ```
 
-1. Read all patches from DB, grouped by symbol_id
-2. For each patched symbol: merge notes into compact list
-3. Compute cascade working set (patched symbols + neighbours within depth)
-4. Build DAG, topological sort
-5. For each symbol in topological order:
-   a. Run infer_source_and_prose()
-   b. Validate: compile(new_source) passes
-   c. Write new source to disk
-   d. Update triefact section: body = new_prose, body_fp = hash(new_prose),
-   section fingerprint = sha256(new_source)
-   e. Update store: upsert_file + replace_file_symbols + replace_all_edges
-   f. Re-read file into parse cache for downstream steps
-6. Delete all applied patches from the DB
-7. Run trie verify — if it passes, commit. If not, rollback.
+1. Acquire apply.lock (exclusive — no concurrent applies)
+2. Read all patches from DB, grouped by symbol_id
+3. Build initial working set = {qnames with patches}
+4. Expand via call-graph BFS (_expand_callers): add callers within
+   cascade.default_depth hops, stop at hub symbols
+5. Topological sort working set: callee before caller
+6. Parallel execution (ThreadPoolExecutor, concurrency from config):
+   For each symbol in dependency order:
+   a. Merge patches (agent + cascade notes from callees)
+   b. infer_source_and_prose(old_source, old_prose, notes) → new_source, new_prose
+   c. Validate: compile(new_source) passes
+   d. Write new source to disk
+   e. Update triefact section: body = new_prose, body_fp = hash(new_prose),
+      section fingerprint = sha256(new_source)
+   f. Re-parse for downstream steps
+   g. If contract unchanged (sig + prose hash same): skip cascade
+   h. Else: pre_filter_cascade(callers) → cascade notes posted to DB
+7. Delete all applied patches from the DB
+8. Run trie verify — if it passes, commit. If not, rollback.
 
-````
+```
+
+### Locking
+
+`apply.lock` (flock-based, shares the mechanism from `refresh_lock.py`)
+prevents concurrent `--apply` runs. The lock is in `.trie/apply.lock`. If
+another apply is in progress, `patch_apply` returns an error immediately.
 
 ### Triefact update
 
@@ -300,7 +351,7 @@ trie patch --apply                                        # merge + generate + c
 trie patch --preview                                      # show what --apply would do
 trie patch --list                                         # show all pending patches
 trie patch --drop <qname>                                 # discard patches for one symbol
-trie patch --drop --session <id>                          # discard patches for one session
+trie patch --drop                                          # discard all patches for this session
 trie patch --drop --all                                   # discard everything
 ```
 
@@ -312,13 +363,23 @@ trie grep --name <pattern>      # each hit includes patch count
 trie trace <qname>              # nodes with patches are annotated
 ```
 
+Human-readable CLI output now shows `[patched: N]` tags:
+
+```
+trie grep serve
+  trie/cli:_run_mcp_serve — ...      [patched: 1]
+  trie/mcp_server:build_server — ...
+```
+
 ## Risks and mitigations
 
-| Risk                                    | Mitigation                                                                                                                                     |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Source reconstruction produces bad code | `compile()` check after every write; rollback on failure                                                                                       |
-| Cascade order wrong                     | SCC contraction + topological sort guarantees order                                                                                            |
-| Merge LLM misses a contradiction        | Merge prompt lists all notes chronologically with reasons; no explicit supersession needed because contradictions are rare at this granularity |
-| Session interrupted mid-apply           | Git stash is the atomic unit; full rollback on any failure                                                                                     |
-| Cascade loop (A patches B, B pulls A)   | SCC contraction merges them into one regeneration unit                                                                                         |
-| Hub symbol patched (50+ neighbours)     | Same hub threshold guard as cascade; hubs are depth-0 only                                                                                     |
+| Risk                                    | Mitigation                                                                                                                                                                                       |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Source reconstruction produces bad code | `compile()` check after every write; rollback on failure                                                                                                                                         |
+| Cascade order wrong                     | Topological sort guarantees callee before caller                                                                                                                                                 |
+| Merge LLM misses a contradiction        | Merge prompt (within `_process_one`) lists all notes chronologically with reasons; no explicit supersession needed because contradictions are rare at this granularity                           |
+| Session interrupted mid-apply           | Git stash is the atomic unit; full rollback on any failure                                                                                                                                       |
+| Cascade loop (A patches B, B pulls A)   | Single pass, no fixpoint — if A and B are both patched, topo order ensures the last one processed sees the freshest version of the other; no SCC contraction needed                              |
+| Hub symbol patched (50+ neighbours)     | `_expand_callers` stops at hubs (inbound > threshold); `max_judgments` caps pre-filter LLM calls; beyond cap, remaining callers get a conservative blanket note                                  |
+| LLM incorrectly skips a caller          | `pre_filter_cascade` sees all callers simultaneously with full context; any caller whose prose references the callee is less likely to be skipped. The cap only triggers on high volume (>50)     |
+| Race between apply and refresh hook     | `apply.lock` and `refresh.lock` are independent, named locks; hook's `trie refresh` uses its own lock. No deadlock because the two code paths never wait on each other's lock                   |
