@@ -411,6 +411,26 @@ class TrieTools:
         ]
         return {"hits": hits}
 
+    def all_edges(self, limit: int = 50000) -> dict[str, Any]:
+        """Return all call-graph edges for the desktop app's initial graph population.
+
+        Returns {edges: [{from, to}, ...]} — a flat list of directed edges
+        read straight from the SQLite edge table. Much faster than 200 individual
+        trace calls and doesn't require the MCP connection to be fully warmed up.
+        """
+        with self.store as s:
+            rows = s._conn.execute(
+                """
+                SELECT s_src.qualified_name, s_dst.qualified_name
+                FROM edges e
+                JOIN symbols s_src ON s_src.id = e.src_symbol_id
+                JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+        return {"edges": [{"from": r[0], "to": r[1]} for r in rows]}
+
     def summary(self) -> dict[str, Any]:
         """Return project-level aggregate counts for the trie desktop app.
 
@@ -2062,6 +2082,7 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     server.tool(name="summary")(tools.summary)
     server.tool(name="symbols_by_file")(tools.symbols_by_file)
     server.tool(name="all_symbols")(tools.all_symbols)
+    server.tool(name="all_edges")(tools.all_edges)
     return server, tools
 
 

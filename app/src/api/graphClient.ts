@@ -47,6 +47,13 @@ export const graphClient = {
     return get("/desktop/graph/all-symbols", Object.keys(params).length ? params : undefined)
   },
 
+  // Dedicated initial-load endpoint — returns all call-graph edges directly from DB.
+  allEdges(opts?: { limit?: number }): Promise<{ edges: Array<{ from: string; to: string }> }> {
+    const params: Record<string, string> = {}
+    if (opts?.limit != null) params.limit = String(opts.limit)
+    return get("/desktop/graph/all-edges", Object.keys(params).length ? params : undefined)
+  },
+
   grep(opts: { predicate?: Record<string, unknown>; rank_by?: string; limit?: number }): Promise<{ hits: SymbolHit[] }> {
     return post("/desktop/graph/grep", opts)
   },
