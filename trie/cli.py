@@ -1677,6 +1677,13 @@ def _emit_envelope(
         raise typer.Exit(code=1)
 
 
+def _patched_tag(count: int) -> str:
+    """Return a yellow `[patched: N]` tag when count > 0."""
+    if count <= 0:
+        return ""
+    return f" [yellow][patched: {count}][/yellow]"
+
+
 def _render_grep(envelope: dict[str, object], reporter: Reporter) -> None:
     """Human-readable rendering for `trie grep` output.
 
@@ -1703,8 +1710,11 @@ def _render_grep(envelope: dict[str, object], reporter: Reporter) -> None:
         for h in hits:
             if not isinstance(h, dict):
                 continue
+            qname = str(h.get("qname", ""))
+            patch_count = int(h.get("pending_patch_count", 0))
+            qname_display = qname + _patched_tag(patch_count)
             table.add_row(
-                str(h.get("qname", "")),
+                qname_display,
                 str(h.get("kind", "")),
                 str(h.get("file_pointer", "")),
                 str(h.get("one_liner", "")),
@@ -1787,6 +1797,23 @@ def _render_read(envelope: dict[str, object], reporter: Reporter) -> None:
             ol = entry.get("one_liner", "")
             reporter.console.print(f"  [cyan]{ql}[/cyan] — {ol}")
 
+    pending = envelope.get("pending_patches") or []
+    if isinstance(pending, list) and pending:
+        reporter.console.print()
+        reporter.console.print(
+            f"[yellow]pending patches[/yellow] ({len(pending)})"
+        )
+        for p in pending:
+            if not isinstance(p, dict):
+                continue
+            origin = str(p.get("origin", "?"))
+            note = str(p.get("note", ""))
+            reason = str(p.get("reason", ""))
+            line = f"  [{origin}] {note}"
+            if reason:
+                line += f" [dim]({reason})[/dim]"
+            reporter.console.print(line)
+
     _print_neighbours("callers", envelope.get("callers"))
     _print_neighbours("callees", envelope.get("callees"))
 
@@ -1824,7 +1851,9 @@ def _render_trace(envelope: dict[str, object], reporter: Reporter) -> None:
             if not isinstance(data, dict):
                 continue
             ol = data.get("one_liner", "")
-            reporter.console.print(f"  [cyan]{qname}[/cyan] — {ol}")
+            patched = data.get("has_pending_patches", False)
+            tag = _patched_tag(1) if patched else ""
+            reporter.console.print(f"  [cyan]{qname}{tag}[/cyan] — {ol}")
 
     edges = envelope.get("edges") or []
     if isinstance(edges, list) and edges:

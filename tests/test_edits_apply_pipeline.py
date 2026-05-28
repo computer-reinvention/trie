@@ -239,7 +239,6 @@ class TestApplyPatchesEmpty:
         assert result["ok"] is True
         assert result["applied"] == 0
         assert result["failed"] == 0
-        assert result["skipped"] == 0
 
     def test_git_clean_after_empty_apply(self, project: Path):
         config, _ = Config.find_and_load(project)

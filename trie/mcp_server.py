@@ -275,9 +275,103 @@ class TrieTools:
         self.triefacts_root = self.root / self.config.triefacts.root
         self.src_root = (self.root / self.config.triefacts.source_root).resolve()
         self.store = Store(self.root / ".trie" / "graph.db")
+        # Session id for patch operations — lives for the MCP server lifetime,
+        # which maps 1:1 to an agent session.
+        import uuid
+
+        self._session_id = uuid.uuid4().hex[:12]
 
     def close(self) -> None:
         self.store.close()
+
+    # --- patch tools -------------------------------------------------------
+
+    def patch(
+        self,
+        qname: str,
+        note: str,
+        reason: str = "",
+    ) -> dict[str, Any]:
+        """Post an implementation note against a symbol.
+
+        Fire-and-forget. Returns {patch_id, qname, pending_patch_count}.
+        Use patch_list() to view all pending; patch_drop() to undo.
+        """
+        if not note.strip():
+            return _error("invalid_argument", "note must be non-empty.")
+        try:
+            patch_id = self.store.add_patch(qname, note, reason, self._session_id)
+        except KeyError:
+            return _error(
+                "not_found",
+                f"Symbol {qname!r} not found in the graph.",
+                "Use grep({'name_contains': '...'}) to find the exact qname.",
+            )
+        detail = self.store.get_symbol_detail(qname)
+        return {
+            "patch_id": int(patch_id),
+            "qname": qname,
+            "pending_patch_count": detail.pending_patch_count if detail else 1,
+        }
+
+    def patch_drop(
+        self,
+        qname: str | None = None,
+    ) -> dict[str, Any]:
+        """Remove pending patches for a symbol or for this session.
+
+        Omit qname to drop all patches created this session.
+        Returns {removed: int}.
+        """
+        if qname is not None:
+            removed = self.store.delete_patches(qname=qname)
+        else:
+            removed = self.store.delete_patches(session_id=self._session_id)
+        return {"removed": removed}
+
+    def patch_list(self) -> dict[str, Any]:
+        """List all pending patches grouped by symbol.
+
+        Returns {patches: [{qname, count, origin, notes: [...]}, ...]}.
+        """
+        qnames = self.store.get_patched_qnames()
+        patches: list[dict[str, Any]] = []
+        for qn in qnames:
+            notes = self.store.get_patches_for_qname(qn)
+            # Determine origin from session_id of patches
+            origins = set(p.get("session_id", "") for p in notes)
+            origin = "cascade" if origins == {"cascade"} else "mixed" if len(origins) > 1 else "agent"
+            patches.append({
+                "qname": qn,
+                "count": len(notes),
+                "origin": origin,
+                "notes": notes,
+            })
+        return {"patches": patches}
+
+    def patch_apply(self) -> dict[str, Any]:
+        """Apply all pending patches: merge, generate, cascade, commit.
+
+        Uses an exclusive lock to prevent concurrent apply runs.
+        Returns {ok, applied, failed, error?}.
+        """
+        from trie.edits.apply import apply_patches
+        from trie.models import make_client
+        from trie.refresh_lock import try_acquire
+
+        with try_acquire(self.root, name="apply") as holder:
+            if not holder.acquired:
+                return _error(
+                    "conflict",
+                    "another patch apply is already in progress",
+                    "retry when the current apply finishes.",
+                )
+            client = make_client(self.config.models.edits)
+            try:
+                result = apply_patches(self.store, self.config, client, self.root)
+            except Exception as exc:
+                return _error("internal", f"patch apply failed: {exc}")
+            return result
 
     # --- grep --------------------------------------------------------------
 
@@ -392,6 +486,7 @@ class TrieTools:
                     "inbound_count": h.inbound_count,
                     "outbound_count": h.outbound_count,
                     "pending_patch_count": h.pending_patch_count,
+                    "has_pending_patches": h.pending_patch_count > 0,
                 }
                 for h in hits
             ]
@@ -924,7 +1019,17 @@ class TrieTools:
                 "callees": callees,
             }
             if detail.pending_patches:
-                out["pending_patches"] = detail.pending_patches
+                # Add origin tag to each patch (derived from session_id)
+                tagged_patches = []
+                for p in detail.pending_patches:
+                    p_copy = dict(p)
+                    sid = p_copy.get("session_id", "")
+                    p_copy["origin"] = "cascade" if sid == "cascade" else "agent"
+                    tagged_patches.append(p_copy)
+                out["pending_patches"] = tagged_patches
+                out["has_pending_patches"] = True
+            else:
+                out["has_pending_patches"] = False
             if notes:
                 out["notes"] = notes
             tele_ctx["result_kind"] = "ok"
@@ -1841,6 +1946,11 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     server.tool(name="explain_symbol_references")(tools.explain_symbol_references)
     server.tool(name="trace_flow")(tools.trace_flow)
     server.tool(name="explain_flow")(tools.explain_flow)
+    # Patch tools — implementation notes + apply
+    server.tool(name="patch")(tools.patch)
+    server.tool(name="patch_drop")(tools.patch_drop)
+    server.tool(name="patch_list")(tools.patch_list)
+    server.tool(name="patch_apply")(tools.patch_apply)
     return server, tools
 
 

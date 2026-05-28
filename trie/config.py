@@ -40,6 +40,7 @@ class Models:
 class Cascade:
     default_depth: int = 1
     hub_symbol_threshold: int = 20
+    max_judgments: int = 50  # hard cap on pre_filter_cascade calls per apply run
 
 
 @dataclass
