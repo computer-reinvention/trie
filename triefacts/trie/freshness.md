@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/freshness.py
 file_fingerprint: 2cfbe2407b5c12abfef2c8810d2e08554beed0757be02240a4f1dd954b355b9a
-last_synced_at: '2026-05-23T23:50:14Z'
+last_synced_at: '2026-05-28T01:38:43Z'
 description: 'Freshness gate: keep the graph + triefact tree current with respect
   to disk and HEAD.'
 defines:
@@ -160,13 +160,13 @@ Probe graph freshness at agent turn start, triggering incremental sync only when
 
 Run a HEAD/mtime freshness check after an agent turn, capturing files the agent just edited.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/freshness:_ensure_fresh fingerprint=9cd5bb51c0c2f61fcc7445e251bbafefc7fa2745eb3f050ba41b5e55b4df903c body_fp=174a0b73fa82c5252adb828c66de206b6987136a2a56480206272959993b366a source_ref=f0e0b9f3488673b79d087d3bee139798c331d329 -->
+<!-- trie:section symbol=trie/freshness:_ensure_fresh fingerprint=0508de7da5c974aebbcd23b7cbea9f212f5a8eaeae4c1f66c578d209397cbd64 body_fp=7cdf7cf321eeedb98ace64b79db552b145701ec746b154d8109b472b91711055 source_ref=b09ef7b11df3129624aefe1f6eb0bbde27cb055a -->
 ## `_ensure_fresh(*, project_root, config, store, client, progress, trigger) -> FreshnessResult`
 
 Determine staleness reason and run the appropriate refresh, writing an updated stamp on any change.
 
 - `trigger`: telemetry label only; does not affect branching logic.
-- `no_stamp` / `head_moved`: runs `scan_project` only; LLM never invoked.
+- `no_stamp` / `head_moved`: runs `scan_project` only; LLM never invoked; calls `backfill_section_records` if section records are missing.
 - `mtimes_moved`: runs `run_incremental`, which may invoke the LLM for prose regen.
-- `unchanged`: returns immediately without touching the graph or stamp.
+- `unchanged`: calls `backfill_section_records` if section records are missing, then returns without touching the graph or stamp.
 <!-- trie:end -->

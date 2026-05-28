@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_mcp.py
 file_fingerprint: 4457d81c89ebf7bf4d21dffb6407ca53d07d7b52dc6ed0a206cd8db2258c29da
-last_synced_at: '2026-05-23T23:21:22Z'
+last_synced_at: '2026-05-28T01:39:47Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: module

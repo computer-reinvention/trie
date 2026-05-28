@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_docs_install.py
 file_fingerprint: 612d52ed0d41bd1438627a21efab404e22edca595ae18169882a7c75b143b312
-last_synced_at: '2026-05-23T23:47:07Z'
+last_synced_at: '2026-05-28T01:36:16Z'
 description: 'Tests for `trie.docs_install`: project-local agent documentation install.'
 defines:
 - kind: module
@@ -178,10 +178,10 @@ Assert that `install` with no `target_names` renders bare `grep`/`read`/`trace` 
 
 Assert that `install` with `target_names=["claude-code"]` renders `mcp__trie__grep/read/trace` in `TRIE.md` and leaves no `«…»` placeholder tokens.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_docs_install:test_install_for_opencode_uses_single_underscore_prefix fingerprint=22926a0d8f5b42ab3687ac6b9d5ef0ea1c93b0100e80c9f6e3b363b6bc55889b body_fp=04886c183abf157ad7e59c1c8eb66064603bd00009c2ecd1fb5a445a7bfbf41f source_ref=c71598498bc9ec5f3a1ba4c97c80ab82f4fb431f -->
-## `test_install_for_opencode_uses_single_underscore_prefix(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_docs_install:test_install_for_opencode_uses_bare_tool_names fingerprint=a29cc89ae0deac1cada85e8f6f38f7866374a9887c407b5294e0f055d3bdeaa1 body_fp=aa8f1160482870d61c04df4642ea818ea7b5412ed7f6b525d05608fd53efb267 source_ref=9fe1a66b8400606b68b3e6d8a2b2a75352e32c94 -->
+## `test_install_for_opencode_uses_bare_tool_names(tmp_path: Path)`
 
-Assert that `install` with `target_names=["opencode"]` renders `trie_grep`, `trie_read`, and `trie_trace` in `TRIE.md`.
+Assert that `install` with `target_names=["opencode"]` renders bare tool names (`grep`, `read`, `trace`) in TRIE.md, not MCP-prefixed names like `trie_grep`.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_docs_install:test_install_unknown_target_falls_back_to_bare_names fingerprint=8dc34e858b445570e9f034ad3c01247ba1aafcc6cf8bacfca76855fcdc499d65 body_fp=4a8f20e50687f78133b144b604f8e97ed34c3386643697125b2ca9d23bc2c3b2 source_ref=c71598498bc9ec5f3a1ba4c97c80ab82f4fb431f -->
 ## `test_install_unknown_target_falls_back_to_bare_names(tmp_path: Path)`
@@ -193,7 +193,7 @@ Assert that `install` uses bare tool names when `target_names` contains an unrec
 
 Assert that the pointer block spliced into `AGENTS.md` uses target-specific tool names (e.g. `mcp__trie__grep` for `claude-code`), not bare names.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_docs_install:test_install_multiple_targets_renders_primary_in_body_and_footer_for_rest fingerprint=2559dcf8d6468ade53c2ea38c8a01c2e7b4e87472da0a18d41680885a4b09c78 body_fp=3e85533eff552c81adbc8e7922eff0f027fc62ed70a3f8093aefb2acee8bf9a3 source_ref=c71598498bc9ec5f3a1ba4c97c80ab82f4fb431f -->
+<!-- trie:section symbol=tests/test_docs_install:test_install_multiple_targets_renders_primary_in_body_and_footer_for_rest fingerprint=1c8049e6eb9d914828abe22ff389d3c1627c1bff5993f0f3a49b0b5b35959688 body_fp=3e85533eff552c81adbc8e7922eff0f027fc62ed70a3f8093aefb2acee8bf9a3 source_ref=9fe1a66b8400606b68b3e6d8a2b2a75352e32c94 -->
 ## `test_install_multiple_targets_renders_primary_in_body_and_footer_for_rest(tmp_path: Path)`
 
 Assert that with multiple targets, the first target's tool names appear in the TRIE.md body and remaining targets' aliases appear in a footer.

@@ -1,41 +1,47 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/refresh_lock.py
-file_fingerprint: 61056ade51e9c5714da16cd2dd35c2b8ff75a5c2f11dfbe5a5a9d160fa32419b
-last_synced_at: '2026-05-23T23:53:21Z'
+file_fingerprint: 461fdc42c9807dca5469c0c263a1dd0c6c9aef648163a419a850b80082a4e985
+last_synced_at: '2026-05-28T01:39:17Z'
 description: Mutual exclusion + coalescing queue for `trie refresh`.
 defines:
 - kind: module
   qualified_name: trie/refresh_lock:__module__
-  lines: 1-176
+  lines: 1-185
 - kind: constant
   qualified_name: trie/refresh_lock:LOCK_FILENAME
   lines: 51-51
 - kind: constant
   qualified_name: trie/refresh_lock:QUEUED_FILENAME
   lines: 52-52
+- kind: constant
+  qualified_name: trie/refresh_lock:LOCK_NAMES
+  lines: 54-54
+- kind: function
+  qualified_name: trie/refresh_lock:_register_lock_name
+  lines: 57-59
 - kind: function
   qualified_name: trie/refresh_lock:lock_path
-  lines: 55-57
+  lines: 65-70
 - kind: function
   qualified_name: trie/refresh_lock:queued_path
-  lines: 60-62
+  lines: 73-78
 - kind: class
   qualified_name: trie/refresh_lock:LockHolder
-  lines: 66-117
+  lines: 82-121
 - kind: method
   qualified_name: trie/refresh_lock:LockHolder.mark_queued
-  lines: 79-94
+  lines: 96-104
 - kind: method
   qualified_name: trie/refresh_lock:LockHolder.consume_queued
-  lines: 96-117
+  lines: 106-121
 - kind: function
   qualified_name: trie/refresh_lock:try_acquire
-  lines: 121-175
+  lines: 125-184
 incoming_refs: 22
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=trie/refresh_lock:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=27f03d3cac54145eb834ac9c046a7198eff58dc15f7544a5f7713d7af30518fb source_ref=6b6fb8bf76ce617c5f239ce25cd25d4c0c1b377d -->
+<!-- trie:section symbol=trie/refresh_lock:__module__ fingerprint=105fd9e2cb19d65e5a58241b307951982df73a98eefe163e2ed77c7e28088af6 body_fp=27f03d3cac54145eb834ac9c046a7198eff58dc15f7544a5f7713d7af30518fb source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde -->
 ## `refresh_lock`
 
 Provide mutual-exclusion and coalescing-queue primitives for concurrent `trie refresh` processes sharing a `.trie/` directory.
@@ -53,33 +59,48 @@ Filename of the exclusive flock anchor file inside `.trie/`.
 
 Filename of the boolean sentinel file indicating a queued refresh is pending.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/refresh_lock:lock_path fingerprint=fa3088fd68739b854180275954958c8a963a73e37727f2320f06ad463de967ae body_fp=21bd1a47dcd485c6201aca71ee602336435efb715fdc7b3cfe09c5a2bf5b9e98 source_ref=6b6fb8bf76ce617c5f239ce25cd25d4c0c1b377d -->
-## `lock_path(project_root: Path) -> Path`
+<!-- trie:section symbol=trie/refresh_lock:LOCK_NAMES fingerprint=c53f2ac7ddea965a4eba06568fa0a67759e9caed568f9374710e4d6f892b482b body_fp=53aec5b0b6ef1a43a296c92d7249cbf7f59dfb162fe955e1629c4895515d7738 source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde -->
+## `LOCK_NAMES: set[str]`
 
-Return the path to the refresh lock file for a given project root.
+Registry of all lock names passed to `_register_lock_name` for validation.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/refresh_lock:queued_path fingerprint=95879d8bf8bf8e968c77a60ea271e4ae651e7c92546d422b5101977181858495 body_fp=5f7a6994cfc3f016b69bbd5baa492128f50be99bb3bc84c0cc86c21585cb22f4 source_ref=6b6fb8bf76ce617c5f239ce25cd25d4c0c1b377d -->
-## `queued_path(project_root: Path) -> Path`
+<!-- trie:section symbol=trie/refresh_lock:_register_lock_name fingerprint=17f91ff119b7aa625e8976c7fa00bfe70b5e5018e1e985de026dc83d32c30fa8 body_fp=8920605b29a7297d4a28eda6b1934b5f5653121fb59da9ad1a593d6138c6f9cc source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde -->
+## `_register_lock_name(name: str) -> None`
 
-Return the canonical path of the `refresh.queued` sentinel file inside a project's `.trie/` directory.
+Add `name` to the `LOCK_NAMES` set for later validation.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/refresh_lock:LockHolder fingerprint=e439d723dd88420de64af59d7f5afb1254d78ef77abaefa15688d43e6a1bcc91 body_fp=74d7700e005b57ac9ba19350617b741d2f00a63f0460e541ddbad93df8195a8d source_ref=6b6fb8bf76ce617c5f239ce25cd25d4c0c1b377d -->
-## `LockHolder(project_root: Path, acquired: bool, _fd: IO[bytes] | None = None)`
+<!-- trie:section symbol=trie/refresh_lock:lock_path fingerprint=c610e86a3f8542a0e1e182730727359ea33d3ac720a46ed3f5f681146368091f body_fp=21e9cbc0c9639d0bd0cac627d9355d9ac22cbf2a16eda45f59aa14036f432264 source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde -->
+## `lock_path(project_root: Path, name: str = "refresh") -> Path`
+
+Return the path to a named lock file under `.trie/` for a given project root.
+
+- `name`: base name determining the filename; `"refresh"` → `refresh.lock`, `"apply"` → `apply.lock`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/refresh_lock:queued_path fingerprint=68114fd059c6f0347ee6f892e273a22863abb4039065b72f3256a6e2f6ca2137 body_fp=11940afe71b0ef967b3ce6444f1123258e264983653feae92788cbcd9304aafb source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde -->
+## `queued_path(project_root: Path, name: str = "refresh") -> Path`
+
+Return the canonical path of a `<name>.queued` sentinel file inside a project's `.trie/` directory.
+
+- `name`: base name of the sentinel; `"refresh"` → `refresh.queued`, `"apply"` → `apply.queued`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/refresh_lock:LockHolder fingerprint=b55694a146f40bf55285a276cd4df716502c440e040bb4cf4fde471f11a8b1bf body_fp=4f88ba1dcbe2dbe82e88e5d1741adfaea2927bd1af128ae053c64679e7c59eea source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde -->
+## `LockHolder(project_root: Path, acquired: bool, name: str = "refresh", _fd: IO[bytes] | None = None)`
 
 Handle returned by `try_acquire` representing either a won or contested refresh lock.
 
 - `acquired`: `True` if this process holds the exclusive lock; `False` if contested.
+- `name`: selects which lock/queued sentinel files are used (e.g. `"refresh"`, `"apply"`).
 - `mark_queued()`: touches the queued sentinel; no-op if `acquired` is `True`.
 - `consume_queued()`: atomically removes sentinel and returns `True` if a queued pass is needed; no-op returning `False` when not acquired.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/refresh_lock:LockHolder.mark_queued fingerprint=3617b6220645cf133dc03e1790150b06f1ba85993dfb1a164ab33719285eef3a body_fp=1cb4321fb0f527aee6083e11e4b5e97760d51ff613466a88f0ebdda17e56a60f source_ref=6b6fb8bf76ce617c5f239ce25cd25d4c0c1b377d -->
+<!-- trie:section symbol=trie/refresh_lock:LockHolder.mark_queued fingerprint=9aed2862bedff649eb249383557d2cddd31ef4a4a00c4933e32ba9521edb4857 body_fp=1cb4321fb0f527aee6083e11e4b5e97760d51ff613466a88f0ebdda17e56a60f source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde -->
 ## `LockHolder.mark_queued() -> None`
 
 Touch the `refresh.queued` sentinel file to signal that another refresh pass is wanted.
 
 - Only writes the sentinel when `acquired` is `False`; no-op on the lock holder itself.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/refresh_lock:LockHolder.consume_queued fingerprint=631fb126c50921f21ab18ff51f25092d1fe0a61275f82801982e65ae117f7f65 body_fp=d944acbb7cc9c095f677bb10741185140e7daf41439a61f1d3d0e7c6c61c994a source_ref=6b6fb8bf76ce617c5f239ce25cd25d4c0c1b377d -->
+<!-- trie:section symbol=trie/refresh_lock:LockHolder.consume_queued fingerprint=fb0387219d5a28f6c9e532241df5b67970a48d1252b5698e377364d9dcbebdd5 body_fp=d944acbb7cc9c095f677bb10741185140e7daf41439a61f1d3d0e7c6c61c994a source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde -->
 ## `LockHolder.consume_queued() -> bool`
 
 Atomically check and clear the `refresh.queued` sentinel, returning `True` if a queued pass is needed.
@@ -87,11 +108,12 @@ Atomically check and clear the `refresh.queued` sentinel, returning `True` if a 
 - Returns `False` if `LockHolder` did not acquire the lock or sentinel is absent.
 - Safe only while holding the exclusive flock; non-atomic otherwise.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/refresh_lock:try_acquire fingerprint=f8de1fece64c1bcb8892f7b44b2af75e6f447096db53f0ede3a47034ab8b659d body_fp=34eb26402bc4b26bfa97701b6a1b56021bb5fa26e39bb865ef806cdb63c1b7e2 source_ref=6b6fb8bf76ce617c5f239ce25cd25d4c0c1b377d -->
-## `try_acquire(project_root: Path) -> Iterator[LockHolder]`
+<!-- trie:section symbol=trie/refresh_lock:try_acquire fingerprint=505f7d32ed2a79bce34da78a62c7a116f27146d64b62ffa5b247928d7f5b7179 body_fp=ff8c73590bfdfb9a3b771cc7ad72163f20f47328f51aec0866898c27fa424a3f source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde -->
+## `try_acquire(project_root: Path, name: str = "refresh") -> Iterator[LockHolder]`
 
-Context-manager that attempts a non-blocking `LOCK_EX` flock on the refresh lock file, yielding a `LockHolder` regardless of outcome.
+Context-manager that attempts a non-blocking `LOCK_EX` flock on a named lock file, yielding a `LockHolder` regardless of outcome.
 
+- `name`: selects the lock file (`refresh` → `refresh.lock`, `apply` → `apply.lock`); each name is independent.
 - `acquired=True`: caller holds the lock; fd is closed on context exit.
 - `acquired=False`: another process holds the lock; raises only for unexpected `OSError` (not `EAGAIN`/`EWOULDBLOCK`).
 <!-- trie:end -->

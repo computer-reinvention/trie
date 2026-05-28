@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/docs_install.py
 file_fingerprint: e92285ce3493f87f3d5a6772eae8325e51c0f782be2cf982ed8ee205d3fd0b5d
-last_synced_at: '2026-05-23T23:49:23Z'
+last_synced_at: '2026-05-28T01:38:12Z'
 description: Project-local agent documentation install.
 defines:
 - kind: module
@@ -166,22 +166,39 @@ Load the bundled `trie/data/TRIE.md` text via `importlib.resources`.
 
 - Raises `DocsInstallError` if the data file is missing from the installed package.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/docs_install:_render_tool_names fingerprint=94cc845e0f7537a1aabcf13f76a256d48091692ca0ce4a4ef9418672108050da body_fp=9b15a8d0b209e9039288f3344ad723252861fa72352ec4bb9f5c33f7599d2f0d source_ref=f33ef49ae65ead2b16b114b5450c290ad20aff99 -->
-## `_render_tool_names(target_name: str | None) -> tuple[str, str, str]`
+<!-- trie:section symbol=trie/docs_install:ALL_TOOL_NAMES fingerprint=2c5819862721aefd616cc387f60dbe4d52ac6f1815aeb7eea832188b0d36a39d body_fp=8580f70170d10fe82d79702ceac4e93f4018df9c4d1b9068d3fa869e8a73d1b2 source_ref=522f68595f35cca243978bf30a6c7a09230cfac5 -->
+## `ALL_TOOL_NAMES`
 
-Resolve harness-specific rendered names for the three trie tools, falling back to bare names when target is unknown.
-
-- `target_name`: MCP target slug; `None` yields unprefixed `"grep"`, `"read"`, `"trace"`.
+Ordered tuple of every trie MCP tool name used as substitution keys when rendering tool-name placeholders.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/docs_install:_render_trie_doc_body fingerprint=dd2c68e9b17365e8ea4031617b2c1d8523f81683651cdd3b120b4ee1b072174e body_fp=affb05c23e0288519039fbc77e178f883cabfce5c9b981d3aca0cd9a2a1a3631 source_ref=f33ef49ae65ead2b16b114b5450c290ad20aff99 -->
+<!-- trie:section symbol=trie/docs_install:CORE_TOOL_NAMES fingerprint=a01417ad0bf41b11233db4c1efafe4be8cd1310ada273677c106bfa1a6c60159 body_fp=7cfc6d3d931de3e348190a98a98de452846e4f0a70cbe7ec32283d3533169409 source_ref=522f68595f35cca243978bf30a6c7a09230cfac5 -->
+## `CORE_TOOL_NAMES = ("grep", "read", "trace")`
+
+The three primary trie tools named in pointer-line text for agent doc files.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/docs_install:_BARE_NAME_TARGETS fingerprint=e18bb59a3074732896d7e1791b0d5835544dd5e5b1eeb6b69a46e7259fad0ae9 body_fp=4b55b465c36d4ece393e3888d371b3f3955f7ba98043b088eefbeacdc06ee725 source_ref=522f68595f35cca243978bf30a6c7a09230cfac5 -->
+## `_BARE_NAME_TARGETS = frozenset({"opencode"})`
+
+Set of target names whose tool overrides expose bare (unprefixed) tool names directly.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/docs_install:_render_tool_names fingerprint=f68f5f905e855e1cdfe74aa87bdb1c3bc3ec9f8f1c3a351eeff961c2c5635bc2 body_fp=0b19254070eec4e63d8d7a40155bf8643c4f0ff2d5bcc5adca0e2b6eeac97259 source_ref=522f68595f35cca243978bf30a6c7a09230cfac5 -->
+## `_render_tool_names(target_name: str | None, tool_names: tuple[str, ...] = ALL_TOOL_NAMES) -> tuple[str, ...]`
+
+Resolve harness-specific rendered names for the given tool names, falling back to bare names when target is unknown or in `_BARE_NAME_TARGETS`.
+
+- `target_name`: MCP target slug; `None` or unknown yields unprefixed names.
+- `tool_names`: which tool names to render; defaults to all trie tools.
+- Targets in `_BARE_NAME_TARGETS` (e.g. opencode) always return bare names regardless of `tool_name_format`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/docs_install:_render_trie_doc_body fingerprint=f808b5ce80ae80c0f3e96a795081963edfdb15d0d83ff8f244285247d78b367e body_fp=fec0f408dc35cd5e8e2ad9d78f7de5c7f17591c71e6ca337a16396474325ffa2 source_ref=522f68595f35cca243978bf30a6c7a09230cfac5 -->
 ## `_render_trie_doc_body(target_name: str | None, additional_targets: list[str]) -> str`
 
-Substitute `«grep»`, `«read»`, `«trace»` placeholders in the bundled TRIE.md template with harness-specific tool names, appending a multi-harness footer when needed.
+Substitute all `«tool_name»` placeholders in the bundled TRIE.md template with harness-specific tool names, appending a multi-harness footer when needed.
 
 - `target_name`: selects the harness whose tool-name prefix is baked into the body.
 - `additional_targets`: each extra harness gets a footer row listing its tool aliases.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/docs_install:_multi_target_footer fingerprint=a410230a34d4f17180004d15061e507ca025abffc827f63dbb72f0967da54e37 body_fp=34e7132fdb02d85f5cfc8d481dae8e281e8398e2469c5592827c99a2ddbe1991 source_ref=f33ef49ae65ead2b16b114b5450c290ad20aff99 -->
+<!-- trie:section symbol=trie/docs_install:_multi_target_footer fingerprint=35857e704e1551a50edb5324952d860180d3f5b39d86dc9a6acd3648cacc5298 body_fp=34e7132fdb02d85f5cfc8d481dae8e281e8398e2469c5592827c99a2ddbe1991 source_ref=522f68595f35cca243978bf30a6c7a09230cfac5 -->
 ## `_multi_target_footer(primary: str | None, additional: list[str]) -> str`
 
 Build a Markdown footer section listing harness-specific tool name aliases for every entry in `additional`.
@@ -199,12 +216,15 @@ Write (or preview) `TRIE.md` at `project_root`, skipping when content is already
 - `print_only`: returns a `preview` result without touching disk, bypassing the dry-run check.
 - Returns `skipped` when the existing file matches byte-for-byte; `created` or `updated` otherwise.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/docs_install:_pointer_block_for fingerprint=d83b756430737cd0b23f0c7aa21d73968e703a3e17668c68942ebdef6e13b323 body_fp=26379a25c9a802efb658f9bef1294f514ea06e3af3b2519705675c0cb515f699 source_ref=f33ef49ae65ead2b16b114b5450c290ad20aff99 -->
+<!-- trie:section symbol=trie/docs_install:_pointer_block_for fingerprint=cbd860bde347ee152ae7440d1a192b98cec61357cb8c7cd5e501ebfbed0ffad0 body_fp=4175493935c251f9216652f260860561ac39a33cf0850f2f82a7843e13929df1 source_ref=522f68595f35cca243978bf30a6c7a09230cfac5 -->
+The change from `_render_tool_names(target_name)` to `_render_tool_names(target_name, tool_names=CORE_TOOL_NAMES)` is behavioural: it restricts the rendered names to only the three core tools (`grep`, `read`, `trace`) instead of all tools. The pointer block now always uses core-only names.
+
 ## `_pointer_block_for(target_name: str | None) -> str`
 
-Build the complete marker-fenced pointer block using harness-specific tool names for `target_name`.
+Build the complete marker-fenced pointer block using harness-specific names for the three core tools.
 
 - `target_name`: MCP harness slug; `None` falls back to bare unprefixed names.
+- Renders only `grep`, `read`, `trace` — not the full tool set.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/docs_install:_apply_pointer fingerprint=a763b7d91c68bd1347193a7e2a594af0ab84d377e2ea5b6532b1cd9f1b6646f1 body_fp=7bac5438cdb05042d5e8643adc2ccb9b7c6816f563594fcf2bfe0989c42f503a source_ref=f33ef49ae65ead2b16b114b5450c290ad20aff99 -->
 ## `_apply_pointer(project_root, filename, *, print_only, dry_run, target_name) -> DocsApplyResult | None`

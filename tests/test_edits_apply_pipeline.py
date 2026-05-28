@@ -278,7 +278,8 @@ class TestApplyPatchesSuccess:
         with Store(project / ".trie" / "graph.db") as store:
             assert store.get_patches_for_qname("src/gamma:gamma_fn") == []
 
-    def test_commit_created(self, project: Path):
+    def test_no_git_commit_created(self, project: Path):
+        """apply_patches no longer creates git commits."""
         config, _ = Config.find_and_load(project)
         with Store(project / ".trie" / "graph.db") as store:
             store.add_patch("src/gamma:gamma_fn", "change return", "test", "s1")
@@ -291,7 +292,7 @@ class TestApplyPatchesSuccess:
             text=True,
             check=True,
         )
-        assert "feat(edits): batch apply" in log.stdout
+        assert "apply" not in log.stdout
 
     def test_applies_in_topo_order(self, project: Path):
         """Patch deepest callee (gamma); verify alpha/beta chain works."""

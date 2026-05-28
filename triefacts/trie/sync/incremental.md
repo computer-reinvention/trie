@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/sync/incremental.py
 file_fingerprint: 18680eeb2367dfd90b76da693ed45e23a5f2458fb15fa47a2da4cca100b9af06
-last_synced_at: '2026-05-24T00:25:26Z'
+last_synced_at: '2026-05-28T01:39:21Z'
 defines:
 - kind: module
   qualified_name: trie/sync/incremental:__module__
@@ -65,7 +65,7 @@ Run scan + check + cascade and return the read-only worklist of files and symbol
 - Files missing from disk are excluded from stale lists and appear only in `orphan_triefacts`.
 - `MISSING_TRIEFACT` items are omitted from `regen_qnames_by_file`, signalling full-file regen to the runner.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/incremental:run_incremental fingerprint=4f4334832b6715ee217168385cf25f369872022f8b2bc4bc7fcde9c19db2c193 body_fp=600b094eaa3ff5d58551f548484c8e99b644819267b52fe60d24c506bbbffb28 source_ref=75fad555723fb0d9fdc38c5f729779434c0a4951 -->
+<!-- trie:section symbol=trie/sync/incremental:run_incremental fingerprint=3421866a34523c470eae61043bd2cb317f9aec553a4c2e5c7b2d5db263d82e30 body_fp=639dfef32ef6f8daee8468d095c22db7c1c506281052a58e6123b60206ad52ec source_ref=14a19fe2a26fd88601a93755f0b2e907e34879a2 -->
 ## `run_incremental(*, project_root: Path, config: Config, store: Store, client: ModelClient, pricing: ModelPricing | None = None, budget_usd: float | None = None, limit: int | None = None, progress: ProgressCallback | None = None) -> IncrementalResult`
 
 Scan, check, cascade, and regenerate all stale triefacts plus their referencing files, deleting orphans.
@@ -76,4 +76,5 @@ Scan, check, cascade, and regenerate all stale triefacts plus their referencing 
 - `progress`: receives `on_start` / `on_done` / `on_skip` callbacks; defaults to a no-op.
 - Directly-stale files are processed first; cascade-pulled files follow ordered by hop distance.
 - Orphan triefact files are unlinked before syncing begins.
+- Calls `backfill_section_records` after syncing (and also on the no-op early-return path) if section records are fewer than symbols.
 <!-- trie:end -->

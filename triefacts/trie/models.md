@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/models.py
 file_fingerprint: eed971b1aee49803434c0744c5585a07ecf33c7018ba891ece9c67ea15a7f614
-last_synced_at: '2026-05-23T23:51:06Z'
+last_synced_at: '2026-05-28T01:40:30Z'
 defines:
 - kind: module
   qualified_name: trie/models:__module__
@@ -55,7 +55,7 @@ defines:
 - kind: function
   qualified_name: trie/models:make_client
   lines: 253-271
-incoming_refs: 71
+incoming_refs: 88
 outgoing_refs: 6
 ---
 <!-- trie:section symbol=trie/models:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=4308b81c01985cb94226de5b112b67fe8612ef329c9dea1313ec5761336f6a07 source_ref=474d1856e9eae610812aee137ef64ddc15dadb3f -->

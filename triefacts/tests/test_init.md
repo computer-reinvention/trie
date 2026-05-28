@@ -1,12 +1,12 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_init.py
-file_fingerprint: e2a72c51fe1f6c7144b6c823ed90adfd1fec4a364d2a34324f3f9196a5a28861
-last_synced_at: '2026-05-23T23:25:04Z'
+file_fingerprint: 4f7cf1e91a3a43649f2db6b12773746816c15047ce7c0b98276a4bee1ff8996c
+last_synced_at: '2026-05-28T01:37:30Z'
 defines:
 - kind: module
   qualified_name: tests/test_init:__module__
-  lines: 1-382
+  lines: 1-388
 - kind: function
   qualified_name: tests/test_init:python_project
   lines: 21-23
@@ -114,10 +114,10 @@ defines:
   lines: 317-332
 - kind: function
   qualified_name: tests/test_init:test_cli_init_runs_setup_when_user_accepts_prompt
-  lines: 335-359
+  lines: 335-365
 - kind: function
   qualified_name: tests/test_init:test_cli_init_does_not_run_setup_when_user_declines_prompt
-  lines: 362-381
+  lines: 368-387
 incoming_refs: 0
 outgoing_refs: 46
 ---
@@ -303,12 +303,13 @@ Assert that `trie init` always prints `trie setup` in the "Next steps:" output b
 
 Assert that `trie init` in a non-TTY environment never invokes `trie setup` or writes MCP config files.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_init:test_cli_init_runs_setup_when_user_accepts_prompt fingerprint=4fc6f3632b51dadbf4b6aa8d4dc094ff81e0779ee67530c414bb6f9da2d60e01 body_fp=4399ac2bb7dd5bde9bc6daa47505052a21cd88d3921434e05f44e391693366a2 source_ref=63ee7ba4f36a8d241236d5cae670d2020ba31a9b -->
+<!-- trie:section symbol=tests/test_init:test_cli_init_runs_setup_when_user_accepts_prompt fingerprint=75aaed2bda52d5c9835ea382d06aa18b2ede4765c03f92f8a0b6e27efa30d696 body_fp=e7db6ad0d07e90f477916ed1dff547540b53398e1d46f494e11c7ea71aae7e8e source_ref=0f97acda485ff7a046c788feb9cbfd63ccd9448a -->
 ## `test_cli_init_runs_setup_when_user_accepts_prompt(python_project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that accepting the interactive setup prompt triggers `trie setup` by verifying the "Running `trie setup`" banner appears in output.
 
 - `_is_interactive` is patched to `True` to simulate a TTY environment.
+- `monkeypatch.chdir(python_project)` ensures `trie setup` resolves the project root to `tmp_path`, not the trie repo itself.
 - Uses `--no-install-hooks` so the single `"y\n"` input targets only the setup prompt.
 - Asserts on banner text only; exit code is not checked due to host-dependent tool availability.
 <!-- trie:end -->

@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_symbol_level_sync.py
 file_fingerprint: 133aa06a0a1bad83a79c2c29c35c83c395c034f96cd89569410ac98f2b657e57
-last_synced_at: '2026-05-23T23:49:07Z'
+last_synced_at: '2026-05-28T01:40:21Z'
 description: 'Symbol-level sync: regenerate only the symbols actually asked for.'
 defines:
 - kind: module

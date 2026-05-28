@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_models_retry.py
 file_fingerprint: d8d4752517d6e5bf1496ef2c5d557771d28562d3a747f82dda60e3d14e5b946e
-last_synced_at: '2026-05-23T23:48:41Z'
+last_synced_at: '2026-05-28T01:40:07Z'
 description: Retry-on-rate-limit behaviour of `AnthropicClient`.
 defines:
 - kind: module

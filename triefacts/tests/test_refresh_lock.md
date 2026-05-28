@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_refresh_lock.py
 file_fingerprint: f37035603e7cde190a1a87d214327d25c837bec535ba99a295b010093dd1e3f0
-last_synced_at: '2026-05-23T23:46:49Z'
+last_synced_at: '2026-05-28T01:40:15Z'
 description: Tests for the refresh lock + queue.
 defines:
 - kind: module

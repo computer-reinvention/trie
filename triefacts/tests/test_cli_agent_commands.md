@@ -1,94 +1,121 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_cli_agent_commands.py
-file_fingerprint: c8b0fe3d831eba8a48b9e521c6ccf3fcadf924d81628bd3b9d09aff196a67fd9
-last_synced_at: '2026-05-23T23:45:19Z'
+file_fingerprint: 6782184ec67e10c4450d891ca682f9b79a551b339abeae8506b52add37ad3bfe
+last_synced_at: '2026-05-28T01:36:12Z'
 description: 'Tests for the agent-facing CLI subcommands: `trie grep`, `trie read`,
   `trie trace`.'
 defines:
 - kind: module
   qualified_name: tests/test_cli_agent_commands:__module__
-  lines: 1-488
+  lines: 1-591
 - kind: constant
   qualified_name: tests/test_cli_agent_commands:PROJECT_TOML
-  lines: 32-39
+  lines: 32-40
 - kind: class
   qualified_name: tests/test_cli_agent_commands:FakeClient
-  lines: 43-57
+  lines: 44-58
 - kind: method
   qualified_name: tests/test_cli_agent_commands:FakeClient.generate
-  lines: 47-54
+  lines: 48-55
 - kind: method
   qualified_name: tests/test_cli_agent_commands:FakeClient.count_tokens
-  lines: 56-57
+  lines: 57-58
 - kind: function
   qualified_name: tests/test_cli_agent_commands:populated_project
-  lines: 61-93
+  lines: 62-94
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_with_name_returns_human_readable_table
-  lines: 101-113
+  lines: 102-114
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_with_json_is_byte_equivalent_to_mcp_envelope
-  lines: 116-145
+  lines: 117-146
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_predicate_json_overrides_via_flags
-  lines: 148-171
+  lines: 149-172
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_invalid_predicate_json_exits_2
-  lines: 174-184
+  lines: 175-185
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_no_matches_shows_fallback_envelope
-  lines: 187-199
+  lines: 188-200
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_with_no_flags_exits_with_invalid_argument
-  lines: 202-223
+  lines: 203-224
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_text_match_fallback_renders_candidates
-  lines: 226-238
+  lines: 227-239
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_read_known_qname_prints_prose_and_neighbours
-  lines: 246-258
+  lines: 247-259
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_read_unknown_qname_exits_1_with_suggestion
-  lines: 261-273
+  lines: 262-274
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_read_json_emits_envelope
-  lines: 276-288
+  lines: 277-289
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_trace_callers_renders_topology
-  lines: 296-308
+  lines: 297-309
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_trace_json_shape_matches_mcp
-  lines: 311-333
+  lines: 312-334
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_trace_unknown_qname_exits_1
-  lines: 336-343
+  lines: 337-344
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_trace_invalid_direction_exits_1
-  lines: 346-355
+  lines: 347-356
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_without_trie_toml_exits_1_with_clean_error
-  lines: 363-373
+  lines: 364-374
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_read_without_trie_toml_exits_1
-  lines: 376-382
+  lines: 377-383
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_trace_without_trie_toml_exits_1
-  lines: 385-391
+  lines: 386-392
 - kind: function
   qualified_name: tests/test_cli_agent_commands:_read_jsonl_events
-  lines: 399-405
+  lines: 400-406
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_emits_cli_call_event_not_mcp_call
-  lines: 408-434
+  lines: 409-435
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_read_and_trace_also_emit_cli_call_events
-  lines: 437-461
+  lines: 438-462
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_cli_call_event_carries_duration_and_result_fields
-  lines: 464-487
+  lines: 465-488
+- kind: function
+  qualified_name: tests/test_cli_agent_commands:test_patch_list_empty
+  lines: 494-499
+- kind: function
+  qualified_name: tests/test_cli_agent_commands:test_patch_create_and_list
+  lines: 502-515
+- kind: function
+  qualified_name: tests/test_cli_agent_commands:test_patch_create_unknown_symbol
+  lines: 518-523
+- kind: function
+  qualified_name: tests/test_cli_agent_commands:test_patch_preview
+  lines: 526-535
+- kind: function
+  qualified_name: tests/test_cli_agent_commands:test_patch_preview_empty
+  lines: 538-543
+- kind: function
+  qualified_name: tests/test_cli_agent_commands:test_patch_drop_by_qname
+  lines: 546-558
+- kind: function
+  qualified_name: tests/test_cli_agent_commands:test_patch_drop_all
+  lines: 561-570
+- kind: function
+  qualified_name: tests/test_cli_agent_commands:test_patch_drop_no_args
+  lines: 573-578
+- kind: function
+  qualified_name: tests/test_cli_agent_commands:test_patch_help
+  lines: 581-590
 incoming_refs: 0
-outgoing_refs: 26
+outgoing_refs: 35
 ---
 <!-- trie:section symbol=tests/test_cli_agent_commands:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=66f04576c3a67474b50e6d0f5c37020c298d61571c056d3aa695f1c00042b341 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
 ## `tests/test_cli_agent_commands`
@@ -99,7 +126,7 @@ Integration tests for the agent-facing CLI subcommands `trie grep`, `trie read`,
 - Covers exit codes: 0 (success), 1 (tool error / missing config), 2 (bad CLI input).
 - Asserts CLI invocations emit `cli_call` telemetry events, never `mcp_call`.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_cli_agent_commands:PROJECT_TOML fingerprint=e9c7735b60c9b4e2a539d27c21376b8f0df51a16c1349855a9eec287b1183875 body_fp=d1d45a91d6cf78fc5da0e1233fcc418ecf7bc97b8b3859a16e0fdc22b2009241 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:PROJECT_TOML fingerprint=ea44d5615a2611cc14e40b5b84f8141a4679269bc80e3914e4fef0417f24d38b body_fp=d1d45a91d6cf78fc5da0e1233fcc418ecf7bc97b8b3859a16e0fdc22b2009241 source_ref=43ba62379b6654651ccb7051a24ea3eccb1b278d -->
 ## `PROJECT_TOML: str`
 
 TOML string used to create `trie.toml` in test fixtures.
@@ -245,4 +272,49 @@ Assert that `trie read` and `trie trace` each emit a `cli_call` event and zero `
 ## `test_cli_call_event_carries_duration_and_result_fields(populated_project: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path)`
 
 Assert that a `cli_call` telemetry event from `trie grep` includes `duration_ms`, `result_kind`, `result_count`, and `response_bytes`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_patch_list_empty fingerprint=bbcc0fb6395c895b950ebb9b9a1a4f0a52a9df3617cb617589512b803738ce23 body_fp=428a642f30c46ab9f8af35445700b90d4284f9c61d160b9293f669bcb706ec57 source_ref=43ba62379b6654651ccb7051a24ea3eccb1b278d -->
+## `test_patch_list_empty(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert `trie patch list` exits 0 and reports "no pending patches" when the queue is empty.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_patch_create_and_list fingerprint=b669d758dc85686efcf4b77523d214120ab2387a7cc08f4c603559339679bb0d body_fp=10c5459ab7e586920cbf19519bf1fff62099b23fa8b9a1537294456ffaf0dbf7 source_ref=43ba62379b6654651ccb7051a24ea3eccb1b278d -->
+## `test_patch_create_and_list(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Verify that `patch create` posts a patch and `patch list` subsequently shows it.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_patch_create_unknown_symbol fingerprint=1d749f1e6d207fe88059f0df21a061551acc207809069338c86b7061a439122c body_fp=74047e93d555ae77d4c1077293ecbf07db5a445367eac2ab4604a5f6095cb890 source_ref=43ba62379b6654651ccb7051a24ea3eccb1b278d -->
+## `test_patch_create_unknown_symbol(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie patch create` exits 1 with a "not found" message when the target qname doesn't exist.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_patch_preview fingerprint=387cf8a08c89463e48c5ef0292e5f65cf4bb47b2e852f6666645a4b4b54ec248 body_fp=bd0f0873384227e565ec7cd4bc52d1ba25951056bd4e41d5df089f0dfa1c426e source_ref=43ba62379b6654651ccb7051a24ea3eccb1b278d -->
+## `test_patch_preview(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Verify that `trie patch preview` displays the pending patch after `patch create` populates the queue.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_patch_preview_empty fingerprint=4a4adb1e2c4354c41f42fbd9263899a957590931d66f3b4f06ec8df4c7d99848 body_fp=6ef81878fae2f8caa1dbf1f299667191e23723e7f8fb31cfe77a430c06fa314d source_ref=43ba62379b6654651ccb7051a24ea3eccb1b278d -->
+## `test_patch_preview_empty(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert `trie patch preview` with no pending patches exits 0 and prints "no pending patches".
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_patch_drop_by_qname fingerprint=7a7cefdc90bc2b5d31b2a1db268922b8e11d144284005c654e255a7defae877e body_fp=a245af2e835d2faac660af811f9a4ce102e7ec9806b4efe420a02862228e963a source_ref=43ba62379b6654651ccb7051a24ea3eccb1b278d -->
+## `test_patch_drop_by_qname(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Verify that `trie patch drop --qname <qname>` removes the matching patch and leaves the queue empty.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_patch_drop_all fingerprint=aecc0899edea290cf374f5a791edc2e7e3486b8c17322890ddc6fd6aaa15516d body_fp=df7ba85b24a566deb7b0062924a6d967b03584f57b790c73bd90e8c7647a8c3e source_ref=43ba62379b6654651ccb7051a24ea3eccb1b278d -->
+## `test_patch_drop_all(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Verify that `patch drop --all` clears every pending patch, leaving the list empty.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_patch_drop_no_args fingerprint=57a9a7dec5dd7b64521914f3b2db1dd3634960a1120e8302acf91af939c95bee body_fp=c5ba72f83cb29ee2cf44ee21e0b71f9c6f08f642949ef1b152ebc33fc3f99947 source_ref=43ba62379b6654651ccb7051a24ea3eccb1b278d -->
+## `test_patch_drop_no_args(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie patch drop` with no `--qname` or `--all` flag exits 1 with a "specify" message.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:test_patch_help fingerprint=5ab2f593844c63dd8a2e16cee02cb45fb8496135884638863ecba10eb16eb068 body_fp=d23e67a7832afcfe784d6479da54e37693c6ac1805ff76a37bae3242632350f6 source_ref=43ba62379b6654651ccb7051a24ea3eccb1b278d -->
+## `test_patch_help(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
+
+Assert that `trie patch --help` exits 0 and lists all five subcommands: `create`, `apply`, `preview`, `list`, `drop`.
 <!-- trie:end -->

@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/sync/progress.py
 file_fingerprint: 9d32e2b8cd47ef1fc2895a61b413751e82e465eef96ca2f9b143ec43ebc0075e
-last_synced_at: '2026-05-24T00:25:28Z'
+last_synced_at: '2026-05-28T01:40:35Z'
 defines:
 - kind: module
   qualified_name: trie/sync/progress:__module__
