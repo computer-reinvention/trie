@@ -58,15 +58,42 @@ export function useGraphPopulation(opencodePort: number | null): void {
     let cancelled = false
 
     async function populate(): Promise<void> {
-      appStore.setGraphLoading(true, "Fetching symbols…")
+      appStore.setGraphLoading(true, "Connecting to trie graph…")
 
       try {
-        // 1. Fetch all symbols
-        const { hits } = await graphClient.grep({
-          predicate: {},
-          rank_by: "inbound_count",
-          limit: 5000,
-        })
+        // 1. Fetch all symbols — retry with backoff to allow the trie MCP
+        //    server time to connect after opencode starts.
+        let hits: SymbolHit[] = []
+        const MAX_RETRIES = 8
+        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+          if (cancelled) return
+          try {
+            const res = await graphClient.grep({
+              predicate: {},
+              rank_by: "inbound_count",
+              limit: 5000,
+            })
+            // Guard against error envelopes or missing hits field
+            if (res && Array.isArray(res.hits)) {
+              hits = res.hits
+              break
+            }
+            // Response was an error or unexpected shape — log and retry
+            console.warn("[graph] grep returned unexpected response, retrying…", res)
+          } catch (err) {
+            console.warn(`[graph] grep attempt ${attempt + 1} failed:`, err)
+          }
+          if (attempt < MAX_RETRIES - 1) {
+            appStore.setGraphLoading(true, `Waiting for trie MCP… (${attempt + 1}/${MAX_RETRIES})`)
+            await new Promise((r) => setTimeout(r, 1500 + attempt * 500))
+          }
+        }
+
+        if (hits.length === 0) {
+          appStore.setGraphLoading(false)
+          console.warn("[graph] No symbols returned after retries — trie MCP may not be connected.")
+          return
+        }
         if (cancelled) return
 
         appStore.setGraphLoading(
@@ -121,6 +148,7 @@ export function useGraphPopulation(opencodePort: number | null): void {
         const edgeSet = new Map<string, Edge<EdgeData>>()
         for (const result of traceResults) {
           if (result.status !== "fulfilled") continue
+          if (!Array.isArray(result.value?.edges)) continue
           for (const e of result.value.edges) {
             const id = `${e.from}->${e.to}`
             if (!edgeSet.has(id)) {
