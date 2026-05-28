@@ -1800,9 +1800,7 @@ def _render_read(envelope: dict[str, object], reporter: Reporter) -> None:
     pending = envelope.get("pending_patches") or []
     if isinstance(pending, list) and pending:
         reporter.console.print()
-        reporter.console.print(
-            f"[yellow]pending patches[/yellow] ({len(pending)})"
-        )
+        reporter.console.print(f"[yellow]pending patches[/yellow] ({len(pending)})")
         for p in pending:
             if not isinstance(p, dict):
                 continue

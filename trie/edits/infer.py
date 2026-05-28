@@ -21,6 +21,26 @@ what changed. Replace CALTAG with the callee's bracket tag and CALLERNUM
 with the caller number (1-indexed).
 """
 
+FIXUP_PROMPT = """\
+The following source code was generated for symbol {qname} but has
+diagnostics errors. Fix the errors and return corrected source + prose.
+
+```python
+{source}
+```
+
+Diagnostics:
+{diagnostics}
+
+Fix each issue. Preserve the existing structure. Output:
+
+```python
+<fixed source>
+```
+
+---PROSE---
+<updated prose>"""
+
 CALLEE_SECTION = """\
 [{tag}] {qname}
   Old prose: {old_prose}
@@ -187,12 +207,14 @@ def _build_caller_summaries(
         if detail is None:
             continue
         prose = _read_prose(qn, detail.file_path, triefacts_root)[:200]
-        results.append({
-            "qname": qn,
-            "signature": detail.signature or "",
-            "one_liner": detail.one_liner,
-            "prose": prose,
-        })
+        results.append(
+            {
+                "qname": qn,
+                "signature": detail.signature or "",
+                "one_liner": detail.one_liner,
+                "prose": prose,
+            }
+        )
     return results
 
 
@@ -215,7 +237,7 @@ def _read_prose(
         close_idx = text.find(SECTION_CLOSE, match.end())
         if close_idx == -1:
             return ""
-        body = text[match.end():close_idx]
+        body = text[match.end() : close_idx]
         if body.startswith("\n"):
             body = body[1:]
         if body.endswith("\n"):
@@ -245,27 +267,32 @@ def pre_filter_batch(
     results: list[tuple[str, str | None, str | None]] = []
 
     for start in range(0, len(callee_pairs), batch_size):
-        batch = callee_pairs[start:start + batch_size]
+        batch = callee_pairs[start : start + batch_size]
         sections: list[str] = []
         total_callers: int = 0
 
         for idx, (callee_qn, old_prose, callers, notes_reasons) in enumerate(batch):
             tag = f"C{start + idx}"
-            bullet_notes = "\n".join(
-                f"      - {n}  —  {r}" for n, r in notes_reasons
-            ) if notes_reasons else "      (no implementation notes)"
+            bullet_notes = (
+                "\n".join(f"      - {n}  —  {r}" for n, r in notes_reasons)
+                if notes_reasons
+                else "      (no implementation notes)"
+            )
             caller_lines = []
             for ci, c in enumerate(callers, 1):
                 sig = c["signature"]
                 role = (c["prose"] or c["one_liner"])[:200]
                 caller_lines.append(f"      #{ci}. {sig}  —  {role}")
             caller_table = "\n".join(caller_lines) if caller_lines else "      (none)"
-            sections.append(CALLEE_SECTION.format(
-                tag=tag, qname=callee_qn,
-                old_prose=old_prose[:300] if old_prose else "(empty)",
-                notes=bullet_notes,
-                caller_table=caller_table,
-            ))
+            sections.append(
+                CALLEE_SECTION.format(
+                    tag=tag,
+                    qname=callee_qn,
+                    old_prose=old_prose[:300] if old_prose else "(empty)",
+                    notes=bullet_notes,
+                    caller_table=caller_table,
+                )
+            )
             total_callers += len(callers)
 
         request_body = "\n".join(sections)
@@ -301,7 +328,9 @@ def pre_filter_batch(
             # Map tag back to callee to find caller qnames
             pair_idx = None
             for bi, (_cq, *_rest) in enumerate(batch):
-                if f"C{start + bi}" == callee_tag or (bi < len(batch) and callee_tag == f"C{start + bi}"):
+                if f"C{start + bi}" == callee_tag or (
+                    bi < len(batch) and callee_tag == f"C{start + bi}"
+                ):
                     pair_idx = start + bi
                     break
             if pair_idx is None:
@@ -319,7 +348,7 @@ def pre_filter_batch(
             if decision.upper().startswith("SKIP"):
                 continue
             elif decision.upper().startswith("NOTE:"):
-                note_part = decision[len("NOTE:"):].strip()
+                note_part = decision[len("NOTE:") :].strip()
                 reason = "cascade"
                 if " | REASON:" in note_part:
                     note_part, _, reason = note_part.partition(" | REASON:")
