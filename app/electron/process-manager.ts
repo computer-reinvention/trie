@@ -112,7 +112,7 @@ function writeOpencodeConfig(projectDir: string, trieMcpBin: string): void {
       ...mcp,
       trie: {
         type: "local",
-        command: [trieMcpBin],
+        command: [trieMcpBin, projectDir],
         enabled: true,
       },
     },
