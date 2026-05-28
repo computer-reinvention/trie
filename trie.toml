@@ -13,6 +13,9 @@ exclude = [
     "**/.venv/**",
     "**/build/**",
     "**/dist/**",
+		"**/opencode/**",
+		"**/app/**",
+		"app/node_modules/**",
     "tmp/**",        # session scratch (backfill scripts, notes); never trie-managed
 ]
 

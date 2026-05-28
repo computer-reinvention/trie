@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/scan.py
 file_fingerprint: 1ac64e845687c0b329b8bfd3e1c0d0cb7f588d619cc78b615953aab32750b7d7
 last_synced_at: '2026-05-23T23:54:19Z'
@@ -16,7 +16,7 @@ defines:
 - kind: function
   qualified_name: trie/scan:scan_project
   lines: 30-109
-incoming_refs: 16
+incoming_refs: 17
 outgoing_refs: 4
 ---
 <!-- trie:section symbol=trie/scan:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=4498f154b575b60f099930d983c6a221a781522140c12f15fa705902d9f4b864 source_ref=ba0d38d68c99a578b6395e4b44522d5825f9668d -->

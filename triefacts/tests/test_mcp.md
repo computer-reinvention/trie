@@ -1,174 +1,165 @@
 ---
 trie_version: 0.1.5
 source: tests/test_mcp.py
-file_fingerprint: 4457d81c89ebf7bf4d21dffb6407ca53d07d7b52dc6ed0a206cd8db2258c29da
-last_synced_at: '2026-05-28T01:39:47Z'
+file_fingerprint: 84281240afaf8272fbc86b16d6ea3dc4701d63021e4ec1aad04b74713fc3a453
+last_synced_at: '2026-05-28T21:10:15Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: module
   qualified_name: tests/test_mcp:__module__
-  lines: 1-704
+  lines: 1-691
 - kind: constant
   qualified_name: tests/test_mcp:PROJECT_TOML
-  lines: 22-31
-- kind: class
-  qualified_name: tests/test_mcp:FakeClient
-  lines: 35-51
-- kind: method
-  qualified_name: tests/test_mcp:FakeClient.generate
-  lines: 41-48
-- kind: method
-  qualified_name: tests/test_mcp:FakeClient.count_tokens
-  lines: 50-51
+  lines: 21-30
 - kind: function
   qualified_name: tests/test_mcp:project
-  lines: 55-67
+  lines: 34-50
 - kind: function
   qualified_name: tests/test_mcp:populated_project
-  lines: 71-92
+  lines: 54-79
 - kind: function
   qualified_name: tests/test_mcp:tools
-  lines: 96-99
+  lines: 83-86
 - kind: function
   qualified_name: tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing
-  lines: 105-126
+  lines: 92-113
 - kind: function
   qualified_name: tests/test_mcp:test_grep_name_contains_returns_matches
-  lines: 132-137
+  lines: 119-124
 - kind: function
   qualified_name: tests/test_mcp:test_grep_returns_one_liner_from_section_body
-  lines: 140-146
+  lines: 127-133
 - kind: function
   qualified_name: tests/test_mcp:test_grep_returns_file_pointer
-  lines: 149-151
+  lines: 136-138
 - kind: function
   qualified_name: tests/test_mcp:test_grep_kind_filter
-  lines: 154-160
+  lines: 141-147
 - kind: function
   qualified_name: tests/test_mcp:test_grep_invalid_kind_returns_error
-  lines: 163-166
+  lines: 150-153
 - kind: function
   qualified_name: tests/test_mcp:test_grep_accepts_constant_and_module_kinds
-  lines: 169-181
+  lines: 156-168
 - kind: function
   qualified_name: tests/test_mcp:test_grep_scope_prefix_filter
-  lines: 184-187
+  lines: 171-174
 - kind: function
   qualified_name: tests/test_mcp:test_grep_scope_exclude_filter
-  lines: 190-193
+  lines: 177-180
 - kind: function
   qualified_name: tests/test_mcp:test_grep_inbound_count_predicate
-  lines: 196-201
+  lines: 183-188
 - kind: function
   qualified_name: tests/test_mcp:test_grep_rank_by_inbound_count
-  lines: 204-211
+  lines: 191-198
 - kind: function
   qualified_name: tests/test_mcp:test_grep_limit_respected
-  lines: 214-218
+  lines: 201-205
 - kind: function
   qualified_name: tests/test_mcp:test_grep_empty_predicate_returns_invalid_argument
-  lines: 221-235
+  lines: 208-222
 - kind: function
   qualified_name: tests/test_mcp:test_grep_empty_predicate_rejected_regardless_of_rank_by
-  lines: 238-244
+  lines: 225-231
 - kind: function
   qualified_name: tests/test_mcp:test_grep_unknown_predicate_field_silently_ignored
-  lines: 247-250
+  lines: 234-237
 - kind: function
   qualified_name: tests/test_mcp:test_grep_invalid_predicate_returns_error
-  lines: 253-256
+  lines: 240-243
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_kind_none_when_no_name_contains
-  lines: 262-271
+  lines: 249-258
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_kind_text_match_empty_for_unseen_string
-  lines: 274-281
+  lines: 261-268
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_kind_text_match_redirects_via_body_match
-  lines: 284-302
+  lines: 271-289
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_ranks_by_inbound_count_desc
-  lines: 305-319
+  lines: 292-306
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_caps_matches_and_notes_truncation
-  lines: 322-348
+  lines: 309-335
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_omits_truncation_note_when_under_cap
-  lines: 351-359
+  lines: 338-346
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_honours_scope_prefix
-  lines: 362-377
+  lines: 349-364
 - kind: function
   qualified_name: tests/test_mcp:test_grep_normal_hits_path_omits_fallback_key
-  lines: 380-386
+  lines: 367-373
 - kind: function
   qualified_name: tests/test_mcp:test_read_returns_prose_and_neighbours
-  lines: 392-399
+  lines: 379-386
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_pointer_shape
-  lines: 402-405
+  lines: 389-392
 - kind: function
   qualified_name: tests/test_mcp:test_read_neighbour_carries_one_liner
-  lines: 408-411
+  lines: 395-398
 - kind: function
   qualified_name: tests/test_mcp:test_read_unknown_qname_returns_not_found
-  lines: 414-417
+  lines: 401-404
 - kind: function
   qualified_name: tests/test_mcp:test_read_fuzzy_suggestion_for_typo
-  lines: 420-426
+  lines: 407-413
 - kind: function
   qualified_name: tests/test_mcp:test_trace_callers_returns_topology
-  lines: 432-438
+  lines: 419-425
 - kind: function
   qualified_name: tests/test_mcp:test_trace_callees_returns_outbound
-  lines: 441-444
+  lines: 428-431
 - kind: function
   qualified_name: tests/test_mcp:test_trace_both_directions
-  lines: 447-452
+  lines: 434-439
 - kind: function
   qualified_name: tests/test_mcp:test_trace_invalid_direction_returns_error
-  lines: 455-458
+  lines: 442-445
 - kind: function
   qualified_name: tests/test_mcp:test_trace_unknown_qname_returns_not_found
-  lines: 461-464
+  lines: 448-451
 - kind: function
   qualified_name: tests/test_mcp:test_trace_depth_zero_returns_only_root
-  lines: 467-470
+  lines: 454-457
 - kind: function
   qualified_name: tests/test_mcp:test_trace_depth_clamp_adds_note
-  lines: 473-477
+  lines: 460-464
 - kind: function
   qualified_name: tests/test_mcp:test_build_server_registers_three_verbs
-  lines: 483-506
+  lines: 470-493
 - kind: function
   qualified_name: tests/test_mcp:test_build_server_wire_names_bind_to_internal_methods
-  lines: 509-526
+  lines: 496-513
 - kind: function
   qualified_name: tests/test_mcp:dual_rank_project
-  lines: 535-592
+  lines: 522-579
 - kind: function
   qualified_name: tests/test_mcp:test_grep_entry_points_niche_ranks_before_hub
-  lines: 595-618
+  lines: 582-605
 - kind: function
   qualified_name: tests/test_mcp:test_grep_entry_points_hits_carry_score
-  lines: 621-633
+  lines: 608-620
 - kind: function
   qualified_name: tests/test_mcp:test_grep_symbol_typo_tolerance
-  lines: 636-642
+  lines: 623-629
 - kind: function
   qualified_name: tests/test_mcp:test_grep_symbol_returns_score_field
-  lines: 645-653
+  lines: 632-640
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fuzzy_prose_fallback
-  lines: 656-671
+  lines: 643-658
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_fuzzy_fallback
-  lines: 674-684
+  lines: 661-671
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_fuzzy_fallback_finds_close_name
-  lines: 687-703
+  lines: 674-690
 incoming_refs: 0
-outgoing_refs: 13
+outgoing_refs: 12
 ---
 <!-- trie:section symbol=tests/test_mcp:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=6004134ec6b6ccb1c69b37a1e9c79855c4229204d59f4817486cb1b836c91c43 source_ref=8fc83b82f7020ac6511f342049e4b34682ca4f2c -->
 ## `tests/test_mcp`
@@ -186,41 +177,22 @@ Test suite for the MCP tool surface (`grep`, `read`, `trace`) via `TrieTools` di
 
 TOML string used as `trie.toml` content in test fixtures.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:FakeClient fingerprint=b75f9ea63fb9bc13ffc916b979d6caad8ac663e1050c6f0b56c79dbb9959eb47 body_fp=154898f7d53bf9ff2f0fb2707df925737eb68fa3c0a115b779588fbc93b227c2 source_ref=8fc83b82f7020ac6511f342049e4b34682ca4f2c -->
-## `FakeClient(model_id: str = "fake/test", body: str = "## generated\n\nGenerated description.\n")`
-
-Stand-in for `ModelClient` that returns fixed text and hardcoded token counts.
-
-- `body`: the text returned verbatim in every `generate` response.
-- `generate`: always reports 10 input / 20 output tokens.
-- `count_tokens`: always returns 100.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:FakeClient.generate fingerprint=a28c91031810d416f079e2d7a57f5ed7651bd8c3315cf78d1ec869c3b812915e body_fp=803357a9663d8d69ff2f7725daa3d344b44e71aaa502caa6bf85ed281e8ca3d5 source_ref=8fc83b82f7020ac6511f342049e4b34682ca4f2c -->
-## `FakeClient.generate(self, _req: GenerationRequest) -> GenerationResponse`
-
-Return a fixed `GenerationResponse` using `FakeClient.body` and hardcoded token counts.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:FakeClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=cc6c25933607afe775b24bc993befebab9ab8853947bdb7ba9e5394bb698adcf source_ref=8fc83b82f7020ac6511f342049e4b34682ca4f2c -->
-## `FakeClient.count_tokens(self, _req: GenerationRequest) -> int`
-
-Always returns 100 as a stub token count for `FakeClient`.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:project fingerprint=3077c7d6e147cf70f7507fd05cf0d2907ab77c43051babf48292425cc858b8a9 body_fp=9c05cb50cfbf686a90be43108384667588aec96ba7bddc4acb5149858ae43e49 source_ref=8fc83b82f7020ac6511f342049e4b34682ca4f2c -->
+<!-- trie:section symbol=tests/test_mcp:project fingerprint=3e4b4f7d19d96699d52f90f1396ef4a3c695e286383233613202fea1c0b09b6b body_fp=492ca676f4940bca53994413c262daa0a40150f9798dfdf9c13fbd6c83d36cbe source_ref=e958ddadae9778f3862f68e04e495c326a89e890 -->
 ## `project(tmp_path: Path) -> Path`
 
-Create a minimal two-file project fixture with `trie.toml`, `lib.py` (`slugify`), and `app.py` (`make_url`).
+Create a minimal two-file project fixture with `trie.toml`, `lib.py` (`slugify`, `capitalize`), and `app.py` (`make_url`).
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:populated_project fingerprint=779924a7456d208bcc1a0fe11b3bef22c37c98cb3bf38f148e8308cc4c0d2790 body_fp=7811e01110fa7bcd06ec11a80c34929777469746b3b4176002e2a76a6d15ff6d source_ref=8fc83b82f7020ac6511f342049e4b34682ca4f2c -->
+<!-- trie:section symbol=tests/test_mcp:populated_project fingerprint=a54e186816ee0ef181cf7cc6e7058686a0354458a8b46b1d8f711321355a76b5 body_fp=7811e01110fa7bcd06ec11a80c34929777469746b3b4176002e2a76a6d15ff6d source_ref=7e0a0c4d335fa4f842ab496af136db955df7e519 -->
 ## `populated_project(project: Path) -> Path`
 
 Extend the `project` fixture by running `scan_project` and `sync_single_file` for both source files, so MCP tools have graph data to query.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:tools fingerprint=b89f3ca1611ed5226f820d82ffc6f4d3db27942f64390976744c1fbf0d5e67de body_fp=026e308d5e75d885bcc8f2bc5a93cfcba07a5f01aa163867081122e30e977b8b source_ref=8fc83b82f7020ac6511f342049e4b34682ca4f2c -->
+<!-- trie:section symbol=tests/test_mcp:tools fingerprint=b89f3ca1611ed5226f820d82ffc6f4d3db27942f64390976744c1fbf0d5e67de body_fp=026e308d5e75d885bcc8f2bc5a93cfcba07a5f01aa163867081122e30e977b8b source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
 ## `tools(populated_project: Path)`
 
 Yield a `TrieTools` instance backed by `populated_project`, closing it after the test.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing fingerprint=2ea97d1b02ea695fbca32b81cfd8377a7e1da3159c9b30a1815fe2099d25638b body_fp=8de58518f72002837039f259c428b4f02ef37d9247d1f8f0b809f229d94582b8 source_ref=8fc83b82f7020ac6511f342049e4b34682ca4f2c -->
+<!-- trie:section symbol=tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing fingerprint=2ea97d1b02ea695fbca32b81cfd8377a7e1da3159c9b30a1815fe2099d25638b body_fp=8de58518f72002837039f259c428b4f02ef37d9247d1f8f0b809f229d94582b8 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
 ## `test_trie_tools_init_fails_clearly_when_rg_missing(populated_project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert `TrieTools` raises `RipgrepNotFoundError` with an actionable message when `rg` is absent.
@@ -431,7 +403,7 @@ Assert that `build_server` returns a FastMCP instance with all 11 expected tool 
 
 Assert that each FastMCP wire tool's `fn` attribute is the matching `TrieTools` instance method.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:dual_rank_project fingerprint=af9da9099ff42de6faafedd130917c97fed67bb2a29f4c57a47dd28b104a936c body_fp=1a8271da2be5a1995d2376c2cc872938008ac0dbee25464cc3f5cc75d7f21401 source_ref=8fc83b82f7020ac6511f342049e4b34682ca4f2c -->
+<!-- trie:section symbol=tests/test_mcp:dual_rank_project fingerprint=ddb09bc1e817a930bec9a532e1c272d2dfef3a3e605bc48f4679ba42ed216ee6 body_fp=1a8271da2be5a1995d2376c2cc872938008ac0dbee25464cc3f5cc75d7f21401 source_ref=7e0a0c4d335fa4f842ab496af136db955df7e519 -->
 ## `dual_rank_project(tmp_path: Path) -> Path`
 
 Pytest fixture that builds a scanned, synced project with two equal-text-score symbols differing only in inbound-edge count.
@@ -439,14 +411,14 @@ Pytest fixture that builds a scanned, synced project with two equal-text-score s
 - `hub_authenticate`: 3 inbound refs across `svc_a/b/c.py`
 - `auth_check`: 2 inbound refs across `check_a/b.py`; expected to rank first under `(score DESC, inbound_count ASC)`
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_niche_ranks_before_hub fingerprint=a5bf02d8993e8282336d29b02cec7ebb34624737bcbad9c62cbda7acad54290e body_fp=f50e4f2b4692eebeb34b0335344f3ac41679b136d9234b5cca6c5d6b5cac6d8d source_ref=8fc83b82f7020ac6511f342049e4b34682ca4f2c -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_niche_ranks_before_hub fingerprint=a5bf02d8993e8282336d29b02cec7ebb34624737bcbad9c62cbda7acad54290e body_fp=f50e4f2b4692eebeb34b0335344f3ac41679b136d9234b5cca6c5d6b5cac6d8d source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
 ## `test_grep_entry_points_niche_ranks_before_hub(dual_rank_project: Path)`
 
 Assert that `grep_entry_points` ranks the lower-inbound symbol before the higher-inbound hub when relevance scores are equal.
 
 - `dual_rank_project`: fixture with `auth_check` (2 inbound) and `hub_authenticate` (3 inbound), both matching "auth".
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_hits_carry_score fingerprint=bf76df08b996d67ba20379770a38f838d8fe1c762948d49445555df41368cc37 body_fp=59f5f8b276121a757974955f936f0375d5248ab5aa20a711abb36f488bbe71cb source_ref=8fc83b82f7020ac6511f342049e4b34682ca4f2c -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_hits_carry_score fingerprint=bf76df08b996d67ba20379770a38f838d8fe1c762948d49445555df41368cc37 body_fp=59f5f8b276121a757974955f936f0375d5248ab5aa20a711abb36f488bbe71cb source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
 ## `test_grep_entry_points_hits_carry_score(dual_rank_project: Path)`
 
 Assert every hit from `TrieTools.grep_entry_points` contains a positive numeric `score` field.

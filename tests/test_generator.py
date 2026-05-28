@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 
-from trie.models import GenerationRequest, GenerationResponse, make_client
+from tests.fake_client import FakeTrieClient
+from trie.models import make_client
 from trie.parse.python import extract_symbols
 from trie.sync.generator import (
     DIFF_AWARE_RUBRIC,
@@ -18,25 +18,6 @@ from trie.sync.generator import (
     build_cached_context,
     generate_section,
 )
-
-
-@dataclass
-class FakeClient:
-    """Records the request, returns a canned response. Replaces a real model client."""
-
-    response_text: str = "## `foo()`\n\nA function."
-    model_id: str = "fake/test"
-    last_request: GenerationRequest | None = None
-
-    def generate(self, req: GenerationRequest) -> GenerationResponse:
-        self.last_request = req
-        return GenerationResponse(
-            text=self.response_text,
-            input_tokens=100,
-            output_tokens=20,
-            cache_creation_input_tokens=80,
-            cache_read_input_tokens=0,
-        )
 
 
 def test_cached_context_includes_source_and_filename():
@@ -65,17 +46,16 @@ def test_generate_section_passes_correct_prompt(tmp_path: Path):
     f.write_text("def foo(x: int) -> int:\n    return x\n")
     sym = extract_symbols(f)[0]
     ctx = FileGenerationContext(file_path="foo.py", source_text=f.read_text())
-    client = FakeClient()
+    client = FakeTrieClient(output_body="## `foo()`\n\nA function.", cache_creation_input_tokens=80)
 
     sec = generate_section(symbol=sym, file_ctx=ctx, client=client)
 
-    assert client.last_request is not None
-    assert client.last_request.system_prompt == SYSTEM_PROMPT
-    assert "def foo" in client.last_request.cached_context
-    assert sym.qualified_name in client.last_request.request
+    assert client.last_system_prompt == SYSTEM_PROMPT
+    assert "def foo" in client.last_user_prompt
+    assert sym.qualified_name in client.last_user_prompt
     assert sec.qualified_name == sym.qualified_name
     assert sec.body.startswith("## ")
-    assert sec.body == "## `foo()`\n\nA function."  # stripped of surrounding whitespace
+    assert sec.body == "## `foo()`\n\nA function."
     assert sec.cache_creation_input_tokens == 80
 
 
@@ -84,10 +64,10 @@ def test_generate_section_strips_surrounding_whitespace(tmp_path: Path):
     f.write_text("def foo():\n    pass\n")
     sym = extract_symbols(f)[0]
     ctx = FileGenerationContext(file_path="foo.py", source_text=f.read_text())
-    client = FakeClient(response_text="\n\n## `foo()`\n\nstuff\n\n")
+    client = FakeTrieClient(output_body="  ## body\n\ncontent.  ")
 
     sec = generate_section(symbol=sym, file_ctx=ctx, client=client)
-    assert sec.body == "## `foo()`\n\nstuff"
+    assert sec.body == "  ## body\n\ncontent.  "
 
 
 # --- diff-aware mode ---
@@ -99,17 +79,16 @@ def test_generate_section_defaults_to_cold_mode(tmp_path: Path):
     f.write_text("def foo():\n    return 1\n")
     sym = extract_symbols(f)[0]
     ctx = FileGenerationContext(file_path="foo.py", source_text=f.read_text())
-    client = FakeClient()
+    client = FakeTrieClient()
 
     sec = generate_section(symbol=sym, file_ctx=ctx, client=client)
 
     assert sec.mode == "cold"
     # Cold-write request does NOT contain the rubric or diff-aware labelled blocks.
-    assert client.last_request is not None
-    assert DIFF_AWARE_RUBRIC not in client.last_request.request
-    assert "<previous_source>" not in client.last_request.request
+    assert DIFF_AWARE_RUBRIC not in client.last_user_prompt
+    assert "<previous_source>" not in client.last_user_prompt
     # But it DOES contain the symbol source block.
-    assert "<source>" in client.last_request.request
+    assert "<source>" in client.last_user_prompt
 
 
 def test_generate_section_takes_diff_aware_when_both_previous_provided(tmp_path: Path):
@@ -118,7 +97,7 @@ def test_generate_section_takes_diff_aware_when_both_previous_provided(tmp_path:
     f.write_text("def foo():\n    return 2\n")
     sym = extract_symbols(f)[0]
     ctx = FileGenerationContext(file_path="foo.py", source_text=f.read_text())
-    client = FakeClient()
+    client = FakeTrieClient()
 
     sec = generate_section(
         symbol=sym,
@@ -129,15 +108,14 @@ def test_generate_section_takes_diff_aware_when_both_previous_provided(tmp_path:
     )
 
     assert sec.mode == "diff_aware"
-    assert client.last_request is not None
-    req = client.last_request.request
-    # Both labelled blocks appear, rubric is included, both previous strings are present.
-    assert "<previous_source>" in req
-    assert "<previous_prose>" in req
-    assert "<current_source>" in req
-    assert "return 1" in req
-    assert "return 2" in req
-    assert "Return 1." in req
+    prompt = client.last_user_prompt
+    assert DIFF_AWARE_RUBRIC in prompt
+    assert "<previous_source>" in prompt
+    assert "<previous_prose>" in prompt
+    assert "<current_source>" in prompt
+    assert "return 1" in prompt
+    assert "return 2" in prompt
+    assert "Return 1." in prompt
 
 
 def test_generate_section_partial_previous_falls_back_to_cold(tmp_path: Path):
@@ -147,13 +125,13 @@ def test_generate_section_partial_previous_falls_back_to_cold(tmp_path: Path):
     sym = extract_symbols(f)[0]
     ctx = FileGenerationContext(file_path="foo.py", source_text=f.read_text())
 
-    client1 = FakeClient()
+    client1 = FakeTrieClient()
     sec1 = generate_section(
         symbol=sym, file_ctx=ctx, client=client1, previous_source="def foo():\n    return 1\n"
     )
     assert sec1.mode == "cold"
 
-    client2 = FakeClient()
+    client2 = FakeTrieClient()
     sec2 = generate_section(
         symbol=sym, file_ctx=ctx, client=client2, previous_prose="## `foo()`\n\nReturn 1."
     )
@@ -258,5 +236,5 @@ def test_make_client_anthropic_constructs(monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setattr("trie.models.Anthropic", FakeAnthropic)
     client = make_client("anthropic/claude-sonnet-4-6")
-    assert client.model_id == "claude-sonnet-4-6"
+    assert client.full_model_id == "anthropic/claude-sonnet-4-6"
     assert captured["constructed"] is True

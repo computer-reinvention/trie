@@ -1,63 +1,54 @@
 ---
 trie_version: 0.1.5
 source: tests/test_metadata_refresh.py
-file_fingerprint: 7e27fc3004894011f1d81a5237cb8e6d2d205522e5a507522757c3f7f65023b5
-last_synced_at: '2026-05-28T01:39:58Z'
+file_fingerprint: 2bea858f50a5d11432e54ce0156a70e43c81025119d87ce6a8965da7a4561aa6
+last_synced_at: '2026-05-28T14:39:34Z'
 description: Metadata-only triefact refresh.
 defines:
 - kind: module
   qualified_name: tests/test_metadata_refresh:__module__
-  lines: 1-345
-- kind: class
-  qualified_name: tests/test_metadata_refresh:FakeClient
-  lines: 40-59
-- kind: method
-  qualified_name: tests/test_metadata_refresh:FakeClient.generate
-  lines: 48-56
-- kind: method
-  qualified_name: tests/test_metadata_refresh:FakeClient.count_tokens
-  lines: 58-59
+  lines: 1-321
 - kind: function
   qualified_name: tests/test_metadata_refresh:project
-  lines: 63-83
+  lines: 39-59
 - kind: function
   qualified_name: tests/test_metadata_refresh:_sync_both
-  lines: 86-103
+  lines: 62-79
 - kind: function
   qualified_name: tests/test_metadata_refresh:_read_yaml_front
-  lines: 106-111
+  lines: 82-87
 - kind: function
   qualified_name: tests/test_metadata_refresh:_section_bodies
-  lines: 114-128
+  lines: 90-104
 - kind: function
   qualified_name: tests/test_metadata_refresh:test_refresh_does_not_call_the_llm
-  lines: 136-152
+  lines: 112-128
 - kind: function
   qualified_name: tests/test_metadata_refresh:test_refresh_preserves_section_bodies_byte_for_byte
-  lines: 155-176
+  lines: 131-152
 - kind: function
   qualified_name: tests/test_metadata_refresh:test_refresh_preserves_last_synced_at
-  lines: 179-199
+  lines: 155-175
 - kind: function
   qualified_name: tests/test_metadata_refresh:test_refresh_picks_up_new_edges_in_front_matter
-  lines: 202-231
+  lines: 178-207
 - kind: function
   qualified_name: tests/test_metadata_refresh:test_refresh_is_idempotent
-  lines: 234-249
+  lines: 210-225
 - kind: function
   qualified_name: tests/test_metadata_refresh:test_refresh_skips_missing_triefact
-  lines: 252-262
+  lines: 228-238
 - kind: function
   qualified_name: tests/test_metadata_refresh:test_verify_passes_after_refresh
-  lines: 265-287
+  lines: 241-263
 - kind: function
   qualified_name: tests/test_metadata_refresh:test_cli_sync_metadata_only_mutex_with_other_flags
-  lines: 295-318
+  lines: 271-294
 - kind: function
   qualified_name: tests/test_metadata_refresh:test_cli_sync_metadata_only_runs
-  lines: 321-344
+  lines: 297-320
 incoming_refs: 0
-outgoing_refs: 24
+outgoing_refs: 22
 ---
 <!-- trie:section symbol=tests/test_metadata_refresh:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=51a9f7e168f219e58d85db68c446a95884ec617e03aec64c9baa5ac2120eeb41 source_ref=a2c02bf233ff62220d2358d894f11d3f63345166 -->
 ## `tests/test_metadata_refresh`
@@ -67,29 +58,12 @@ Test suite for the metadata-only triefact refresh contract.
 - `refresh_triefact_metadata`: must not call the LLM, preserve section bodies, and preserve `last_synced_at`.
 - Covers idempotency, new-edge detection, missing-triefact skipping, `trie verify` compatibility, and CLI flag mutex enforcement.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:FakeClient fingerprint=212d1e31e2179767aec84975b3d31b7e75fe9d651f0dbb060df73b9d8eeef8db body_fp=2fa38709b40deb25a65be3c81c5b2fd5eedd441203a2bb4c8c10cff5a07d78e5 source_ref=a2c02bf233ff62220d2358d894f11d3f63345166 -->
-## `FakeClient`
-
-Deterministic LLM stub used only for initial triefact cold-writes; never called by the metadata-refresh path.
-
-- `calls`: incremented on each `generate` invocation; use to assert LLM was not called.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:FakeClient.generate fingerprint=7328b86a4ba976097f1e8eec40c045a8090951dfeca29ef5debd39c4e6fc9a4b body_fp=af2db5153d5f86ee81cd2b76e8bf5924efe77befca2fc6b948c2aeb4bf1cee2d source_ref=a2c02bf233ff62220d2358d894f11d3f63345166 -->
-## `FakeClient.generate(self, _req: GenerationRequest) -> GenerationResponse`
-
-Increment `FakeClient.calls` and return a fixed `GenerationResponse` with deterministic prose.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:FakeClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=d8d333632e478448f38bba2d838461dbe596c5410c31dd57bac064a4fb6776f7 source_ref=a2c02bf233ff62220d2358d894f11d3f63345166 -->
-## `FakeClient.count_tokens(self, _req: GenerationRequest) -> int`
-
-Always returns 100 for any `FakeClient` token-count request.
-<!-- trie:end -->
 <!-- trie:section symbol=tests/test_metadata_refresh:project fingerprint=65fd0b8d1c2fe0511dfb8e02ca8712e1da978440f17e1e72a14ebc38292a6981 body_fp=23eb3fc15d9e82ec4f34f56682d8c6c4ab0bdda8194e24cee7c8a411815664ab source_ref=a2c02bf233ff62220d2358d894f11d3f63345166 -->
 ## `project(tmp_path: Path) -> Path`
 
 Pytest fixture providing a two-module project where `beta.py` imports from `alpha.py`, enabling ref-count assertions.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:_sync_both fingerprint=1eea9e64b03fbdd8dea2d39175d9688c84811c137d1ac9868aa513c1ce8a531f body_fp=869688e7ac1bf7d689aac031c27e115eb5e57113fff77ec264f2b98e24287b71 source_ref=a2c02bf233ff62220d2358d894f11d3f63345166 -->
+<!-- trie:section symbol=tests/test_metadata_refresh:_sync_both fingerprint=34f3862f727710588e479ae81af4b72c3d861240fedba9be071fe5ad9af64a17 body_fp=869688e7ac1bf7d689aac031c27e115eb5e57113fff77ec264f2b98e24287b71 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
 ## `_sync_both(project: Path) -> Store`
 
 Scan and cold-sync `alpha.py` and `beta.py` into a new `Store`, returning it open for the caller to close.

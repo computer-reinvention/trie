@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/check.py
 file_fingerprint: 7f06c7053f40e5352b290eaab4c216f06e376680c60d9886afcf46daa647c6aa
-last_synced_at: '2026-05-23T23:52:56Z'
+last_synced_at: '2026-05-28T15:00:15Z'
 defines:
 - kind: module
   qualified_name: trie/check:__module__
@@ -28,7 +28,7 @@ defines:
 - kind: function
   qualified_name: trie/check:_check_project_inner
   lines: 66-172
-incoming_refs: 21
+incoming_refs: 22
 outgoing_refs: 6
 ---
 <!-- trie:section symbol=trie/check:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=9308fc81b074da1c432f301abc04ad9f4b2e6861840cc9de7a3586d1477f641a source_ref=b13418772d94c7dea0e494653a1d4aadcca3a1c6 -->

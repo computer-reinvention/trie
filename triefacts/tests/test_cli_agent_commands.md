@@ -1,121 +1,112 @@
 ---
 trie_version: 0.1.5
 source: tests/test_cli_agent_commands.py
-file_fingerprint: 6782184ec67e10c4450d891ca682f9b79a551b339abeae8506b52add37ad3bfe
-last_synced_at: '2026-05-28T01:36:12Z'
+file_fingerprint: d162180de1be2d133b826cdb12a6654d5b2937bde9cdb0815bd24b295489b6e3
+last_synced_at: '2026-05-28T14:39:08Z'
 description: 'Tests for the agent-facing CLI subcommands: `trie grep`, `trie read`,
   `trie trace`.'
 defines:
 - kind: module
   qualified_name: tests/test_cli_agent_commands:__module__
-  lines: 1-591
+  lines: 1-572
 - kind: constant
   qualified_name: tests/test_cli_agent_commands:PROJECT_TOML
-  lines: 32-40
-- kind: class
-  qualified_name: tests/test_cli_agent_commands:FakeClient
-  lines: 44-58
-- kind: method
-  qualified_name: tests/test_cli_agent_commands:FakeClient.generate
-  lines: 48-55
-- kind: method
-  qualified_name: tests/test_cli_agent_commands:FakeClient.count_tokens
-  lines: 57-58
+  lines: 31-39
 - kind: function
   qualified_name: tests/test_cli_agent_commands:populated_project
-  lines: 62-94
+  lines: 43-75
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_with_name_returns_human_readable_table
-  lines: 102-114
+  lines: 83-95
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_with_json_is_byte_equivalent_to_mcp_envelope
-  lines: 117-146
+  lines: 98-127
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_predicate_json_overrides_via_flags
-  lines: 149-172
+  lines: 130-153
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_invalid_predicate_json_exits_2
-  lines: 175-185
+  lines: 156-166
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_no_matches_shows_fallback_envelope
-  lines: 188-200
+  lines: 169-181
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_with_no_flags_exits_with_invalid_argument
-  lines: 203-224
+  lines: 184-205
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_text_match_fallback_renders_candidates
-  lines: 227-239
+  lines: 208-220
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_read_known_qname_prints_prose_and_neighbours
-  lines: 247-259
+  lines: 228-240
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_read_unknown_qname_exits_1_with_suggestion
-  lines: 262-274
+  lines: 243-255
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_read_json_emits_envelope
-  lines: 277-289
+  lines: 258-270
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_trace_callers_renders_topology
-  lines: 297-309
+  lines: 278-290
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_trace_json_shape_matches_mcp
-  lines: 312-334
+  lines: 293-315
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_trace_unknown_qname_exits_1
-  lines: 337-344
+  lines: 318-325
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_trace_invalid_direction_exits_1
-  lines: 347-356
+  lines: 328-337
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_without_trie_toml_exits_1_with_clean_error
-  lines: 364-374
+  lines: 345-355
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_read_without_trie_toml_exits_1
-  lines: 377-383
+  lines: 358-364
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_trace_without_trie_toml_exits_1
-  lines: 386-392
+  lines: 367-373
 - kind: function
   qualified_name: tests/test_cli_agent_commands:_read_jsonl_events
-  lines: 400-406
+  lines: 381-387
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_grep_emits_cli_call_event_not_mcp_call
-  lines: 409-435
+  lines: 390-416
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_read_and_trace_also_emit_cli_call_events
-  lines: 438-462
+  lines: 419-443
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_cli_call_event_carries_duration_and_result_fields
-  lines: 465-488
+  lines: 446-469
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_patch_list_empty
-  lines: 494-499
+  lines: 475-480
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_patch_create_and_list
-  lines: 502-515
+  lines: 483-496
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_patch_create_unknown_symbol
-  lines: 518-523
+  lines: 499-504
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_patch_preview
-  lines: 526-535
+  lines: 507-516
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_patch_preview_empty
-  lines: 538-543
+  lines: 519-524
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_patch_drop_by_qname
-  lines: 546-558
+  lines: 527-539
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_patch_drop_all
-  lines: 561-570
+  lines: 542-551
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_patch_drop_no_args
-  lines: 573-578
+  lines: 554-559
 - kind: function
   qualified_name: tests/test_cli_agent_commands:test_patch_help
-  lines: 581-590
+  lines: 562-571
 incoming_refs: 0
-outgoing_refs: 35
+outgoing_refs: 33
 ---
 <!-- trie:section symbol=tests/test_cli_agent_commands:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=66f04576c3a67474b50e6d0f5c37020c298d61571c056d3aa695f1c00042b341 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
 ## `tests/test_cli_agent_commands`
@@ -131,24 +122,7 @@ Integration tests for the agent-facing CLI subcommands `trie grep`, `trie read`,
 
 TOML string used to create `trie.toml` in test fixtures.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_cli_agent_commands:FakeClient fingerprint=57cb0d9af6bb40fa692b1e07a745ebc033aa599c53105b31098873c4ee475f36 body_fp=c82a331b4b3964278d9f27969162752c22e8780c6549f01fb2806f4c1f83f226 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
-## `FakeClient`
-
-Stub AI client for tests; returns a fixed `body` string from `generate` and a constant token count from `count_tokens`.
-
-- `body`: the Markdown text returned as `GenerationResponse.text`.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_cli_agent_commands:FakeClient.generate fingerprint=a28c91031810d416f079e2d7a57f5ed7651bd8c3315cf78d1ec869c3b812915e body_fp=d60ebc8693003167dacec6df491f967b98de2b104dd4b791a0167f7d78c093f2 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
-## `FakeClient.generate(self, _req: GenerationRequest) -> GenerationResponse`
-
-Return a hardcoded `GenerationResponse` using `FakeClient.body` as the generated text.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_cli_agent_commands:FakeClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=77d3b6347ca7e880748f4deac8ccf865d4c9661ed1e5f1c6dd3979573067d702 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
-## `FakeClient.count_tokens(self, _req: GenerationRequest) -> int`
-
-Always return 100 from `FakeClient` without calling a real model.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_cli_agent_commands:populated_project fingerprint=b5db4105294b249e057601fb6357b88650bc0c7a1b1d3573458f847b457673dc body_fp=251d66bf231a0b0cb0f6e533529cfec3db8aa88f1ca286a8825383359f039209 source_ref=aceb4b04b98c59585615632c08ce045a85c337dc -->
+<!-- trie:section symbol=tests/test_cli_agent_commands:populated_project fingerprint=90e67f6eefd8a9cde4344dfea79f23fc3bf21395b4fa03572516d408a220e7b4 body_fp=251d66bf231a0b0cb0f6e533529cfec3db8aa88f1ca286a8825383359f039209 source_ref=c2a3e7c263e044765df99ba12cdc87d04ca17446 -->
 ## `populated_project(tmp_path: Path) -> Path`
 
 Create a temporary project with `lib.py` and `app.py` scanned, synced, and stored in a graph database.

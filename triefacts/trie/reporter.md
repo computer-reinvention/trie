@@ -1,86 +1,102 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/reporter.py
-file_fingerprint: 0d25e92681b94ef96d032a5e5f36c20fcbfab84a6061886aae0515f89fb991e8
-last_synced_at: '2026-05-23T23:51:21Z'
+file_fingerprint: 14ad3f2c8b5d7bed7a6da7c7ee0a460528b42a0de8ab90c6a26cc2a107e06c50
+last_synced_at: '2026-05-28T03:46:36Z'
 defines:
 - kind: module
   qualified_name: trie/reporter:__module__
-  lines: 1-171
+  lines: 1-183
 - kind: class
   qualified_name: trie/reporter:Verbosity
-  lines: 19-22
+  lines: 24-27
 - kind: class
   qualified_name: trie/reporter:Reporter
-  lines: 25-64
+  lines: 30-75
 - kind: method
   qualified_name: trie/reporter:Reporter.__init__
-  lines: 33-35
+  lines: 38-41
 - kind: method
   qualified_name: trie/reporter:Reporter.info
-  lines: 37-39
+  lines: 43-45
 - kind: method
   qualified_name: trie/reporter:Reporter.detail
-  lines: 41-43
+  lines: 47-49
 - kind: method
   qualified_name: trie/reporter:Reporter.success
-  lines: 45-47
+  lines: 51-53
 - kind: method
   qualified_name: trie/reporter:Reporter.warn
-  lines: 49-52
+  lines: 55-58
 - kind: method
   qualified_name: trie/reporter:Reporter.error
-  lines: 54-55
+  lines: 60-61
 - kind: method
   qualified_name: trie/reporter:Reporter.status
-  lines: 57-61
+  lines: 63-67
+- kind: method
+  qualified_name: trie/reporter:Reporter.elapsed
+  lines: 69-72
 - kind: method
   qualified_name: trie/reporter:Reporter.start_progress
-  lines: 63-64
+  lines: 74-75
 - kind: class
   qualified_name: trie/reporter:_NullContext
-  lines: 67-72
+  lines: 78-83
 - kind: method
   qualified_name: trie/reporter:_NullContext.__enter__
-  lines: 68-69
+  lines: 79-80
 - kind: method
   qualified_name: trie/reporter:_NullContext.__exit__
-  lines: 71-72
+  lines: 82-83
 - kind: class
   qualified_name: trie/reporter:ProgressHandle
-  lines: 75-170
+  lines: 86-182
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.__init__
-  lines: 82-87
+  lines: 93-98
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.__enter__
-  lines: 89-103
+  lines: 100-115
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.__exit__
-  lines: 105-114
+  lines: 117-126
 - kind: method
   qualified_name: trie/reporter:ProgressHandle._print
-  lines: 116-122
+  lines: 128-134
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.start_file
-  lines: 124-130
+  lines: 136-142
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.finish_file
-  lines: 132-164
+  lines: 144-176
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.skip_file
-  lines: 166-170
+  lines: 178-182
 incoming_refs: 16
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=trie/reporter:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a6e554260c57038883616cc25e85ad5af597d7a0638b266dda89147f019607b8 source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
+<!-- trie:section symbol=trie/reporter:Reporter fingerprint= body_fp=cc965222e8eb81c0781c8d4fdd9af18daacded83c3b91b5306161d4ca51ed01b -->
+## `Reporter(verbosity: Verbosity = Verbosity.MEDIUM, console: Console | None = None)`
+
+Verbosity-gated Rich console wrapper threaded through CLI subcommand handlers.
+
+- `verbosity`: gates which methods produce output; `error` is always unconditional
+- `info` / `success` / `warn`: print at `MEDIUM+`
+- `detail`: prints at `VERBOSE` only
+- `status`: returns a no-op context manager when below `MEDIUM`
+- `elapsed`: returns a formatted string like `"took 1.23s"` measuring wall-clock time since the `Reporter` was constructed; useful for printing total duration at the end of a command
+- `start_progress`: returns a `ProgressHandle` context manager for file-level progress
+<!-- trie:end -->
+<!-- trie:section symbol=trie/reporter:__module__ fingerprint=5e8b08dfe65f9f795689fb53568d42681062a72da8c7731c23dce6381ade108a body_fp=8bc2b47d837b44eb8a630e7beb1621a0e61952b5027652a9619dbc32fa76b092 source_ref=a4f47faea03f1c6cf869bda0c0d2b7ed2badeae8 -->
 ## `reporter`
 
-Verbosity-gated console and progress-bar utilities for CLI output.
+Provide verbosity-gated console output and Rich progress-bar reporting for CLI commands.
 
-- `Verbosity`: three-level enum (`MUTE`, `MEDIUM`, `VERBOSE`) controlling all output gates.
-- `Reporter`: primary façade; wraps a Rich `Console` with verbosity-filtered print methods.
-- `ProgressHandle`: context-manager rendering a Rich progress bar with per-file start/finish/skip callbacks.
+- `Verbosity`: three-level enum (`MUTE=0`, `MEDIUM=1`, `VERBOSE=2`) controlling output suppression.
+- `Reporter`: central console wrapper; CLI commands share one instance, passing callbacks to sync internals.
+- `ProgressHandle`: context-manager progress bar with per-file start/finish/skip hooks.
+- Requires `rich`; raises `ImportError` with install hint if absent.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/reporter:Verbosity fingerprint=68167be5fddb8748e7165d3e1141f0c0c352b1dcef0f7a2e6430f8fd2efa74be body_fp=744d995411b96f4b4703b386ac7d15da6f3d0a7b956dec75fdd9ac29b2dce726 source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
 ## `Verbosity`
@@ -91,23 +107,23 @@ Three-level verbosity enum controlling `Reporter` output gates.
 - `MEDIUM`: enables info, success, warnings, and progress bars.
 - `VERBOSE`: adds per-file start lines and token/cache detail.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/reporter:Reporter fingerprint=6175ff59d9a94c9793a6a742a13614406a715ec2bb4940a212dbf397392e1507 body_fp=bb1b41992ce5c08ae2385e13eac184074af05942e7505fbe98ca14d1a7e87b92 source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
+<!-- trie:section symbol=trie/reporter:Reporter fingerprint=f2f9eb0d0db812c01986aa8de45e8112145fc59fb1d1c249d40a0b3bf10e0f6c body_fp=047a7b3b0502ed76cb87d3a71659fbc484921c6d3bccfe32ab2afb636bb6a158 source_ref=85c1d7e08391fdf4591efecab54488744b0d9af3 -->
 ## `Reporter(verbosity: Verbosity = Verbosity.MEDIUM, console: Console | None = None)`
 
 Verbosity-gated Rich console wrapper threaded through CLI subcommand handlers.
 
-- `verbosity`: gates which methods produce output; `error` is always unconditional
-- `info` / `success` / `warn`: print at `MEDIUM+`
-- `detail`: prints at `VERBOSE` only
-- `status`: returns a no-op context manager when below `MEDIUM`
+- `verbosity`: gates which methods produce output; `MUTE` suppresses all except `error`
+- `error`: always prints regardless of verbosity level
+- `status`: returns a no-op context manager when verbosity is below `MEDIUM`
 - `start_progress`: returns a `ProgressHandle` context manager for file-level progress
 <!-- trie:end -->
-<!-- trie:section symbol=trie/reporter:Reporter.__init__ fingerprint=014fff4f617144fe244251854a6e2c712bf6c84f9fa795c3aeafeb1467bbcb81 body_fp=c251635d5a289bbe45185cd3caa987eb38255984ee560ae9efcc32daccea0761 source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
+<!-- trie:section symbol=trie/reporter:Reporter.__init__ fingerprint=4cde0d3d19c674bce9d5999617edd36f6c1991fac11b08f19a6ddba17b0f59ce body_fp=ae79feb172bb679d4713ab766a717eb4097dfa3360c3b18744859be50f0477e2 source_ref=85c1d7e08391fdf4591efecab54488744b0d9af3 -->
 ## `Reporter.__init__(self, verbosity: Verbosity = Verbosity.MEDIUM, console: Console | None = None)`
 
-Initialise a `Reporter` with a verbosity level and optional Rich console.
+Initialise a `Reporter` with a verbosity level, optional Rich console, and a wall-clock start time.
 
 - `console`: uses a default `Console()` when not provided.
+- `_start`: records `time.monotonic()` for use by `elapsed()`.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/reporter:Reporter.info fingerprint=c360aff5e763c039038842e46cffcdf806016693b8a32a9024ba31ed85535328 body_fp=ce436e7605422c038d6810982201905229aed200ab31a71e57c24cd669ad47d7 source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
 ## `Reporter.info(msg: str) -> None`
@@ -139,6 +155,11 @@ Print an error message unconditionally, regardless of `Reporter` verbosity level
 
 Render a transient spinner context manager for `Reporter`; returns a no-op context when verbosity is below `MEDIUM`.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/reporter:Reporter.elapsed fingerprint=36090c883265c26b545bd9e37f5a46b55d6b46b76e83bedb1e7013e812e21919 body_fp=67bd266d81a61abc8a5b39aef6d4cccd9fa561dd4f6003e5599c9cd153bfde8b source_ref=85c1d7e08391fdf4591efecab54488744b0d9af3 -->
+## `Reporter.elapsed() -> str`
+
+Human-readable wall-clock elapsed time since the `Reporter` was created, formatted as `"took X.XXs"`.
+<!-- trie:end -->
 <!-- trie:section symbol=trie/reporter:Reporter.start_progress fingerprint=a71b5d1c595a24d65267bee23143bc679a28d76569344578c49e6d107dc67279 body_fp=85a898a073976fc54a9f9445e7c28e9a78e7e00a7df75ee05039b6a4a0460dd5 source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
 ## `Reporter.start_progress(self, total: int, label: str) -> ProgressHandle`
 
@@ -159,23 +180,23 @@ Return the `_NullContext` instance unchanged.
 
 No-op exit for `_NullContext`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/reporter:ProgressHandle fingerprint=125bef14fe34e5b9d3e4da98c499c9b980cc3a6e6dd00519176987508b839599 body_fp=5762ccffb5ade16c06180960c3418ffe01d6acfc348d5068f63ac726f05404c0 source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
-## `ProgressHandle`
+<!-- trie:section symbol=trie/reporter:ProgressHandle fingerprint=28ff21ac130486863ec732556ba4c070942c2c2e199c82b5077209f6d1112c4e body_fp=fcb65b370bdd34ee9b5ffd105227d57732a9554d943635863c70fc70f41c48c1 source_ref=a4f47faea03f1c6cf869bda0c0d2b7ed2badeae8 -->
+## `ProgressHandle(reporter: Reporter, total: int, label: str)`
 
-Context-manager progress reporter that wraps a Rich progress bar and emits per-file status lines gated by `Reporter` verbosity.
+Context-manager progress reporter that wraps a Rich progress bar and per-file status lines, gated by `Reporter` verbosity.
 
 - `total`: expected file count; bar is skipped entirely when zero.
 - `start_file`: updates bar description and prints `→ rel_path` at VERBOSE.
-- `finish_file`: advances bar and prints `✓ rel_path · $cost · N sym`; VERBOSE appends token/cache detail.
+- `finish_file`: advances bar and prints `✓ rel_path · $cost · N sym` at MEDIUM+; adds token/cache detail at VERBOSE.
 - `skip_file`: advances bar and prints `⊘ rel_path · skipped: reason` at MEDIUM+.
-- MUTE verbosity: all methods are no-ops except bar advancement.
+- MUTE: all methods are no-ops except bar advancement.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/reporter:ProgressHandle.__init__ fingerprint=9fe2bc3db3e89583fe4c67c5533f44b25630873d1c3d52254cf9f4719866f0c1 body_fp=bf15ea40373839eb6806c686bf4c0e78d83e793fa742992b838a7521a6cc4e80 source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
+<!-- trie:section symbol=trie/reporter:ProgressHandle.__init__ fingerprint=7db3d0385ca9d91f7d3d72a231d4bdab74ee74393f8ce2c29e6c3904c766396b body_fp=bf15ea40373839eb6806c686bf4c0e78d83e793fa742992b838a7521a6cc4e80 source_ref=a4f47faea03f1c6cf869bda0c0d2b7ed2badeae8 -->
 ## `ProgressHandle.__init__(self, reporter: Reporter, total: int, label: str)`
 
 Initialize a `ProgressHandle` with a parent reporter, file count, and progress bar label.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/reporter:ProgressHandle.__enter__ fingerprint=2ae868997c36e66820006407e666b9295cdd9635a2abf4d7434f1c79cd4b08b7 body_fp=1e8592be9c590b7e75f157c5068b8862dc6279e012d43ceb900f33cd2bed1165 source_ref=7f0e336261956631a0d9573b96ff6567f35b0c87 -->
+<!-- trie:section symbol=trie/reporter:ProgressHandle.__enter__ fingerprint=fa8f8db25bfe291e05bbcf2fae90906b02b98f66c18727e21b41b7ef3e573d8b body_fp=1e8592be9c590b7e75f157c5068b8862dc6279e012d43ceb900f33cd2bed1165 source_ref=85c1d7e08391fdf4591efecab54488744b0d9af3 -->
 ## `ProgressHandle.__enter__() -> ProgressHandle`
 
 Start the `ProgressHandle` context, initialising a Rich progress bar when verbosity is MEDIUM+ and `total > 0`.

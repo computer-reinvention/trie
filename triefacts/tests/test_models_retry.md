@@ -1,78 +1,75 @@
 ---
 trie_version: 0.1.5
 source: tests/test_models_retry.py
-file_fingerprint: d8d4752517d6e5bf1496ef2c5d557771d28562d3a747f82dda60e3d14e5b946e
-last_synced_at: '2026-05-28T01:40:07Z'
+file_fingerprint: cca045d70d0134626d23112d8a4cd67ded3d2381206458827e3811c6074ecd93
+last_synced_at: '2026-05-28T15:01:12Z'
 description: Retry-on-rate-limit behaviour of `AnthropicClient`.
 defines:
 - kind: module
   qualified_name: tests/test_models_retry:__module__
-  lines: 1-294
+  lines: 1-259
 - kind: function
   qualified_name: tests/test_models_retry:_fake_response
-  lines: 42-48
+  lines: 35-41
 - kind: function
   qualified_name: tests/test_models_retry:_rate_limit
-  lines: 51-56
+  lines: 44-49
 - kind: function
   qualified_name: tests/test_models_retry:_overloaded
-  lines: 59-64
+  lines: 52-57
 - kind: function
   qualified_name: tests/test_models_retry:_auth_error
-  lines: 67-72
+  lines: 60-65
 - kind: class
   qualified_name: tests/test_models_retry:_Recorder
-  lines: 76-82
+  lines: 69-75
 - kind: method
   qualified_name: tests/test_models_retry:_Recorder.sleep
-  lines: 81-82
+  lines: 74-75
 - kind: function
   qualified_name: tests/test_models_retry:_frozen_rng
-  lines: 85-86
+  lines: 78-79
 - kind: function
   qualified_name: tests/test_models_retry:test_is_retryable_picks_up_rate_limit_and_5xx_and_timeout
-  lines: 92-95
+  lines: 85-88
 - kind: function
   qualified_name: tests/test_models_retry:test_is_retryable_rejects_auth_and_other_4xx
-  lines: 98-100
+  lines: 91-93
 - kind: function
   qualified_name: tests/test_models_retry:test_retry_after_reads_header_when_present
-  lines: 103-105
+  lines: 96-98
 - kind: function
   qualified_name: tests/test_models_retry:test_retry_after_none_when_header_missing_or_unparseable
-  lines: 108-110
+  lines: 101-103
 - kind: function
   qualified_name: tests/test_models_retry:test_backoff_delay_within_cap
-  lines: 113-121
+  lines: 106-114
 - kind: function
   qualified_name: tests/test_models_retry:test_run_with_retry_honours_retry_after_exactly
-  lines: 127-145
+  lines: 120-138
 - kind: function
   qualified_name: tests/test_models_retry:test_run_with_retry_caps_retry_after
-  lines: 148-165
+  lines: 141-158
 - kind: function
   qualified_name: tests/test_models_retry:test_run_with_retry_uses_backoff_when_no_retry_after
-  lines: 168-184
+  lines: 161-177
 - kind: function
   qualified_name: tests/test_models_retry:test_run_with_retry_backs_off_on_overloaded
-  lines: 187-202
+  lines: 180-195
 - kind: function
   qualified_name: tests/test_models_retry:test_run_with_retry_gives_up_after_max_retries
-  lines: 205-217
+  lines: 198-210
 - kind: function
   qualified_name: tests/test_models_retry:test_run_with_retry_propagates_non_retryable_immediately
-  lines: 220-231
+  lines: 213-224
 - kind: function
-  qualified_name: tests/test_models_retry:test_anthropic_client_generate_retries_on_rate_limit
-  lines: 237-261
+  qualified_name: tests/test_models_retry:test_count_tokens_retries_on_rate_limit
+  lines: 230-242
 - kind: function
-  qualified_name: tests/test_models_retry:test_anthropic_client_count_tokens_retries_on_rate_limit
-  lines: 264-277
-- kind: function
-  qualified_name: tests/test_models_retry:test_anthropic_client_disables_sdk_internal_retries
-  lines: 280-293
+  qualified_name: tests/test_models_retry:test_trie_client_disables_sdk_internal_retries
+  lines: 245-258
 incoming_refs: 0
-outgoing_refs: 25
+outgoing_refs: 21
 ---
 <!-- trie:section symbol=tests/test_models_retry:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8a555c6656c6d53a59b2550c0fe3beab7650e1544511034ccc2ff58cb3a3bcde source_ref=f265d955421abbef1f0ef04061dfebf390adf4eb -->
 ## `tests/test_models_retry`
@@ -179,18 +176,13 @@ Assert that `_run_with_retry` re-raises `RateLimitError` and sleeps exactly `max
 
 Assert that `_run_with_retry` re-raises non-retryable errors instantly without any sleep.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_anthropic_client_generate_retries_on_rate_limit fingerprint=170f404f9b7f5ef0febe3180973e3405eda6abf43caff56cf1c7cfdc9ebd2969 body_fp=9a1d238c2ab0258398ed484e930fc6a3e02f9a7ab54a68c823b9f6ed19ed0ff2 source_ref=f265d955421abbef1f0ef04061dfebf390adf4eb -->
-## `test_anthropic_client_generate_retries_on_rate_limit()`
+<!-- trie:section symbol=tests/test_models_retry:test_count_tokens_retries_on_rate_limit fingerprint=fe50e5e6a9dd7a4d2c7beea67c571e08c7c8d43d55c786363d5329ffdd6b20ed body_fp=7dc885b2b035df319e1aba4965221c0c0a2faadd0b3d992c46d187c436afc937 source_ref=9e70f3931833dd8780c910cf80d83ea0ca5550f9 -->
+## `test_count_tokens_retries_on_rate_limit()`
 
-Verify that `AnthropicClient.generate` retries the SDK call after a 429 and returns the successful second response.
+Verify that `TrieClient.count_tokens` retries on a `RateLimitError` before returning a successful token count.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_anthropic_client_count_tokens_retries_on_rate_limit fingerprint=81431baaa0dab19183f56854549eafcbe79e44a7e52bb3f1c56e96af035186e7 body_fp=3641549e56b7759f64c9bceedd94e34c4d81a6c265d84c56f469e28d47f75f09 source_ref=f265d955421abbef1f0ef04061dfebf390adf4eb -->
-## `test_anthropic_client_count_tokens_retries_on_rate_limit()`
+<!-- trie:section symbol=tests/test_models_retry:test_trie_client_disables_sdk_internal_retries fingerprint=57bed553715f6bf5438ecc76ca930cd69fb6526f471cbbddb3e343bb1bf51044 body_fp=8072df9f184a2c96a3df1bc39ae0c3eb4f4e4fc43c6ab69bb780f65db904ed02 source_ref=9e70f3931833dd8780c910cf80d83ea0ca5550f9 -->
+## `test_trie_client_disables_sdk_internal_retries(monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `AnthropicClient.count_tokens` retries on a 429 rate-limit error before returning the token count.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_anthropic_client_disables_sdk_internal_retries fingerprint=e88632a86840b5880310a262d24f7ff1d9d236bb62c66c744f67f157450c6312 body_fp=3c83c14048bf96f63703563761ae383b61af84314cc1032a52705208459d2913 source_ref=f265d955421abbef1f0ef04061dfebf390adf4eb -->
-## `test_anthropic_client_disables_sdk_internal_retries(monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `AnthropicClient` passes `max_retries=0` to the Anthropic SDK constructor when no explicit `client=` is provided.
+Assert that `TrieClient` passes `max_retries=0` to the Anthropic SDK constructor, preventing a duplicate retry layer.
 <!-- trie:end -->

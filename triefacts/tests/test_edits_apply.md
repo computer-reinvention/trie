@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: tests/test_edits_apply.py
 file_fingerprint: 19c66220dfebe979e907a3cc90b1c56b693dd7f97076bef11d320d853633637c
-last_synced_at: '2026-05-28T01:48:43Z'
+last_synced_at: '2026-05-28T14:59:27Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_apply:__module__
@@ -57,32 +57,32 @@ Assert that `_expand_callers` returns an empty set when given no seed qualnames.
 
 Assert that `_expand_callers` returns an empty set when seeds have no matching store references.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_apply:TestCompileCheck fingerprint=8fc2a428faa925362cd3b6f1fc47572ca2b93dd2bed641f8a90d959f6d40724c body_fp=4ffc5d96c207a27ea7b3bc93ba9f38b42cc161959462aadb4e49daa32272b093 source_ref=4eb2b3d8551abff9491e88aef8f255528549a548 -->
+<!-- trie:section symbol=tests/test_edits_apply:TestCompileCheck fingerprint=8fc2a428faa925362cd3b6f1fc47572ca2b93dd2bed641f8a90d959f6d40724c body_fp=4ffc5d96c207a27ea7b3bc93ba9f38b42cc161959462aadb4e49daa32272b093 source_ref=bc54244d8829f05b1f4b35cf791afb49a820ad23 -->
 ## `TestCompileCheck`
 
 Test suite for `_compile_check`, verifying valid Python, syntax errors, and empty source.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_apply:TestCompileCheck.test_valid_python fingerprint=844bc15fe506d9a29d6ade29d53b5fdd624d5a345d95a1e769c75593680ff7b7 body_fp=797ded025dac0f7b959a6569fef7c6a7210d045694c4196506f42367eafa49aa source_ref=4eb2b3d8551abff9491e88aef8f255528549a548 -->
+<!-- trie:section symbol=tests/test_edits_apply:TestCompileCheck.test_valid_python fingerprint=844bc15fe506d9a29d6ade29d53b5fdd624d5a345d95a1e769c75593680ff7b7 body_fp=797ded025dac0f7b959a6569fef7c6a7210d045694c4196506f42367eafa49aa source_ref=bc54244d8829f05b1f4b35cf791afb49a820ad23 -->
 ## `TestCompileCheck.test_valid_python(self)`
 
 Assert that `_compile_check` returns `True` for syntactically valid Python source.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_apply:TestCompileCheck.test_syntax_error fingerprint=6cafc8bbe6fa50aa1da4a86891aceda978e42a6ef8642d88a09b68a81fa45380 body_fp=22b94d2692700d4b3e53f04e97a14e844dab9c001166e87201ad20d0880c7fed source_ref=4eb2b3d8551abff9491e88aef8f255528549a548 -->
+<!-- trie:section symbol=tests/test_edits_apply:TestCompileCheck.test_syntax_error fingerprint=6cafc8bbe6fa50aa1da4a86891aceda978e42a6ef8642d88a09b68a81fa45380 body_fp=22b94d2692700d4b3e53f04e97a14e844dab9c001166e87201ad20d0880c7fed source_ref=bc54244d8829f05b1f4b35cf791afb49a820ad23 -->
 ## `TestCompileCheck.test_syntax_error(self)`
 
 Verify that `_compile_check` returns `False` for syntactically invalid Python source.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_apply:TestCompileCheck.test_empty_source fingerprint=e755276c9876a3e2d1ae94c67c1306243de4462a7461d57479b960546d4ec556 body_fp=7524db65efb1c617426afff75ee670f3e5f2c6bf78eedcdfb41c0c86f3e34405 source_ref=4eb2b3d8551abff9491e88aef8f255528549a548 -->
+<!-- trie:section symbol=tests/test_edits_apply:TestCompileCheck.test_empty_source fingerprint=e755276c9876a3e2d1ae94c67c1306243de4462a7461d57479b960546d4ec556 body_fp=7524db65efb1c617426afff75ee670f3e5f2c6bf78eedcdfb41c0c86f3e34405 source_ref=bc54244d8829f05b1f4b35cf791afb49a820ad23 -->
 ## `TestCompileCheck.test_empty_source(self)`
 
 Assert that `_compile_check` returns `True` for an empty string input.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_apply:TestPreviewPatches fingerprint=9aae441bda8deacd452b16ecc08df66a9180ee55d974de918be7f3414b0a5b3f body_fp=4ee06304e2a8b2c24d8d244d56a672b6bda65052e535dbcb42dbad785f32b9ae source_ref=4eb2b3d8551abff9491e88aef8f255528549a548 -->
+<!-- trie:section symbol=tests/test_edits_apply:TestPreviewPatches fingerprint=9aae441bda8deacd452b16ecc08df66a9180ee55d974de918be7f3414b0a5b3f body_fp=4ee06304e2a8b2c24d8d244d56a672b6bda65052e535dbcb42dbad785f32b9ae source_ref=bc54244d8829f05b1f4b35cf791afb49a820ad23 -->
 ## `TestPreviewPatches`
 
 Test `preview_patches` against a fresh `Store` with no pending patches.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_apply:TestPreviewPatches.test_no_patches fingerprint=753db71eb29f78deba90dff6621bbe966f7ae16b284c830b173cd4fb8e8a3488 body_fp=de5bac242b05cf78d3cc43e5fcfe90bbc0289c40435c097e0f3c64d2da9718e0 source_ref=4eb2b3d8551abff9491e88aef8f255528549a548 -->
+<!-- trie:section symbol=tests/test_edits_apply:TestPreviewPatches.test_no_patches fingerprint=753db71eb29f78deba90dff6621bbe966f7ae16b284c830b173cd4fb8e8a3488 body_fp=de5bac242b05cf78d3cc43e5fcfe90bbc0289c40435c097e0f3c64d2da9718e0 source_ref=bc54244d8829f05b1f4b35cf791afb49a820ad23 -->
 ## `TestPreviewPatches.test_no_patches(self, tmp_path: Path)`
 
 Verify `preview_patches` returns zero patches and zero patched symbols against an empty `Store`.

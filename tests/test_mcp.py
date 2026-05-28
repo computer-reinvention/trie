@@ -8,14 +8,13 @@ test territory.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 
+from tests.fake_client import FakeTrieClient
 from trie.config import Config
 from trie.mcp_server import TrieTools
-from trie.models import GenerationRequest, GenerationResponse
 from trie.scan import scan_project
 from trie.sync.single_file import sync_single_file
 
@@ -31,26 +30,6 @@ PROJECT_TOML = (
 )
 
 
-@dataclass
-class FakeClient:
-    """Stand-in for ModelClient. Returns a fixed body and bogus token counts."""
-
-    model_id: str = "fake/test"
-    body: str = "## generated\n\nGenerated description.\n"
-
-    def generate(self, _req: GenerationRequest) -> GenerationResponse:
-        return GenerationResponse(
-            text=self.body,
-            input_tokens=10,
-            output_tokens=20,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
-        )
-
-    def count_tokens(self, _req: GenerationRequest) -> int:
-        return 100
-
-
 @pytest.fixture
 def project(tmp_path: Path) -> Path:
     (tmp_path / "trie.toml").write_text(PROJECT_TOML)
@@ -58,6 +37,10 @@ def project(tmp_path: Path) -> Path:
         "def slugify(text: str) -> str:\n"
         '    """Lowercase + dash-separate."""\n'
         '    return text.lower().replace(" ", "-")\n'
+        "\n\n"
+        "def capitalize(text: str) -> str:\n"
+        '    """Capitalize first letter of each word."""\n'
+        "    return text.title()\n"
     )
     (tmp_path / "app.py").write_text(
         "from lib import slugify\n\n\n"
@@ -79,14 +62,18 @@ def populated_project(project: Path) -> Path:
             project / "lib.py",
             project_root=project,
             config=config,
-            client=FakeClient(body="## slugify\n\nLowercase text and dash-separate words.\n"),
+            client=FakeTrieClient(
+                output_body="## slugify\n\nLowercase text and dash-separate words.\n"
+            ),
             store=store,
         )
         sync_single_file(
             project / "app.py",
             project_root=project,
             config=config,
-            client=FakeClient(body="## make_url\n\nBuild a /posts/<slug> URL from a title.\n"),
+            client=FakeTrieClient(
+                output_body="## make_url\n\nBuild a /posts/<slug> URL from a title.\n"
+            ),
             store=store,
         )
     return project
@@ -586,7 +573,7 @@ def dual_rank_project(tmp_path: Path) -> Path:
                 tmp_path / fname,
                 project_root=tmp_path,
                 config=config,
-                client=FakeClient(body=body),
+                client=FakeTrieClient(output_body=body),
                 store=store,
             )
     return tmp_path

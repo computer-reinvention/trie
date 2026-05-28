@@ -3,8 +3,8 @@
 A guide for coding agents working in a project that has trie installed.
 
 trie indexes source code into a graph of symbols and references, attaches
-prose to each public symbol, and exposes **eleven navigation tools** over
-MCP. This document is how to use them well.
+prose to each public symbol, and exposes **fifteen tools** over
+MCP — eleven for navigation and four for edit patches. This document is how to use them well.
 
 If you take one thing from this guide: **`«grep»` is the right tool for
 every code-side search.** Reach for it before the shell's `rg`/grep,
@@ -18,7 +18,7 @@ below.
 
 ---
 
-## The eleven tools
+## The fifteen tools
 
 ```
 «grep»                      Find symbols (and substrings) by predicate
@@ -32,6 +32,10 @@ below.
 «explain_symbol_references»  Usage narrative from callers' prose only
 «trace_flow»                Find call chain(s) between two symbols
 «explain_flow»              Trace + narrate each step of the chain
+«patch»                     Post an implementation note against a symbol
+«patch_drop»                Remove pending patches (all or by symbol)
+«patch_list»                List all pending patches grouped by symbol
+«patch_apply»               Execute all pending patches (generate + write)
 ```
 
 ---
@@ -101,6 +105,31 @@ system.
 **`«explain_symbol_references»`** returns the usage story — callers'
 prose only, skipping the symbol's own prose. Use when you want to
 understand how a symbol is used, by whom, and in what context.
+
+### patch family — edit patches
+
+**`«patch»`** posts an implementation note against a symbol (fire-and-forget).
+The note includes a `reason` explaining the change. Patches are stored in
+the trie store and consumed by `«patch_apply»`.
+
+**`«patch_drop»`** removes pending patches. With no argument, drops all
+patches created in the current session. Pass a `qname` to drop patches
+for a specific symbol only.
+
+**`«patch_list»`** lists all pending patches grouped by symbol, showing
+each patch's note, reason, and origin session.
+
+**`«patch_apply»`** executes every pending patch in a single pipeline:
+merges notes for the same symbol, batches symbols by file, generates
+new source via LLM (one call per file), runs LSP diagnostics with up to
+3 fixup iterations, writes prose sections, and verifies trie consistency
+with `trie verify`. Returns per-file results with status and any errors.
+
+> **Agent workflow**: use `«patch»` to record intended changes, then
+> call `«patch_apply»` once to materialise everything. This avoids
+> editing source directly — the agent posts notes against symbols and
+> the system generates the code. Multiple agents can post notes
+> independently; `«patch_apply»` merges them before generation.
 
 ---
 
@@ -416,6 +445,7 @@ response.
 | | `trie grep-symbol`, `trie grep-symbol-neighbours` |
 | | `trie explain-symbol`, `trie explain-symbol-refs` |
 | | `trie trace-flow`, `trie explain-flow` |
+| | `trie patch`, `trie patch-drop`, `trie patch-list`, `trie patch-apply` |
 
 ```
 trie grep         [--name STR] [--kind K] [--scope-prefix P]
@@ -482,6 +512,7 @@ may already route through trie:
 | **`grep_str`**, **`grep_entry_points`**, **`grep_symbol`**, **`grep_symbol_and_neighbours`** | Custom tools wrapping the corresponding CLI. |
 | **`explain_symbol`**, **`explain_symbol_references`** | Custom tools for deep symbol understanding. |
 | **`trace_flow`**, **`explain_flow`** | Custom tools for inter-symbol path finding. |
+| **`patch`**, **`patch_drop`**, **`patch_list`**, **`patch_apply`** | Custom tools for edit patch workflow — post notes, manage, and execute. |
 
 When the override isn't installed, all tools work through the trie MCP
 server (prefixed as `«grep»`, `«read»`, etc.) and the `trie` CLI.

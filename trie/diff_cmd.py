@@ -8,7 +8,7 @@ from trie.check import check_project
 from trie.config import Config
 from trie.cost import ModelPricing, estimate_actual_cost
 from trie.graph.store import Store
-from trie.models import ModelClient
+from trie.models import TrieClient
 from trie.sync.progress import NULL_PROGRESS, ProgressCallback
 from trie.sync.single_file import FileSyncResult, sync_single_file
 
@@ -33,7 +33,7 @@ def diff_project(
     *,
     project_root: Path,
     config: Config,
-    client: ModelClient,
+    client: TrieClient,
     pricing: ModelPricing | None = None,
     budget_usd: float | None = None,
     limit: int | None = None,

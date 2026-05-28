@@ -17,15 +17,14 @@ surfaces.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
+from tests.fake_client import FakeTrieClient
 from trie.cli import app
 from trie.config import Config
-from trie.models import GenerationRequest, GenerationResponse
 from trie.scan import scan_project
 from trie.sync.single_file import sync_single_file
 
@@ -38,24 +37,6 @@ PROJECT_TOML = (
     'edits = "anthropic/claude-sonnet-4-6"\n'
     "[cascade]\ndefault_depth = 1\nhub_symbol_threshold = 20\n"
 )
-
-
-@dataclass
-class FakeClient:
-    model_id: str = "fake/test"
-    body: str = "## generated\n\nGenerated description.\n"
-
-    def generate(self, _req: GenerationRequest) -> GenerationResponse:
-        return GenerationResponse(
-            text=self.body,
-            input_tokens=10,
-            output_tokens=20,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
-        )
-
-    def count_tokens(self, _req: GenerationRequest) -> int:
-        return 100
 
 
 @pytest.fixture
@@ -81,14 +62,18 @@ def populated_project(tmp_path: Path) -> Path:
             tmp_path / "lib.py",
             project_root=tmp_path,
             config=config,
-            client=FakeClient(body="## slugify\n\nLowercase text and dash-separate words.\n"),
+            client=FakeTrieClient(
+                output_body="## slugify\n\nLowercase text and dash-separate words.\n"
+            ),
             store=store,
         )
         sync_single_file(
             tmp_path / "app.py",
             project_root=tmp_path,
             config=config,
-            client=FakeClient(body="## make_url\n\nBuild a /posts/<slug> URL from a title.\n"),
+            client=FakeTrieClient(
+                output_body="## make_url\n\nBuild a /posts/<slug> URL from a title.\n"
+            ),
             store=store,
         )
     return tmp_path

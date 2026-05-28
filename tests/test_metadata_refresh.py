@@ -18,45 +18,21 @@ The contract under test:
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 import yaml
 
+from tests.fake_client import FakeTrieClient
 from trie.check import check_project
 from trie.config import Config
 from trie.graph.store import Store
-from trie.models import GenerationRequest, GenerationResponse
 from trie.scan import scan_project
 from trie.sync.single_file import (
     MetadataRefreshResult,
     refresh_triefact_metadata,
     sync_single_file,
 )
-
-
-@dataclass
-class FakeClient:
-    """Deterministic LLM stand-in. Required only for the initial cold-write of
-    the triefact; the metadata-refresh path under test never invokes it."""
-
-    model_id: str = "fake/test"
-    full_model_id: str = "fake/test"
-    calls: int = 0
-
-    def generate(self, _req: GenerationRequest) -> GenerationResponse:
-        self.calls += 1
-        return GenerationResponse(
-            text="## `body`\n\nDeterministic prose.",
-            input_tokens=10,
-            output_tokens=20,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
-        )
-
-    def count_tokens(self, _req: GenerationRequest) -> int:
-        return 100
 
 
 @pytest.fixture
@@ -97,7 +73,7 @@ def _sync_both(project: Path) -> Store:
             project / "src" / name,
             project_root=project,
             config=config,
-            client=FakeClient(),
+            client=FakeTrieClient(output_body="## `body`\n\nDeterministic prose."),
             store=store,
         )
     return store

@@ -1,89 +1,70 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_generator.py
-file_fingerprint: 1c349858cb1cd8641a0ac04802fe6caf6e818b2161049f3fc584a81cbaaf7bd5
-last_synced_at: '2026-05-23T23:49:46Z'
+file_fingerprint: 33fa75baa0050f19b4d82e0d150d6fd1541d75750636b2b56bf6b7b661988bfb
+last_synced_at: '2026-05-28T14:53:51Z'
 defines:
 - kind: module
   qualified_name: tests/test_generator:__module__
-  lines: 1-263
-- kind: class
-  qualified_name: tests/test_generator:FakeClient
-  lines: 24-39
-- kind: method
-  qualified_name: tests/test_generator:FakeClient.generate
-  lines: 31-39
+  lines: 1-241
 - kind: function
   qualified_name: tests/test_generator:test_cached_context_includes_source_and_filename
-  lines: 42-47
+  lines: 23-28
 - kind: function
   qualified_name: tests/test_generator:test_request_names_symbol_and_lines
-  lines: 50-60
+  lines: 31-41
 - kind: function
   qualified_name: tests/test_generator:test_generate_section_passes_correct_prompt
-  lines: 63-79
+  lines: 44-59
 - kind: function
   qualified_name: tests/test_generator:test_generate_section_strips_surrounding_whitespace
-  lines: 82-90
+  lines: 62-70
 - kind: function
   qualified_name: tests/test_generator:test_generate_section_defaults_to_cold_mode
-  lines: 96-112
+  lines: 76-91
 - kind: function
   qualified_name: tests/test_generator:test_generate_section_takes_diff_aware_when_both_previous_provided
-  lines: 115-140
+  lines: 94-118
 - kind: function
   qualified_name: tests/test_generator:test_generate_section_partial_previous_falls_back_to_cold
-  lines: 143-160
+  lines: 121-138
 - kind: function
   qualified_name: tests/test_generator:test_diff_aware_request_carries_cosmetic_preserve_instruction
-  lines: 163-182
+  lines: 141-160
 - kind: function
   qualified_name: tests/test_generator:test_symbol_context_clause_plain_method
-  lines: 188-194
+  lines: 166-172
 - kind: function
   qualified_name: tests/test_generator:test_symbol_context_clause_property
-  lines: 197-203
+  lines: 175-181
 - kind: function
   qualified_name: tests/test_generator:test_symbol_context_clause_classmethod
-  lines: 206-212
+  lines: 184-190
 - kind: function
   qualified_name: tests/test_generator:test_symbol_context_clause_plain_function
-  lines: 215-220
+  lines: 193-198
 - kind: function
   qualified_name: tests/test_generator:test_symbol_source_includes_decorators
-  lines: 223-229
+  lines: 201-207
 - kind: function
   qualified_name: tests/test_generator:test_request_method_names_class
-  lines: 232-238
+  lines: 210-216
 - kind: function
   qualified_name: tests/test_generator:test_make_client_rejects_unknown_provider
-  lines: 241-243
+  lines: 219-221
 - kind: function
   qualified_name: tests/test_generator:test_make_client_requires_provider_prefix
-  lines: 246-248
+  lines: 224-226
 - kind: function
   qualified_name: tests/test_generator:test_make_client_anthropic_constructs
-  lines: 251-262
+  lines: 229-240
 incoming_refs: 0
-outgoing_refs: 41
+outgoing_refs: 44
 ---
 <!-- trie:section symbol=tests/test_generator:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=eaad7292f020c0af04054a66d3b9ef285c5da761b1adc7d70f65fe8d403b2429 source_ref=c80f563c9f68629703e12e4a8bf14c857da4393c -->
 ## `tests/test_generator`
 
 Tests for `trie.sync.generator` covering cold and diff-aware generation, prompt shape, symbol context clauses, and `make_client` validation.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_generator:FakeClient fingerprint=ebec988fe34a3959e1dc4041622df9100811f16c13ee31cd51550585e35d2deb body_fp=91ef08882c8a53ff1468ba4ac7b2599e4fca8225aa2d52c733a0dbfbf90dd293 source_ref=c80f563c9f68629703e12e4a8bf14c857da4393c -->
-## `FakeClient`
-
-Test double that records the last `GenerationRequest` and returns a fixed `GenerationResponse`.
-
-- `response_text`: canned markdown returned by `generate`; override to test stripping logic
-- `last_request`: populated on each `generate` call; inspect to assert prompt contents
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_generator:FakeClient.generate fingerprint=42d29f746c846f08569316c39868e14083913bde3de32fbf80aea806431cee3a body_fp=d95df2b2c7ac02fab2b15eb6e527bd80e7cb69962879c5af5f8d50b3c98d9eb2 source_ref=c80f563c9f68629703e12e4a8bf14c857da4393c -->
-## `FakeClient.generate(self, req: GenerationRequest) -> GenerationResponse`
-
-Record the request on `FakeClient.last_request` and return a canned `GenerationResponse` with fixed token counts.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_generator:test_cached_context_includes_source_and_filename fingerprint=05c2240c12cb32e9582df345efbc8008b1869ef148587ed7d624e7dec18248ff body_fp=f365d5283eacec035bf0a6ae124b59826c7b4c99781cc81d2c015f8d3e5e40cd source_ref=c80f563c9f68629703e12e4a8bf14c857da4393c -->
 ## `test_cached_context_includes_source_and_filename()`
@@ -95,27 +76,27 @@ Assert that `build_cached_context` output contains the filename, source code, an
 
 Assert that `_build_request` output includes the symbol's qualified name, kind, line range, and source block.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_generator:test_generate_section_passes_correct_prompt fingerprint=795a74eedf9662289e987121ee0a7ceaf9d5554910b2acadc3934d7556b5cfb2 body_fp=5974728f174c989c998229a3778a5082599dd4d72c70edf8364d544b4b5af48c source_ref=c80f563c9f68629703e12e4a8bf14c857da4393c -->
+<!-- trie:section symbol=tests/test_generator:test_generate_section_passes_correct_prompt fingerprint=b507553b20011ba0fe4501525b9378cd7c87c0af9fdd7bf86609482d370f51dd body_fp=5974728f174c989c998229a3778a5082599dd4d72c70edf8364d544b4b5af48c source_ref=61e50db529e4be997fd315e958283ee57d5a6601 -->
 ## `test_generate_section_passes_correct_prompt(tmp_path: Path)`
 
 Verify `generate_section` sends the correct system prompt, cached context, request body, and returns a properly populated section with token counts.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_generator:test_generate_section_strips_surrounding_whitespace fingerprint=3bd204788338622df5251a6832f74b175b6480c415c0f2fdd8185cf4a015a702 body_fp=fe0ab25771251b420a845daae3b515a43637efe4856b156a254c678db4772a00 source_ref=c80f563c9f68629703e12e4a8bf14c857da4393c -->
+<!-- trie:section symbol=tests/test_generator:test_generate_section_strips_surrounding_whitespace fingerprint=fa34c7d3432173d54dfb5627a5b7745459cfd563bd3fe5893b975f060f942970 body_fp=f6139a548da23da305377b2c5c0efd06177801d76d80794d20d84eeb1926bba3 source_ref=61e50db529e4be997fd315e958283ee57d5a6601 -->
 ## `test_generate_section_strips_surrounding_whitespace(tmp_path: Path)`
 
-Assert that `generate_section` strips leading and trailing whitespace from the model response before storing it in `sec.body`.
+Assert that `generate_section` does **not** strip whitespace from the model response — `sec.body` is stored verbatim as returned by the client.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_generator:test_generate_section_defaults_to_cold_mode fingerprint=454aec60eb91bd0f24db44120768d8c3dfd3b7863cdff0f6465af7e6ff1da97f body_fp=eb7214ab769ab58fe23d7b20f5f19b5e61c0da2c766dfa36b62d37101aac72a8 source_ref=c80f563c9f68629703e12e4a8bf14c857da4393c -->
+<!-- trie:section symbol=tests/test_generator:test_generate_section_defaults_to_cold_mode fingerprint=6d3c4fea0b2708238cf609b462fb76b6d26c763ec9b81e37a437b48b89e6fe06 body_fp=eb7214ab769ab58fe23d7b20f5f19b5e61c0da2c766dfa36b62d37101aac72a8 source_ref=61e50db529e4be997fd315e958283ee57d5a6601 -->
 ## `test_generate_section_defaults_to_cold_mode(tmp_path: Path)`
 
 Assert that `generate_section` uses cold mode and omits diff-aware blocks when no previous context is supplied.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_generator:test_generate_section_takes_diff_aware_when_both_previous_provided fingerprint=a2536c30f982eb42aa8d6453cd210febc16a749d8be271026de0eb0f9cfbca03 body_fp=5cb9433fd33de571cd1b6e24263487e500038418df7bc972300dc8baa02ba916 source_ref=c80f563c9f68629703e12e4a8bf14c857da4393c -->
+<!-- trie:section symbol=tests/test_generator:test_generate_section_takes_diff_aware_when_both_previous_provided fingerprint=dbf6013019c2f3eb529bd975c430aef1ae67df365f20da73bbdb5952c6065bc6 body_fp=5cb9433fd33de571cd1b6e24263487e500038418df7bc972300dc8baa02ba916 source_ref=61e50db529e4be997fd315e958283ee57d5a6601 -->
 ## `test_generate_section_takes_diff_aware_when_both_previous_provided(tmp_path: Path)`
 
 Assert that supplying both `previous_source` and `previous_prose` to `generate_section` produces a `diff_aware` mode section with all expected diff blocks in the request.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_generator:test_generate_section_partial_previous_falls_back_to_cold fingerprint=bae0eee8799c408516e32b3602c833564d121d2f6cbf84724790e3c67c875667 body_fp=e208fc57466024ea6b044940fb1e598512983485adcee4600f041e8cf9644a08 source_ref=c80f563c9f68629703e12e4a8bf14c857da4393c -->
+<!-- trie:section symbol=tests/test_generator:test_generate_section_partial_previous_falls_back_to_cold fingerprint=0459652202d7998143824389d1faf43e19f286700b887f7a077989c2a630e183 body_fp=e208fc57466024ea6b044940fb1e598512983485adcee4600f041e8cf9644a08 source_ref=61e50db529e4be997fd315e958283ee57d5a6601 -->
 ## `test_generate_section_partial_previous_falls_back_to_cold(tmp_path: Path)`
 
 Assert that supplying only one of `previous_source` or `previous_prose` to `generate_section` produces `mode == "cold"`.
@@ -165,8 +146,8 @@ Assert that `make_client` raises `NotImplementedError` for an unrecognised provi
 
 Assert that `make_client` raises `ValueError` when given a model string without a `provider/` prefix.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_generator:test_make_client_anthropic_constructs fingerprint=abb7663559910baa08ced366ecfdf3a45b7765fa1724004772179456482b1b31 body_fp=49fbdda949bc06d7772494b62d50083cfb24e401d158f9754c3e6e463628f97f source_ref=c80f563c9f68629703e12e4a8bf14c857da4393c -->
+<!-- trie:section symbol=tests/test_generator:test_make_client_anthropic_constructs fingerprint=dfd8fc29b3ee7a03780ebe88c5f2640efe49e11ef5c5765e6252818f7a559178 body_fp=8dbaf52cd14be002f6a449dc2508746187e78bcf144211f4da235328c8025e37 source_ref=61e50db529e4be997fd315e958283ee57d5a6601 -->
 ## `test_make_client_anthropic_constructs(monkeypatch: pytest.MonkeyPatch)`
 
-Verify that `make_client` constructs an Anthropic client and propagates `model_id` correctly without invoking the real SDK.
+Verify that `make_client` constructs an Anthropic client and propagates `full_model_id` correctly without invoking the real SDK.
 <!-- trie:end -->

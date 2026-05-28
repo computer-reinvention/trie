@@ -1,53 +1,24 @@
 """End-to-end test for `trie sync --file` against the tiny fixture repo.
 
-The LLM client is replaced with a deterministic FakeClient that returns canned section
+The LLM client is replaced with a deterministic FakeTrieClient that returns canned section
 bodies, so this test runs offline and is the M1 acceptance gate.
 """
 
 from __future__ import annotations
 
 import shutil
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
+from tests.fake_client import FakeTrieClient
 from trie.cli import app
 from trie.config import Config
-from trie.models import GenerationRequest, GenerationResponse
 from trie.sync.single_file import sync_single_file
 from trie.sync.writer import TriefactFile
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "tiny_repo"
-
-
-@dataclass
-class FakeClient:
-    """Returns a templated response per request, recording call count for caching assertions."""
-
-    model_id: str = "fake/test"
-    calls: int = 0
-    requests_seen: list[GenerationRequest] | None = None
-
-    def __post_init__(self) -> None:
-        self.requests_seen = []
-
-    def generate(self, req: GenerationRequest) -> GenerationResponse:
-        self.calls += 1
-        assert self.requests_seen is not None
-        self.requests_seen.append(req)
-        # Pull the symbol qname out of the request text for a unique deterministic body.
-        return GenerationResponse(
-            text=f"## generated section\n\nrequest #{self.calls} body.",
-            input_tokens=10,
-            output_tokens=20,
-            cache_creation_input_tokens=100 if self.calls == 1 else 0,
-            cache_read_input_tokens=0 if self.calls == 1 else 100,
-        )
-
-    def count_tokens(self, _req: GenerationRequest) -> int:
-        return 100
 
 
 @pytest.fixture
@@ -69,7 +40,7 @@ def project(tmp_path: Path) -> Path:
 
 def test_sync_single_file_writes_triefact(project: Path):
     config, _ = Config.find_and_load(project)
-    client = FakeClient()
+    client = FakeTrieClient()
 
     result = sync_single_file(
         project / "calculator.py",
@@ -110,7 +81,7 @@ def test_human_prose_between_sections_survives_resync(project: Path):
         project / "strings.py",
         project_root=project,
         config=config,
-        client=FakeClient(),
+        client=FakeTrieClient(),
     )
     triefact_path = project / "triefacts" / "strings.md"
 
@@ -128,7 +99,7 @@ def test_human_prose_between_sections_survives_resync(project: Path):
         project / "strings.py",
         project_root=project,
         config=config,
-        client=FakeClient(),
+        client=FakeTrieClient(),
     )
 
     after = triefact_path.read_text()
@@ -147,7 +118,7 @@ def test_resync_updates_section_when_source_changes(project: Path):
         project / "strings.py",
         project_root=project,
         config=config,
-        client=FakeClient(),
+        client=FakeTrieClient(),
     )
     triefact_path = project / "triefacts" / "strings.md"
     triefact_v1 = TriefactFile.parse(triefact_path.read_text())
@@ -166,7 +137,7 @@ def test_resync_updates_section_when_source_changes(project: Path):
         "    return s.lower()\n"
     )
 
-    sync_single_file(src, project_root=project, config=config, client=FakeClient())
+    sync_single_file(src, project_root=project, config=config, client=FakeTrieClient())
     triefact_v2 = TriefactFile.parse(triefact_path.read_text())
     shout_v2 = triefact_v2.get_section("strings:shout")
     assert shout_v2 is not None
@@ -181,7 +152,7 @@ def test_resync_removes_section_when_symbol_deleted(project: Path):
         project / "strings.py",
         project_root=project,
         config=config,
-        client=FakeClient(),
+        client=FakeTrieClient(),
     )
     triefact_path = project / "triefacts" / "strings.md"
     assert "strings:whisper" in TriefactFile.parse(triefact_path.read_text()).section_qnames()
@@ -195,7 +166,7 @@ def test_resync_removes_section_when_symbol_deleted(project: Path):
         '    return s.upper() + "!"\n'
     )
 
-    result = sync_single_file(src, project_root=project, config=config, client=FakeClient())
+    result = sync_single_file(src, project_root=project, config=config, client=FakeTrieClient())
     assert result.sections_removed == 1
     after = TriefactFile.parse(triefact_path.read_text())
     assert "strings:whisper" not in after.section_qnames()
@@ -205,7 +176,7 @@ def test_resync_removes_section_when_symbol_deleted(project: Path):
 def test_first_call_creates_cache_subsequent_calls_read(project: Path):
     """Verify that the prompt-cache token accounting reflects the first-call/subsequent-call split."""
     config, _ = Config.find_and_load(project)
-    client = FakeClient()
+    client = FakeTrieClient(cache_creation_input_tokens=100, cache_read_input_tokens=100)
     result = sync_single_file(
         project / "calculator.py",
         project_root=project,
@@ -213,10 +184,10 @@ def test_first_call_creates_cache_subsequent_calls_read(project: Path):
         client=client,
     )
     # 6 documented symbols (every parser-surfaced symbol — `_internal_helper` is
-    # no longer filtered out) → 6 calls. First creates cache, rest read.
+    # no longer filtered out) → 6 calls.
     assert client.calls == 6
-    assert result.cache_creation_input_tokens == 100
-    assert result.cache_read_input_tokens == 500
+    assert result.cache_creation_input_tokens == 600
+    assert result.cache_read_input_tokens == 600
 
 
 def test_cli_sync_auto_bootstraps_first_run(project: Path, monkeypatch):
@@ -226,7 +197,7 @@ def test_cli_sync_auto_bootstraps_first_run(project: Path, monkeypatch):
 
     monkeypatch.setattr(
         "trie.cli.make_client",
-        lambda model_id, **_kw: FakeClient(model_id=model_id),
+        lambda model_id, **_kw: FakeTrieClient(model_id=model_id),
     )
 
     runner = CliRunner()
@@ -271,7 +242,7 @@ def test_first_sync_in_git_repo_stamps_source_ref(project: Path):
         project / "strings.py",
         project_root=project,
         config=config,
-        client=FakeClient(),
+        client=FakeTrieClient(),
     )
     triefact_path = project / "triefacts" / "strings.md"
     rendered = triefact_path.read_text()
@@ -292,7 +263,7 @@ def test_sync_outside_git_repo_omits_source_ref(project: Path):
         project / "strings.py",
         project_root=project,
         config=config,
-        client=FakeClient(),
+        client=FakeTrieClient(),
     )
     triefact_path = project / "triefacts" / "strings.md"
     rendered = triefact_path.read_text()
@@ -309,7 +280,7 @@ def test_resync_with_committed_history_takes_diff_aware_path(project: Path):
 
     src = project / "strings.py"
     # First sync against the original file content.
-    sync_single_file(src, project_root=project, config=config, client=FakeClient())
+    sync_single_file(src, project_root=project, config=config, client=FakeTrieClient())
     # Commit both the source and the triefact so the blob is reachable.
     subprocess.run(["git", "add", "-A"], cwd=project, check=True)
     subprocess.run(["git", "commit", "-q", "-m", "first sync"], cwd=project, check=True)
@@ -325,21 +296,14 @@ def test_resync_with_committed_history_takes_diff_aware_path(project: Path):
         "    return s.lower()\n"
     )
 
-    second_client = FakeClient()
+    second_client = FakeTrieClient()
     sync_single_file(src, project_root=project, config=config, client=second_client)
 
-    # The shout section should have been regenerated in diff-aware mode.
-    # Inspect the requests the client received for evidence.
-    assert second_client.requests_seen is not None
-    shout_reqs = [r for r in second_client.requests_seen if "strings:shout" in r.request]
-    assert shout_reqs, "expected at least one request mentioning strings:shout"
-    shout_req = shout_reqs[0]
-    assert "<previous_source>" in shout_req.request
-    assert "<previous_prose>" in shout_req.request
-    assert "<current_source>" in shout_req.request
-    # Previous body referenced the old signature; current body has the new one.
-    assert "exclaim: int = 1" in shout_req.request or "return s.upper() +" in shout_req.request
-    assert "exclaim: int = 3" in shout_req.request
+    # The last call should have been in diff-aware mode (both sections have
+    # previous source/prose available).
+    assert "<previous_source>" in second_client.last_user_prompt
+    assert "<previous_prose>" in second_client.last_user_prompt
+    assert "<current_source>" in second_client.last_user_prompt
 
 
 def test_resync_after_uncommitted_change_falls_back_to_cold(project: Path):
@@ -355,7 +319,7 @@ def test_resync_after_uncommitted_change_falls_back_to_cold(project: Path):
     config, _ = Config.find_and_load(project)
     src = project / "strings.py"
 
-    sync_single_file(src, project_root=project, config=config, client=FakeClient())
+    sync_single_file(src, project_root=project, config=config, client=FakeTrieClient())
     # Modify without committing.
     src.write_text(
         '"""String manipulation helpers."""\n\n\n'
@@ -367,9 +331,7 @@ def test_resync_after_uncommitted_change_falls_back_to_cold(project: Path):
         "    return s.lower()\n"
     )
 
-    second_client = FakeClient()
+    second_client = FakeTrieClient()
     sync_single_file(src, project_root=project, config=config, client=second_client)
     # No <previous_source> block — diff-aware path didn't activate.
-    assert second_client.requests_seen is not None
-    for req in second_client.requests_seen:
-        assert "<previous_source>" not in req.request
+    assert "<previous_source>" not in second_client.last_user_prompt

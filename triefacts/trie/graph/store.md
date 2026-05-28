@@ -148,7 +148,7 @@ defines:
 - kind: method
   qualified_name: trie/graph/store:Store.find_paths
   lines: 836-910
-incoming_refs: 71
+incoming_refs: 70
 outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/graph/store:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=df19a7d92687c892c51d630679ee2dabd6fccb2ff46be566c0076aac8e7c9ed8 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->

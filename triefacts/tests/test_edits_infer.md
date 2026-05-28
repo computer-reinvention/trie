@@ -1,56 +1,50 @@
 ---
 trie_version: 0.1.5
 source: tests/test_edits_infer.py
-file_fingerprint: 674d55d0e379a66c2d0e1c56dd1475331d8c700c8efa26cffb98d49ce2936902
-last_synced_at: '2026-05-28T01:49:06Z'
+file_fingerprint: e4459ae0f5487c93f4160f40f85d5a3736a5a587c896fbb145da811f6695fef6
+last_synced_at: '2026-05-28T14:53:42Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_infer:__module__
-  lines: 1-166
-- kind: function
-  qualified_name: tests/test_edits_infer:_make_response
-  lines: 9-19
+  lines: 1-130
 - kind: class
   qualified_name: tests/test_edits_infer:TestMergeNotes
-  lines: 22-97
+  lines: 7-80
 - kind: method
   qualified_name: tests/test_edits_infer:TestMergeNotes.test_empty_patches
-  lines: 23-28
+  lines: 8-12
 - kind: method
   qualified_name: tests/test_edits_infer:TestMergeNotes.test_single_patch_preserved
-  lines: 30-36
+  lines: 14-22
 - kind: method
   qualified_name: tests/test_edits_infer:TestMergeNotes.test_empty_response_returns_empty
-  lines: 38-44
+  lines: 24-29
 - kind: method
   qualified_name: tests/test_edits_infer:TestMergeNotes.test_preserves_reasons_via_delimiter
-  lines: 46-53
+  lines: 31-40
 - kind: method
   qualified_name: tests/test_edits_infer:TestMergeNotes.test_preserves_reasons_multiple_lines
-  lines: 55-68
+  lines: 42-53
 - kind: method
   qualified_name: tests/test_edits_infer:TestMergeNotes.test_fallback_no_delimiter
-  lines: 70-79
+  lines: 55-66
 - kind: method
   qualified_name: tests/test_edits_infer:TestMergeNotes.test_mixed_bullet_formats
-  lines: 81-97
+  lines: 68-80
 - kind: class
   qualified_name: tests/test_edits_infer:TestInferSourceAndProse
-  lines: 100-165
+  lines: 83-129
 - kind: method
   qualified_name: tests/test_edits_infer:TestInferSourceAndProse.test_basic_inference
-  lines: 101-116
-- kind: method
-  qualified_name: tests/test_edits_infer:TestInferSourceAndProse.test_unknown_delimiter_raises
-  lines: 118-128
+  lines: 84-97
 - kind: method
   qualified_name: tests/test_edits_infer:TestInferSourceAndProse.test_source_without_code_block
-  lines: 130-146
+  lines: 99-113
 - kind: method
   qualified_name: tests/test_edits_infer:TestInferSourceAndProse.test_multiline_prose
-  lines: 148-165
+  lines: 115-129
 incoming_refs: 0
-outgoing_refs: 13
+outgoing_refs: 24
 ---
 <!-- trie:section symbol=tests/test_edits_infer:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=c10650778195a6cc658ed4963d096bf26fb6108e54fb14f862145fc170c68cb5 source_ref=c36508a0c2c7c60d58c666723859928b6264564c -->
 ## `tests/test_edits_infer`
@@ -60,75 +54,63 @@ Test suite for `trie.edits.infer.infer_source_and_prose` and `merge_notes`.
 - `TestMergeNotes`: covers empty, single, delimiter, multi-line, and mixed-bullet cases.
 - `TestInferSourceAndProse`: covers basic inference, missing delimiter error, no code-block, and multi-line prose.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_infer:_make_response fingerprint=59a0874092ddad87cbc98dc0fa09532fc367ab2bdbf188d059a22b98b621f1fd body_fp=fc3dbaf222d3a8bd4f30b57b05ba065b0a73f1322267b96b7ba1028e03549902 source_ref=c36508a0c2c7c60d58c666723859928b6264564c -->
-## `_make_response(text: str)`
-
-Build a minimal `GenerationResponse`-like `SimpleNamespace` for use in tests.
-
-- `output_tokens`: set to word count of `text`; all cache token fields fixed at `0`.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes fingerprint=2ac94edc9fa7ceebb838a37a1c85809a14a56616d89e348ad7682236d38a5007 body_fp=5ce39247311e4f0cb41666901a9b56d5f77dfa40474cd2ea4114f9aa986e2cb7 source_ref=c36508a0c2c7c60d58c666723859928b6264564c -->
+<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes fingerprint=536c144865fac54b0f67efce337e4540069db0d99d77a55a9d1f8ce7cfa4d0e7 body_fp=5ce39247311e4f0cb41666901a9b56d5f77dfa40474cd2ea4114f9aa986e2cb7 source_ref=ee1bca5ff64260672604cc21e6e8223a33ed21f3 -->
 ## `TestMergeNotes`
 
 Test suite for `merge_notes` covering empty input, delimiter parsing, multi-bullet responses, and fallback behaviour.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_empty_patches fingerprint=822c95235dec295a4acaf02544991397ac94bb75f77c94f2ae3a036a4e205f19 body_fp=d87bb2c22f47735c96a37ac13d0f129de13ab4c37b1b319972f7808a5d341ec9 source_ref=c36508a0c2c7c60d58c666723859928b6264564c -->
-## `TestMergeNotes.test_empty_patches(self, mocker: MockerFixture)`
+<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_empty_patches fingerprint=264d07314effb6a3d3ea131dbadcf126ac7078eb4ebff4dfb240abc4cbc03d02 body_fp=e43ba34814557db967d251592ee151e958806027f65d1fbd004a2992f49781c0 source_ref=ee1bca5ff64260672604cc21e6e8223a33ed21f3 -->
+## `TestMergeNotes.test_empty_patches(self)`
 
 Verify that `merge_notes` returns empty lists when given an empty patches list.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_single_patch_preserved fingerprint=5fd90769ef3f48854478973ce3231ba5a9c27f3326ed49a85028c5afb79ccb43 body_fp=161044c735c6942bd76f35e3e3297c4a3c8a120a21a5af3c20d6af1a1844605d source_ref=c36508a0c2c7c60d58c666723859928b6264564c -->
-## `TestMergeNotes.test_single_patch_preserved(self, mocker: MockerFixture)`
+<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_single_patch_preserved fingerprint=c503a6a0b86c3889717b4bc8e6546c1863424f629e6457a18e54820d070295ad body_fp=21bbe64d554722b2dd9ffc060c01822cc584fa2f41a43939e0006a218a506904 source_ref=ee1bca5ff64260672604cc21e6e8223a33ed21f3 -->
+## `TestMergeNotes.test_single_patch_preserved(self)`
 
 Assert that `merge_notes` returns exactly one note containing the patch text when given a single patch.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_empty_response_returns_empty fingerprint=18559650a44ab0864f4c4c577fb436f6e1100a970db78e7e6708fbe77297fd5c body_fp=ba658f441fb1ce5096a666b05282919731953371cc108414cb2852f2cb781185 source_ref=c36508a0c2c7c60d58c666723859928b6264564c -->
-## `TestMergeNotes.test_empty_response_returns_empty(self, mocker: MockerFixture)`
+<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_empty_response_returns_empty fingerprint=333e3f8fef5e7cb72b3c886d24b7dbd7829bee752b3a5efa8cb31bb75102133c body_fp=50769f191c6c9c457358e2c53135cd68e51c6218e2f6217fc8b85bc70863c1a2 source_ref=ee1bca5ff64260672604cc21e6e8223a33ed21f3 -->
+## `TestMergeNotes.test_empty_response_returns_empty(self)`
 
 Assert that `merge_notes` returns empty lists when the client generates an empty response.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_preserves_reasons_via_delimiter fingerprint=c6dc88181257216989a7fe0805875b7f3b800dac067009817ff245355cfc14e1 body_fp=c399635d33d4c7c12c4b429954b370add9c87daca6b3ed659b7521334c473877 source_ref=c36508a0c2c7c60d58c666723859928b6264564c -->
-## `TestMergeNotes.test_preserves_reasons_via_delimiter(self, mocker: MockerFixture)`
+<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_preserves_reasons_via_delimiter fingerprint=1836d50cfcb4e992a0a26cd20fc4b687002a516548cebcc50f8ff9fd35348c92 body_fp=e2ac6ded91f78ad5f7419ace1b719929b46dcaab2ba6a1065862a9ce821a6424 source_ref=ee1bca5ff64260672604cc21e6e8223a33ed21f3 -->
+## `TestMergeNotes.test_preserves_reasons_via_delimiter(self)`
 
 Verify that `merge_notes` correctly parses reasons from bullet lines using the `—` delimiter.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_preserves_reasons_multiple_lines fingerprint=16f4002c0a4650ffafe0bc7a2c243240ed8f6d6c3bbd1ef95359d0b055adaac1 body_fp=9366131aa559aa290b5c9e085f4195c2eba6c5187d441587dd6bfb45055d1c5c source_ref=c36508a0c2c7c60d58c666723859928b6264564c -->
-## `TestMergeNotes.test_preserves_reasons_multiple_lines(self, mocker: MockerFixture)`
+<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_preserves_reasons_multiple_lines fingerprint=c546416b38c95499af23d8a8c08eb5f4656bce8dbfc6d4e2d0e76e576d00cd24 body_fp=4ccbcf48bccf0fec939b32ddee0b59f5bd1b75f8a149413c1b54087eaaf3bd35 source_ref=ee1bca5ff64260672604cc21e6e8223a33ed21f3 -->
+## `TestMergeNotes.test_preserves_reasons_multiple_lines(self)`
 
 Verify that `merge_notes` correctly extracts reasons from multiple delimited bullet lines across mixed bullet styles.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_fallback_no_delimiter fingerprint=7ad4d4539ae1f8e10fc9019fd8af0acdd65992e257b43aaf96b3883025d6aa74 body_fp=0676ff35d4aa1a178f7a2dfb7daa2950dfce63377bccd36de7b752ba36b0cfe8 source_ref=c36508a0c2c7c60d58c666723859928b6264564c -->
-## `TestMergeNotes.test_fallback_no_delimiter(self, mocker: MockerFixture)`
+<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_fallback_no_delimiter fingerprint=4e34c3466964b09fb2d6a35c59806e2aeb85c1be6d4a9db0516ae22c72f9150f body_fp=40d4528e0addd7d08a3c9abe664ccf995d669bc2ea39bdc470893800199870fa source_ref=ee1bca5ff64260672604cc21e6e8223a33ed21f3 -->
+## `TestMergeNotes.test_fallback_no_delimiter(self)`
 
 Verify `merge_notes` assigns `"merged"` as the reason for every note when the LLM response contains no `—` delimiter.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_mixed_bullet_formats fingerprint=806cf3bd4ba4bf0df137d8b268d19e876daa99c877a552c36e7bf56e862446a8 body_fp=a0f0ee8190f839356cfe0b46bece89a589f1bdc5f0b6e463ac208e43f298acba source_ref=c36508a0c2c7c60d58c666723859928b6264564c -->
-## `TestMergeNotes.test_mixed_bullet_formats(self, mocker: MockerFixture)`
+<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_mixed_bullet_formats fingerprint=2192ba701494849c6e69485818a00a1e596178780e9a129691631ccfe8929f68 body_fp=64d913b7442d4aae82e0518724859dba97d75877c98685956db2d14019faf9f2 source_ref=ee1bca5ff64260672604cc21e6e8223a33ed21f3 -->
+## `TestMergeNotes.test_mixed_bullet_formats(self)`
 
-Verify `merge_notes` correctly parses notes and reasons from `<bullet>`, `*`, and `-` prefixed lines.
+Verify `merge_notes` returns correct notes and reasons when the client yields multiple note/reason pairs.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_infer:TestInferSourceAndProse fingerprint=5b0ef9d59027434d7a368e8a7da9029faa55869a7eca072810970e0eb9a5487b body_fp=c97afe99897424ffdd08d8c76b796ec9fb3275d1379661903847928c18968d4f source_ref=c36508a0c2c7c60d58c666723859928b6264564c -->
+<!-- trie:section symbol=tests/test_edits_infer:TestInferSourceAndProse fingerprint=7a600df802688fe313b6c68cc9b80d3295e9b3f08a27b7fd1bd445a0313794b7 body_fp=c97afe99897424ffdd08d8c76b796ec9fb3275d1379661903847928c18968d4f source_ref=ee1bca5ff64260672604cc21e6e8223a33ed21f3 -->
 ## `class TestInferSourceAndProse`
 
 Test suite for `infer_source_and_prose`, covering delimiter parsing, code-block extraction, missing delimiters, and multiline prose.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_infer:TestInferSourceAndProse.test_basic_inference fingerprint=5e756324f8d487e71aaa39ce72013d13ee09c32724b6dafab9d1209cac167d79 body_fp=916c42482c473f8bc3b1f9c7b4a391878140a5b70b6a9a7d389bebb3975518ab source_ref=c36508a0c2c7c60d58c666723859928b6264564c -->
-## `TestInferSourceAndProse.test_basic_inference(self, mocker: MockerFixture)`
+<!-- trie:section symbol=tests/test_edits_infer:TestInferSourceAndProse.test_basic_inference fingerprint=6fe32699f693d902c7ba7aacab41558e2a7b2462527ebdcaebcc32039bc5013f body_fp=86ff33c5b82612d56c832d25e4d03cc7bc1f1b27a03a5817875ed246e1898bbb source_ref=ee1bca5ff64260672604cc21e6e8223a33ed21f3 -->
+## `TestInferSourceAndProse.test_basic_inference(self)`
 
 Verify `infer_source_and_prose` correctly parses a well-formed LLM response containing a fenced code block and `---PROSE---` delimiter.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_infer:TestInferSourceAndProse.test_unknown_delimiter_raises fingerprint=edae656908aca862abf6b75c4eea882128fc0fbea2c187285dc2fd195b742b99 body_fp=16a63f5ac82893ecf7af61dcccf400053d722b2234a8b2776418be5cccdae951 source_ref=c36508a0c2c7c60d58c666723859928b6264564c -->
-## `TestInferSourceAndProse.test_unknown_delimiter_raises(self, mocker: MockerFixture)`
-
-Assert `infer_source_and_prose` raises `ValueError` when the LLM response lacks the expected delimiter.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_infer:TestInferSourceAndProse.test_source_without_code_block fingerprint=149f4b5a6d579be7bebd885d62229b085098b2a20bdb63979ed5b778cf304c83 body_fp=e9eb329ee970890651baf8a915d3889559dac67211e1d1e12e0ea2d24acca152 source_ref=c36508a0c2c7c60d58c666723859928b6264564c -->
-## `TestInferSourceAndProse.test_source_without_code_block(self, mocker: MockerFixture)`
+<!-- trie:section symbol=tests/test_edits_infer:TestInferSourceAndProse.test_source_without_code_block fingerprint=a584d6fedcd6cfbfd37a807849e69a9c05f620aedf393e02817ac2fa4ad624cf body_fp=02ff12dbca723a0786c653e1f1fe7d9fa62e3c54ffdb429d05c3de9aa4564769 source_ref=ee1bca5ff64260672604cc21e6e8223a33ed21f3 -->
+## `TestInferSourceAndProse.test_source_without_code_block(self)`
 
 Verify `infer_source_and_prose` correctly parses LLM output when source is returned without triple-backtick fences.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_infer:TestInferSourceAndProse.test_multiline_prose fingerprint=a9feaf985d7ffd7c01931b7d68a6142cf4470c1287c9dd02e986c8a23f8ccb3c body_fp=680688b4706c94540f0e647cac8c3c3529c1de7baa7d7b366aafbf7ef8eaf1df source_ref=c36508a0c2c7c60d58c666723859928b6264564c -->
-## `TestInferSourceAndProse.test_multiline_prose(self, mocker: MockerFixture)`
+<!-- trie:section symbol=tests/test_edits_infer:TestInferSourceAndProse.test_multiline_prose fingerprint=30ad28170ee5253cdba42ed7d90de74e8a10d3dbf65af86594b5b304ebeaaf61 body_fp=8004b3062e3c7cd243bb3b5325bf561209ffc48b406df01df54005e443ddaad2 source_ref=ee1bca5ff64260672604cc21e6e8223a33ed21f3 -->
+## `TestInferSourceAndProse.test_multiline_prose(self)`
 
 Verify that `infer_source_and_prose` preserves multi-paragraph prose sections following the `---PROSE---` delimiter.
 <!-- trie:end -->

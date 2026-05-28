@@ -16,41 +16,19 @@ The contract under test:
 from __future__ import annotations
 
 import shutil
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 
+from tests.fake_client import FakeTrieClient
 from trie.config import Config
 from trie.graph.store import Store
-from trie.models import GenerationRequest, GenerationResponse
 from trie.scan import scan_project
 from trie.sync.incremental import compute_incremental_worklist, run_incremental
 from trie.sync.single_file import sync_single_file
 from trie.sync.writer import TriefactFile
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "tiny_repo"
-
-
-@dataclass
-class FakeClient:
-    """Deterministic stand-in for an LLM. Each call returns a uniquely-tagged body."""
-
-    model_id: str = "fake/test"
-    calls: int = 0
-
-    def generate(self, req: GenerationRequest) -> GenerationResponse:
-        self.calls += 1
-        return GenerationResponse(
-            text=f"## generated section\n\ncall #{self.calls} body.",
-            input_tokens=10,
-            output_tokens=20,
-            cache_creation_input_tokens=100 if self.calls == 1 else 0,
-            cache_read_input_tokens=0 if self.calls == 1 else 100,
-        )
-
-    def count_tokens(self, _req: GenerationRequest) -> int:
-        return 100
 
 
 def _make_project(tmp_path: Path) -> Path:
@@ -80,7 +58,7 @@ def project(tmp_path: Path) -> Path:
 def test_symbols_to_regen_none_regens_every_symbol(project: Path):
     """The legacy / --file path: passing None regenerates everything (6 symbols)."""
     config, _ = Config.find_and_load(project)
-    client = FakeClient()
+    client = FakeTrieClient()
 
     result = sync_single_file(
         project / "calculator.py",
@@ -105,7 +83,7 @@ def test_symbols_to_regen_subset_only_regenerates_listed_symbols(project: Path):
         project / "calculator.py",
         project_root=project,
         config=config,
-        client=FakeClient(),
+        client=FakeTrieClient(output_body="## first run"),
     )
 
     # Capture pre-state bytes for every section.
@@ -114,7 +92,7 @@ def test_symbols_to_regen_subset_only_regenerates_listed_symbols(project: Path):
     pre_sections = {s.qualified_name: s for s in pre.chunks if hasattr(s, "qualified_name")}
 
     # Second sync: ask to regen only `add`. Every other symbol must pass through.
-    client = FakeClient()
+    client = FakeTrieClient(output_body="## second run")
     result = sync_single_file(
         project / "calculator.py",
         project_root=project,
@@ -151,13 +129,13 @@ def test_symbols_to_regen_empty_set_runs_no_llm_calls(project: Path):
         project / "calculator.py",
         project_root=project,
         config=config,
-        client=FakeClient(),
+        client=FakeTrieClient(),
     )
     triefact_path = project / "triefacts" / "calculator.md"
     pre_text = triefact_path.read_text()
 
     # Sync again with an empty regen set.
-    client = FakeClient()
+    client = FakeTrieClient()
     result = sync_single_file(
         project / "calculator.py",
         project_root=project,
@@ -188,10 +166,10 @@ def test_symbols_to_regen_ignores_unknown_qnames(project: Path):
         project / "calculator.py",
         project_root=project,
         config=config,
-        client=FakeClient(),
+        client=FakeTrieClient(),
     )
 
-    client = FakeClient()
+    client = FakeTrieClient()
     result = sync_single_file(
         project / "calculator.py",
         project_root=project,
@@ -227,13 +205,13 @@ def test_worklist_collects_qnames_for_directly_stale_symbols(project: Path):
         project / "calculator.py",
         project_root=project,
         config=config,
-        client=FakeClient(),
+        client=FakeTrieClient(),
     )
     sync_single_file(
         project / "strings.py",
         project_root=project,
         config=config,
-        client=FakeClient(),
+        client=FakeTrieClient(),
     )
 
     # Edit one symbol's body in calculator.py.
@@ -289,7 +267,7 @@ def test_run_incremental_regenerates_only_changed_symbol(project: Path):
             project / f,
             project_root=project,
             config=config,
-            client=FakeClient(),
+            client=FakeTrieClient(),
         )
 
     triefact_path = project / "triefacts" / "calculator.md"
@@ -305,7 +283,7 @@ def test_run_incremental_regenerates_only_changed_symbol(project: Path):
         )
     )
 
-    client = FakeClient()
+    client = FakeTrieClient()
     with Store(project / ".trie" / "graph.db") as store:
         result = run_incremental(
             project_root=project,
@@ -339,7 +317,7 @@ def test_underscored_symbols_are_documented_and_can_go_stale(project: Path):
         project / "calculator.py",
         project_root=project,
         config=config,
-        client=FakeClient(),
+        client=FakeTrieClient(),
     )
 
     triefact_path = project / "triefacts" / "calculator.md"

@@ -1,63 +1,54 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_triefact_metadata.py
-file_fingerprint: 47522a6871bc49888f60da41195002592d8aedc61c3f41f83369340886d01f00
-last_synced_at: '2026-05-23T23:51:33Z'
+file_fingerprint: c9ca8a05dc8bfff00b6d53711b19041182ab22506e795915e8ed0e2a2fb05b19
+last_synced_at: '2026-05-28T14:39:43Z'
 description: Front-matter enrichment in `sync_single_file`.
 defines:
 - kind: module
   qualified_name: tests/test_triefact_metadata:__module__
-  lines: 1-183
-- kind: class
-  qualified_name: tests/test_triefact_metadata:FakeClient
-  lines: 25-40
-- kind: method
-  qualified_name: tests/test_triefact_metadata:FakeClient.generate
-  lines: 29-37
-- kind: method
-  qualified_name: tests/test_triefact_metadata:FakeClient.count_tokens
-  lines: 39-40
+  lines: 1-163
 - kind: function
   qualified_name: tests/test_triefact_metadata:project
-  lines: 44-65
+  lines: 24-45
 - kind: function
   qualified_name: tests/test_triefact_metadata:_front_matter
-  lines: 68-73
+  lines: 48-53
 - kind: function
   qualified_name: tests/test_triefact_metadata:_sync
-  lines: 76-95
+  lines: 56-75
 - kind: function
   qualified_name: tests/test_triefact_metadata:test_front_matter_carries_description_from_module_docstring
-  lines: 98-101
+  lines: 78-81
 - kind: function
   qualified_name: tests/test_triefact_metadata:test_front_matter_omits_description_when_no_module_docstring
-  lines: 104-108
+  lines: 84-88
 - kind: function
   qualified_name: tests/test_triefact_metadata:test_front_matter_lists_public_symbols_in_source_order
-  lines: 111-117
+  lines: 91-97
 - kind: function
   qualified_name: tests/test_triefact_metadata:test_front_matter_carries_iso8601_timestamp
-  lines: 120-129
+  lines: 100-109
 - kind: function
   qualified_name: tests/test_triefact_metadata:test_front_matter_includes_ref_counts_when_store_provided
-  lines: 132-137
+  lines: 112-117
 - kind: function
   qualified_name: tests/test_triefact_metadata:test_front_matter_omits_ref_counts_when_store_omitted
-  lines: 140-144
+  lines: 120-124
 - kind: function
   qualified_name: tests/test_triefact_metadata:test_extract_module_docstring_handles_triple_and_single
-  lines: 147-155
+  lines: 127-135
 - kind: function
   qualified_name: tests/test_triefact_metadata:test_extract_module_docstring_returns_none_when_first_stmt_is_code
-  lines: 158-161
+  lines: 138-141
 - kind: function
   qualified_name: tests/test_triefact_metadata:test_strip_string_literal_handles_prefixes
-  lines: 164-167
+  lines: 144-147
 - kind: function
   qualified_name: tests/test_triefact_metadata:test_store_file_ref_counts_excludes_intra_file_edges
-  lines: 170-182
+  lines: 150-162
 incoming_refs: 0
-outgoing_refs: 14
+outgoing_refs: 12
 ---
 <!-- trie:section symbol=tests/test_triefact_metadata:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=b560688d5393243a5b2a015428d65b11f42491ec8a8a25a2d22cf81882f9353b source_ref=a472f3ac583e637383ff06da45f7bb5ef9707f56 -->
 ## `tests/test_triefact_metadata`
@@ -65,25 +56,6 @@ outgoing_refs: 14
 Test front-matter enrichment written by `sync_single_file` alongside each triefact.
 
 - Covers timestamps, module-docstring description, public-symbol roster, and cross-file ref counts.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_triefact_metadata:FakeClient fingerprint=e41cdf8484085fe52836a78fa046003a64b4ee976928802814aeb5dfbe564b63 body_fp=7fdb806807f4336c723f051a129a718a19eb6fd066ae37958676cab731d79840 source_ref=a472f3ac583e637383ff06da45f7bb5ef9707f56 -->
-## `FakeClient`
-
-Stub LLM client for tests that records call counts and returns fixed responses.
-
-- `calls`: incremented on each `generate` invocation.
-- `generate`: always returns a hardcoded two-token triefact body.
-- `count_tokens`: always returns 100.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_triefact_metadata:FakeClient.generate fingerprint=7328b86a4ba976097f1e8eec40c045a8090951dfeca29ef5debd39c4e6fc9a4b body_fp=68c03a2d5308b635b78a6f88c213406b5afd83ad703a7840a3b38639f522f49f source_ref=a472f3ac583e637383ff06da45f7bb5ef9707f56 -->
-## `FakeClient.generate(self, _req: GenerationRequest) -> GenerationResponse`
-
-Increment `FakeClient.calls` and return a fixed stub `GenerationResponse`.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_triefact_metadata:FakeClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=58f13e5964588efcb5dd3d583916a1d08eb61ae8589aeedeefc9993cb537902d source_ref=a472f3ac583e637383ff06da45f7bb5ef9707f56 -->
-## `FakeClient.count_tokens(self, _req: GenerationRequest) -> int`
-
-Return a fixed token count of 100 for any `GenerationRequest`.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_triefact_metadata:project fingerprint=495f251e3dd8b92a847acbd1c63dafa2c313097bc04492791267e04d649c9a0f body_fp=465574900bd1cf48b15dbf6ec4befc71229a0489907f4d03a967c7a025ac678f source_ref=a472f3ac583e637383ff06da45f7bb5ef9707f56 -->
 ## `project(tmp_path: Path) -> Path`
@@ -98,7 +70,7 @@ Pytest fixture that creates a minimal two-module project tree with a `trie.toml`
 
 Parse and return the YAML front-matter block from a triefact Markdown file.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_triefact_metadata:_sync fingerprint=01a73721a724ab824593515a56f32ab25dadc0ee5a29ab4b0a9529a6d8a318b6 body_fp=c9fde6fbee4731037f0ffb8450a6933178097bd5acb15470dd0666b7df493156 source_ref=a472f3ac583e637383ff06da45f7bb5ef9707f56 -->
+<!-- trie:section symbol=tests/test_triefact_metadata:_sync fingerprint=15a91710c2ea87b25b9abba5b9a815fd6245540e6ebd1242c6ef3c40ec522383 body_fp=c9fde6fbee4731037f0ffb8450a6933178097bd5acb15470dd0666b7df493156 source_ref=05954546e31c15368c9e6e45fc073fbf819f6008 -->
 ## `_sync(project: Path, *, with_store: bool) -> Path`
 
 Run `sync_single_file` on `src/alpha.py` within the test project, optionally with a populated `Store`, and return the output triefact path.

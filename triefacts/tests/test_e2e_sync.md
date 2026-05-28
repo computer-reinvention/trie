@@ -1,72 +1,60 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_e2e_sync.py
-file_fingerprint: 79b65409efae0ed16ba77f82d63dc68cc6914f24061f6e722d81f9c5b23a3fb7
-last_synced_at: '2026-05-23T23:48:15Z'
+file_fingerprint: 927e6b77c5b8b24d71444ae286de99af096680f8b42cc8f5e3c2c3bff8df0d03
+last_synced_at: '2026-05-28T14:53:25Z'
 description: End-to-end test for `trie sync --file` against the tiny fixture repo.
 defines:
 - kind: module
   qualified_name: tests/test_e2e_sync:__module__
-  lines: 1-376
+  lines: 1-338
 - kind: constant
   qualified_name: tests/test_e2e_sync:FIXTURE_DIR
-  lines: 22-22
-- kind: class
-  qualified_name: tests/test_e2e_sync:FakeClient
-  lines: 26-50
-- kind: method
-  qualified_name: tests/test_e2e_sync:FakeClient.__post_init__
-  lines: 33-34
-- kind: method
-  qualified_name: tests/test_e2e_sync:FakeClient.generate
-  lines: 36-47
-- kind: method
-  qualified_name: tests/test_e2e_sync:FakeClient.count_tokens
-  lines: 49-50
+  lines: 21-21
 - kind: function
   qualified_name: tests/test_e2e_sync:project
-  lines: 54-67
+  lines: 25-38
 - kind: function
   qualified_name: tests/test_e2e_sync:test_sync_single_file_writes_triefact
-  lines: 70-102
+  lines: 41-73
 - kind: function
   qualified_name: tests/test_e2e_sync:test_human_prose_between_sections_survives_resync
-  lines: 105-140
+  lines: 76-111
 - kind: function
   qualified_name: tests/test_e2e_sync:test_resync_updates_section_when_source_changes
-  lines: 143-174
+  lines: 114-145
 - kind: function
   qualified_name: tests/test_e2e_sync:test_resync_removes_section_when_symbol_deleted
-  lines: 177-202
+  lines: 148-173
 - kind: function
   qualified_name: tests/test_e2e_sync:test_first_call_creates_cache_subsequent_calls_read
-  lines: 205-219
+  lines: 176-190
 - kind: function
   qualified_name: tests/test_e2e_sync:test_cli_sync_auto_bootstraps_first_run
-  lines: 222-235
+  lines: 193-206
 - kind: function
   qualified_name: tests/test_e2e_sync:test_cli_sync_errors_on_missing_file
-  lines: 238-242
+  lines: 209-213
 - kind: function
   qualified_name: tests/test_e2e_sync:test_cli_sync_errors_when_no_config
-  lines: 245-251
+  lines: 216-222
 - kind: function
   qualified_name: tests/test_e2e_sync:_init_git
-  lines: 257-263
+  lines: 228-234
 - kind: function
   qualified_name: tests/test_e2e_sync:test_first_sync_in_git_repo_stamps_source_ref
-  lines: 266-284
+  lines: 237-255
 - kind: function
   qualified_name: tests/test_e2e_sync:test_sync_outside_git_repo_omits_source_ref
-  lines: 287-299
+  lines: 258-270
 - kind: function
   qualified_name: tests/test_e2e_sync:test_resync_with_committed_history_takes_diff_aware_path
-  lines: 302-342
+  lines: 273-306
 - kind: function
   qualified_name: tests/test_e2e_sync:test_resync_after_uncommitted_change_falls_back_to_cold
-  lines: 345-375
+  lines: 309-337
 incoming_refs: 0
-outgoing_refs: 29
+outgoing_refs: 36
 ---
 <!-- trie:section symbol=tests/test_e2e_sync:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=c8312f9875b0f542090e16c6680523fffe7b9317feff679738af264eacc6a6bf source_ref=de4967ffd03ab7a1cb0403f02d212520ddf339e8 -->
 ## `tests/test_e2e_sync`
@@ -82,62 +70,37 @@ End-to-end tests for `trie sync --file` using a deterministic `FakeClient` inste
 
 Absolute path to the `tests/fixtures/tiny_repo` directory used as the test fixture source.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_e2e_sync:FakeClient fingerprint=464e2049df41370146411117991983091506f10d89f570b2aa42a935790758e0 body_fp=5ecb03dcd45daccf6ec927e4b098bbe5586540b1733beb0f42ebb547b4992ba0 source_ref=de4967ffd03ab7a1cb0403f02d212520ddf339e8 -->
-## `FakeClient`
-
-Deterministic LLM client stub that returns canned `GenerationResponse` objects and records calls for cache-token assertions.
-
-- `calls`: incremented on each `generate` call; first call simulates cache creation, subsequent calls simulate cache reads.
-- `requests_seen`: accumulates every `GenerationRequest` passed to `generate`.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_e2e_sync:FakeClient.__post_init__ fingerprint=acb5f189b6faf4617c18bdcf095ff513902e065e9313e669660eb6579ac7a01f body_fp=2cf6e359491388a86ed6f45661a2472968ce30e8ca885c14936701059ef6f682 source_ref=de4967ffd03ab7a1cb0403f02d212520ddf339e8 -->
-## `FakeClient.__post_init__(self) -> None`
-
-Initialize `FakeClient.requests_seen` to an empty list after dataclass construction.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_e2e_sync:FakeClient.generate fingerprint=32144d57a656826d76eaf8439dcfc814411dfe621be53b51e279bc7343b2ba1e body_fp=27d3c0871a874acc19fd91dd5c8df71e55bd5b7a449ecc056af203a34e002f98 source_ref=de4967ffd03ab7a1cb0403f02d212520ddf339e8 -->
-## `FakeClient.generate(self, req: GenerationRequest) -> GenerationResponse`
-
-Record the request and return a deterministic `GenerationResponse` with call-count-based cache token splits.
-
-- First call sets `cache_creation_input_tokens=100`, subsequent calls set `cache_read_input_tokens=100`.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_e2e_sync:FakeClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=ca27c3bea5e2b96663b0946a5703f310915fce4c787a87fbd5c5da859942d202 source_ref=de4967ffd03ab7a1cb0403f02d212520ddf339e8 -->
-## `FakeClient.count_tokens(_req: GenerationRequest) -> int`
-
-Always returns 100 for any `FakeClient` token-count request.
-<!-- trie:end -->
 <!-- trie:section symbol=tests/test_e2e_sync:project fingerprint=16df3ebd676a6f8d2473a730ffb75c5fd86a5da52f7caae13faab42c03ae674f body_fp=f6a1e7524674455f4a09e957fd2fcccbd82b99e7ec8d1677b49e0d0c8e59b099 source_ref=de4967ffd03ab7a1cb0403f02d212520ddf339e8 -->
 ## `project(tmp_path: Path) -> Path`
 
 pytest fixture that copies the tiny fixture repo into a temp directory and writes a minimal `trie.toml`.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_e2e_sync:test_sync_single_file_writes_triefact fingerprint=94b9928853195be421740237bfaca67bdaa59a4ba7330e35e51099530b458628 body_fp=35bff4e706b9a4cf948aabebb6285cc7ba1fb3525e639467c40ccbd3ffaf1b5c source_ref=de4967ffd03ab7a1cb0403f02d212520ddf339e8 -->
+<!-- trie:section symbol=tests/test_e2e_sync:test_sync_single_file_writes_triefact fingerprint=2121e6316c2fa3f95a4d992213459338ae92f48da5d912f5f6b8f59b7d1c9b07 body_fp=35bff4e706b9a4cf948aabebb6285cc7ba1fb3525e639467c40ccbd3ffaf1b5c source_ref=64fa57905e1efe9489f5ca64acb79dfa4e7a99a1 -->
 ## `test_sync_single_file_writes_triefact(project: Path)`
 
 Verify `sync_single_file` generates 6 sections (all symbols, including private), writes valid front matter, and records every expected qname.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_e2e_sync:test_human_prose_between_sections_survives_resync fingerprint=918ac4736b7f4fb6b3d9d2da82a2d4084996a1f4547563434cf25bfcc35c6abe body_fp=d75abdad3cbc83d7a64f23f5464cb5f383ad036d285703001e7bc4e1bc6670ed source_ref=de4967ffd03ab7a1cb0403f02d212520ddf339e8 -->
+<!-- trie:section symbol=tests/test_e2e_sync:test_human_prose_between_sections_survives_resync fingerprint=d78590d8ab891f9ac8defc53cb0b9e62d7aef77faadb7f976af01e987fff1557 body_fp=d75abdad3cbc83d7a64f23f5464cb5f383ad036d285703001e7bc4e1bc6670ed source_ref=64fa57905e1efe9489f5ca64acb79dfa4e7a99a1 -->
 ## `test_human_prose_between_sections_survives_resync(project: Path)`
 
 Assert that hand-written Markdown between trie-managed sections is preserved across a second sync.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_e2e_sync:test_resync_updates_section_when_source_changes fingerprint=511dda2600814a422bce301b8428b60e6ba80391945cfcaa349e66b7675df2bb body_fp=1297b81dc3235d7b51dcc870a4e930e0b3dc030624fcb0fef007910306948e01 source_ref=de4967ffd03ab7a1cb0403f02d212520ddf339e8 -->
+<!-- trie:section symbol=tests/test_e2e_sync:test_resync_updates_section_when_source_changes fingerprint=663c27217202cf7408645525b391142168f1625b4ac47b0fc35634aa95882ec6 body_fp=1297b81dc3235d7b51dcc870a4e930e0b3dc030624fcb0fef007910306948e01 source_ref=64fa57905e1efe9489f5ca64acb79dfa4e7a99a1 -->
 ## `test_resync_updates_section_when_source_changes(project: Path)`
 
 Assert that resyncing after a source change produces a section with a different fingerprint.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_e2e_sync:test_resync_removes_section_when_symbol_deleted fingerprint=9f7d8ea0b59c3bde607537336b4d182624eb6e60374ad8f6f4307c66a3767229 body_fp=4338148b2fe728e2ddbe91cca1d525708a12df94852870cb715def5000ade823 source_ref=de4967ffd03ab7a1cb0403f02d212520ddf339e8 -->
+<!-- trie:section symbol=tests/test_e2e_sync:test_resync_removes_section_when_symbol_deleted fingerprint=673de21fdb3f1dda0cf202daf792ec31139e2884e104d93e20a5e69b42a0b18d body_fp=4338148b2fe728e2ddbe91cca1d525708a12df94852870cb715def5000ade823 source_ref=64fa57905e1efe9489f5ca64acb79dfa4e7a99a1 -->
 ## `test_resync_removes_section_when_symbol_deleted(project: Path)`
 
 Assert that resyncing after a symbol is deleted from source removes its triefact section and decrements `sections_removed`.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_e2e_sync:test_first_call_creates_cache_subsequent_calls_read fingerprint=d349234f6f28f8ec4ddae981bc0d114c8a9720ace243788a9b245d233d30c096 body_fp=0ecb22f751804a9fa2d3bdba72e6c2d5c75a00c500d090b315acccc9a42c2af9 source_ref=de4967ffd03ab7a1cb0403f02d212520ddf339e8 -->
+<!-- trie:section symbol=tests/test_e2e_sync:test_first_call_creates_cache_subsequent_calls_read fingerprint=71b11ded7011ab869391c4cffb47b16e972ba1ad5a80529fa9955f80101bd632 body_fp=83865f2fcccf6769df13b423be9e34140e027f0fbf3ac8382a33e5e52348a140 source_ref=64fa57905e1efe9489f5ca64acb79dfa4e7a99a1 -->
 ## `test_first_call_creates_cache_subsequent_calls_read(project: Path)`
 
-Assert that syncing `calculator.py` makes 6 LLM calls, with cache creation tokens on the first and cache read tokens on the remaining five.
+Assert that syncing `calculator.py` makes 6 LLM calls, accumulating 600 cache creation tokens and 600 cache read tokens total.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_e2e_sync:test_cli_sync_auto_bootstraps_first_run fingerprint=2bcfc5f6118090e540d8bf670a676551d99e301c4e54623b6d9463d576f6ad4a body_fp=0446152775d776eff4ac7f5b9b80d42d215160e6bfea16084c6c8a51c196e14b source_ref=de4967ffd03ab7a1cb0403f02d212520ddf339e8 -->
+<!-- trie:section symbol=tests/test_e2e_sync:test_cli_sync_auto_bootstraps_first_run fingerprint=f8ac8941d8c66dd7a5fcadf8f18b78de6836b689711714fbc279bbbfc840e476 body_fp=0446152775d776eff4ac7f5b9b80d42d215160e6bfea16084c6c8a51c196e14b source_ref=64fa57905e1efe9489f5ca64acb79dfa4e7a99a1 -->
 ## `test_cli_sync_auto_bootstraps_first_run(project: Path, monkeypatch)`
 
 Verify that `trie sync --limit 10` in a fresh project exits 0 and reports "synced" using a patched `FakeClient`.
@@ -157,25 +120,25 @@ Assert that `trie sync --file` exits with code 1 and mentions `trie.toml` when n
 
 Initialize a bare git repository with test identity config in the given directory.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_e2e_sync:test_first_sync_in_git_repo_stamps_source_ref fingerprint=3cf6343c5a3f146e8cd69642be21dbf0170a9a1f397e446884acb686081434a3 body_fp=580f9e1e49d9076d1a1a83abe78dc9049804cfb6d8dad4fe7a63d605bd807566 source_ref=de4967ffd03ab7a1cb0403f02d212520ddf339e8 -->
+<!-- trie:section symbol=tests/test_e2e_sync:test_first_sync_in_git_repo_stamps_source_ref fingerprint=33d11105b1829e30a5df223660e0fa452090c1682228d299acb163aaa9e36dd5 body_fp=580f9e1e49d9076d1a1a83abe78dc9049804cfb6d8dad4fe7a63d605bd807566 source_ref=64fa57905e1efe9489f5ca64acb79dfa4e7a99a1 -->
 ## `test_first_sync_in_git_repo_stamps_source_ref(project: Path)`
 
 Assert that syncing a git-managed file stamps a 40-character SHA-1 `source_ref` on every section.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_e2e_sync:test_sync_outside_git_repo_omits_source_ref fingerprint=9cf4b71feeef97f2de3c2c1fc42f325f5326babf39a788ac1bf7f712228a8649 body_fp=0e8ea04101c9abc4f24c0c82b45c21d44c098fe50fcda52d5574ceab2d4af0eb source_ref=de4967ffd03ab7a1cb0403f02d212520ddf339e8 -->
+<!-- trie:section symbol=tests/test_e2e_sync:test_sync_outside_git_repo_omits_source_ref fingerprint=c4a59b57a38fc9c1313e196f759d91817d606129b39ad9dc5ff44c10ed3ed269 body_fp=0e8ea04101c9abc4f24c0c82b45c21d44c098fe50fcda52d5574ceab2d4af0eb source_ref=64fa57905e1efe9489f5ca64acb79dfa4e7a99a1 -->
 ## `test_sync_outside_git_repo_omits_source_ref(project: Path)`
 
 Assert that syncing outside a git repository produces triefact sections with no `source_ref=` field.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_e2e_sync:test_resync_with_committed_history_takes_diff_aware_path fingerprint=1bd65ccdbd4b8049db3ee27391af7a14573c6e435c527292269a33fabdac7c75 body_fp=1f40098a73eba8515ce3ffb678387f80ac5a8d72b727f6c93dafca1ea4c08811 source_ref=de4967ffd03ab7a1cb0403f02d212520ddf339e8 -->
+<!-- trie:section symbol=tests/test_e2e_sync:test_resync_with_committed_history_takes_diff_aware_path fingerprint=2500a2e8833c01b96853fdd0a8618dad6e2bb805468ca30c82840208dc366804 body_fp=1fe444a992a87779ded24ab4e073ad89b48cdc864f2770fe17bd519220ed365c source_ref=64fa57905e1efe9489f5ca64acb79dfa4e7a99a1 -->
 ## `test_resync_with_committed_history_takes_diff_aware_path(project: Path)`
 
 Assert that resyncing a committed-then-modified file injects `<previous_source>` and `<previous_prose>` into the generation request.
 
-- Syncs, commits, modifies `strings.py`, then resyncs; inspects `FakeClient.requests_seen`.
-- Confirms both old and new `shout` signatures appear in the request payload.
+- Syncs, commits, modifies `strings.py`, then resyncs; inspects `FakeTrieClient.last_user_prompt`.
+- Confirms `<previous_source>`, `<previous_prose>`, and `<current_source>` appear in the last prompt.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_e2e_sync:test_resync_after_uncommitted_change_falls_back_to_cold fingerprint=5d3a03ac89ffaf02efdd90a0b822ca9d456842b2602ae29c024e7470ef1b6530 body_fp=3f064f5fcfc8b684e17be1f13ee08237a2b0c3bf18977c890f0a2fd67f67a4ba source_ref=de4967ffd03ab7a1cb0403f02d212520ddf339e8 -->
+<!-- trie:section symbol=tests/test_e2e_sync:test_resync_after_uncommitted_change_falls_back_to_cold fingerprint=e2d41f6911f7282fc7dce6bf2ecf2f7413b786ca21f7d82187740907dfe0eba3 body_fp=3f064f5fcfc8b684e17be1f13ee08237a2b0c3bf18977c890f0a2fd67f67a4ba source_ref=64fa57905e1efe9489f5ca64acb79dfa4e7a99a1 -->
 ## `test_resync_after_uncommitted_change_falls_back_to_cold(project: Path)`
 
 Verify that resync falls back to cold generation when the previous blob is unreachable in git due to no intervening commit.
