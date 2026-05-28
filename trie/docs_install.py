@@ -145,6 +145,10 @@ ALL_TOOL_NAMES = (
     "explain_symbol_references",
     "trace_flow",
     "explain_flow",
+    "patch",
+    "patch_drop",
+    "patch_list",
+    "patch_apply",
 )
 
 CORE_TOOL_NAMES = ("grep", "read", "trace")
