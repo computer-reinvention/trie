@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.5
 source: trie/docs_install.py
-file_fingerprint: e92285ce3493f87f3d5a6772eae8325e51c0f782be2cf982ed8ee205d3fd0b5d
-last_synced_at: '2026-05-28T01:38:12Z'
+file_fingerprint: 76aee4d6c89d5e1089a5357507b1a32f664d0988821f6b27d46af35cbc247f99
+last_synced_at: '2026-05-28T02:56:54Z'
 description: Project-local agent documentation install.
 defines:
 - kind: module
   qualified_name: trie/docs_install:__module__
-  lines: 1-458
+  lines: 1-462
 - kind: constant
   qualified_name: trie/docs_install:Action
   lines: 35-35
@@ -49,37 +49,37 @@ defines:
   lines: 118-133
 - kind: constant
   qualified_name: trie/docs_install:ALL_TOOL_NAMES
-  lines: 136-148
+  lines: 136-152
 - kind: constant
   qualified_name: trie/docs_install:CORE_TOOL_NAMES
-  lines: 150-150
+  lines: 154-154
 - kind: constant
   qualified_name: trie/docs_install:_BARE_NAME_TARGETS
-  lines: 155-155
+  lines: 159-159
 - kind: function
   qualified_name: trie/docs_install:_render_tool_names
-  lines: 158-176
+  lines: 162-180
 - kind: function
   qualified_name: trie/docs_install:_render_trie_doc_body
-  lines: 179-194
+  lines: 183-198
 - kind: function
   qualified_name: trie/docs_install:_multi_target_footer
-  lines: 197-230
+  lines: 201-234
 - kind: function
   qualified_name: trie/docs_install:_write_trie_doc
-  lines: 233-288
+  lines: 237-292
 - kind: function
   qualified_name: trie/docs_install:_pointer_block_for
-  lines: 291-301
+  lines: 295-305
 - kind: function
   qualified_name: trie/docs_install:_apply_pointer
-  lines: 304-370
+  lines: 308-374
 - kind: function
   qualified_name: trie/docs_install:_splice_pointer_block
-  lines: 373-402
+  lines: 377-406
 - kind: function
   qualified_name: trie/docs_install:install
-  lines: 405-457
+  lines: 409-461
 incoming_refs: 51
 outgoing_refs: 2
 ---
@@ -166,7 +166,7 @@ Load the bundled `trie/data/TRIE.md` text via `importlib.resources`.
 
 - Raises `DocsInstallError` if the data file is missing from the installed package.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/docs_install:ALL_TOOL_NAMES fingerprint=2c5819862721aefd616cc387f60dbe4d52ac6f1815aeb7eea832188b0d36a39d body_fp=8580f70170d10fe82d79702ceac4e93f4018df9c4d1b9068d3fa869e8a73d1b2 source_ref=522f68595f35cca243978bf30a6c7a09230cfac5 -->
+<!-- trie:section symbol=trie/docs_install:ALL_TOOL_NAMES fingerprint=4fd83f1dc4db3a96c0251f624a649d307e4ad6aecd159781022bfee6c221243c body_fp=8580f70170d10fe82d79702ceac4e93f4018df9c4d1b9068d3fa869e8a73d1b2 source_ref=637a214fb02121ef02ef39bfc864ca1f54b4ab48 -->
 ## `ALL_TOOL_NAMES`
 
 Ordered tuple of every trie MCP tool name used as substitution keys when rendering tool-name placeholders.

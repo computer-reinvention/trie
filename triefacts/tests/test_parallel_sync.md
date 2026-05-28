@@ -1,48 +1,48 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_parallel_sync.py
-file_fingerprint: cad16241f23173bb51f0d895bfa0b376f57b34e2e3d44b9b7f5bc8d0b3a81a86
-last_synced_at: '2026-05-23T23:52:23Z'
+file_fingerprint: 2b911896b35fa1695fbf19e89d0be03e6fec7d4ac947c33bcfc22cf110a1682a
+last_synced_at: '2026-05-28T14:53:55Z'
 description: 'Parallel per-symbol sync: the threaded generate phase must produce output'
 defines:
 - kind: module
   qualified_name: tests/test_parallel_sync:__module__
-  lines: 1-182
+  lines: 1-198
 - kind: constant
   qualified_name: tests/test_parallel_sync:FIXTURE_DIR
   lines: 25-25
 - kind: class
   qualified_name: tests/test_parallel_sync:_DeterministicClient
-  lines: 29-67
+  lines: 29-83
 - kind: method
-  qualified_name: tests/test_parallel_sync:_DeterministicClient.generate
-  lines: 41-64
+  qualified_name: tests/test_parallel_sync:_DeterministicClient.run
+  lines: 41-80
 - kind: method
   qualified_name: tests/test_parallel_sync:_DeterministicClient.count_tokens
-  lines: 66-67
+  lines: 82-83
 - kind: function
   qualified_name: tests/test_parallel_sync:_make_project
-  lines: 70-82
+  lines: 86-98
 - kind: function
   qualified_name: tests/test_parallel_sync:serial_project
-  lines: 86-87
+  lines: 102-103
 - kind: function
   qualified_name: tests/test_parallel_sync:parallel_project
-  lines: 91-92
+  lines: 107-108
 - kind: function
   qualified_name: tests/test_parallel_sync:test_parallel_output_byte_identical_to_serial
-  lines: 95-118
+  lines: 111-134
 - kind: function
   qualified_name: tests/test_parallel_sync:test_parallel_actually_fans_out
-  lines: 121-138
+  lines: 137-154
 - kind: function
   qualified_name: tests/test_parallel_sync:test_serial_never_fans_out
-  lines: 141-154
+  lines: 157-170
 - kind: function
   qualified_name: tests/test_parallel_sync:test_totals_match_between_serial_and_parallel
-  lines: 157-181
+  lines: 173-197
 incoming_refs: 0
-outgoing_refs: 11
+outgoing_refs: 12
 ---
 <!-- trie:section symbol=tests/test_parallel_sync:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=47c1317aa449e0ea5053f6be7bae755d29e1a3c068a45e031d976b2755836322 source_ref=a82385f7947314cf1ddd1a52434fd73a6744672f -->
 ## `tests/test_parallel_sync`
@@ -57,22 +57,23 @@ Verify that the threaded generate phase in `sync_single_file` produces byte-iden
 
 Absolute path to the `tiny_repo` fixture directory used as the source tree for test projects.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_parallel_sync:_DeterministicClient fingerprint=c791affbf3ed0ce3504e97f46d4fa1bd050b64d8a9becb9284827892c0773986 body_fp=7802dfee36ec0d6f489654102b9073eb9381b81cc0e4216c3ac0525927ae350a source_ref=a82385f7947314cf1ddd1a52434fd73a6744672f -->
+<!-- trie:section symbol=tests/test_parallel_sync:_DeterministicClient fingerprint=535a333193cfef040b719e8a13a1dcef58f755b2b17c3f6f853b368739667ca8 body_fp=9c82cf6e7ec211a5066a3ccd6fccfe6b5b0f0154c865fba8c7d3e50b6a04bf21 source_ref=a7ca9c73c71a9dd8a5a5b33e13530a6c9df9bcf2 -->
 ## `_DeterministicClient`
 
-Fake LLM client returning deterministic prose keyed on symbol qname while tracking peak concurrent `generate()` calls.
+Fake LLM client returning deterministic prose keyed on symbol qname while tracking peak concurrent `run()` calls.
 
-- `peak_in_flight`: maximum simultaneous `generate()` calls observed across all threads.
+- `peak_in_flight`: maximum simultaneous `run()` calls observed across all threads.
 - `delay_seconds`: sleep duration per call; set >0 to force worker overlap.
-- `generate`: returns output stable under any completion order; updates `in_flight` under `_lock`.
+- `run`: accepts `output_type`, `system_prompt`, `user_prompt`; returns `ModelResult` stable under any completion order; updates `in_flight` under `_lock`.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_parallel_sync:_DeterministicClient.generate fingerprint=a2416d7c378769a6decb13b3c0576208f23498ae961dfd5a735802daadac5f4a body_fp=de2b27d71d5a17894734a6f512b1157e5a4a508d6a18765edb3646e1cd0c9103 source_ref=a82385f7947314cf1ddd1a52434fd73a6744672f -->
-## `generate(self, req: GenerationRequest) -> GenerationResponse`
+<!-- trie:section symbol=tests/test_parallel_sync:_DeterministicClient.run fingerprint=a3c8ee445cc41eefc0b4c1cc2280efc949ac507e6b09c3f5f5fe1c645af8d0c1 body_fp=f686c4132a97b825a0bbe42ffd8d0f2bc746cfb320b2201bffc96fa8a1f775e2 source_ref=a7ca9c73c71a9dd8a5a5b33e13530a6c9df9bcf2 -->
+## `_DeterministicClient.run(self, output_type, system_prompt, user_prompt, *, max_tokens=1024) -> ModelResult`
 
-Produce a deterministic fake `GenerationResponse`, tracking peak concurrent in-flight calls.
+Simulate an LLM call, tracking concurrency and returning deterministic output keyed on the symbol qname.
 
-- `req`: qname extracted from backtick-delimited text in `req.request` to key output.
-- `peak_in_flight`: updated atomically; callers assert this to verify parallelism.
+- `user_prompt`: scanned for `"symbol \`"` to extract the qname for stable body text.
+- `delay_seconds`: if set, sleeps to allow concurrent workers to overlap before returning.
+- Returns a `ModelResult` with fixed token counts (10 input, 20 output) and qname-derived body.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_parallel_sync:_DeterministicClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=313c5c5e5e2560d9ea1820b4631083562d368cda2144ff8a31db5501daf8326c source_ref=a82385f7947314cf1ddd1a52434fd73a6744672f -->
 ## `count_tokens(self, _req: GenerationRequest) -> int`

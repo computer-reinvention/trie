@@ -2336,6 +2336,61 @@ patch_app = typer.Typer(
 app.add_typer(patch_app, name="patch")
 
 
+class _RichApplyProgress:
+    """Rich progress reporter passed as ``progress`` to ``apply_patches``.
+
+    Prints structured lines to the console.  Each stage gets a section
+    header; per-file output is indented under that header.  Because
+    ``apply_patches`` calls these methods from worker threads, lines from
+    different files interleave naturally — the user sees parallelism in
+    real time.
+    """
+
+    def __init__(self, console: Console, *, verbose: bool = False):
+        self.console = console
+        self.verbose = verbose
+
+    def stage(self, msg: str) -> None:
+        self.console.print(f"[bold cyan]┃ {msg}[/]")
+
+    def file_start(self, fp: str, symbols: int) -> None:
+        self.console.print(f"  [dim]→[/dim] [bold]{fp}[/] [dim]({symbols} symbol(s))[/dim]")
+
+    def file_symbol(self, qn: str, notes: list[str]) -> None:
+        if not self.verbose:
+            return
+        self.console.print(f"    [dim]·[/dim] [cyan]{qn}[/]")
+        for n in notes:
+            short = n[:100].replace("\n", " ")
+            self.console.print(f"      [dim]note:[/dim] {short}")
+
+    def file_generate(self) -> None:
+        if not self.verbose:
+            return
+
+    def file_fixup(self, iteration: int, count: int) -> None:
+        self.console.print(
+            f"    [yellow]⚙[/yellow] lsp fixup #{iteration} ([dim]{count} diagnostic(s)[/dim])"
+        )
+
+    def file_prose(self, qn: str) -> None:
+        if not self.verbose:
+            return
+        self.console.print(f"    [dim]✎[/dim] prose: {qn}")
+
+    def file_done(self, fp: str, ok: bool, error: str | None = None) -> None:
+        if ok:
+            self.console.print(f"  [green]✓[/green] {fp}")
+        else:
+            self.console.print(f"  [red]✗[/red] {fp} [red]{error or ''}[/red]")
+
+    def refresh(self, fp: str) -> None:
+        self.console.print(f"  [dim]↻[/dim] {fp}")
+
+    def verify(self) -> None:
+        self.console.print("  [green]✓[/green] project consistent")
+
+
 @patch_app.command("create")
 def patch_create_cmd(
     ctx: typer.Context,
@@ -2376,6 +2431,12 @@ def patch_apply_cmd(
         "--model",
         help="Override the configured edit model for this apply run.",
     ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Show per-symbol detail during apply.",
+    ),
 ) -> None:
     """Merge all patches, generate source+prose, cascade, and commit."""
     reporter = _get_reporter(ctx)
@@ -2388,25 +2449,27 @@ def patch_apply_cmd(
     model_id = model or config.models.edits
     client = make_client(model_id)
 
+    progress = _RichApplyProgress(reporter.console, verbose=verbose)
+
     store = Store(project_root / ".trie" / "graph.db")
     try:
-        result = apply_patches(store, config, client, project_root)
+        result = apply_patches(store, config, client, project_root, progress=progress)
     finally:
         store.close()
 
     if result["ok"]:
-        reporter.success(
-            f"applied {result['applied']} symbols, "
-            f"{result['failed']} failed, "
-            f"{result['skipped']} skipped"
-        )
+        n = result["total_files"]
+        s = result["total_symbols"]
+        reporter.success(f"applied {s} symbol(s) across {n} file(s)")
     else:
         reporter.error(
-            f"apply failed: {result['error']} "
-            f"(applied {result['applied']}, "
-            f"failed {result['failed']})"
+            f"apply failed: {result.get('error', 'unknown')} "
+            f"(files: {result.get('total_files', 0)}, "
+            f"symbols: {result.get('total_symbols', 0)})"
         )
         raise typer.Exit(code=1)
+
+    reporter.info(reporter.elapsed())
 
 
 @patch_app.command("preview")

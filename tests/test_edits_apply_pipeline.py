@@ -8,7 +8,13 @@ import pytest
 from trie.config import Config
 from trie.edits.apply import apply_patches
 from trie.graph.store import Store
-from trie.models import GenerationRequest, GenerationResponse
+from trie.models import (
+    BatchFilterOutput,
+    MergeNotesOutput,
+    ModelResult,
+    SectionBody,
+    SymbolEdit,
+)
 from trie.scan import scan_project
 from trie.sync.single_file import sync_single_file
 
@@ -49,18 +55,33 @@ def _extract_old_source(request: str) -> str:
     return old_source.rstrip("\n")
 
 
+def _extract_old_prose(request: str) -> str:
+    """Extract old prose from the infer prompt."""
+    prose_marker = "Old prose (the symbol's documented purpose):"
+    if prose_marker not in request:
+        return ""
+    after = request.split(prose_marker, 1)[1]
+    before_notes = after.split("\nImplementation notes", 1)[0]
+    return before_notes.strip()
+
+
 def _is_merge_prompt(request: str) -> bool:
-    return "Existing notes" in request
+    return "The following patch notes exist" in request
 
 
-def _merge_response() -> GenerationResponse:
-    return GenerationResponse(
-        text="* change return value  —  test",
-        input_tokens=10,
-        output_tokens=10,
-        cache_creation_input_tokens=0,
-        cache_read_input_tokens=0,
-    )
+def _make_usage(**overrides: int):
+    return type(
+        "Usage",
+        (),
+        {
+            "input_tokens": overrides.get("input_tokens", 10),
+            "output_tokens": overrides.get("output_tokens", 20),
+            "details": {
+                "cache_creation_input_tokens": overrides.get("cache_creation_input_tokens", 0),
+                "cache_read_input_tokens": overrides.get("cache_read_input_tokens", 0),
+            },
+        },
+    )()
 
 
 class FakeTriefactClient:
@@ -69,17 +90,20 @@ class FakeTriefactClient:
     model_id: str = "fake/triefact"
 
     @staticmethod
-    def generate(req: GenerationRequest) -> GenerationResponse:
-        return GenerationResponse(
-            text="## Symbol\n\nAuto-generated prose.\n",
-            input_tokens=10,
-            output_tokens=20,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
+    def run(
+        output_type: type,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        max_tokens: int = 1024,
+    ) -> ModelResult:
+        return ModelResult(
+            output=SectionBody(body="## Symbol\n\nAuto-generated prose.\n"),
+            usage=_make_usage(),
         )
 
     @staticmethod
-    def count_tokens(_req: GenerationRequest) -> int:
+    def count_tokens(system_prompt: str, user_prompt: str) -> int:
         return 100
 
 
@@ -92,21 +116,32 @@ class FakeEditClient:
     model_id: str = "fake/edits"
 
     @staticmethod
-    def generate(req: GenerationRequest) -> GenerationResponse:
-        if _is_merge_prompt(req.request):
-            return _merge_response()
-        old_source = _extract_old_source(req.request)
+    def run(
+        output_type: type,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        max_tokens: int = 1024,
+    ) -> ModelResult:
+        if output_type is MergeNotesOutput:
+            return ModelResult(
+                output=MergeNotesOutput(notes=["* change return value  —  test"], reasons=["test"]),
+                usage=_make_usage(),
+            )
+        if output_type is BatchFilterOutput:
+            return ModelResult(
+                output=BatchFilterOutput(decisions=[]),
+                usage=_make_usage(),
+            )
+        old_source = _extract_old_source(user_prompt)
         new_source = old_source + "\n# patch-applied"
-        return GenerationResponse(
-            text=f"```python\n{new_source}\n```\n\n---PROSE---\n## Updated\n\nModified by patch.\n",
-            input_tokens=10,
-            output_tokens=20,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
+        return ModelResult(
+            output=SymbolEdit(source=new_source, prose="## Updated\n\nModified by patch.\n"),
+            usage=_make_usage(),
         )
 
     @staticmethod
-    def count_tokens(_req: GenerationRequest) -> int:
+    def count_tokens(system_prompt: str, user_prompt: str) -> int:
         return 100
 
 
@@ -116,39 +151,32 @@ class PassthroughClient:
     model_id: str = "fake/passthrough"
 
     @staticmethod
-    def generate(req: GenerationRequest) -> GenerationResponse:
-        if _is_merge_prompt(req.request):
-            return _merge_response()
-        request = req.request
-        old_source = ""
-        in_source_block = False
-        for line in request.split("\n"):
-            if line.startswith("```python"):
-                in_source_block = True
-                continue
-            if in_source_block:
-                if line.startswith("```"):
-                    break
-                old_source += line + "\n"
-        old_source = old_source.rstrip("\n")
-
-        old_prose = ""
-        prose_marker = "Old prose (the symbol's documented purpose):"
-        if prose_marker in request:
-            after = request.split(prose_marker, 1)[1]
-            before_notes = after.split("\nImplementation notes", 1)[0]
-            old_prose = before_notes.strip()
-
-        return GenerationResponse(
-            text=f"```python\n{old_source}\n```\n\n---PROSE---\n{old_prose}",
-            input_tokens=10,
-            output_tokens=20,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
+    def run(
+        output_type: type,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        max_tokens: int = 1024,
+    ) -> ModelResult:
+        if output_type is MergeNotesOutput:
+            return ModelResult(
+                output=MergeNotesOutput(notes=["* change return value  —  test"], reasons=["test"]),
+                usage=_make_usage(),
+            )
+        if output_type is BatchFilterOutput:
+            return ModelResult(
+                output=BatchFilterOutput(decisions=[]),
+                usage=_make_usage(),
+            )
+        old_source = _extract_old_source(user_prompt)
+        old_prose = _extract_old_prose(user_prompt)
+        return ModelResult(
+            output=SymbolEdit(source=old_source, prose=old_prose),
+            usage=_make_usage(),
         )
 
     @staticmethod
-    def count_tokens(_req: GenerationRequest) -> int:
+    def count_tokens(system_prompt: str, user_prompt: str) -> int:
         return 100
 
 
@@ -158,19 +186,30 @@ class BrokenClient:
     model_id: str = "fake/broken"
 
     @staticmethod
-    def generate(req: GenerationRequest) -> GenerationResponse:
-        if _is_merge_prompt(req.request):
-            return _merge_response()
-        return GenerationResponse(
-            text="```python\ndef broken(:\n```\n\n---PROSE---\nBroken.\n",
-            input_tokens=10,
-            output_tokens=20,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
+    def run(
+        output_type: type,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        max_tokens: int = 1024,
+    ) -> ModelResult:
+        if output_type is MergeNotesOutput:
+            return ModelResult(
+                output=MergeNotesOutput(notes=["* change return value  —  test"], reasons=["test"]),
+                usage=_make_usage(),
+            )
+        if output_type is BatchFilterOutput:
+            return ModelResult(
+                output=BatchFilterOutput(decisions=[]),
+                usage=_make_usage(),
+            )
+        return ModelResult(
+            output=SymbolEdit(source="def broken(:", prose="Broken."),
+            usage=_make_usage(),
         )
 
     @staticmethod
-    def count_tokens(_req: GenerationRequest) -> int:
+    def count_tokens(system_prompt: str, user_prompt: str) -> int:
         return 100
 
 
@@ -237,8 +276,8 @@ class TestApplyPatchesEmpty:
         with Store(project / ".trie" / "graph.db") as store:
             result = apply_patches(store, config, FakeEditClient(), project)
         assert result["ok"] is True
-        assert result["applied"] == 0
-        assert result["failed"] == 0
+        assert result["total_files"] == 0
+        assert result["total_symbols"] == 0
 
     def test_git_clean_after_empty_apply(self, project: Path):
         config, _ = Config.find_and_load(project)
@@ -265,7 +304,8 @@ class TestApplyPatchesSuccess:
             result = apply_patches(store, config, FakeEditClient(), project)
 
         assert result["ok"] is True
-        assert result["applied"] >= 1
+        assert result["total_files"] >= 1
+        assert result["total_symbols"] >= 1
 
     def test_patches_deleted_after_success(self, project: Path):
         config, _ = Config.find_and_load(project)
@@ -315,7 +355,7 @@ class TestApplyPatchesSuccess:
             result = apply_patches(store, config, client, project)
 
         assert result["ok"] is True
-        assert result["applied"] >= 1
+        assert result["total_files"] >= 1
         gamma_after = (project / "src/gamma.py").read_text()
         assert gamma_after == gamma_before
 
@@ -328,7 +368,8 @@ class TestApplyPatchesFailure:
             result = apply_patches(store, config, BrokenClient(), project)
 
         assert result["ok"] is False
-        assert result["failed"] >= 1
+        assert len([f for f in result.get("files", []) if not f["ok"]]) >= 1
+        assert result["error"] is not None
 
     def test_rollback_restores_files(self, project: Path):
         """After a failure, files should be back to committed state."""

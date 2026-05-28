@@ -40,7 +40,7 @@ import yaml
 # sentinels when nothing has changed. The parser accepts any order via named groups.
 
 SECTION_OPEN_RE = re.compile(
-    r"(?m)^<!--\s*trie:section\s+symbol=(?P<symbol>\S+)\s+fingerprint=(?P<fp>\S+)"
+    r"(?m)^<!--\s*trie:section\s+symbol=(?P<symbol>\S+)\s+fingerprint=(?P<fp>\S*)"
     r"(?:\s+body_fp=(?P<body_fp>\S+))?"
     r"(?:\s+source_ref=(?P<source_ref>\S+))?"
     r"\s*-->[ \t]*$"

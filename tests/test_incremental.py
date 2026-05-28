@@ -1,39 +1,18 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
+from tests.fake_client import FakeTrieClient
 from trie.cli import app
 from trie.config import Config
 from trie.cost import get_pricing
 from trie.graph.store import Store
-from trie.models import GenerationRequest, GenerationResponse
 from trie.sync.incremental import compute_incremental_worklist, run_incremental
 from trie.sync.single_file import sync_single_file
 from trie.sync.writer import TriefactFile
-
-
-@dataclass
-class FakeClient:
-    model_id: str = "anthropic/claude-sonnet-4-6"
-    body: str = "## generated\n\nbody."
-    calls: int = 0
-
-    def generate(self, _req: GenerationRequest) -> GenerationResponse:
-        self.calls += 1
-        return GenerationResponse(
-            text=self.body,
-            input_tokens=50,
-            output_tokens=100,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
-        )
-
-    def count_tokens(self, _req: GenerationRequest) -> int:
-        return 100
 
 
 @pytest.fixture
@@ -59,13 +38,13 @@ def _initial_sync(project: Path) -> None:
         project / "lib.py",
         project_root=project,
         config=config,
-        client=FakeClient(body="## v1 lib\n\nbody."),
+        client=FakeTrieClient(output_body="## v1 lib\n\nbody."),
     )
     sync_single_file(
         project / "app.py",
         project_root=project,
         config=config,
-        client=FakeClient(body="## v1 app\n\nbody."),
+        client=FakeTrieClient(output_body="## v1 app\n\nbody."),
     )
 
 
@@ -73,7 +52,7 @@ def test_incremental_no_op_when_clean(project: Path):
     _initial_sync(project)
     config, _ = Config.find_and_load(project)
     pricing = get_pricing("anthropic/claude-sonnet-4-6")
-    client = FakeClient()
+    client = FakeTrieClient(input_tokens=50, output_tokens=100)
     with Store(project / ".trie" / "graph.db") as store:
         result = run_incremental(
             project_root=project,
@@ -93,7 +72,7 @@ def test_incremental_resyncs_directly_changed_file(project: Path):
 
     config, _ = Config.find_and_load(project)
     pricing = get_pricing("anthropic/claude-sonnet-4-6")
-    client = FakeClient(body="## v2 lib\n\nbody.")
+    client = FakeTrieClient(output_body="## v2 lib\n\nbody.")
     with Store(project / ".trie" / "graph.db") as store:
         result = run_incremental(
             project_root=project,
@@ -114,7 +93,7 @@ def test_incremental_cascades_to_callers(project: Path):
 
     config, _ = Config.find_and_load(project)
     pricing = get_pricing("anthropic/claude-sonnet-4-6")
-    client = FakeClient(body="## v2\n\nbody.")
+    client = FakeTrieClient(output_body="## v2\n\nbody.")
     with Store(project / ".trie" / "graph.db") as store:
         result = run_incremental(
             project_root=project,
@@ -137,7 +116,7 @@ def test_incremental_respects_budget(project: Path):
 
     config, _ = Config.find_and_load(project)
     pricing = get_pricing("anthropic/claude-sonnet-4-6")
-    client = FakeClient()
+    client = FakeTrieClient(input_tokens=50, output_tokens=100)
     with Store(project / ".trie" / "graph.db") as store:
         result = run_incremental(
             project_root=project,
@@ -162,7 +141,9 @@ def test_incremental_dispatched_via_cli(project: Path, monkeypatch: pytest.Monke
 
     def fake_make_client(model_id: str, **_kwargs):
         captured["model_id"] = model_id
-        return FakeClient(body="## via_cli\n\nbody.", model_id=model_id)
+        return FakeTrieClient(
+            output_body="## via_cli\n\nbody.", model_id=model_id, input_tokens=50, output_tokens=100
+        )
 
     monkeypatch.setattr("trie.cli.make_client", fake_make_client)
 
@@ -183,7 +164,9 @@ def test_incremental_clean_via_cli(project: Path, monkeypatch: pytest.MonkeyPatc
     monkeypatch.chdir(project)
     monkeypatch.setattr(
         "trie.cli.make_client",
-        lambda model_id, **_kw: FakeClient(model_id=model_id),
+        lambda model_id, **_kw: FakeTrieClient(
+            model_id=model_id, input_tokens=50, output_tokens=100
+        ),
     )
     runner = CliRunner()
     cli_result = runner.invoke(app, ["sync"])
@@ -200,7 +183,7 @@ def test_incremental_with_no_changes_yields_empty(project: Path):
             project_root=project,
             config=config,
             store=store,
-            client=FakeClient(),
+            client=FakeTrieClient(input_tokens=50, output_tokens=100),
             pricing=get_pricing("anthropic/claude-sonnet-4-6"),
         )
     assert result.directly_stale_count == 0
@@ -217,7 +200,7 @@ def test_incremental_handles_missing_triefact(project: Path):
             project_root=project,
             config=config,
             store=store,
-            client=FakeClient(),
+            client=FakeTrieClient(input_tokens=50, output_tokens=100),
             pricing=pricing,
         )
     synced_files = {sr.source_path.name for sr in result.sync_results}
@@ -242,7 +225,7 @@ def test_triefact_regenerated_only_for_affected_symbols_v01_limitation(project: 
             project_root=project,
             config=config,
             store=store,
-            client=FakeClient(body="## v2\n\nbody."),
+            client=FakeTrieClient(input_tokens=50, output_tokens=100, output_body="## v2\n\nbody."),
             pricing=get_pricing("anthropic/claude-sonnet-4-6"),
         )
 
@@ -266,8 +249,18 @@ def test_run_incremental_invokes_progress_callback(project: Path):
         from trie.scan import scan_project as _scan
 
         _scan(project_root=project, config=config, store=store)
-    sync_single_file(project / "lib.py", project_root=project, config=config, client=FakeClient())
-    sync_single_file(project / "app.py", project_root=project, config=config, client=FakeClient())
+    sync_single_file(
+        project / "lib.py",
+        project_root=project,
+        config=config,
+        client=FakeTrieClient(input_tokens=50, output_tokens=100),
+    )
+    sync_single_file(
+        project / "app.py",
+        project_root=project,
+        config=config,
+        client=FakeTrieClient(input_tokens=50, output_tokens=100),
+    )
 
     # Mutate lib.py so the cascade kicks in.
     (project / "lib.py").write_text("def helper():\n    return 'CHANGED'\n")
@@ -290,7 +283,7 @@ def test_run_incremental_invokes_progress_callback(project: Path):
             project_root=project,
             config=config,
             store=store,
-            client=FakeClient(body="## v2\n\nbody."),
+            client=FakeTrieClient(input_tokens=50, output_tokens=100, output_body="## v2\n\nbody."),
             pricing=get_pricing("anthropic/claude-sonnet-4-6"),
             progress=Recorder(),
         )
@@ -363,7 +356,10 @@ def test_cli_plan_incremental_on_clean_tree_reports_noop(
     bogus full-bootstrap cost."""
     _initial_sync(project)
     monkeypatch.chdir(project)
-    monkeypatch.setattr("trie.cli.make_client", lambda _model_id, **_kw: FakeClient())
+    monkeypatch.setattr(
+        "trie.cli.make_client",
+        lambda _model_id, **_kw: FakeTrieClient(input_tokens=50, output_tokens=100),
+    )
     runner = CliRunner()
     result = runner.invoke(app, ["plan"])
     assert result.exit_code == 0, result.output
@@ -380,7 +376,10 @@ def test_cli_plan_incremental_on_drift_lists_only_affected(
     _initial_sync(project)
     (project / "lib.py").write_text("def helper():\n    return 999\n")
     monkeypatch.chdir(project)
-    monkeypatch.setattr("trie.cli.make_client", lambda _model_id, **_kw: FakeClient())
+    monkeypatch.setattr(
+        "trie.cli.make_client",
+        lambda _model_id, **_kw: FakeTrieClient(input_tokens=50, output_tokens=100),
+    )
     runner = CliRunner()
     result = runner.invoke(app, ["plan"])
     assert result.exit_code == 0, result.output
@@ -393,9 +392,13 @@ def test_cli_plan_all_forces_full_bootstrap_view(project: Path, monkeypatch: pyt
     project — useful for 'what would re-bootstrapping cost?'"""
     _initial_sync(project)
     monkeypatch.chdir(project)
-    monkeypatch.setattr("trie.cli.make_client", lambda _model_id, **_kw: FakeClient())
+    monkeypatch.setattr(
+        "trie.cli.make_client",
+        lambda _model_id, **_kw: FakeTrieClient(input_tokens=50, output_tokens=100),
+    )
     runner = CliRunner()
     result = runner.invoke(app, ["plan", "--all"])
+
     assert result.exit_code == 0, result.output
     assert "plan for" in result.output
     assert "incremental plan for" not in result.output

@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/sync/writer.py
-file_fingerprint: e52c149cb863ae0965c51ea285478b5ef347e435983931d9fc488ddeb2881166
-last_synced_at: '2026-05-23T23:47:43Z'
+file_fingerprint: 24f293a78cccc5d4636602b4fbef2a42ca35a7ec007a24e5010f4b73e2e11c16
+last_synced_at: '2026-05-28T14:59:22Z'
 defines:
 - kind: module
   qualified_name: trie/sync/writer:__module__
@@ -88,7 +88,7 @@ Parse, mutate, and render trie-managed Markdown files containing delimited symbo
 - `SECTION_CLOSE_RE`: matches closing `<!-- trie:end -->` sentinels
 - `AGENT_FRONT_MATTER_KEYS`: frontmatter keys preserved by `render_for_agent`
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/writer:SECTION_OPEN_RE fingerprint=1be5610e8a8a656183d1ce9d75ecba54ebb2113537e3c28d43cce24d941e0194 body_fp=29f690fe61aba7d2bcb4de997c50ad80a86efc087047949ae0e1353256bac086 source_ref=7779abbc571fd9eb4f6d6cdcb9583c2521743028 -->
+<!-- trie:section symbol=trie/sync/writer:SECTION_OPEN_RE fingerprint=e9ea14248a1eff91bf843154bab1c2f82ee305fad4f1ed4b3d3e25d705262257 body_fp=29f690fe61aba7d2bcb4de997c50ad80a86efc087047949ae0e1353256bac086 source_ref=b8bc54fd6dfe1be68bb60012cf18b620e9aac632 -->
 ## `SECTION_OPEN_RE`
 
 Compiled regex matching a `trie:section` open sentinel line, capturing `symbol`, `fp`, and optionally `body_fp` and `source_ref`.

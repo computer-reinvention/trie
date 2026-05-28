@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .animate-pulse-slow {
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  .animate-pulse-fast {
+    animation: pulse 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+/* React Flow overrides */
+.react-flow__node {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+}
+
+.react-flow__edge-path {
+  transition: opacity 0.2s;
+}

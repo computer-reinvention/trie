@@ -1,45 +1,45 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/sync/generator.py
-file_fingerprint: ca705d29b24d698ceabe28d1ebfbfdef52a31f6bfaa45efaa15fb849c9041d1b
-last_synced_at: '2026-05-23T23:51:59Z'
+file_fingerprint: 8c718b35b1e8951bfad8c044a242877f43114e1e591e9b27bb61128ce58ff136
+last_synced_at: '2026-05-28T14:27:14Z'
 defines:
 - kind: module
   qualified_name: trie/sync/generator:__module__
-  lines: 1-233
+  lines: 1-171
 - kind: constant
   qualified_name: trie/sync/generator:SYSTEM_PROMPT
-  lines: 9-31
+  lines: 12-28
 - kind: constant
   qualified_name: trie/sync/generator:DIFF_AWARE_RUBRIC
-  lines: 37-58
+  lines: 34-53
 - kind: class
   qualified_name: trie/sync/generator:FileGenerationContext
-  lines: 62-64
+  lines: 57-59
 - kind: constant
   qualified_name: trie/sync/generator:RegenMode
-  lines: 67-67
+  lines: 62-62
 - kind: class
   qualified_name: trie/sync/generator:GeneratedSection
-  lines: 71-78
+  lines: 66-73
 - kind: function
   qualified_name: trie/sync/generator:build_cached_context
-  lines: 81-86
+  lines: 76-81
 - kind: function
   qualified_name: trie/sync/generator:_symbol_context_clause
-  lines: 89-117
-- kind: function
-  qualified_name: trie/sync/generator:_build_request
-  lines: 120-128
-- kind: function
-  qualified_name: trie/sync/generator:_build_diff_aware_request
-  lines: 131-161
+  lines: 84-94
 - kind: function
   qualified_name: trie/sync/generator:_symbol_source
-  lines: 164-176
+  lines: 97-102
+- kind: function
+  qualified_name: trie/sync/generator:_build_request
+  lines: 105-112
+- kind: function
+  qualified_name: trie/sync/generator:_build_diff_aware_request
+  lines: 115-130
 - kind: function
   qualified_name: trie/sync/generator:generate_section
-  lines: 179-232
+  lines: 133-170
 incoming_refs: 28
 outgoing_refs: 1
 ---
@@ -54,10 +54,10 @@ Build and dispatch LLM generation requests for per-symbol Markdown documentation
 - `GeneratedSection`: output record carrying prose, token counts, and regen mode.
 - `RegenMode`: either `"cold"` (fresh write) or `"diff_aware"` (preserve-unless-behavioural).
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/generator:SYSTEM_PROMPT fingerprint=ad20b6f444c5ba37460802394b74294c961478ebd752b3e8c4cc32556ce7601c body_fp=5e13856ddc19dfd51664a8060516c3b268d930c002ab3c9fc92469abe30300e3 source_ref=e1429e000717536ad70e96ef323336c0f72c9593 -->
-## `SYSTEM_PROMPT`
+<!-- trie:section symbol=trie/sync/generator:SYSTEM_PROMPT fingerprint=95516de738a5633ca13e52935ce9bac749d63d4c1f41461f4ed457302ccf56e2 body_fp=d5b32bec7ccafe6a308b928eb214b1aa3f124615aad4a0c7bd4647ba8452fcc1 source_ref=f0773534fd360386bb5fff199726100f7f61a175 -->
+## `SYSTEM_PROMPT: str`
 
-System prompt injected into every generation request, defining output format and hard rules for the LLM documentation writer.
+System prompt passed to the LLM defining prose style, format rules, and documentation guidelines for symbol summarisation.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/sync/generator:DIFF_AWARE_RUBRIC fingerprint=7c866bd51ce563f306b0d97f7dc4de26b2b4a58b79c09173c397935974ee876b body_fp=da851514c0741aa5a6fffe15156ee9c078948983deb7cb4966cfb77d500e3951 source_ref=e1429e000717536ad70e96ef323336c0f72c9593 -->
 ## `DIFF_AWARE_RUBRIC`
@@ -89,39 +89,31 @@ Immutable result of a single symbol documentation generation call.
 
 Build the prompt preamble embedding the file path and full source text for prompt-cache reuse across symbols.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/generator:_symbol_context_clause fingerprint=66ffa00d18d0960758db5ad3f66c58d8a68fb444b601bc3317159e0906743eda body_fp=5099e4af1fdd8b172bf5ad4ad3ac58e2118267499083eaa78bd0b8ac84b294ce source_ref=e1429e000717536ad70e96ef323336c0f72c9593 -->
+<!-- trie:section symbol=trie/sync/generator:_symbol_context_clause fingerprint=c09e100e6fb7e7cc96cdc11924de704c27a8ccd8dfe93971657b33f5d5703293 body_fp=5aa7f7d2548fefb90b3264b6856bf53dec331787280b82624863f84311a6bde7 source_ref=f0773534fd360386bb5fff199726100f7f61a175 -->
 ## `_symbol_context_clause(symbol: Symbol) -> str`
 
-Produce a human-readable string describing a `Symbol`'s kind and class membership for use in LLM prompts.
-
-- Returns decorator-qualified label (e.g. `"a @property of class \`Foo\`"`) for significant decorators.
-- Falls back to `"a method of class \`X\`"`, `"a class (decorated with ...)"`, or `"a {kind}"`.
+Build a human-readable context string describing a symbol's kind and class relationship for use in prompts.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/generator:_build_request fingerprint=b0e10db84ea47a101c1619368b1e7524d95dd0b8ea67b57ed7919bae32792039 body_fp=9d150d4275bffe2ccbebf01fa2dc6e875baa3c6f44b62c83b057e20aab2d04ca source_ref=e1429e000717536ad70e96ef323336c0f72c9593 -->
-## `_build_request(symbol: Symbol) -> str`
-
-Build the cold-write user message for generating documentation for a single symbol.
-<!-- trie:end -->
-<!-- trie:section symbol=trie/sync/generator:_build_diff_aware_request fingerprint=cf9165ed76197dbeecd98a545a6132e7cbad618c1e7727593abeb59788f1be08 body_fp=28cbdd00cc35df139b18b4397636e6442e54cbe342935147c83b646e1b2c55ee source_ref=e1429e000717536ad70e96ef323336c0f72c9593 -->
-## `_build_diff_aware_request(symbol: Symbol, *, previous_source: str, previous_prose: str, current_source: str) -> str`
-
-Build the user-message string for diff-aware documentation regeneration, combining `DIFF_AWARE_RUBRIC` with three labelled source/prose blocks.
-
-- `previous_source`: full decorated source (decorators + signature + body) from the prior version.
-- `current_source`: same format for the current version; not synthesised from `symbol`.
-- `previous_prose`: existing Markdown prose to preserve verbatim on cosmetic changes.
-<!-- trie:end -->
-<!-- trie:section symbol=trie/sync/generator:_symbol_source fingerprint=c4f0bf9d6a8940532c18d8bbf3cfa1580d0607b6c87bdcfe5afe636542806f9e body_fp=986ed820ac74fbd5f24cfe16c66c3d4e2cd4d8a12af77f0692354090505a9b76 source_ref=e1429e000717536ad70e96ef323336c0f72c9593 -->
+<!-- trie:section symbol=trie/sync/generator:_symbol_source fingerprint=68bf268b9a98ae2d58e9e30fa409031d97d648fe216e5835e1c5fe53e4b7b3a5 body_fp=755baffec017b39b7b44df3f5839667582d3625e035e144ea7ec3ff591d47e73 source_ref=f0773534fd360386bb5fff199726100f7f61a175 -->
 ## `_symbol_source(symbol: Symbol) -> str`
 
-Reconstruct the full decorated source block for a `Symbol` by joining decorators, signature, and body into a single string.
+Render a `Symbol` as a source string, prepending decorator lines before the signature and body.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/generator:generate_section fingerprint=15aece61f894d2f21e7f19deda458eb6d940a6813eb85e35d6540e5f39ff908f body_fp=bbfd6e62c856d7a824325066d14d2d8f879ae953c5a2c12b367269802469e4c1 source_ref=e1429e000717536ad70e96ef323336c0f72c9593 -->
+<!-- trie:section symbol=trie/sync/generator:_build_request fingerprint=3fdb7f4957e6e175fe0f6f5969b47e187de7e809a518a6f3b81a8b8935857b70 body_fp=8b70b839a4502e0405dceb9dc325518894028b82677b34504150e3676cbc61f9 source_ref=f0773534fd360386bb5fff199726100f7f61a175 -->
+## `_build_request(symbol: Symbol) -> str`
+
+Build a cold-generation user prompt string for a single symbol.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/sync/generator:_build_diff_aware_request fingerprint=17ae7e782e9ad3e153d3b6375ce815b751c4a8347a297583f0c14dc12fbaac28 body_fp=c222d2d76a1491d57c4309dc4d1e09bb4eba85820296e8b7d3dfbef3abd1b947 source_ref=f0773534fd360386bb5fff199726100f7f61a175 -->
+## `_build_diff_aware_request(symbol, *, previous_source, previous_prose, current_source) -> str`
+
+Build a diff-aware LLM user prompt embedding the rubric, symbol metadata, and before/after source and prose.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/sync/generator:generate_section fingerprint=7029e9e7c2c66f887ff0ca6a4c46cace980c04a482ebf8a8c2ca11fd5a7a308a body_fp=c06e77c78ec257a46a84bdee23577c03f2f317f011ca3d1e43a19cf6b599d27e source_ref=f0773534fd360386bb5fff199726100f7f61a175 -->
 ## `generate_section(*, symbol, file_ctx, client, max_tokens=1024, previous_source=None, previous_prose=None) -> GeneratedSection`
 
-Generate the Markdown documentation body for a single `Symbol` via a `ModelClient`.
+Generate a documentation section for a single symbol by calling the LLM client.
 
-- `previous_source` + `previous_prose`: both required to activate diff-aware mode; either `None` forces cold generation.
-- `file_ctx`: provides the full source file as a cached prompt context shared across symbols.
-- `mode`: set to `"diff_aware"` or `"cold"` in the returned `GeneratedSection`.
+- `previous_source` / `previous_prose`: when both provided, switches to diff-aware mode to preserve unchanged prose.
+- `mode`: set to `"diff_aware"` or `"cold"` depending on whether previous context was supplied.
 <!-- trie:end -->

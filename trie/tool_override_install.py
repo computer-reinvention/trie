@@ -1340,6 +1340,172 @@ export default tool({
 
 
 # ---------------------------------------------------------------------------
+# opencode: 4 patch tools.
+# ---------------------------------------------------------------------------
+
+
+def _render_opencode_patch(_project_root: Path) -> str:
+    return (
+        _GENERATED_HEADER
+        + """
+import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description:
+    "Post an implementation note against a named symbol in the trie graph " +
+    "store. Patches accumulate until `patch_apply` is called to merge, " +
+    "generate source, and cascade through the call graph.",
+  args: {
+    qname: tool.schema
+      .string()
+      .describe("Qualified name of the symbol to patch, e.g. 'src/foo:bar'."),
+    note: tool.schema
+      .string()
+      .describe("Implementation change note describing what to modify."),
+    reason: tool.schema
+      .string()
+      .optional()
+      .describe("Why the cascade needs to know about this change."),
+  },
+  async execute(args, context) {
+    const flags: string[] = [
+      "patch", "create", args.qname,
+      "--note", args.note,
+    ]
+    if (args.reason) flags.push("--reason", args.reason)
+
+    const proc = Bun.spawn(["trie", ...flags], {
+      cwd: context.directory,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+    if (code === 0) return stdout.trim() || "patch posted"
+    throw new Error(`trie patch create failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+  },
+})
+"""
+    )
+
+
+def _render_opencode_patch_drop(_project_root: Path) -> str:
+    return (
+        _GENERATED_HEADER
+        + """
+import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description:
+    "Remove pending patches. Pass `--qname` to drop patches for a specific " +
+    "symbol, or `--all` to clear every pending patch.",
+  args: {
+    qname: tool.schema
+      .string()
+      .optional()
+      .describe("Drop patches for a specific symbol by qualified name."),
+    all: tool.schema
+      .boolean()
+      .optional()
+      .describe("Drop all pending patches."),
+  },
+  async execute(args, context) {
+    const flags: string[] = ["patch", "drop"]
+    if (args.all) flags.push("--all")
+    else if (args.qname) flags.push("--qname", args.qname)
+    else throw new Error("specify either --qname <symbol> or --all")
+
+    const proc = Bun.spawn(["trie", ...flags], {
+      cwd: context.directory,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+    if (code === 0) return stdout.trim() || "patches dropped"
+    throw new Error(`trie patch drop failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+  },
+})
+"""
+    )
+
+
+def _render_opencode_patch_list(_project_root: Path) -> str:
+    return (
+        _GENERATED_HEADER
+        + """
+import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description:
+    "List all pending patches grouped by symbol. Shows each symbol\\'s " +
+    "qualified name and how many patches are queued for it.",
+  args: {},
+  async execute(_args, context) {
+    const proc = Bun.spawn(["trie", "patch", "list"], {
+      cwd: context.directory,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+    if (code === 0) return stdout.trim() || "(no pending patches)"
+    throw new Error(`trie patch list failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+  },
+})
+"""
+    )
+
+
+def _render_opencode_patch_apply(_project_root: Path) -> str:
+    return (
+        _GENERATED_HEADER
+        + """
+import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description:
+    "Apply all pending patches: merge notes, generate source+prose via LLM, " +
+    "cascade to neighbour symbols, run LSP fixup, sync triefact metadata, " +
+    "and verify project consistency. Pass --verbose for per-symbol detail.",
+  args: {
+    verbose: tool.schema
+      .boolean()
+      .optional()
+      .describe("Show per-symbol notes and prose updates during apply."),
+  },
+  async execute(args, context) {
+    const flags: string[] = ["patch", "apply"]
+    if (args.verbose) flags.push("--verbose")
+
+    const proc = Bun.spawn(["trie", ...flags], {
+      cwd: context.directory,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+    if (code === 0) return stdout.trim() || "patches applied"
+    throw new Error(`trie patch apply failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+  },
+})
+"""
+    )
+
+
+# ---------------------------------------------------------------------------
 # Claude Code: PreToolUse advisory hook on `Grep`.
 # ---------------------------------------------------------------------------
 
@@ -1415,12 +1581,14 @@ TARGETS: dict[str, ToolOverrideTarget] = {
         display_name="opencode",
         summary=(
             "Override built-in `grep` and `read`, add `trace`, and install "
-            "8 extended tools: `grep_str` (regex over source), "
+            "12 extended tools: `grep_str` (regex over source), "
             "`grep_entry_points` (hub discovery by topic), `grep_symbol` "
             "(fuzzy name lookup), `grep_symbol_neighbours` (symbol + "
             "neighbourhood), `explain_symbol` (full prose + narrative), "
             "`explain_symbol_refs` (usage story), `trace_flow` (call chain "
-            "between two symbols), `explain_flow` (narrated execution path)."
+            "between two symbols), `explain_flow` (narrated execution path), "
+            "`patch` (post implementation notes), `patch_drop` (remove "
+            "patches), `patch_list` (list patches), `patch_apply` (apply all)."
         ),
         files=(
             FileToWrite(
@@ -1480,6 +1648,26 @@ TARGETS: dict[str, ToolOverrideTarget] = {
                 relative_path=(".opencode", "tools", "explain_flow.ts"),
                 render=_render_opencode_explain_flow,
                 description="add `explain_flow` (narrated execution path between two symbols)",
+            ),
+            FileToWrite(
+                relative_path=(".opencode", "tools", "patch.ts"),
+                render=_render_opencode_patch,
+                description="add `patch` (post implementation notes)",
+            ),
+            FileToWrite(
+                relative_path=(".opencode", "tools", "patch_drop.ts"),
+                render=_render_opencode_patch_drop,
+                description="add `patch_drop` (remove pending patches)",
+            ),
+            FileToWrite(
+                relative_path=(".opencode", "tools", "patch_list.ts"),
+                render=_render_opencode_patch_list,
+                description="add `patch_list` (list pending patches)",
+            ),
+            FileToWrite(
+                relative_path=(".opencode", "tools", "patch_apply.ts"),
+                render=_render_opencode_patch_apply,
+                description="add `patch_apply` (execute all pending patches)",
             ),
         ),
         # Earlier versions of `trie setup --override-builtins` shipped a

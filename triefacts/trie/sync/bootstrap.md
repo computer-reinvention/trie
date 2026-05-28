@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.5
 source: trie/sync/bootstrap.py
-file_fingerprint: c0f4f174435148e121708503ba60c8afc867ea101708bae16e1d220cc1fe5ade
-last_synced_at: '2026-05-28T01:40:33Z'
+file_fingerprint: ed84fc3396904355438b749b7c6e76594aa6592f4f35f8df92abc98a667fff89
+last_synced_at: '2026-05-28T14:27:07Z'
 defines:
 - kind: module
   qualified_name: trie/sync/bootstrap:__module__
-  lines: 1-206
+  lines: 1-205
 - kind: class
   qualified_name: trie/sync/bootstrap:PlanItem
   lines: 23-27
@@ -18,12 +18,12 @@ defines:
   lines: 38-43
 - kind: function
   qualified_name: trie/sync/bootstrap:build_plan
-  lines: 46-133
+  lines: 46-132
 - kind: function
   qualified_name: trie/sync/bootstrap:run_bootstrap
-  lines: 136-205
+  lines: 135-204
 incoming_refs: 16
-outgoing_refs: 14
+outgoing_refs: 13
 ---
 <!-- trie:section symbol=trie/sync/bootstrap:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=2c44ad2129410e5f78f3ce0090cea7f8ed4f87735d12047f806bab3d04a258b8 source_ref=6fa7f487ae550d9e0cbd13df58df2357ddc4b78a -->
 ## `trie/sync/bootstrap`
@@ -58,7 +58,7 @@ Immutable record of a completed bootstrap run's outcomes and costs.
 - `files_skipped_no_budget`: count of files skipped due to budget or limit.
 - `sync_results`: per-file `FileSyncResult` for every file that was processed.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/bootstrap:build_plan fingerprint=cb58508dbf1731b80ba6987d1ed9b9c6985a068b30e6e48d9d4e1fa52e119e1f body_fp=776e6e17885155b77cf27de186537e100a45a261d4d3d227982a26b1dcbd3885 source_ref=6fa7f487ae550d9e0cbd13df58df2357ddc4b78a -->
+<!-- trie:section symbol=trie/sync/bootstrap:build_plan fingerprint=639d2e91a91763f78e779d228bd86933d3afdd6d622048322fc763f83a59f463 body_fp=776e6e17885155b77cf27de186537e100a45a261d4d3d227982a26b1dcbd3885 source_ref=a9697e77ed2f518a87a84d4b0dd7da51d2d4623a -->
 ## `build_plan(*, project_root, store, model_id, client, only_files=None, regen_count_by_file=None) -> BootstrapPlan`
 
 Rank store files by `LOC × public_symbol_count` and produce per-file LLM cost estimates.

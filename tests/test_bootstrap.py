@@ -1,37 +1,17 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
+from tests.fake_client import FakeTrieClient
 from trie.cli import app
 from trie.config import Config
 from trie.cost import get_pricing
 from trie.graph.store import Store
-from trie.models import GenerationRequest, GenerationResponse
 from trie.scan import scan_project
 from trie.sync.bootstrap import build_plan, run_bootstrap
-
-
-@dataclass
-class FakeClient:
-    model_id: str = "anthropic/claude-sonnet-4-6"
-    calls: int = 0
-
-    def generate(self, _req: GenerationRequest) -> GenerationResponse:
-        self.calls += 1
-        return GenerationResponse(
-            text="## generated\n\nbody.",
-            input_tokens=50,
-            output_tokens=100,
-            cache_creation_input_tokens=500 if self.calls == 1 else 0,
-            cache_read_input_tokens=0 if self.calls == 1 else 500,
-        )
-
-    def count_tokens(self, _req: GenerationRequest) -> int:
-        return 100
 
 
 @pytest.fixture
@@ -67,7 +47,13 @@ def test_plan_ranks_higher_score_first(project: Path):
             project_root=project,
             store=store,
             model_id="anthropic/claude-sonnet-4-6",
-            client=FakeClient(),
+            client=FakeTrieClient(
+                model_id="anthropic/claude-sonnet-4-6",
+                output_body="## generated\n\nbody.",
+                input_tokens=50,
+                output_tokens=100,
+                cache_creation_input_tokens=500,
+            ),
         )
     paths = [it.file_path for it in plan.items]
     # large.py has 2 symbols * ~50 LOC; medium.py has 3 symbols * small LOC; small.py has 1 * 2 LOC.
@@ -103,7 +89,13 @@ def test_plan_excludes_files_with_no_documentable_symbols(project: Path, tmp_pat
             project_root=project,
             store=store,
             model_id="anthropic/claude-sonnet-4-6",
-            client=FakeClient(),
+            client=FakeTrieClient(
+                model_id="anthropic/claude-sonnet-4-6",
+                output_body="## generated\n\nbody.",
+                input_tokens=50,
+                output_tokens=100,
+                cache_creation_input_tokens=500,
+            ),
         )
     paths = [it.file_path for it in plan.items]
     # `private.py` is documented — its `_hidden` symbol is a real, parser-surfaced def.
@@ -121,7 +113,13 @@ def test_plan_with_unknown_model_zero_cost(project: Path):
             project_root=project,
             store=store,
             model_id="openai/some-model",
-            client=FakeClient(),  # never queried since pricing is unknown
+            client=FakeTrieClient(
+                model_id="anthropic/claude-sonnet-4-6",
+                output_body="## generated\n\nbody.",
+                input_tokens=50,
+                output_tokens=100,
+                cache_creation_input_tokens=500,
+            ),  # never queried since pricing is unknown
         )
     assert plan.pricing_known is False
     assert plan.total_estimated_cost == 0.0
@@ -135,7 +133,13 @@ def test_plan_only_files_restricts_worklist(project: Path):
             project_root=project,
             store=store,
             model_id="anthropic/claude-sonnet-4-6",
-            client=FakeClient(),
+            client=FakeTrieClient(
+                model_id="anthropic/claude-sonnet-4-6",
+                output_body="## generated\n\nbody.",
+                input_tokens=50,
+                output_tokens=100,
+                cache_creation_input_tokens=500,
+            ),
             only_files={"medium.py"},
         )
     paths = [it.file_path for it in plan.items]
@@ -148,7 +152,13 @@ def test_plan_only_files_empty_yields_empty_plan(project: Path):
             project_root=project,
             store=store,
             model_id="anthropic/claude-sonnet-4-6",
-            client=FakeClient(),
+            client=FakeTrieClient(
+                model_id="anthropic/claude-sonnet-4-6",
+                output_body="## generated\n\nbody.",
+                input_tokens=50,
+                output_tokens=100,
+                cache_creation_input_tokens=500,
+            ),
             only_files=set(),
         )
     assert plan.items == []
@@ -158,13 +168,25 @@ def test_plan_only_files_empty_yields_empty_plan(project: Path):
 def test_run_bootstrap_respects_limit(project: Path):
     config, _ = Config.find_and_load(project)
     pricing = get_pricing("anthropic/claude-sonnet-4-6")
-    client = FakeClient()
+    client = FakeTrieClient(
+        model_id="anthropic/claude-sonnet-4-6",
+        output_body="## generated\n\nbody.",
+        input_tokens=50,
+        output_tokens=100,
+        cache_creation_input_tokens=500,
+    )
     with _scanned_store(project) as store:
         plan = build_plan(
             project_root=project,
             store=store,
             model_id="anthropic/claude-sonnet-4-6",
-            client=FakeClient(),
+            client=FakeTrieClient(
+                model_id="anthropic/claude-sonnet-4-6",
+                output_body="## generated\n\nbody.",
+                input_tokens=50,
+                output_tokens=100,
+                cache_creation_input_tokens=500,
+            ),
         )
     result = run_bootstrap(
         plan=plan,
@@ -182,13 +204,25 @@ def test_run_bootstrap_respects_limit(project: Path):
 def test_run_bootstrap_respects_budget(project: Path):
     config, _ = Config.find_and_load(project)
     pricing = get_pricing("anthropic/claude-sonnet-4-6")
-    client = FakeClient()
+    client = FakeTrieClient(
+        model_id="anthropic/claude-sonnet-4-6",
+        output_body="## generated\n\nbody.",
+        input_tokens=50,
+        output_tokens=100,
+        cache_creation_input_tokens=500,
+    )
     with _scanned_store(project) as store:
         plan = build_plan(
             project_root=project,
             store=store,
             model_id="anthropic/claude-sonnet-4-6",
-            client=FakeClient(),
+            client=FakeTrieClient(
+                model_id="anthropic/claude-sonnet-4-6",
+                output_body="## generated\n\nbody.",
+                input_tokens=50,
+                output_tokens=100,
+                cache_creation_input_tokens=500,
+            ),
         )
     # Tiny budget should cap to ~1 file.
     result = run_bootstrap(
@@ -208,13 +242,25 @@ def test_run_bootstrap_respects_budget(project: Path):
 def test_run_bootstrap_unbounded_processes_all(project: Path):
     config, _ = Config.find_and_load(project)
     pricing = get_pricing("anthropic/claude-sonnet-4-6")
-    client = FakeClient()
+    client = FakeTrieClient(
+        model_id="anthropic/claude-sonnet-4-6",
+        output_body="## generated\n\nbody.",
+        input_tokens=50,
+        output_tokens=100,
+        cache_creation_input_tokens=500,
+    )
     with _scanned_store(project) as store:
         plan = build_plan(
             project_root=project,
             store=store,
             model_id="anthropic/claude-sonnet-4-6",
-            client=FakeClient(),
+            client=FakeTrieClient(
+                model_id="anthropic/claude-sonnet-4-6",
+                output_body="## generated\n\nbody.",
+                input_tokens=50,
+                output_tokens=100,
+                cache_creation_input_tokens=500,
+            ),
         )
     result = run_bootstrap(
         plan=plan,
@@ -232,7 +278,13 @@ def test_run_bootstrap_unbounded_processes_all(project: Path):
 def test_cli_plan_makes_no_message_calls(project: Path, monkeypatch: pytest.MonkeyPatch):
     """`trie plan` may call count_tokens (free) but must never call generate."""
     monkeypatch.chdir(project)
-    fake = FakeClient()
+    fake = FakeTrieClient(
+        model_id="anthropic/claude-sonnet-4-6",
+        output_body="## generated\n\nbody.",
+        input_tokens=50,
+        output_tokens=100,
+        cache_creation_input_tokens=500,
+    )
     monkeypatch.setattr("trie.cli.make_client", lambda _model_id, **_kw: fake)
     runner = CliRunner()
     result = runner.invoke(app, ["plan"])
@@ -263,7 +315,16 @@ def test_cli_first_run_sync_requires_budget_or_limit_non_interactive(
     """In a fresh project (no triefacts yet), `trie sync` without --budget/--limit must
     refuse non-interactive runs to avoid surprise bills."""
     monkeypatch.chdir(project)
-    monkeypatch.setattr("trie.cli.make_client", lambda _model_id, **_kw: FakeClient())
+    monkeypatch.setattr(
+        "trie.cli.make_client",
+        lambda _model_id, **_kw: FakeTrieClient(
+            model_id="anthropic/claude-sonnet-4-6",
+            output_body="## generated\n\nbody.",
+            input_tokens=50,
+            output_tokens=100,
+            cache_creation_input_tokens=500,
+        ),
+    )
     runner = CliRunner()
     result = runner.invoke(app, ["sync"])
     assert result.exit_code == 1
@@ -273,7 +334,16 @@ def test_cli_first_run_sync_requires_budget_or_limit_non_interactive(
 def test_cli_first_run_sync_with_limit_succeeds(project: Path, monkeypatch: pytest.MonkeyPatch):
     """Auto-detected first-run bootstrap proceeds when a cap is set."""
     monkeypatch.chdir(project)
-    monkeypatch.setattr("trie.cli.make_client", lambda _model_id, **_kw: FakeClient())
+    monkeypatch.setattr(
+        "trie.cli.make_client",
+        lambda _model_id, **_kw: FakeTrieClient(
+            model_id="anthropic/claude-sonnet-4-6",
+            output_body="## generated\n\nbody.",
+            input_tokens=50,
+            output_tokens=100,
+            cache_creation_input_tokens=500,
+        ),
+    )
     runner = CliRunner()
     result = runner.invoke(app, ["sync", "--limit", "1"])
     assert result.exit_code == 0, result.output
@@ -287,7 +357,16 @@ def test_cli_sync_all_forces_full_pass(project: Path, monkeypatch: pytest.Monkey
     triefacts.mkdir()
     (triefacts / "small.md").write_text("# placeholder\n")
     monkeypatch.chdir(project)
-    monkeypatch.setattr("trie.cli.make_client", lambda _model_id, **_kw: FakeClient())
+    monkeypatch.setattr(
+        "trie.cli.make_client",
+        lambda _model_id, **_kw: FakeTrieClient(
+            model_id="anthropic/claude-sonnet-4-6",
+            output_body="## generated\n\nbody.",
+            input_tokens=50,
+            output_tokens=100,
+            cache_creation_input_tokens=500,
+        ),
+    )
     runner = CliRunner()
     result = runner.invoke(app, ["sync", "--all", "--limit", "1"])
     assert result.exit_code == 0, result.output
@@ -317,13 +396,25 @@ def test_run_bootstrap_invokes_progress_callback(project: Path):
 
     config, _ = Config.find_and_load(project)
     pricing = get_pricing("anthropic/claude-sonnet-4-6")
-    client = FakeClient()
+    client = FakeTrieClient(
+        model_id="anthropic/claude-sonnet-4-6",
+        output_body="## generated\n\nbody.",
+        input_tokens=50,
+        output_tokens=100,
+        cache_creation_input_tokens=500,
+    )
     with _scanned_store(project) as store:
         plan = build_plan(
             project_root=project,
             store=store,
             model_id="anthropic/claude-sonnet-4-6",
-            client=FakeClient(),
+            client=FakeTrieClient(
+                model_id="anthropic/claude-sonnet-4-6",
+                output_body="## generated\n\nbody.",
+                input_tokens=50,
+                output_tokens=100,
+                cache_creation_input_tokens=500,
+            ),
         )
 
     starts: list[tuple[str, int, int]] = []

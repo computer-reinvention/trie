@@ -30,8 +30,7 @@ from anthropic import (
 
 from trie.config import Sync
 from trie.models import (
-    AnthropicClient,
-    GenerationRequest,
+    TrieClient,
     _backoff_delay,
     _is_retryable,
     _retry_after_seconds,
@@ -231,53 +230,25 @@ def test_run_with_retry_propagates_non_retryable_immediately():
     assert rec.sleeps == [], "non-retryable errors must not trigger any backoff sleep"
 
 
-# --- end-to-end through AnthropicClient ------------------------------------
+# --- end-to-end through TrieClient -----------------------------------------
 
 
-def test_anthropic_client_generate_retries_on_rate_limit():
-    """`generate` wraps the SDK call in the retry loop."""
-    mock_anth = MagicMock()
-    # First call raises 429, second succeeds.
-    success_resp = SimpleNamespace(
-        content=[SimpleNamespace(type="text", text="ok")],
-        usage=SimpleNamespace(
-            input_tokens=10,
-            output_tokens=20,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
-        ),
-    )
-    mock_anth.messages.create.side_effect = [_rate_limit(retry_after="0"), success_resp]
-
-    client = AnthropicClient(
-        "claude-sonnet-4-6",
-        client=mock_anth,
-        sync_cfg=Sync(max_retries=2, retry_base_delay_seconds=0.0, retry_cap_seconds=0.0),
-    )
-    req = GenerationRequest(system_prompt="sys", cached_context="ctx", request="r")
-    resp = client.generate(req)
-
-    assert resp.text == "ok"
-    assert mock_anth.messages.create.call_count == 2
-
-
-def test_anthropic_client_count_tokens_retries_on_rate_limit():
+def test_count_tokens_retries_on_rate_limit():
     """Same retry envelope applies to count_tokens (plan-time path)."""
     mock_anth = MagicMock()
     success_resp = SimpleNamespace(input_tokens=123)
     mock_anth.messages.count_tokens.side_effect = [_rate_limit(retry_after="0"), success_resp]
 
-    client = AnthropicClient(
-        "claude-sonnet-4-6",
-        client=mock_anth,
+    client = TrieClient(
+        "anthropic/claude-sonnet-4-6",
         sync_cfg=Sync(max_retries=2, retry_base_delay_seconds=0.0, retry_cap_seconds=0.0),
     )
-    req = GenerationRequest(system_prompt="sys", cached_context="ctx", request="r")
-    assert client.count_tokens(req) == 123
+    client._raw_client = mock_anth
+    assert client.count_tokens(system_prompt="sys", user_prompt="r") == 123
     assert mock_anth.messages.count_tokens.call_count == 2
 
 
-def test_anthropic_client_disables_sdk_internal_retries(monkeypatch: pytest.MonkeyPatch):
+def test_trie_client_disables_sdk_internal_retries(monkeypatch: pytest.MonkeyPatch):
     """When constructing the underlying Anthropic SDK client without an explicit
     `client=` argument, we must pass `max_retries=0` so the SDK doesn't add its own
     retry layer on top of ours. Otherwise wall-clock and telemetry both lie."""
@@ -288,6 +259,6 @@ def test_anthropic_client_disables_sdk_internal_retries(monkeypatch: pytest.Monk
             captured["kwargs"] = kwargs
 
     monkeypatch.setattr("trie.models.Anthropic", FakeAnthropic)
-    AnthropicClient("claude-sonnet-4-6")
+    TrieClient("anthropic/claude-sonnet-4-6")
 
     assert captured["kwargs"].get("max_retries") == 0

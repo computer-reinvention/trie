@@ -13,7 +13,7 @@ from trie.cost import (
     get_pricing,
 )
 from trie.graph.store import Store
-from trie.models import GenerationRequest, ModelClient
+from trie.models import TrieClient
 from trie.sync.generator import SYSTEM_PROMPT, FileGenerationContext, build_cached_context
 from trie.sync.progress import NULL_PROGRESS, ProgressCallback
 from trie.sync.single_file import FileSyncResult, sync_single_file
@@ -48,7 +48,7 @@ def build_plan(
     project_root: Path,
     store: Store,
     model_id: str,
-    client: ModelClient,
+    client: TrieClient,
     only_files: Iterable[str] | None = None,
     regen_count_by_file: dict[str, int] | None = None,
 ) -> BootstrapPlan:
@@ -98,12 +98,11 @@ def build_plan(
         )
         if pricing is not None:
             ctx = FileGenerationContext(file_path=stats.path, source_text=text)
-            count_req = GenerationRequest(
-                system_prompt=SYSTEM_PROMPT,
-                cached_context=build_cached_context(ctx),
-                request="",
+            cached_context = build_cached_context(ctx)
+            cached_prefix_tokens = client.count_tokens(
+                system_prompt=SYSTEM_PROMPT + ("\n\n" + cached_context if cached_context else ""),
+                user_prompt="",
             )
-            cached_prefix_tokens = client.count_tokens(count_req)
             est = estimate_file_cost(
                 file_path=stats.path,
                 cached_prefix_tokens=cached_prefix_tokens,
@@ -138,7 +137,7 @@ def run_bootstrap(
     plan: BootstrapPlan,
     project_root: Path,
     config: Config,
-    client: ModelClient,
+    client: TrieClient,
     pricing: ModelPricing | None,
     budget_usd: float | None,
     limit: int | None,

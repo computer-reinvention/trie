@@ -7,37 +7,17 @@ reference counts when a Store is provided.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 import yaml
 
+from tests.fake_client import FakeTrieClient
 from trie.config import Config
 from trie.graph.store import Store
-from trie.models import GenerationRequest, GenerationResponse
 from trie.parse.python import extract_module_docstring, strip_string_literal
 from trie.scan import scan_project
 from trie.sync.single_file import sync_single_file
-
-
-@dataclass
-class FakeClient:
-    model_id: str = "fake/test"
-    calls: int = 0
-
-    def generate(self, _req: GenerationRequest) -> GenerationResponse:
-        self.calls += 1
-        return GenerationResponse(
-            text="## `body`\n\nGenerated.",
-            input_tokens=10,
-            output_tokens=20,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
-        )
-
-    def count_tokens(self, _req: GenerationRequest) -> int:
-        return 100
 
 
 @pytest.fixture
@@ -82,7 +62,7 @@ def _sync(project: Path, *, with_store: bool) -> Path:
                 project / "src" / "alpha.py",
                 project_root=project,
                 config=config,
-                client=FakeClient(),
+                client=FakeTrieClient(output_body="## `body`\n\nGenerated."),
                 store=store,
             )
     else:
@@ -90,7 +70,7 @@ def _sync(project: Path, *, with_store: bool) -> Path:
             project / "src" / "alpha.py",
             project_root=project,
             config=config,
-            client=FakeClient(),
+            client=FakeTrieClient(output_body="## `body`\n\nGenerated."),
         )
     return project / "triefacts" / "src" / "alpha.md"
 

@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_writer_sentinels.py
 file_fingerprint: a519a84719aab5621f81b3d793504e8bff7ce051e43556066ad9548fafe30c79
-last_synced_at: '2026-05-23T23:24:15Z'
+last_synced_at: '2026-05-28T15:00:12Z'
 defines:
 - kind: module
   qualified_name: tests/test_writer_sentinels:__module__

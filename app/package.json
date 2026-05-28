@@ -1,0 +1,65 @@
+{
+  "name": "trie-app",
+  "version": "0.1.0",
+  "description": "trie desktop — graph-based code editor powered by trie + opencode",
+  "private": true,
+  "main": "out/main/main.js",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "build:resources": "node scripts/build-resources.mjs",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build:resources && npm run build && electron-builder",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "node scripts/setup-opencode.mjs"
+  },
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.3.0",
+    "@xyflow/react": "^12.6.4",
+    "elkjs": "^0.10.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-markdown": "^9.0.3",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "@types/react": "^19.1.4",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.4.1",
+    "autoprefixer": "^10.4.21",
+    "electron": "^35.4.0",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^3.1.0",
+    "keytar": "^7.9.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.6",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "web-worker": "^1.4.0"
+  },
+  "build": {
+    "appId": "ai.trie.app",
+    "productName": "trie",
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        { "target": "dmg", "arch": ["arm64"] }
+      ]
+    },
+    "extraResources": [
+      {
+        "from": "resources/opencode-server",
+        "to": "opencode-server"
+      },
+      {
+        "from": "resources/trie-mcp",
+        "to": "trie-mcp"
+      }
+    ],
+    "files": [
+      "out/**/*"
+    ]
+  }
+}

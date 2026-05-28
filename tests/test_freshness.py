@@ -17,11 +17,11 @@ from __future__ import annotations
 import json
 import subprocess
 import time
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 
+from tests.fake_client import FakeTrieClient
 from trie.config import Config
 from trie.freshness import (
     NotAGitRepoError,
@@ -34,7 +34,6 @@ from trie.freshness import (
     write_stamp,
 )
 from trie.graph.store import Store
-from trie.models import GenerationRequest, GenerationResponse
 
 # ---------------------------------------------------------------------------
 # Test scaffolding: a real git repo with a real trie.toml and two real source
@@ -52,29 +51,6 @@ def _init_repo(path: Path) -> None:
     _git(["init", "-q", "-b", "main"], path)
     _git(["config", "user.email", "trie-test@example.com"], path)
     _git(["config", "user.name", "trie test"], path)
-
-
-@dataclass
-class FakeClient:
-    """LLM stand-in: deterministic, counts calls, full_model_id present so
-    telemetry plumbing in sync_single_file doesn't blow up."""
-
-    model_id: str = "fake/test"
-    full_model_id: str = "fake/test"
-    calls: int = 0
-
-    def generate(self, _req: GenerationRequest) -> GenerationResponse:
-        self.calls += 1
-        return GenerationResponse(
-            text="## `body`\n\nDeterministic.",
-            input_tokens=10,
-            output_tokens=20,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
-        )
-
-    def count_tokens(self, _req: GenerationRequest) -> int:
-        return 100
 
 
 @pytest.fixture
@@ -185,7 +161,7 @@ def test_ensure_fresh_raises_outside_git(tmp_path: Path):
             project_root=tmp_path,
             config=config,
             store=store,
-            client=FakeClient(),
+            client=FakeTrieClient(output_body="## `body`\n\nDeterministic."),
         )
 
 
@@ -194,11 +170,11 @@ def test_ensure_fresh_raises_outside_git(tmp_path: Path):
 # ---------------------------------------------------------------------------
 
 
-def _run_before_turn(project: Path, client: FakeClient | None = None):
+def _run_before_turn(project: Path, client: FakeTrieClient | None = None):
     """Run the pre-turn gate, returning the FreshnessResult.
 
     A caller that needs to inspect LLM call counts after the run can pass its
-    own FakeClient instance and read `.calls` on it. The default behaviour
+    own FakeTrieClient instance and read `.calls` on it. The default behaviour
     matches the original helper for tests that don't care about call counts.
     """
     config, _ = Config.find_and_load(project)
@@ -209,11 +185,11 @@ def _run_before_turn(project: Path, client: FakeClient | None = None):
             project_root=project,
             config=config,
             store=store,
-            client=client or FakeClient(),
+            client=client or FakeTrieClient(output_body="## `body`\n\nDeterministic."),
         )
 
 
-def _run_after_turn(project: Path, client: FakeClient | None = None):
+def _run_after_turn(project: Path, client: FakeTrieClient | None = None):
     config, _ = Config.find_and_load(project)
     db = project / ".trie" / "graph.db"
     db.parent.mkdir(parents=True, exist_ok=True)
@@ -222,7 +198,7 @@ def _run_after_turn(project: Path, client: FakeClient | None = None):
             project_root=project,
             config=config,
             store=store,
-            client=client or FakeClient(),
+            client=client or FakeTrieClient(output_body="## `body`\n\nDeterministic."),
         )
 
 
@@ -230,7 +206,7 @@ def test_no_stamp_triggers_scan_without_llm(project: Path):
     """First run in a fresh checkout: no stamp exists, graph scan fires but
     the LLM is NOT called. Trie does not auto-spend dollars on first contact;
     the user opts into prose regen by running `trie sync` explicitly."""
-    client = FakeClient()
+    client = FakeTrieClient(output_body="## `body`\n\nDeterministic.")
     result = _run_before_turn(project, client=client)
     assert result.refreshed is True
     assert result.reason == "no_stamp"
@@ -263,7 +239,7 @@ def test_head_moved_triggers_scan_without_llm(project: Path):
     _git(["add", "README.md"], project)
     _git(["commit", "-q", "-m", "add readme"], project)
 
-    client = FakeClient()
+    client = FakeTrieClient(output_body="## `body`\n\nDeterministic.")
     result = _run_before_turn(project, client=client)
     assert result.refreshed is True
     assert result.reason == "head_moved"
@@ -284,7 +260,7 @@ def test_mtimes_moved_triggers_sync_with_llm(project: Path):
     alpha = project / "src" / "alpha.py"
     alpha.write_text(alpha.read_text() + "\n# tweak\n")
 
-    client = FakeClient()
+    client = FakeTrieClient(output_body="## `body`\n\nDeterministic.")
     result = _run_before_turn(project, client=client)
     assert result.refreshed is True
     assert result.reason == "mtimes_moved"
@@ -362,7 +338,10 @@ def test_cli_refresh_default_runs_after_turn(project: Path, monkeypatch: pytest.
 
     # Stub make_client so we don't construct a real AnthropicClient (which would
     # fail in the test sandbox without ANTHROPIC_API_KEY).
-    monkeypatch.setattr("trie.cli.make_client", lambda *_a, **_kw: FakeClient())
+    monkeypatch.setattr(
+        "trie.cli.make_client",
+        lambda *_a, **_kw: FakeTrieClient(output_body="## `body`\n\nDeterministic."),
+    )
     monkeypatch.chdir(project)
 
     runner = CliRunner()
@@ -396,7 +375,10 @@ def test_cli_refresh_outside_git_fails(tmp_path: Path, monkeypatch: pytest.Monke
         'cascade = "anthropic/claude-sonnet-4-6"\n'
         "[cascade]\ndefault_depth = 1\nhub_symbol_threshold = 20\n"
     )
-    monkeypatch.setattr("trie.cli.make_client", lambda *_a, **_kw: FakeClient())
+    monkeypatch.setattr(
+        "trie.cli.make_client",
+        lambda *_a, **_kw: FakeTrieClient(output_body="## `body`\n\nDeterministic."),
+    )
     monkeypatch.chdir(tmp_path)
 
     runner = CliRunner()

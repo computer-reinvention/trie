@@ -10,7 +10,7 @@ from typing import Any
 from trie.check import check_project
 from trie.config import Config, LspBackend
 from trie.graph.store import Store
-from trie.models import ModelClient
+from trie.models import FixupOutput, TrieClient
 
 from .infer import (
     FILE_FIXUP_PROMPT,
@@ -18,6 +18,7 @@ from .infer import (
     _build_caller_summaries,
     _read_prose,
     infer_file_source,
+    infer_source_and_prose,
     merge_notes,
     pre_filter_batch,
 )
@@ -109,40 +110,29 @@ def _format_diagnostics(diags: list[dict]) -> str:
 
 
 def _file_fixup(
-    client: ModelClient,
+    client: TrieClient,
     file_path: str,
     file_content: str,
     diagnostics: list[dict],
 ) -> str | None:
-    from trie.models import GenerationRequest
-
     diag_text = _format_diagnostics(diagnostics)
     if not diag_text.strip():
         return file_content
 
-    request = FILE_FIXUP_PROMPT.format(
+    user_prompt = FILE_FIXUP_PROMPT.format(
         file_path=file_path,
         file_content=file_content,
         diagnostics=diag_text,
     )
 
-    req = GenerationRequest(
+    result = client.run(
+        FixupOutput,
         system_prompt=INFER_SYSTEM_PROMPT,
-        cached_context="",
-        request=request,
+        user_prompt=user_prompt,
         max_tokens=4096,
     )
-
-    resp = client.generate(req)
-    text = resp.text.strip()
-
-    if "```python" not in text:
-        return None
-    _before, after = text.split("```python", 1)
-    if "```" not in after:
-        return None
-    fixed, _rest = after.split("```", 1)
-    return fixed.strip()
+    fixup: FixupOutput = result.output
+    return fixup.content
 
 
 def _compile_check(source: str) -> bool:
@@ -201,15 +191,40 @@ def _refresh_file(
 def apply_patches(
     store: Store,
     config: Config,
-    client: ModelClient,
+    client: TrieClient,
     project_root: Path,
+    progress: Any | None = None,
 ) -> dict[str, Any]:
+    """Apply all pending patches.
+
+    When *progress* is provided, it must have:
+
+        def stage(self, msg: str) -> None
+        def file_start(self, fp: str, symbols: int) -> None
+        def file_symbol(self, qn: str, notes: list[str]) -> None
+        def file_generate(self) -> None
+        def file_fixup(self, iteration: int, count: int) -> None
+        def file_prose(self, qn: str) -> None
+        def file_done(self, fp: str, ok: bool, error: str | None = None) -> None
+        def refresh(self, fp: str) -> None
+        def verify(self) -> None
+
+    Returns a dict with:
+
+        ok            bool
+        total_files   int
+        total_symbols int
+        files         list[dict]   — one per file with per-symbol detail
+        error         str | None
+    """
     src_root: Path = (project_root / config.triefacts.source_root).resolve()
     triefacts_root: Path = (project_root / config.triefacts.root).resolve()
 
     grouped = store.get_all_patches_grouped()
     if not grouped:
-        return {"ok": True, "applied": 0, "failed": 0, "error": None}
+        if progress:
+            progress.stage("no pending patches — nothing to do")
+        return {"ok": True, "total_files": 0, "total_symbols": 0, "files": [], "error": None}
 
     patches_by_qname: dict[str, list[dict]] = {}
     qname_to_file: dict[str, str] = {}
@@ -223,7 +238,6 @@ def apply_patches(
             continue
         qname = str(row[0])
         patches_by_qname[qname] = patch_list
-
         detail = store.get_symbol_detail(qname)
         if detail is None:
             continue
@@ -231,10 +245,12 @@ def apply_patches(
         file_to_qnames.setdefault(detail.file_path, []).append(qname)
 
     if not qname_to_file:
-        return {"ok": True, "applied": 0, "failed": 0, "error": None}
+        return {"ok": True, "total_files": 0, "total_symbols": 0, "files": [], "error": None}
 
     patched_qnames = list(patches_by_qname.keys())
 
+    if progress:
+        progress.stage("cascade — expanding caller graph")
     working = _expand_callers(
         patched_qnames,
         store,
@@ -259,18 +275,29 @@ def apply_patches(
         callee_pairs.append((qn, old_prose, callers, notes_reasons))
 
     if callee_pairs:
+        if progress:
+            progress.stage("cascade — pre-filtering callee relationships")
         cascade_results = pre_filter_batch(client, callee_pairs, batch_size=8)
+        cascade_applied = 0
         for caller_qn, note, reason in cascade_results:
             if note is None or reason is None:
                 continue
             with contextlib.suppress(KeyError):
                 store.add_patch(caller_qn, note, reason, "cascade")
+                cascade_applied += 1
                 if caller_qn not in qname_to_file:
                     detail = store.get_symbol_detail(caller_qn)
                     if detail is not None:
                         qname_to_file[caller_qn] = detail.file_path
                         file_to_qnames.setdefault(detail.file_path, []).append(caller_qn)
+        if progress:
+            progress.stage(
+                f"cascade — {cascade_applied} new patches, "
+                f"total expanded to {len(all_qnames)} symbols"
+            )
 
+    if progress:
+        progress.stage("merge — consolidating per-symbol notes")
     file_groups: dict[str, list[dict]] = {}
     for fp, qnames_in_file in file_to_qnames.items():
         symbols_data: list[dict] = []
@@ -296,73 +323,133 @@ def apply_patches(
             file_groups[fp] = symbols_data
 
     if not file_groups:
-        return {"ok": True, "applied": 0, "failed": 0, "error": None}
+        return {"ok": True, "total_files": 0, "total_symbols": 0, "files": [], "error": None}
 
-    changed_files: list[str] = []
+    total_symbols_count = sum(len(v) for v in file_groups.values())
+    if progress:
+        progress.stage(f"source gen — {len(file_groups)} file(s), {total_symbols_count} symbol(s)")
+
+    file_results: list[dict] = []
     failed: list[str] = []
 
-    def _process_one_file(file_path: str, symbols: list[dict]) -> bool:
+    def _process_one_file(file_path: str, symbols: list[dict]) -> dict | None:
         full_path = src_root / file_path
+
+        if progress:
+            progress.file_start(file_path, len(symbols))
+
         try:
             file_content = full_path.read_text()
         except FileNotFoundError:
-            failed.append(file_path)
-            return False
+            if progress:
+                progress.file_done(file_path, False, "file not found")
+            return {"path": file_path, "ok": False, "error": "file not found"}
 
-        symbols_data_for_llm: list[dict] = []
+        symbol_details: list[dict] = []
         for sd in symbols:
             qn = sd["qname"]
+            notes = sd["merged_notes"]
+            if progress:
+                progress.file_symbol(qn, notes)
             old_source = _read_source_span(sd["detail"], src_root)
             old_prose = _read_prose(qn, file_path, triefacts_root)
-            symbols_data_for_llm.append(
+            symbol_details.append(
                 {
                     "qname": qn,
+                    "detail": sd["detail"],
                     "old_source": old_source,
                     "old_prose": old_prose,
-                    "merged_notes": sd["merged_notes"],
+                    "merged_notes": notes,
                     "merged_reasons": sd["merged_reasons"],
                 }
             )
 
+        if progress:
+            progress.file_generate()
+
+        def _fallback_per_symbol() -> tuple[str, dict[str, str]]:
+            lines = file_content.splitlines(keepends=True)
+            proses: dict[str, str] = {}
+            for sd in symbol_details:
+                new_src, new_prose = infer_source_and_prose(
+                    client,
+                    old_source=sd["old_source"],
+                    old_prose=sd["old_prose"],
+                    notes=sd["merged_notes"],
+                    reasons=sd["merged_reasons"],
+                )
+                start = sd["detail"].start_line - 1
+                end = sd["detail"].end_line
+                lines[start:end] = [new_src] if new_src.endswith("\n") else [new_src + "\n"]
+                if new_prose:
+                    proses[sd["qname"]] = new_prose
+            return "".join(lines), proses
+
+        new_content: str = ""
+        proses: dict[str, str] = {}
         try:
-            new_content, proses = infer_file_source(
-                client, file_path, file_content, symbols_data_for_llm
-            )
+            new_content, proses = infer_file_source(client, file_path, file_content, symbol_details)
         except (ValueError, Exception):
-            failed.append(file_path)
-            return False
+            new_content, proses = _fallback_per_symbol()
 
         if not _compile_check(new_content):
-            failed.append(file_path)
-            return False
+            new_content, proses = _fallback_per_symbol()
+
+        if not _compile_check(new_content):
+            if progress:
+                progress.file_done(file_path, False, "syntax error after generation + fallback")
+            return {
+                "path": file_path,
+                "ok": False,
+                "error": "syntax error after generation + fallback",
+            }
 
         if not new_content.endswith("\n"):
             new_content += "\n"
         full_path.write_text(new_content)
 
-        for _ in range(config.edits.lsp_max_retries):
+        lsp_iterations = 0
+        for i in range(config.edits.lsp_max_retries):
             diags = _lsp_diagnostics(full_path, config.edits.lsp_backends)
             if not diags:
                 break
+            if progress:
+                progress.file_fixup(i + 1, len(diags))
             fixed = _file_fixup(client, file_path, new_content, diags)
             if fixed is None:
                 break
             if not _compile_check(fixed):
-                failed.append(file_path)
-                return False
+                if progress:
+                    progress.file_done(file_path, False, "syntax error after fixup")
+                return {"path": file_path, "ok": False, "error": "syntax error after lsp fixup"}
             if not fixed.endswith("\n"):
                 fixed += "\n"
             full_path.write_text(fixed)
             new_content = fixed
+            lsp_iterations += 1
 
+        prose_written: list[str] = []
         for sd in symbols:
             qn = sd["qname"]
             prose = proses.get(qn, "")
             if prose:
-                _write_prose_section(qn, file_path, prose, triefacts_root)
+                if progress:
+                    progress.file_prose(qn)
+                _write_prose_section(qn, file_path, prose, triefacts_root, src_root)
+                prose_written.append(qn)
 
-        changed_files.append(file_path)
-        return True
+        result = {
+            "path": file_path,
+            "ok": True,
+            "error": None,
+            "symbols": [sd["qname"] for sd in symbols],
+            "notes": [sd["merged_notes"] for sd in symbols],
+            "lsp_iterations": lsp_iterations,
+            "prose_written": prose_written,
+        }
+        if progress:
+            progress.file_done(file_path, True)
+        return result
 
     try:
         with ThreadPoolExecutor(max_workers=config.sync.concurrency) as pool:
@@ -374,46 +461,80 @@ def apply_patches(
             for f in futures_map:
                 fp = futures_map[f]
                 try:
-                    f.result()
-                except Exception:
+                    res = f.result()
+                    if res is not None:
+                        file_results.append(res)
+                        if not res["ok"]:
+                            failed.append(fp)
+                except Exception as exc:
                     failed.append(fp)
+                    file_results.append({"path": fp, "ok": False, "error": str(exc)})
 
     except Exception as exc:
-        return {"ok": False, "applied": 0, "failed": len(failed) or 1, "error": str(exc)}
+        return {
+            "ok": False,
+            "total_files": len(file_results),
+            "total_symbols": total_symbols_count,
+            "files": file_results,
+            "error": str(exc),
+        }
 
     if failed:
         return {
             "ok": False,
-            "applied": len(changed_files),
-            "failed": len(failed),
-            "error": f"failed to process: {', '.join(failed)}",
+            "total_files": len(file_results),
+            "total_symbols": total_symbols_count,
+            "files": file_results,
+            "error": f"failed files: {', '.join(failed)}",
         }
 
-    for fp in changed_files:
+    if progress:
+        progress.stage("refresh — syncing triefact metadata")
+    changed_file_paths = [r["path"] for r in file_results if r["ok"]]
+    for fp in changed_file_paths:
+        if progress:
+            progress.refresh(fp)
         try:
             _refresh_file(fp, project_root, config, store)
         except Exception as exc:
             return {
                 "ok": False,
-                "applied": len(changed_files),
-                "failed": 0,
+                "total_files": len(file_results),
+                "total_symbols": total_symbols_count,
+                "files": file_results,
                 "error": f"refresh failed for {fp}: {exc}",
             }
 
+    if progress:
+        progress.stage("verify — checking project consistency")
     result = check_project(project_root=project_root, config=config)
     if not result.is_clean:
         stale = [f"{i.source_path}: {i.reason.value}" for i in result.items]
+        if progress:
+            progress.verify()
         return {
             "ok": False,
-            "applied": len(changed_files),
-            "failed": 1,
+            "total_files": len(file_results),
+            "total_symbols": total_symbols_count,
+            "files": file_results,
             "error": f"verify failed: {', '.join(stale[:5])}",
         }
 
     for qn in all_qnames:
         store.delete_patches(qname=qn)
 
-    return {"ok": True, "applied": len(changed_files), "failed": 0, "error": None}
+    if progress:
+        progress.stage(
+            f"done — {len(changed_file_paths)} file(s), {total_symbols_count} symbol(s) applied"
+        )
+
+    return {
+        "ok": True,
+        "total_files": len(file_results),
+        "total_symbols": total_symbols_count,
+        "files": file_results,
+        "error": None,
+    }
 
 
 def _read_source_span(detail: Any, src_root: Path) -> str:
@@ -427,6 +548,7 @@ def _write_prose_section(
     file_path: str,
     prose: str,
     triefacts_root: Path,
+    src_root: Path | None = None,
 ) -> None:
     from trie.sync.writer import TriefactFile
 
@@ -436,9 +558,24 @@ def _write_prose_section(
     text = triefact_path.read_text() if triefact_path.exists() else ""
     tf = TriefactFile.parse(text) if text else TriefactFile.empty()
 
+    # Compute fingerprint from the updated source so verify passes
+    fingerprint = ""
+    if src_root is not None:
+        source_path = src_root / file_path
+        if source_path.exists():
+            try:
+                from trie.parse.python import extract_symbols
+
+                for sym in extract_symbols(source_path, source_root=src_root):
+                    if sym.qualified_name == qname:
+                        fingerprint = sym.body_normalized_hash
+                        break
+            except Exception:
+                pass
+
     tf.upsert_section(
         qualified_name=qname,
-        fingerprint="",
+        fingerprint=fingerprint,
         body=prose,
         source_ref="",
     )

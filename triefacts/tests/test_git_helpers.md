@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_git_helpers.py
 file_fingerprint: f3dcec4ab08da1021c94f58ed56c75875b776e2d27a98e78a6ff7d672154f3f9
 last_synced_at: '2026-05-23T23:52:32Z'

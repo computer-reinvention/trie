@@ -1,19 +1,24 @@
 from __future__ import annotations
 
+import time
 from contextlib import AbstractContextManager
 from enum import IntEnum
 from types import TracebackType
 from typing import Any
 
-from rich.console import Console
-from rich.progress import (
-    BarColumn,
-    MofNCompleteColumn,
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    TimeRemainingColumn,
-)
+try:
+    from rich.console import Console  # type: ignore[import-untyped,import-not-found]
+    from rich.progress import (  # type: ignore[import-untyped,import-not-found]
+        BarColumn,
+        MofNCompleteColumn,
+        Progress,
+        SpinnerColumn,
+        TaskID,
+        TextColumn,
+        TimeRemainingColumn,
+    )
+except ImportError:  # pragma: no cover
+    raise ImportError("rich is required: pip install rich")
 
 
 class Verbosity(IntEnum):
@@ -33,6 +38,7 @@ class Reporter:
     def __init__(self, verbosity: Verbosity = Verbosity.MEDIUM, console: Console | None = None):
         self.verbosity = verbosity
         self.console = console or Console()
+        self._start = time.monotonic()
 
     def info(self, msg: str) -> None:
         if self.verbosity >= Verbosity.MEDIUM:
@@ -54,11 +60,16 @@ class Reporter:
     def error(self, msg: str) -> None:
         self.console.print(f"[red]error:[/red] {msg}")
 
-    def status(self, msg: str) -> AbstractContextManager:
+    def status(self, msg: str) -> AbstractContextManager[Any]:
         """Render a transient spinner while a step is in flight (MEDIUM+ only)."""
         if self.verbosity >= Verbosity.MEDIUM:
             return self.console.status(msg)
         return _NullContext()
+
+    def elapsed(self) -> str:
+        """Return a human-readable wall-clock elapsed time since this Reporter was created."""
+        elapsed = time.monotonic() - self._start
+        return f"took {elapsed:.2f}s"
 
     def start_progress(self, total: int, label: str) -> ProgressHandle:
         return ProgressHandle(self, total=total, label=label)
@@ -84,11 +95,11 @@ class ProgressHandle:
         self.total = total
         self.label = label
         self._progress: Progress | None = None
-        self._task_id: int | None = None
+        self._task_id: TaskID | None = None
 
     def __enter__(self) -> ProgressHandle:
         if self.reporter.verbosity >= Verbosity.MEDIUM and self.total > 0:
-            self._progress = Progress(
+            progress = Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
                 BarColumn(),
@@ -98,8 +109,9 @@ class ProgressHandle:
                 console=self.reporter.console,
                 transient=False,
             )
-            self._progress.__enter__()
-            self._task_id = self._progress.add_task(self.label, total=self.total)
+            progress.__enter__()
+            self._task_id = progress.add_task(self.label, total=self.total)
+            self._progress = progress
         return self
 
     def __exit__(

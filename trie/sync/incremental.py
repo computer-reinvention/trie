@@ -7,7 +7,7 @@ from trie.check import check_project
 from trie.config import Config
 from trie.cost import ModelPricing, estimate_actual_cost
 from trie.graph.store import Store
-from trie.models import ModelClient
+from trie.models import TrieClient
 from trie.scan import scan_project
 from trie.sync.cascade import compute_cascade
 from trie.sync.progress import NULL_PROGRESS, ProgressCallback
@@ -147,7 +147,7 @@ def run_incremental(
     project_root: Path,
     config: Config,
     store: Store,
-    client: ModelClient,
+    client: TrieClient,
     pricing: ModelPricing | None = None,
     budget_usd: float | None = None,
     limit: int | None = None,

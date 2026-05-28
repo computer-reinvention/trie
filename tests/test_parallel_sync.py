@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 
 from trie.config import Config
-from trie.models import GenerationRequest, GenerationResponse
+from trie.models import ModelResult, SectionBody
 from trie.sync.single_file import sync_single_file
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "tiny_repo"
@@ -38,7 +38,14 @@ class _DeterministicClient:
     _lock: threading.Lock = field(default_factory=threading.Lock)
     delay_seconds: float = 0.0
 
-    def generate(self, req: GenerationRequest) -> GenerationResponse:
+    def run(
+        self,
+        output_type: type,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        max_tokens: int = 1024,
+    ) -> ModelResult:
         with self._lock:
             self.in_flight += 1
             if self.in_flight > self.peak_in_flight:
@@ -49,21 +56,30 @@ class _DeterministicClient:
                 time.sleep(self.delay_seconds)
             # Key the body on a stable substring of the per-symbol request so two
             # calls for the same qname produce identical text. The qname appears
-            # verbatim in `_build_request` output.
-            qname_marker = req.request.split("`")[1] if "`" in req.request else "?"
+            # verbatim in `_build_request` output, after "symbol `".
+            if "symbol `" in user_prompt:
+                qname_marker = user_prompt.split("symbol `")[1].split("`")[0]
+            else:
+                qname_marker = "?"
             body = f"## `signature`\n\nGenerated body for `{qname_marker}`."
-            return GenerationResponse(
-                text=body,
-                input_tokens=10,
-                output_tokens=20,
-                cache_creation_input_tokens=100,
-                cache_read_input_tokens=0,
-            )
+            usage = type(
+                "Usage",
+                (),
+                {
+                    "input_tokens": 10,
+                    "output_tokens": 20,
+                    "details": {
+                        "cache_creation_input_tokens": 100,
+                        "cache_read_input_tokens": 0,
+                    },
+                },
+            )()
+            return ModelResult(output=SectionBody(body=body), usage=usage)
         finally:
             with self._lock:
                 self.in_flight -= 1
 
-    def count_tokens(self, _req: GenerationRequest) -> int:
+    def count_tokens(self, system_prompt: str, user_prompt: str) -> int:
         return 100
 
 

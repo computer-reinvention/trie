@@ -1,53 +1,53 @@
 ---
 trie_version: 0.1.5
 source: trie/edits/apply.py
-file_fingerprint: 0ab81e029a9f49f24626a2d9c2cb3c16a747054379647c0b19dca54a3ffb560f
-last_synced_at: '2026-05-28T01:48:55Z'
+file_fingerprint: 6872cb464280b74ac7932f505cb23d4221c2fda56e0817ab80bbf073679b1d24
+last_synced_at: '2026-05-28T14:59:20Z'
 defines:
 - kind: module
   qualified_name: trie/edits/apply:__module__
-  lines: 1-479
+  lines: 1-616
 - kind: function
   qualified_name: trie/edits/apply:_parse_pyright_output
-  lines: 26-42
+  lines: 27-43
 - kind: function
   qualified_name: trie/edits/apply:_parse_ruff_output
-  lines: 45-63
+  lines: 46-64
 - kind: constant
   qualified_name: trie/edits/apply:_PARSERS
-  lines: 66-69
+  lines: 67-70
 - kind: function
   qualified_name: trie/edits/apply:_lsp_diagnostics
-  lines: 72-97
+  lines: 73-98
 - kind: function
   qualified_name: trie/edits/apply:_format_diagnostics
-  lines: 100-108
+  lines: 101-109
 - kind: function
   qualified_name: trie/edits/apply:_file_fixup
-  lines: 111-145
+  lines: 112-135
 - kind: function
   qualified_name: trie/edits/apply:_compile_check
-  lines: 148-153
+  lines: 138-143
 - kind: function
   qualified_name: trie/edits/apply:_expand_callers
-  lines: 156-186
+  lines: 146-176
 - kind: function
   qualified_name: trie/edits/apply:_refresh_file
-  lines: 189-198
+  lines: 179-188
 - kind: function
   qualified_name: trie/edits/apply:apply_patches
-  lines: 201-416
+  lines: 191-537
 - kind: function
   qualified_name: trie/edits/apply:_read_source_span
-  lines: 419-422
+  lines: 540-543
 - kind: function
   qualified_name: trie/edits/apply:_write_prose_section
-  lines: 425-447
+  lines: 546-584
 - kind: function
   qualified_name: trie/edits/apply:preview_patches
-  lines: 450-478
+  lines: 587-615
 incoming_refs: 24
-outgoing_refs: 1
+outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/edits/apply:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=37383da3df8b594ba94ac395f0d7a49b032afbce24b4b530fd84bbc07d3097cb source_ref=e8d8084e43a869c493b5fb62f4c6feec96cfec79 -->
 ## `trie/edits/apply`
@@ -85,13 +85,13 @@ Run each `LspBackend` in order and return diagnostics from the first that produc
 
 Format a list of LSP diagnostic dicts into a human-readable newline-joined string.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/apply:_file_fixup fingerprint=8c69ed35219cd61d08ea5d9727883fabd1ae80e808e8e74779dd4dec6ee40653 body_fp=f9dbc70fb0d65b5764c0b1c73e8b3a96c4c38ffdaeb7b6303509a375cf067f1a source_ref=9308cf9d98e9fd9b6e95c3a8c09e9d395de442f1 -->
-## `_file_fixup(client: ModelClient, file_path: str, file_content: str, diagnostics: list[dict]) -> str | None`
+<!-- trie:section symbol=trie/edits/apply:_file_fixup fingerprint=bbadd2dda12f9b9865bdf44285d919b279240223f85f1fca9335ac9413ccd9e7 body_fp=c4c49cab001718f9683030ffe784a7c244e3cd7e783ad32a679bae04134e0ae6 source_ref=4da703e107bded20b26978e188fb319c6d98b948 -->
+## `_file_fixup(client: TrieClient, file_path: str, file_content: str, diagnostics: list[dict]) -> str | None`
 
-Send file content and LSP diagnostics to the model and return fixed source code extracted from a fenced code block.
+Send file content and LSP diagnostics to the model and return fixed source code via a structured `FixupOutput` response.
 
 - Returns `file_content` unchanged if `diagnostics` format to an empty string.
-- Returns `None` if the model response contains no valid `\`\`\`python` block.
+- Returns `fixup.content` directly from the structured output; no longer parses a fenced code block.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/apply:_compile_check fingerprint=7a854ad40befe46ef361c13e67a4678144ea8a66457bd5ceeb3562379b1703cf body_fp=af3832d6dfc421d01292785216cfc8635a87c71cc387605c90c16101621032ac source_ref=9308cf9d98e9fd9b6e95c3a8c09e9d395de442f1 -->
 ## `_compile_check(source: str) -> bool`
@@ -111,25 +111,27 @@ BFS from seed symbols through caller edges up to `cascade_depth` hops, returning
 
 Refresh triefact metadata for a single source file after it has been patched.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/apply:apply_patches fingerprint=7f7e62e92cacc874eca04cffd929baf119bf89a9d31ace7bb102092d94873e28 body_fp=b1c2042b084d7ab7506afec33a512e266f7c221c91301c82bf9b5e3bde2bd624 source_ref=9308cf9d98e9fd9b6e95c3a8c09e9d395de442f1 -->
-## `apply_patches(store: Store, config: Config, client: ModelClient, project_root: Path) -> dict[str, Any]`
+<!-- trie:section symbol=trie/edits/apply:apply_patches fingerprint=34152c4a10101626598cdf65b430179eaebdc1213a49e9710db538fcb37aee10 body_fp=6f49d8eb6d762873a6de4931de194f1fb31f841a5f04ca2cc95e090d53f1007e source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 -->
+## `apply_patches(store: Store, config: Config, client: TrieClient, project_root: Path, progress: Any | None = None) -> dict[str, Any]`
 
-Expand cascade DAG, pre-filter caller relationships, then apply all pending patches grouped by file with parallel execution, LSP fixup, and project verification.
+Expand pending patches via caller-cascade, regenerate affected source files, run LSP fixup loops, refresh triefact metadata, and verify project consistency.
 
-- `store`: source of pending patches and symbol graph.
-- Returns `ok`, `applied`, `failed`, `error`; no git stash/commit — writes files directly and rolls back nothing.
-- Verifies via `check_project` after writing; on success, deletes all consumed patches from the store.
-- Processes symbols per-file (not per-symbol) using `infer_file_source` and `merge_notes`.
+- `progress`: optional reporter; must implement `stage`, `file_start`, `file_symbol`, `file_generate`, `file_fixup`, `file_prose`, `file_done`, `refresh`, `verify`.
+- `store`: source of pending patches; cleared for all affected qnames on success.
+- Returns `ok=False` immediately on syntax error, LSP fixup failure, refresh error, or verify failure.
+- `files`: one dict per processed file with keys `path`, `ok`, `symbols`, `notes`, `lsp_iterations`, `prose_written`, `error`.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/apply:_read_source_span fingerprint=43f69c6b8bf7cdf184ce904aba0f8a6e02e68bdef37b33c43b59ff4df640eb73 body_fp=b98adcd92f77c498e6be8600c2389e1d755ac9f23d54f8b8c0ac20a0bad44e17 source_ref=9308cf9d98e9fd9b6e95c3a8c09e9d395de442f1 -->
 ## `_read_source_span(detail: Any, src_root: Path) -> str`
 
 Read the source lines of a symbol span from disk using its start/end line metadata.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/apply:_write_prose_section fingerprint=21bd634ef2f469c7728038b2b03e6eaafb449c4dcefb0765341316f0b7e6442a body_fp=e2b69f50c32893f6438c54bfb2bc7674386e94a72992f6422d97c18b0bb3b233 source_ref=9308cf9d98e9fd9b6e95c3a8c09e9d395de442f1 -->
-## `_write_prose_section(qname: str, file_path: str, prose: str, triefacts_root: Path) -> None`
+<!-- trie:section symbol=trie/edits/apply:_write_prose_section fingerprint=8af674914055253618af885b0cd4c3668e2e7e6ddb737d486007b02b58a61a00 body_fp=f050c428053d51aec1f0e7ae936c3e0c9bf513ef720f74a17917b52d5218d27c source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 -->
+## `_write_prose_section(qname: str, file_path: str, prose: str, triefacts_root: Path, src_root: Path | None = None) -> None`
 
 Upsert a symbol's prose into its corresponding triefact Markdown file, then write the result to disk.
+
+- `src_root`: when provided, computes the symbol's `body_normalized_hash` fingerprint from the updated source file before upserting.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/apply:preview_patches fingerprint=40df1bfff989b701a17843747fb88bcd6b9a12a390a9f1fbf23fc30b1d899b30 body_fp=bb864cf19096334c749ac097c0af09be6db4b22e942f111ea50293f4f325b6e9 source_ref=9308cf9d98e9fd9b6e95c3a8c09e9d395de442f1 -->
 ## `preview_patches(store: Store, config: Config) -> dict[str, Any]`

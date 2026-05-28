@@ -27,6 +27,7 @@ dependencies = [
     "mcp>=1.0",
     "rapidfuzz>=3.0",
     "jedi>=0.20.0",
+    "pydantic-ai>=1.103.0",
 ]
 
 [project.optional-dependencies]
@@ -50,6 +51,30 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["trie"]
 
+[tool.hatch.build]
+exclude = [
+    "app/",
+    "opencode/",
+    "landing/",
+    "triefacts/",
+    "tmp/",
+    "dist/",
+    "*.spec",
+    "trie_mcp_entry.py",
+]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "app/",
+    "opencode/",
+    "landing/",
+    "triefacts/",
+    "tmp/",
+    "dist/",
+    "*.spec",
+    "trie_mcp_entry.py",
+]
+
 # Bundle the agent-facing usage guide as package data. `trie setup` copies it
 # out to `TRIE.md` at the project root and adds a one-line pointer to
 # AGENTS.md / CLAUDE.md so agents land on a project-local doc rather than a
@@ -72,3 +97,8 @@ ignore = ["E501"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.20.0",
+]

@@ -377,6 +377,77 @@ class TrieTools:
                 return _error("internal", f"patch apply failed: {exc}")
             return result
 
+    # --- desktop app helpers -----------------------------------------------
+
+    def summary(self) -> dict[str, Any]:
+        """Return project-level aggregate counts for the trie desktop app.
+
+        Returns {project_name, total_symbols, public_symbols, total_files,
+        total_edges, trie_version}.
+        """
+        import trie as trie_pkg
+
+        with self.store as s:
+            total_symbols: int = s._conn.execute("SELECT COUNT(*) FROM symbols").fetchone()[0]
+            public_symbols: int = s._conn.execute(
+                "SELECT COUNT(*) FROM symbols WHERE is_public = 1"
+            ).fetchone()[0]
+            total_files: int = s._conn.execute(
+                "SELECT COUNT(DISTINCT file_path) FROM symbols"
+            ).fetchone()[0]
+            total_edges: int = s._conn.execute("SELECT COUNT(*) FROM edges").fetchone()[0]
+
+        return {
+            "project_name": self.root.name,
+            "project_root": str(self.root),
+            "total_symbols": total_symbols,
+            "public_symbols": public_symbols,
+            "total_files": total_files,
+            "total_edges": total_edges,
+            "trie_version": getattr(trie_pkg, "__version__", "unknown"),
+        }
+
+    def symbols_by_file(self, file_path: str) -> dict[str, Any]:
+        """Return all symbols in a given source file.
+
+        Returns {file_path, symbols: [SymbolDetail, ...]}.
+        Used by the desktop app sidebar file-click to highlight graph nodes.
+        """
+        with self.store as s:
+            rows = s._conn.execute(
+                """
+                SELECT
+                    sym.qualified_name, sym.name, sym.kind, sym.file_path,
+                    sym.start_line, sym.end_line, sym.signature, sym.is_public,
+                    (SELECT COUNT(*) FROM edges e WHERE e.dst_symbol_id = sym.id) as inbound_count,
+                    (SELECT COUNT(*) FROM edges e WHERE e.src_symbol_id = sym.id) as outbound_count,
+                    COALESCE(ts.one_liner, '') as one_liner
+                FROM symbols sym
+                LEFT JOIN triefact_sections ts ON ts.symbol_id = sym.id
+                WHERE sym.file_path = ?
+                ORDER BY sym.start_line
+                """,
+                (file_path,),
+            ).fetchall()
+
+        symbols = [
+            {
+                "qname": r[0],
+                "name": r[1],
+                "kind": r[2],
+                "file_path": r[3],
+                "start_line": r[4],
+                "end_line": r[5],
+                "signature": r[6],
+                "is_public": bool(r[7]),
+                "inbound_count": r[8],
+                "outbound_count": r[9],
+                "one_liner": r[10],
+            }
+            for r in rows
+        ]
+        return {"file_path": file_path, "symbols": symbols}
+
     # --- grep --------------------------------------------------------------
 
     def grep(
@@ -1955,10 +2026,17 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     server.tool(name="patch_drop")(tools.patch_drop)
     server.tool(name="patch_list")(tools.patch_list)
     server.tool(name="patch_apply")(tools.patch_apply)
+    # Desktop app helpers — project summary + symbols by file
+    server.tool(name="summary")(tools.summary)
+    server.tool(name="symbols_by_file")(tools.symbols_by_file)
     return server, tools
 
 
 def run_stdio(project_root: Path) -> None:
     """Run the MCP server over stdio. Blocks until the parent closes the pipe."""
+    import sys
+
+    sys.stdout.reconfigure(line_buffering=True)  # type: ignore[attr-defined]
+    sys.stderr.reconfigure(line_buffering=True)  # type: ignore[attr-defined]
     server, _tools = build_server(project_root)
     server.run()

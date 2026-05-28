@@ -1,0 +1,61 @@
+// HTTP client for /desktop/graph/* endpoints.
+// Routes all calls through the Electron main process (IPC proxy) because
+// the renderer cannot reach 127.0.0.1 directly on some macOS configurations.
+
+import type { ProjectSummary, ReadResult, SymbolsByFileResult, TraceResult, SymbolHit } from "./types"
+
+let baseUrl = ""
+
+export function setGraphClientBase(opencodePort: number): void {
+  baseUrl = `http://127.0.0.1:${opencodePort}`
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const trie = () => (window as any).trie
+
+async function post<T>(path: string, body: unknown): Promise<T> {
+  const result = await trie().httpRequest({
+    method: "POST",
+    url: `${baseUrl}${path}`,
+    body: JSON.stringify(body),
+  }) as { status: number; body: string }
+  if (result.status >= 500) throw new Error(`${path} failed (${result.status}): ${result.body}`)
+  return JSON.parse(result.body) as T
+}
+
+async function get<T>(path: string, params?: Record<string, string>): Promise<T> {
+  const url = new URL(`${baseUrl}${path}`)
+  if (params) for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
+  const result = await trie().httpRequest({
+    method: "GET",
+    url: url.toString(),
+  }) as { status: number; body: string }
+  if (result.status >= 500) throw new Error(`${path} failed (${result.status}): ${result.body}`)
+  return JSON.parse(result.body) as T
+}
+
+export const graphClient = {
+  summary(): Promise<ProjectSummary> {
+    return get("/desktop/graph/summary")
+  },
+
+  grep(opts: { predicate?: Record<string, unknown>; rank_by?: string; limit?: number }): Promise<{ hits: SymbolHit[] }> {
+    return post("/desktop/graph/grep", opts)
+  },
+
+  read(qname: string): Promise<ReadResult> {
+    return post("/desktop/graph/read", { qname })
+  },
+
+  trace(opts: { from_qname: string; direction?: string; depth?: number }): Promise<TraceResult> {
+    return post("/desktop/graph/trace", opts)
+  },
+
+  symbolsByFile(path: string): Promise<SymbolsByFileResult> {
+    return get("/desktop/graph/symbols-by-file", { path })
+  },
+
+  createSession(title?: string): Promise<{ id: string }> {
+    return post("/desktop/session", title ? { title } : {})
+  },
+}

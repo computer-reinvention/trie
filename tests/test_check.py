@@ -1,35 +1,15 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
+from tests.fake_client import FakeTrieClient
 from trie.check import StaleReason, check_project
 from trie.cli import app
 from trie.config import Config
-from trie.models import GenerationRequest, GenerationResponse
 from trie.sync.single_file import sync_single_file
-
-
-@dataclass
-class FakeClient:
-    model_id: str = "fake/test"
-    calls: int = 0
-
-    def generate(self, _req: GenerationRequest) -> GenerationResponse:
-        self.calls += 1
-        return GenerationResponse(
-            text="## generated\n\nbody.",
-            input_tokens=10,
-            output_tokens=20,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
-        )
-
-    def count_tokens(self, _req: GenerationRequest) -> int:
-        return 100
 
 
 @pytest.fixture
@@ -51,7 +31,7 @@ def project(tmp_path: Path) -> Path:
 def _sync_all(project: Path) -> None:
     config, _ = Config.find_and_load(project)
     for src in (project / "src").glob("*.py"):
-        sync_single_file(src, project_root=project, config=config, client=FakeClient())
+        sync_single_file(src, project_root=project, config=config, client=FakeTrieClient())
 
 
 def test_clean_after_fresh_sync(project: Path):
@@ -184,7 +164,7 @@ def test_cli_verify_detects_tampered_body(project: Path, monkeypatch: pytest.Mon
     _sync_all(project)
     triefact = project / "triefacts" / "src" / "alpha.md"
     text = triefact.read_text()
-    tampered = re.sub(r"## generated\n\nbody\.", "TAMPERED CONTENT", text)
+    tampered = re.sub(r"Generated body for `[^`]+`\.", "TAMPERED CONTENT", text)
     triefact.write_text(tampered)
     monkeypatch.chdir(project)
     runner = CliRunner()
@@ -201,7 +181,7 @@ def test_check_project_detects_tampered_body(project: Path):
     _sync_all(project)
     triefact = project / "triefacts" / "src" / "beta.md"
     text = triefact.read_text()
-    tampered = re.sub(r"## generated\n\nbody\.", "DIFFERENT TEXT", text)
+    tampered = re.sub(r"Generated body for `[^`]+`\.", "DIFFERENT TEXT", text)
     triefact.write_text(tampered)
     config, _ = Config.find_and_load(project)
     result = check_project(project_root=project, config=config)

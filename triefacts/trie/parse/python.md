@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/parse/python.py
 file_fingerprint: 6cc182c49cdbbec0046c0972db86bdad4bbbcfaa64c0c1ee1e6da2c2fa823edd
 last_synced_at: '2026-05-23T23:45:57Z'
@@ -67,7 +67,7 @@ defines:
 - kind: function
   qualified_name: trie/parse/python:extract_symbols
   lines: 416-562
-incoming_refs: 71
+incoming_refs: 82
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/parse/python:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=78b972ab1135c82f1b23baec8a8ab88c0fa2ea0d010f9be0a3e3a48e29fcb4f5 source_ref=5e8d03050d1b221cab9968d16c6e9555575ee417 -->

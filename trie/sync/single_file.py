@@ -10,7 +10,7 @@ from trie import __version__, telemetry
 from trie.config import Config
 from trie.git_helpers import compute_blob_hash, retrieve_blob
 from trie.graph.store import Store
-from trie.models import ModelClient
+from trie.models import TrieClient
 from trie.parse.python import (
     Symbol,
     extract_module_docstring,
@@ -289,7 +289,7 @@ def sync_single_file(
     *,
     project_root: Path,
     config: Config,
-    client: ModelClient,
+    client: TrieClient,
     dest_triefact_path: Path | None = None,
     store: Store | None = None,
     symbols_to_regen: set[str] | None = None,

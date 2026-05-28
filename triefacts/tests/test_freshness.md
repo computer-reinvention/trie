@@ -1,96 +1,87 @@
 ---
 trie_version: 0.1.5
 source: tests/test_freshness.py
-file_fingerprint: faa5046abb75e84c069ee5698da7624da737f20196239af4e9ab670125e196d3
-last_synced_at: '2026-05-28T01:39:37Z'
+file_fingerprint: c21306cc630617ff74b1c882b39215fb8d4332a944959c05fd891670ae6e8333
+last_synced_at: '2026-05-28T15:04:26Z'
 description: Tests for the turn-boundary freshness gate.
 defines:
 - kind: module
   qualified_name: tests/test_freshness:__module__
-  lines: 1-406
+  lines: 1-388
 - kind: function
   qualified_name: tests/test_freshness:_git
-  lines: 46-48
+  lines: 45-47
 - kind: function
   qualified_name: tests/test_freshness:_init_repo
-  lines: 51-54
-- kind: class
-  qualified_name: tests/test_freshness:FakeClient
-  lines: 58-77
-- kind: method
-  qualified_name: tests/test_freshness:FakeClient.generate
-  lines: 66-74
-- kind: method
-  qualified_name: tests/test_freshness:FakeClient.count_tokens
-  lines: 76-77
+  lines: 50-53
 - kind: function
   qualified_name: tests/test_freshness:project
-  lines: 81-102
+  lines: 57-78
 - kind: function
   qualified_name: tests/test_freshness:test_stamp_round_trip
-  lines: 110-113
+  lines: 86-89
 - kind: function
   qualified_name: tests/test_freshness:test_read_stamp_returns_none_when_missing
-  lines: 116-117
+  lines: 92-93
 - kind: function
   qualified_name: tests/test_freshness:test_read_stamp_returns_none_on_malformed_json
-  lines: 120-123
+  lines: 96-99
 - kind: function
   qualified_name: tests/test_freshness:test_read_stamp_returns_none_on_wrong_schema
-  lines: 126-129
+  lines: 102-105
 - kind: function
   qualified_name: tests/test_freshness:test_write_stamp_is_atomic_no_partial_files_left_behind
-  lines: 132-137
+  lines: 108-113
 - kind: function
   qualified_name: tests/test_freshness:test_scan_mtimes_returns_in_scope_files_only
-  lines: 145-151
+  lines: 121-127
 - kind: function
   qualified_name: tests/test_freshness:test_scan_mtimes_changes_after_file_edit
-  lines: 154-162
+  lines: 130-138
 - kind: function
   qualified_name: tests/test_freshness:test_ensure_fresh_raises_outside_git
-  lines: 170-189
+  lines: 146-165
 - kind: function
   qualified_name: tests/test_freshness:_run_before_turn
-  lines: 197-213
+  lines: 173-189
 - kind: function
   qualified_name: tests/test_freshness:_run_after_turn
-  lines: 216-226
+  lines: 192-202
 - kind: function
   qualified_name: tests/test_freshness:test_no_stamp_triggers_scan_without_llm
-  lines: 229-242
+  lines: 205-218
 - kind: function
   qualified_name: tests/test_freshness:test_unchanged_state_is_a_noop
-  lines: 245-251
+  lines: 221-227
 - kind: function
   qualified_name: tests/test_freshness:test_head_moved_triggers_scan_without_llm
-  lines: 254-273
+  lines: 230-249
 - kind: function
   qualified_name: tests/test_freshness:test_mtimes_moved_triggers_sync_with_llm
-  lines: 276-298
+  lines: 252-274
 - kind: function
   qualified_name: tests/test_freshness:test_new_file_added_triggers_refresh
-  lines: 301-310
+  lines: 277-286
 - kind: function
   qualified_name: tests/test_freshness:test_removed_file_triggers_refresh
-  lines: 313-320
+  lines: 289-296
 - kind: function
   qualified_name: tests/test_freshness:test_after_turn_picks_up_just_made_edit
-  lines: 328-339
+  lines: 304-315
 - kind: function
   qualified_name: tests/test_freshness:test_after_turn_noop_when_nothing_changed
-  lines: 342-348
+  lines: 318-324
 - kind: function
   qualified_name: tests/test_freshness:test_cli_refresh_default_runs_after_turn
-  lines: 356-370
+  lines: 332-349
 - kind: function
   qualified_name: tests/test_freshness:test_cli_refresh_before_and_after_mutex
-  lines: 373-382
+  lines: 352-361
 - kind: function
   qualified_name: tests/test_freshness:test_cli_refresh_outside_git_fails
-  lines: 385-405
+  lines: 364-387
 incoming_refs: 0
-outgoing_refs: 31
+outgoing_refs: 36
 ---
 <!-- trie:section symbol=tests/test_freshness:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8ca7adf074d35afa6a41fbee0a37dd3aaef596de402632b07b851880ad5d754f source_ref=f28a6f590f3fa498c176b6f0b528e9f44fefd5ad -->
 ## `tests/test_freshness`
@@ -109,24 +100,6 @@ Run a `git` subprocess in `cwd` with `check=True`, capturing output.
 ## `_init_repo(path: Path) -> None`
 
 Initialise a git repo at `path` with a fixed test identity on branch `main`.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:FakeClient fingerprint=72e1cfda4ef7f35341e25aa7cd44da1240024f4af92ce0191c7df39fdb8ea8e0 body_fp=e037dc09b0be25d465c938b812648ab48f4390ac9c9c6b954c5a7de12752e01f source_ref=f28a6f590f3fa498c176b6f0b528e9f44fefd5ad -->
-## `FakeClient`
-
-Deterministic LLM test double that counts `generate` calls and satisfies telemetry requirements.
-
-- `calls`: incremented on each `generate` invocation; inspect after test runs.
-- `count_tokens`: always returns 100.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:FakeClient.generate fingerprint=7328b86a4ba976097f1e8eec40c045a8090951dfeca29ef5debd39c4e6fc9a4b body_fp=b4d8f76a204a697a7f1541ef55d5c3c02d87dd2a3042b3456cc5ad13da7c67ed source_ref=f28a6f590f3fa498c176b6f0b528e9f44fefd5ad -->
-## `FakeClient.generate(self, _req: GenerationRequest) -> GenerationResponse`
-
-Increment `FakeClient.calls` and return a fixed `GenerationResponse` with deterministic token counts.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:FakeClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=d8d333632e478448f38bba2d838461dbe596c5410c31dd57bac064a4fb6776f7 source_ref=f28a6f590f3fa498c176b6f0b528e9f44fefd5ad -->
-## `FakeClient.count_tokens(self, _req: GenerationRequest) -> int`
-
-Always returns 100 for any `FakeClient` token-count request.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_freshness:project fingerprint=e01c8f727530a5c7c7c2f8e977e16ddd4243b91299298f93efeff46d49c525b1 body_fp=23b6562bcf1ae5cd48fedb589ebba91f83c6adae54b0c6aed94a2610e749069a source_ref=f28a6f590f3fa498c176b6f0b528e9f44fefd5ad -->
 ## `project(tmp_path: Path) -> Path`
@@ -168,24 +141,24 @@ Assert that `scan_mtimes` returns only files matching the scope glob, excluding 
 
 Verify that editing one file updates only its mtime entry, leaving unedited files unchanged.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:test_ensure_fresh_raises_outside_git fingerprint=89e3a8aaf80ce9d90638c4ddf7d07d34205a24f88d42f29522515c6ee04a3fb3 body_fp=55aed1828a80a742800aceaa965c8baa25c31d5b6046cd193119981b3cb22dba source_ref=f28a6f590f3fa498c176b6f0b528e9f44fefd5ad -->
+<!-- trie:section symbol=tests/test_freshness:test_ensure_fresh_raises_outside_git fingerprint=8367b6046047f80f7b6b3bb2170adbb3f445edbf63f301ce34d542c7e9a78532 body_fp=55aed1828a80a742800aceaa965c8baa25c31d5b6046cd193119981b3cb22dba source_ref=b9e672c5a19ee1a8556e80890f1c8f6b75c4ca0b -->
 ## `test_ensure_fresh_raises_outside_git(tmp_path: Path)`
 
 Assert that `ensure_fresh_before_turn` raises `NotAGitRepoError` when called outside a git repository.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:_run_before_turn fingerprint=71c2b56e4469ba0325dfa70ff210926de24f2af8597adf671bb8f90d1d26a325 body_fp=ba2af7f4ea27d4c41b4bfe4b1ca91ba0f7cf2e8206e90b2be4a3ad76755ce464 source_ref=f28a6f590f3fa498c176b6f0b528e9f44fefd5ad -->
+<!-- trie:section symbol=tests/test_freshness:_run_before_turn fingerprint=af1360c956ad404ceb854af6f7e6bdfff427769e8260556070de5da747ab5d3c body_fp=ba2af7f4ea27d4c41b4bfe4b1ca91ba0f7cf2e8206e90b2be4a3ad76755ce464 source_ref=b9e672c5a19ee1a8556e80890f1c8f6b75c4ca0b -->
 ## `_run_before_turn(project: Path, client: FakeClient | None = None)`
 
 Invoke `ensure_fresh_before_turn` against a test project, returning its `FreshnessResult`.
 
 - `client`: pass a `FakeClient` instance to inspect `.calls` after the run; defaults to a fresh `FakeClient`.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:_run_after_turn fingerprint=6e5e97c6c2cb478ecb5ccd03719aa403e8e124f067af83c532639b8cce7b413f body_fp=c5ad441fa45d6ca9b5183108d5368f8ccd3a9454902b8947b7477c08ff9e3d64 source_ref=f28a6f590f3fa498c176b6f0b528e9f44fefd5ad -->
-## `_run_after_turn(project: Path, client: FakeClient | None = None)`
+<!-- trie:section symbol=tests/test_freshness:_run_after_turn fingerprint=a442953cd9d0a2624b0fd4681c83c3af537c79593588ab97a22c7bd1a304db1b body_fp=0a53911fbc99351a8bf52322c7afe3f129dfc33edafa4834578d4a6abeee6f3c source_ref=b9e672c5a19ee1a8556e80890f1c8f6b75c4ca0b -->
+## `_run_after_turn(project: Path, client: FakeTrieClient | None = None)`
 
 Invoke `ensure_fresh_after_turn` against a test project, returning the `FreshnessResult`.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:test_no_stamp_triggers_scan_without_llm fingerprint=376b562973de1b3f38953b030644c19a7115ae56d41dbf4795c146596f126188 body_fp=940a5ae9ee99000f665b45de7ad8bfb0ccc21ff28fabd7a44a4922f5138923b4 source_ref=f28a6f590f3fa498c176b6f0b528e9f44fefd5ad -->
+<!-- trie:section symbol=tests/test_freshness:test_no_stamp_triggers_scan_without_llm fingerprint=b53a0383509dd6c81eb6710ee57bdbdb51f7358a5fc29aa5946076b4ae82c369 body_fp=940a5ae9ee99000f665b45de7ad8bfb0ccc21ff28fabd7a44a4922f5138923b4 source_ref=b9e672c5a19ee1a8556e80890f1c8f6b75c4ca0b -->
 ## `test_no_stamp_triggers_scan_without_llm(project: Path)`
 
 Assert that `ensure_fresh_before_turn` rescans the graph on first run without invoking the LLM.
@@ -199,12 +172,12 @@ Assert that `ensure_fresh_before_turn` rescans the graph on first run without in
 
 Assert that a second consecutive `ensure_fresh_before_turn` call returns `refreshed=False` with reason `"unchanged"`.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:test_head_moved_triggers_scan_without_llm fingerprint=53fd9c5d55e1b6f4fb91c44726d9ef3c4c5f968426c32d0ce5af677173de93be body_fp=b59cb22e0584a19768a2fea79ceaa43a6990c98037d098111b51aac179b576eb source_ref=f28a6f590f3fa498c176b6f0b528e9f44fefd5ad -->
+<!-- trie:section symbol=tests/test_freshness:test_head_moved_triggers_scan_without_llm fingerprint=7c7b6e6971abb581360e4fcb858cf34d7d6f853887f5f33cc6bf13ce11cf2f1b body_fp=b59cb22e0584a19768a2fea79ceaa43a6990c98037d098111b51aac179b576eb source_ref=b9e672c5a19ee1a8556e80890f1c8f6b75c4ca0b -->
 ## `test_head_moved_triggers_scan_without_llm(project: Path)`
 
 Assert that a new commit shifting HEAD triggers a graph rescan with `reason="head_moved"` but no LLM call and no incremental run.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:test_mtimes_moved_triggers_sync_with_llm fingerprint=60d1db01a580111a416263a2b7fb64da88ef5046f754beecf3c5b81fe7f38941 body_fp=c1e27972522e4ea3a8359130835e093442721ecd827bba9f92a7df8ba943a6f8 source_ref=f28a6f590f3fa498c176b6f0b528e9f44fefd5ad -->
+<!-- trie:section symbol=tests/test_freshness:test_mtimes_moved_triggers_sync_with_llm fingerprint=b54352bc949a81fb06d57f78672a8214131cebf4b6604abd7fe5d999d8959db7 body_fp=c1e27972522e4ea3a8359130835e093442721ecd827bba9f92a7df8ba943a6f8 source_ref=b9e672c5a19ee1a8556e80890f1c8f6b75c4ca0b -->
 ## `test_mtimes_moved_triggers_sync_with_llm(project: Path)`
 
 Assert that editing a file without committing triggers `run_incremental` (LLM path) with reason `"mtimes_moved"` while HEAD stays unchanged.
@@ -231,18 +204,20 @@ Assert that `ensure_fresh_after_turn` detects a modified source file and returns
 
 Assert that `ensure_fresh_after_turn` returns `refreshed=False` with reason `"unchanged"` when no source files changed during the turn.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:test_cli_refresh_default_runs_after_turn fingerprint=dbcf0791a3b289b7c2f6d86d2eb2af4c4414a468cce91a2b2135c88d47d65e63 body_fp=fcb3f386bd2643de805c99019fe5ef386b0a1e6de1939c8d3f3f9de3056746cf source_ref=f28a6f590f3fa498c176b6f0b528e9f44fefd5ad -->
+<!-- trie:section symbol=tests/test_freshness:test_cli_refresh_default_runs_after_turn fingerprint=f22dd366b40ee69587e3e3da35085658d4520cad79261e3a630c6a948ee431b3 body_fp=151b06098bd94a9f8b51c917e1bc239fb4bdce71c4c7d0ec671b744fe62a086e source_ref=83ee0c7f20ba827538abaac9ac76f3991301821c -->
 ## `test_cli_refresh_default_runs_after_turn(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `trie refresh` with no flags exits 0 and runs the after-turn path.
+Assert that `trie refresh` with no flags exits 0, exercising the after-turn path.
+
+- `monkeypatch`: stubs `trie.cli.make_client` to avoid requiring `ANTHROPIC_API_KEY`.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_freshness:test_cli_refresh_before_and_after_mutex fingerprint=a656ec572aa7041e39940d696a533e02cb4eb833e3cc5e278199b18bccaadb99 body_fp=71547666d2a5e53b2a8340b175aff82c7ab76eba00abf1d1d5898247343f5378 source_ref=f28a6f590f3fa498c176b6f0b528e9f44fefd5ad -->
 ## `test_cli_refresh_before_and_after_mutex(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that passing both `--before-turn` and `--after-turn` to `trie refresh` exits with code 1 and reports mutual exclusivity.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:test_cli_refresh_outside_git_fails fingerprint=385e9125a386640f49e3e7864373a927f1f099cada6fdb1679eb7ec6337f7218 body_fp=a05a9c13d1012c7b75b2c1c865c5f429d781a86a1fdb6dbc67abb561e45e8be2 source_ref=f28a6f590f3fa498c176b6f0b528e9f44fefd5ad -->
+<!-- trie:section symbol=tests/test_freshness:test_cli_refresh_outside_git_fails fingerprint=ae9d7e6fe8285a8be7c1bc4818e405388a351ffe08979820a130884f7b31210d body_fp=e1136d427d702ffe7f59318115bf94d990ca68dc84aec96fcd7eb005b0b71b7d source_ref=83ee0c7f20ba827538abaac9ac76f3991301821c -->
 ## `test_cli_refresh_outside_git_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)`
 
-Assert that `trie refresh` exits with code 1 and mentions "git repository" when run outside a git repo.
+Assert that `trie refresh` exits with code 1 and prints "git repository" when invoked outside a git repo.
 <!-- trie:end -->

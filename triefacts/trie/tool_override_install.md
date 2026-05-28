@@ -1,14 +1,14 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/tool_override_install.py
-file_fingerprint: 3b34bace4cd8bd0f17cd30f9cfdb4448b4f688e54e2386d2c8ecbc3e88f5560b
-last_synced_at: '2026-05-23T23:20:42Z'
+file_fingerprint: cf20a2f7b92f6a86f71b576ebacd67f79a073cd62eed7d433fb16b055a72c738
+last_synced_at: '2026-05-28T14:27:17Z'
 description: 'Tool-override installation: replace an agent''s built-in tools with
   trie wrappers.'
 defines:
 - kind: module
   qualified_name: trie/tool_override_install:__module__
-  lines: 1-1804
+  lines: 1-1992
 - kind: constant
   qualified_name: trie/tool_override_install:Action
   lines: 39-39
@@ -64,26 +64,38 @@ defines:
   qualified_name: trie/tool_override_install:_render_opencode_explain_flow
   lines: 1303-1339
 - kind: function
+  qualified_name: trie/tool_override_install:_render_opencode_patch
+  lines: 1347-1392
+- kind: function
+  qualified_name: trie/tool_override_install:_render_opencode_patch_drop
+  lines: 1395-1436
+- kind: function
+  qualified_name: trie/tool_override_install:_render_opencode_patch_list
+  lines: 1439-1466
+- kind: function
+  qualified_name: trie/tool_override_install:_render_opencode_patch_apply
+  lines: 1469-1505
+- kind: function
   qualified_name: trie/tool_override_install:_render_claude_code_hooks_json
-  lines: 1347-1403
+  lines: 1513-1569
 - kind: constant
   qualified_name: trie/tool_override_install:TARGETS
-  lines: 1412-1563
+  lines: 1578-1751
 - kind: class
   qualified_name: trie/tool_override_install:ToolOverrideInstallPlan
-  lines: 1572-1578
+  lines: 1760-1766
 - kind: function
   qualified_name: trie/tool_override_install:install
-  lines: 1581-1620
+  lines: 1769-1808
 - kind: function
   qualified_name: trie/tool_override_install:apply_one
-  lines: 1623-1680
+  lines: 1811-1868
 - kind: function
   qualified_name: trie/tool_override_install:_remove_obsolete
-  lines: 1683-1736
+  lines: 1871-1924
 - kind: function
   qualified_name: trie/tool_override_install:_apply_file
-  lines: 1739-1803
+  lines: 1927-1991
 incoming_refs: 33
 outgoing_refs: 0
 ---
@@ -216,6 +228,26 @@ Render `.opencode/tools/trace_flow.ts`, a custom tool that finds shortest call c
 
 Render `.opencode/tools/explain_flow.ts`, an opencode custom tool that shells out to `trie explain-flow` to narrate the call chain between two symbols.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_patch fingerprint=7d3eeaa5500b89ea0b3f58626af2edecfd4e01b955c1dc949259babdde12784c body_fp=933613b24a5adc62f2121580fab979c51e77a9d5f8193512510194388f8b626c source_ref=71f51dd9f7fe32391c5e0e222fcd7a56fe247388 -->
+## `_render_opencode_patch(_project_root: Path) -> str`
+
+Render `.opencode/tools/patch.ts`, a custom tool that posts an implementation note against a named symbol via `trie patch create`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_patch_drop fingerprint=c5a387d3ccd119d17f820125b1767dcb772ecdab7406226b76fd4aad95c70acd body_fp=5f6597dd9d4535efe4052b3b33fec1f052769213bf6e33258f5aec399c2afbbf source_ref=71f51dd9f7fe32391c5e0e222fcd7a56fe247388 -->
+## `_render_opencode_patch_drop(_project_root: Path) -> str`
+
+Render `.opencode/tools/patch_drop.ts`, which removes pending patches by qname or clears all.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_patch_list fingerprint=f5f3bac0e07e83cb60c4f3605da6a9b7dafb2e575ca1cf8a3c2cd0b8aeeb736b body_fp=55eb375ef31075c611be8ac30b744da9f611e2bd76e25bc05fbc7f213d53e6c7 source_ref=71f51dd9f7fe32391c5e0e222fcd7a56fe247388 -->
+## `_render_opencode_patch_list(_project_root: Path) -> str`
+
+Render `.opencode/tools/patch_list.ts`, a custom tool that lists all pending patches grouped by symbol.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_patch_apply fingerprint=c1d3e2346fdc9369b2275316c79f709733b929a1107fac815ab6075c24603a5f body_fp=c5bb342fc643fc8b4f9d46eed1a4834fdc9850744ad108a3ac56f76dfb15afda source_ref=71f51dd9f7fe32391c5e0e222fcd7a56fe247388 -->
+## `_render_opencode_patch_apply(_project_root: Path) -> str`
+
+Render `.opencode/tools/patch_apply.ts`, a tool that runs `trie patch apply` to execute all pending patches.
+<!-- trie:end -->
 <!-- trie:section symbol=trie/tool_override_install:_render_claude_code_hooks_json fingerprint=2b004e51b57a5be1e5d0181eb5239d9e0484ae53fc4b78e3acda4c59131e21ed body_fp=8f98a136fdaa84b7442e48d37b71a10905d9d3f89801c62c6dbf96e87044da5c source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
 ## `_render_claude_code_hooks_json(_project_root: Path) -> str`
 
@@ -224,12 +256,12 @@ Render `.claude/hooks/trie-tools.json`, a Claude Code `PreToolUse` advisory hook
 - Emits a `systemMessage` via `echo`; does not block the original `Grep` call.
 - Only intercepts `Grep`; `Read` and `Glob` are left unhooked.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:TARGETS fingerprint=295ef083f6bacd559b89e23f06d4246b2ea275129558e6a81272d4fb3420ae82 body_fp=be70f21746701e0b31852079bfdd9c5d2d5937f957d9ed1817daa0d4016e9a8b source_ref=658149b8ddacc94108782566ea27b58af04ee820 -->
+<!-- trie:section symbol=trie/tool_override_install:TARGETS fingerprint=34ed053e3260f7d7d50751489108a97a3c33b6738a62034bd2797dbf3300480d body_fp=6ab5fd86bdbd648622596beb37697271f9ee237f36c5bfa6b2734af027d100f6 source_ref=cfb899e753d7c0d36aaf32452b674ea11e3097a3 -->
 ## `TARGETS: dict[str, ToolOverrideTarget]`
 
 Registry mapping agent slug to its `ToolOverrideTarget` definition, keyed by the same names used in `mcp_install.TARGETS`.
 
-- `"opencode"`: 11 files — overrides `grep`/`read`, adds `trace` plus 8 extended tools; obsoletes `trie_read.ts`/`trie_trace.ts`.
+- `"opencode"`: 15 files — overrides `grep`/`read`, adds `trace` plus 8 extended tools and 4 patch tools (`patch`, `patch_drop`, `patch_list`, `patch_apply`); obsoletes `trie_read.ts`/`trie_trace.ts`.
 - `"claude-code"`: 1 file — advisory `PreToolUse` hook nudging toward `mcp__trie__grep`.
 - All other entries: no files; `apply_one` returns `needs_manual_setup` with `manual_instructions`.
 <!-- trie:end -->

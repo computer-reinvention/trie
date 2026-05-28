@@ -1,39 +1,16 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
+from tests.fake_client import FakeTrieClient
 from trie.cli import app
 from trie.config import Config
 from trie.cost import get_pricing
 from trie.diff_cmd import diff_project
-from trie.models import GenerationRequest, GenerationResponse
 from trie.sync.single_file import sync_single_file
-
-
-@dataclass
-class StableClient:
-    """First sync produces 'v1 body'; subsequent calls produce 'v2 body' so diffs show change."""
-
-    model_id: str = "anthropic/claude-sonnet-4-6"
-    body: str = "## v1\n\nv1 body."
-    calls: int = 0
-
-    def generate(self, _req: GenerationRequest) -> GenerationResponse:
-        self.calls += 1
-        return GenerationResponse(
-            text=self.body,
-            input_tokens=10,
-            output_tokens=20,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
-        )
-
-    def count_tokens(self, _req: GenerationRequest) -> int:
-        return 100
 
 
 @pytest.fixture
@@ -53,7 +30,7 @@ def project(tmp_path: Path) -> Path:
 
 def test_diff_returns_empty_when_clean(project: Path):
     config, _ = Config.find_and_load(project)
-    client_v1 = StableClient(body="## v1\n\nv1 body.")
+    client_v1 = FakeTrieClient(output_body="## v1\n\nv1 body.")
     sync_single_file(
         project / "src" / "alpha.py",
         project_root=project,
@@ -74,14 +51,14 @@ def test_diff_shows_regenerated_content(project: Path):
         project / "src" / "alpha.py",
         project_root=project,
         config=config,
-        client=StableClient(body="## v1\n\nv1 body."),
+        client=FakeTrieClient(output_body="## v1\n\nv1 body."),
     )
 
     # Modify source so check sees a stale section
     (project / "src" / "alpha.py").write_text("def alpha():\n    return 999\n")
 
     # Diff with a v2 client
-    client_v2 = StableClient(body="## v2\n\nv2 body.")
+    client_v2 = FakeTrieClient(output_body="## v2\n\nv2 body.")
     result = diff_project(project_root=project, config=config, client=client_v2, pricing=pricing)
     assert len(result.diffs) == 1
     fd = result.diffs[0]
@@ -104,7 +81,7 @@ def test_diff_writes_to_preview_dir(project: Path):
     result = diff_project(
         project_root=project,
         config=config,
-        client=StableClient(),
+        client=FakeTrieClient(),
         pricing=pricing,
     )
     assert len(result.diffs) == 1
@@ -124,7 +101,7 @@ def test_diff_respects_limit(project: Path):
     result = diff_project(
         project_root=project,
         config=config,
-        client=StableClient(),
+        client=FakeTrieClient(),
         pricing=pricing,
         limit=2,
     )
@@ -141,7 +118,7 @@ def test_diff_respects_budget(project: Path):
     result = diff_project(
         project_root=project,
         config=config,
-        client=StableClient(),
+        client=FakeTrieClient(),
         pricing=pricing,
         budget_usd=0.00001,
     )
@@ -156,14 +133,14 @@ def test_cli_sync_dry_run_routes_through_diff(project: Path, monkeypatch: pytest
         project / "src" / "alpha.py",
         project_root=project,
         config=config,
-        client=StableClient(body="## v1\n\nv1 body."),
+        client=FakeTrieClient(output_body="## v1\n\nv1 body."),
     )
     (project / "src" / "alpha.py").write_text("def alpha():\n    return 999\n")
 
     monkeypatch.chdir(project)
     monkeypatch.setattr(
         "trie.cli.make_client",
-        lambda model_id, **_kw: StableClient(body="## v2\n\nv2 body.", model_id=model_id),
+        lambda model_id, **_kw: FakeTrieClient(output_body="## v2\n\nv2 body.", model_id=model_id),
     )
 
     runner = CliRunner()
@@ -182,12 +159,12 @@ def test_cli_sync_dry_run_no_stale(project: Path, monkeypatch: pytest.MonkeyPatc
         project / "src" / "alpha.py",
         project_root=project,
         config=config,
-        client=StableClient(body="## v1\n\nv1 body."),
+        client=FakeTrieClient(output_body="## v1\n\nv1 body."),
     )
     monkeypatch.chdir(project)
     monkeypatch.setattr(
         "trie.cli.make_client",
-        lambda model_id, **_kw: StableClient(model_id=model_id),
+        lambda model_id, **_kw: FakeTrieClient(model_id=model_id),
     )
     runner = CliRunner()
     result = runner.invoke(app, ["sync", "--dry-run"])

@@ -40,7 +40,7 @@ from trie import telemetry
 from trie.config import Config
 from trie.git_helpers import current_head, is_git_repo
 from trie.graph.store import Store
-from trie.models import ModelClient
+from trie.models import TrieClient
 from trie.scan import scan_project
 from trie.scope import discover_files
 from trie.sync.incremental import IncrementalResult, run_incremental
@@ -207,7 +207,7 @@ def ensure_fresh_before_turn(
     project_root: Path,
     config: Config,
     store: Store,
-    client: ModelClient,
+    client: TrieClient,
     progress: ProgressCallback | None = None,
 ) -> FreshnessResult:
     """Cheap freshness probe to run at the start of an agent turn.
@@ -239,7 +239,7 @@ def ensure_fresh_after_turn(
     project_root: Path,
     config: Config,
     store: Store,
-    client: ModelClient,
+    client: TrieClient,
     progress: ProgressCallback | None = None,
 ) -> FreshnessResult:
     """Always-on freshness sweep to run at the end of an agent turn.
@@ -269,7 +269,7 @@ def _ensure_fresh(
     project_root: Path,
     config: Config,
     store: Store,
-    client: ModelClient,
+    client: TrieClient,
     progress: ProgressCallback | None,
     trigger: str,
 ) -> FreshnessResult:

@@ -5,8 +5,8 @@
 A guide for coding agents working in a project that has trie installed.
 
 trie indexes source code into a graph of symbols and references, attaches
-prose to each public symbol, and exposes **eleven navigation tools** over
-MCP. This document is how to use them well.
+prose to each public symbol, and exposes **fifteen tools** over
+MCP — eleven for navigation and four for edit patches. This document is how to use them well.
 
 If you take one thing from this guide: **`grep` is the right tool for
 every code-side search.** Reach for it before the shell's `rg`/grep,
@@ -34,10 +34,10 @@ explain_symbol            Full prose narrative weaving callers + callees
 explain_symbol_references  Usage narrative from callers' prose only
 trace_flow                Find call chain(s) between two symbols
 explain_flow              Trace + narrate each step of the chain
-patch                     Post an implementation note on a symbol
-patch_drop                Remove pending patches for a symbol or session
-patch_list                View all pending patches grouped by symbol
-patch_apply               Merge, generate, cascade, and commit all patches
+patch                     Post an implementation note against a symbol
+patch_drop                Remove pending patches (all or by symbol)
+patch_list                List all pending patches grouped by symbol
+patch_apply               Execute all pending patches (generate + write)
 ```
 
 ---
@@ -57,8 +57,8 @@ know a literal string or pattern rather than a symbol name.
 
 **`grep_entry_points`** finds public, high-inbound symbols whose
 triefact prose fuzzy-matches a topic or concept. Use for orienting in
-an unfamiliar codebase: *"authentication"*, *"error handling"*, *"config
-loading"*.
+an unfamiliar codebase: _"authentication"_, _"error handling"_, _"config
+loading"_.
 
 **`grep_symbol`** fuzzy-matches a symbol name fragment and returns the
 best match plus up to 9 similar alternatives. Use when you have a rough
@@ -108,49 +108,30 @@ system.
 prose only, skipping the symbol's own prose. Use when you want to
 understand how a symbol is used, by whom, and in what context.
 
-### patch family — implementation notes + apply
+### patch family — edit patches
 
-Four tools implement a reactive patch-apply workflow where you post
-short implementation notes on symbols and the system propagates changes
-through the call graph.
+**`patch`** posts an implementation note against a symbol (fire-and-forget).
+The note includes a `reason` explaining the change. Patches are stored in
+the trie store and consumed by `patch_apply`.
 
-**`patch(qname, note, reason)`** — post an implementation note on a
-symbol. Fire-and-forget. Returns `{patch_id, qname, pending_patch_count}`.
-The `note` describes what to change; `reason` is optional context. Notes
-stay in the graph store until applied.
+**`patch_drop`** removes pending patches. With no argument, drops all
+patches created in the current session. Pass a `qname` to drop patches
+for a specific symbol only.
 
-**`patch_drop(qname?)`** — remove pending patches for a symbol, or
-omit qname to drop all patches created this session. Returns
-`{removed: int}`.
+**`patch_list`** lists all pending patches grouped by symbol, showing
+each patch's note, reason, and origin session.
 
-**`patch_list()`** — view all pending patches grouped by symbol.
-Each entry shows `qname`, `count`, `origin` (agent/cascade/mixed),
-and the raw notes. Returns `{patches: [...]}`.
+**`patch_apply`** executes every pending patch in a single pipeline:
+merges notes for the same symbol, batches symbols by file, generates
+new source via LLM (one call per file), runs LSP diagnostics with up to
+3 fixup iterations, writes prose sections, and verifies trie consistency
+with `trie verify`. Returns per-file results with status and any errors.
 
-**`patch_apply()`** — merge all pending patches, generate new source
-and prose for affected symbols, expand the call-graph cascade within
-`cascade.default_depth`, run LSP diagnostics (pyright by default) with
-fixup loop, and commit the result. Uses an exclusive lock to prevent
-concurrent runs.
-
-The pipeline:
-1. **Static cascade expansion** — BFS through caller edges (no LLMs)
-2. **Batch pre-filter** — one LLM call per batch of callee↔caller groups
-   judges which relationships warrant cascade notes
-3. **Parallel dependency-aware scheduler** — symbols processed callee→caller
-   via `ThreadPoolExecutor`
-4. **Source generation** — merge all notes → LLM generates new source+prose
-5. **LSP fixup loop** — run diagnostics (pyright default), feed errors back to
-   LLM for up to `lsp_max_retries` iterations
-6. **Graph update** — re-parse, update prose in triefact, update store
-7. **Commit** — `git stash` → apply → `trie verify` → `git commit`
-
-When `patch_apply` fails (compile error, LLM error, etc.), files are
-restored to their committed state and patches remain in the store for
-retry.
-
-After a successful apply, you'll see `[patched: N]` tags on symbols
-in `grep`, `read`, and `trace` output, indicating pending patches.
+> **Agent workflow**: use `patch` to record intended changes, then
+> call `patch_apply` once to materialise everything. This avoids
+> editing source directly — the agent posts notes against symbols and
+> the system generates the code. Multiple agents can post notes
+> independently; `patch_apply` merges them before generation.
 
 ---
 
@@ -247,9 +228,13 @@ grep({ "scope_prefix": "src/", "public_only": true },
   "signature": "...",
   "prose": "...",
   "source_pointer": "...",
-  "callers": [ /* { qname, signature, one_liner } */ ],
-  "callees": [ /* same shape */ ],
-  "notes": "..."       // present only when there's something to flag
+  "callers": [
+    /* { qname, signature, one_liner } */
+  ],
+  "callees": [
+    /* same shape */
+  ],
+  "notes": "..." // present only when there's something to flag
 }
 ```
 
@@ -269,7 +254,9 @@ grep({ "scope_prefix": "src/", "public_only": true },
 ```json
 {
   "best": { "qname": "...", "one_liner": "..." },
-  "similar": [ /* up to 9 alternatives */ ],
+  "similar": [
+    /* up to 9 alternatives */
+  ],
   "note": "..."
 }
 ```
@@ -280,10 +267,12 @@ grep({ "scope_prefix": "src/", "public_only": true },
 {
   "paths_found": 2,
   "paths": [
-    [ "qname1", "qname2", "qname3" ],
-    [ "qname1", "qname4", "qname3" ]
+    ["qname1", "qname2", "qname3"],
+    ["qname1", "qname4", "qname3"]
   ],
-  "narratives": [ /* explain_flow only — one per path */ ]
+  "narratives": [
+    /* explain_flow only — one per path */
+  ]
 }
 ```
 
@@ -293,8 +282,12 @@ grep({ "scope_prefix": "src/", "public_only": true },
 {
   "symbol": { "qname": "...", "prose": "..." },
   "narrative": "...",
-  "callers": [ /* with prose */ ],
-  "callees": [ /* with prose */ ]
+  "callers": [
+    /* with prose */
+  ],
+  "callees": [
+    /* with prose */
+  ]
 }
 ```
 
@@ -412,23 +405,6 @@ explain_symbol_references("acquire_lock")
 # → callers' prose only. The usage story.
 ```
 
-**"Change the return value of `compute_cascade` and propagate."**
-
-```python
-# 1. Post an implementation note
-patch("trie/sync/cascade:compute_cascade",
-      note="return CascadeResult(symbols=[]) instead",
-      reason="deprecate cascade; cascade is now done upfront in apply")
-
-# 2. Verify it's pending
-patch_list()
-# → shows compute_cascade with [patched: 1]
-
-# 3. Apply — merges, generates, cascades, LSP-validates, commits
-patch_apply()
-# → {ok: true, applied: 3, failed: 0}
-```
-
 **"What are the main entry points into the auth system?"**
 
 ```python
@@ -463,10 +439,6 @@ Round-trip without rewriting.
   broad, narrow from results.
 - **Don't manually parse triefact files.** `read` returns the section
   body directly.
-- **Don't edit source code directly when you want the system to
-  propagate.** Use `patch(qname, note, reason)` instead. The patch-
-  apply pipeline handles cascade expansion, topo-ordering, and LSP
-  validation.
 - **Don't worry about whether a triefact exists.** If a symbol has no
   prose yet, `read` still returns signature, callers, and callees;
   `prose` is empty and `notes` says so.
@@ -481,12 +453,13 @@ response.
 
 **Output modes by command:**
 
-| Human-readable (pass `--json` for machine) | JSON-only (always machine-readable) |
-|---|---|
-| `trie grep`, `trie read`, `trie trace` | `trie grep-str`, `trie grep-entry-points` |
-| `trie patch create`, `trie patch drop` | `trie grep-symbol`, `trie grep-symbol-neighbours` |
-| `trie patch list`, `trie patch preview` | `trie explain-symbol`, `trie explain-symbol-refs` |
-| `trie patch apply` | `trie trace-flow`, `trie explain-flow` |
+| Human-readable (pass `--json` for machine) | JSON-only (always machine-readable)                                    |
+| ------------------------------------------ | ---------------------------------------------------------------------- |
+| `trie grep`, `trie read`, `trie trace`     | `trie grep-str`, `trie grep-entry-points`                              |
+|                                            | `trie grep-symbol`, `trie grep-symbol-neighbours`                      |
+|                                            | `trie explain-symbol`, `trie explain-symbol-refs`                      |
+|                                            | `trie trace-flow`, `trie explain-flow`                                 |
+|                                            | `trie patch`, `trie patch-drop`, `trie patch-list`, `trie patch-apply` |
 
 ```
 trie grep         [--name STR] [--kind K] [--scope-prefix P]
@@ -512,6 +485,7 @@ trie explain-flow        <sym1> <sym2>
 ```
 
 CLI-specific behaviour:
+
 - **Human-readable commands** (grep, read, trace) output Rich tables /
   structured prose by default. Pass `--json` for the raw MCP envelope.
 - **JSON-only commands** always output JSON; they accept no `--json` flag.
@@ -536,16 +510,6 @@ trie setup        [--target NAME] [--all] [--scope project|user]
 trie mcp serve
 trie mcp install  [--target NAME] [--all] [--scope project|user]
 trie mcp uninstall [--target NAME] [--all] [--scope project|user]
-
-Patch subcommands (under `trie patch`):
-
-```
-trie patch create   <qname> <note> [--reason TEXT]
-trie patch list     [--json]
-trie patch preview  [--json]
-trie patch drop     [<qname>]
-trie patch apply
-```
 ```
 
 ---
@@ -555,19 +519,18 @@ trie patch apply
 If `trie setup --target opencode` was run, the agent's built-in tools
 may already route through trie:
 
-| Built-in | Override behaviour |
-|---|---|
-| **`grep`** | Routes through `trie grep` — symbol-predicate search with fallback. |
-| **`read`** | Qname-shaped paths → `trie read`; plain file paths → compact triefact view; `show_source: true` → raw source bytes. |
-| **`trace`** | Added as bare `trace` tool for graph traversal. |
-| **`grep_str`**, **`grep_entry_points`**, **`grep_symbol`**, **`grep_symbol_and_neighbours`** | Custom tools wrapping the corresponding CLI. |
-| **`explain_symbol`**, **`explain_symbol_references`** | Custom tools for deep symbol understanding. |
-| **`trace_flow`**, **`explain_flow`** | Custom tools for inter-symbol path finding. |
-| **`patch`**, **`patch_drop`**, **`patch_list`**, **`patch_apply`** | Custom tools for implementation notes + apply. |
+| Built-in                                                                                     | Override behaviour                                                                                                  |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **`grep`**                                                                                   | Routes through `trie grep` — symbol-predicate search with fallback.                                                 |
+| **`read`**                                                                                   | Qname-shaped paths → `trie read`; plain file paths → compact triefact view; `show_source: true` → raw source bytes. |
+| **`trace`**                                                                                  | Added as bare `trace` tool for graph traversal.                                                                     |
+| **`grep_str`**, **`grep_entry_points`**, **`grep_symbol`**, **`grep_symbol_and_neighbours`** | Custom tools wrapping the corresponding CLI.                                                                        |
+| **`explain_symbol`**, **`explain_symbol_references`**                                        | Custom tools for deep symbol understanding.                                                                         |
+| **`trace_flow`**, **`explain_flow`**                                                         | Custom tools for inter-symbol path finding.                                                                         |
+| **`patch`**, **`patch_drop`**, **`patch_list`**, **`patch_apply`**                           | Custom tools for edit patch workflow — post notes, manage, and execute.                                             |
 
 When the override isn't installed, all tools work through the trie MCP
-server (prefixed as `grep`, `read`, etc.) and the `trie` CLI. The patch
-tools are always registered on the MCP server regardless of overrides.
+server (prefixed as `grep`, `read`, etc.) and the `trie` CLI.
 
 ---
 
@@ -611,9 +574,4 @@ config files trie's scope doesn't cover. That's it.
 - **`grep_symbol`** / **`grep_symbol_and_neighbours`** for fuzzy name
   discovery.
 - **`grep_str`** for literal/pattern searches in source bodies.
-- **`patch(qname, note, reason)`** to post implementation notes, then
-  **`patch_apply()`** to merge, generate, cascade, validate with LSP,
-  and commit.
-- **`patch_list()`** / **`patch_drop()`** to inspect and manage
-  pending work.
 - Shell `rg`/grep for non-code files only.
