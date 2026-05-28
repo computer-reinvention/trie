@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import json
 import subprocess
 import time
 import uuid
@@ -9,7 +10,7 @@ from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from pathlib import Path
 from typing import Any
 
-from trie.config import Config
+from trie.config import Config, LspBackend
 from trie.graph.store import Store
 from trie.models import ModelClient
 from trie.parse.python import extract_symbols
@@ -17,12 +18,191 @@ from trie.scan import file_fingerprint
 from trie.sync.writer import TriefactFile
 
 from .infer import (
+    INFER_SYSTEM_PROMPT,
     _build_caller_summaries,
     _read_prose,
     infer_source_and_prose,
     merge_notes,
     pre_filter_batch,
 )
+
+FIXUP_PROMPT_INLINE = """\
+The following source code was generated for symbol {qname} but has
+diagnostics errors. Fix the errors and return corrected source + prose.
+
+```python
+{source}
+```
+
+Diagnostics:
+{diagnostics}
+
+Fix each issue. Preserve the existing structure. Output:
+
+```python
+<fixed source>
+```
+
+---PROSE---
+<updated prose>"""
+
+
+def _parse_pyright_output(stdout: str) -> list[dict]:
+    """Parse pyright --outputjson stdout into our normalised diagnostic format.
+
+    Returns list of {line, column, code, message} dicts.
+    """
+    try:
+        data = json.loads(stdout)
+    except (json.JSONDecodeError, ValueError):
+        return []
+    diags = data.get("generalDiagnostics", [])
+    result: list[dict] = []
+    for d in diags:
+        result.append(
+            {
+                "line": d.get("line", 0),
+                "column": d.get("column", 0),
+                "code": d.get("rule", "?") if d.get("rule") != "" else "pyright",
+                "message": d.get("message", ""),
+            }
+        )
+    return result
+
+
+def _parse_ruff_output(stdout: str) -> list[dict]:
+    """Parse ruff --output-format json into our normalised diagnostic format.
+
+    Returns list of {line, column, code, message} dicts.
+    """
+    try:
+        data = json.loads(stdout)
+    except (json.JSONDecodeError, ValueError):
+        return []
+    if isinstance(data, dict):
+        data = [data]
+    result: list[dict] = []
+    for d in data:
+        loc = d.get("location", {})
+        result.append(
+            {
+                "line": loc.get("row", d.get("line", 0)),
+                "column": loc.get("column", d.get("col", 0)),
+                "code": d.get("code", "ruff"),
+                "message": d.get("message", ""),
+            }
+        )
+    return result
+
+
+_PARSERS = {
+    "pyright": _parse_pyright_output,
+    "ruff": _parse_ruff_output,
+}
+
+
+def _lsp_diagnostics(file_path: Path, backends: list[LspBackend]) -> list[dict]:
+    """Run the first available LSP backend on a file and return diagnostics.
+
+    Iterates the backend list in order. For each backend that resolves
+    via shutil.which, runs it with `check_args + [file_path]`, parses
+    stdout according to `output_format`, and returns diagnostics on
+    first non-empty result. Returns empty list if no backend is available
+    or all return clean.
+    """
+    import shutil
+
+    for backend in backends:
+        cmd = shutil.which(backend.command)
+        if cmd is None:
+            continue
+        try:
+            result = subprocess.run(
+                [cmd, *backend.check_args, str(file_path)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except FileNotFoundError:
+            continue
+        stdout = result.stdout.strip()
+        if not stdout:
+            continue
+        parser = _PARSERS.get(backend.output_format)
+        if parser is None:
+            continue
+        diags = parser(stdout)
+        if diags:
+            return diags
+    return []
+
+
+def _format_diagnostics(diags: list[dict]) -> str:
+    """Format LSP diagnostics into a readable multi-line string."""
+    lines: list[str] = []
+    for d in diags:
+        line = d.get("line", "?")
+        col = d.get("column", "?")
+        code = d.get("code", "?")
+        msg = d.get("message", "")
+        lines.append(f"  {line}:{col}  {code}  {msg}")
+    return "\n".join(lines)
+
+
+def _fixup_source(
+    client: ModelClient,
+    qname: str,
+    source: str,
+    prose: str,
+    diagnostics: list[dict],
+) -> tuple[str, str] | None:
+    """Feed diagnostics back to the LLM for a fixup pass.
+
+    Returns (new_source, new_prose) or None on failure.
+    """
+    from trie.models import GenerationRequest
+
+    diag_text = _format_diagnostics(diagnostics)
+    if not diag_text.strip():
+        return (source, prose)
+
+    request = FIXUP_PROMPT_INLINE.format(
+        qname=qname,
+        source=source,
+        diagnostics=diag_text,
+    )
+
+    req = GenerationRequest(
+        system_prompt=INFER_SYSTEM_PROMPT,
+        cached_context="",
+        request=request,
+        max_tokens=2048,
+    )
+
+    resp = client.generate(req)
+    text = resp.text.strip()
+
+    delimiter = "---PROSE---"
+    if delimiter not in text:
+        return None
+
+    before, after = text.split(delimiter, 1)
+
+    new_source = before.strip()
+    if new_source.startswith("```python"):
+        new_source = new_source[len("```python") :].strip()
+    if new_source.startswith("```"):
+        new_source = new_source[3:].strip()
+    if new_source.endswith("```"):
+        new_source = new_source[:-3].strip()
+
+    new_prose = after.strip()
+    if new_prose.startswith("```"):
+        new_prose = new_prose[3:].strip()
+    if new_prose.endswith("```"):
+        new_prose = new_prose[:-3].strip()
+
+    return (new_source, new_prose)
 
 
 def _get_file_paths_for_qnames(
@@ -270,14 +450,18 @@ def _process_one(
     client: ModelClient,
     src_root: Path,
     triefacts_root: Path,
+    lsp_max_retries: int = 3,
+    lsp_backends: list[LspBackend] | None = None,
 ) -> tuple[bool, bool]:
     """Process one symbol: merge notes → generate source+prose → write.
 
-    Cascade notes are already posted to the store by the upfront batch
-    pre-filter, so this just merges all patches (agent + cascade) and
-    regenerates. Opens a dedicated Store per call (thread-safe).
+    After initial generation, runs LSP diagnostics (ruff check) on the
+    written file and feeds errors back to the LLM for up to
+    `lsp_max_retries` fixup iterations. Cascade notes are already posted
+    to the store by the upfront batch pre-filter, so this just merges
+    all patches (agent + cascade) and regenerates.
 
-    Returns (ok, changed).
+    Opens a dedicated Store per call (thread-safe). Returns (ok, changed).
     """
     store = Store(store_path)
     try:
@@ -296,24 +480,40 @@ def _process_one(
         if not merged_notes:
             return (True, False)
 
+        # Initial generation
         try:
-            new_source, new_prose = infer_source_and_prose(
+            source, prose = infer_source_and_prose(
                 client, old_source, old_prose, merged_notes, merged_reasons
             )
         except ValueError:
             return (False, False)
 
-        if not _compile_check(new_source):
+        if not _compile_check(source):
             return (False, False)
 
-        # Write source
-        _write_source_span(detail.file_path, detail.start_line, detail.end_line, new_source, src_root)
+        # Write initial source to disk (needed for LSP diagnostics)
+        _write_source_span(detail.file_path, detail.start_line, detail.end_line, source, src_root)
+        full_path = src_root / detail.file_path
+
+        # LSP fixup loop
+        for _ in range(lsp_max_retries):
+            diags = _lsp_diagnostics(full_path, lsp_backends or [])
+            if not diags:
+                break
+            fixed = _fixup_source(client, qname, source, prose, diags)
+            if fixed is None:
+                break
+            source, prose = fixed
+            if not _compile_check(source):
+                return (False, False)
+            _write_source_span(
+                detail.file_path, detail.start_line, detail.end_line, source, src_root
+            )
 
         # Re-parse to get body hash for section fingerprint
-        file_path_obj = src_root / detail.file_path
         try:
-            text = file_path_obj.read_text()
-            symbols = extract_symbols(file_path_obj, src_root, source_text=text)
+            text = full_path.read_text()
+            symbols = extract_symbols(full_path, src_root, source_text=text)
         except Exception:
             return (False, False)
 
@@ -321,7 +521,7 @@ def _process_one(
         now_int = int(time.time())
         section_fp = sym.body_normalized_hash if sym else ("patch-" + str(now_int))
 
-        _write_prose(qname, detail.file_path, new_prose, section_fp, triefacts_root, src_root)
+        _write_prose(qname, detail.file_path, prose, section_fp, triefacts_root, src_root)
 
         try:
             store.replace_file_symbols(detail.file_path, symbols)
@@ -424,7 +624,9 @@ def apply_patches(
 
     if callee_pairs:
         cascade_results = pre_filter_batch(
-            client, callee_pairs, batch_size=8,
+            client,
+            callee_pairs,
+            batch_size=8,
         )
         # Post cascade notes to store
         posted_qnames: set[str] = set()
@@ -490,9 +692,7 @@ def apply_patches(
             )
         else:
             _rollback()
-            raise RuntimeError(
-                f"trie verify failed after applying {applied_count} symbols"
-            )
+            raise RuntimeError(f"trie verify failed after applying {applied_count} symbols")
 
     applied = 0
     failed: list[str] = []
@@ -524,6 +724,8 @@ def apply_patches(
                         client,
                         src_root,
                         triefacts_root,
+                        config.edits.lsp_max_retries,
+                        config.edits.lsp_backends,
                     )
                     futures[f] = qname
 

@@ -340,13 +340,17 @@ class TrieTools:
             notes = self.store.get_patches_for_qname(qn)
             # Determine origin from session_id of patches
             origins = set(p.get("session_id", "") for p in notes)
-            origin = "cascade" if origins == {"cascade"} else "mixed" if len(origins) > 1 else "agent"
-            patches.append({
-                "qname": qn,
-                "count": len(notes),
-                "origin": origin,
-                "notes": notes,
-            })
+            origin = (
+                "cascade" if origins == {"cascade"} else "mixed" if len(origins) > 1 else "agent"
+            )
+            patches.append(
+                {
+                    "qname": qn,
+                    "count": len(notes),
+                    "origin": origin,
+                    "notes": notes,
+                }
+            )
         return {"patches": patches}
 
     def patch_apply(self) -> dict[str, Any]:

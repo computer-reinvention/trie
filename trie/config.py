@@ -44,6 +44,38 @@ class Cascade:
 
 
 @dataclass
+class LspBackend:
+    """A language server / checker invoked for diagnostics during patch apply.
+
+    `command` is the binary name (resolved via shutil.which).
+    `check_args` are CLI flags passed before the file path.
+    `output_format` is one of "pyright" or "ruff" — determines how
+    stdout is parsed into our normalised diagnostic format:
+      {line, column, code, message}[]
+    `exit_ok_codes` — list of exit codes that mean "no diagnostics."
+    Pyright exits 0 even with diagnostics when it's just warnings;
+    we always read stdout regardless of exit code.
+    """
+
+    command: str
+    check_args: list[str] = field(default_factory=list)
+    output_format: str = "pyright"
+    exit_ok_codes: list[int] = field(default_factory=lambda: [0])
+
+
+@dataclass
+class Edits:
+    """Settings for the patch-apply pipeline and LSP diagnostics."""
+
+    lsp_max_retries: int = 3
+    lsp_backends: list[LspBackend] = field(
+        default_factory=lambda: [
+            LspBackend(command="pyright", check_args=["--outputjson"], output_format="pyright"),
+        ]
+    )
+
+
+@dataclass
 class Sync:
     """Per-file sync execution knobs.
 
@@ -159,9 +191,14 @@ class Config:
     sync: Sync = field(default_factory=Sync)
     mcp: Mcp = field(default_factory=Mcp)
     debug: Debug = field(default_factory=Debug)
+    edits: Edits = field(default_factory=Edits)
 
     @classmethod
     def from_dict(cls, data: dict) -> Config:
+        raw_edits = data.get("edits", {})
+        backends_raw = raw_edits.pop("lsp_backends", None)
+        if backends_raw is not None:
+            raw_edits["lsp_backends"] = [LspBackend(**b) for b in backends_raw]
         return cls(
             trie=TrieMeta(**data.get("trie", {})),
             scope=Scope(**data.get("scope", {})),
@@ -171,6 +208,7 @@ class Config:
             sync=Sync(**data.get("sync", {})),
             mcp=Mcp(**data.get("mcp", {})),
             debug=Debug(**data.get("debug", {})),
+            edits=Edits(**raw_edits),
         )
 
     @classmethod
@@ -275,6 +313,20 @@ trace_hub_threshold = 20                       # mirrors cascade.hub_symbol_thre
 trace_max_nodes = 200
 trace_prose_at_depth = 0                       # 0 = no prose on trace
 trace_prose_budget = 10
+
+[edits]
+# Patch-apply pipeline settings.
+lsp_max_retries = 3
+
+# Ordered list of LSP backends for source diagnostics during apply.
+# The first backend on PATH wins; its diagnostics are fed to the fixup loop.
+# Each entry: {command, check_args?, output_format?, exit_ok_codes?}.
+# Supported output_formats: "pyright" (--outputjson), "ruff" (--output-format json).
+# Add more backends (or replace pyright with ruff) by editing this list.
+[[edits.lsp_backends]]
+command = "pyright"
+check_args = ["--outputjson"]
+output_format = "pyright"
 
 [debug]
 # Append-only JSONL telemetry for trie's own operations. Off by default; flip on
