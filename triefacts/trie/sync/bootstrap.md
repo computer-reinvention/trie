@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/sync/bootstrap.py
 file_fingerprint: c0f4f174435148e121708503ba60c8afc867ea101708bae16e1d220cc1fe5ade
-last_synced_at: '2026-05-24T00:25:20Z'
+last_synced_at: '2026-05-28T01:40:33Z'
 defines:
 - kind: module
   qualified_name: trie/sync/bootstrap:__module__

@@ -1,133 +1,154 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/graph/store.py
-file_fingerprint: 30101619ce5ae822efc0c597fa7ef4876560390b5543d373ebaeea0b624ccffe
-last_synced_at: '2026-05-23T23:22:48Z'
+file_fingerprint: e9928d85d19f8b7002da3561fa1402fedf5fb7722efd9f0a425d3dd16af25f91
+last_synced_at: '2026-05-28T01:38:54Z'
 defines:
 - kind: module
   qualified_name: trie/graph/store:__module__
-  lines: 1-758
+  lines: 1-911
 - kind: constant
   qualified_name: trie/graph/store:SCHEMA_VERSION
   lines: 13-13
 - kind: constant
   qualified_name: trie/graph/store:SCHEMA_SQL
-  lines: 17-62
+  lines: 17-73
 - kind: class
   qualified_name: trie/graph/store:FileRecord
-  lines: 66-69
+  lines: 77-80
 - kind: class
   qualified_name: trie/graph/store:FileStats
-  lines: 73-76
+  lines: 84-87
 - kind: class
   qualified_name: trie/graph/store:SymbolHit
-  lines: 80-87
+  lines: 91-98
 - kind: class
   qualified_name: trie/graph/store:SymbolDetail
-  lines: 91-108
+  lines: 102-121
 - kind: class
   qualified_name: trie/graph/store:GrepPredicate
-  lines: 112-131
+  lines: 125-144
 - kind: class
   qualified_name: trie/graph/store:Store
-  lines: 134-757
+  lines: 147-910
 - kind: method
   qualified_name: trie/graph/store:Store.__init__
-  lines: 143-146
+  lines: 156-159
 - kind: method
   qualified_name: trie/graph/store:Store._open
-  lines: 148-169
+  lines: 161-182
 - kind: method
   qualified_name: trie/graph/store:Store.close
-  lines: 171-172
+  lines: 184-185
 - kind: method
   qualified_name: trie/graph/store:Store.__enter__
-  lines: 174-175
+  lines: 187-188
 - kind: method
   qualified_name: trie/graph/store:Store.__exit__
-  lines: 177-178
+  lines: 190-191
 - kind: method
   qualified_name: trie/graph/store:Store.transaction
-  lines: 181-187
+  lines: 194-200
 - kind: method
   qualified_name: trie/graph/store:Store.get_file
-  lines: 191-196
+  lines: 204-209
 - kind: method
   qualified_name: trie/graph/store:Store.upsert_file
-  lines: 198-209
+  lines: 211-222
 - kind: method
   qualified_name: trie/graph/store:Store.delete_file
-  lines: 211-213
+  lines: 224-226
 - kind: method
   qualified_name: trie/graph/store:Store.list_files
-  lines: 215-221
+  lines: 228-234
 - kind: method
   qualified_name: trie/graph/store:Store.replace_file_symbols
-  lines: 225-252
+  lines: 238-265
 - kind: method
   qualified_name: trie/graph/store:Store.count_symbols
-  lines: 254-265
+  lines: 267-278
 - kind: method
   qualified_name: trie/graph/store:Store.count_section_records
-  lines: 267-269
+  lines: 280-282
 - kind: method
   qualified_name: trie/graph/store:Store.replace_all_edges
-  lines: 273-304
+  lines: 286-317
 - kind: method
   qualified_name: trie/graph/store:Store.references_in
-  lines: 306-318
+  lines: 319-331
 - kind: method
   qualified_name: trie/graph/store:Store.references_in_with_files
-  lines: 320-332
+  lines: 333-345
 - kind: method
   qualified_name: trie/graph/store:Store.qnames_in_file
-  lines: 334-340
+  lines: 347-353
 - kind: method
   qualified_name: trie/graph/store:Store.symbols_in_file_with_lines
-  lines: 342-361
+  lines: 355-374
 - kind: method
   qualified_name: trie/graph/store:Store.search_symbols
-  lines: 363-390
+  lines: 376-403
 - kind: method
   qualified_name: trie/graph/store:Store.references_out
-  lines: 392-404
+  lines: 405-417
 - kind: method
   qualified_name: trie/graph/store:Store.count_edges
-  lines: 406-407
+  lines: 419-420
 - kind: method
   qualified_name: trie/graph/store:Store.inbound_count_per_symbol
-  lines: 409-418
+  lines: 422-431
 - kind: method
   qualified_name: trie/graph/store:Store.file_ref_counts
-  lines: 420-450
+  lines: 433-463
 - kind: method
   qualified_name: trie/graph/store:Store.file_stats
-  lines: 452-474
+  lines: 465-487
 - kind: method
   qualified_name: trie/graph/store:Store.upsert_section_record
-  lines: 478-513
+  lines: 491-526
 - kind: method
   qualified_name: trie/graph/store:Store.one_liner_for
-  lines: 515-528
+  lines: 528-541
 - kind: method
   qualified_name: trie/graph/store:Store.one_liners_for
-  lines: 530-543
+  lines: 543-556
+- kind: method
+  qualified_name: trie/graph/store:Store.add_patch
+  lines: 560-586
+- kind: method
+  qualified_name: trie/graph/store:Store.get_patches_for_qname
+  lines: 588-597
+- kind: method
+  qualified_name: trie/graph/store:Store._get_patches_by_symbol_id
+  lines: 599-613
+- kind: method
+  qualified_name: trie/graph/store:Store.get_all_patches_grouped
+  lines: 615-636
+- kind: method
+  qualified_name: trie/graph/store:Store.delete_patches
+  lines: 638-672
+- kind: method
+  qualified_name: trie/graph/store:Store.get_patched_qnames
+  lines: 674-682
+- kind: method
+  qualified_name: trie/graph/store:Store.patch_count_for_symbol
+  lines: 684-690
 - kind: method
   qualified_name: trie/graph/store:Store.get_symbol_detail
-  lines: 547-580
+  lines: 694-730
 - kind: method
   qualified_name: trie/graph/store:Store.grep_symbols
-  lines: 582-671
+  lines: 732-824
 - kind: method
   qualified_name: trie/graph/store:Store.all_symbol_names
-  lines: 673-676
+  lines: 826-829
 - kind: method
   qualified_name: trie/graph/store:Store.all_qualified_names
-  lines: 678-681
+  lines: 831-834
 - kind: method
   qualified_name: trie/graph/store:Store.find_paths
-  lines: 683-757
-incoming_refs: 49
+  lines: 836-910
+incoming_refs: 71
 outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/graph/store:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=df19a7d92687c892c51d630679ee2dabd6fccb2ff46be566c0076aac8e7c9ed8 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
@@ -138,21 +159,22 @@ SQLite-backed store for trie's symbol graph, file fingerprints, and triefact sec
 - `SCHEMA_VERSION`: bump to wipe and rebuild the regenerable `.trie/` cache
 - `SCHEMA_SQL`: defines `files`, `symbols`, `edges`, and `triefact_sections` tables
 <!-- trie:end -->
-<!-- trie:section symbol=trie/graph/store:SCHEMA_VERSION fingerprint=a3143f53a397605d955af85dc9c565211e3a2039edbb4283decccb73b16240ca body_fp=49297254e2b98df03a8f9272b537d2d92920fe38cc7cb90ac46ca0399860ab00 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
-## `SCHEMA_VERSION = 2`
+<!-- trie:section symbol=trie/graph/store:SCHEMA_VERSION fingerprint=53a1f6485212aab77917eb5d6c4bd1c49c78794b5e6b1a814925e6eeb2361140 body_fp=66f58615363476c6a59c8d9c9ffb0dcf24eb4611aff22d2dc2049338aa8b8cad source_ref=e9980a62504c58b5fea56d67ef9c83f4fc24aeb7 -->
+## `SCHEMA_VERSION = 3`
 
 Integer sentinel compared against `schema_version` table on open; mismatch drops and rebuilds the DB.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/graph/store:SCHEMA_SQL fingerprint=660e8edae6c97dfc3c8bee4057fe4c56895de17e501503a702b97bdabc7584f0 body_fp=545b1e59563f4098780f26015ac0f58d98260130b865d913e0e7f95345f39569 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+<!-- trie:section symbol=trie/graph/store:SCHEMA_SQL fingerprint=7c0bc4f3e7ac8b93f808885b9703a21c211e05eacc35ab3e06838200fb916367 body_fp=fa4b9906115015a579ab71b1666344be0c975db82b8b9de1a9bf2bca8a5764d0 source_ref=e9980a62504c58b5fea56d67ef9c83f4fc24aeb7 -->
 ## `SCHEMA_SQL`
 
-SQLite DDL string that creates all five core tables and their indexes on first connect.
+SQLite DDL string that creates all six core tables and their indexes on first connect.
 
 - `schema_version`: holds `SCHEMA_VERSION`; mismatch triggers DB wipe and rebuild.
 - `files`: per-file fingerprint and scan timestamp; primary key is path.
 - `symbols`: one row per parsed symbol; cascades deletes to `edges` and `triefact_sections`.
 - `edges`: directed symbol-reference pairs; both FKs cascade on symbol delete.
 - `triefact_sections`: cached generated-section metadata keyed by `(triefact_path, symbol_id)`.
+- `patches`: agent-authored notes per symbol, indexed by `symbol_id` and `session_id`.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/graph/store:FileRecord fingerprint=9e5bd64fbbf95f8eb3616b9da3d84b73687a569550e6ace513eef354bd16b1e1 body_fp=e71b6c2fadb3adafc914d3af550c9545f7ffebbfa485fe78febaf64e5f8a842b source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
 ## `FileRecord(path: str, fingerprint: str, last_scanned_at: int)`
@@ -175,12 +197,14 @@ Immutable summary record returned by `Store.search_symbols`.
 
 - `kind`: one of `"function"`, `"class"`, `"method"`, `"constant"`, `"module"`
 <!-- trie:end -->
-<!-- trie:section symbol=trie/graph/store:SymbolDetail fingerprint=79b8fb53099949838219ec9a398c584ec95ec2bad4f37021becc742118d59a63 body_fp=31a8a9c0d247000d371ec7aad4b6af671bb6d8a9a65f77ab89baefcd4256b3b6 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+<!-- trie:section symbol=trie/graph/store:SymbolDetail fingerprint=e191e9b707c0ed386c0abdeed7cc8e4db62c4df947fcfb4e3bce992e0a811af7 body_fp=32686bf70764ecb05d5665071b9f438f80b91adb7788fecc34a31d84313cc5b8 source_ref=e9980a62504c58b5fea56d67ef9c83f4fc24aeb7 -->
 ## `SymbolDetail`
 
-Frozen dataclass carrying full symbol metadata, edge counts, and cached one-liner for a single DB roundtrip.
+Frozen dataclass carrying full symbol metadata, edge counts, cached one-liner, and pending patch info for a single DB roundtrip.
 
 - `one_liner`: empty string when no triefact section has been generated yet.
+- `pending_patches`: list of patch dicts; defaults to empty list.
+- `pending_patch_count`: number of pending patches; defaults to `0`.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/graph/store:GrepPredicate fingerprint=bb94fc53eb9ffe605f051d331b0b74099549200f353c204750e987092d9ac0e6 body_fp=f17b231b67864c154d77ecb6f0e90438bbd11b6ef083a1677e89aa4012e4efcd source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
 ## `GrepPredicate`
@@ -193,7 +217,7 @@ Server-side filter passed to `Store.grep_symbols`; all fields optional, omitted 
 - `inbound_count_min` / `inbound_count_max`: inclusive bounds on inbound edge count
 - `outbound_count_min` / `outbound_count_max`: inclusive bounds on outbound edge count
 <!-- trie:end -->
-<!-- trie:section symbol=trie/graph/store:Store fingerprint=c667d42041ba28c56365ffa0ac474f390cc456c47d03f09c7ea0693dbc064aa7 body_fp=a313830ec51d254f13712d2182fde07242b7681aba00bcc90eadd4b3039d3b7f source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+<!-- trie:section symbol=trie/graph/store:Store fingerprint=54d8c229c6f2c126bc9491c3ec69919d02b081bbd3c11c2080a7f0021ad9776c body_fp=a313830ec51d254f13712d2182fde07242b7681aba00bcc90eadd4b3039d3b7f source_ref=e9980a62504c58b5fea56d67ef9c83f4fc24aeb7 -->
 ## `class Store`
 
 SQLite-backed persistence for trie's symbol graph, file fingerprints, and triefact section metadata.
@@ -263,6 +287,11 @@ Atomically delete and re-insert all `Store` symbol rows for a given file within 
 ## `Store.count_symbols(self, *, file_path: str | None = None, public_only: bool = False) -> int`
 
 Count symbols in the `Store`, optionally filtered by file and/or public visibility.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.count_section_records fingerprint=610f302acb473963e5a29105d08a8808237b8ffa314427ab6ac1f9a61e853fbe body_fp=1b696049be3e84725312e02eb988da952141a8b00aadf44bf099198632700629 source_ref=e9980a62504c58b5fea56d67ef9c83f4fc24aeb7 -->
+## `Store.count_section_records(self) -> int`
+
+Return the total row count of the `triefact_sections` table.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/graph/store:Store.replace_all_edges fingerprint=f723b23ba6b913c951a282870d919431f131b8e31d304ccf18880dc9d37bfe93 body_fp=80660e7ebb923ac8dec041dc51b573d7a5208a4c496d0098bf314c5f893b6aac source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
 ## `Store.replace_all_edges(self, references_by_file: dict[str, list[Reference]]) -> int`
@@ -351,20 +380,64 @@ Batch-fetch cached one-liners from `Store` for multiple qualified names in one q
 - Returns only entries that exist; missing qnames are absent from the result dict.
 - Empty string substituted for `NULL` one-liner values.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/graph/store:Store.get_symbol_detail fingerprint=035c308d0bc43eb38d36a7245a821ffa036ba178cbd25c058ef045f1d485d90d body_fp=a987125a0b97980edaeee5adda276ef850f7ec0ec98001df207237427e1e8a0b source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+<!-- trie:section symbol=trie/graph/store:Store.add_patch fingerprint=7138f7d0247ef1f8126177ab0ec274e3b5204fe0c5425cd7ceb49ae37ec3a547 body_fp=e2729a75f8860a4b8979e952d549edce793c2e340a50cce47b30b14062e53cae source_ref=e9980a62504c58b5fea56d67ef9c83f4fc24aeb7 -->
+## `Store.add_patch(self, qname: str, note: str, reason: str, session_id: str) -> int`
+
+Insert a patch row for a symbol into the `Store`, returning the new patch id.
+
+- `qname`: qualified name of the target symbol; raises `KeyError` if not found.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.get_patches_for_qname fingerprint=99cf3d176ccf53de862a8deb7087fe8c39df8552d648c1cafb1bd48c038fa021 body_fp=55361e7062732103a6aca74e50f00f1dbfdbc9799f8c87f319f673cfe277d704 source_ref=e9980a62504c58b5fea56d67ef9c83f4fc24aeb7 -->
+## `Store.get_patches_for_qname(self, qname: str) -> list[dict]`
+
+Return all pending patches for a symbol as a list of dicts, or `[]` if the symbol doesn't exist.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store._get_patches_by_symbol_id fingerprint=7237e3712892b20f9f97dda9893b1001944188b4c8a9517a3049eece76651481 body_fp=c6fcd02a1815982aef0857aa790cb4f783aa72ebcd949feb14b137f7d0638b76 source_ref=e9980a62504c58b5fea56d67ef9c83f4fc24aeb7 -->
+## `Store._get_patches_by_symbol_id(self, symbol_id: int) -> list[dict]`
+
+Fetch all patch rows for a given `symbol_id`, returning them as a list of dicts.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.get_all_patches_grouped fingerprint=82c6d9f5fc59b0b4c235714ed11733ead3f39828ab8e1c58b6b44a04469f5419 body_fp=c4ef7344794b6873987a5a7eb28d21cbb2180c5a0208481dc00793bacdd46a25 source_ref=e9980a62504c58b5fea56d67ef9c83f4fc24aeb7 -->
+## `Store.get_all_patches_grouped(self) -> dict[int, list[dict]]`
+
+Return all `patches` rows from the `Store`, grouped by `symbol_id`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.delete_patches fingerprint=c1457117713979a51e97ee435994b5d9819075c1f5bce24aaa7f31c328e1f99d body_fp=72f7e6e4d412c7002fb9a21d1d725a811a11e50d12407878a14d80fa3de036e1 source_ref=e9980a62504c58b5fea56d67ef9c83f4fc24aeb7 -->
+## `Store.delete_patches(self, *, qname: str | None = None, session_id: str | None = None, all: bool = False) -> int`
+
+Delete patches from the `Store` matching the given criteria; returns the number of deleted rows.
+
+- `all`: deletes every patch row when `True`, ignoring other filters.
+- `qname`: deletes patches for the symbol with that qualified name; returns 0 if symbol not found.
+- `session_id`: deletes all patches belonging to that session.
+- Returns 0 if none of the three criteria are set.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.get_patched_qnames fingerprint=0e2e2afe6da23a44267b7db00a8fdca0a377fddfffb84b1d624128b0a1eb5136 body_fp=1a637ea8b118249f5cbfb64ae9a6c68e47cbc11b024ff67d052635c9724477e4 source_ref=e9980a62504c58b5fea56d67ef9c83f4fc24aeb7 -->
+## `Store.get_patched_qnames(self) -> list[str]`
+
+Return all distinct qualified names in `Store` that have at least one pending patch, sorted alphabetically.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.patch_count_for_symbol fingerprint=0b9529da6e2ea49324486ddca6f3b682563b67ac8c3504c0249c1bebbb9dc8bd body_fp=a83eda62f0f441a38543f46ba07518dadc0e77e595b928f7ea29fccd66cb95f1 source_ref=e9980a62504c58b5fea56d67ef9c83f4fc24aeb7 -->
+## `Store.patch_count_for_symbol(self, symbol_id: int) -> int`
+
+Return the number of pending patches for a given `Store` symbol by its integer primary key.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/graph/store:Store.get_symbol_detail fingerprint=e8ada704c34f269ef2b2059c6ed4f3a3ef9100e4add2b09fb2f40f67c1fd03f4 body_fp=3fd9e84fa873ad09468a8aef6a75bde86a7122d1d5686f10cb44b214b14ab46d source_ref=e9980a62504c58b5fea56d67ef9c83f4fc24aeb7 -->
 ## `Store.get_symbol_detail(self, qualified_name: str) -> SymbolDetail | None`
 
-Fetch a fully-populated `SymbolDetail` for one symbol by qualified name, including edge counts and cached one-liner, in a single query.
+Fetch a fully-populated `SymbolDetail` for one symbol by qualified name, including edge counts, cached one-liner, and pending patches, in one query plus a patch lookup.
 
 - `qualified_name`: exact match against `symbols.qualified_name`; returns `None` if not found.
+- `pending_patches` / `pending_patch_count`: populated via a second `get_patches_for_qname` call.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/graph/store:Store.grep_symbols fingerprint=83b17a895d0060e7833abe22296476ad93ea93e488e0fd8bccb18773bec91068 body_fp=80f55b1b0947061129675a91e4fc741eb73f009e6465448ad87173d0cb9f0d35 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
+<!-- trie:section symbol=trie/graph/store:Store.grep_symbols fingerprint=994b988c155b6f510d95253fd9cba6c0e9c0255289cc193b8b91fe3f12a385b4 body_fp=1231dce44d114c226fc535326e199aa705635b96235a1cb6e6ced26966cf8d70 source_ref=e9980a62504c58b5fea56d67ef9c83f4fc24aeb7 -->
 ## `Store.grep_symbols(self, predicate: GrepPredicate, *, rank_by: str = "public_first", limit: int = 10) -> list[SymbolDetail]`
 
 Query `Store` symbols using a `GrepPredicate` filter, returning up to `limit` `SymbolDetail` results.
 
 - `rank_by`: `"public_first"` (default), `"inbound_count"`, or `"alphabetical"`; unknown values fall back to `"public_first"`.
 - `predicate`: all fields are optional; omitted fields apply no filter.
+- Each returned `SymbolDetail` includes `pending_patch_count` populated from the `patches` table.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/graph/store:Store.all_symbol_names fingerprint=fd7275a10e4d910bbe493d3316de5e7e152c08eabc201043b81db9d247002f65 body_fp=a56ee588e9fdbe5fd8db0427f4d381769fcfad357bab3ad4870339ae2467b0d0 source_ref=13638c0451f438414c1a7dfd4d65e87c53be5767 -->
 ## `Store.all_symbol_names(self) -> list[str]`

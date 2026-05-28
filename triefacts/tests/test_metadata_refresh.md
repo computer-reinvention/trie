@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_metadata_refresh.py
 file_fingerprint: 7e27fc3004894011f1d81a5237cb8e6d2d205522e5a507522757c3f7f65023b5
-last_synced_at: '2026-05-24T00:25:12Z'
+last_synced_at: '2026-05-28T01:39:58Z'
 description: Metadata-only triefact refresh.
 defines:
 - kind: module

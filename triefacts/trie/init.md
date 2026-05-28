@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/init.py
 file_fingerprint: 0a0f50d06e8a6f9d4f79bb977d3e2bd80e6beb28d3ea51ded39a2599aad8aeb4
-last_synced_at: '2026-05-23T23:53:14Z'
+last_synced_at: '2026-05-28T01:40:25Z'
 defines:
 - kind: module
   qualified_name: trie/init:__module__

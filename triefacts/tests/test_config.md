@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_config.py
-file_fingerprint: ab2f4ec56dd812bf269b73522f1b37903706c25cce64bacbd8c7216033936e80
-last_synced_at: '2026-05-23T23:54:10Z'
+file_fingerprint: c659474b9bf3edbb4f7ce11684a1910ce0fdcfeeb1e98b156f427f0788592352
+last_synced_at: '2026-05-28T01:36:14Z'
 defines:
 - kind: module
   qualified_name: tests/test_config:__module__
@@ -36,7 +36,7 @@ outgoing_refs: 10
 
 Test suite for `Config` loading, merging, file discovery, and error handling.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_config:test_defaults_when_empty_dict fingerprint=4074056b63de5e2a478fad3e1678a1bb80a87e6170ce3efaea444173402832a3 body_fp=d99384c3816ff454240dcb0bed57aaac043a299ad76cdbdb1414949667eede4d source_ref=3e8bc28037d2b7d09075a457bbb71839f3f57bbf -->
+<!-- trie:section symbol=tests/test_config:test_defaults_when_empty_dict fingerprint=7079d25ce5bd1212e3cd6b3e6e1f639440d455340183fa74f6757abae21a6ca7 body_fp=d99384c3816ff454240dcb0bed57aaac043a299ad76cdbdb1414949667eede4d source_ref=ce0170296e1b69f535154cc3d8fa01546c83fc5e -->
 ## `test_defaults_when_empty_dict()`
 
 Verify that `Config.from_dict({})` populates all sections with correct default values.
@@ -46,7 +46,7 @@ Verify that `Config.from_dict({})` populates all sections with correct default v
 
 Verify that `Config.from_dict` merges overrides per-section while preserving untouched keys and sections at their defaults.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_config:test_load_roundtrips_default_template fingerprint=09862766e0214b1097784113034f5fe29f81c8142cff315d70c8c10ede315fc4 body_fp=ca7c2ca27435aff82b631a63bf59b5e3e29ca8787036e4110bf3c97d585845a5 source_ref=3e8bc28037d2b7d09075a457bbb71839f3f57bbf -->
+<!-- trie:section symbol=tests/test_config:test_load_roundtrips_default_template fingerprint=7976917fe1d121c59caeee292e0ba1615d530e55cb060757bdf0763e61f59674 body_fp=ca7c2ca27435aff82b631a63bf59b5e3e29ca8787036e4110bf3c97d585845a5 source_ref=ce0170296e1b69f535154cc3d8fa01546c83fc5e -->
 ## `test_load_roundtrips_default_template(tmp_path: Path)`
 
 Verify that writing `DEFAULT_CONFIG_TOML` to disk and loading it via `Config.load` preserves default field values.

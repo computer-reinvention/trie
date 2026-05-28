@@ -191,6 +191,150 @@ Output:
     return new_source, new_prose
 
 
+FILE_FIXUP_PROMPT = """\
+The following file has diagnostics errors. Fix all errors.
+
+```python
+{file_content}
+```
+
+Diagnostics:
+{diagnostics}
+
+Output the complete corrected file:
+```python
+<corrected file content>
+```
+"""
+
+FILE_GEN_PROMPT = """\
+You are updating symbols in the file {file_path}.
+
+Below is the current file content for context:
+```python
+{file_content}
+```
+
+Symbols that need changes:
+
+{symbol_sections}
+
+Output:
+1. The COMPLETE new file content with ALL symbol changes applied.
+2. An updated prose section for EVERY changed symbol.
+
+```python
+<complete new file content with all changes applied>
+```
+{prose_delimiters}"""
+
+
+def _format_file_notes(notes: list[str], reasons: list[str]) -> str:
+    lines: list[str] = []
+    for note, reason in zip(notes, reasons, strict=False):
+        lines.append(f"- {note}  —  {reason}")
+    return "\n".join(lines)
+
+
+def infer_file_source(
+    client: ModelClient,
+    file_path: str,
+    file_content: str,
+    symbols_data: list[dict],
+    *,
+    max_tokens: int = 4096,
+) -> tuple[str, dict[str, str]]:
+    """Generate new source + prose for all symbols in a file in one LLM call.
+
+    symbols_data: each dict has keys:
+        qname, old_source, old_prose, merged_notes (list[str]), merged_reasons (list[str])
+
+    Returns (new_file_content, {qname: new_prose}).
+    """
+    sections: list[str] = []
+    prose_delimiters: list[str] = []
+    for idx, sd in enumerate(symbols_data, 1):
+        notes_text = _format_file_notes(sd["merged_notes"], sd["merged_reasons"])
+        sections.append(
+            f"--- SYMBOL {idx}: {sd['qname']} ---\n"
+            f"Old source:\n```python\n{sd['old_source']}\n```\n\n"
+            f"Old prose:\n{sd['old_prose']}\n\n"
+            f"Implementation notes:\n{notes_text}\n"
+        )
+        prose_delimiters.append(f"---PROSE:{sd['qname']}---")
+
+    prose_delim_block = "\n" + "\n".join(
+        f"{d}\n<prose for {d.split(':')[1].removesuffix('---')}>" for d in prose_delimiters
+    )
+
+    request = FILE_GEN_PROMPT.format(
+        file_path=file_path,
+        file_content=file_content,
+        symbol_sections="\n".join(sections),
+        prose_delimiters=prose_delim_block,
+    )
+
+    req = GenerationRequest(
+        system_prompt=INFER_SYSTEM_PROMPT,
+        cached_context="",
+        request=request,
+        max_tokens=max_tokens,
+    )
+    resp = client.generate(req)
+    text = resp.text.strip()
+
+    # Split on the first ```python block to get file content
+    if "```python" not in text:
+        raise ValueError(f"LLM response missing file content code block. Got:\n{text[:500]}...")
+
+    _before_first, after_first = text.split("```python", 1)
+    if "```" not in after_first:
+        raise ValueError(f"LLM response missing closing ```. Got:\n{text[:500]}...")
+
+    new_content, rest = after_first.split("```", 1)
+    new_content = new_content.strip()
+
+    # Parse prose blocks
+    proses: dict[str, str] = {}
+    remaining = rest.strip()
+    for sd in symbols_data:
+        qn = sd["qname"]
+        marker = f"---PROSE:{qn}---"
+        if marker not in remaining:
+            continue
+        # Check if a prose marker follows — if so, this is the end boundary
+        prose_start = remaining.index(marker) + len(marker)
+        remaining = remaining[prose_start:].strip()
+
+        # Find next prose marker or end of text
+        next_marker = None
+        for other_sd in symbols_data:
+            other_qn = other_sd["qname"]
+            if other_qn == qn:
+                continue
+            m = f"---PROSE:{other_qn}---"
+            if m in remaining and (
+                next_marker is None or remaining.index(m) < remaining.index(next_marker)
+            ):
+                next_marker = m
+
+        if next_marker:
+            prose_text = remaining[: remaining.index(next_marker)].strip()
+            remaining = remaining[remaining.index(next_marker) :]
+        else:
+            prose_text = remaining.strip()
+            remaining = ""
+
+        if prose_text.startswith("```"):
+            prose_text = prose_text[3:].strip()
+        if prose_text.endswith("```"):
+            prose_text = prose_text[:-3].strip()
+
+        proses[qn] = prose_text
+
+    return new_content, proses
+
+
 def _build_caller_summaries(
     caller_qnames: list[str],
     store: Store,

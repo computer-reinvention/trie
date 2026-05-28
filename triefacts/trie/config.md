@@ -1,12 +1,12 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/config.py
-file_fingerprint: 2c7f1cc694c5ad9a5c789bc8c2a480d17eba16f19127aac9fbd36c8d0100c072
-last_synced_at: '2026-05-23T23:50:40Z'
+file_fingerprint: d3319a14a8e4df719e1265fb0298a81b036ecbfc1f33d850990a6b430d3bc2e7
+last_synced_at: '2026-05-28T01:38:05Z'
 defines:
 - kind: module
   qualified_name: trie/config:__module__
-  lines: 1-287
+  lines: 1-342
 - kind: class
   qualified_name: trie/config:TrieMeta
   lines: 9-10
@@ -18,38 +18,44 @@ defines:
   lines: 27-29
 - kind: class
   qualified_name: trie/config:Models
-  lines: 33-35
+  lines: 33-36
 - kind: class
   qualified_name: trie/config:Cascade
-  lines: 39-41
+  lines: 40-43
+- kind: class
+  qualified_name: trie/config:LspBackend
+  lines: 47-63
+- kind: class
+  qualified_name: trie/config:Edits
+  lines: 67-75
 - kind: class
   qualified_name: trie/config:Sync
-  lines: 45-65
+  lines: 79-99
 - kind: class
   qualified_name: trie/config:Debug
-  lines: 69-88
+  lines: 103-122
 - kind: class
   qualified_name: trie/config:Mcp
-  lines: 92-147
+  lines: 126-181
 - kind: class
   qualified_name: trie/config:Config
-  lines: 151-194
+  lines: 185-234
 - kind: method
   qualified_name: trie/config:Config.from_dict
-  lines: 162-172
+  lines: 197-212
 - kind: method
   qualified_name: trie/config:Config.load
-  lines: 175-178
+  lines: 215-218
 - kind: method
   qualified_name: trie/config:Config.find_and_load
-  lines: 181-194
+  lines: 221-234
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
-  lines: 197-198
+  lines: 237-238
 - kind: constant
   qualified_name: trie/config:DEFAULT_CONFIG_TOML
-  lines: 201-286
-incoming_refs: 149
+  lines: 241-341
+incoming_refs: 173
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/config:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=61627a2cc3c7ae6e0fc5dd6a9e82438b6c586d2e8280283184e8b0abb2bc93b9 source_ref=e4ba123c065b3ae251beea6b022a4c16bb2c9f72 -->
@@ -61,7 +67,7 @@ Define configuration dataclasses and loading logic for `trie.toml` project confi
 - `ConfigNotFoundError`: raised when no `trie.toml` exists in the directory tree
 - `DEFAULT_CONFIG_TOML`: ready-to-write string for `trie init`
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:TrieMeta fingerprint=3a9f3f9b594eb2bc004d5ab6492991cf167ef4b9ae7b65e2738917beda05b61b body_fp=902860c5735258ea54f465b124a3a37d21f48734f0000d65250d5c135e87e5da source_ref=e4ba123c065b3ae251beea6b022a4c16bb2c9f72 -->
+<!-- trie:section symbol=trie/config:TrieMeta fingerprint=042e1678d51e63de3de50f0abb830138d4b678a5fb1cb49d024bcb1909843280 body_fp=902860c5735258ea54f465b124a3a37d21f48734f0000d65250d5c135e87e5da source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 -->
 ## `TrieMeta`
 
 Holds the trie tool version string used in config serialization.
@@ -82,20 +88,40 @@ Configure the output and source root directories for triefact generation.
 - `root`: directory where generated Markdown triefact tree is written.
 - `source_root`: source tree root, relative to the project file.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Models fingerprint=abf55624d4d046500cb6caf33a90cb62e33c0a2f319cfcb63d35d6a242726335 body_fp=6b56f51d7bc4d823432cba654a4d36d022d36e21776131f93d7c9c20bce4062c source_ref=e4ba123c065b3ae251beea6b022a4c16bb2c9f72 -->
+<!-- trie:section symbol=trie/config:Models fingerprint=e882ddd5e301a630dc1f077967f9ec3f48511c22931d0bd32de2d39512854871 body_fp=782d9bf82fd4d88ae390315b75eef8efd5e918eae9723853485986d03751a70e source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 -->
 ## `Models`
 
-Store model identifiers for bootstrap and cascade LLM operations.
+Store model identifiers for bootstrap, cascade, and edits LLM operations.
 
 - `bootstrap`: model used for initial triefact generation.
 - `cascade`: model used for incremental cascade sync.
+- `edits`: model used for the patch-apply pipeline.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Cascade fingerprint=0e7b3a716fd306199ce4ccbb537cb901c77f5a484dcc79d8132d1177378c9597 body_fp=fca6aee9a19f23f6b2a1009dc79b42236d31483bae6919fc129375f3e5d9abd8 source_ref=e4ba123c065b3ae251beea6b022a4c16bb2c9f72 -->
+<!-- trie:section symbol=trie/config:Cascade fingerprint=9a685f1d6a6008e1bc16ca1ea29a753bdf3f64fc881a94cb31cf485d6ee42b01 body_fp=ae9452809ee29e3dce446b80e2a4ef6371eda8d53760df3df55fc9bb92889b88 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 -->
 ## `Cascade`
 
 Configure reference-graph traversal behaviour for incremental sync.
 
 - `hub_symbol_threshold`: symbols with more inbound refs than this are treated as depth-0 only, preventing utility hubs from over-invalidating.
+- `max_judgments`: hard cap on `pre_filter_cascade` calls per apply run.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/config:LspBackend fingerprint=b9c2864ea0cd6bcd2cdb18b855ee096c71423d6f619e3d8132b5a2ee64091d4a body_fp=14a8d984f56e041a7582a3e781d4be38875b2199f4f298120639c8f52b954f6e source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 -->
+## `LspBackend`
+
+Configure a single language-server backend used for diagnostics during patch apply.
+
+- `command`: binary name resolved via `shutil.which`
+- `check_args`: CLI flags prepended before the file path argument
+- `output_format`: `"pyright"` or `"ruff"`; controls stdout parsing into `{line, column, code, message}[]`
+- `exit_ok_codes`: exit codes meaning "no diagnostics"; stdout is always read regardless
+<!-- trie:end -->
+<!-- trie:section symbol=trie/config:Edits fingerprint=981676998916a9eb811467dfc40523109336af054a86d94aaa07898c1fdfc1d0 body_fp=273e16762a132905daa4823ef2ddc6af26654d4d1ab15a3eab69b7877b90f553 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 -->
+## `Edits`
+
+Configure the patch-apply pipeline and LSP diagnostics.
+
+- `lsp_max_retries`: attempts to fix LSP-reported diagnostics before giving up.
+- `lsp_backends`: ordered list of LSP backends; first one found on PATH is used.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:Sync fingerprint=6e78bc409faa3564065bef1b86229e39b56fce1ec430f52e79b1e562be89d6fe body_fp=e0f1d9bcb760348118b9c38e2005b8b307f417ffacd41974040352e0d9be05d1 source_ref=e4ba123c065b3ae251beea6b022a4c16bb2c9f72 -->
 ## `Sync`
@@ -135,19 +161,20 @@ Server-side tuning knobs for the MCP `grep`, `read`, and `trace` tool surfaces; 
 - `trace_hub_threshold`: symbols with more inbound refs are skipped in trace; default is effectively unlimited.
 - `trace_prose_at_depth`: `0` = no prose attached to trace nodes.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Config fingerprint=a550e09883e6c18df41905160eff158c7967ad28acfc1bbf54776be19224fac3 body_fp=9e0c55cb49b1e4aeb19da23603e40d6e502238a8a8b5fcdcb88c20afd540a5cf source_ref=e4ba123c065b3ae251beea6b022a4c16bb2c9f72 -->
+<!-- trie:section symbol=trie/config:Config fingerprint=39cdd983275490488052db937ca90d6b40f612dddf42cf46502e0a832b7dade6 body_fp=251ea66abeaf9b1507babd08892bdb45fa865718518e644022ec4e9da7aa1616 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 -->
 ## `Config`
 
 Aggregate all configuration sections parsed from `trie.toml` into a single dataclass.
 
+- `edits`: new `Edits` field; `from_dict` deserialises `lsp_backends` entries into `LspBackend` instances before constructing it.
 - `from_dict(data)`: construct from a raw TOML dict, with per-section defaults.
 - `load(path)`: parse a TOML file at `path` and return a `Config`.
 - `find_and_load(start)`: walk up from `start` to find `trie.toml`; returns `(Config, config_dir)` or raises `ConfigNotFoundError`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Config.from_dict fingerprint=2a49e1d83738c09e61cd41f62971e3bc5e6c4e3affac719b5f5b3a0498c717dc body_fp=4d082ee447df243674920d32d61358be027290fc28cebe9e563beebcce733ecc source_ref=e4ba123c065b3ae251beea6b022a4c16bb2c9f72 -->
+<!-- trie:section symbol=trie/config:Config.from_dict fingerprint=1b59860b1ffda417aa3d89ae97b50e688620da830b00253b94767622bf77c05d body_fp=7b483bef673a29e850ad8133a993cbaf5169fe875b255db58232ec39a1892b02 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 -->
 ## `Config.from_dict(cls, data: dict) -> Config`
 
-Construct a `Config` instance from a plain dictionary, defaulting each section to an empty dict if absent.
+Construct a `Config` instance from a plain dictionary, deserialising `edits.lsp_backends` into `LspBackend` objects and defaulting each section to an empty dict if absent.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:Config.load fingerprint=5365299d7ecf0cdb6ae8bfad33855d997debd906c3d769b616f66b3f625a0f2b body_fp=27fd2dd76b1f1ef32e50534a62131424ad6a5b00c30ae5a767b639e231cc1b4a source_ref=e4ba123c065b3ae251beea6b022a4c16bb2c9f72 -->
 ## `Config.load(cls, path: Path) -> Config`

@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_freshness.py
 file_fingerprint: faa5046abb75e84c069ee5698da7624da737f20196239af4e9ab670125e196d3
-last_synced_at: '2026-05-23T23:46:16Z'
+last_synced_at: '2026-05-28T01:39:37Z'
 description: Tests for the turn-boundary freshness gate.
 defines:
 - kind: module

@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/__init__.py
-file_fingerprint: 62fb98cd69cab6a05bf88a86f0702efa7848600b208fd56673f6fda3bbcefa3b
-last_synced_at: '2026-05-23T23:54:51Z'
+file_fingerprint: acf49f5a021eab661654fc8448e030081b7cbdfb6c4e9224b8b0060c4cf24507
+last_synced_at: '2026-05-28T01:37:48Z'
 defines:
 - kind: constant
   qualified_name: trie/__init__:__version__
@@ -10,8 +10,8 @@ defines:
 incoming_refs: 0
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=trie/__init__:__version__ fingerprint=51b4566f6e80074be2fb69a653a9c9693ab87eed1c7c0c64f8518b5cf6088e92 body_fp=b1d53e8e97870164aee55432da05fb6d055f58ae90fc8b7427fae30ca12f6f83 source_ref=b3f4756216d06217d275110297a69bbb7ea74a59 -->
-## `__version__ = "0.1.2"`
+<!-- trie:section symbol=trie/__init__:__version__ fingerprint=dde86dad69a9fd7a3e592c414aec23c5d29cbb0126020d6f1286dbdbb651501a body_fp=cfd5a5f328c38e2a3ea8857cd00a4266a41ce82ce382de281cf95e3ad8e29df0 source_ref=1276d0254ffc2b5e4fcf48cd868123238d4ad06f -->
+## `__version__ = "0.1.5"`
 
 Package version string.
 <!-- trie:end -->

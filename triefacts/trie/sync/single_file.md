@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: trie/sync/single_file.py
 file_fingerprint: 54a07bbf9727d0d286d4fe611ddedc7633e285d065b0489452a370d87701e381
-last_synced_at: '2026-05-24T00:25:09Z'
+last_synced_at: '2026-05-28T01:39:29Z'
 defines:
 - kind: module
   qualified_name: trie/sync/single_file:__module__
@@ -40,7 +40,7 @@ defines:
 - kind: function
   qualified_name: trie/sync/single_file:sync_single_file
   lines: 287-575
-incoming_refs: 55
+incoming_refs: 56
 outgoing_refs: 22
 ---
 <!-- trie:section symbol=trie/sync/single_file:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=d8b1c6b223f88b270332763746c5067180410153e3fef8e9073fa9e7f611e8bd source_ref=34057e5d9c5ee57019bcfb44216c4b3de34127e1 -->
@@ -52,6 +52,11 @@ Generate or refresh triefact Markdown files for individual Python source files.
 - `refresh_triefact_metadata`: updates front matter from store without calling the LLM
 - `FileSyncResult`: aggregated token/symbol counts returned to callers
 - `MetadataRefreshResult`: signals whether the triefact bytes changed on disk
+<!-- trie:end -->
+<!-- trie:section symbol=trie/sync/single_file:backfill_section_records fingerprint=dec06899d9b80748da3f949a0b97ccdb9c0cfd7a048bf544ccb3e0c4025e7c21 body_fp=d2f08558e3e1991f89b85b378f40a0d402424c9aa1a006493c4ebc3784083a91 source_ref=95f6498c190ca2eb863035f58cd44a3b543ade65 -->
+## `backfill_section_records(project_root: Path, config: Config, store: Store) -> None`
+
+Scan all on-disk triefact files and upsert a `triefact_sections` store record for every section found; idempotent.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/sync/single_file:FileSyncResult fingerprint=f658b6cb6f956faf262f29751e15b6efaad12e661c2976d58946940db38a0ed7 body_fp=a14f526007aca92c0796d86e378c557ef5d8443dcb245ccd6b6df85d0970222e source_ref=d6da1d131c5c5e11b320faa2c7147616cfbd1f01 -->
 ## `@dataclass(frozen=True) class FileSyncResult`
@@ -107,17 +112,17 @@ Retrieve and parse previous-version `Symbol` objects for each qname that has a r
 - Deduplicates git calls by grouping qnames sharing the same blob hash.
 - Silently skips qnames whose blob is unreachable, parse fails, or qname no longer exists.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:refresh_triefact_metadata fingerprint=2f9eb0431e1d2bea4e45739c32f76fca9716eb96d3b1455f680fc5bdf71e8615 body_fp=ec7b270cddba0146aa442a704141bde7aa0fdcbb2950010924ac0c91706d5e9f source_ref=34057e5d9c5ee57019bcfb44216c4b3de34127e1 -->
+<!-- trie:section symbol=trie/sync/single_file:refresh_triefact_metadata fingerprint=22c4df71adb33d8327a2ecbd2d9475971bd9a0f875943e7b3a4a251f85b8ab92 body_fp=be902ffe00ae66cc4b6ee3b070aaf19974e3ab68c1ca16189440a02029cb6db6 source_ref=95f6498c190ca2eb863035f58cd44a3b543ade65 -->
 ## `refresh_triefact_metadata(source_path: Path, *, project_root: Path, config: Config, store: Store | None = None) -> MetadataRefreshResult`
 
 Rewrite a triefact's front matter from live data without calling the LLM or touching section bodies.
 
-- `store`: when provided, enriches front matter with `incoming_refs`/`outgoing_refs` counts.
+- `store`: when provided, enriches front matter with `incoming_refs`/`outgoing_refs` counts and backfills `triefact_sections` records for every section.
 - `changed`: `True` if the rewritten bytes differ from what was on disk.
 - Returns `changed=False` (no-op) when no triefact exists yet for the source file.
 - Raises `ValueError` if `source_path` is not under `config.triefacts.source_root`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:sync_single_file fingerprint=994b098b85bbb1dec1dfce5be08ec79d1e6e0bb76bc7d61950520ec6c199ebac body_fp=3eb1be4bdedc14312d93eda5ad638ef45f9a91b950848d511a3d4cca8849653f source_ref=0c4713671098aa5e960f2c6d96cb38c7cff1d3cd -->
+<!-- trie:section symbol=trie/sync/single_file:sync_single_file fingerprint=8db7e4d85f567724794aaf7c7107bbbd1a7051b8fe8b32c1cb2b6e5e50e89643 body_fp=3eb1be4bdedc14312d93eda5ad638ef45f9a91b950848d511a3d4cca8849653f source_ref=95f6498c190ca2eb863035f58cd44a3b543ade65 -->
 ## `sync_single_file(source_path, *, project_root, config, client, dest_triefact_path=None, store=None, symbols_to_regen=None, force=False) -> FileSyncResult`
 
 Generate or refresh the triefact file for a single Python source file, upserting sections for all parser-surfaced symbols and removing stale ones.

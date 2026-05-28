@@ -1,123 +1,123 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_mcp_install.py
-file_fingerprint: 79bfe15932eef28fd8a138aaf00bbdaf80ddd609c19f3439b21c6d503939860b
-last_synced_at: '2026-05-23T23:23:12Z'
+file_fingerprint: 29be6cb897bb91f1cc5fb997df8e2fe3a95fc94825c147f3ee09245c304d5545
+last_synced_at: '2026-05-28T01:37:33Z'
 defines:
 - kind: module
   qualified_name: tests/test_mcp_install:__module__
-  lines: 1-726
+  lines: 1-734
 - kind: function
   qualified_name: tests/test_mcp_install:project
-  lines: 20-29
+  lines: 20-37
 - kind: function
   qualified_name: tests/test_mcp_install:test_snippet_uses_serve_subcommand
-  lines: 35-39
+  lines: 43-47
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_claude_code_creates_file
-  lines: 45-60
+  lines: 53-68
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_preserves_other_servers
-  lines: 63-77
+  lines: 71-85
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_idempotent_when_unchanged
-  lines: 80-97
+  lines: 88-105
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_errors_on_unknown_target
-  lines: 100-109
+  lines: 108-117
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_print_only_writes_no_file
-  lines: 115-125
+  lines: 123-133
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_dry_run_writes_no_file
-  lines: 128-138
+  lines: 136-146
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_opencode_creates_project_config
-  lines: 144-166
+  lines: 152-174
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_opencode_user_scope_lands_in_config_dir
-  lines: 169-188
+  lines: 177-196
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_opencode_preserves_existing_mcp_servers
-  lines: 191-217
+  lines: 199-225
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_opencode_idempotent_when_unchanged
-  lines: 220-237
+  lines: 228-245
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_vscode_uses_servers_key
-  lines: 243-258
+  lines: 251-266
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_errors_on_invalid_json
-  lines: 264-274
+  lines: 272-282
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_user_scope_writes_to_user_path
-  lines: 280-299
+  lines: 288-307
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_skips_target_without_scope
-  lines: 302-313
+  lines: 310-321
 - kind: function
   qualified_name: tests/test_mcp_install:test_detect_returns_false_in_clean_environment
-  lines: 319-326
+  lines: 327-334
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_auto_detect_errors_when_nothing_found
-  lines: 329-343
+  lines: 337-351
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_all_runs_every_target_in_print_mode
-  lines: 349-366
+  lines: 357-374
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_install_print_only
-  lines: 372-378
+  lines: 380-386
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_install_writes_file
-  lines: 381-387
+  lines: 389-395
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_install_unknown_target
-  lines: 390-395
-- kind: function
-  qualified_name: tests/test_mcp_install:test_cli_mcp_install_target_and_all_mutex
   lines: 398-403
 - kind: function
+  qualified_name: tests/test_mcp_install:test_cli_mcp_install_target_and_all_mutex
+  lines: 406-411
+- kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_serve_dispatches_to_run_stdio
-  lines: 406-418
+  lines: 414-426
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_no_subcommand_prints_help
-  lines: 421-439
+  lines: 429-447
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_removes_trie_entry
-  lines: 449-481
+  lines: 457-489
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_preserves_other_servers
-  lines: 484-518
+  lines: 492-526
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_when_not_installed_is_skipped
-  lines: 521-535
+  lines: 529-543
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_when_config_has_no_trie_key_is_skipped
-  lines: 538-563
+  lines: 546-571
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_dry_run_does_not_modify_file
-  lines: 566-589
+  lines: 574-597
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_print_only_does_not_modify_file
-  lines: 592-615
+  lines: 600-623
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_all_targets
-  lines: 618-648
+  lines: 626-656
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_unknown_target_raises
-  lines: 651-662
+  lines: 659-670
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_invalid_json_returns_error
-  lines: 665-682
+  lines: 673-690
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_uninstall_round_trips
-  lines: 688-702
+  lines: 696-710
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_uninstall_rejects_target_and_all_together
-  lines: 705-714
+  lines: 713-722
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_help_lists_uninstall
-  lines: 717-725
+  lines: 725-733
 incoming_refs: 0
 outgoing_refs: 45
 ---
@@ -128,10 +128,10 @@ Test suite for `trie.mcp_install` covering install, uninstall, CLI surface, and 
 
 - `project` fixture: temp dir with a valid `trie.toml`; used by nearly every test.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:project fingerprint=9635d698397eed755ba54f18855a451e5f737f90ab053c81317de51f20a18b4a body_fp=1379bfc073e627515d56672678202ff5dff3e34ae1be17082dbe4b1d6ecf2991 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
+<!-- trie:section symbol=tests/test_mcp_install:project fingerprint=ec0dcdc7ce6b4eb60414b372c10e3ddd78937efff6c97a9c42895523ab41b485 body_fp=b1e7dfea3886eedf97e2bdcec9554df975645ef16c15d8f3404b5131800a158c source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
 ## `project(tmp_path: Path) -> Path`
 
-Pytest fixture that creates a `tmp_path` directory with a valid `trie.toml` and returns it as the project root.
+Pytest fixture that creates a `tmp_path` directory with a valid `trie.toml`, yields it as the project root, then removes any leaked `.mcp.json` or `.claude` artifacts from `cwd` and `HOME`.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp_install:test_snippet_uses_serve_subcommand fingerprint=64e9dd207621028e9aaaa81e3e2f4ff89f8d2e8def334be47eea06f9eb38a9a0 body_fp=8066ef86e59ace6b39af7c33dae4e91793e002722011ef681b76ee1d52eee8a2 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
 ## `test_snippet_uses_serve_subcommand(project: Path)`

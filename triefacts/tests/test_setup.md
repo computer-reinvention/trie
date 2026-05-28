@@ -1,88 +1,88 @@
 ---
-trie_version: 0.1.2
+trie_version: 0.1.5
 source: tests/test_setup.py
-file_fingerprint: 244a847eb74b1fec37989630a6a0fae7753c0029ae79eaec5c613e288c824d99
-last_synced_at: '2026-05-23T23:45:39Z'
+file_fingerprint: 86cb254cd0c4339624942317ede1168fc28a3822bebae8ce1273c7ec7f5852c1
+last_synced_at: '2026-05-28T01:37:35Z'
 description: End-to-end tests for `trie setup` and the underlying hook installer.
 defines:
 - kind: module
   qualified_name: tests/test_setup:__module__
-  lines: 1-462
+  lines: 1-470
 - kind: function
   qualified_name: tests/test_setup:project
-  lines: 34-45
+  lines: 34-53
 - kind: function
   qualified_name: tests/test_setup:test_opencode_hook_creates_plugin_file
-  lines: 53-83
+  lines: 61-91
 - kind: function
   qualified_name: tests/test_setup:test_opencode_hook_writes_package_json_to_unblock_bun_install
-  lines: 86-105
+  lines: 94-113
 - kind: function
   qualified_name: tests/test_setup:test_opencode_hook_package_json_is_idempotent
-  lines: 108-128
+  lines: 116-136
 - kind: function
   qualified_name: tests/test_setup:test_opencode_hook_is_idempotent
-  lines: 131-148
+  lines: 139-156
 - kind: function
   qualified_name: tests/test_setup:test_opencode_hook_updates_when_contents_changed
-  lines: 151-166
+  lines: 159-174
 - kind: function
   qualified_name: tests/test_setup:test_print_only_writes_no_files
-  lines: 169-181
+  lines: 177-189
 - kind: function
   qualified_name: tests/test_setup:test_dry_run_writes_no_files
-  lines: 184-193
+  lines: 192-201
 - kind: function
   qualified_name: tests/test_setup:test_claude_code_hook_is_manual_setup
-  lines: 196-210
+  lines: 204-218
 - kind: function
   qualified_name: tests/test_setup:test_unknown_target_raises
-  lines: 213-221
+  lines: 221-229
 - kind: function
   qualified_name: tests/test_setup:test_install_all_covers_every_target
-  lines: 224-233
+  lines: 232-241
 - kind: function
   qualified_name: tests/test_setup:test_apply_one_returns_needs_manual_setup_for_render_none
-  lines: 241-249
+  lines: 249-257
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_opencode_writes_hook_and_overrides_by_default
-  lines: 257-273
+  lines: 265-281
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_opencode_with_mcp_writes_mcp
-  lines: 276-292
+  lines: 284-300
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_claude_code_warns_about_hook
-  lines: 295-304
+  lines: 303-312
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_claude_code_with_mcp_writes_mcp_and_warns_about_hook
-  lines: 307-317
+  lines: 315-325
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_print_only_writes_nothing
-  lines: 320-328
+  lines: 328-336
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_target_and_all_mutex
-  lines: 331-336
-- kind: function
-  qualified_name: tests/test_setup:test_cli_setup_invalid_scope
   lines: 339-344
 - kind: function
+  qualified_name: tests/test_setup:test_cli_setup_invalid_scope
+  lines: 347-352
+- kind: function
   qualified_name: tests/test_setup:test_cli_setup_idempotent_second_run
-  lines: 347-361
+  lines: 355-369
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_installs_overrides_by_default
-  lines: 374-386
+  lines: 382-394
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_no_overrides_flag_skips_overrides
-  lines: 389-404
+  lines: 397-412
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_print_only_previews_overrides_without_writing
-  lines: 407-422
+  lines: 415-430
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_claude_code_creates_advisory_hook_by_default
-  lines: 425-440
+  lines: 433-448
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_override_idempotent_on_second_run
-  lines: 443-461
+  lines: 451-469
 incoming_refs: 0
 outgoing_refs: 28
 ---
@@ -94,10 +94,10 @@ End-to-end tests for `trie setup` CLI and the `hook_install` module.
 - `project` fixture: tmp dir with minimal `trie.toml` satisfying `Config.find_and_load`
 - Covers: file creation, idempotency, `--print-only`/`--dry-run`, manual-setup targets, CLI flags, tool-override install
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_setup:project fingerprint=1f83c1fd82d36d3db04107648fc45b8a7541a7d15408974e22c21bda26a413b5 body_fp=28bafac5057b2f988f348b15d6df74f9f104a8e2285bfb92c0cd80d0ec448389 source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
+<!-- trie:section symbol=tests/test_setup:project fingerprint=7238db83261cb205b8f74f43a46da638bec089b0562445564e88a022fa35d30f body_fp=59675e01c77c385fc42e67cf14473477431a4f2ac9f47710bc7e2c6e284c10e4 source_ref=ee8a95ecaf3f1e7f45f08a83c627670aaa27deb4 -->
 ## `project(tmp_path: Path) -> Path`
 
-Pytest fixture that creates a minimal `trie.toml` in a temp directory and returns it as the project root.
+Pytest fixture that creates a minimal `trie.toml` in a temp directory, yields it as the project root, and cleans up any `.mcp.json` or `.claude/` artifacts that leaked into `cwd` or home.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_setup:test_opencode_hook_creates_plugin_file fingerprint=fc94d480e290261b1fe2896b887d8b2dad458d4ad585c77f7a6e67594d0f2a0b body_fp=85c4df03f27a5fe8cfeae2657297d2b493aec26f085e933a51ed60cc90648cbe source_ref=a8893a5db1e60d129df684efdfac7292f52592a8 -->
 ## `test_opencode_hook_creates_plugin_file(project: Path)`
