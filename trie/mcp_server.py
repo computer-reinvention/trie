@@ -379,6 +379,38 @@ class TrieTools:
 
     # --- desktop app helpers -----------------------------------------------
 
+    def all_symbols(self, rank_by: str = "inbound_count", limit: int = 5000) -> dict[str, Any]:
+        """Return all symbols in the project, sorted by `rank_by`.
+
+        Dedicated endpoint for the desktop app's initial graph population —
+        avoids the empty-predicate guard in `grep` which rejects requests
+        with no filters. Returns {hits: [SymbolDetail, ...]} in the same
+        shape as grep() so the frontend can use the same code path.
+        """
+        from trie.graph.store import GrepPredicate
+
+        pred = GrepPredicate(kind="any")  # kind="any" is non-empty → bypasses the guard
+        with self.store as s:
+            results = s.grep_symbols(pred, rank_by=rank_by, limit=limit)
+        hits = [
+            {
+                "qname": r.qualified_name,
+                "name": r.name,
+                "kind": r.kind,
+                "file_path": r.file_path,
+                "start_line": r.start_line,
+                "signature": r.signature,
+                "is_public": r.is_public,
+                "inbound_count": r.inbound_count,
+                "outbound_count": r.outbound_count,
+                "one_liner": r.one_liner,
+                "pending_patch_count": r.pending_patch_count,
+                "has_pending_patches": r.pending_patch_count > 0,
+            }
+            for r in results
+        ]
+        return {"hits": hits}
+
     def summary(self) -> dict[str, Any]:
         """Return project-level aggregate counts for the trie desktop app.
 
@@ -2026,9 +2058,10 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     server.tool(name="patch_drop")(tools.patch_drop)
     server.tool(name="patch_list")(tools.patch_list)
     server.tool(name="patch_apply")(tools.patch_apply)
-    # Desktop app helpers — project summary + symbols by file
+    # Desktop app helpers — project summary + symbols by file + all symbols
     server.tool(name="summary")(tools.summary)
     server.tool(name="symbols_by_file")(tools.symbols_by_file)
+    server.tool(name="all_symbols")(tools.all_symbols)
     return server, tools
 
 

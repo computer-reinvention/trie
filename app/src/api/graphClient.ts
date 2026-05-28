@@ -39,6 +39,14 @@ export const graphClient = {
     return get("/desktop/graph/summary")
   },
 
+  // Dedicated initial-load endpoint — no predicate required, returns all symbols.
+  allSymbols(opts?: { rank_by?: string; limit?: number }): Promise<{ hits: SymbolHit[] }> {
+    const params: Record<string, string> = {}
+    if (opts?.rank_by) params.rank_by = opts.rank_by
+    if (opts?.limit != null) params.limit = String(opts.limit)
+    return get("/desktop/graph/all-symbols", Object.keys(params).length ? params : undefined)
+  },
+
   grep(opts: { predicate?: Record<string, unknown>; rank_by?: string; limit?: number }): Promise<{ hits: SymbolHit[] }> {
     return post("/desktop/graph/grep", opts)
   },

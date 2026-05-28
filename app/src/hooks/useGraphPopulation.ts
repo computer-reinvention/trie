@@ -61,27 +61,22 @@ export function useGraphPopulation(opencodePort: number | null): void {
       appStore.setGraphLoading(true, "Connecting to trie graph…")
 
       try {
-        // 1. Fetch all symbols — retry with backoff to allow the trie MCP
-        //    server time to connect after opencode starts.
+        // 1. Fetch all symbols via the dedicated all-symbols endpoint.
+        //    Retry with backoff — trie MCP may not be connected immediately
+        //    after opencode starts.
         let hits: SymbolHit[] = []
-        const MAX_RETRIES = 8
+        const MAX_RETRIES = 10
         for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
           if (cancelled) return
           try {
-            const res = await graphClient.grep({
-              predicate: {},
-              rank_by: "inbound_count",
-              limit: 5000,
-            })
-            // Guard against error envelopes or missing hits field
-            if (res && Array.isArray(res.hits)) {
+            const res = await graphClient.allSymbols({ rank_by: "inbound_count", limit: 5000 })
+            if (res && Array.isArray(res.hits) && res.hits.length > 0) {
               hits = res.hits
               break
             }
-            // Response was an error or unexpected shape — log and retry
-            console.warn("[graph] grep returned unexpected response, retrying…", res)
+            console.warn(`[graph] allSymbols attempt ${attempt + 1}: no hits yet`, res)
           } catch (err) {
-            console.warn(`[graph] grep attempt ${attempt + 1} failed:`, err)
+            console.warn(`[graph] allSymbols attempt ${attempt + 1} failed:`, err)
           }
           if (attempt < MAX_RETRIES - 1) {
             appStore.setGraphLoading(true, `Waiting for trie MCP… (${attempt + 1}/${MAX_RETRIES})`)
@@ -91,7 +86,7 @@ export function useGraphPopulation(opencodePort: number | null): void {
 
         if (hits.length === 0) {
           appStore.setGraphLoading(false)
-          console.warn("[graph] No symbols returned after retries — trie MCP may not be connected.")
+          console.warn("[graph] No symbols after retries — trie MCP not connected.")
           return
         }
         if (cancelled) return
