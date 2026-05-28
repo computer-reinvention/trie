@@ -5,11 +5,6 @@ import { useGraphStore } from "@/store/graphStore"
 import { useAppStore } from "@/store/appStore"
 import type { SymbolNodeData, EdgeData, SymbolHit } from "@/api/types"
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyNode = Node<any>
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyEdge = Edge<any>
-
 // Stable file-path → hue mapping
 function fileHue(filePath: string): number {
   let hash = 0
@@ -48,6 +43,75 @@ export function symbolHitToNode(hit: SymbolHit, parentId?: string): Node<SymbolN
   }
 }
 
+// ---------------------------------------------------------------------------
+// Simple grid layout — no ELK, no async layout engine.
+//
+// Files are laid out in columns (up to MAX_COLS). Within each file column
+// symbols are stacked vertically. File group nodes are sized to contain
+// their children.
+// ---------------------------------------------------------------------------
+
+const NODE_W = 240
+const NODE_H = 72
+const NODE_GAP_Y = 12    // vertical gap between symbols
+const GROUP_PAD = 20     // padding inside file group
+const COL_GAP = 60       // horizontal gap between file columns
+const ROW_GAP = 60       // vertical gap between file groups in same column
+const MAX_COLS = 6
+
+function gridLayout(
+  byFile: Map<string, SymbolHit[]>,
+): { groupNodes: Node[]; symbolNodes: Node<SymbolNodeData>[] } {
+  const files = [...byFile.entries()]
+  const numCols = Math.min(MAX_COLS, Math.ceil(Math.sqrt(files.length)))
+
+  // Track current Y offset per column
+  const colY = new Array(numCols).fill(0)
+  // Track X position per column
+  const colX = new Array(numCols).fill(0).map((_, i) => i * (NODE_W + GROUP_PAD * 2 + COL_GAP))
+
+  const groupNodes: Node[] = []
+  const symbolNodes: Node<SymbolNodeData>[] = []
+
+  files.forEach(([filePath, symbols], fileIdx) => {
+    const col = fileIdx % numCols
+    const hue = fileHue(filePath)
+
+    const groupH = GROUP_PAD * 2 + symbols.length * (NODE_H + NODE_GAP_Y) - NODE_GAP_Y
+    const groupW = NODE_W + GROUP_PAD * 2
+    const gx = colX[col]
+    const gy = colY[col]
+
+    const groupId = `__file__${filePath}`
+    groupNodes.push({
+      id: groupId,
+      type: "fileGroup",
+      position: { x: gx, y: gy },
+      style: {
+        width: groupW,
+        height: groupH,
+        background: `hsla(${hue}, 40%, 18%, 0.35)`,
+        border: `1px solid hsla(${hue}, 40%, 40%, 0.4)`,
+        borderRadius: 8,
+      },
+      data: { filePath, label: filePath.split("/").pop() ?? filePath },
+    })
+
+    symbols.forEach((hit, symIdx) => {
+      const node = symbolHitToNode(hit, groupId)
+      node.position = {
+        x: GROUP_PAD,
+        y: GROUP_PAD + symIdx * (NODE_H + NODE_GAP_Y),
+      }
+      symbolNodes.push(node)
+    })
+
+    colY[col] += groupH + ROW_GAP
+  })
+
+  return { groupNodes, symbolNodes }
+}
+
 export function useGraphPopulation(opencodePort: number | null): void {
   const appStore = useAppStore()
   const graphStore = useGraphStore()
@@ -61,25 +125,27 @@ export function useGraphPopulation(opencodePort: number | null): void {
       appStore.setGraphLoading(true, "Connecting to trie graph…")
 
       try {
-        // 1. Fetch all symbols. The server-side handler waits for trie MCP
-        //    to be connected before responding, so this is a single blocking call.
-        appStore.setGraphLoading(true, "Connecting to trie graph…")
-        const res = await graphClient.allSymbols({ rank_by: "inbound_count", limit: 5000 })
+        // Fetch symbols and edges in parallel — both wait server-side for trie MCP.
+        appStore.setGraphLoading(true, "Loading symbols and edges…")
+        const [symbolsRes, edgesRes] = await Promise.all([
+          graphClient.allSymbols({ rank_by: "inbound_count", limit: 5000 }),
+          graphClient.allEdges({ limit: 50000 }),
+        ])
         if (cancelled) return
 
-        if (!res || !Array.isArray(res.hits) || res.hits.length === 0) {
-          console.error("[graph] allSymbols returned no hits:", res)
+        if (!symbolsRes?.hits?.length) {
+          console.error("[graph] allSymbols returned no hits:", symbolsRes)
           appStore.setGraphLoading(false)
           return
         }
-        const hits = res.hits
 
-        appStore.setGraphLoading(
-          true,
-          `Building graph for ${hits.length} symbols…`,
-        )
+        const hits = symbolsRes.hits
+        const rawEdges = edgesRes?.edges ?? []
+        console.log(`[graph] ${hits.length} symbols, ${rawEdges.length} edges`)
 
-        // 2. Group by file → build FileGroupNodes + SymbolNodes
+        appStore.setGraphLoading(true, `Laying out ${hits.length} symbols…`)
+
+        // Group by file
         const byFile = new Map<string, SymbolHit[]>()
         for (const hit of hits) {
           const arr = byFile.get(hit.file_path) ?? []
@@ -87,73 +153,35 @@ export function useGraphPopulation(opencodePort: number | null): void {
           byFile.set(hit.file_path, arr)
         }
 
-        const groupNodes: Node[] = []
-        const symbolNodes: Node<SymbolNodeData>[] = []
+        // Simple grid layout — synchronous, no ELK needed
+        const { groupNodes, symbolNodes } = gridLayout(byFile)
 
-        for (const [filePath, symbols] of byFile) {
-          const groupId = `__file__${filePath}`
-          const hue = fileHue(filePath)
-          groupNodes.push({
-            id: groupId,
-            type: "fileGroup",
-            position: { x: 0, y: 0 },
-            style: {
-              background: `hsla(${hue}, 40%, 20%, 0.3)`,
-              border: `1px solid hsla(${hue}, 40%, 40%, 0.5)`,
-            },
-            data: { filePath, label: filePath.split("/").pop() ?? filePath },
-          })
-          for (const hit of symbols) {
-            symbolNodes.push(symbolHitToNode(hit, groupId))
+        // Build edge set — only include edges where both endpoints are in our symbol set
+        const knownQnames = new Set(hits.map((h) => h.qname))
+        const edges: Edge<EdgeData>[] = []
+        const seen = new Set<string>()
+        for (const e of rawEdges) {
+          const id = `${e.from}->${e.to}`
+          if (!seen.has(id) && knownQnames.has(e.from) && knownQnames.has(e.to)) {
+            seen.add(id)
+            edges.push({
+              id,
+              source: e.from,
+              target: e.to,
+              type: "semantic",
+              data: { kind: "calls" },
+            })
           }
         }
 
-        // 3. Fetch edges for top-200 by inbound_count, batched 10 at a time
-        // to avoid saturating the IPC channel.
-        const top200 = hits.slice(0, 200)
-        const traceResults: PromiseSettledResult<Awaited<ReturnType<typeof graphClient.trace>>>[] = []
-        const BATCH = 10
-        for (let i = 0; i < top200.length; i += BATCH) {
-          if (cancelled) return
-          const batch = top200.slice(i, i + BATCH)
-          const batchResults = await Promise.allSettled(
-            batch.map((h) => graphClient.trace({ from_qname: h.qname, direction: "both", depth: 1 }))
-          )
-          traceResults.push(...batchResults)
-        }
         if (cancelled) return
 
-        const edgeSet = new Map<string, Edge<EdgeData>>()
-        for (const result of traceResults) {
-          if (result.status !== "fulfilled") continue
-          if (!Array.isArray(result.value?.edges)) continue
-          for (const e of result.value.edges) {
-            const id = `${e.from}->${e.to}`
-            if (!edgeSet.has(id)) {
-              edgeSet.set(id, {
-                id,
-                source: e.from,
-                target: e.to,
-                type: "semantic",
-                data: { kind: "calls" },
-              })
-            }
-          }
-        }
-
-        // 4. ELK layout
-        appStore.setGraphLoading(
-          true,
-          `Laying out ${symbolNodes.length} symbols across ${groupNodes.length} files…`,
+        const allNodes = [...groupNodes, ...symbolNodes]
+        console.log(`[graph] rendering ${allNodes.length} nodes, ${edges.length} edges`)
+        graphStore.setGraph(
+          allNodes as Node<SymbolNodeData>[],
+          edges as Edge<EdgeData>[],
         )
-
-        const allNodes: AnyNode[] = [...groupNodes, ...symbolNodes]
-        const allEdges: AnyEdge[] = [...edgeSet.values()]
-
-        const positioned = await runElkLayout(allNodes, allEdges)
-        if (cancelled) return
-
-        graphStore.setGraph(positioned.nodes as unknown as Node<SymbolNodeData>[], positioned.edges as unknown as Edge<EdgeData>[])
       } catch (err) {
         console.error("Graph population failed:", err)
       } finally {
@@ -164,68 +192,4 @@ export function useGraphPopulation(opencodePort: number | null): void {
     populate()
     return () => { cancelled = true }
   }, [opencodePort])
-}
-
-// ELK layout using a Web Worker for the heavy lifting
-async function runElkLayout(
-  nodes: AnyNode[],
-  edges: AnyEdge[],
-): Promise<{ nodes: AnyNode[]; edges: AnyEdge[] }> {
-  // Dynamic import so ELK only loads when needed
-  const ELK = (await import("elkjs/lib/elk.bundled.js")).default
-  const elk = new ELK()
-
-  const elkNodes = nodes.map((n) => {
-    const isGroup = n.type === "fileGroup"
-    return {
-      id: n.id,
-      width: isGroup ? 300 : 240,
-      height: isGroup ? 200 : 80,
-      children: isGroup
-        ? nodes
-            .filter((c) => c.parentId === n.id)
-            .map((c) => ({ id: c.id, width: 220, height: 70, children: undefined, layoutOptions: undefined }))
-        : undefined,
-      layoutOptions: isGroup
-        ? { "elk.direction": "DOWN", "elk.spacing.nodeNode": "20" }
-        : undefined,
-    }
-  })
-
-  const elkEdges = edges.map((e) => ({
-    id: e.id,
-    sources: [e.source],
-    targets: [e.target],
-  }))
-
-  const graph = await elk.layout({
-    id: "root",
-    layoutOptions: {
-      "elk.algorithm": "layered",
-      "elk.direction": "DOWN",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "100",
-      "elk.spacing.nodeNode": "50",
-      "elk.hierarchyHandling": "INCLUDE_CHILDREN",
-    },
-    children: elkNodes,
-    edges: elkEdges,
-  })
-
-  // Map positions back to React Flow nodes
-  const positionMap = new Map<string, { x: number; y: number }>()
-  function extractPositions(elkChildren: typeof graph.children): void {
-    if (!elkChildren) return
-    for (const n of elkChildren) {
-      positionMap.set(n.id, { x: n.x ?? 0, y: n.y ?? 0 })
-      if (n.children) extractPositions(n.children)
-    }
-  }
-  extractPositions(graph.children)
-
-  const positionedNodes = nodes.map((n) => {
-    const pos = positionMap.get(n.id)
-    return pos ? { ...n, position: pos } : n
-  })
-
-  return { nodes: positionedNodes, edges }
 }
