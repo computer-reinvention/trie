@@ -443,11 +443,16 @@ def sync_single_file(
             )
 
         # Phase 2 — generate. The per-symbol LLM call is pure network I/O; threads
-        # are sufficient. Each call shares the same `file_ctx` so Anthropic's prompt
-        # cache (keyed on the cached_context block) hits on every symbol after the
-        # first. Order of completion is irrelevant — `TriefactFile.upsert_section`
-        # is keyed by qname, not position, so phase 3 produces identical output
-        # regardless of which future resolved first.
+        # are sufficient. Every call shares the same `file_ctx`, which is sent as a
+        # cached prefix (system prompt + file source). Anthropic's prompt cache is
+        # keyed on that prefix, so after it's written once, every subsequent symbol
+        # in the file reads it instead of re-billing the full prefix.
+        #
+        # CRITICAL: the cache write must land before the parallel fan-out, or every
+        # concurrent request races to write its own copy of the cache (each billed
+        # at the 1.25x cache-creation rate) and only the stragglers get a read. We
+        # therefore generate the FIRST symbol serially to warm the cache, then
+        # parallelise the rest — guaranteeing one write and N-1 reads per file.
         #
         # `concurrency=1` collapses to serial execution (a 1-thread pool is still a
         # pool but adds no parallelism), useful for deterministic eval runs and for
@@ -455,23 +460,29 @@ def sync_single_file(
         concurrency = max(1, config.sync.concurrency)
         generated: list[tuple[Symbol, GeneratedSection]] = []
         if jobs:
-            with ThreadPoolExecutor(max_workers=concurrency) as pool:
-                # Submit in source order; collect in submission order so the
-                # iteration below preserves the source-line ordering used by
-                # upsert_section's chunk placement.
-                futures = [
-                    pool.submit(
-                        generate_section,
-                        symbol=job.symbol,
-                        file_ctx=file_ctx,
-                        client=client,
-                        previous_source=job.previous_source,
-                        previous_prose=job.previous_prose,
-                    )
-                    for job in jobs
-                ]
-                for job, fut in zip(jobs, futures, strict=True):
-                    generated.append((job.symbol, fut.result()))
+
+            def _gen(job: _SymbolJob) -> GeneratedSection:
+                return generate_section(
+                    symbol=job.symbol,
+                    file_ctx=file_ctx,
+                    client=client,
+                    previous_source=job.previous_source,
+                    previous_prose=job.previous_prose,
+                )
+
+            if concurrency > 1 and len(jobs) > 1:
+                # Warm the prompt cache with the first symbol, serially.
+                generated.append((jobs[0].symbol, _gen(jobs[0])))
+                rest = jobs[1:]
+                with ThreadPoolExecutor(max_workers=concurrency) as pool:
+                    futures = [pool.submit(_gen, job) for job in rest]
+                    for job, fut in zip(rest, futures, strict=True):
+                        generated.append((job.symbol, fut.result()))
+            else:
+                # Serial path (concurrency=1 or a single symbol): no fan-out, so
+                # the cache warms naturally on the first call.
+                for job in jobs:
+                    generated.append((job.symbol, _gen(job)))
 
         # Phase 3 — apply. All mutation of `triefact` and `store` happens on this
         # thread; neither is safe to touch concurrently. We process generated
@@ -500,6 +511,7 @@ def sync_single_file(
                         section_fingerprint=sym.body_normalized_hash,
                         one_liner=extract_one_liner(section.body),
                         role=gen.role,
+                        boundary=gen.boundary,
                     )
 
         current_qnames = {s.qualified_name for s in target_symbols}
