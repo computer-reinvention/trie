@@ -11,6 +11,18 @@ export class ProcessManager {
   constructor(private win: BrowserWindow) {}
 
   async startForProject(projectDir: string): Promise<void> {
+    // Kill any previously-spawned server before starting a new one. Without
+    // this, a second open-project (re-open, StrictMode, retry) orphans the
+    // prior opencode-server, leaking processes and ports.
+    if (this.opencodeProc && !this.opencodeProc.killed) {
+      try {
+        this.opencodeProc.kill("SIGTERM")
+      } catch {
+        /* ignore */
+      }
+      this.opencodeProc = null
+    }
+
     this.opencodePort = await findFreePort(4096)
 
     const { opencodeBin, trieMcpBin } = resolveResourcePaths()
