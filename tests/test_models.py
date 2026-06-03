@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import MagicMock
 
 from pydantic_ai import CachePoint
@@ -66,8 +67,12 @@ def test_empty_user_prompt_gets_nonwhitespace_placeholder():
 
 
 def _mock_agent(mocker):
-    """Patch trie.models.Agent so run_sync returns a canned result and we can
-    inspect the user input and model_settings it was called with."""
+    """Patch trie.models.Agent so the async ``run`` returns a canned result and
+    records the user input / model_settings it was called with.
+
+    ``run`` is driven via ``loop.run_until_complete`` in production, so the mock
+    must be an async function (returning a coroutine), not a plain MagicMock.
+    """
     fake_result = SimpleNamespace(
         output=SectionBody(body="## body", role="logic", boundary="internal"),
         usage=SimpleNamespace(
@@ -76,23 +81,30 @@ def _mock_agent(mocker):
             details={"cache_creation_input_tokens": 0, "cache_read_input_tokens": 0},
         ),
     )
+    calls: dict[str, Any] = {}
+
+    async def fake_run(user_input, **kwargs):
+        calls["args"] = (user_input,)
+        calls["kwargs"] = kwargs
+        return fake_result
+
     agent_instance = MagicMock()
-    agent_instance.run_sync.return_value = fake_result
+    agent_instance.run = fake_run
     agent_cls = mocker.patch("trie.models.Agent", return_value=agent_instance)
-    return agent_cls, agent_instance
+    return agent_cls, calls
 
 
 def test_run_without_cache_prefix_sends_bare_string(mocker):
-    _, agent_instance = _mock_agent(mocker)
+    _, calls = _mock_agent(mocker)
     client = TrieClient("anthropic/claude-sonnet-4-6", sync_cfg=Sync(max_retries=0))
     client.run(SectionBody, system_prompt="sys", user_prompt="hello")
 
-    user_input = agent_instance.run_sync.call_args.args[0]
+    user_input = calls["args"][0]
     assert user_input == "hello"
 
 
 def test_run_with_cache_prefix_inserts_cachepoint(mocker):
-    _, agent_instance = _mock_agent(mocker)
+    _, calls = _mock_agent(mocker)
     client = TrieClient("anthropic/claude-sonnet-4-6", sync_cfg=Sync(max_retries=0))
     client.run(
         SectionBody,
@@ -101,7 +113,7 @@ def test_run_with_cache_prefix_inserts_cachepoint(mocker):
         cache_prefix="FILE SOURCE",
     )
 
-    user_input = agent_instance.run_sync.call_args.args[0]
+    user_input = calls["args"][0]
     assert isinstance(user_input, list)
     assert user_input[0] == "FILE SOURCE"
     assert isinstance(user_input[1], CachePoint)
@@ -109,11 +121,11 @@ def test_run_with_cache_prefix_inserts_cachepoint(mocker):
 
 
 def test_run_caches_system_instructions(mocker):
-    _, agent_instance = _mock_agent(mocker)
+    _, calls = _mock_agent(mocker)
     client = TrieClient("anthropic/claude-sonnet-4-6", sync_cfg=Sync(max_retries=0))
     client.run(SectionBody, system_prompt="sys", user_prompt="hello")
 
-    settings = agent_instance.run_sync.call_args.kwargs["model_settings"]
+    settings = calls["kwargs"]["model_settings"]
     # AnthropicModelSettings is a TypedDict — a plain dict at runtime.
     assert settings["anthropic_cache_instructions"] is True
     assert settings["max_tokens"] == 1024

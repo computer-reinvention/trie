@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import random
+import threading
 import time
 from collections.abc import Callable
 from typing import Any
@@ -19,6 +21,24 @@ from pydantic_ai.usage import Usage
 
 from trie import telemetry
 from trie.config import Sync
+
+# Per-thread event loop. ``Agent.run_sync`` creates a fresh event loop on every
+# call when invoked from a worker thread, and each loop allocates a socketpair
+# (two file descriptors). Under the parallel sync fan-out these accumulate
+# faster than they're reclaimed and the process hits ``OSError: [Errno 24] Too
+# many open files``. We instead keep one long-lived loop per thread and drive
+# the async ``Agent.run`` on it, so a thread allocates its loop once and reuses
+# it for every symbol it generates.
+_thread_local = threading.local()
+
+
+def _thread_event_loop() -> asyncio.AbstractEventLoop:
+    loop = getattr(_thread_local, "loop", None)
+    if loop is None or loop.is_closed():
+        loop = asyncio.new_event_loop()
+        _thread_local.loop = loop
+    return loop
+
 
 # ---------------------------------------------------------------------------
 # Structured output models — every LLM call returns one of these.
@@ -321,12 +341,18 @@ class TrieClient:
                 user_input: str | list[Any] = [cache_prefix, CachePoint(), user_prompt]
             else:
                 user_input = user_prompt
-            result = agent.run_sync(
-                user_input,
-                model_settings=AnthropicModelSettings(
-                    max_tokens=max_tokens,
-                    anthropic_cache_instructions=True,
-                ),
+            # Drive the async API on a per-thread loop (see ``_thread_event_loop``)
+            # rather than ``run_sync``, which spins up — and leaks — a fresh loop
+            # per call under the parallel fan-out.
+            loop = _thread_event_loop()
+            result = loop.run_until_complete(
+                agent.run(
+                    user_input,
+                    model_settings=AnthropicModelSettings(
+                        max_tokens=max_tokens,
+                        anthropic_cache_instructions=True,
+                    ),
+                )
             )
             usage = result.usage
             tele["input_tokens"] = usage.input_tokens
