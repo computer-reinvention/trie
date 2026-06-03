@@ -133,16 +133,47 @@ function handleToolStart(
   }
 }
 
+// Fire directional comets along traversed edges, in sequence, so the user
+// watches the agent's attention flow through the call graph.
+function animateFlows(
+  output: string | null,
+  graphStore: ReturnType<typeof useGraphStore.getState>,
+): void {
+  if (!output) return
+  let edges: Array<{ from: string; to: string }> = []
+  try {
+    const parsed = JSON.parse(output) as {
+      edges?: Array<{ from: string; to: string }>
+      paths?: string[][]
+    }
+    if (parsed.edges) edges = parsed.edges
+    else if (parsed.paths) {
+      // explain/trace_flow returns paths (lists of qnames) -> consecutive edges
+      for (const path of parsed.paths) {
+        for (let i = 0; i + 1 < path.length; i++) edges.push({ from: path[i], to: path[i + 1] })
+      }
+    }
+  } catch {
+    return
+  }
+  edges.slice(0, 40).forEach((e, i) => {
+    setTimeout(() => graphStore.flowAlong(e.from, e.to), i * 180)
+  })
+}
+
 function handleToolDone(
   p: DesktopToolDoneEvent,
   graphStore: ReturnType<typeof useGraphStore.getState>,
 ): void {
-  const { tool, input } = p
+  const { tool, input, output } = p
   const settle = (q: string) => setTimeout(() => graphStore.setNodeAgentState(q, "idle"), 800)
 
   if (tool === "trie_read" && input.qname) settle(input.qname as string)
-  else if (tool === "trie_trace" && input.from_qname) settle(input.from_qname as string)
-  else if (tool === "trie_trace_flow" || tool === "trie_explain_flow") {
+  else if (tool === "trie_trace" && input.from_qname) {
+    animateFlows(output, graphStore)
+    settle(input.from_qname as string)
+  } else if (tool === "trie_trace_flow" || tool === "trie_explain_flow") {
+    animateFlows(output, graphStore)
     if (input.symbol1) settle(input.symbol1 as string)
     if (input.symbol2) settle(input.symbol2 as string)
   } else if (tool === "write_file" && input.path) {

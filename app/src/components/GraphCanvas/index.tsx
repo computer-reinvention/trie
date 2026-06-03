@@ -95,6 +95,16 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
     [setHovered],
   )
 
+  // Is the agent currently traversing this link? (either direction)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const linkIsActive = useCallback((l: any) => {
+    const flows = useGraphStore.getState().activeFlows
+    if (!flows.size) return false
+    const s = typeof l.source === "object" ? l.source.id : l.source
+    const t = typeof l.target === "object" ? l.target.id : l.target
+    return flows.has(`${s}|${t}`) || flows.has(`${t}|${s}`)
+  }, [])
+
   // Build the graph data for the current level. L0 = component diagram; deeper
   // levels = the DOI-bounded symbol set + "+N" aggregate bubbles.
   const data = useMemo(() => {
@@ -269,6 +279,10 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
           }}
           linkWidth={(l) => 0.5 + 2.5 * ((l as FGLink).weight / maxWeight)}
           linkCurvature={0.12}
+          linkDirectionalParticles={(l) => (linkIsActive(l) ? 4 : 0)}
+          linkDirectionalParticleWidth={2.5}
+          linkDirectionalParticleColor={() => ACTIVITY.read}
+          linkDirectionalParticleSpeed={0.01}
           nodeCanvasObject={(node, ctx, globalScale) => {
             const n = node as FGNode & { x: number; y: number }
             const dimmed = highlightSet ? !highlightSet.has(n.id) : false
