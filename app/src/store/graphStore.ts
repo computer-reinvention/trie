@@ -42,6 +42,9 @@ interface GraphStore {
 
   // --- live per-node runtime ---
   runtime: Map<string, NodeRuntime>
+  // transient "the agent just traversed here" edges -> expiry timestamp (ms).
+  // Drives directional comet particles along the real call edges.
+  activeFlows: Map<string, number>
 
   // --- derived visible set (recomputed by recomputeVisible) ---
   visible: VisibleSet
@@ -65,6 +68,7 @@ interface GraphStore {
   setFileAgentState: (filePath: string, state: AgentState) => void
   bumpActivity: (qname: string, amount?: number) => void
   setHeat: (qname: string, heat: number) => void
+  flowAlong: (from: string, to: string, durationMs?: number) => void
   decayActivityAndHeat: (dt: number) => void
 }
 
@@ -89,6 +93,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   hoveredId: null,
 
   runtime: new Map(),
+  activeFlows: new Map(),
   visible: emptyVisible(),
 
   setModel: (model, edges) => {
@@ -236,6 +241,17 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
       return { runtime }
     }),
 
+  flowAlong: (from, to, durationMs = 1600) =>
+    set((s) => {
+      const activeFlows = new Map(s.activeFlows)
+      activeFlows.set(`${from}|${to}`, Date.now() + durationMs)
+      // also light up the destination as it's "reached"
+      const runtime = new Map(s.runtime)
+      const cur = runtime.get(to) ?? { ...DEFAULT_RUNTIME }
+      runtime.set(to, { ...cur, activity: Math.min(1, cur.activity + 0.6) })
+      return { activeFlows, runtime }
+    }),
+
   decayActivityAndHeat: (dt) =>
     set((s) => {
       // activity decays fast (~0.5s), heat decays slow (~minutes)
@@ -249,6 +265,17 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
           changed = true
         }
       }
-      return changed ? { runtime } : {}
+      // expire finished flows
+      let flows = s.activeFlows
+      if (flows.size) {
+        const now = Date.now()
+        const next = new Map<string, number>()
+        for (const [k, exp] of flows) if (exp > now) next.set(k, exp)
+        if (next.size !== flows.size) {
+          flows = next
+          changed = true
+        }
+      }
+      return changed ? { runtime, activeFlows: flows } : {}
     }),
 }))
