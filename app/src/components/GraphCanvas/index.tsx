@@ -15,7 +15,7 @@ interface GraphCanvasProps {
 
 // A force-graph node is either a real symbol, an L0 component, or a "+N" bubble.
 type FGNode =
-  | { kind: "component"; id: string; label: string; count: number; color: string; val: number; expanded?: boolean }
+  | { kind: "component"; id: string; label: string; count: number; color: string; val: number; expanded?: boolean; order?: number }
   | { kind: "symbol"; id: string; node: SystemModelNode; color: string; val: number }
   | { kind: "aggregate"; id: string; label: string; count: number; color: string; val: number }
 
@@ -124,15 +124,16 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
     if (!model) return { nodes: [] as FGNode[], links: [] as FGLink[] }
 
     const view = componentView(model, axis)
-    const maxCount = Math.max(1, ...view.groups.map((g) => g.count))
     const expanded = new Set<string>(pinnedExpansions)
     if (focusedExpansion) expanded.add(focusedExpansion)
+    const groupByKey = new Map(view.groups.map((g) => [g.key, g]))
 
     const nodes: FGNode[] = []
     const links: FGLink[] = []
 
-    // 1) component backbone — collapsed groups stay as single nodes; expanded
-    //    groups shrink to a labelled "anchor" the members orbit.
+    // 1) component backbone — UNIFORM size (size shouldn't mislead); count is
+    //    shown as text. order = left(entry)->right(foundation) by call depth.
+    const COMP_R = 13
     for (const g of view.groups) {
       const isExpanded = expanded.has(g.key)
       nodes.push({
@@ -141,8 +142,9 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
         label: g.key.split("/").pop() ?? g.key,
         count: g.count,
         color: colorOf(g.key),
-        val: isExpanded ? 10 : 8 + 16 * Math.sqrt(g.count / maxCount),
+        val: COMP_R,
         expanded: isExpanded,
+        order: g.order,
       })
     }
     const presentComp = new Set(view.groups.map((g) => g.key))
@@ -152,21 +154,31 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
       }
     }
 
-    // 2) members of expanded components, linked to their parent component node
+    // 2) members of expanded components, linked to their parent component node.
+    //    Emphasis depends on the group's CHARACTER: entry-facing groups lead
+    //    with their doors; foundational groups lead with their most-depended-on.
     if (expanded.size > 0) {
       const groupKey = (n: (typeof visible.nodes)[number]) =>
         axis === "role" ? n.role || "untagged" : n.subsystem
+      const isLead = (n: (typeof visible.nodes)[number], character: string) => {
+        if (character === "entry") return n.cls === "door"
+        if (character === "foundation") return n.cls === "bedrock" || n.cls === "hub"
+        return n.cls === "hub" || n.cls === "door"
+      }
       const shownIds = new Set<string>()
       for (const n of visible.nodes) {
         const gk = groupKey(n)
         if (!expanded.has(gk)) continue
         shownIds.add(n.qname)
+        const character = groupByKey.get(gk)?.character ?? "mixed"
+        const lead = isLead(n, character)
         nodes.push({
           kind: "symbol",
           id: n.qname,
           node: n,
           color: colorOf(gk),
-          val: nodeRadius(n.salience, n.cls),
+          // lead symbols for the group's character render larger (emphasis)
+          val: nodeRadius(n.salience, n.cls) * (lead ? 1.5 : 0.85),
         })
         // tether member -> its component anchor (containment)
         links.push({ source: gk, target: n.qname, weight: 0, kind: "member" })
@@ -210,15 +222,30 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
     if (!data.nodes.length || !fgRef.current) return
     const fg = fgRef.current
     const expanded = focusedExpansion !== null || pinnedExpansions.size > 0
-    fg.d3Force("charge")?.strength(expanded ? -140 : -320)
+    // sparse + readable: strong repulsion so role labels never overlap
+    fg.d3Force("charge")?.strength(expanded ? -220 : -900)
     // member tethers short (cluster around parent), flow edges long (spread roles)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const linkForce = fg.d3Force("link") as any
     if (linkForce?.distance) {
       linkForce.distance((l: FGLink) =>
-        l.kind === "member" ? 28 : l.kind === "call" ? 40 : 160,
+        l.kind === "member" ? 34 : l.kind === "call" ? 48 : 220,
       )
     }
+
+    // Left->right ordering: pin each component's x by its call-flow order
+    // (0=entry on the left, 1=foundation on the right). y stays force-driven.
+    // Members of expanded groups float free (fx cleared).
+    const COL_SPAN = 1100
+    for (const n of data.nodes as Array<FGNode & { fx?: number; x?: number }>) {
+      if (n.kind === "component" && typeof n.order === "number") {
+        n.fx = (n.order - 0.5) * COL_SPAN
+      } else {
+        // ensure prior pins don't stick to reused symbol objects
+        delete (n as { fx?: number }).fx
+      }
+    }
+
     // register nodes for the reveal animation (new ones born at 0)
     const anim = animatorRef.current
     const present = new Set<string>()
@@ -227,7 +254,8 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
       anim.ensure(n.id, true)
     }
     anim.prune(present)
-    const t = setTimeout(() => fg.zoomToFit(800, 60), 200)
+    fg.d3ReheatSimulation?.()
+    const t = setTimeout(() => fg.zoomToFit(800, 80), 250)
     return () => clearTimeout(t)
   }, [data, focusedExpansion, pinnedExpansions])
 
@@ -473,35 +501,33 @@ function paintNode(
 
   if (n.kind === "component") {
     const expanded = n.expanded
+    // uniform dot; expanded = hollow "opened container"
     ctx.beginPath()
     ctx.arc(n.x, n.y, r, 0, 2 * Math.PI)
     if (expanded) {
-      // opened container: hollow ring with a faint fill
       ctx.fillStyle = n.color
-      ctx.globalAlpha = 0.15
+      ctx.globalAlpha = 0.18
       ctx.fill()
       ctx.globalAlpha = dimmed ? 0.18 : 1
       ctx.strokeStyle = n.color
-      ctx.lineWidth = 2 / globalScale
+      ctx.lineWidth = 2.5 / globalScale
       ctx.stroke()
     } else {
       ctx.fillStyle = n.color
-      ctx.globalAlpha = dimmed ? 0.18 : 0.92
+      ctx.globalAlpha = dimmed ? 0.18 : 0.95
       ctx.fill()
-      ctx.globalAlpha = dimmed ? 0.18 : 1
     }
-    // label (role name) centered on the node, with the count beneath
-    const fs = Math.max(12, 14 / globalScale)
-    ctx.font = `600 ${fs}px ui-sans-serif, system-ui, sans-serif`
+    ctx.globalAlpha = dimmed ? 0.25 : 1
+    // role label below the dot (never overlapping it), count under that
+    const fs = Math.max(12, 13 / globalScale)
     ctx.textAlign = "center"
-    ctx.textBaseline = "middle"
+    ctx.textBaseline = "top"
+    ctx.font = `600 ${fs}px ui-sans-serif, system-ui, sans-serif`
     ctx.fillStyle = "#f1f5f9"
-    ctx.fillText(n.label, n.x, n.y - (expanded ? r + fs : 0))
-    if (!expanded) {
-      ctx.font = `${Math.max(9, 10 / globalScale)}px ui-monospace, monospace`
-      ctx.fillStyle = "rgba(2,6,23,0.9)"
-      ctx.fillText(`${n.count}`, n.x, n.y + fs * 0.95)
-    }
+    ctx.fillText(n.label, n.x, n.y + r + 4 / globalScale)
+    ctx.font = `${Math.max(8, 9 / globalScale)}px ui-monospace, monospace`
+    ctx.fillStyle = "#64748b"
+    ctx.fillText(`${n.count}`, n.x, n.y + r + 4 / globalScale + fs * 1.05)
     ctx.restore()
     return
   }
