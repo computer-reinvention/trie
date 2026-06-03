@@ -430,24 +430,30 @@ class TrieTools:
         ).fetchall()
         return {"edges": [{"from": r[0], "to": r[1]} for r in rows]}
 
-    def system_model(self, landmark_limit: int = 60) -> dict[str, Any]:
+    def system_model(
+        self, landmark_limit: int = 160, include_tests: bool = False
+    ) -> dict[str, Any]:
         """Return the high-level *system model* for the desktop graph view.
 
-        A model of the system rather than one node per symbol: every node is
-        classified (door/hub/bedrock/exit/orphan/normal), scored for salience,
-        and annotated with betweenness, depth-from-entry, and community. Also
-        returns role summaries and aggregated role-to-role flow edges (the L0
-        view) plus a landmark set for the L1 view.
+        A model of the system rather than one node per symbol. Every production
+        node is classified (door/hub/bedrock/exit/internal/orphan), scored for
+        salience, and annotated with betweenness, depth-from-door, community,
+        subsystem, and a precomputed layered layout position. Tests are excluded
+        by default (set `include_tests` to include them, flagged `is_test`).
 
-        Returns {nodes, roles, role_flows, landmarks}. Pure graph math over the
-        store — no LLM calls.
+        Returns `{nodes, axes: {role, subsystem}, landmarks, stats}` where each
+        axis carries L0 component groups + thresholded group-to-group flow.
+        Pure graph math over the store — no LLM calls. Result is cached on disk
+        keyed by graph fingerprint, so repeat calls are instant.
         """
-        from trie.graph.system_model import build_system_model, system_model_to_dict
+        from trie.graph.system_model import build_system_model_cached
 
-        model = build_system_model(
-            self.store, project_root=self.root, landmark_limit=landmark_limit
+        return build_system_model_cached(
+            self.store,
+            project_root=self.root,
+            landmark_limit=landmark_limit,
+            include_tests=include_tests,
         )
-        return system_model_to_dict(model)
 
     def summary(self) -> dict[str, Any]:
         """Return project-level aggregate counts for the trie desktop app.
