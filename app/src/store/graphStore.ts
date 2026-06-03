@@ -1,217 +1,233 @@
 import { create } from "zustand"
-import type { Node, Edge } from "@xyflow/react"
-import type { SymbolNodeData, EdgeData, AgentState, TraceResult } from "@/api/types"
+import type {
+  AgentState,
+  SystemModel,
+  SystemModelNode,
+  GroupingAxis,
+} from "@/api/types"
+import { buildAdjacency, selectVisible, type Adjacency, type VisibleSet } from "@/graph/doi"
+import { regimeForModel, type RegimeConfig } from "@/graph/regime"
+
+// Per-node live state, keyed by qname. Kept separate from the immutable model
+// so agent activity / selection never forces a model rebuild.
+export interface NodeRuntime {
+  agentState: AgentState
+  selected: boolean
+  // transient activity intensity 0..1 driven by SSE (pulse/heat); animator reads it
+  activity: number
+  // edit-heat 0..1, decays over time
+  heat: number
+}
+
+// View level: L0 components -> L1 landmarks (a component expanded) -> L2 symbol nbhd
+export type ViewLevel = "components" | "landmarks" | "neighborhood"
 
 interface GraphStore {
-  nodes: Node<SymbolNodeData>[]
-  edges: Edge<EdgeData>[]
+  // --- the model (immutable once loaded) ---
+  model: SystemModel | null
+  nodesByQname: Map<string, SystemModelNode>
+  adjacency: Adjacency | null
+  regime: RegimeConfig | null
 
-  setGraph: (nodes: Node<SymbolNodeData>[], edges: Edge<EdgeData>[]) => void
-  addNodes: (nodes: Node<SymbolNodeData>[]) => void
-  addEdges: (edges: Edge<EdgeData>[]) => void
-  removeNode: (qname: string) => void
-  hasNode: (qname: string) => boolean
-  findNodeByName: (name: string) => Node<SymbolNodeData> | undefined
+  // --- view state ---
+  axis: GroupingAxis
+  level: ViewLevel
+  // the single transient expansion (a component key) + the pinned ones
+  focusedExpansion: string | null
+  pinnedExpansions: Set<string>
+  // focus qnames feeding DOI (selection + agent location)
+  focus: string[]
+  selectedQname: string | null
 
-  // Node state mutations
+  // --- live per-node runtime ---
+  runtime: Map<string, NodeRuntime>
+
+  // --- derived visible set (recomputed by recomputeVisible) ---
+  visible: VisibleSet
+
+  // --- actions: model lifecycle ---
+  setModel: (model: SystemModel, edges: Array<{ from: string; to: string }>) => void
+  recomputeVisible: () => void
+
+  // --- actions: view ---
+  setAxis: (axis: GroupingAxis) => void
+  setLevel: (level: ViewLevel) => void
+  expandComponent: (key: string) => void // transient (auto-collapses prior)
+  collapseTransient: () => void
+  togglePin: (key: string) => void
+  selectNode: (qname: string | null) => void
+  focusFile: (relPath: string) => void
+
+  // --- actions: live runtime (driven by SSE) ---
   setNodeAgentState: (qname: string, state: AgentState) => void
   setFileAgentState: (filePath: string, state: AgentState) => void
-  setNodeProse: (qname: string, prose: string) => void
-  setNodeProseLoading: (qname: string, loading: boolean) => void
-  expandNode: (qname: string) => void
-  collapseNode: (qname: string) => void
-  selectNode: (qname: string) => void
-  deselectNode: (qname: string) => void
-  deselectAll: () => void
+  bumpActivity: (qname: string, amount?: number) => void
+  setHeat: (qname: string, heat: number) => void
+  decayActivityAndHeat: (dt: number) => void
+}
 
-  // Sidebar integration
-  selectedFilePath: string | null
-  setSelectedFilePath: (path: string | null) => void
-  highlightedQnames: Set<string>
+const DEFAULT_RUNTIME: NodeRuntime = { agentState: "idle", selected: false, activity: 0, heat: 0 }
 
-  // Merge a trace result — adds new nodes/edges without disturbing existing positions
-  mergeTraceResult: (result: TraceResult) => void
+function emptyVisible(): VisibleSet {
+  return { nodes: [], aggregates: [] }
 }
 
 export const useGraphStore = create<GraphStore>((set, get) => ({
-  nodes: [],
-  edges: [],
-  selectedFilePath: null,
-  highlightedQnames: new Set(),
+  model: null,
+  nodesByQname: new Map(),
+  adjacency: null,
+  regime: null,
 
-  setGraph: (nodes, edges) => set({ nodes, edges }),
+  axis: "role",
+  level: "components",
+  focusedExpansion: null,
+  pinnedExpansions: new Set(),
+  focus: [],
+  selectedQname: null,
 
-  addNodes: (newNodes) =>
-    set((state) => {
-      const existing = new Set(state.nodes.map((n) => n.id))
-      const toAdd = newNodes.filter((n) => !existing.has(n.id))
-      return toAdd.length > 0 ? { nodes: [...state.nodes, ...toAdd] } : {}
+  runtime: new Map(),
+  visible: emptyVisible(),
+
+  setModel: (model, edges) => {
+    const nodesByQname = new Map(model.nodes.map((n) => [n.qname, n]))
+    const adjacency = buildAdjacency(edges)
+    const regime = regimeForModel(model)
+    set({
+      model,
+      nodesByQname,
+      adjacency,
+      regime,
+      axis: regime.defaultAxis,
+      level: "components",
+      focusedExpansion: null,
+      focus: [],
+      runtime: new Map(),
+    })
+    get().recomputeVisible()
+  },
+
+  recomputeVisible: () => {
+    const { model, adjacency, regime, axis, focus } = get()
+    if (!model || !adjacency || !regime) {
+      set({ visible: emptyVisible() })
+      return
+    }
+    const visible = selectVisible({
+      model,
+      budget: regime.budget,
+      salienceFloor: regime.salienceFloor,
+      axis,
+      focus,
+      adjacency,
+    })
+    set({ visible })
+  },
+
+  setAxis: (axis) => {
+    set({ axis })
+    get().recomputeVisible()
+  },
+
+  setLevel: (level) => set({ level }),
+
+  expandComponent: (key) => {
+    // exactly one transient expansion: replaces the previous unpinned one
+    set({ focusedExpansion: key, level: "landmarks" })
+  },
+
+  collapseTransient: () => {
+    set({ focusedExpansion: null, level: "components", focus: [], selectedQname: null })
+    get().recomputeVisible()
+  },
+
+  togglePin: (key) =>
+    set((s) => {
+      const pinned = new Set(s.pinnedExpansions)
+      if (pinned.has(key)) pinned.delete(key)
+      else pinned.add(key)
+      return { pinnedExpansions: pinned }
     }),
 
-  addEdges: (newEdges) =>
-    set((state) => {
-      const existing = new Set(state.edges.map((e) => e.id))
-      const toAdd = newEdges.filter((e) => !existing.has(e.id))
-      return toAdd.length > 0 ? { edges: [...state.edges, ...toAdd] } : {}
-    }),
+  selectNode: (qname) => {
+    set((s) => {
+      const runtime = new Map(s.runtime)
+      if (s.selectedQname) {
+        const prev = runtime.get(s.selectedQname) ?? { ...DEFAULT_RUNTIME }
+        runtime.set(s.selectedQname, { ...prev, selected: false })
+      }
+      if (qname) {
+        const cur = runtime.get(qname) ?? { ...DEFAULT_RUNTIME }
+        runtime.set(qname, { ...cur, selected: true })
+      }
+      return {
+        runtime,
+        selectedQname: qname,
+        focus: qname ? [qname] : [],
+      }
+    })
+    get().recomputeVisible()
+  },
 
-  removeNode: (qname) =>
-    set((state) => ({
-      nodes: state.nodes.filter((n) => n.id !== qname),
-      edges: state.edges.filter((e) => e.source !== qname && e.target !== qname),
-    })),
-
-  hasNode: (qname) => get().nodes.some((n) => n.id === qname),
-
-  findNodeByName: (name) =>
-    get().nodes.find(
-      (n) =>
-        n.data.name === name ||
-        n.data.qname.endsWith(`:${name}`) ||
-        n.data.qname.includes(`.${name}`),
-    ),
+  focusFile: (relPath) => {
+    const { model } = get()
+    if (!model) return
+    const qnames = model.nodes
+      .filter((n) => n.file_path === relPath || n.file_path.endsWith(relPath))
+      .map((n) => n.qname)
+    set({ focus: qnames })
+    get().recomputeVisible()
+  },
 
   setNodeAgentState: (qname, agentState) =>
-    set((state) => ({
-      nodes: state.nodes.map((n) =>
-        n.id === qname ? { ...n, data: { ...n.data, agentState } } : n,
-      ),
-    })),
-
-  setFileAgentState: (filePath, agentState) =>
-    set((state) => ({
-      nodes: state.nodes.map((n) =>
-        n.data.filePath === filePath || n.data.filePath.endsWith(filePath)
-          ? { ...n, data: { ...n.data, agentState } }
-          : n,
-      ),
-    })),
-
-  setNodeProse: (qname, prose) =>
-    set((state) => ({
-      nodes: state.nodes.map((n) =>
-        n.id === qname
-          ? { ...n, data: { ...n.data, prose, isProseLoading: false } }
-          : n,
-      ),
-    })),
-
-  setNodeProseLoading: (qname, isProseLoading) =>
-    set((state) => ({
-      nodes: state.nodes.map((n) =>
-        n.id === qname ? { ...n, data: { ...n.data, isProseLoading } } : n,
-      ),
-    })),
-
-  expandNode: (qname) =>
-    set((state) => ({
-      nodes: state.nodes.map((n) =>
-        n.id === qname ? { ...n, data: { ...n.data, isExpanded: true } } : n,
-      ),
-    })),
-
-  collapseNode: (qname) =>
-    set((state) => ({
-      nodes: state.nodes.map((n) =>
-        n.id === qname ? { ...n, data: { ...n.data, isExpanded: false } } : n,
-      ),
-    })),
-
-  selectNode: (qname) =>
-    set((state) => ({
-      nodes: state.nodes.map((n) =>
-        n.id === qname ? { ...n, data: { ...n.data, isSelected: true } } : n,
-      ),
-    })),
-
-  deselectNode: (qname) =>
-    set((state) => ({
-      nodes: state.nodes.map((n) =>
-        n.id === qname ? { ...n, data: { ...n.data, isSelected: false } } : n,
-      ),
-    })),
-
-  deselectAll: () =>
-    set((state) => ({
-      nodes: state.nodes.map((n) => ({ ...n, data: { ...n.data, isSelected: false } })),
-    })),
-
-  setSelectedFilePath: (selectedFilePath) =>
-    set((state) => {
-      const highlighted = new Set(
-        selectedFilePath
-          ? state.nodes
-              .filter(
-                (n) =>
-                  n.data.filePath === selectedFilePath ||
-                  n.data.filePath.endsWith(selectedFilePath),
-              )
-              .map((n) => n.id)
-          : [],
-      )
-      return {
-        selectedFilePath,
-        highlightedQnames: highlighted,
-        nodes: state.nodes.map((n) => ({
-          ...n,
-          data: {
-            ...n.data,
-            isHighlighted: highlighted.has(n.id),
-          },
-        })),
-      }
+    set((s) => {
+      const runtime = new Map(s.runtime)
+      const cur = runtime.get(qname) ?? { ...DEFAULT_RUNTIME }
+      runtime.set(qname, { ...cur, agentState })
+      return { runtime }
     }),
 
-  mergeTraceResult: (result) => {
-    const { nodes: existing, edges: existingEdges } = get()
-    const existingQnames = new Set(existing.map((n) => n.id))
-    const existingEdgeIds = new Set(existingEdges.map((e) => e.id))
+  setFileAgentState: (filePath, agentState) =>
+    set((s) => {
+      if (!s.model) return {}
+      const runtime = new Map(s.runtime)
+      for (const n of s.model.nodes) {
+        if (n.file_path === filePath || n.file_path.endsWith(filePath)) {
+          const cur = runtime.get(n.qname) ?? { ...DEFAULT_RUNTIME }
+          runtime.set(n.qname, { ...cur, agentState })
+        }
+      }
+      return { runtime }
+    }),
 
-    const newNodes: Node<SymbolNodeData>[] = Object.entries(result.nodes)
-      .filter(([qname]) => !existingQnames.has(qname))
-      .map(([qname, info]) => ({
-        id: qname,
-        type: "symbol",
-        position: { x: 0, y: 0 }, // ELK will reposition
-        data: {
-          qname,
-          name: qname.split(":").pop()?.split(".").pop() ?? qname,
-          kind: "function" as const,
-          filePath: qname.split(":")[0] + ".py",
-          startLine: 0,
-          endLine: 0,
-          signature: info.signature,
-          oneLiner: info.one_liner,
-          isPublic: true,
-          inboundCount: 0,
-          outboundCount: 0,
-          prose: null,
-          isProseLoading: false,
-          isExpanded: false,
-          agentState: "idle" as AgentState,
-          isSelected: false,
-          isHighlighted: false,
-        },
-      }))
+  bumpActivity: (qname, amount = 1) =>
+    set((s) => {
+      const runtime = new Map(s.runtime)
+      const cur = runtime.get(qname) ?? { ...DEFAULT_RUNTIME }
+      runtime.set(qname, { ...cur, activity: Math.min(1, cur.activity + amount) })
+      return { runtime }
+    }),
 
-    const newEdges: Edge<EdgeData>[] = result.edges
-      .filter((e) => {
-        const id = `${e.from}->${e.to}`
-        return !existingEdgeIds.has(id)
-      })
-      .map((e) => ({
-        id: `${e.from}->${e.to}`,
-        source: e.from,
-        target: e.to,
-        type: "semantic",
-        data: { kind: "calls" as const },
-      }))
+  setHeat: (qname, heat) =>
+    set((s) => {
+      const runtime = new Map(s.runtime)
+      const cur = runtime.get(qname) ?? { ...DEFAULT_RUNTIME }
+      runtime.set(qname, { ...cur, heat: Math.max(0, Math.min(1, heat)) })
+      return { runtime }
+    }),
 
-    if (newNodes.length > 0 || newEdges.length > 0) {
-      set((state) => ({
-        nodes: [...state.nodes, ...newNodes],
-        edges: [...state.edges, ...newEdges],
-      }))
-    }
-  },
+  decayActivityAndHeat: (dt) =>
+    set((s) => {
+      // activity decays fast (~0.5s), heat decays slow (~minutes)
+      const aK = Math.exp(-dt / 500)
+      const hK = Math.exp(-dt / 120000)
+      const runtime = new Map(s.runtime)
+      let changed = false
+      for (const [q, r] of runtime) {
+        if (r.activity > 0.001 || r.heat > 0.001) {
+          runtime.set(q, { ...r, activity: r.activity * aK, heat: r.heat * hK })
+          changed = true
+        }
+      }
+      return changed ? { runtime } : {}
+    }),
 }))

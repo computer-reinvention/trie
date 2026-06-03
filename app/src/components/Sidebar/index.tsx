@@ -6,16 +6,16 @@ import { useAppStore } from "@/store/appStore"
 
 export function Sidebar() {
   const { projectDir } = useAppStore()
-  const { setSelectedFilePath } = useGraphStore()
+  const { focusFile } = useGraphStore()
   const [viewSourcePath, setViewSourcePath] = useState<string | null>(null)
 
   const onFileClick = useCallback(
     (filePath: string) => {
       // Map absolute path to project-relative path for graph lookup
       const rel = projectDir ? filePath.replace(projectDir + "/", "") : filePath
-      setSelectedFilePath(rel)
+      focusFile(rel)
     },
-    [projectDir, setSelectedFilePath],
+    [projectDir, focusFile],
   )
 
   const onFileRightClick = useCallback((filePath: string) => {

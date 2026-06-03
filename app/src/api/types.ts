@@ -50,6 +50,79 @@ export interface TraceEdge {
   direction: "in" | "out"
 }
 
+// ---------------------------------------------------------------------------
+// System model — the high-level "model of the system" the graph view renders.
+// Mirrors trie/graph/system_model.py system_model_to_dict().
+// ---------------------------------------------------------------------------
+
+export type NodeClass =
+  | "door"
+  | "hub"
+  | "bedrock"
+  | "exit"
+  | "internal"
+  | "normal"
+  | "orphan"
+  | "test"
+
+export interface SystemModelNode {
+  qname: string
+  name: string
+  kind: SymbolKind
+  file_path: string
+  role: string
+  boundary: string
+  subsystem: string
+  is_public: boolean
+  is_test: boolean
+  inbound_count: number
+  outbound_count: number
+  prod_inbound_count: number
+  cls: NodeClass
+  salience: number
+  betweenness: number
+  depth: number
+  community: number
+  one_liner: string
+  x: number
+  y: number
+}
+
+export interface GroupSummary {
+  key: string
+  count: number
+  door_count: number
+  hub_count: number
+}
+
+export interface GroupFlow {
+  source: string
+  target: string
+  weight: number
+}
+
+export interface ComponentAxis {
+  axis: "role" | "subsystem"
+  groups: GroupSummary[]
+  flows: GroupFlow[]
+}
+
+export interface SystemModel {
+  nodes: SystemModelNode[]
+  axes: { role: ComponentAxis; subsystem: ComponentAxis }
+  landmarks: string[]
+  stats: {
+    production_nodes: number
+    test_nodes: number
+    edges: number
+    class_counts: Record<string, number>
+    role_count: number
+    subsystem_count: number
+  }
+}
+
+export type GroupingAxis = "role" | "subsystem"
+
 export interface ProjectSummary {
   project_name: string
   project_root: string
