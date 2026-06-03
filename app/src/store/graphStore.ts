@@ -22,6 +22,9 @@ export interface NodeRuntime {
 // View level: L0 components -> L1 landmarks (a component expanded) -> L2 symbol nbhd
 export type ViewLevel = "components" | "landmarks" | "neighborhood"
 
+// How members inside an expanded container are sub-grouped.
+export type MemberGrouping = "subsystem" | "class" | "owningClass"
+
 interface GraphStore {
   // --- the model (immutable once loaded) ---
   model: SystemModel | null
@@ -41,6 +44,8 @@ interface GraphStore {
   hoveredId: string | null
   // legend filter: when set, only this group (on the current axis) is bright
   isolatedGroup: string | null
+  // how to sub-group members inside an expanded role/subsystem container
+  memberGrouping: MemberGrouping
 
   // --- live per-node runtime ---
   runtime: Map<string, NodeRuntime>
@@ -58,6 +63,7 @@ interface GraphStore {
   // --- actions: view ---
   setAxis: (axis: GroupingAxis) => void
   setIsolatedGroup: (key: string | null) => void
+  setMemberGrouping: (g: MemberGrouping) => void
   setLevel: (level: ViewLevel) => void
   expandComponent: (key: string) => void // transient (auto-collapses prior)
   collapseTransient: () => void
@@ -95,6 +101,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   selectedQname: null,
   hoveredId: null,
   isolatedGroup: null,
+  memberGrouping: "subsystem",
 
   runtime: new Map(),
   activeFlows: new Map(),
@@ -147,6 +154,8 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   },
 
   setIsolatedGroup: (key) => set({ isolatedGroup: key }),
+
+  setMemberGrouping: (memberGrouping) => set({ memberGrouping }),
 
   setLevel: (level) => set({ level }),
 

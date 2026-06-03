@@ -2,6 +2,7 @@ import { useState, useCallback } from "react"
 import { useGraphStore } from "@/store/graphStore"
 import { FileTree } from "./FileTree"
 import { ViewSourceModal } from "./ViewSourceModal"
+import { Legend } from "@/components/GraphCanvas/Legend"
 import { useAppStore } from "@/store/appStore"
 
 export function Sidebar() {
@@ -25,16 +26,21 @@ export function Sidebar() {
   if (!projectDir) return null
 
   return (
-    <aside className="w-56 shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col overflow-hidden">
+    <aside className="w-60 shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col overflow-hidden">
       <div className="px-3 py-2 border-b border-slate-800">
         <p className="text-slate-500 text-xs font-mono truncate">{projectDir.split("/").pop()}</p>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      {/* top half: file tree */}
+      <div className="h-1/2 overflow-y-auto border-b border-slate-800">
         <FileTree
           dir={projectDir}
           onFileClick={onFileClick}
           onFileRightClick={onFileRightClick}
         />
+      </div>
+      {/* bottom half: legend / controls */}
+      <div className="h-1/2 min-h-0">
+        <Legend />
       </div>
       {viewSourcePath && (
         <ViewSourceModal

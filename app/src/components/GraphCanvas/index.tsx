@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef } from "react"
 import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d"
-import { forceCollide, forceX, forceY } from "d3-force"
+import { forceCollide, forceX } from "d3-force"
 import { useGraphStore } from "@/store/graphStore"
 import { useAppStore } from "@/store/appStore"
-import { componentView } from "@/graph/doi"
+import { componentView, memberSubgroup } from "@/graph/doi"
 import { nodeRadius, classMarker, ACTIVITY, depthColor } from "@/graph/style"
 import { GraphAnimator } from "@/graph/animator"
 import { SearchPalette } from "./SearchPalette"
-import { Legend } from "./Legend"
 import type { SystemModelNode } from "@/api/types"
 
 interface GraphCanvasProps {
@@ -31,6 +30,7 @@ type FGNode =
       x?: number
       y?: number
       fx?: number
+      fy?: number
     }
   | {
       kind: "symbol"
@@ -42,6 +42,8 @@ type FGNode =
       order: number
       x?: number
       y?: number
+      fx?: number
+      fy?: number
     }
   | {
       kind: "aggregate"
@@ -54,6 +56,8 @@ type FGNode =
       order: number
       x?: number
       y?: number
+      fx?: number
+      fy?: number
     }
 
 interface FGLink {
@@ -61,6 +65,25 @@ interface FGLink {
   target: string
   weight: number
   kind?: "flow" | "member" | "call"
+}
+
+interface BinLayout {
+  key: string
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+interface ContainerLayout {
+  group: string
+  label: string
+  color: string
+  x: number
+  y: number
+  w: number
+  h: number
+  bins: BinLayout[]
 }
 
 // Depth order per group key, for color + x-position of member nodes.
@@ -81,6 +104,7 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
     isolatedGroup,
     focusedExpansion,
     pinnedExpansions,
+    memberGrouping,
   } = useGraphStore()
   const expandComponent = useGraphStore((s) => s.expandComponent)
   const togglePin = useGraphStore((s) => s.togglePin)
@@ -115,7 +139,8 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
   // Build the graph. L0 component backbone always present; expanded roles bloom
   // their members into a bounded community region tethered to the role anchor.
   const data = useMemo(() => {
-    if (!model) return { nodes: [] as FGNode[], links: [] as FGLink[] }
+    if (!model)
+      return { nodes: [] as FGNode[], links: [] as FGLink[], containers: [] as ContainerLayout[] }
 
     const view = componentView(model, axis)
     const expanded = new Set<string>(pinnedExpansions)
@@ -145,102 +170,143 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
       }
     }
 
+    // Expanded containers: deterministic GRID layout in reserved space BELOW the
+    // L0 row, so they never overlap the system. Members are binned by the chosen
+    // sub-grouping; each container + bin is laid out with fixed positions.
+    const containers: ContainerLayout[] = []
     if (expanded.size > 0) {
       const groupKey = (n: SystemModelNode) =>
         axis === "role" ? n.role || "untagged" : n.subsystem
-      const isLead = (n: SystemModelNode, character: string) => {
-        if (character === "entry") return n.cls === "door"
-        if (character === "foundation") return n.cls === "bedrock" || n.cls === "hub"
-        return n.cls === "hub" || n.cls === "door"
-      }
-      const shownIds = new Set<string>()
+      // collect members per expanded group
+      const membersByGroup = new Map<string, SystemModelNode[]>()
       for (const n of visible.nodes) {
         const gk = groupKey(n)
         if (!expanded.has(gk)) continue
-        shownIds.add(n.qname)
-        const character = groupByKey.get(gk)?.character ?? "mixed"
-        const lead = isLead(n, character)
-        const t = n.depth >= 0 ? n.depth / maxDepth : 0.5
-        nodes.push({
-          kind: "symbol",
-          id: n.qname,
-          node: n,
-          color: depthColor(t),
-          val: nodeRadius(n.salience, n.cls) * (lead ? 1.5 : 0.9),
+        if (!membersByGroup.has(gk)) membersByGroup.set(gk, [])
+        membersByGroup.get(gk)!.push(n)
+      }
+
+      // reserved band below the L0 row; containers laid left->right by group order
+      const CONTAINER_TOP = 320 // below L0 row (which sits around y=0)
+      let cursorX = -((expanded.size - 1) * 520) / 2
+      const expandedOrdered = [...membersByGroup.keys()].sort(
+        (a, b) => (groupByKey.get(a)?.order ?? 0) - (groupByKey.get(b)?.order ?? 0),
+      )
+
+      for (const gk of expandedOrdered) {
+        const members = membersByGroup.get(gk)!
+        // bin by sub-grouping
+        const bins = new Map<string, SystemModelNode[]>()
+        for (const n of members) {
+          const b = memberSubgroup(n, memberGrouping)
+          if (!bins.has(b)) bins.set(b, [])
+          bins.get(b)!.push(n)
+        }
+        const binList = [...bins.entries()].sort((a, b) => b[1].length - a[1].length)
+
+        const PAD = 22
+        const BIN_GAP = 16
+        const CELL = 34 // per-symbol cell
+        const COLS = 4 // symbols per row within a bin
+        const BIN_HEADER = 18
+        const startX = cursorX
+        let y = CONTAINER_TOP + PAD + 24 // leave room for container title
+        let containerW = 0
+        const binLayouts: BinLayout[] = []
+
+        for (const [binKey, binMembers] of binList) {
+          const rows = Math.ceil(binMembers.length / COLS)
+          const cols = Math.min(COLS, binMembers.length)
+          const binW = cols * CELL
+          const binH = BIN_HEADER + rows * CELL
+          binLayouts.push({ key: binKey, x: startX + PAD, y, w: binW, h: binH })
+          binMembers.forEach((n, i) => {
+            const r = Math.floor(i / COLS)
+            const c = i % COLS
+            const t = n.depth >= 0 ? n.depth / maxDepth : 0.5
+            nodes.push({
+              kind: "symbol",
+              id: n.qname,
+              node: n,
+              color: depthColor(t),
+              val: Math.min(9, nodeRadius(n.salience, n.cls)),
+              group: gk,
+              order: groupByKey.get(gk)?.order ?? 0.5,
+              fx: startX + PAD + c * CELL + CELL / 2,
+              fy: y + BIN_HEADER + r * CELL + CELL / 2,
+            })
+          })
+          containerW = Math.max(containerW, binW)
+          y += binH + BIN_GAP
+        }
+
+        const containerH = y - CONTAINER_TOP
+        containers.push({
           group: gk,
-          order: groupByKey.get(gk)?.order ?? 0.5,
+          label: gk.split("/").pop() ?? gk,
+          color: depthColor(groupByKey.get(gk)?.order ?? 0.5),
+          x: startX,
+          y: CONTAINER_TOP,
+          w: containerW + PAD * 2,
+          h: containerH + PAD,
+          bins: binLayouts,
         })
-        links.push({ source: gk, target: n.qname, weight: 0, kind: "member" })
+
+        cursorX = startX + containerW + PAD * 2 + 80
       }
-      for (const agg of visible.aggregates) {
-        if (!expanded.has(agg.key)) continue
-        nodes.push({
-          kind: "aggregate",
-          id: agg.id,
-          label: `+${agg.count}`,
-          count: agg.count,
-          color: depthColor(groupByKey.get(agg.key)?.order ?? 0.5),
-          val: 9,
-          group: agg.key,
-          order: groupByKey.get(agg.key)?.order ?? 0.5,
-        })
-        links.push({ source: agg.key, target: agg.id, weight: 0, kind: "member" })
-      }
+
+      // call edges among shown members (drawn subtly inside containers)
+      const shownIds = new Set(nodes.filter((n) => n.kind === "symbol").map((n) => n.id))
       const adj = useGraphStore.getState().adjacency
       const seen = new Set<string>()
-      for (const n of visible.nodes) {
-        if (!shownIds.has(n.qname)) continue
-        const nbrs = adj?.neighbours.get(n.qname)
+      for (const id of shownIds) {
+        const nbrs = adj?.neighbours.get(id)
         if (!nbrs) continue
         for (const w of nbrs) {
           if (shownIds.has(w)) {
-            const id = n.qname < w ? `${n.qname}|${w}` : `${w}|${n.qname}`
-            if (!seen.has(id)) {
-              seen.add(id)
-              links.push({ source: n.qname, target: w, weight: 1, kind: "call" })
+            const lid = id < w ? `${id}|${w}` : `${w}|${id}`
+            if (!seen.has(lid)) {
+              seen.add(lid)
+              links.push({ source: id, target: w, weight: 1, kind: "call" })
             }
           }
         }
       }
     }
 
-    return { nodes, links }
-  }, [model, axis, visible, focusedExpansion, pinnedExpansions, maxDepth])
+    return { nodes, links, containers }
+  }, [model, axis, visible, focusedExpansion, pinnedExpansions, maxDepth, memberGrouping])
 
   useEffect(() => {
     if (!data.nodes.length || !fgRef.current) return
     const fg = fgRef.current
-    const expanded = focusedExpansion !== null || pinnedExpansions.size > 0
 
-    // Sparsity: strong repulsion. No-overlap: collision sized to node radius +
-    // generous padding (and bigger for component anchors so their labels clear).
-    fg.d3Force("charge")?.strength(expanded ? -300 : -1200)
+    // L0 component row: pinned to a single top row (fx by call order, fy=0) so
+    // the reserved band below is always free for expanded containers — they
+    // can never overlap the system. Member symbols are fixed-positioned inside
+    // their container (fx/fy set in the data builder), so forces don't move them.
+    fg.d3Force("charge")?.strength(-900)
     fg.d3Force(
       "collide",
       forceCollide<FGNode>()
-        .radius((n) => (n.kind === "component" ? n.val + 46 : n.val + 14))
+        .radius((n) => (n.kind === "component" ? n.val + 50 : n.val + 6))
         .strength(1)
         .iterations(3),
     )
-    // Left->right by call order. Components hard-pin via fx; members pulled
-    // toward their group's column so the community sits under its anchor.
-    fg.d3Force(
-      "x",
-      forceX<FGNode>((n) => (n.order - 0.5) * COL_SPAN).strength((n) =>
-        n.kind === "component" ? 1 : 0.25,
-      ),
-    )
-    fg.d3Force("y", forceY<FGNode>(0).strength(0.04))
+    fg.d3Force("x", forceX<FGNode>((n) => (n.order - 0.5) * COL_SPAN).strength(0.05))
+    fg.d3Force("y", null)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const linkForce = fg.d3Force("link") as any
     if (linkForce?.distance) {
-      linkForce.distance((l: FGLink) =>
-        l.kind === "member" ? 60 : l.kind === "call" ? 70 : 320,
-      )
+      linkForce.distance((l: FGLink) => (l.kind === "call" ? 60 : 300))
+      linkForce.strength((l: FGLink) => (l.kind === "flow" ? 0.3 : 0))
     }
 
     for (const n of data.nodes as FGNode[]) {
-      if (n.kind === "component") n.fx = (n.order - 0.5) * COL_SPAN
+      if (n.kind === "component") {
+        n.fx = (n.order - 0.5) * COL_SPAN
+        n.fy = 0
+      }
     }
 
     const anim = animatorRef.current
@@ -272,70 +338,50 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
   const maxWeight = useMemo(() => Math.max(1, ...data.links.map((l) => l.weight)), [data.links])
   const anyExpanded = focusedExpansion !== null || pinnedExpansions.size > 0
 
-  // Draw bounded community regions behind expanded groups (the "container").
+  // Draw OPAQUE community containers (fixed rects from the data builder) with
+  // labeled sub-group bins. Opaque so it's obvious which nodes belong inside;
+  // positioned in reserved space so it never overlaps the system.
   const drawRegions = useCallback(
     (ctx: CanvasRenderingContext2D) => {
-      if (!anyExpanded) return
-      const expanded = new Set<string>(pinnedExpansions)
-      if (focusedExpansion) expanded.add(focusedExpansion)
-      // gather member positions per group
-      const byGroup = new Map<string, Array<{ x: number; y: number; r: number }>>()
-      for (const n of data.nodes as Array<FGNode & { x?: number; y?: number }>) {
-        const g =
-          n.kind === "component"
-            ? n.id
-            : n.kind === "symbol"
-              ? n.group
-              : n.kind === "aggregate"
-                ? n.group
-                : null
-        if (!g || !expanded.has(g)) continue
-        if (n.x == null || n.y == null) continue
-        if (!byGroup.has(g)) byGroup.set(g, [])
-        byGroup.get(g)!.push({ x: n.x, y: n.y, r: n.val })
-      }
-      for (const [g, pts] of byGroup) {
-        if (pts.length < 1) continue
-        let minX = Infinity,
-          minY = Infinity,
-          maxX = -Infinity,
-          maxY = -Infinity
-        for (const p of pts) {
-          minX = Math.min(minX, p.x - p.r)
-          minY = Math.min(minY, p.y - p.r)
-          maxX = Math.max(maxX, p.x + p.r)
-          maxY = Math.max(maxY, p.y + p.r)
-        }
-        const pad = 26
-        const x = minX - pad,
-          y = minY - pad,
-          w = maxX - minX + pad * 2,
-          h = maxY - minY + pad * 2
-        const order =
-          (data.nodes.find((n) => n.kind === "component" && n.id === g) as
-            | (FGNode & { order: number })
-            | undefined)?.order ?? 0.5
-        const col = depthColor(order)
-        const radius = 22
+      for (const c of data.containers) {
+        // opaque panel
         ctx.beginPath()
-        roundRect(ctx, x, y, w, h, radius)
-        ctx.fillStyle = col
-        ctx.globalAlpha = 0.07
+        roundRect(ctx, c.x, c.y, c.w, c.h, 16)
+        ctx.fillStyle = "#0b1220" // solid dark panel — not see-through
+        ctx.globalAlpha = 1
         ctx.fill()
-        ctx.globalAlpha = 0.5
-        ctx.lineWidth = 1.5
-        ctx.strokeStyle = col
+        ctx.lineWidth = 2
+        ctx.strokeStyle = c.color
+        ctx.globalAlpha = 0.9
         ctx.stroke()
         ctx.globalAlpha = 1
-        // group title in the container's top-left
-        ctx.font = "600 13px ui-sans-serif, system-ui, sans-serif"
+        // accent bar + title
+        ctx.fillStyle = c.color
+        roundRectFillTop(ctx, c.x, c.y, c.w, 26, 16)
+        ctx.font = "700 14px ui-sans-serif, system-ui, sans-serif"
         ctx.textAlign = "left"
-        ctx.textBaseline = "bottom"
-        ctx.fillStyle = col
-        ctx.fillText(g.split("/").pop() ?? g, x + 10, y + 18)
+        ctx.textBaseline = "middle"
+        ctx.fillStyle = "#0b1220"
+        ctx.fillText(c.label, c.x + 12, c.y + 13)
+
+        // sub-group bins
+        for (const b of c.bins) {
+          ctx.font = "600 10px ui-sans-serif, system-ui, sans-serif"
+          ctx.textAlign = "left"
+          ctx.textBaseline = "top"
+          ctx.fillStyle = "#94a3b8"
+          ctx.fillText(b.key.split("/").pop() ?? b.key, b.x, b.y)
+          // faint divider under bin header
+          ctx.strokeStyle = "rgba(148,163,184,0.18)"
+          ctx.lineWidth = 1
+          ctx.beginPath()
+          ctx.moveTo(b.x, b.y + 14)
+          ctx.lineTo(b.x + b.w, b.y + 14)
+          ctx.stroke()
+        }
       }
     },
-    [anyExpanded, data.nodes, focusedExpansion, pinnedExpansions],
+    [data.containers],
   )
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -405,7 +451,6 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
         </div>
       )}
       <SearchPalette />
-      <Legend />
       {data.nodes.length > 0 && (
         <ForceGraph2D
           ref={fgRef}
@@ -523,6 +568,27 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.arcTo(x, y + h, x, y, rr)
   ctx.arcTo(x, y, x + w, y, rr)
   ctx.closePath()
+}
+
+// Filled rounded rect with only the TOP corners rounded (for the title bar).
+function roundRectFillTop(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  const rr = Math.min(r, w / 2, h)
+  ctx.beginPath()
+  ctx.moveTo(x, y + h)
+  ctx.lineTo(x, y + rr)
+  ctx.arcTo(x, y, x + rr, y, rr)
+  ctx.lineTo(x + w - rr, y)
+  ctx.arcTo(x + w, y, x + w, y + rr, rr)
+  ctx.lineTo(x + w, y + h)
+  ctx.closePath()
+  ctx.fill()
 }
 
 interface PaintOpts {

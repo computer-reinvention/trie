@@ -177,6 +177,21 @@ export interface ComponentView {
   flows: Array<{ source: string; target: string; weight: number }>
 }
 
+// Sub-group key for a member inside an expanded container.
+export function memberSubgroup(
+  n: SystemModelNode,
+  grouping: "subsystem" | "class" | "owningClass",
+): string {
+  if (grouping === "subsystem") return n.subsystem
+  if (grouping === "class") return n.cls
+  // owningClass: methods -> their class; others -> "(module)"
+  if (n.kind === "method" && n.qname.includes(":") && n.qname.split(":")[1].includes(".")) {
+    const local = n.qname.split(":")[1]
+    return local.slice(0, local.lastIndexOf("."))
+  }
+  return "(module-level)"
+}
+
 export function componentView(model: SystemModel, axis: GroupingAxis): ComponentView {
   const a = model.axes[axis]
   const groupKeyOf = (n: SystemModelNode) =>
