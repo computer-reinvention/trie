@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react"
 import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d"
-import { forceCollide, forceX } from "d3-force"
+import { forceCollide } from "d3-force"
 import { useGraphStore } from "@/store/graphStore"
 import { useAppStore } from "@/store/appStore"
 import { componentView, memberSubgroup } from "@/graph/doi"
@@ -12,9 +12,6 @@ import type { SystemModelNode } from "@/api/types"
 interface GraphCanvasProps {
   className?: string
 }
-
-// Position spread for the left->right call-flow axis.
-const COL_SPAN = 1600
 
 type FGNode =
   | {
@@ -149,9 +146,38 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
 
     const nodes: FGNode[] = []
     const links: FGLink[] = []
-    const COMP_R = 14
+    const COMP_R = 16
+
+    // Top-down LAYERED layout — the way an engineer reads a system: start at
+    // entry points (top), follow the call flow down through logic, to the
+    // foundations everything rests on (bottom). Roles are bucketed into discrete
+    // layers by call-flow order; within a layer they're spread horizontally and
+    // de-overlapped. Deterministic fixed positions (no collapse-to-a-line).
+    const LAYER_GAP = 200
+    const COL_GAP = 260
+    // assign each group a layer index from its order (0..1) -> 0..NLAYERS-1
+    const NLAYERS = 5
+    const layerOf = (order: number) => Math.min(NLAYERS - 1, Math.round(order * (NLAYERS - 1)))
+    const byLayer = new Map<number, typeof view.groups>()
+    for (const g of view.groups) {
+      const L = layerOf(g.order)
+      if (!byLayer.has(L)) byLayer.set(L, [])
+      byLayer.get(L)!.push(g)
+    }
+    const compPos = new Map<string, { x: number; y: number }>()
+    for (const [L, groups] of byLayer) {
+      // sort within layer by member count desc for a stable, centered spread
+      const sorted = [...groups].sort((a, b) => b.count - a.count)
+      const n = sorted.length
+      sorted.forEach((g, i) => {
+        const x = (i - (n - 1) / 2) * COL_GAP
+        const y = L * LAYER_GAP
+        compPos.set(g.key, { x, y })
+      })
+    }
 
     for (const g of view.groups) {
+      const p = compPos.get(g.key)!
       nodes.push({
         kind: "component",
         id: g.key,
@@ -161,6 +187,8 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
         val: COMP_R,
         expanded: expanded.has(g.key),
         order: g.order,
+        fx: p.x,
+        fy: p.y,
       })
     }
     const presentComp = new Set(view.groups.map((g) => g.key))
@@ -170,14 +198,14 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
       }
     }
 
-    // Expanded containers: deterministic GRID layout in reserved space BELOW the
-    // L0 row, so they never overlap the system. Members are binned by the chosen
-    // sub-grouping; each container + bin is laid out with fixed positions.
+    // Expanded containers: the role node turns INTO its community. The container
+    // is anchored AT the role's own layout position (blooms in place), and
+    // collapses when focus shifts away. Members are binned by the chosen
+    // sub-grouping in a deterministic grid (fixed positions, no overlap).
     const containers: ContainerLayout[] = []
     if (expanded.size > 0) {
       const groupKey = (n: SystemModelNode) =>
         axis === "role" ? n.role || "untagged" : n.subsystem
-      // collect members per expanded group
       const membersByGroup = new Map<string, SystemModelNode[]>()
       for (const n of visible.nodes) {
         const gk = groupKey(n)
@@ -186,16 +214,8 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
         membersByGroup.get(gk)!.push(n)
       }
 
-      // reserved band below the L0 row; containers laid left->right by group order
-      const CONTAINER_TOP = 320 // below L0 row (which sits around y=0)
-      let cursorX = -((expanded.size - 1) * 520) / 2
-      const expandedOrdered = [...membersByGroup.keys()].sort(
-        (a, b) => (groupByKey.get(a)?.order ?? 0) - (groupByKey.get(b)?.order ?? 0),
-      )
-
-      for (const gk of expandedOrdered) {
+      for (const gk of membersByGroup.keys()) {
         const members = membersByGroup.get(gk)!
-        // bin by sub-grouping
         const bins = new Map<string, SystemModelNode[]>()
         for (const n of members) {
           const b = memberSubgroup(n, memberGrouping)
@@ -206,20 +226,37 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
 
         const PAD = 22
         const BIN_GAP = 16
-        const CELL = 34 // per-symbol cell
-        const COLS = 4 // symbols per row within a bin
+        const CELL = 34
+        const COLS = 4
         const BIN_HEADER = 18
-        const startX = cursorX
-        let y = CONTAINER_TOP + PAD + 24 // leave room for container title
-        let containerW = 0
-        const binLayouts: BinLayout[] = []
+        const TITLE_H = 30
 
+        // first pass: measure container size
+        let measureY = 0
+        let containerW = 0
+        for (const [, binMembers] of binList) {
+          const rows = Math.ceil(binMembers.length / COLS)
+          const cols = Math.min(COLS, binMembers.length)
+          containerW = Math.max(containerW, cols * CELL)
+          measureY += BIN_HEADER + rows * CELL + BIN_GAP
+        }
+        const cw = containerW + PAD * 2
+        const ch = measureY + PAD + TITLE_H
+
+        // anchor: bloom from the role node's own position, centered horizontally
+        // on it, opening downward.
+        const origin = compPos.get(gk) ?? { x: 0, y: 0 }
+        const originX = origin.x - cw / 2
+        const originY = origin.y + 18 // just below the role node
+
+        let y = originY + TITLE_H + PAD
+        const binLayouts: BinLayout[] = []
         for (const [binKey, binMembers] of binList) {
           const rows = Math.ceil(binMembers.length / COLS)
           const cols = Math.min(COLS, binMembers.length)
           const binW = cols * CELL
           const binH = BIN_HEADER + rows * CELL
-          binLayouts.push({ key: binKey, x: startX + PAD, y, w: binW, h: binH })
+          binLayouts.push({ key: binKey, x: originX + PAD, y, w: binW, h: binH })
           binMembers.forEach((n, i) => {
             const r = Math.floor(i / COLS)
             const c = i % COLS
@@ -232,27 +269,23 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
               val: Math.min(9, nodeRadius(n.salience, n.cls)),
               group: gk,
               order: groupByKey.get(gk)?.order ?? 0.5,
-              fx: startX + PAD + c * CELL + CELL / 2,
+              fx: originX + PAD + c * CELL + CELL / 2,
               fy: y + BIN_HEADER + r * CELL + CELL / 2,
             })
           })
-          containerW = Math.max(containerW, binW)
           y += binH + BIN_GAP
         }
 
-        const containerH = y - CONTAINER_TOP
         containers.push({
           group: gk,
           label: gk.split("/").pop() ?? gk,
           color: depthColor(groupByKey.get(gk)?.order ?? 0.5),
-          x: startX,
-          y: CONTAINER_TOP,
-          w: containerW + PAD * 2,
-          h: containerH + PAD,
+          x: originX,
+          y: originY,
+          w: cw,
+          h: ch,
           bins: binLayouts,
         })
-
-        cursorX = startX + containerW + PAD * 2 + 80
       }
 
       // call edges among shown members (drawn subtly inside containers)
@@ -281,33 +314,23 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
     if (!data.nodes.length || !fgRef.current) return
     const fg = fgRef.current
 
-    // L0 component row: pinned to a single top row (fx by call order, fy=0) so
-    // the reserved band below is always free for expanded containers — they
-    // can never overlap the system. Member symbols are fixed-positioned inside
-    // their container (fx/fy set in the data builder), so forces don't move them.
-    fg.d3Force("charge")?.strength(-900)
+    // Everything is fixed-positioned (components in a top-down layered layout,
+    // members in their containers). Forces are effectively off — we only keep a
+    // gentle collide so any unpinned stragglers don't stack. The layout is
+    // deterministic and stable; no collapse to a line.
+    fg.d3Force("charge")?.strength(0)
     fg.d3Force(
       "collide",
       forceCollide<FGNode>()
-        .radius((n) => (n.kind === "component" ? n.val + 50 : n.val + 6))
-        .strength(1)
-        .iterations(3),
+        .radius((n) => n.val + 4)
+        .strength(0.2)
+        .iterations(1),
     )
-    fg.d3Force("x", forceX<FGNode>((n) => (n.order - 0.5) * COL_SPAN).strength(0.05))
+    fg.d3Force("x", null)
     fg.d3Force("y", null)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const linkForce = fg.d3Force("link") as any
-    if (linkForce?.distance) {
-      linkForce.distance((l: FGLink) => (l.kind === "call" ? 60 : 300))
-      linkForce.strength((l: FGLink) => (l.kind === "flow" ? 0.3 : 0))
-    }
-
-    for (const n of data.nodes as FGNode[]) {
-      if (n.kind === "component") {
-        n.fx = (n.order - 0.5) * COL_SPAN
-        n.fy = 0
-      }
-    }
+    if (linkForce?.strength) linkForce.strength(0) // links don't pull; layout is fixed
 
     const anim = animatorRef.current
     const present = new Set<string>()
@@ -389,8 +412,15 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (node: any) => {
       const n = node as FGNode
-      if (n.kind === "component") expandComponent(n.id)
-      else if (n.kind === "aggregate") expandComponent(n.group)
+      if (n.kind === "component") {
+        expandComponent(n.id)
+        // center on where the community will bloom (just below the node)
+        const p = node as { x: number; y: number }
+        if (fgRef.current) {
+          fgRef.current.centerAt(p.x, p.y + 160, 700)
+          fgRef.current.zoom(1.4, 700)
+        }
+      } else if (n.kind === "aggregate") expandComponent(n.group)
       else if (n.kind === "symbol") {
         selectNode(n.id)
         window.dispatchEvent(new CustomEvent("trie:node-selected", { detail: { qname: n.id } }))
