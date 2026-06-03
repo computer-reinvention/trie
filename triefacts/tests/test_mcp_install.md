@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: tests/test_mcp_install.py
 file_fingerprint: 29be6cb897bb91f1cc5fb997df8e2fe3a95fc94825c147f3ee09245c304d5545
-last_synced_at: '2026-05-28T01:37:33Z'
+last_synced_at: '2026-06-03T20:42:27Z'
 defines:
 - kind: module
   qualified_name: tests/test_mcp_install:__module__
@@ -121,207 +121,199 @@ defines:
 incoming_refs: 0
 outgoing_refs: 45
 ---
-<!-- trie:section symbol=tests/test_mcp_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=cbc1fe063b37f04f15cf950538ab0dcc0be9f170907458294dfeeda8155be3fe source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `tests/test_mcp_install`
+<!-- trie:section symbol=tests/test_mcp_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=f3ba8b193c3bc167fe88b8b7ccb2dbf3a5dd7805b8f071b8ba3950dd88b759fa source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests MCP installation and uninstallation functionality across different AI coding agents and scopes.
 
-Test suite for `trie.mcp_install` covering install, uninstall, CLI surface, and edge cases.
-
-- `project` fixture: temp dir with a valid `trie.toml`; used by nearly every test.
+- Tests install/uninstall operations for Claude Code, VS Code, OpenCode, and other targets
+- Verifies configuration file management, JSON preservation, and idempotent operations  
+- Covers CLI commands, error handling, dry-run modes, and auto-detection
+- Tests both project-scope and user-scope installation patterns
+- Validates round-trip install/uninstall cycles preserve other MCP servers
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:project fingerprint=ec0dcdc7ce6b4eb60414b372c10e3ddd78937efff6c97a9c42895523ab41b485 body_fp=b1e7dfea3886eedf97e2bdcec9554df975645ef16c15d8f3404b5131800a158c source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
-## `project(tmp_path: Path) -> Path`
+<!-- trie:section symbol=tests/test_mcp_install:project fingerprint=ec0dcdc7ce6b4eb60414b372c10e3ddd78937efff6c97a9c42895523ab41b485 body_fp=4b6d05aaedb8e0324a98f5e1dae4521711f4e48a175b00ca2901aa0e252bd63f source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Creates a temporary project directory with a pre-configured `trie.toml` file for testing MCP installation functionality.
 
-Pytest fixture that creates a `tmp_path` directory with a valid `trie.toml`, yields it as the project root, then removes any leaked `.mcp.json` or `.claude` artifacts from `cwd` and `HOME`.
+- **tmp_path**: pytest's temporary directory fixture
+- **yields**: path to the temporary project directory containing the config file
+- **cleanup**: removes any leaked `.mcp.json` or `.claude` files from current/home directories
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_snippet_uses_serve_subcommand fingerprint=64e9dd207621028e9aaaa81e3e2f4ff89f8d2e8def334be47eea06f9eb38a9a0 body_fp=8066ef86e59ace6b39af7c33dae4e91793e002722011ef681b76ee1d52eee8a2 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_snippet_uses_serve_subcommand(project: Path)`
-
-Assert that `trie_server_snippet` returns a snippet with `command="trie"`, `args=["mcp", "serve"]`, and `cwd` set to the resolved project path.
+<!-- trie:section symbol=tests/test_mcp_install:test_snippet_uses_serve_subcommand fingerprint=64e9dd207621028e9aaaa81e3e2f4ff89f8d2e8def334be47eea06f9eb38a9a0 body_fp=a2f2af6bf970d6a4487cab5c0254071c21a5092facbd090e3e8cc0deffc6c7db source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies that `trie_server_snippet` generates correct MCP server configuration with command "trie", args ["mcp", "serve"], and project directory as cwd.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_install_claude_code_creates_file fingerprint=901f2a4de5c763742d248d63f1efe2f94fe89ae5a4547c2d4a1ffbfdd4757c24 body_fp=dfc825b0234fba114950aed659fcaccaa919a26561eb92e64e46b30d37134b8a source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_install_claude_code_creates_file(project: Path)`
-
-Assert that `install` with `target_names=["claude-code"]` creates `.mcp.json` containing a `trie` entry under `mcpServers` with `args == ["mcp", "serve"]`.
+<!-- trie:section symbol=tests/test_mcp_install:test_install_claude_code_creates_file fingerprint=901f2a4de5c763742d248d63f1efe2f94fe89ae5a4547c2d4a1ffbfdd4757c24 body_fp=fc6caf9a1dd5f6e41a06be9a304d841244f386b821b232b10286221a7bda3a5e source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that installing trie for claude-code target creates .mcp.json with correct server configuration.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_install_preserves_other_servers fingerprint=d7e5f3a30a59855914ceb6300c7973d65f4f9f3052e3289d40988a7fa7a4c2d7 body_fp=94097dd76967763b46172cda29849caf292a8c5f9b596ff21d6b89556a0f944c source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_install_preserves_other_servers(project: Path)`
-
-Assert that installing `claude-code` merges `trie` into an existing `.mcp.json` without removing other servers.
+<!-- trie:section symbol=tests/test_mcp_install:test_install_preserves_other_servers fingerprint=d7e5f3a30a59855914ceb6300c7973d65f4f9f3052e3289d40988a7fa7a4c2d7 body_fp=b1051516debfe2b85237b5b04603db55a748135ac98db6464161c5c290ef821d source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies that MCP install preserves existing server configurations alongside the new trie entry.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_install_idempotent_when_unchanged fingerprint=24e0cb1f0131366a118dcb75e676778cb66f4dbd891bf4436d2bc8bd96146a02 body_fp=18d52d9d76be3ded3c18b93770993abe3ea66b65c70a698f26c5a94bb0cc75cb source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_install_idempotent_when_unchanged(project: Path)`
-
-Assert that a second `install` call for an already-configured target returns `"skipped"`.
+<!-- trie:section symbol=tests/test_mcp_install:test_install_idempotent_when_unchanged fingerprint=24e0cb1f0131366a118dcb75e676778cb66f4dbd891bf4436d2bc8bd96146a02 body_fp=9f4e07cdf0fcac20c86ae42d0bc545a6549502d9ca8669cbb8aeef9985b42902 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies that installing the same target twice returns a "skipped" action when no changes are needed.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_install_errors_on_unknown_target fingerprint=c1f6d21c077c44f6ca31b1a618e33f1f64a8e4a8b7c7ee59b8de7d502eca0470 body_fp=b2dcd3ffc61d2cee920a192fd961cb360724531929a477b345e33200dded3b67 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_install_errors_on_unknown_target(project: Path)`
-
-Assert that `install` raises `MCPInstallError` matching "unknown target" when given an unrecognised target name.
+<!-- trie:section symbol=tests/test_mcp_install:test_install_errors_on_unknown_target fingerprint=c1f6d21c077c44f6ca31b1a618e33f1f64a8e4a8b7c7ee59b8de7d502eca0470 body_fp=f67f2dd1fa67a28c6d7e38d4b79a8105181e19a8c2f402db97e4604b55ffb0dc source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies that `install()` raises `MCPInstallError` when given an unrecognized target name.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_install_print_only_writes_no_file fingerprint=5f34d3623185276dc469ed875c75be469cd1bfc224527482601d004f1214bb4f body_fp=48ca0b0e980ecfd38269dfc4459fc74b5edba1ed3c9150c837f95ad0e678ebbb source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_install_print_only_writes_no_file(project: Path)`
+<!-- trie:section symbol=tests/test_mcp_install:test_install_print_only_writes_no_file fingerprint=5f34d3623185276dc469ed875c75be469cd1bfc224527482601d004f1214bb4f body_fp=a6c77860308c6906b4dec8f9eff1536d2928e681914c4ad830cd2db424711435 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies that install with print_only=True returns a preview action without creating configuration files.
 
-Assert that `install` with `print_only=True` returns a `"preview"` action and writes no config file to disk.
+- Calls install with print_only=True and confirms no .mcp.json file is written to disk
+- Asserts the result action is "preview" rather than "created" or "updated"
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_install_dry_run_writes_no_file fingerprint=f2b938546f453a63eb32e6747656f09e095bf8bdacefe51e84b35372b7939bff body_fp=ffa99e5b202a4e06865d4f9a5274e6a14751b18003c40eab3465b85f437804d0 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_install_dry_run_writes_no_file(project: Path)`
-
-Assert that `dry_run=True` returns a `"preview"` action without writing `.mcp.json` to disk.
+<!-- trie:section symbol=tests/test_mcp_install:test_install_dry_run_writes_no_file fingerprint=f2b938546f453a63eb32e6747656f09e095bf8bdacefe51e84b35372b7939bff body_fp=67d962834a8b0f2b2be569ffb80be16aeb6c6d5da7ab9957da25a6266d591871 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies that install with `dry_run=True` returns a preview action without creating any files.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_install_opencode_creates_project_config fingerprint=056d1ec0c7977353f4a8cffaff32482702b1f93b8e3613017f92191c1adefcab body_fp=bf2c24b609476fdfded9fa60ab4561b20d3ba2638cc75a6668211616d9b9e211 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_install_opencode_creates_project_config(project: Path)`
+<!-- trie:section symbol=tests/test_mcp_install:test_install_opencode_creates_project_config fingerprint=056d1ec0c7977353f4a8cffaff32482702b1f93b8e3613017f92191c1adefcab body_fp=ea554a5af0ae3243d360c0aee0137c853163099f7e7479e5e27788d18ea35bd8 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that installing the opencode target creates `opencode.json` with trie MCP server configuration under `mcp.trie` key.
 
-Assert that installing the `opencode` target at project scope creates `opencode.json` with the correct snippet shape.
-
-- `opencode.json` uses `mcp` key, not `mcpServers`
-- Snippet nested at `mcp.trie` with `type: "local"`, `command: ["trie", "mcp", "serve"]`, `enabled: true`
-- No `cwd` field present in the opencode snippet
+- Verifies opencode uses `mcp` key instead of `mcpServers` 
+- Checks trie entry has `type: "local"` and `enabled: true`
+- Confirms `cwd` field is absent from opencode configuration format
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_install_opencode_user_scope_lands_in_config_dir fingerprint=1d03ac3f2f3d2cc7e111ab61962771718ea315388c6e26ef4d5b5b913234a4e6 body_fp=4bc97988a38293992d7e6d9f7cf1223effe514d329fc4e53e4cca19ccd0057f2 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_install_opencode_user_scope_lands_in_config_dir(project: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch)`
+<!-- trie:section symbol=tests/test_mcp_install:test_install_opencode_user_scope_lands_in_config_dir fingerprint=1d03ac3f2f3d2cc7e111ab61962771718ea315388c6e26ef4d5b5b913234a4e6 body_fp=73e34c44797eebbeb74ee124f3c230196aa7d808b3f68dbcf9801651b2db20a1 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that user-scope opencode installation creates config file at `~/.config/opencode/opencode.json`.
 
-Assert that a user-scope opencode install writes to `~/.config/opencode/opencode.json` with a `local` type snippet.
-
-- `monkeypatch`: redirects `HOME` to a sandboxed temp directory to avoid touching the real filesystem.
+- Mocks HOME directory to sandbox the test
+- Verifies config file lands in the standard opencode user config location
+- Confirms the MCP entry has `type: "local"` as expected for opencode format
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_install_opencode_preserves_existing_mcp_servers fingerprint=a5ebe471b22cc0b8e89250528323be69aa94350d8b75831d9e4a84d9c001f615 body_fp=a059ae4ce3d581a629ef36c31148de6622b5131ccd629bb12262de2072eb2ce1 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_install_opencode_preserves_existing_mcp_servers(project: Path)`
+<!-- trie:section symbol=tests/test_mcp_install:test_install_opencode_preserves_existing_mcp_servers fingerprint=a5ebe471b22cc0b8e89250528323be69aa94350d8b75831d9e4a84d9c001f615 body_fp=6809f40675f0374b0f1ebb1af5aa6ad5edb02a7161551fb8cf77a4bc3bbd2077 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that `install` for opencode target preserves existing MCP servers when updating configuration.
 
-Assert that installing the opencode target merges `trie` into an existing `mcp` block without removing other servers or top-level keys.
+- Creates existing opencode.json with context7 server and schema URL
+- Verifies install action is "updated" rather than "created"
+- Confirms both trie and context7 servers exist in final config
+- Ensures non-mcp keys like $schema survive the update
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_install_opencode_idempotent_when_unchanged fingerprint=4feb7ef3e18d0c41903e35f54d8c15fbe57b3e201600c0b55870bcf0c8f811d8 body_fp=00efe8b20183a56f060cddeb235cec040e475d6edc342a57a3d1790ea4014d89 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_install_opencode_idempotent_when_unchanged(project: Path)`
-
-Assert that a second `install` call for the `opencode` target returns `skipped` when the config is already up to date.
+<!-- trie:section symbol=tests/test_mcp_install:test_install_opencode_idempotent_when_unchanged fingerprint=4feb7ef3e18d0c41903e35f54d8c15fbe57b3e201600c0b55870bcf0c8f811d8 body_fp=2c19c751bad793804b7127a7100fdcd6426bcb81e401e646b78523b3aef38a3e source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that opencode installation is idempotent by installing twice and verifying the second installation returns "skipped" action.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_install_vscode_uses_servers_key fingerprint=12064f01b3a79dc6f332cfc0dde7fb01c28f9c76ed47588c834127f5f5f74b0f body_fp=fc02e8ffeb62f38e2a326917f71cfc94211af5a96ab27985bd019a0f22e363fd source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_install_vscode_uses_servers_key(project: Path)`
-
-Assert that a VS Code project-scope install writes `servers` (not `mcpServers`) as the top-level key containing the `trie` entry.
+<!-- trie:section symbol=tests/test_mcp_install:test_install_vscode_uses_servers_key fingerprint=12064f01b3a79dc6f332cfc0dde7fb01c28f9c76ed47588c834127f5f5f74b0f body_fp=2a95fca61e9e21e90b922fb71d230fdd362e810115a733a3d17173569df5c205 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that VS Code MCP installation uses `servers` key instead of `mcpServers` in configuration JSON.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_install_errors_on_invalid_json fingerprint=b219580693bbb91025df19bade8031d5b11a5ea8cb7cb36b20c1645e7cd0842e body_fp=37a3d8f0f2d98da05263f90f0089254d9c54e4074b9917a3458b434c1a6866d1 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_install_errors_on_invalid_json(project: Path)`
+<!-- trie:section symbol=tests/test_mcp_install:test_install_errors_on_invalid_json fingerprint=b219580693bbb91025df19bade8031d5b11a5ea8cb7cb36b20c1645e7cd0842e body_fp=018353d5ae5d7aa09764fe8e9788061d43d38014ab028e357936588120852f59 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies install handles malformed JSON in existing config files by returning an error action.
 
-Assert that `install` returns an `error` action result when the target config file contains malformed JSON.
+- Creates invalid JSON in `.mcp.json` before attempting installation
+- Confirms install plan returns "error" action rather than crashing
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_install_user_scope_writes_to_user_path fingerprint=5f342f1684d327798ed976f2305c907845b83d5f576644da55e91fe72e5f3c04 body_fp=11f1bff25279145a6120785648bba9bd9f35d51059b61190563bbb64202d3537 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_install_user_scope_writes_to_user_path(project: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch)`
+<!-- trie:section symbol=tests/test_mcp_install:test_install_user_scope_writes_to_user_path fingerprint=5f342f1684d327798ed976f2305c907845b83d5f576644da55e91fe72e5f3c04 body_fp=ed899013cf6f0e4c47339e25d1b09b17606edbbed59e06ea4252c295e331532b source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that user-scope install writes to the user's home directory configuration file.
 
-Assert that a `user`-scope claude-code install writes `~/.claude.json` under the redirected `HOME`.
-
-- `monkeypatch`: redirects `HOME` to a sandboxed `tmp_path` subdirectory before invoking `install`.
+• Redirects HOME to a temporary directory to sandbox the test
+• Verifies the installation creates `.claude.json` in the fake home directory
+• Confirms the generated config contains the trie MCP server entry
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_install_skips_target_without_scope fingerprint=42874c537fdf9644872091b02f75cded37910b56a8300572544c3bd9f315d386 body_fp=154998155b15e41ab24d5cbe5930c2c3949b99aed1062b91bde91b9fc6101230 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_install_skips_target_without_scope(project: Path)`
+<!-- trie:section symbol=tests/test_mcp_install:test_install_skips_target_without_scope fingerprint=42874c537fdf9644872091b02f75cded37910b56a8300572544c3bd9f315d386 body_fp=de060cdd290d090bc5305ed3641b343c18d162677b2dd9b94e09d7cfeeda1e7f source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that install skips targets that don't support the requested scope with appropriate detail.
 
-Assert that `install` skips a target and includes `"scope"` in the detail when the target doesn't support the requested scope.
+- Tests VS Code target with user scope (unsupported) gets "skipped" action
+- Verifies result detail mentions "scope" to explain why it was skipped
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_detect_returns_false_in_clean_environment fingerprint=1c0deba75e86080d128799ac73240d8e3081589f4472276776630717eba7c462 body_fp=0783995171a410e08c8f2fcca920e3dbdb17169a76feb62a166748c190c2f83a source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_detect_returns_false_in_clean_environment(monkeypatch: pytest.MonkeyPatch)`
+<!-- trie:section symbol=tests/test_mcp_install:test_detect_returns_false_in_clean_environment fingerprint=1c0deba75e86080d128799ac73240d8e3081589f4472276776630717eba7c462 body_fp=e8eafdc18c902703ce0449cbf5b56c32ec413b8111de1d3024dfb65d31f50133 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that all MCP targets return `False` from their `detect()` method when run in a clean environment with no installations present.
 
-Assert that every `TARGETS` entry returns `False` from `detect()` when `HOME` and `PATH` point to non-existent locations.
+- Redirects `HOME` and `PATH` to non-existent directories to simulate clean system
+- Asserts `detect()` returns `False` for every target in the registry
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_install_auto_detect_errors_when_nothing_found fingerprint=f729e5cb0970771d53976e18bfd16e7348a9a236597bc29dfa71ac580a755a70 body_fp=038f0d5c1e3fdd2f82e1ef9abdadf11eca244ac2add3ef13ac1b007c0218890c source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_install_auto_detect_errors_when_nothing_found(project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `install` raises `MCPInstallError` matching "no agents detected" when auto-detection finds no installed targets.
-
-- Redirects `HOME` and `PATH` to non-existent paths to suppress all target detection.
+<!-- trie:section symbol=tests/test_mcp_install:test_install_auto_detect_errors_when_nothing_found fingerprint=f729e5cb0970771d53976e18bfd16e7348a9a236597bc29dfa71ac580a755a70 body_fp=763a1573bda83e7fc7ac5124c585657f44bef4b6d94169d31417071410c2f67e source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that auto-detection raises MCPInstallError when no agent targets are found in clean environment.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_install_all_runs_every_target_in_print_mode fingerprint=b0fda18ed4da73efc289339a12ccb0257ce9b572056669f413bce3f958cecab2 body_fp=a7bd2550eda9cb8310bea6121b44e87bcfbe58c12f3db5c634057bb38cb0e6dd source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_install_all_runs_every_target_in_print_mode(project: Path)`
+<!-- trie:section symbol=tests/test_mcp_install:test_install_all_runs_every_target_in_print_mode fingerprint=b0fda18ed4da73efc289339a12ccb0257ce9b572056669f413bce3f958cecab2 body_fp=26743cb50a6b2a677e4c540da21ff8c6def8642e2dc91c5aabc9cbdf3e701194 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies that `install_all=True` with `print_only=True` attempts every target, previewing project-scope targets and skipping user-scope-only targets.
 
-Assert that `install_all=True` with `print_only=True` covers every registered target, previewing project-scoped ones and skipping user-scope-only targets.
+- Returns preview action for claude-code, vscode, opencode targets
+- Returns skipped action for claude-desktop, windsurf (user-scope only)
+- Confirms all registered targets are processed
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_install_print_only fingerprint=ff72c235cd8c0a7bd68d24714747272e35a04b8f4dda60b434f7d23c379ca3c9 body_fp=6d0702f8e04ff4364115c8ee24ad893f9abacec73c1c9c05cb45fad645ffa6c5 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_cli_mcp_install_print_only(project: Path, monkeypatch: pytest.MonkeyPatch)`
+<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_install_print_only fingerprint=ff72c235cd8c0a7bd68d24714747272e35a04b8f4dda60b434f7d23c379ca3c9 body_fp=a8cda1f42ef3c218f637c07715257db3fbd486a8521ae62d7a9069471cf755fb source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that `trie mcp install --print-only` exits successfully and outputs preview content without creating files.
 
-Assert that `trie mcp install --target claude-code --print-only` exits 0 and prints the server snippet without writing files.
+- Verifies exit code 0
+- Checks output contains target name "Claude Code" and command fragments "mcp", "serve"
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_install_writes_file fingerprint=cf6045c64a03c2ac5c3023e6a4e3030a819ceecc932e3e4b6a7fd007d299dd70 body_fp=6efaadfd7350ca9464ade7304a14e2e1a167e3fdb488b243a430913fe0f33903 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_cli_mcp_install_writes_file(project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Verify that `trie mcp install --target claude-code` creates `.mcp.json` and reports success via the CLI.
+<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_install_writes_file fingerprint=cf6045c64a03c2ac5c3023e6a4e3030a819ceecc932e3e4b6a7fd007d299dd70 body_fp=6b085e83c52b8cd5288c4c0a40ff212f444fd078b741fcbb849ab972ec74e949 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies that `trie mcp install --target claude-code` creates the `.mcp.json` configuration file.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_install_unknown_target fingerprint=bce0de12746a6f9f01ff2afd0109dd69569e194e6dc4fc6a0207b585541fee36 body_fp=97a9741854089f151ad7aa9807cd40a64a26e8e43244bbf9b1094d3d5f1dfd2c source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_cli_mcp_install_unknown_target(project: Path, monkeypatch: pytest.MonkeyPatch)`
+<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_install_unknown_target fingerprint=bce0de12746a6f9f01ff2afd0109dd69569e194e6dc4fc6a0207b585541fee36 body_fp=99a1e4c7dd45eb0b366a93d08e16a4f162dd4798663294f9524b3f022568c088 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that CLI `mcp install` with unknown target exits non-zero with error message.
 
-Assert that `trie mcp install --target bogus` exits with code 1 and prints "unknown target".
+- `project`: Test fixture providing temporary project directory with trie.toml
+- `monkeypatch`: pytest fixture for modifying environment during test
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_install_target_and_all_mutex fingerprint=faca422a774e99a77e55dd846f767a61a0b152766c074a084428d5341d7478f8 body_fp=71fa2fa38607f3915192c6f6d6e65e09632396a2578012935b668b7d58187a16 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_cli_mcp_install_target_and_all_mutex(project: Path, monkeypatch: pytest.MonkeyPatch)`
+<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_install_target_and_all_mutex fingerprint=faca422a774e99a77e55dd846f767a61a0b152766c074a084428d5341d7478f8 body_fp=c472057163cb2ea92718feece3da89acddb4c6812ef7347a6e4df01f5b173194 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that `trie mcp install` rejects `--target` and `--all` flags when used together.
 
-Assert that passing `--target` and `--all` together to `trie mcp install` exits with code 1 and reports mutual exclusivity.
+- Verifies CLI exits with code 1 and reports "mutually exclusive" error
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_serve_dispatches_to_run_stdio fingerprint=dc419e9badf8868cb08692fc7c528c6d5b50a9b9dd57c5b724a65a1e645d0c0a body_fp=6957fc2f1761e23d3c4cd463ea493c54643ec73d6906d26ae8b3f28c6676c3b2 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_cli_mcp_serve_dispatches_to_run_stdio(project: Path, monkeypatch: pytest.MonkeyPatch)`
+<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_serve_dispatches_to_run_stdio fingerprint=dc419e9badf8868cb08692fc7c528c6d5b50a9b9dd57c5b724a65a1e645d0c0a body_fp=013e6f3070bc2dd3d14664d26b60a9aca89e254b64072e1d9d8f2e3c1d533baf source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies that `trie mcp serve` CLI command correctly dispatches to `run_mcp_stdio` with resolved project root.
 
-Assert that `trie mcp serve` calls `run_mcp_stdio` with the resolved project root.
+- Mocks `run_mcp_stdio` to capture the root path argument
+- Asserts the CLI exits successfully and passes the expected project path
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_no_subcommand_prints_help fingerprint=81a7825c6ac3f78de339c25c6d9c267e2f68655c15bbb250a598119a1b2e1863 body_fp=e9c10350fb4b534bc267e71a7a582b67ecaf06aaaeadc01cc2b9aac0c171937c source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_cli_mcp_no_subcommand_prints_help(project: Path, monkeypatch: pytest.MonkeyPatch)`
+<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_no_subcommand_prints_help fingerprint=81a7825c6ac3f78de339c25c6d9c267e2f68655c15bbb250a598119a1b2e1863 body_fp=498d59ef18f835520dd43e78dc6586a0c186a2527528da0b2f5275517b8cf6db source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that `trie mcp` without subcommand prints help and exits with code 2, avoiding silent server startup.
 
-Assert that `trie mcp` with no subcommand prints help, exits with code 2, and does not start the MCP stdio server.
+- Mocks `run_mcp_stdio` to capture if server starts unexpectedly
+- Verifies help text mentions "serve" and "install" subcommands  
+- Confirms server function is never called when no subcommand given
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_removes_trie_entry fingerprint=971ab5611ba1b9b03cc9a128e906cda48f702598abb239b594b68f6d32e1713b body_fp=0a3e23a5ab3d0adf829dd74a41131f48eea4ae84c778dc53a3b57fe31de5df23 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_uninstall_removes_trie_entry(project: Path)`
-
-Install then uninstall claude-code; assert `trie` key is removed and `mcpServers` dropped from `.mcp.json`.
-
-- Result action is `"removed"`, path is `.mcp.json`, and `r.snippet["args"]` is `["mcp", "serve"]`.
+<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_removes_trie_entry fingerprint=971ab5611ba1b9b03cc9a128e906cda48f702598abb239b594b68f6d32e1713b body_fp=47b5387b60f90f257121a1ebfb1304a52ac420388eb0ccb894eaaa8ac8ec9e60 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies that uninstall correctly removes the `trie` entry from MCP configuration while preserving the config file structure.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_preserves_other_servers fingerprint=ae273311161d194d8e53473c92efd25ced9713851f0545a9b918c1daa365b628 body_fp=f688d2762fba158d54b9ed80033ba2b413e399bfc5dc82daf04a0013c71677ea source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_uninstall_preserves_other_servers(project: Path)`
-
-Assert that `uninstall` removes only the `trie` key, leaving sibling MCP servers and unrelated top-level config keys intact.
+<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_preserves_other_servers fingerprint=ae273311161d194d8e53473c92efd25ced9713851f0545a9b918c1daa365b628 body_fp=e97a1b80840971c32a07674a9ed418fc69d7d1302e0babf39842a24809ed84e1 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that uninstall removes only the trie entry while preserving other MCP servers and top-level config keys.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_when_not_installed_is_skipped fingerprint=9dedbf216b46a3053f2635c7775ffed45f83087a930b42a000441d970863c7ab body_fp=d66a8e8c6a4e4a0f3fafc4d024557a28378e4ba7f006f2fcd299ada3e1b86f11 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_uninstall_when_not_installed_is_skipped(project: Path)`
+<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_when_not_installed_is_skipped fingerprint=9dedbf216b46a3053f2635c7775ffed45f83087a930b42a000441d970863c7ab body_fp=862e6ea3fd33e61c52c19130021cf52c5303a012ad36cbaa5aa391301839362a source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies uninstall skips gracefully when trie was never registered for the target.
 
-Assert that `uninstall` returns a `skipped` result with a "no config file" detail when trie was never installed on the target.
+- Tests uninstall with no existing config file returns action "skipped"
+- Asserts detail message mentions "no config file" for clear user feedback
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_when_config_has_no_trie_key_is_skipped fingerprint=28657ea793254d5f844f6f8be2888077b3a56faf9e93fb1a78d258a92e67916e body_fp=f8e936266c1148e71a548fd187cee1c2bf040eae494e69b8c901dc1697c06ec0 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_uninstall_when_config_has_no_trie_key_is_skipped(project: Path)`
+<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_when_config_has_no_trie_key_is_skipped fingerprint=28657ea793254d5f844f6f8be2888077b3a56faf9e93fb1a78d258a92e67916e body_fp=902aa5580325d57fa47b5b574dfcb15bed4cded2a49573f20c7a76cdd7ebb172 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that uninstalling trie from a config file without a trie entry skips the operation and preserves other servers.
 
-Assert that `uninstall` returns `skipped` and leaves the config file untouched when it exists but contains no `trie` entry.
+- Creates `.mcp.json` with `other-tool` server but no `trie` entry
+- Verifies uninstall returns `skipped` action with "trie not registered" detail
+- Confirms the existing `other-tool` configuration remains untouched
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_dry_run_does_not_modify_file fingerprint=3b7f689c728aa757b567ae8d16269840a6712f35d0c735c68469b1dd71c1a049 body_fp=d8d05ca8f8615d3df0e73133428209130e8630f089b03b1227efb98f1c9dae81 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_uninstall_dry_run_does_not_modify_file(project: Path)`
+<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_dry_run_does_not_modify_file fingerprint=3b7f689c728aa757b567ae8d16269840a6712f35d0c735c68469b1dd71c1a049 body_fp=47cc9d5cad35909993a7f5c74e598a3b98534c7e7652b664b2b963dcff31b923 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies that uninstall dry-run returns preview action without modifying the config file.
 
-Assert that `uninstall` with `dry_run=True` returns a `preview` action and leaves the config file byte-identical.
+- Installs trie for claude-code, captures config content, runs uninstall with dry_run=True
+- Asserts result action is "preview" and file content remains byte-identical
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_print_only_does_not_modify_file fingerprint=dfca7d6660914c8fda96ef49d0f05a3754b66ddd1bbeb06c07565d776eb7c792 body_fp=019e9a99cd8c7a4bd5037e9f9adf54f46b7287cbcdccd3dc94dccd5c2d8cd842 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_uninstall_print_only_does_not_modify_file(project: Path)`
-
-Assert that `uninstall` with `print_only=True` returns a `"preview"` action and leaves the config file byte-identical.
+<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_print_only_does_not_modify_file fingerprint=dfca7d6660914c8fda96ef49d0f05a3754b66ddd1bbeb06c07565d776eb7c792 body_fp=afb2a4378d6fe638289a73cc284fbe255e2b983ea13bf3571dcef3f7194093e8 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that uninstall with `--print-only` flag returns preview action without modifying config file.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_all_targets fingerprint=aca9ab8e631abd60e4e2777d62008c2a59f555cdae4bc4a3fb2887c202f9aaf9 body_fp=ad281b6e6905c7fcd8a51ce2d77d7ee0d3be2cb69cbef430fc42800e5f513e5a source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_uninstall_all_targets(project: Path)`
+<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_all_targets fingerprint=aca9ab8e631abd60e4e2777d62008c2a59f555cdae4bc4a3fb2887c202f9aaf9 body_fp=1b08ef7af089b60498cffacbb0a9f962cf2ac81f6a62e115c4e84979a2d5e5a3 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies that `uninstall` with `uninstall_all=True` walks every target in the registry and removes only previously installed ones.
 
-Verify that `uninstall_all=True` walks every registered target, marking previously-installed ones `removed` and scope-incompatible ones `skipped`.
+- Installs trie for `claude-code` and `opencode` targets, then uninstalls all targets
+- Asserts that previously installed targets return `removed` action
+- Asserts that targets not supporting project scope return `skipped` action
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_unknown_target_raises fingerprint=f78972ed42eae1aa73343ef43a32589addb94dc75f33b040b2ca577f4c6a966b body_fp=51e152cf56241894d09d4e1fa45f4965bd836569592cdb1eeedd6eda6cd89895 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_uninstall_unknown_target_raises()`
-
-Assert that `uninstall` raises `MCPInstallError` matching "unknown target" for unrecognised target slugs.
+<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_unknown_target_raises fingerprint=f78972ed42eae1aa73343ef43a32589addb94dc75f33b040b2ca577f4c6a966b body_fp=de1e2d75e4e873c8fdf9d139d9fac8ed41c0814b3a74d5e22f13447046f89052 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies `uninstall` raises `MCPInstallError` when given an unknown target name instead of silently skipping.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_invalid_json_returns_error fingerprint=9854b0b5f0d9c291141ae7c12be25d53f7de5e4f2ae39593dc5256edf94125fb body_fp=779553436500a70b2a0bea372efcab7b7cf31f8c1c77e234990ae73b176ddd3b source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_uninstall_invalid_json_returns_error(project: Path)`
+<!-- trie:section symbol=tests/test_mcp_install:test_uninstall_invalid_json_returns_error fingerprint=9854b0b5f0d9c291141ae7c12be25d53f7de5e4f2ae39593dc5256edf94125fb body_fp=10cc788f20f2e4193e0c012dbf8690f4c39f76df47a93271d715fd3d48a0cfb5 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that uninstall gracefully handles corrupt JSON config files by returning error status without modifying the file.
 
-Assert that `uninstall` returns an `error` result for a corrupt config file without modifying or crashing on it.
+- Creates invalid JSON in `.mcp.json` then calls uninstall on `claude-code` target
+- Verifies result action is `error` with appropriate detail message
+- Confirms the corrupt config file remains unchanged for manual repair
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_uninstall_round_trips fingerprint=2b5988bb6d4f64478fb0295c8c127b637f11125efe436a7c8b9f61842cf703c3 body_fp=ad3ebaa42db1dfba3a033824993421dd3e154ded7aae4767db8f6472080b1036 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_cli_mcp_uninstall_round_trips(project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Verify that `trie mcp install` followed by `trie mcp uninstall` leaves `.mcp.json` free of any `mcpServers` key.
+<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_uninstall_round_trips fingerprint=2b5988bb6d4f64478fb0295c8c127b637f11125efe436a7c8b9f61842cf703c3 body_fp=4610a863298e5d1b65654829f6b614e191ef973a91445761f899c7101d7e9241 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Tests that installing and uninstalling trie via CLI commands returns the config file to its original state.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_uninstall_rejects_target_and_all_together fingerprint=d6582c23d9b225cbcba13c6edde6ddd64018fc33cbf9b1b61974285e488ebf74 body_fp=4f6a21ab8f47c020eb98819fe098a4d66c9dc0281b428e9dda8c3452af810867 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_cli_mcp_uninstall_rejects_target_and_all_together(project: Path, monkeypatch: pytest.MonkeyPatch)`
+<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_uninstall_rejects_target_and_all_together fingerprint=d6582c23d9b225cbcba13c6edde6ddd64018fc33cbf9b1b61974285e488ebf74 body_fp=7ddeea0f977510ec1a1d7e1b4eb2cfbd4311dd5bfdc7cf24cc1a7a59cf11927b source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies that `trie mcp uninstall` rejects the combination of `--target` and `--all` flags.
 
-Assert that `trie mcp uninstall --target <name> --all` exits with code 1 and reports mutual exclusivity.
+- Expects exit code 1 and "mutually exclusive" error message
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_help_lists_uninstall fingerprint=c2c2a3f26f862873bfc6dafb4114a6cfe3d0aa9173f08a8378f2c4ee13e430ef body_fp=771d18117d9a060fc71f4e7537c079a75a90efb97a4f41218bf774282aeb9273 source_ref=e661d455f96b2f16fd9464529e313e3f1c9ca66f -->
-## `test_cli_mcp_help_lists_uninstall(project: Path, monkeypatch: pytest.MonkeyPatch)`
+<!-- trie:section symbol=tests/test_mcp_install:test_cli_mcp_help_lists_uninstall fingerprint=c2c2a3f26f862873bfc6dafb4114a6cfe3d0aa9173f08a8378f2c4ee13e430ef body_fp=c65432971742dbc1af12f3e64fe3c569b8e0f00108940177f960d088097f48c9 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a -->
+Verifies that `trie mcp` help screen mentions uninstall command for discoverability.
 
-Assert that `trie mcp` (no subcommand) exits with code 2 and prints `uninstall` in its help output.
+- Invokes CLI with no subcommand to trigger help display
+- Asserts exit code 2 (typer's no-args-is-help behavior)  
+- Confirms "uninstall" appears in help output
 <!-- trie:end -->

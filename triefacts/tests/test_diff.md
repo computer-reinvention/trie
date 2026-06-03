@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: tests/test_diff.py
 file_fingerprint: d83d0840359a9c272308c62c367d58bffef9a016ff138381191538600ddfaa56
-last_synced_at: '2026-05-28T14:39:13Z'
+last_synced_at: '2026-06-03T21:18:35Z'
 defines:
 - kind: module
   qualified_name: tests/test_diff:__module__
@@ -34,53 +34,46 @@ defines:
 incoming_refs: 0
 outgoing_refs: 30
 ---
-<!-- trie:section symbol=tests/test_diff:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=b0f4fd73434a4b5b98be1485b450ce20243bf35e3591c39aa502a22ed2571e9a source_ref=8dc0a9126adca8d8c25210e48ac9e88c059af184 -->
-## `tests/test_diff`
+<!-- trie:section symbol=tests/test_diff:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8a5c1e54e8a14b26b73a841b05c551b0ade2acc273033838a16557edf974cd7b source_ref=6e1055a06b208b8b3b614db15da47304d012b68a -->
+Tests for the diff functionality that compares current documentation state against regenerated content.
 
-Integration tests for `diff_project` and the `trie sync --dry-run` CLI route.
-
-- `StableClient`: stub LLM client returning configurable body text
-- `project`: pytest fixture providing a minimal `trie.toml` workspace in `tmp_path`
+- `project`: Creates temporary test project with basic config and Python file
+- Tests cover empty diffs when clean, showing changes when stale, preview directory usage, limit/budget constraints, and CLI dry-run behavior
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_diff:project fingerprint=cd6f42afcf67cc71ef8f9decc80cf1252526bcf42bc7ac1d0055f21d53a8719b body_fp=f6716f0d46629cb46040354e5b48c03a5aaf87934ca2a824a18b03e4d08710f4 source_ref=8dc0a9126adca8d8c25210e48ac9e88c059af184 -->
-## `project(tmp_path: Path) -> Path`
-
-Pytest fixture that creates a minimal trie project with a `trie.toml` config and one source file `src/alpha.py`.
+<!-- trie:section symbol=tests/test_diff:project fingerprint=cd6f42afcf67cc71ef8f9decc80cf1252526bcf42bc7ac1d0055f21d53a8719b body_fp=b041ca925f7449984be48929cfbf62b43c74418899baea891895ce0274ecebd4 source_ref=6e1055a06b208b8b3b614db15da47304d012b68a -->
+Creates a temporary project directory with trie.toml configuration and a sample Python file for testing.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_diff:test_diff_returns_empty_when_clean fingerprint=d2a7fa508081814258d613ec8b2872d7afd765927bf7186ab357128ee7f9bf0d body_fp=c8a27103d7b97bf94ec949aa605bd8ef906d613d5257797022dafa71b7fa8418 source_ref=6e1055a06b208b8b3b614db15da47304d012b68a -->
-## `test_diff_returns_empty_when_clean(project: Path)`
-
-Assert that `diff_project` returns no diffs when the triefact is already up-to-date with the source.
+<!-- trie:section symbol=tests/test_diff:test_diff_returns_empty_when_clean fingerprint=d2a7fa508081814258d613ec8b2872d7afd765927bf7186ab357128ee7f9bf0d body_fp=ed66bb542c97912920ef9e0b5a6de42e8ba50fdb675be860be8b8ce1464811e8 source_ref=6e1055a06b208b8b3b614db15da47304d012b68a -->
+Verifies that diff_project returns empty diffs when triefacts are synchronized with source files.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_diff:test_diff_shows_regenerated_content fingerprint=89d814a6af063c4e94a927e1ad9a5d3ba321e11e78109c5408a5c8c3fdc11a86 body_fp=9769182d1780878cafda5edeb15a71889c44e94abb36651831ca2a0a9f2c976e source_ref=6e1055a06b208b8b3b614db15da47304d012b68a -->
-## `test_diff_shows_regenerated_content(project: Path)`
+<!-- trie:section symbol=tests/test_diff:test_diff_shows_regenerated_content fingerprint=89d814a6af063c4e94a927e1ad9a5d3ba321e11e78109c5408a5c8c3fdc11a86 body_fp=e622e713c6eb01591a65dd74be116668586950abd5e7ba11ce12bb044eea8210 source_ref=6e1055a06b208b8b3b614db15da47304d012b68a -->
+Tests that diff_project detects stale triefacts and generates unified diffs showing old vs new content.
 
-Assert that `diff_project` produces a unified diff between stale v1 and regenerated v2 content without mutating the canonical triefact.
-
-- `preview_triefact_path`: written to disk; `canonical_triefact_path` left unchanged containing v1.
+- Creates initial triefact with v1 content, modifies source to make it stale
+- Verifies diff result contains unified diff with both v1 and v2 content
+- Confirms preview file is written while canonical file remains unchanged
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_diff:test_diff_writes_to_preview_dir fingerprint=6186a6b103b571bb8d221bc104bdbe3c8a225ebb2613b5d5158913e45b95d3e5 body_fp=a3ba323a792c96d6edb40c28d3c867e545780c83f22eaec4ce270ae23a5a22c5 source_ref=6e1055a06b208b8b3b614db15da47304d012b68a -->
-## `test_diff_writes_to_preview_dir(project: Path)`
-
-Assert that `diff_project` writes generated content under `.trie/preview` and leaves the canonical triefact untouched.
+<!-- trie:section symbol=tests/test_diff:test_diff_writes_to_preview_dir fingerprint=6186a6b103b571bb8d221bc104bdbe3c8a225ebb2613b5d5158913e45b95d3e5 body_fp=284f0d5cdde4d433812603dd04323377d858591de393c3bb9620803f6e53068d source_ref=6e1055a06b208b8b3b614db15da47304d012b68a -->
+Verifies that diff_project writes preview triefacts to `.trie/preview` directory without modifying canonical triefacts.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_diff:test_diff_respects_limit fingerprint=71c42631990c386a9403ab70f96ea8d4074843ec7a0a344e69c56129512ea813 body_fp=874d27b1d07a5203731767b73db1465683774edf87f3fcb4917564a1138868ef source_ref=6e1055a06b208b8b3b614db15da47304d012b68a -->
-## `test_diff_respects_limit(project: Path)`
+<!-- trie:section symbol=tests/test_diff:test_diff_respects_limit fingerprint=71c42631990c386a9403ab70f96ea8d4074843ec7a0a344e69c56129512ea813 body_fp=d44eeb44930a679c8a4f0f0664597aff7409a62920da919b954be115bca32017 source_ref=6e1055a06b208b8b3b614db15da47304d012b68a -->
+Verifies that diff_project respects the limit parameter by stopping after processing the specified number of files.
 
-Assert that `diff_project` honours the `limit` parameter and reports skipped files in `files_skipped_no_budget`.
+- Creates three source files (alpha, beta, gamma) to exceed the limit of 2
+- Asserts exactly 2 diffs returned and at least 1 file skipped
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_diff:test_diff_respects_budget fingerprint=95de6fbbd940c39eb444cde0d455543f20ea4616710b08dff6a0891436f92691 body_fp=8285f7372da8aa060976be800785aa68906159e98bbbfe071afa40e2a94275d9 source_ref=6e1055a06b208b8b3b614db15da47304d012b68a -->
-## `test_diff_respects_budget(project: Path)`
+<!-- trie:section symbol=tests/test_diff:test_diff_respects_budget fingerprint=95de6fbbd940c39eb444cde0d455543f20ea4616710b08dff6a0891436f92691 body_fp=f2b000a4bafbc8c53e5b4741376171f023902fd8b359a80c6f0b453487c82a2a source_ref=6e1055a06b208b8b3b614db15da47304d012b68a -->
+Verifies that `diff_project` respects USD budget limits by stopping before processing all eligible files.
 
-Assert that `diff_project` stops processing files once a tiny USD budget is exhausted, producing fewer than all three diffs.
+- Creates multiple source files to exceed tiny budget
+- Asserts at least one diff generated but fewer than total files processed
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_diff:test_cli_sync_dry_run_routes_through_diff fingerprint=010c932914ab38809bb11f22bd06bb023d694dfc73a6ae2319a8b5110c7f2bf6 body_fp=171a238c9a2f2d02ccafb2a7a873fed57769ec1917ae6fd01b2d7f38ff31ec49 source_ref=6e1055a06b208b8b3b614db15da47304d012b68a -->
-## `test_cli_sync_dry_run_routes_through_diff(project: Path, monkeypatch: pytest.MonkeyPatch)`
+<!-- trie:section symbol=tests/test_diff:test_cli_sync_dry_run_routes_through_diff fingerprint=010c932914ab38809bb11f22bd06bb023d694dfc73a6ae2319a8b5110c7f2bf6 body_fp=47efefc8791051983ae03e44582eafb4e126d355c9b9350ebddaa14b0735637b source_ref=6e1055a06b208b8b3b614db15da47304d012b68a -->
+Tests that `trie sync --dry-run` shows unified diffs without modifying existing triefact files.
 
-Assert that `trie sync --dry-run` prints unified diffs and leaves canonical triefacts unmodified.
+- Sets up stale triefact by modifying source after initial sync
+- Verifies CLI outputs preview diffs and preserves original triefact content
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_diff:test_cli_sync_dry_run_no_stale fingerprint=d6f94373a6ce8ad7631f8fb0e92857adf69fbcb9fa419531cb8d56b4ef087435 body_fp=582bc893eeb84d7c25980434748bf37df4f3ff93711d5df708382b0c196ecaff source_ref=6e1055a06b208b8b3b614db15da47304d012b68a -->
-## `test_cli_sync_dry_run_no_stale(project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `trie sync --dry-run` reports "no stale triefacts" when all triefacts are current.
+<!-- trie:section symbol=tests/test_diff:test_cli_sync_dry_run_no_stale fingerprint=d6f94373a6ce8ad7631f8fb0e92857adf69fbcb9fa419531cb8d56b4ef087435 body_fp=2c8fea52b3676f703e2d9ab52ff344ef07c45f7ddddaa54cae553c3ee41a5d79 source_ref=6e1055a06b208b8b3b614db15da47304d012b68a -->
+Verifies that `trie sync --dry-run` reports "no stale triefacts" when all triefacts are current.
 <!-- trie:end -->
