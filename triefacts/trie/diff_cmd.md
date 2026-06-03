@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.5
 source: trie/diff_cmd.py
-file_fingerprint: 4000181a96da75377e49dd956d62958fee83874a5a2404378edb21fb0e9d64cc
-last_synced_at: '2026-05-28T01:40:22Z'
+file_fingerprint: aede83b4992eaaf7ba79ed2b696080f3c91639d232164fe2f26f1fe01131e4dd
+last_synced_at: '2026-06-03T21:10:09Z'
 defines:
 - kind: module
   qualified_name: trie/diff_cmd:__module__
@@ -19,39 +19,32 @@ defines:
 incoming_refs: 6
 outgoing_refs: 6
 ---
-<!-- trie:section symbol=trie/diff_cmd:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=e1fbbc068efeb21a773ba682d164a15db8e5ebb5b4dd6b23d26ea101e8006a9b source_ref=6f05daac303d962947af10d1a505706948b32064 -->
-## `trie/diff_cmd`
+<!-- trie:section symbol=trie/diff_cmd:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=d810b0b94f518f9a5e682ca34a9a1a2becaad8071293b7ab1e55133ef629d73e source_ref=1e1ead40b2ec4f67fd8bdb317097295a702459f9 -->
+Generates unified diffs between current triefacts and regenerated previews for stale symbols.
 
-Regenerate stale triefacts into a preview directory and produce unified diffs without modifying canonical files.
-
-- `FileDiff`: per-file diff result pairing canonical and preview paths with unified diff text
-- `DiffResult`: aggregated diff output with cost tracking and skip count
-- `diff_project`: entry point; respects budget, limit, and progress callbacks
+- `FileDiff`: dataclass containing paths and diff information for a single source file
+- `DiffResult`: dataclass aggregating all file diffs with cost and skip statistics
+- `diff_project()`: main function that checks staleness, regenerates into `.trie/preview/`, and creates unified diffs
 <!-- trie:end -->
-<!-- trie:section symbol=trie/diff_cmd:FileDiff fingerprint=bbaa5525d99c5a921555181054314026e079df655184757146e111be5a021380 body_fp=113e2b442b222f0f3b7fe7a75270d7c49d4a42bdae9ad046c8c4edc7f4e43d5d source_ref=6f05daac303d962947af10d1a505706948b32064 -->
-## `FileDiff`
+<!-- trie:section symbol=trie/diff_cmd:FileDiff fingerprint=bbaa5525d99c5a921555181054314026e079df655184757146e111be5a021380 body_fp=bf39d4152aafcf65e695a3e14c4087466822152060063c758e7413853cf3fa10 source_ref=1e1ead40b2ec4f67fd8bdb317097295a702459f9 -->
+Represents comparison between original and regenerated triefact file with diff metadata.
 
-Immutable record of a single file's diff between its canonical and preview triefact.
-
-- `unified_diff`: unified-diff string ready for display or writing.
-- `preview_triefact_path`: path under `.trie/preview/` where regenerated content was written.
+- `canonical_triefact_path`: path to existing triefact in project
+- `preview_triefact_path`: path to regenerated triefact in `.trie/preview/`
+- `unified_diff`: text output from difflib.unified_diff
+- `sync_result`: token usage and regeneration details from sync operation
 <!-- trie:end -->
-<!-- trie:section symbol=trie/diff_cmd:DiffResult fingerprint=86f0131d3b4847f6b1543e4465a0b65119ed8675475fa3fbbe50951b01784721 body_fp=40e41114bdf3518c0c287fa1e0daf2a0567a25ec9c9f54b36b34dddd120504ff source_ref=6f05daac303d962947af10d1a505706948b32064 -->
-## `DiffResult`
+<!-- trie:section symbol=trie/diff_cmd:DiffResult fingerprint=86f0131d3b4847f6b1543e4465a0b65119ed8675475fa3fbbe50951b01784721 body_fp=ba930409ceb4d8b10e1f137e660366d7bb8e6a3767ef5d3b4b8de6984ba7e263 source_ref=1e1ead40b2ec4f67fd8bdb317097295a702459f9 -->
+Contains the result of running `diff_project` with generated diffs and metadata.
 
-Immutable aggregate result returned by `diff_project`.
-
-- `files_skipped_no_budget`: count of files skipped due to limit or budget exhaustion.
-- `actual_cost_usd`: cumulative LLM spend across all processed files.
+- `files_skipped_no_budget`: count of files skipped due to budget or limit constraints
+- `actual_cost_usd`: total cost in USD for all API calls made during diff generation
 <!-- trie:end -->
-<!-- trie:section symbol=trie/diff_cmd:diff_project fingerprint=bf8c5025e2d84ba1b505f054c1303f130e6589b23bd4a0d3c4abfc00ee48f9f2 body_fp=eb11ab922b1be9812c37b49a9b7ef6442a02585a9f7b4b2620fc9db9ef7dd824 source_ref=6f05daac303d962947af10d1a505706948b32064 -->
-## `diff_project(*, project_root, config, client, pricing=None, budget_usd=None, limit=None, progress=None, store=None) -> DiffResult`
+<!-- trie:section symbol=trie/diff_cmd:diff_project fingerprint=bf8c5025e2d84ba1b505f054c1303f130e6589b23bd4a0d3c4abfc00ee48f9f2 body_fp=db372c292795a93f836e3ea18a2f428e7441679c2d19aa998938e750d37857ee source_ref=1e1ead40b2ec4f67fd8bdb317097295a702459f9 -->
+Regenerates stale triefacts into `.trie/preview/` and produces unified diffs against current versions.
 
-Regenerate stale triefacts into `.trie/preview/` and return unified diffs against canonical versions.
-
-- `pricing`: when provided, accumulates estimated USD cost across regenerated files.
-- `budget_usd`: stops processing new files once cumulative cost meets or exceeds this value.
-- `limit`: stops after this many diffs have been collected; remaining files counted as skipped.
-- `store`: optional graph `Store` passed through to `sync_single_file`.
-- `DiffResult.files_skipped_no_budget`: count of files skipped due to limit, budget, or missing source.
+- `budget_usd`: stops processing when cumulative cost exceeds this amount
+- `limit`: maximum number of files to process before stopping
+- `progress`: callback for tracking file processing status
+- Files with missing sources are skipped as they will be handled by reconciliation
 <!-- trie:end -->

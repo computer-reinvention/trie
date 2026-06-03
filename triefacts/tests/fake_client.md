@@ -1,82 +1,70 @@
 ---
 trie_version: 0.1.5
 source: tests/fake_client.py
-file_fingerprint: 4bc2d5e3f5017394dede812dd7c86e5a0d27b386e7166e7a508a11d846b6bf5d
-last_synced_at: '2026-05-28T15:04:12Z'
+file_fingerprint: af7bc15b5f0cf20bec1e916105cf99a089a73228e131a20a015a0df512784c76
+last_synced_at: '2026-06-03T21:17:51Z'
 defines:
 - kind: module
   qualified_name: tests/fake_client:__module__
-  lines: 1-135
+  lines: 1-138
 - kind: function
   qualified_name: tests/fake_client:_make_default_body
   lines: 8-9
 - kind: class
   qualified_name: tests/fake_client:FakeTrieClient
-  lines: 12-134
+  lines: 12-137
 - kind: method
   qualified_name: tests/fake_client:FakeTrieClient.__init__
-  lines: 19-53
+  lines: 19-54
 - kind: method
   qualified_name: tests/fake_client:FakeTrieClient.model_id
-  lines: 56-57
+  lines: 57-58
 - kind: method
   qualified_name: tests/fake_client:FakeTrieClient.run
-  lines: 59-131
+  lines: 60-134
 - kind: method
   qualified_name: tests/fake_client:FakeTrieClient.count_tokens
-  lines: 133-134
+  lines: 136-137
 incoming_refs: 82
 outgoing_refs: 2
 ---
-<!-- trie:section symbol=tests/fake_client:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=7c9adf9ebaac86d10909e711c72cc1d60fa6c107fc7efe0686a12a13e2cd5cd9 source_ref=4823170683910a0c815cd3d33e2fda31da8808d6 -->
-## `tests/fake_client`
+<!-- trie:section symbol=tests/fake_client:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=7c896717304f03fb1266769941f21a61c86acfbfa47a863728499ddb2c607b4c source_ref=2531228f8acb585736a73a490870ae5a63bdfe87 -->
+Test double module providing FakeTrieClient for deterministic testing of TrieClient interactions.
 
-Provide a deterministic test double for `TrieClient` used across the test suite.
+- Contains helper function to generate default documentation bodies
+- Provides canned responses based on output type to verify prompt generation and token accounting
 <!-- trie:end -->
-<!-- trie:section symbol=tests/fake_client:_make_default_body fingerprint=c93d0b492761d8ec79615239de75f928f9ddd9f76b6f2844c1cee9586f630c57 body_fp=2d7bcd6ca9167191c5408a4d1c58244bda3ac961f4b6f0c0ff4a71666569129d source_ref=4823170683910a0c815cd3d33e2fda31da8808d6 -->
-## `_make_default_body(qname: str) -> str`
-
-Generate a minimal Markdown section body string for a given qualified name.
+<!-- trie:section symbol=tests/fake_client:_make_default_body fingerprint=c93d0b492761d8ec79615239de75f928f9ddd9f76b6f2844c1cee9586f630c57 body_fp=aaaf47826e7fcc6037e6ead6d2383eb5f87c30d3de1f8ac49adce0d072e299c0 source_ref=2531228f8acb585736a73a490870ae5a63bdfe87 -->
+Generates a default Markdown documentation body with a heading and placeholder text for the given qualified name.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/fake_client:FakeTrieClient fingerprint=bc09564df2920eb38f3e1a3fdc7c4a9b364df965fa25a3c598e7c7a8cfc9c624 body_fp=00d97d1ce2fcf6ed31ed30456b6744b0d98965d7cba1f9c443f66d76e2164af9 source_ref=9752d7c7a0bd5580dfd0af2afb98df81e9607ffb -->
-## `FakeTrieClient`
+<!-- trie:section symbol=tests/fake_client:FakeTrieClient fingerprint=5abb4ff676c1f72c4c801ffdc3318837243fec77566936c77b0f5dfa23098945 body_fp=b67ef2c57bb7f99f4745f0790f105a68f3726e7d17e6456f0f614d725a9026b0 source_ref=2531228f8acb585736a73a490870ae5a63bdfe87 -->
+Test double that mocks TrieClient with configurable canned responses and records all method calls.
 
-Deterministic test double for `TrieClient` that records prompts and returns canned `ModelResult` outputs.
-
-- `output_body`: canned `SectionBody` text; auto-generated from qname if `None`
-- `output_prose`: canned prose string for `SymbolEdit`/`FileEdit` responses
-- `output_notes`/`output_reasons`: canned fields for `MergeNotesOutput`
-- `output_source`: canned source for `SymbolEdit`
-- `output_file_content`: canned content for `FileEdit`
-- `output_fixup_content`: canned content for `FixupOutput`
-- `calls`: incremented on each `run` invocation
-- `last_output_type`, `last_system_prompt`, `last_user_prompt`, `last_max_tokens`: captured from the most recent `run` call
+- `run`: returns ModelResult with output based on output_type parameter and preset field values
+- `count_tokens`: always returns 100 regardless of input
+- `calls`: tracks number of times run method was invoked
+- `last_*`: stores parameters from most recent run call for test verification
 <!-- trie:end -->
-<!-- trie:section symbol=tests/fake_client:FakeTrieClient.__init__ fingerprint=1608520d677d1d7f5cc13e617f504e178d5c299577a13fb48fb96a0178e57f82 body_fp=3a70c710fd130a61a2593d5fdc21795c81fa99a7fe093013cc08fc4766c69ab0 source_ref=9752d7c7a0bd5580dfd0af2afb98df81e9607ffb -->
-## `FakeTrieClient.__init__(self, *, output_body, output_prose, output_notes, output_reasons, output_source, output_file_content, output_fixup_content, input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens, model_id)`
+<!-- trie:section symbol=tests/fake_client:FakeTrieClient.__init__ fingerprint=38a05b65413e4ef41df7486ccbd447ba80ac1063b21ae6a59cc06215cf930f6c body_fp=956f8e1415b6ad50ed9bd96d9fb39bd4d26cb934ba43c65a9aaf5516466dbf6e source_ref=2531228f8acb585736a73a490870ae5a63bdfe87 -->
+## `tests/fake_client:FakeTrieClient.__init__`
 
-Initialise a `FakeTrieClient` with canned outputs and token counts for each supported response type.
+Initializes FakeTrieClient with canned output values and token counts for testing.
 
-- `output_body`: returned as `SectionBody.body`; auto-generated from prompt if `None`.
-- `output_notes`: defaults to `["* change return value  —  test"]` when `None`.
-- `output_reasons`: defaults to `["test"]` when `None`.
-- `calls`, `last_output_type`, `last_system_prompt`, `last_user_prompt`, `last_max_tokens`: call-recording attributes initialised to zero/empty.
+- `output_notes`: defaults to `["* change return value  —  test"]` if None
+- `output_reasons`: defaults to `["test"]` if None
+- `model_id`: stored as `full_model_id` attribute
+- `calls`: initialized to 0 to track invocation count
 <!-- trie:end -->
-<!-- trie:section symbol=tests/fake_client:FakeTrieClient.model_id fingerprint=97f92be530ac0cf7719ccd4e66d90df3ff1ec6a091d81261c51f210e24af53d3 body_fp=fa507c56e9e0c5d3dfc3c9cef5ab892cbe86c8488a40fa8f94039d093aa46d00 source_ref=4823170683910a0c815cd3d33e2fda31da8808d6 -->
-## `FakeTrieClient.model_id`
-
-The `full_model_id` string set at construction time.
+<!-- trie:section symbol=tests/fake_client:FakeTrieClient.model_id fingerprint=97f92be530ac0cf7719ccd4e66d90df3ff1ec6a091d81261c51f210e24af53d3 body_fp=f7dd8aed78ab2fbcb578ecf6658603fc440fc4f609a89ab11ce8456235a31dae source_ref=2531228f8acb585736a73a490870ae5a63bdfe87 -->
+Returns the FakeTrieClient's model ID as a string property.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/fake_client:FakeTrieClient.run fingerprint=466a3535f542c6a3e6d477141cf870caeeebfb845e5ef05481c2d4536c4bbb1c body_fp=aa5e19505e14d316c8a1c5cc0c3d7356776a3ce08876aed51d991ac5a7ceaeb1 source_ref=9752d7c7a0bd5580dfd0af2afb98df81e9607ffb -->
-## `FakeTrieClient.run(self, output_type, system_prompt, user_prompt, *, max_tokens=1024) -> ModelResult`
+<!-- trie:section symbol=tests/fake_client:FakeTrieClient.run fingerprint=200f4ae7f8e829284e069e67fa5284cd68ed649309d75665c47225b451616c79 body_fp=09ca68f5aab20fff86aca85f1fc4acfd9c5b00fb10c56749089a500a282ebf4d source_ref=2531228f8acb585736a73a490870ae5a63bdfe87 -->
+FakeTrieClient run method simulates LLM calls by recording parameters and returning canned structured output.
 
-Record call parameters and return a canned `ModelResult` built from the instance's configured output fields.
-
-- `output_type`: selects which model subclass to construct; raises `TypeError` for unsupported types.
-- Records call count and last prompt/token values on the instance for test assertions.
+- Records call count and all input parameters in instance attributes
+- Returns pre-configured output based on output_type with fake token usage
+- Supports SectionBody, MergeNotesOutput, SymbolEdit, FileEdit, BatchFilterOutput, and FixupOutput types
 <!-- trie:end -->
-<!-- trie:section symbol=tests/fake_client:FakeTrieClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=9a00cc857b4117697cf5c1ea176403ed8b4e319eb6879934c9fd24ac1364cec4 source_ref=4823170683910a0c815cd3d33e2fda31da8808d6 -->
-## `FakeTrieClient.count_tokens(self, system_prompt: str, user_prompt: str) -> int`
-
-Always return 100 as a fixed token count stub for `FakeTrieClient`.
+<!-- trie:section symbol=tests/fake_client:FakeTrieClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=3aeb4635ead87c3491bcf7c1c22d3a2a709dc02874606ec0f49996c30dc0ce28 source_ref=2531228f8acb585736a73a490870ae5a63bdfe87 -->
+FakeTrieClient method that returns a fixed token count for testing purposes.
 <!-- trie:end -->

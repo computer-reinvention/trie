@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: tests/test_incremental.py
 file_fingerprint: 8a62f0c285b7cf16d1f3454e2c33a8a96493c90320181c04e3e3749cd1ff2819
-last_synced_at: '2026-05-28T15:04:29Z'
+last_synced_at: '2026-06-03T20:56:40Z'
 defines:
 - kind: module
   qualified_name: tests/test_incremental:__module__
@@ -67,105 +67,100 @@ defines:
 incoming_refs: 0
 outgoing_refs: 67
 ---
-<!-- trie:section symbol=tests/test_incremental:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=cbd0208bd1a5e20ff12cb76dba063241750c2fa827bde432ba6a4dc120ee3b98 source_ref=f81ee936e7bc6c01e0ab2b744f93acfa2cd45c96 -->
-## `tests/test_incremental`
+<!-- trie:section symbol=tests/test_incremental:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=4711276e90fe1ac84ee08ae4fc2167af651d31569ad2df9aa93671424122ed8e source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Tests incremental synchronization functionality that updates only changed files and their dependents.
 
-Integration tests for incremental sync, cascade worklist computation, and related CLI commands.
+- `project` fixture creates a temporary project with lib.py and app.py files
+- `_initial_sync()` helper bootstraps initial triefacts for both files
+- Tests verify cascade behavior when lib.py changes trigger app.py regeneration
+- Tests verify budget constraints, CLI routing, and progress callbacks
+- Tests verify worklist computation for planning without side effects
+- Tests verify orphan triefact detection when source files are deleted
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:project fingerprint=4e084006f178a9857caa68e57d59fa178c9ea3c6baac1bde21faa670adc80dea body_fp=feb539da8c48d37dd340972b8e166c25fb5589f48c09473d5928b9556589ba44 source_ref=f81ee936e7bc6c01e0ab2b744f93acfa2cd45c96 -->
-## `project(tmp_path: Path) -> Path`
-
-Pytest fixture that creates a minimal two-file project (`lib.py`, `app.py`) with a `trie.toml` config in a temporary directory.
+<!-- trie:section symbol=tests/test_incremental:project fingerprint=4e084006f178a9857caa68e57d59fa178c9ea3c6baac1bde21faa670adc80dea body_fp=78dedd416b7d04f53522878d73355c91cee1fec2624727c184b109ffd4d22b14 source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Creates a temporary project directory with trie configuration and two interdependent Python files for testing incremental sync behavior.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:_initial_sync fingerprint=19f828a287e74e17fb5815cd69f3830e5f4503b2184e00c8d3630d3a0be01605 body_fp=a0278c92c8af75e26ffc5c007fd65e416c30c8eca07b8b894bdb085fb23e6fcb source_ref=17efc5900983b25f09743e7d3cf11646ba6932b5 -->
-## `_initial_sync(project: Path) -> None`
-
-Seed `project` with v1 triefacts for `lib.py` and `app.py` using `FakeClient`.
+<!-- trie:section symbol=tests/test_incremental:_initial_sync fingerprint=19f828a287e74e17fb5815cd69f3830e5f4503b2184e00c8d3630d3a0be01605 body_fp=652189108852e3eef5b85b093a5138f0a08233347a1bc82891a5ee1201032bd3 source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Syncs both lib.py and app.py in the test project to establish baseline triefacts.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_incremental_no_op_when_clean fingerprint=88fcf5a07320e6e6a6898d8ec818ea05472e9c1fe359a9487c5d3555f6c3b0e2 body_fp=3debe33dedd47caea43d9bcca4d0806221b4840481b386d4b552c69369b5aff8 source_ref=17efc5900983b25f09743e7d3cf11646ba6932b5 -->
-## `test_incremental_no_op_when_clean(project: Path)`
-
-Assert that `run_incremental` performs zero LLM calls and syncs zero files when triefacts are already up to date.
+<!-- trie:section symbol=tests/test_incremental:test_incremental_no_op_when_clean fingerprint=88fcf5a07320e6e6a6898d8ec818ea05472e9c1fe359a9487c5d3555f6c3b0e2 body_fp=e0d6392da412ee7fba08cf4e175b24f799b230d7ee7fdbead4a27cea9c71ef48 source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Verifies incremental sync performs no work when all triefacts are current.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_incremental_resyncs_directly_changed_file fingerprint=b85bcd905c8ae3f2c0d017f024aa870a61d8a4833413467123ba8c15408719b8 body_fp=8455f11bbd1f35f8aa6b166a04b8eeeabefe8e2ab1dc1b52b7976219e0b47d24 source_ref=17efc5900983b25f09743e7d3cf11646ba6932b5 -->
-## `test_incremental_resyncs_directly_changed_file(project: Path)`
-
-Assert that modifying a source file marks its triefact stale and causes `run_incremental` to regenerate it.
+<!-- trie:section symbol=tests/test_incremental:test_incremental_resyncs_directly_changed_file fingerprint=b85bcd905c8ae3f2c0d017f024aa870a61d8a4833413467123ba8c15408719b8 body_fp=c76e89412ad4bcd6cf6b6c0647dc9968ec82664d358bf8b5276d4c196aa9c19a source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Tests that `run_incremental` detects and resyncs a file when its source code changes.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_incremental_cascades_to_callers fingerprint=1a95fb6afc0cf2e0f53dfc94ad563bf7b0d8f80435e30dc35159d35975602d6e body_fp=f7355927c7023b776bd577d246b172ae2c987f755809fba9a85aa41e9df2d7da source_ref=17efc5900983b25f09743e7d3cf11646ba6932b5 -->
-## `test_incremental_cascades_to_callers(project: Path)`
-
-Assert that modifying `lib.py` causes both `lib.py` (direct) and `app.py` (cascade) to be regenerated by `run_incremental`.
+<!-- trie:section symbol=tests/test_incremental:test_incremental_cascades_to_callers fingerprint=1a95fb6afc0cf2e0f53dfc94ad563bf7b0d8f80435e30dc35159d35975602d6e body_fp=30d97e26c38a36a7fd8b651775a6d9852093429278e8e14b2fa8300fbe0a958f source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Tests that incremental sync propagates changes to dependent files via cascade mechanism.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_incremental_respects_budget fingerprint=04bdeeb4d89158444a5e2992e804a6d9579264e9f628bd719f996fbadaeb14d6 body_fp=4da2f894dfa0d181d90ae7ab7ffda628889ce8039bba81ae2f449313c5730b81 source_ref=17efc5900983b25f09743e7d3cf11646ba6932b5 -->
-## `test_incremental_respects_budget(project: Path)`
-
-Verify that `run_incremental` skips files once a tight USD budget is exhausted.
-
-- `budget_usd=0.0001`: intentionally tiny to force at least one skip after the first file.
+<!-- trie:section symbol=tests/test_incremental:test_incremental_respects_budget fingerprint=04bdeeb4d89158444a5e2992e804a6d9579264e9f628bd719f996fbadaeb14d6 body_fp=665f4061e59633d0b1227742ca1f8b8fecf87d69bb970be4644c33e01b6a54a3 source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Tests that run_incremental honors budget limits and skips files when cost exceeds the budget threshold.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_incremental_dispatched_via_cli fingerprint=4a90404380aa80415fd81dced526cdff5bf9d212639a159913dc18ea05ba6992 body_fp=7037e04d356d21fb7d5dcb2ec28ab019eca34acc452ca12567ad07c14d33e3cb source_ref=17efc5900983b25f09743e7d3cf11646ba6932b5 -->
-## `test_incremental_dispatched_via_cli(project: Path, monkeypatch: pytest.MonkeyPatch)`
+<!-- trie:section symbol=tests/test_incremental:test_incremental_dispatched_via_cli fingerprint=4a90404380aa80415fd81dced526cdff5bf9d212639a159913dc18ea05ba6992 body_fp=c0639d793a8e3234414b06d929ca2b65e6b4d0a390287501ade5a6dfb6940bcf source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Verifies that `trie sync` CLI command routes through incremental sync functionality and properly regenerates triefacts.
 
-Verify `trie sync` CLI routes through `run_incremental` and regenerates stale triefacts via cascade.
+- Sets up project with changes to trigger incremental sync
+- Mocks the LLM client to inject identifiable output
+- Validates CLI output indicates sync and cascade operations
+- Confirms regenerated triefacts contain the mocked client output
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_incremental_clean_via_cli fingerprint=1e718e0f925df852f5addd2cb488022f865c67a55380d521ca0b4965c38d3cf6 body_fp=0e1b1dde46def8082f42449dd9883f24ec56c6d796e27e658000425e0e5c2020 source_ref=17efc5900983b25f09743e7d3cf11646ba6932b5 -->
-## `test_incremental_clean_via_cli(project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `trie sync` on an already-coherent project exits cleanly and reports "coherent".
+<!-- trie:section symbol=tests/test_incremental:test_incremental_clean_via_cli fingerprint=1e718e0f925df852f5addd2cb488022f865c67a55380d521ca0b4965c38d3cf6 body_fp=c4e3d045bb530d5f3951b24a23f2258ae736f9dc552d9110d9b9c1e6953552c6 source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Verifies `trie sync` on an unchanged project reports the tree as coherent without performing any LLM work.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_incremental_with_no_changes_yields_empty fingerprint=846cbe05b5e0e137dd212f80c02a87f499be74cb900023d6bab72d309145b92e body_fp=6346ef078a148a84a0f088aafa09ca4206e7f4cc919a731dd12bb297b5980b42 source_ref=17efc5900983b25f09743e7d3cf11646ba6932b5 -->
-## `test_incremental_with_no_changes_yields_empty(project: Path)`
-
-Assert that `run_incremental` produces zero stale, cascaded, or synced files when triefacts are already coherent.
+<!-- trie:section symbol=tests/test_incremental:test_incremental_with_no_changes_yields_empty fingerprint=846cbe05b5e0e137dd212f80c02a87f499be74cb900023d6bab72d309145b92e body_fp=9c7a619715460ab6b9b9a262427b315f50fd80f1916d959b30b8ba16ce1509c7 source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Verifies that incremental sync performs no operations when triefacts exist and source files are unchanged.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_incremental_handles_missing_triefact fingerprint=879a299f4eb31e0d2b869bea257c5b3b21131e22e4ad5bcc3fb53163484f21fb body_fp=65e4167f358efd1584d145f4d87ca73866760efb7396599423c928c78884d9d1 source_ref=17efc5900983b25f09743e7d3cf11646ba6932b5 -->
-## `test_incremental_handles_missing_triefact(project: Path)`
+<!-- trie:section symbol=tests/test_incremental:test_incremental_handles_missing_triefact fingerprint=879a299f4eb31e0d2b869bea257c5b3b21131e22e4ad5bcc3fb53163484f21fb body_fp=a284c02088b68f961f7a4dd9e0136affd5601b9121ad07fded3b74a941b523c4 source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Tests that incremental sync treats all files as directly stale when no triefacts exist yet.
 
-Assert that `run_incremental` treats all in-scope files as directly stale when no triefacts exist, and cascade adds no additional count.
+- Verifies both `lib.py` and `app.py` get synced when starting from scratch
+- Confirms `directly_stale_count` is 2 (no cascade double-counting)
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_triefact_regenerated_only_for_affected_symbols_v01_limitation fingerprint=0a9e2046dc131c3000bfe9fa03a00508cb967fa052fcf4e88d29b8fbdefcde50 body_fp=9434172ef8c50c62c25e6aeb41827c9df7eccb3e48b450e38d616fc77ff1e6ed source_ref=17efc5900983b25f09743e7d3cf11646ba6932b5 -->
-## `test_triefact_regenerated_only_for_affected_symbols_v01_limitation(project: Path)`
+<!-- trie:section symbol=tests/test_incremental:test_triefact_regenerated_only_for_affected_symbols_v01_limitation fingerprint=0a9e2046dc131c3000bfe9fa03a00508cb967fa052fcf4e88d29b8fbdefcde50 body_fp=3608baa4424dc0b852a2b3709176fbd615d39b7b802f6ff278cd43187d936852 source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Documents that incremental sync regenerates entire files rather than individual symbols when changes occur.
 
-Document that v0.1 regenerates all symbols in a file, not just stale sections, and verify cascade updates both `lib.md` and `app.md`.
+- Modifies only lib.py and verifies both lib.md and app.md are regenerated due to cascade
+- Confirms v0.1 limitation: whole-file regeneration instead of per-symbol granularity
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_run_incremental_invokes_progress_callback fingerprint=412274a40568b9a4b7ab6ef350db630f15eb17287688711580021655266352ed body_fp=a8e6a6d5e0aa4a59c27fabfd8850ed9721295a5f36484a60e86d6226e881b512 source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
-## `test_run_incremental_invokes_progress_callback(project: Path)`
+<!-- trie:section symbol=tests/test_incremental:test_run_incremental_invokes_progress_callback fingerprint=412274a40568b9a4b7ab6ef350db630f15eb17287688711580021655266352ed body_fp=3197bb9acd235558901b6a7c6f4063a0b0b555d14656ce9527340a0645d8b7b7 source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Verifies that `run_incremental` streams per-file progress events to the provided callback during cascade-driven re-sync.
 
-Verify that `run_incremental` fires `on_start` and `on_done` progress callbacks for each cascade-affected file.
+- Creates test project with lib.py and app.py files, syncs both initially
+- Modifies lib.py to trigger cascade to app.py 
+- Uses custom Recorder class to capture on_start and on_done callback invocations
+- Asserts both files appear in captured progress events
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_compute_incremental_worklist_empty_when_clean fingerprint=cee10449e37638cbcb7584f41c7a16959603fbd74fc37e487f6c4431acef61cd body_fp=ef8aa9806a740b314f429a71f7e602b0ed0c2edb29165462401fa0300552d2b5 source_ref=f81ee936e7bc6c01e0ab2b744f93acfa2cd45c96 -->
-## `test_compute_incremental_worklist_empty_when_clean(project: Path)`
-
-Assert that `compute_incremental_worklist` returns an empty worklist when all triefacts are up to date.
+<!-- trie:section symbol=tests/test_incremental:test_compute_incremental_worklist_empty_when_clean fingerprint=cee10449e37638cbcb7584f41c7a16959603fbd74fc37e487f6c4431acef61cd body_fp=3426d263139065383fb981161cfeb821a597a9707b23effab2b578bf4e4c5ecc source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Verifies `compute_incremental_worklist` returns empty worklist when project triefacts are coherent with source files.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_compute_incremental_worklist_includes_cascade fingerprint=19c15c1b29c078331a336f622e363b66959f8716f801ca6fe7080644d95a55c2 body_fp=aca2a23fb7ab09ac4f6928ca73ec055f7b724958409e376f247d35722e317c03 source_ref=f81ee936e7bc6c01e0ab2b744f93acfa2cd45c96 -->
-## `test_compute_incremental_worklist_includes_cascade(project: Path)`
+<!-- trie:section symbol=tests/test_incremental:test_compute_incremental_worklist_includes_cascade fingerprint=19c15c1b29c078331a336f622e363b66959f8716f801ca6fe7080644d95a55c2 body_fp=db70c7244aac5ba8e5b26f524aa4f3fdfe70747944121e14a55fd0586ef8f569 source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Verifies that compute_incremental_worklist includes both directly modified files and cascade-affected dependencies.
 
-Assert that modifying `lib.py` places it in `directly_stale` and its caller `app.py` in `cascaded_files` without invoking any LLM or mutating triefacts.
+- Modifies lib.py to make it directly stale
+- Confirms lib.py appears in directly_stale list 
+- Confirms app.py appears in cascaded_files (depends on lib.py)
+- Verifies both files are included in affected_files
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_compute_incremental_worklist_is_read_only fingerprint=b52fe57285334a3855e29c7336c6bcbc9cc95bfb04a5a962c757fce08ac63a67 body_fp=f0adb6f316233f284336e2e1bb2245a3810dfcf5d30429ee257e44895c44f3fd source_ref=f81ee936e7bc6c01e0ab2b744f93acfa2cd45c96 -->
-## `test_compute_incremental_worklist_is_read_only(project: Path)`
+<!-- trie:section symbol=tests/test_incremental:test_compute_incremental_worklist_is_read_only fingerprint=b52fe57285334a3855e29c7336c6bcbc9cc95bfb04a5a962c757fce08ac63a67 body_fp=ba03f18eccb8a06c893778b7c5d2cc7daa0ae22300fccd684aa3ad445b11a4bf source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Verifies that `compute_incremental_worklist` does not mutate triefact files when determining work needed.
 
-Assert that `compute_incremental_worklist` leaves all triefact files unchanged after drift is introduced.
+- Snapshots triefact directory contents before and after calling `compute_incremental_worklist`
+- Modifies source file to trigger stale detection but expects no file changes
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_compute_incremental_worklist_reports_orphans fingerprint=485e1297b791feffbf91b27b19055ae1493474b073d92853ea881e5c40bfad3c body_fp=3c42ab0d1fd3287dcd0f690bf0a9aed232e815e835f4b5a55daad52d5b93600c source_ref=f81ee936e7bc6c01e0ab2b744f93acfa2cd45c96 -->
-## `test_compute_incremental_worklist_reports_orphans(project: Path)`
+<!-- trie:section symbol=tests/test_incremental:test_compute_incremental_worklist_reports_orphans fingerprint=485e1297b791feffbf91b27b19055ae1493474b073d92853ea881e5c40bfad3c body_fp=438c836d73e9500148c90a238969ea4a847ef181c559f7e51c3917cc3772f902 source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Verifies that `compute_incremental_worklist` identifies orphaned triefacts when source files are deleted.
 
-Assert that deleting a source file causes its triefact to appear in `worklist.orphan_triefacts` without being deleted from disk.
+- Creates initial sync then removes `lib.py` to orphan its triefact
+- Confirms orphan appears in worklist without being deleted from disk
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_cli_plan_incremental_on_clean_tree_reports_noop fingerprint=4db390236c0ccf4b0a6740b4884f58820085d76652e2c109d278c69e7638a4d9 body_fp=9f3f0cff487a76e7bc31cd07b9d02dfa1e8325b498e023a66c78c2319a011da5 source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
-## `test_cli_plan_incremental_on_clean_tree_reports_noop(project: Path, monkeypatch: pytest.MonkeyPatch)`
+<!-- trie:section symbol=tests/test_incremental:test_cli_plan_incremental_on_clean_tree_reports_noop fingerprint=4db390236c0ccf4b0a6740b4884f58820085d76652e2c109d278c69e7638a4d9 body_fp=ecfe3049527cc2686b925c5b5fae476756b6e79010ca8b020eb8c7becf67a005 source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Tests that `trie plan` on a clean project reports no-op status rather than full-bootstrap cost.
 
-Assert that `trie plan` on a coherent, fully-synced project outputs "coherent" or "no-op" and never the full-bootstrap cost header.
+- Verifies CLI output contains "coherent" or "no-op" messaging
+- Ensures "plan for" header does not appear for established projects
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_cli_plan_incremental_on_drift_lists_only_affected fingerprint=8af4a0d4196163c1948a984c33f635d05f98b0f37378f54703608740eb844080 body_fp=6043bc8c7fc5e1e16790df014fa5fe4c73b8f6a363d1ba203d3c8fe3a80c4e3a source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
-## `test_cli_plan_incremental_on_drift_lists_only_affected(project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `trie plan` on a drifted established project outputs incremental cost, not full-bootstrap cost.
+<!-- trie:section symbol=tests/test_incremental:test_cli_plan_incremental_on_drift_lists_only_affected fingerprint=8af4a0d4196163c1948a984c33f635d05f98b0f37378f54703608740eb844080 body_fp=126c4cef52710f6c7efbf047c81ad3144cc7772a9855ae049f09f5d7a444d7c0 source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Tests that `trie plan` on a project with file changes shows incremental cost rather than full bootstrap cost.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_incremental:test_cli_plan_all_forces_full_bootstrap_view fingerprint=4b275d51edf24baed79b45e27f8bf548affa56b8c67ab6f014a8b1f227e37ede body_fp=ebb3a57122fe73aa4e1d7b96a29fe59f22cbb410764b24c110575a47d796364d source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
-## `test_cli_plan_all_forces_full_bootstrap_view(project: Path, monkeypatch: pytest.MonkeyPatch)`
-
-Assert that `trie plan --all` displays the full-bootstrap cost view, not the incremental plan.
+<!-- trie:section symbol=tests/test_incremental:test_cli_plan_all_forces_full_bootstrap_view fingerprint=4b275d51edf24baed79b45e27f8bf548affa56b8c67ab6f014a8b1f227e37ede body_fp=3f02dd9ce5ad441c4383e121af63aee2afccf5ae09ce34cf024ba53db83f2adc source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e -->
+Verifies `trie plan --all` shows full-bootstrap cost view on established projects instead of incremental planning.
 <!-- trie:end -->

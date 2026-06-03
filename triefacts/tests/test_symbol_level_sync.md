@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: tests/test_symbol_level_sync.py
 file_fingerprint: 557cc0ef4d2d6936d9449cad54b52e04caa6f9bc6c9c0b5ae7dabf808cdebcd5
-last_synced_at: '2026-05-28T14:39:40Z'
+last_synced_at: '2026-06-03T21:07:45Z'
 description: 'Symbol-level sync: regenerate only the symbols actually asked for.'
 defines:
 - kind: module
@@ -47,73 +47,62 @@ defines:
 incoming_refs: 0
 outgoing_refs: 33
 ---
-<!-- trie:section symbol=tests/test_symbol_level_sync:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=14c53c9f2656fb060ed16ca328e9b47aa46f05f215ff7f6f4313a96bec616dd9 source_ref=0013b0d2bb1e2a586f0828e9253a2620db3d60a9 -->
-## `tests/test_symbol_level_sync`
+<!-- trie:section symbol=tests/test_symbol_level_sync:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=da8aad35f588907e10af88c80b9961cbfdb6447ba33c348c07f99fa0427e2031 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
+Tests symbol-level sync functionality ensuring only requested symbols are regenerated while others remain byte-identical.
 
-Test suite for symbol-level sync: verifying partial regeneration, worklist computation, and end-to-end incremental sync behaviour.
-
-- `FIXTURE_DIR`: points to `tests/fixtures/tiny_repo` source fixtures
-- `FakeClient`: deterministic LLM stub; each call returns a uniquely-tagged body
+- Tests `sync_single_file` with `symbols_to_regen=None` (regenerates all symbols), subset selection (only specified symbols), and empty set (no LLM calls)
+- Tests `compute_incremental_worklist` correctly identifies directly stale symbols and excludes files missing triefacts
+- Tests `run_incremental` end-to-end behavior where single symbol edits trigger single symbol regenerations
+- Validates underscored symbols are documented and participate in staleness detection
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_symbol_level_sync:FIXTURE_DIR fingerprint=2635a439793a81128764c32977c9356050865c2ac61f8264769219675508cca2 body_fp=8a16487de16ba9146dfdb7d585eaf10db7487d08248770243258eef11ae67233 source_ref=0013b0d2bb1e2a586f0828e9253a2620db3d60a9 -->
-## `FIXTURE_DIR: Path`
-
-Absolute path to the `tests/fixtures/tiny_repo` directory used as the base for test project copies.
+<!-- trie:section symbol=tests/test_symbol_level_sync:FIXTURE_DIR fingerprint=2635a439793a81128764c32977c9356050865c2ac61f8264769219675508cca2 body_fp=4cfd1dd2840cc5710ced1dc0cfeb73a77806e80815eb56e1b32623b9749e3835 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
+Path constant pointing to the test fixture directory containing a minimal repository for testing symbol-level sync behavior.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_symbol_level_sync:_make_project fingerprint=c97c2c26a919c215f8014b8f1407e668c378af04f12f290758ef0642a790e528 body_fp=36614e935e4107b4c01b60b74d4733a27228231c4b090a91bb74b3716cad5639 source_ref=0013b0d2bb1e2a586f0828e9253a2620db3d60a9 -->
-## `_make_project(tmp_path: Path) -> Path`
-
-Copy the `tiny_repo` fixture into `tmp_path/demo` and write a `trie.toml` config, returning the project root.
+<!-- trie:section symbol=tests/test_symbol_level_sync:_make_project fingerprint=c97c2c26a919c215f8014b8f1407e668c378af04f12f290758ef0642a790e528 body_fp=b43a195466656c99b9ad9eb01d87ae32f55ce2ced1b276a0b7f1a790caffb295 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
+Creates a test project by copying fixture files and generating a trie.toml configuration.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_symbol_level_sync:project fingerprint=31b657a420ab0ee010f44136750460d44af36302a21bf48ce10670807d6c13bc body_fp=374bcef3b1a3bd7420e66ea76ea713073fc98e9a7e4e71732752e5d6a7d3f0d3 source_ref=0013b0d2bb1e2a586f0828e9253a2620db3d60a9 -->
-## `project(tmp_path: Path) -> Path`
-
-Pytest fixture that creates a temporary demo project copied from the fixture directory.
+<!-- trie:section symbol=tests/test_symbol_level_sync:project fingerprint=31b657a420ab0ee010f44136750460d44af36302a21bf48ce10670807d6c13bc body_fp=12769c491e4bf4a8ea08241bdf3aa73feb864431aed593f978cf78d870bbbe23 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
+Creates a temporary project directory with fixture files and trie configuration for testing.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_symbol_level_sync:test_symbols_to_regen_none_regens_every_symbol fingerprint=fb12d83380d332e73109d6d987b1a7ee655b9a8af3f03ea95aa40df27debcfd1 body_fp=ac5215a40e79f73f59cbeb3e88062ffc6767c0fb2f48bc27a03029e37211ecd5 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
-## `test_symbols_to_regen_none_regens_every_symbol(project: Path)`
-
-Assert that `sync_single_file` with `symbols_to_regen=None` regenerates all 6 symbols and skips none.
+<!-- trie:section symbol=tests/test_symbol_level_sync:test_symbols_to_regen_none_regens_every_symbol fingerprint=fb12d83380d332e73109d6d987b1a7ee655b9a8af3f03ea95aa40df27debcfd1 body_fp=cdfb40bd96eefdf06eec4036b179697b31e6177631481997e3ccfc49810ff09b source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
+Tests that sync_single_file with symbols_to_regen=None regenerates all symbols in the file.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_symbol_level_sync:test_symbols_to_regen_subset_only_regenerates_listed_symbols fingerprint=c0e0dc6b3ec9514aadc4bb7814ca2d4a764c576b17b5668912db430004ce00de body_fp=b6b2f56fc4529a5f6f053c33eb3e771ca9a015c5d79be443ff6dd6e88e29b4ea source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
-## `test_symbols_to_regen_subset_only_regenerates_listed_symbols(project: Path)`
+<!-- trie:section symbol=tests/test_symbol_level_sync:test_symbols_to_regen_subset_only_regenerates_listed_symbols fingerprint=c0e0dc6b3ec9514aadc4bb7814ca2d4a764c576b17b5668912db430004ce00de body_fp=c1aea8c65de678b0ff14765aa8e13d050aabd454fd918de1b2b9ee2c54de0661 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
+Verifies that `sync_single_file` with a specific symbols_to_regen set only regenerates those symbols while preserving all other sections byte-identically.
 
-Assert that `sync_single_file` with a subset `symbols_to_regen` calls the LLM only for listed symbols and leaves all other sections byte-identical.
+- Performs initial sync to establish baseline triefact content
+- Captures pre-sync section state for comparison
+- Runs targeted sync requesting only "calculator:add" symbol regeneration  
+- Asserts exactly one LLM call made and one symbol generated
+- Validates untouched symbols remain byte-identical in body, body_fingerprint, and fingerprint
+- Confirms targeted symbol received fresh documentation body
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_symbol_level_sync:test_symbols_to_regen_empty_set_runs_no_llm_calls fingerprint=db98c682cf2f1faecc4a6940c1e50fddb07a427c5dc860642f6970a32737a007 body_fp=9052924d389beb69dfbbd5cec384a031ef36fe518fb4d96251dd9df2346762cc source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
-## `test_symbols_to_regen_empty_set_runs_no_llm_calls(project: Path)`
+<!-- trie:section symbol=tests/test_symbol_level_sync:test_symbols_to_regen_empty_set_runs_no_llm_calls fingerprint=db98c682cf2f1faecc4a6940c1e50fddb07a427c5dc860642f6970a32737a007 body_fp=da1d735fcda419ef50a2988cc9f31d22a0216a09560a6f043be0c2431eeee6f8 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
+Tests that sync_single_file with empty symbols_to_regen set runs zero LLM calls but updates file front matter.
 
-Assert that `sync_single_file` with `symbols_to_regen=set()` makes zero LLM calls, skips all 6 symbols, and preserves every section body byte-for-byte.
+- Verifies no symbols are generated or sent to LLM when empty set provided
+- Confirms all section bytes remain identical, only front-matter timestamps change
+- Validates the degenerate case where file is visited but no symbols regenerated
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_symbol_level_sync:test_symbols_to_regen_ignores_unknown_qnames fingerprint=ad0de3a19c2b3d9f728703a235bdd9d9d564ed295a5a2df4c9dca30198d9151c body_fp=30f48fdc722019b99762772e3bea51ac290a2467d61b37f17d265c609738087e source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
-## `test_symbols_to_regen_ignores_unknown_qnames(project: Path)`
-
-Verify that qnames in `symbols_to_regen` that don't exist in the current source are silently ignored, triggering zero LLM calls.
+<!-- trie:section symbol=tests/test_symbol_level_sync:test_symbols_to_regen_ignores_unknown_qnames fingerprint=ad0de3a19c2b3d9f728703a235bdd9d9d564ed295a5a2df4c9dca30198d9151c body_fp=42059ff1e549f377baf2a65b3970d823faeb4cc28fd1e3217053124bde6bfa5e source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
+Verifies that `sync_single_file` silently ignores qualified names in `symbols_to_regen` that don't exist in current source, making no LLM calls and skipping all symbols.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_symbol_level_sync:_scanned_store fingerprint=be2171d309873933c9dd828dece87833bd3c117974cc17e64314491077d352a8 body_fp=3304e352da39298e9fd1e9b5b3d9c7ec217e79779c79c2cc9168d1fb0acfe2fd source_ref=0013b0d2bb1e2a586f0828e9253a2620db3d60a9 -->
-## `_scanned_store(project: Path) -> Store`
-
-Create and return a `Store` populated by scanning the given project directory.
+<!-- trie:section symbol=tests/test_symbol_level_sync:_scanned_store fingerprint=be2171d309873933c9dd828dece87833bd3c117974cc17e64314491077d352a8 body_fp=e565d8aed5e4d306bd640e1e46f3ee0a102a4cbb7c9bba5ec4db0e4facf482f4 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
+Creates and returns a Store instance populated with scanned project data from the given project directory.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_symbol_level_sync:test_worklist_collects_qnames_for_directly_stale_symbols fingerprint=f89a09ff2d19d054811e97848e9b3407918d480797ee1db5e217233dc7a2d961 body_fp=af452f4c3ad5341449d2844b3b47450f24bc3e07d30cc21fe2462351f3185694 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
-## `test_worklist_collects_qnames_for_directly_stale_symbols(project: Path)`
+<!-- trie:section symbol=tests/test_symbol_level_sync:test_worklist_collects_qnames_for_directly_stale_symbols fingerprint=f89a09ff2d19d054811e97848e9b3407918d480797ee1db5e217233dc7a2d961 body_fp=aa8fe8929db6e4d31dba8df9447bec00ae11f4c671b910c41d76eb3ffc8c14a8 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
+Tests that `compute_incremental_worklist` correctly identifies directly stale symbols for symbol-level regeneration.
 
-Assert that editing a single symbol's body causes `compute_incremental_worklist` to populate `regen_qnames_by_file` with exactly that qname.
+- Creates baseline triefacts for calculator.py and strings.py
+- Modifies the `add` function body in calculator.py to make it stale
+- Verifies worklist contains only the modified symbol qualified name, not the entire file
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_symbol_level_sync:test_worklist_omits_files_marked_missing_triefact fingerprint=a4aa6fab8ebd4667cbcb0251c911c91c9b4ff411519f99919cadf8354d1e30a7 body_fp=8ae363b46362adbdf180617472e7fe047c2329bc9989a53f70515316e01a369c source_ref=0013b0d2bb1e2a586f0828e9253a2620db3d60a9 -->
-## `test_worklist_omits_files_marked_missing_triefact(project: Path)`
-
-Assert that files with no existing triefact appear in `directly_stale` but not in `regen_qnames_by_file`, triggering full cold-write instead of symbol-level regen.
+<!-- trie:section symbol=tests/test_symbol_level_sync:test_worklist_omits_files_marked_missing_triefact fingerprint=a4aa6fab8ebd4667cbcb0251c911c91c9b4ff411519f99919cadf8354d1e30a7 body_fp=edabd9699a32a5b9cf43ff9c5e719bc451868c21621df6e4ae1ed1d4e7696a98 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
+Tests that files without existing triefacts are excluded from symbol-level regeneration mapping and use cold-write path instead.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_symbol_level_sync:test_run_incremental_regenerates_only_changed_symbol fingerprint=a65113dda9afce87564899c0db24eb8071924c986e5b7ab1d8d70355c2cd8e75 body_fp=2d890a9391357872ca8f2bf60617a42c3e501a45997851f8786eea3c4e3f6ecb source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
-## `test_run_incremental_regenerates_only_changed_symbol(project: Path)`
-
-End-to-end verify that `run_incremental` regenerates exactly one symbol after a single-symbol source edit, leaving all other sections byte-identical.
-
-- `project`: temp copy of `tiny_repo` fixture, bootstrapped with two synced files before the edit.
+<!-- trie:section symbol=tests/test_symbol_level_sync:test_run_incremental_regenerates_only_changed_symbol fingerprint=a65113dda9afce87564899c0db24eb8071924c986e5b7ab1d8d70355c2cd8e75 body_fp=871297bcc33ccff1421363eb20024b71502320808c0f58eebc9ff7502d7e48f4 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
+Tests that run_incremental regenerates only the changed symbol while preserving all other sections byte-identically.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_symbol_level_sync:test_underscored_symbols_are_documented_and_can_go_stale fingerprint=83103e9fad1ddc9c6dd458d47055a45da52160bc322cc88d14089ac18bbf805e body_fp=4105dd52a727c51a6a3c5885353ecd140dbb49a46c047f5b1302319dff7fe89d source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
-## `test_underscored_symbols_are_documented_and_can_go_stale(project: Path)`
-
-Verify that underscore-prefixed symbols receive triefact sections and are flagged stale after source edits.
+<!-- trie:section symbol=tests/test_symbol_level_sync:test_underscored_symbols_are_documented_and_can_go_stale fingerprint=83103e9fad1ddc9c6dd458d47055a45da52160bc322cc88d14089ac18bbf805e body_fp=db69723a57dd772b8f709fe607559aab7c3d6df39b40ab6db2453fec92179b3c source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a -->
+Verifies that underscored symbols receive documentation and are properly detected as stale when modified.
 <!-- trie:end -->
