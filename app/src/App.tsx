@@ -37,28 +37,46 @@ function AppShell() {
 
 function OpenProjectScreen({ onOpen }: { onOpen: () => void }) {
   const [loading, setLoading] = useState(false)
+  const [autoOpening, setAutoOpening] = useState(true)
+  const [recent, setRecent] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
+  const attempted = useRef(false)
 
-  const handleOpen = async () => {
+  const openDir = async (dir: string) => {
     setLoading(true)
     setError(null)
     try {
-      const dir = await trie().showOpenDialog()
-      if (dir) {
-        // openProject spawns opencode and waits for it to be ready.
-        // ipc:servers-ready fires during this call; onServersReady in App
-        // will handle the transition to AppShell — onOpen() is called from there.
-        await trie().openProject(dir)
-        // openProject resolved means the server is up; onServersReady already
-        // fired and called onOpen(). If for some reason it hasn't (timing),
-        // wait a tick to let the IPC event process.
-        setTimeout(onOpen, 50)
-      }
+      await trie().openProject(dir)
+      setTimeout(onOpen, 50)
     } catch (err) {
       setError(String(err))
-    } finally {
       setLoading(false)
     }
+  }
+
+  // Auto-open the most recent project on launch (project persistence).
+  useEffect(() => {
+    if (attempted.current) return
+    attempted.current = true
+    ;(async () => {
+      try {
+        const list: string[] = (await trie().getRecentProjects()) ?? []
+        setRecent(list)
+        if (list.length > 0) {
+          await openDir(list[0])
+          return
+        }
+      } catch {
+        /* fall through to manual */
+      }
+      setAutoOpening(false)
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleOpen = async () => {
+    const dir = await trie().showOpenDialog()
+    if (dir) await openDir(dir)
   }
 
   return (
@@ -73,13 +91,38 @@ function OpenProjectScreen({ onOpen }: { onOpen: () => void }) {
             {error}
           </p>
         )}
-        <button
-          className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-6 py-3 text-sm font-medium transition-colors disabled:opacity-50"
-          onClick={handleOpen}
-          disabled={loading}
-        >
-          {loading ? "Opening…" : "Open Project"}
-        </button>
+        {autoOpening && !error ? (
+          <div className="flex items-center gap-2 text-slate-500 text-sm">
+            <span className="w-4 h-4 border-2 border-slate-600 border-t-indigo-400 rounded-full animate-spin" />
+            Opening last project…
+          </div>
+        ) : (
+          <>
+            <button
+              className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-6 py-3 text-sm font-medium transition-colors disabled:opacity-50"
+              onClick={handleOpen}
+              disabled={loading}
+            >
+              {loading ? "Opening…" : "Open Project"}
+            </button>
+            {recent.length > 0 && (
+              <div className="flex flex-col items-stretch gap-1 w-72">
+                <p className="text-slate-600 text-xs uppercase tracking-wide">Recent</p>
+                {recent.slice(0, 5).map((p) => (
+                  <button
+                    key={p}
+                    className="text-left text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded px-2 py-1.5 text-xs font-mono truncate"
+                    onClick={() => openDir(p)}
+                    disabled={loading}
+                    title={p}
+                  >
+                    {p.split("/").slice(-2).join("/")}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   )

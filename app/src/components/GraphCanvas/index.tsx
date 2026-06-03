@@ -15,7 +15,7 @@ interface GraphCanvasProps {
 
 // A force-graph node is either a real symbol, an L0 component, or a "+N" bubble.
 type FGNode =
-  | { kind: "component"; id: string; label: string; count: number; color: string; val: number }
+  | { kind: "component"; id: string; label: string; count: number; color: string; val: number; expanded?: boolean }
   | { kind: "symbol"; id: string; node: SystemModelNode; color: string; val: number }
   | { kind: "aggregate"; id: string; label: string; count: number; color: string; val: number }
 
@@ -23,11 +23,21 @@ interface FGLink {
   source: string
   target: string
   weight: number
+  kind?: "flow" | "member" | "call"
 }
 
 export function GraphCanvas({ className }: GraphCanvasProps) {
-  const { model, axis, level, visible, hoveredId, adjacency, selectedQname, isolatedGroup } =
-    useGraphStore()
+  const {
+    model,
+    axis,
+    visible,
+    hoveredId,
+    adjacency,
+    selectedQname,
+    isolatedGroup,
+    focusedExpansion,
+    pinnedExpansions,
+  } = useGraphStore()
   const expandComponent = useGraphStore((s) => s.expandComponent)
   const togglePin = useGraphStore((s) => s.togglePin)
   const selectNode = useGraphStore((s) => s.selectNode)
@@ -107,71 +117,108 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
     return flows.has(`${s}|${t}`) || flows.has(`${t}|${s}`)
   }, [])
 
-  // Build the graph data for the current level. L0 = component diagram; deeper
-  // levels = the DOI-bounded symbol set + "+N" aggregate bubbles.
+  // Build the graph data. The L0 component graph is ALWAYS the backbone; when
+  // components are expanded, their member symbols bloom OUT of the parent
+  // component node (linked to it) — expand-in-place, never a view swap.
   const data = useMemo(() => {
     if (!model) return { nodes: [] as FGNode[], links: [] as FGLink[] }
 
-    if (level === "components") {
-      const view = componentView(model, axis)
-      const maxCount = Math.max(1, ...view.groups.map((g) => g.count))
-      const nodes: FGNode[] = view.groups.map((g) => ({
+    const view = componentView(model, axis)
+    const maxCount = Math.max(1, ...view.groups.map((g) => g.count))
+    const expanded = new Set<string>(pinnedExpansions)
+    if (focusedExpansion) expanded.add(focusedExpansion)
+
+    const nodes: FGNode[] = []
+    const links: FGLink[] = []
+
+    // 1) component backbone — collapsed groups stay as single nodes; expanded
+    //    groups shrink to a labelled "anchor" the members orbit.
+    for (const g of view.groups) {
+      const isExpanded = expanded.has(g.key)
+      nodes.push({
         kind: "component",
         id: g.key,
         label: g.key.split("/").pop() ?? g.key,
         count: g.count,
         color: colorOf(g.key),
-        val: 4 + 20 * Math.sqrt(g.count / maxCount),
-      }))
-      const present = new Set(nodes.map((n) => n.id))
-      const links: FGLink[] = view.flows
-        .filter((f) => present.has(f.source) && present.has(f.target))
-        .map((f) => ({ source: f.source, target: f.target, weight: f.weight }))
-      return { nodes, links }
-    }
-
-    // L1/L2 — DOI visible symbol set + aggregates.
-    const nodes: FGNode[] = visible.nodes.map((n) => ({
-      kind: "symbol",
-      id: n.qname,
-      node: n,
-      color: colorOf(axis === "role" ? n.role || "untagged" : n.subsystem),
-      val: nodeRadius(n.salience, n.cls),
-    }))
-    for (const agg of visible.aggregates) {
-      nodes.push({
-        kind: "aggregate",
-        id: agg.id,
-        label: `+${agg.count} ${agg.key.split("/").pop() ?? agg.key}`,
-        count: agg.count,
-        color: colorOf(agg.key),
-        val: 6 + 10 * Math.sqrt(agg.count / 50),
+        val: isExpanded ? 10 : 8 + 16 * Math.sqrt(g.count / maxCount),
+        expanded: isExpanded,
       })
     }
-    // edges among visible symbols only (tapered caller->callee drawn in paint)
-    const shownIds = new Set(visible.nodes.map((n) => n.qname))
-    const links: FGLink[] = []
-    const seen = new Set<string>()
-    for (const n of visible.nodes) {
-      const nbrs = useGraphStore.getState().adjacency?.neighbours.get(n.qname)
-      if (!nbrs) continue
-      for (const w of nbrs) {
-        if (shownIds.has(w)) {
-          const id = n.qname < w ? `${n.qname}|${w}` : `${w}|${n.qname}`
-          if (!seen.has(id)) {
-            seen.add(id)
-            links.push({ source: n.qname, target: w, weight: 1 })
+    const presentComp = new Set(view.groups.map((g) => g.key))
+    for (const f of view.flows) {
+      if (presentComp.has(f.source) && presentComp.has(f.target)) {
+        links.push({ source: f.source, target: f.target, weight: f.weight, kind: "flow" })
+      }
+    }
+
+    // 2) members of expanded components, linked to their parent component node
+    if (expanded.size > 0) {
+      const groupKey = (n: (typeof visible.nodes)[number]) =>
+        axis === "role" ? n.role || "untagged" : n.subsystem
+      const shownIds = new Set<string>()
+      for (const n of visible.nodes) {
+        const gk = groupKey(n)
+        if (!expanded.has(gk)) continue
+        shownIds.add(n.qname)
+        nodes.push({
+          kind: "symbol",
+          id: n.qname,
+          node: n,
+          color: colorOf(gk),
+          val: nodeRadius(n.salience, n.cls),
+        })
+        // tether member -> its component anchor (containment)
+        links.push({ source: gk, target: n.qname, weight: 0, kind: "member" })
+      }
+      // aggregates ("+N") for the folded tail of each expanded component
+      for (const agg of visible.aggregates) {
+        if (!expanded.has(agg.key)) continue
+        nodes.push({
+          kind: "aggregate",
+          id: agg.id,
+          label: `+${agg.count}`,
+          count: agg.count,
+          color: colorOf(agg.key),
+          val: 6 + 8 * Math.sqrt(agg.count / 50),
+        })
+        links.push({ source: agg.key, target: agg.id, weight: 0, kind: "member" })
+      }
+      // real call edges among shown members (so structure is visible)
+      const adj = useGraphStore.getState().adjacency
+      const seen = new Set<string>()
+      for (const n of visible.nodes) {
+        if (!shownIds.has(n.qname)) continue
+        const nbrs = adj?.neighbours.get(n.qname)
+        if (!nbrs) continue
+        for (const w of nbrs) {
+          if (shownIds.has(w)) {
+            const id = n.qname < w ? `${n.qname}|${w}` : `${w}|${n.qname}`
+            if (!seen.has(id)) {
+              seen.add(id)
+              links.push({ source: n.qname, target: w, weight: 1, kind: "call" })
+            }
           }
         }
       }
     }
+
     return { nodes, links }
-  }, [model, axis, level, visible, colorOf])
+  }, [model, axis, visible, colorOf, focusedExpansion, pinnedExpansions])
 
   useEffect(() => {
     if (!data.nodes.length || !fgRef.current) return
     const fg = fgRef.current
-    fg.d3Force("charge")?.strength(level === "components" ? -300 : -120)
+    const expanded = focusedExpansion !== null || pinnedExpansions.size > 0
+    fg.d3Force("charge")?.strength(expanded ? -140 : -320)
+    // member tethers short (cluster around parent), flow edges long (spread roles)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const linkForce = fg.d3Force("link") as any
+    if (linkForce?.distance) {
+      linkForce.distance((l: FGLink) =>
+        l.kind === "member" ? 28 : l.kind === "call" ? 40 : 160,
+      )
+    }
     // register nodes for the reveal animation (new ones born at 0)
     const anim = animatorRef.current
     const present = new Set<string>()
@@ -182,7 +229,7 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
     anim.prune(present)
     const t = setTimeout(() => fg.zoomToFit(800, 60), 200)
     return () => clearTimeout(t)
-  }, [data, level])
+  }, [data, focusedExpansion, pinnedExpansions])
 
   // decay activity (fast) + heat (slow) on a rAF loop so pulses fade and edit
   // warmth cools even when the sim is frozen.
@@ -201,12 +248,12 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
 
   const maxWeight = useMemo(() => Math.max(1, ...data.links.map((l) => l.weight)), [data.links])
 
-  const { focusedExpansion, pinnedExpansions } = useGraphStore()
+  const anyExpanded = focusedExpansion !== null || pinnedExpansions.size > 0
 
   return (
     <div className={`relative flex-1 bg-slate-950 ${className ?? ""}`}>
       {/* breadcrumb / level affordance */}
-      {level !== "components" && (
+      {anyExpanded && (
         <div className="absolute top-3 left-3 z-10 flex items-center gap-2 text-xs">
           <button
             className="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded px-2 py-1"
@@ -270,18 +317,31 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
           onNodeHover={onNodeHover}
           onBackgroundClick={onBackgroundClick}
           linkColor={(l) => {
-            const lk = l as unknown as { source: { id: string }; target: { id: string } }
-            if (highlightSet) {
-              const s = typeof lk.source === "object" ? lk.source.id : (lk.source as unknown as string)
-              const t = typeof lk.target === "object" ? lk.target.id : (lk.target as unknown as string)
-              return highlightSet.has(s) && highlightSet.has(t)
-                ? "rgba(148,163,184,0.55)"
-                : "rgba(148,163,184,0.06)"
+            const lk = l as unknown as {
+              kind?: string
+              source: string | { id: string }
+              target: string | { id: string }
             }
-            return "rgba(148,163,184,0.22)"
+            const s = typeof lk.source === "object" ? lk.source.id : lk.source
+            const t = typeof lk.target === "object" ? lk.target.id : lk.target
+            if (highlightSet) {
+              return highlightSet.has(s) && highlightSet.has(t)
+                ? "rgba(148,163,184,0.6)"
+                : "rgba(148,163,184,0.04)"
+            }
+            if (lk.kind === "member") return "rgba(100,116,139,0.18)" // faint tether
+            if (lk.kind === "call") return "rgba(148,163,184,0.22)"
+            return "rgba(148,163,184,0.38)" // role->role flow: most prominent
           }}
-          linkWidth={(l) => 0.5 + 2.5 * ((l as FGLink).weight / maxWeight)}
-          linkCurvature={0.12}
+          linkWidth={(l) => {
+            const lk = l as FGLink
+            if (lk.kind === "member") return 0.5
+            if (lk.kind === "call") return 0.6
+            return 0.6 + 3.5 * (lk.weight / maxWeight) // flow scaled by call volume
+          }}
+          linkCurvature={(l) => ((l as FGLink).kind === "flow" ? 0.18 : 0)}
+          linkDirectionalArrowLength={(l) => ((l as FGLink).kind === "flow" ? 4 : 0)}
+          linkDirectionalArrowRelPos={0.9}
           linkDirectionalParticles={(l) => (linkIsActive(l) ? 4 : 0)}
           linkDirectionalParticleWidth={2.5}
           linkDirectionalParticleColor={() => ACTIVITY.read}
@@ -412,21 +472,36 @@ function paintNode(
   }
 
   if (n.kind === "component") {
+    const expanded = n.expanded
     ctx.beginPath()
     ctx.arc(n.x, n.y, r, 0, 2 * Math.PI)
-    ctx.fillStyle = n.color
-    ctx.globalAlpha = 0.9
-    ctx.fill()
-    ctx.globalAlpha = 1
-    const fs = Math.max(11, 13 / globalScale)
-    ctx.font = `${fs}px ui-sans-serif, system-ui, sans-serif`
+    if (expanded) {
+      // opened container: hollow ring with a faint fill
+      ctx.fillStyle = n.color
+      ctx.globalAlpha = 0.15
+      ctx.fill()
+      ctx.globalAlpha = dimmed ? 0.18 : 1
+      ctx.strokeStyle = n.color
+      ctx.lineWidth = 2 / globalScale
+      ctx.stroke()
+    } else {
+      ctx.fillStyle = n.color
+      ctx.globalAlpha = dimmed ? 0.18 : 0.92
+      ctx.fill()
+      ctx.globalAlpha = dimmed ? 0.18 : 1
+    }
+    // label (role name) centered on the node, with the count beneath
+    const fs = Math.max(12, 14 / globalScale)
+    ctx.font = `600 ${fs}px ui-sans-serif, system-ui, sans-serif`
     ctx.textAlign = "center"
     ctx.textBaseline = "middle"
-    ctx.fillStyle = "#e2e8f0"
-    ctx.fillText(n.label, n.x, n.y + r + fs)
-    ctx.fillStyle = "rgba(2,6,23,0.85)"
-    ctx.font = `${Math.max(9, 10 / globalScale)}px ui-monospace, monospace`
-    ctx.fillText(String(n.count), n.x, n.y)
+    ctx.fillStyle = "#f1f5f9"
+    ctx.fillText(n.label, n.x, n.y - (expanded ? r + fs : 0))
+    if (!expanded) {
+      ctx.font = `${Math.max(9, 10 / globalScale)}px ui-monospace, monospace`
+      ctx.fillStyle = "rgba(2,6,23,0.9)"
+      ctx.fillText(`${n.count}`, n.x, n.y + fs * 0.95)
+    }
     ctx.restore()
     return
   }
