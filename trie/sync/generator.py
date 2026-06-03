@@ -25,6 +25,8 @@ Guidelines:
 - For @property methods: describe them as attributes, not as callable functions.
 - For @classmethod / @staticmethod: make clear they are called on the class, not an instance.
 - For class symbols: do not add sub-headings for methods inside the class body.
+
+Also classify the symbol's architectural role via the `role` field. Pick the single most specific role describing what the symbol primarily does, preferring the standard vocabulary listed in the field description. The role drives how the symbol is grouped in the graph view, so be consistent: symbols doing the same kind of work should get the same role.
 """
 
 # Diff-aware regeneration rubric. Prepended to the user message when we have both
@@ -71,6 +73,7 @@ class GeneratedSection:
     cache_creation_input_tokens: int
     cache_read_input_tokens: int
     mode: RegenMode = "cold"
+    role: str = ""
 
 
 def build_cached_context(ctx: FileGenerationContext) -> str:
@@ -167,4 +170,5 @@ def generate_section(
         cache_creation_input_tokens=result.cache_creation_input_tokens,
         cache_read_input_tokens=result.cache_read_input_tokens,
         mode=mode,
+        role=section_body.role.strip().lower(),
     )

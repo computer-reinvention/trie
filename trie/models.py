@@ -12,7 +12,7 @@ from anthropic import (
     InternalServerError,
     RateLimitError,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 from pydantic_ai.usage import Usage
 
@@ -26,9 +26,27 @@ from trie.config import Sync
 
 
 class SectionBody(BaseModel):
-    """Triefact documentation body for a single symbol."""
+    """Triefact documentation body for a single symbol, plus its architectural role."""
 
     body: str
+    role: str = Field(
+        default="",
+        description=(
+            "A single lowercase role tag classifying this symbol's architectural "
+            "function in the codebase. Prefer one of the standard roles: "
+            "'entrypoint' (CLI/main/server bootstrap), 'api' (request handlers, "
+            "public interface surface), 'domain' (core business logic and rules), "
+            "'persistence' (database/storage/serialization), 'io' (filesystem, "
+            "network, subprocess, external services), 'parsing' (lexing/AST/"
+            "deserialization of inputs), 'model' (data structures, schemas, "
+            "dataclasses, types), 'config' (settings, environment, configuration), "
+            "'orchestration' (pipelines, schedulers, coordinators that wire other "
+            "components together), 'util' (small reusable helpers), 'test' (test "
+            "code and fixtures). If none of these fit, coin a concise "
+            "project-specific role (one or two lowercase words, hyphenated). "
+            "Choose the single most specific role for what this symbol primarily does."
+        ),
+    )
 
 
 class MergeNotesOutput(BaseModel):
