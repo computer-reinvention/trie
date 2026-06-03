@@ -2,7 +2,14 @@
 // Routes all calls through the Electron main process (IPC proxy) because
 // the renderer cannot reach 127.0.0.1 directly on some macOS configurations.
 
-import type { ProjectSummary, ReadResult, SymbolsByFileResult, TraceResult, SymbolHit } from "./types"
+import type {
+  ProjectSummary,
+  ReadResult,
+  SymbolsByFileResult,
+  TraceResult,
+  SymbolHit,
+  SystemModel,
+} from "./types"
 
 let baseUrl = ""
 
@@ -52,6 +59,16 @@ export const graphClient = {
     const params: Record<string, string> = {}
     if (opts?.limit != null) params.limit = String(opts.limit)
     return get("/desktop/graph/all-edges", Object.keys(params).length ? params : undefined)
+  },
+
+  // The high-level system model — classified+scored nodes, L0 component axes
+  // (role/subsystem), landmarks, precomputed layout positions. The primary
+  // data source for the graph view. Cached server-side; instant after first call.
+  systemModel(opts?: { landmarkLimit?: number; includeTests?: boolean }): Promise<SystemModel> {
+    const params: Record<string, string> = {}
+    if (opts?.landmarkLimit != null) params.landmark_limit = String(opts.landmarkLimit)
+    if (opts?.includeTests) params.include_tests = "true"
+    return get("/desktop/graph/system-model", Object.keys(params).length ? params : undefined)
   },
 
   grep(opts: { predicate?: Record<string, unknown>; rank_by?: string; limit?: number }): Promise<{ hits: SymbolHit[] }> {

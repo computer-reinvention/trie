@@ -1,7 +1,6 @@
 import { useEffect } from "react"
 import { useGraphStore } from "@/store/graphStore"
 import { useAgentStore } from "@/store/agentStore"
-import { graphClient } from "@/api/graphClient"
 import type {
   DesktopEvent,
   DesktopToolStartEvent,
@@ -87,25 +86,9 @@ export function useOpenCodeSSE(opencodePort: number): void {
         case "desktop.file.edited": {
           const p = data.properties as unknown as DesktopFileEditedEvent
           // If the edited file is under triefacts/, the prose for its
-          // corresponding symbols may have been refreshed — re-fetch.
-          if (p.file.includes("triefacts/")) {
-            // Derive the source path from the triefact path and re-fetch prose
-            // for any currently-expanded nodes in that file.
-            const match = p.file.match(/triefacts\/(.+)\.md$/)
-            if (match) {
-              const sourcePath = match[1]
-              const expanded = useGraphStore
-                .getState()
-                .nodes.filter((n) => n.data.isExpanded && n.data.filePath.includes(sourcePath))
-              for (const node of expanded) {
-                graphClient.read(node.id).then((result) => {
-                  graphStore.setNodeProse(node.id, result.prose)
-                  graphStore.setNodeAgentState(node.id, "idle")
-                }).catch(() => {/* best-effort */})
-              }
-            }
-          } else {
-            // Source file edited — mark its nodes stale
+          // corresponding symbols may have been refreshed. We don't re-fetch
+          // prose here (the inspector loads it on demand); just mark stale.
+          if (!p.file.includes("triefacts/")) {
             graphStore.setFileAgentState(p.file, "stale")
           }
           break
@@ -123,28 +106,26 @@ export function useOpenCodeSSE(opencodePort: number): void {
   }, [opencodePort])
 }
 
+// Map agent tool calls onto the graph's live runtime. Reading a symbol breathes
+// it blue (reading); writing pulses amber. The richer comet/heat choreography
+// lands in the live-monitor pass; this is the grounded baseline.
 function handleToolStart(
   p: DesktopToolStartEvent,
   graphStore: ReturnType<typeof useGraphStore.getState>,
 ): void {
   const { tool, input } = p
-
-  if (tool === "trie_read" && input.qname) {
-    graphStore.setNodeAgentState(input.qname as string, "reading")
-  } else if (tool === "trie_trace" && input.from_qname) {
-    graphStore.setNodeAgentState(input.from_qname as string, "reading")
-  } else if (tool === "trie_trace_flow" || tool === "trie_explain_flow") {
-    if (input.symbol1) graphStore.setNodeAgentState(input.symbol1 as string, "reading")
-    if (input.symbol2) graphStore.setNodeAgentState(input.symbol2 as string, "reading")
-  } else if (tool === "trie_explain_symbol" && input.sym) {
-    const match = graphStore.findNodeByName(input.sym as string)
-    if (match) graphStore.setNodeAgentState(match.id, "reading")
+  const read = (q: string) => {
+    graphStore.setNodeAgentState(q, "reading")
+    graphStore.bumpActivity(q, 0.8)
+  }
+  if (tool === "trie_read" && input.qname) read(input.qname as string)
+  else if (tool === "trie_trace" && input.from_qname) read(input.from_qname as string)
+  else if (tool === "trie_trace_flow" || tool === "trie_explain_flow") {
+    if (input.symbol1) read(input.symbol1 as string)
+    if (input.symbol2) read(input.symbol2 as string)
   } else if (tool === "trie_patch" && input.qname) {
     graphStore.setNodeAgentState(input.qname as string, "writing")
-  } else if (tool === "trie_patch_apply") {
-    graphStore.nodes
-      .filter((n) => n.data.agentState === "writing")
-      .forEach((n) => graphStore.setNodeAgentState(n.id, "writing"))
+    graphStore.bumpActivity(input.qname as string, 1)
   } else if (tool === "write_file" && input.path) {
     graphStore.setFileAgentState(input.path as string, "writing")
   } else if (tool === "str_replace_editor" && input.path) {
@@ -156,41 +137,25 @@ function handleToolDone(
   p: DesktopToolDoneEvent,
   graphStore: ReturnType<typeof useGraphStore.getState>,
 ): void {
-  const { tool, input, output } = p
+  const { tool, input } = p
+  const settle = (q: string) => setTimeout(() => graphStore.setNodeAgentState(q, "idle"), 800)
 
-  if (tool === "trie_read" && input.qname) {
-    // Update prose inline if output contains it
-    if (output) {
-      try {
-        const parsed = JSON.parse(output) as { prose?: string }
-        if (parsed.prose) {
-          graphStore.setNodeProse(input.qname as string, parsed.prose)
-        }
-      } catch { /* ignore */ }
-    }
-    setTimeout(() => graphStore.setNodeAgentState(input.qname as string, "idle"), 800)
-  } else if (tool === "trie_trace" && input.from_qname) {
-    if (output) {
-      try {
-        const parsed = JSON.parse(output) as import("@/api/types").TraceResult
-        if (parsed.nodes) graphStore.mergeTraceResult(parsed)
-      } catch { /* ignore */ }
-    }
-    setTimeout(() => graphStore.setNodeAgentState(input.from_qname as string, "idle"), 800)
-  } else if (tool === "trie_trace_flow" || tool === "trie_explain_flow") {
-    if (input.symbol1) setTimeout(() => graphStore.setNodeAgentState(input.symbol1 as string, "idle"), 800)
-    if (input.symbol2) setTimeout(() => graphStore.setNodeAgentState(input.symbol2 as string, "idle"), 800)
-  } else if (tool === "trie_patch_apply") {
-    // Re-fetch prose for all nodes that were in writing state
-    const writingNodes = graphStore.nodes.filter((n) => n.data.agentState === "writing")
-    for (const node of writingNodes) {
-      graphClient.read(node.id).then((result) => {
-        graphStore.setNodeProse(node.id, result.prose)
-        graphStore.setNodeAgentState(node.id, "idle")
-      }).catch(() => graphStore.setNodeAgentState(node.id, "idle"))
-    }
+  if (tool === "trie_read" && input.qname) settle(input.qname as string)
+  else if (tool === "trie_trace" && input.from_qname) settle(input.from_qname as string)
+  else if (tool === "trie_trace_flow" || tool === "trie_explain_flow") {
+    if (input.symbol1) settle(input.symbol1 as string)
+    if (input.symbol2) settle(input.symbol2 as string)
   } else if (tool === "write_file" && input.path) {
     graphStore.setFileAgentState(input.path as string, "stale")
+    // residual edit heat that lingers (persistent monitor dimension)
+    const m = graphStore.model
+    if (m) {
+      for (const n of m.nodes) {
+        if (n.file_path === input.path || n.file_path.endsWith(input.path as string)) {
+          graphStore.setHeat(n.qname, 1)
+        }
+      }
+    }
   } else if (tool === "str_replace_editor" && input.path) {
     graphStore.setFileAgentState(input.path as string, "stale")
   }

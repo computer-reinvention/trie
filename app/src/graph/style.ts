@@ -1,0 +1,78 @@
+// Visual encoding for the system map: color by role, marker by class, size by
+// salience. Grounded constants — every channel encodes a fact.
+
+import type { NodeClass } from "@/api/types"
+
+// Stable role -> hue. Standard roles get curated colors; unknown roles hash.
+const ROLE_COLORS: Record<string, string> = {
+  entrypoint: "#f59e0b", // amber — doors into the system
+  api: "#6366f1", // indigo
+  domain: "#8b5cf6", // violet — core logic
+  orchestration: "#a855f7", // purple — coordinators
+  persistence: "#0ea5e9", // sky — storage
+  io: "#06b6d4", // cyan — outside world
+  parsing: "#14b8a6", // teal
+  model: "#22c55e", // green — data structures
+  config: "#eab308", // yellow
+  util: "#64748b", // slate — helpers
+  test: "#475569", // dim slate
+  untagged: "#374151",
+}
+
+export function roleColor(role: string): string {
+  const r = role || "untagged"
+  if (ROLE_COLORS[r]) return ROLE_COLORS[r]
+  // deterministic hue from hash for project-specific roles
+  let h = 0
+  for (let i = 0; i < r.length; i++) h = (h * 31 + r.charCodeAt(i)) >>> 0
+  return `hsl(${h % 360}, 55%, 55%)`
+}
+
+// Subsystem -> hue (used when grouping/coloring by subsystem axis).
+export function subsystemColor(subsystem: string): string {
+  let h = 0
+  for (let i = 0; i < subsystem.length; i++) h = (h * 31 + subsystem.charCodeAt(i)) >>> 0
+  return `hsl(${h % 360}, 50%, 58%)`
+}
+
+// Node radius from salience (px at globalScale 1). Hubs visibly larger.
+export function nodeRadius(salience: number, cls: NodeClass): number {
+  const base = 3 + salience * 9 // 3..12
+  if (cls === "hub") return base * 1.35
+  if (cls === "door") return base * 1.2
+  return base
+}
+
+// Class marker style: how the dot is decorated to read its boundary role.
+export interface ClassMarker {
+  ring?: string // ring color (doors get a ring)
+  halo?: string // soft glow (hubs)
+  shape: "circle" | "diamond" // bedrock = diamond
+  chevron?: boolean // exit = outward chevron
+}
+
+export function classMarker(cls: NodeClass, color: string): ClassMarker {
+  switch (cls) {
+    case "door":
+      return { shape: "circle", ring: "#fbbf24" }
+    case "hub":
+      return { shape: "circle", halo: color }
+    case "bedrock":
+      return { shape: "diamond" }
+    case "exit":
+      return { shape: "circle", chevron: true }
+    default:
+      return { shape: "circle" }
+  }
+}
+
+// Agent-activity colors (live monitor).
+export const ACTIVITY = {
+  read: "#3b82f6", // cool blue breath
+  write: "#f59e0b", // urgent amber
+  heat: "#ef4444", // residual edit warmth
+}
+
+// Aggregate "+N" bubble styling.
+export const AGGREGATE_COLOR = "#1e293b"
+export const AGGREGATE_BORDER = "#334155"
