@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { ReactFlowProvider } from "@xyflow/react"
 import { GraphCanvas } from "@/components/GraphCanvas"
 import { Sidebar } from "@/components/Sidebar"
+import { Inspector } from "@/components/Inspector"
 import { InputBar } from "@/components/InputBar"
 import { TurnHistory } from "@/components/TurnHistory"
 import { useAppStore } from "@/store/appStore"
@@ -29,6 +30,7 @@ function AppShell() {
         <TurnHistory />
         <InputBar />
       </div>
+      <Inspector />
     </div>
   )
 }
