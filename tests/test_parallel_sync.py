@@ -45,6 +45,7 @@ class _DeterministicClient:
         user_prompt: str,
         *,
         max_tokens: int = 1024,
+        cache_prefix: str | None = None,
     ) -> ModelResult:
         with self._lock:
             self.in_flight += 1

@@ -13,7 +13,8 @@ from anthropic import (
     RateLimitError,
 )
 from pydantic import BaseModel, Field
-from pydantic_ai import Agent
+from pydantic_ai import Agent, CachePoint
+from pydantic_ai.models.anthropic import AnthropicModelSettings
 from pydantic_ai.usage import Usage
 
 from trie import telemetry
@@ -45,6 +46,22 @@ class SectionBody(BaseModel):
             "code and fixtures). If none of these fit, coin a concise "
             "project-specific role (one or two lowercase words, hyphenated). "
             "Choose the single most specific role for what this symbol primarily does."
+        ),
+    )
+    boundary: str = Field(
+        default="internal",
+        description=(
+            "Where this symbol sits relative to the system's boundary with the "
+            "outside world. One of exactly: 'entry' — execution enters the system "
+            "here from outside (CLI commands, HTTP/route handlers, framework "
+            "callbacks, public tool/RPC methods invoked by an agent or client, "
+            "main/run entry functions); 'exit' — the symbol's primary job is to "
+            "reach OUT of the system (spawn a subprocess, open a socket or network "
+            "request, read/write the filesystem, call an external API or LLM "
+            "client); 'internal' — neither; it is called by and calls other "
+            "in-project code. Judge by the symbol's actual purpose in the source, "
+            "not just its name. When a symbol both is invoked from outside and "
+            "reaches outside, prefer 'entry'. Most symbols are 'internal'."
         ),
     )
 
@@ -274,11 +291,24 @@ class TrieClient:
         user_prompt: str,
         *,
         max_tokens: int = 1024,
+        cache_prefix: str | None = None,
     ) -> ModelResult:
         """Run an agent with structured output.
 
-        The ``system_prompt`` is set on the agent (eligible for Anthropic
-        prompt caching). The ``user_prompt`` is sent as the user message.
+        Prompt caching (critical for cost control on multi-symbol files):
+
+        - ``system_prompt`` is cached via ``anthropic_cache_instructions`` —
+          identical across every symbol, so it's written once and read
+          thereafter.
+        - ``cache_prefix``, when given, is sent as a leading user content block
+          followed by a ``CachePoint()`` marker, then ``user_prompt``. Everything
+          up to (and including) the prefix is cached; the per-call ``user_prompt``
+          stays dynamic. The sync path passes the full file source here so all
+          symbols in a file share one cached prefix.
+
+        Without explicit breakpoints pydantic-ai does NOT cache, which bills the
+        full prefix on every call — the regression this guards against.
+
         Returns the validated Pydantic model plus token usage counters.
         """
         with telemetry.timed("model_call", model=self.full_model_id, kind="generate") as tele:
@@ -287,8 +317,18 @@ class TrieClient:
                 output_type=output_type,
                 system_prompt=system_prompt,
             )
-            result = agent.run_sync(user_prompt, model_settings={"max_tokens": max_tokens})
-            usage = result.usage()
+            if cache_prefix:
+                user_input: str | list[Any] = [cache_prefix, CachePoint(), user_prompt]
+            else:
+                user_input = user_prompt
+            result = agent.run_sync(
+                user_input,
+                model_settings=AnthropicModelSettings(
+                    max_tokens=max_tokens,
+                    anthropic_cache_instructions=True,
+                ),
+            )
+            usage = result.usage
             tele["input_tokens"] = usage.input_tokens
             tele["output_tokens"] = usage.output_tokens
             tele["cache_creation_input_tokens"] = (usage.details or {}).get(
@@ -301,9 +341,16 @@ class TrieClient:
 
     def count_tokens(self, system_prompt: str, user_prompt: str) -> int:
         """Return the number of input tokens via the Anthropic count_tokens API."""
+        # The Anthropic API rejects empty or whitespace-only user message
+        # content ("user messages must have non-empty content" / "text content
+        # blocks must contain non-whitespace text"), but the plan-time cost
+        # preview intentionally passes an empty user_prompt to measure only the
+        # cached prefix (system + cached context). Substitute a minimal
+        # non-whitespace placeholder so the request is accepted; the one-token
+        # delta is negligible for cost estimation.
         payload: dict[str, Any] = {
             "model": self._anthropic_model,
-            "messages": [{"role": "user", "content": user_prompt}],
+            "messages": [{"role": "user", "content": user_prompt if user_prompt.strip() else "."}],
         }
         if system_prompt:
             payload["system"] = [{"type": "text", "text": system_prompt}]

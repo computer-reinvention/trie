@@ -51,6 +51,7 @@ class FakeTrieClient:
         self.last_system_prompt: str = ""
         self.last_user_prompt: str = ""
         self.last_max_tokens: int = 0
+        self.last_cache_prefix: str | None = None
 
     @property
     def model_id(self) -> str:
@@ -63,6 +64,7 @@ class FakeTrieClient:
         user_prompt: str,
         *,
         max_tokens: int = 1024,
+        cache_prefix: str | None = None,
     ) -> ModelResult:
         from trie.models import (
             BatchFilterOutput,
@@ -80,6 +82,7 @@ class FakeTrieClient:
         self.last_system_prompt = system_prompt
         self.last_user_prompt = user_prompt
         self.last_max_tokens = max_tokens
+        self.last_cache_prefix = cache_prefix
 
         if output_type is SectionBody:
             body = self.output_body

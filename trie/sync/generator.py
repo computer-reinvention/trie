@@ -74,6 +74,7 @@ class GeneratedSection:
     cache_read_input_tokens: int
     mode: RegenMode = "cold"
     role: str = ""
+    boundary: str = ""
 
 
 def build_cached_context(ctx: FileGenerationContext) -> str:
@@ -158,7 +159,8 @@ def generate_section(
     result = client.run(
         SectionBody,
         system_prompt=SYSTEM_PROMPT,
-        user_prompt=build_cached_context(file_ctx) + "\n\n" + user_prompt,
+        user_prompt=user_prompt,
+        cache_prefix=build_cached_context(file_ctx),
         max_tokens=max_tokens,
     )
     section_body: SectionBody = result.output
@@ -171,4 +173,5 @@ def generate_section(
         cache_read_input_tokens=result.cache_read_input_tokens,
         mode=mode,
         role=section_body.role.strip().lower(),
+        boundary=section_body.boundary.strip().lower(),
     )

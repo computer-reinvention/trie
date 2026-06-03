@@ -96,6 +96,7 @@ class FakeTriefactClient:
         user_prompt: str,
         *,
         max_tokens: int = 1024,
+        cache_prefix: str | None = None,
     ) -> ModelResult:
         return ModelResult(
             output=SectionBody(body="## Symbol\n\nAuto-generated prose.\n"),
@@ -122,6 +123,7 @@ class FakeEditClient:
         user_prompt: str,
         *,
         max_tokens: int = 1024,
+        cache_prefix: str | None = None,
     ) -> ModelResult:
         if output_type is MergeNotesOutput:
             return ModelResult(
@@ -157,6 +159,7 @@ class PassthroughClient:
         user_prompt: str,
         *,
         max_tokens: int = 1024,
+        cache_prefix: str | None = None,
     ) -> ModelResult:
         if output_type is MergeNotesOutput:
             return ModelResult(
@@ -192,6 +195,7 @@ class BrokenClient:
         user_prompt: str,
         *,
         max_tokens: int = 1024,
+        cache_prefix: str | None = None,
     ) -> ModelResult:
         if output_type is MergeNotesOutput:
             return ModelResult(
