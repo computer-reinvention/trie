@@ -430,6 +430,25 @@ class TrieTools:
         ).fetchall()
         return {"edges": [{"from": r[0], "to": r[1]} for r in rows]}
 
+    def system_model(self, landmark_limit: int = 60) -> dict[str, Any]:
+        """Return the high-level *system model* for the desktop graph view.
+
+        A model of the system rather than one node per symbol: every node is
+        classified (door/hub/bedrock/exit/orphan/normal), scored for salience,
+        and annotated with betweenness, depth-from-entry, and community. Also
+        returns role summaries and aggregated role-to-role flow edges (the L0
+        view) plus a landmark set for the L1 view.
+
+        Returns {nodes, roles, role_flows, landmarks}. Pure graph math over the
+        store — no LLM calls.
+        """
+        from trie.graph.system_model import build_system_model, system_model_to_dict
+
+        model = build_system_model(
+            self.store, project_root=self.root, landmark_limit=landmark_limit
+        )
+        return system_model_to_dict(model)
+
     def summary(self) -> dict[str, Any]:
         """Return project-level aggregate counts for the trie desktop app.
 
@@ -2082,6 +2101,7 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     server.tool(name="symbols_by_file")(tools.symbols_by_file)
     server.tool(name="all_symbols")(tools.all_symbols)
     server.tool(name="all_edges")(tools.all_edges)
+    server.tool(name="system_model")(tools.system_model)
     return server, tools
 
 

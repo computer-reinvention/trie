@@ -10,7 +10,7 @@ from pathlib import Path
 from trie.parse.python import Symbol
 from trie.parse.references import Reference
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 # All schema is created if not present. The DB is a regenerable cache under .trie/;
 # bumping SCHEMA_VERSION blows it away and triggers a re-scan on next connect.
@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS symbols (
     is_public INTEGER NOT NULL,
     start_line INTEGER NOT NULL,
     end_line INTEGER NOT NULL,
+    decorators TEXT NOT NULL DEFAULT '',
     UNIQUE (file_path, qualified_name)
 );
 CREATE INDEX IF NOT EXISTS idx_symbols_file ON symbols(file_path);
@@ -56,11 +57,13 @@ CREATE TABLE IF NOT EXISTS triefact_sections (
     section_fingerprint TEXT NOT NULL,
     one_liner TEXT,
     role TEXT NOT NULL DEFAULT '',
+    boundary TEXT NOT NULL DEFAULT '',
     last_generated_at INTEGER NOT NULL,
     PRIMARY KEY (triefact_path, symbol_id)
 );
 CREATE INDEX IF NOT EXISTS idx_sections_symbol ON triefact_sections(symbol_id);
 CREATE INDEX IF NOT EXISTS idx_sections_role ON triefact_sections(role);
+CREATE INDEX IF NOT EXISTS idx_sections_boundary ON triefact_sections(boundary);
 
 CREATE TABLE IF NOT EXISTS patches (
     id INTEGER PRIMARY KEY,
@@ -120,6 +123,8 @@ class SymbolDetail:
     outbound_count: int
     one_liner: str  # "" when no triefact section exists
     role: str = ""  # LLM-inferred architectural role; "" when unknown
+    boundary: str = ""  # LLM-inferred boundary class: entry/exit/internal; "" unknown
+    decorators: str = ""  # newline-joined decorator lines; "" when none
     pending_patches: list[dict] = field(default_factory=list)
     pending_patch_count: int = 0
 
@@ -246,8 +251,9 @@ class Store:
                 """
                 INSERT INTO symbols (
                     file_path, qualified_name, name, kind, signature, docstring,
-                    body_normalized_hash, signature_hash, is_public, start_line, end_line
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    body_normalized_hash, signature_hash, is_public, start_line, end_line,
+                    decorators
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     (
@@ -262,6 +268,7 @@ class Store:
                         int(s.is_public),
                         s.start_line,
                         s.end_line,
+                        "\n".join(s.decorators),
                     )
                     for s in symbols
                 ],
@@ -499,6 +506,7 @@ class Store:
         section_fingerprint: str,
         one_liner: str,
         role: str = "",
+        boundary: str = "",
         now: int | None = None,
     ) -> None:
         """Record (or refresh) the metadata trie keeps in lockstep with a generated section.
@@ -507,9 +515,10 @@ class Store:
         (e.g. renamed/deleted between scan and sync), the row is silently skipped — the
         next scan + sync will clean things up.
 
-        `role` is the LLM-inferred architectural role tag; '' when unknown. An empty
-        role on update does not clobber a previously-stored non-empty role, so a
-        metadata-only refresh that lacks role inference preserves the existing tag.
+        `role` is the LLM-inferred architectural role tag; '' when unknown. `boundary`
+        is the LLM-inferred boundary class (entry/exit/internal); '' when unknown. An
+        empty value on update does not clobber a previously-stored non-empty one, so a
+        metadata-only refresh that lacks LLM inference preserves the existing tags.
         """
         ts = now if now is not None else int(time.time())
         row = self._conn.execute(
@@ -522,8 +531,9 @@ class Store:
         self._conn.execute(
             """
             INSERT INTO triefact_sections
-                (triefact_path, symbol_id, section_fingerprint, one_liner, role, last_generated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+                (triefact_path, symbol_id, section_fingerprint, one_liner, role,
+                 boundary, last_generated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(triefact_path, symbol_id) DO UPDATE SET
                 section_fingerprint = excluded.section_fingerprint,
                 one_liner = excluded.one_liner,
@@ -531,9 +541,13 @@ class Store:
                     WHEN excluded.role != '' THEN excluded.role
                     ELSE triefact_sections.role
                 END,
+                boundary = CASE
+                    WHEN excluded.boundary != '' THEN excluded.boundary
+                    ELSE triefact_sections.boundary
+                END,
                 last_generated_at = excluded.last_generated_at
             """,
-            (triefact_path, symbol_id, section_fingerprint, one_liner, role, ts),
+            (triefact_path, symbol_id, section_fingerprint, one_liner, role, boundary, ts),
         )
         self._conn.commit()
 
@@ -719,7 +733,12 @@ class Store:
                 COALESCE(
                     (SELECT role FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
                     ''
-                ) AS role
+                ) AS role,
+                COALESCE(
+                    (SELECT boundary FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
+                    ''
+                ) AS boundary,
+                COALESCE(s.decorators, '') AS decorators
             FROM symbols s
             WHERE s.qualified_name = ?
             LIMIT 1
@@ -742,6 +761,8 @@ class Store:
             outbound_count=int(row[9]),
             one_liner=row[10] or "",
             role=row[11] or "",
+            boundary=row[12] or "",
+            decorators=row[13] or "",
             pending_patches=patches,
             pending_patch_count=len(patches),
         )
@@ -818,6 +839,11 @@ class Store:
                     (SELECT role FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
                     ''
                 ) AS role,
+                COALESCE(
+                    (SELECT boundary FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
+                    ''
+                ) AS boundary,
+                COALESCE(s.decorators, '') AS decorators,
                 {patch_subq} AS patch_count
             FROM symbols s
             {where_sql}
@@ -840,7 +866,9 @@ class Store:
                 outbound_count=int(row[9]),
                 one_liner=row[10] or "",
                 role=row[11] or "",
-                pending_patch_count=int(row[12]),
+                boundary=row[12] or "",
+                decorators=row[13] or "",
+                pending_patch_count=int(row[14]),
             )
             for row in rows
         ]
