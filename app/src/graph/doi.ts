@@ -155,22 +155,79 @@ export function selectVisible(params: DoiParams): VisibleSet {
   return { nodes: shown, aggregates }
 }
 
+// A group's character determines how it expands: entry-facing groups lead with
+// their doors; foundational groups lead with their most-depended-on symbols.
+export type GroupCharacter = "entry" | "foundation" | "mixed"
+
+export interface ComponentGroup {
+  key: string
+  count: number
+  doorCount: number
+  hubCount: number
+  bedrockCount: number
+  avgDepth: number // mean depth-from-door of members (entry small, deep large)
+  order: number // 0 = entry side, 1 = foundation side (for left->right layout)
+  character: GroupCharacter
+}
+
 // L0 component view: one synthetic node per group on the chosen axis, plus the
 // thresholded group->group flows. This is the opening frame (~11-26 nodes).
 export interface ComponentView {
-  groups: Array<{ key: string; count: number; doorCount: number; hubCount: number }>
+  groups: ComponentGroup[]
   flows: Array<{ source: string; target: string; weight: number }>
 }
 
 export function componentView(model: SystemModel, axis: GroupingAxis): ComponentView {
   const a = model.axes[axis]
+  const groupKeyOf = (n: SystemModelNode) =>
+    axis === "role" ? n.role || "untagged" : n.subsystem
+
+  // aggregate per-group depth + bedrock count from member nodes
+  const depthSum = new Map<string, number>()
+  const depthN = new Map<string, number>()
+  const bedrock = new Map<string, number>()
+  for (const n of model.nodes) {
+    if (n.is_test) continue
+    const k = groupKeyOf(n)
+    if (n.depth >= 0) {
+      depthSum.set(k, (depthSum.get(k) ?? 0) + n.depth)
+      depthN.set(k, (depthN.get(k) ?? 0) + 1)
+    }
+    if (n.cls === "bedrock") bedrock.set(k, (bedrock.get(k) ?? 0) + 1)
+  }
+  const avgDepthOf = (k: string) =>
+    depthN.get(k) ? (depthSum.get(k) as number) / (depthN.get(k) as number) : 0
+
+  const raw = a.groups.map((g) => ({
+    key: g.key,
+    count: g.count,
+    doorCount: g.door_count,
+    hubCount: g.hub_count,
+    bedrockCount: bedrock.get(g.key) ?? 0,
+    avgDepth: avgDepthOf(g.key),
+  }))
+
+  // normalize avgDepth -> order in [0,1] (entry side small depth, foundation deep)
+  const depths = raw.map((g) => g.avgDepth)
+  const minD = Math.min(...depths, 0)
+  const maxD = Math.max(...depths, 1)
+  const span = maxD - minD || 1
+
+  const groups: ComponentGroup[] = raw.map((g) => {
+    const order = (g.avgDepth - minD) / span
+    const doorRatio = g.count ? g.doorCount / g.count : 0
+    const bedrockRatio = g.count ? g.bedrockCount / g.count : 0
+    const character: GroupCharacter =
+      doorRatio >= 0.25 || g.key === "entrypoint" || g.key === "api"
+        ? "entry"
+        : bedrockRatio >= 0.15 || g.key === "util" || g.key === "model" || g.key === "config"
+          ? "foundation"
+          : "mixed"
+    return { ...g, order, character }
+  })
+
   return {
-    groups: a.groups.map((g) => ({
-      key: g.key,
-      count: g.count,
-      doorCount: g.door_count,
-      hubCount: g.hub_count,
-    })),
+    groups,
     flows: a.flows.map((f) => ({ source: f.source, target: f.target, weight: f.weight })),
   }
 }
