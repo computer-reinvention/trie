@@ -3,7 +3,8 @@ import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d"
 import { useGraphStore } from "@/store/graphStore"
 import { useAppStore } from "@/store/appStore"
 import { componentView } from "@/graph/doi"
-import { roleColor, subsystemColor, nodeRadius, classMarker } from "@/graph/style"
+import { roleColor, subsystemColor, nodeRadius, classMarker, ACTIVITY } from "@/graph/style"
+import { GraphAnimator } from "@/graph/animator"
 import { SearchPalette } from "./SearchPalette"
 import type { SystemModelNode } from "@/api/types"
 
@@ -33,6 +34,7 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
   const { graphLoading, graphLoadingMessage } = useAppStore()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<ForceGraphMethods<any, any> | undefined>(undefined)
+  const animatorRef = useRef(new GraphAnimator())
 
   const colorOf = axis === "role" ? roleColor : subsystemColor
 
@@ -158,9 +160,32 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
     if (!data.nodes.length || !fgRef.current) return
     const fg = fgRef.current
     fg.d3Force("charge")?.strength(level === "components" ? -300 : -120)
+    // register nodes for the reveal animation (new ones born at 0)
+    const anim = animatorRef.current
+    const present = new Set<string>()
+    for (const n of data.nodes) {
+      present.add(n.id)
+      anim.ensure(n.id, true)
+    }
+    anim.prune(present)
     const t = setTimeout(() => fg.zoomToFit(800, 60), 200)
     return () => clearTimeout(t)
   }, [data, level])
+
+  // decay activity (fast) + heat (slow) on a rAF loop so pulses fade and edit
+  // warmth cools even when the sim is frozen.
+  useEffect(() => {
+    let raf = 0
+    let last = performance.now()
+    const loop = (now: number) => {
+      const dt = now - last
+      last = now
+      useGraphStore.getState().decayActivityAndHeat(dt)
+      raf = requestAnimationFrame(loop)
+    }
+    raf = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(raf)
+  }, [])
 
   const maxWeight = useMemo(() => Math.max(1, ...data.links.map((l) => l.weight)), [data.links])
 
@@ -206,6 +231,27 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
           cooldownTicks={120}
           warmupTicks={20}
           d3VelocityDecay={0.3}
+          autoPauseRedraw={false}
+          onRenderFramePre={() => {
+            // The animation heart: advance springs + sync targets from store
+            // runtime once per frame, before nodes paint.
+            const anim = animatorRef.current
+            const st = useGraphStore.getState()
+            for (const fgn of data.nodes) {
+              if (fgn.kind !== "symbol") {
+                anim.ensure(fgn.id)
+                continue
+              }
+              const rt = st.runtime.get(fgn.id)
+              const hovered = st.hoveredId === fgn.id
+              const selected = st.selectedQname === fgn.id
+              anim.setTargets(fgn.id, {
+                pulse: rt?.activity ?? 0,
+                emphasis: hovered || selected ? 1 : 0,
+              })
+            }
+            anim.tick(performance.now())
+          }}
           onNodeClick={onNodeClick}
           onNodeRightClick={onNodeRightClick}
           onNodeHover={onNodeHover}
@@ -226,7 +272,17 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
           nodeCanvasObject={(node, ctx, globalScale) => {
             const n = node as FGNode & { x: number; y: number }
             const dimmed = highlightSet ? !highlightSet.has(n.id) : false
-            paintNode(n, ctx, globalScale, dimmed, n.id === selectedQname)
+            const anim = animatorRef.current.get(n.id)
+            const rt = n.kind === "symbol" ? useGraphStore.getState().runtime.get(n.id) : undefined
+            paintNode(n, ctx, globalScale, {
+              dimmed,
+              selected: n.id === selectedQname,
+              reveal: anim?.reveal.current ?? 1,
+              pulse: anim?.pulse.current ?? 0,
+              emphasis: anim?.emphasis.current ?? 0,
+              agentState: rt?.agentState ?? "idle",
+              heat: rt?.heat ?? 0,
+            })
           }}
           nodePointerAreaPaint={(node, color, ctx) => {
             const n = node as FGNode & { x: number; y: number }
@@ -256,16 +312,51 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
 
 // --- canvas painting --------------------------------------------------------
 
+interface PaintOpts {
+  dimmed: boolean
+  selected: boolean
+  reveal: number
+  pulse: number
+  emphasis: number
+  agentState: string
+  heat: number
+}
+
 function paintNode(
   n: FGNode & { x: number; y: number },
   ctx: CanvasRenderingContext2D,
   globalScale: number,
-  dimmed: boolean,
-  selected: boolean,
+  opts: PaintOpts,
 ): void {
-  const r = n.val
+  const { dimmed, selected, reveal, pulse, emphasis, agentState, heat } = opts
+  // reveal: scale + fade in on first appearance; emphasis: grow on hover/select
+  const scale = (0.4 + 0.6 * reveal) * (1 + 0.25 * emphasis)
+  const r = n.val * scale
   ctx.save()
-  if (dimmed) ctx.globalAlpha = 0.18
+  ctx.globalAlpha = dimmed ? 0.18 : reveal
+
+  // sonar pulse ring (agent reading/writing) — expands outward and fades
+  if (pulse > 0.01 && n.kind === "symbol") {
+    const ringColor = agentState === "writing" ? ACTIVITY.write : ACTIVITY.read
+    ctx.beginPath()
+    ctx.arc(n.x, n.y, r + (4 + 18 * (1 - pulse)) / globalScale, 0, 2 * Math.PI)
+    ctx.strokeStyle = ringColor
+    ctx.globalAlpha = (dimmed ? 0.18 : 1) * pulse * 0.7
+    ctx.lineWidth = 2 / globalScale
+    ctx.stroke()
+    ctx.globalAlpha = dimmed ? 0.18 : reveal
+  }
+
+  // residual edit heat — a warm glow that lingers
+  if (heat > 0.02 && n.kind === "symbol") {
+    ctx.beginPath()
+    ctx.arc(n.x, n.y, r * 2.2, 0, 2 * Math.PI)
+    ctx.fillStyle = ACTIVITY.heat
+    ctx.globalAlpha = (dimmed ? 0.1 : 0.22) * heat
+    ctx.fill()
+    ctx.globalAlpha = dimmed ? 0.18 : reveal
+  }
+
   if (selected && n.kind === "symbol") {
     ctx.beginPath()
     ctx.arc(n.x, n.y, r + 4 / globalScale, 0, 2 * Math.PI)
