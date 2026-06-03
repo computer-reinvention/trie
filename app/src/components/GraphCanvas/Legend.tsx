@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react"
 import { useGraphStore } from "@/store/graphStore"
 import { graphClient } from "@/api/graphClient"
-import { roleColor, subsystemColor } from "@/graph/style"
+import { componentView } from "@/graph/doi"
+import { depthColor } from "@/graph/style"
 
-// Bottom-left overlay: lens switcher (role/subsystem), color legend with
-// click-to-isolate, and a Show-tests toggle. The legend doubles as a filter —
-// the Obsidian "color groups" idea generalized.
+// Bottom-left overlay: lens switcher (role/subsystem), a call-depth gradient
+// key, group list with click-to-isolate, and a Show-tests toggle.
 export function Legend() {
   const model = useGraphStore((s) => s.model)
   const axis = useGraphStore((s) => s.axis)
@@ -16,11 +16,10 @@ export function Legend() {
   const [showTests, setShowTests] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
 
-  const colorOf = axis === "role" ? roleColor : subsystemColor
-
+  // groups ordered left->right by call depth, colored by depth (matches canvas)
   const groups = useMemo(() => {
     if (!model) return []
-    return model.axes[axis].groups.slice(0, 16)
+    return [...componentView(model, axis).groups].sort((a, b) => a.order - b.order).slice(0, 16)
   }, [model, axis])
 
   if (!model) return null
@@ -67,6 +66,19 @@ export function Legend() {
 
       {!collapsed && (
         <>
+          {/* call-depth gradient key */}
+          <div className="px-3 py-2 border-b border-slate-800">
+            <div
+              className="h-1.5 rounded"
+              style={{
+                background: `linear-gradient(to right, ${depthColor(0)}, ${depthColor(0.5)}, ${depthColor(1)})`,
+              }}
+            />
+            <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+              <span>entry</span>
+              <span>foundation</span>
+            </div>
+          </div>
           <div className="max-h-56 overflow-y-auto px-2 py-1.5 space-y-0.5">
             {groups.map((g) => {
               const active = isolatedGroup === g.key
@@ -81,7 +93,7 @@ export function Legend() {
                 >
                   <span
                     className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ background: colorOf(g.key) }}
+                    style={{ background: depthColor(g.order) }}
                   />
                   <span className="text-slate-200 truncate">{g.key.split("/").pop()}</span>
                   <span className="text-slate-500 ml-auto tabular-nums">{g.count}</span>

@@ -35,6 +35,26 @@ export function subsystemColor(subsystem: string): string {
   return `hsl(${h % 360}, 50%, 58%)`
 }
 
+// Call-depth gradient: entry (warm amber, left) -> foundation (cool blue, right).
+// `t` in [0,1] is the normalized call-flow order. This makes the primary spatial
+// axis (left->right) reinforced by an obvious color shift.
+export function depthColor(t: number): string {
+  const u = Math.max(0, Math.min(1, t))
+  // amber(40°) -> magenta/violet(290°) sweep through the warm-to-cool arc
+  const hue = 40 + u * 250
+  const sat = 70
+  const light = 62 - u * 10 // foundations slightly deeper
+  return `hsl(${hue}, ${sat}%, ${light}%)`
+}
+
+// Discrete depth-band label for the legend.
+export function depthBand(t: number): string {
+  if (t < 0.2) return "entry"
+  if (t < 0.45) return "interface"
+  if (t < 0.7) return "logic"
+  return "foundation"
+}
+
 // Node radius from salience (px at globalScale 1). Hubs visibly larger.
 export function nodeRadius(salience: number, cls: NodeClass): number {
   const base = 3 + salience * 9 // 3..12
