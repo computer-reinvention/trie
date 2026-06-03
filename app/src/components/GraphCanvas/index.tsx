@@ -6,6 +6,7 @@ import { componentView } from "@/graph/doi"
 import { roleColor, subsystemColor, nodeRadius, classMarker, ACTIVITY } from "@/graph/style"
 import { GraphAnimator } from "@/graph/animator"
 import { SearchPalette } from "./SearchPalette"
+import { Legend } from "./Legend"
 import type { SystemModelNode } from "@/api/types"
 
 interface GraphCanvasProps {
@@ -25,7 +26,8 @@ interface FGLink {
 }
 
 export function GraphCanvas({ className }: GraphCanvasProps) {
-  const { model, axis, level, visible, hoveredId, adjacency, selectedQname } = useGraphStore()
+  const { model, axis, level, visible, hoveredId, adjacency, selectedQname, isolatedGroup } =
+    useGraphStore()
   const expandComponent = useGraphStore((s) => s.expandComponent)
   const togglePin = useGraphStore((s) => s.togglePin)
   const selectNode = useGraphStore((s) => s.selectNode)
@@ -231,6 +233,7 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
         </div>
       )}
       <SearchPalette />
+      <Legend />
       {data.nodes.length > 0 && (
         <ForceGraph2D
           ref={fgRef}
@@ -285,7 +288,17 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
           linkDirectionalParticleSpeed={0.01}
           nodeCanvasObject={(node, ctx, globalScale) => {
             const n = node as FGNode & { x: number; y: number }
-            const dimmed = highlightSet ? !highlightSet.has(n.id) : false
+            const groupOf =
+              n.kind === "symbol"
+                ? axis === "role"
+                  ? n.node.role || "untagged"
+                  : n.node.subsystem
+                : n.kind === "component"
+                  ? n.id
+                  : n.id.replace(/^\+agg:[^:]+:/, "")
+            const isolatedDim = isolatedGroup ? groupOf !== isolatedGroup : false
+            const hoverDim = highlightSet ? !highlightSet.has(n.id) : false
+            const dimmed = isolatedDim || hoverDim
             const anim = animatorRef.current.get(n.id)
             const rt = n.kind === "symbol" ? useGraphStore.getState().runtime.get(n.id) : undefined
             paintNode(n, ctx, globalScale, {

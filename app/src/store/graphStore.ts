@@ -39,6 +39,8 @@ interface GraphStore {
   focus: string[]
   selectedQname: string | null
   hoveredId: string | null
+  // legend filter: when set, only this group (on the current axis) is bright
+  isolatedGroup: string | null
 
   // --- live per-node runtime ---
   runtime: Map<string, NodeRuntime>
@@ -55,6 +57,7 @@ interface GraphStore {
 
   // --- actions: view ---
   setAxis: (axis: GroupingAxis) => void
+  setIsolatedGroup: (key: string | null) => void
   setLevel: (level: ViewLevel) => void
   expandComponent: (key: string) => void // transient (auto-collapses prior)
   collapseTransient: () => void
@@ -91,6 +94,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   focus: [],
   selectedQname: null,
   hoveredId: null,
+  isolatedGroup: null,
 
   runtime: new Map(),
   activeFlows: new Map(),
@@ -138,9 +142,11 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   },
 
   setAxis: (axis) => {
-    set({ axis })
+    set({ axis, focusedExpansion: null, level: "components", isolatedGroup: null })
     get().recomputeVisible()
   },
+
+  setIsolatedGroup: (key) => set({ isolatedGroup: key }),
 
   setLevel: (level) => set({ level }),
 
