@@ -348,7 +348,7 @@ def sync_single_file(
     rel_path = str(source_path.relative_to(src_root))
 
     with telemetry.timed(
-        "sync_file", path=rel_path, model=getattr(client, "full_model_id", client.model_id)
+        "sync_file", path=rel_path, model=getattr(client, "full_model_id", "")
     ) as tele:
         # Every parser-surfaced symbol gets a section. The `is_public` flag (leading
         # underscore by convention) is kept as descriptive metadata on Symbol but is
@@ -499,6 +499,7 @@ def sync_single_file(
                         symbol_qname=qn,
                         section_fingerprint=sym.body_normalized_hash,
                         one_liner=extract_one_liner(section.body),
+                        role=gen.role,
                     )
 
         current_qnames = {s.qualified_name for s in target_symbols}

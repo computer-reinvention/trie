@@ -390,8 +390,7 @@ class TrieTools:
         from trie.graph.store import GrepPredicate
 
         pred = GrepPredicate(kind="any")  # kind="any" is non-empty → bypasses the guard
-        with self.store as s:
-            results = s.grep_symbols(pred, rank_by=rank_by, limit=limit)
+        results = self.store.grep_symbols(pred, rank_by=rank_by, limit=limit)
         hits = [
             {
                 "qname": r.qualified_name,
@@ -404,6 +403,7 @@ class TrieTools:
                 "inbound_count": r.inbound_count,
                 "outbound_count": r.outbound_count,
                 "one_liner": r.one_liner,
+                "role": r.role,
                 "pending_patch_count": r.pending_patch_count,
                 "has_pending_patches": r.pending_patch_count > 0,
             }
@@ -418,17 +418,16 @@ class TrieTools:
         read straight from the SQLite edge table. Much faster than 200 individual
         trace calls and doesn't require the MCP connection to be fully warmed up.
         """
-        with self.store as s:
-            rows = s._conn.execute(
-                """
-                SELECT s_src.qualified_name, s_dst.qualified_name
-                FROM edges e
-                JOIN symbols s_src ON s_src.id = e.src_symbol_id
-                JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
-                LIMIT ?
-                """,
-                (limit,),
-            ).fetchall()
+        rows = self.store._conn.execute(
+            """
+            SELECT s_src.qualified_name, s_dst.qualified_name
+            FROM edges e
+            JOIN symbols s_src ON s_src.id = e.src_symbol_id
+            JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
         return {"edges": [{"from": r[0], "to": r[1]} for r in rows]}
 
     def summary(self) -> dict[str, Any]:
@@ -439,15 +438,15 @@ class TrieTools:
         """
         import trie as trie_pkg
 
-        with self.store as s:
-            total_symbols: int = s._conn.execute("SELECT COUNT(*) FROM symbols").fetchone()[0]
-            public_symbols: int = s._conn.execute(
-                "SELECT COUNT(*) FROM symbols WHERE is_public = 1"
-            ).fetchone()[0]
-            total_files: int = s._conn.execute(
-                "SELECT COUNT(DISTINCT file_path) FROM symbols"
-            ).fetchone()[0]
-            total_edges: int = s._conn.execute("SELECT COUNT(*) FROM edges").fetchone()[0]
+        conn = self.store._conn
+        total_symbols: int = conn.execute("SELECT COUNT(*) FROM symbols").fetchone()[0]
+        public_symbols: int = conn.execute(
+            "SELECT COUNT(*) FROM symbols WHERE is_public = 1"
+        ).fetchone()[0]
+        total_files: int = conn.execute(
+            "SELECT COUNT(DISTINCT file_path) FROM symbols"
+        ).fetchone()[0]
+        total_edges: int = conn.execute("SELECT COUNT(*) FROM edges").fetchone()[0]
 
         return {
             "project_name": self.root.name,
@@ -465,22 +464,22 @@ class TrieTools:
         Returns {file_path, symbols: [SymbolDetail, ...]}.
         Used by the desktop app sidebar file-click to highlight graph nodes.
         """
-        with self.store as s:
-            rows = s._conn.execute(
-                """
-                SELECT
-                    sym.qualified_name, sym.name, sym.kind, sym.file_path,
-                    sym.start_line, sym.end_line, sym.signature, sym.is_public,
-                    (SELECT COUNT(*) FROM edges e WHERE e.dst_symbol_id = sym.id) as inbound_count,
-                    (SELECT COUNT(*) FROM edges e WHERE e.src_symbol_id = sym.id) as outbound_count,
-                    COALESCE(ts.one_liner, '') as one_liner
-                FROM symbols sym
-                LEFT JOIN triefact_sections ts ON ts.symbol_id = sym.id
-                WHERE sym.file_path = ?
-                ORDER BY sym.start_line
-                """,
-                (file_path,),
-            ).fetchall()
+        rows = self.store._conn.execute(
+            """
+            SELECT
+                sym.qualified_name, sym.name, sym.kind, sym.file_path,
+                sym.start_line, sym.end_line, sym.signature, sym.is_public,
+                (SELECT COUNT(*) FROM edges e WHERE e.dst_symbol_id = sym.id) as inbound_count,
+                (SELECT COUNT(*) FROM edges e WHERE e.src_symbol_id = sym.id) as outbound_count,
+                COALESCE(ts.one_liner, '') as one_liner,
+                COALESCE(ts.role, '') as role
+            FROM symbols sym
+            LEFT JOIN triefact_sections ts ON ts.symbol_id = sym.id
+            WHERE sym.file_path = ?
+            ORDER BY sym.start_line
+            """,
+            (file_path,),
+        ).fetchall()
 
         symbols = [
             {
@@ -490,11 +489,11 @@ class TrieTools:
                 "file_path": r[3],
                 "start_line": r[4],
                 "end_line": r[5],
-                "signature": r[6],
                 "is_public": bool(r[7]),
                 "inbound_count": r[8],
                 "outbound_count": r[9],
                 "one_liner": r[10],
+                "role": r[11],
             }
             for r in rows
         ]

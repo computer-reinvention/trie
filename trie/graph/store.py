@@ -10,7 +10,7 @@ from pathlib import Path
 from trie.parse.python import Symbol
 from trie.parse.references import Reference
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 # All schema is created if not present. The DB is a regenerable cache under .trie/;
 # bumping SCHEMA_VERSION blows it away and triggers a re-scan on next connect.
@@ -55,10 +55,12 @@ CREATE TABLE IF NOT EXISTS triefact_sections (
     symbol_id INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
     section_fingerprint TEXT NOT NULL,
     one_liner TEXT,
+    role TEXT NOT NULL DEFAULT '',
     last_generated_at INTEGER NOT NULL,
     PRIMARY KEY (triefact_path, symbol_id)
 );
 CREATE INDEX IF NOT EXISTS idx_sections_symbol ON triefact_sections(symbol_id);
+CREATE INDEX IF NOT EXISTS idx_sections_role ON triefact_sections(role);
 
 CREATE TABLE IF NOT EXISTS patches (
     id INTEGER PRIMARY KEY,
@@ -117,6 +119,7 @@ class SymbolDetail:
     inbound_count: int
     outbound_count: int
     one_liner: str  # "" when no triefact section exists
+    role: str = ""  # LLM-inferred architectural role; "" when unknown
     pending_patches: list[dict] = field(default_factory=list)
     pending_patch_count: int = 0
 
@@ -495,6 +498,7 @@ class Store:
         symbol_qname: str,
         section_fingerprint: str,
         one_liner: str,
+        role: str = "",
         now: int | None = None,
     ) -> None:
         """Record (or refresh) the metadata trie keeps in lockstep with a generated section.
@@ -502,6 +506,10 @@ class Store:
         Looks up the symbol's current id from `symbols`. If the symbol no longer exists
         (e.g. renamed/deleted between scan and sync), the row is silently skipped — the
         next scan + sync will clean things up.
+
+        `role` is the LLM-inferred architectural role tag; '' when unknown. An empty
+        role on update does not clobber a previously-stored non-empty role, so a
+        metadata-only refresh that lacks role inference preserves the existing tag.
         """
         ts = now if now is not None else int(time.time())
         row = self._conn.execute(
@@ -514,14 +522,18 @@ class Store:
         self._conn.execute(
             """
             INSERT INTO triefact_sections
-                (triefact_path, symbol_id, section_fingerprint, one_liner, last_generated_at)
-            VALUES (?, ?, ?, ?, ?)
+                (triefact_path, symbol_id, section_fingerprint, one_liner, role, last_generated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(triefact_path, symbol_id) DO UPDATE SET
                 section_fingerprint = excluded.section_fingerprint,
                 one_liner = excluded.one_liner,
+                role = CASE
+                    WHEN excluded.role != '' THEN excluded.role
+                    ELSE triefact_sections.role
+                END,
                 last_generated_at = excluded.last_generated_at
             """,
-            (triefact_path, symbol_id, section_fingerprint, one_liner, ts),
+            (triefact_path, symbol_id, section_fingerprint, one_liner, role, ts),
         )
         self._conn.commit()
 
@@ -703,7 +715,11 @@ class Store:
                 COALESCE(
                     (SELECT one_liner FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
                     ''
-                ) AS one_liner
+                ) AS one_liner,
+                COALESCE(
+                    (SELECT role FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
+                    ''
+                ) AS role
             FROM symbols s
             WHERE s.qualified_name = ?
             LIMIT 1
@@ -725,6 +741,7 @@ class Store:
             inbound_count=int(row[8]),
             outbound_count=int(row[9]),
             one_liner=row[10] or "",
+            role=row[11] or "",
             pending_patches=patches,
             pending_patch_count=len(patches),
         )
@@ -797,6 +814,10 @@ class Store:
                     (SELECT one_liner FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
                     ''
                 ) AS one_liner,
+                COALESCE(
+                    (SELECT role FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
+                    ''
+                ) AS role,
                 {patch_subq} AS patch_count
             FROM symbols s
             {where_sql}
@@ -818,7 +839,8 @@ class Store:
                 inbound_count=int(row[8]),
                 outbound_count=int(row[9]),
                 one_liner=row[10] or "",
-                pending_patch_count=int(row[11]),
+                role=row[11] or "",
+                pending_patch_count=int(row[12]),
             )
             for row in rows
         ]
