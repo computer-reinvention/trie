@@ -87,6 +87,9 @@ export interface DoiParams {
   adjacency: Adjacency
   // distance penalty per hop applied to DOI
   distancePenalty?: number
+  // restrict the candidate pool to nodes in these group keys (on `axis`).
+  // Used when a component is expanded (L1): only its members are eligible.
+  restrictToGroups?: Set<string>
 }
 
 const groupKeyOf = (n: SystemModelNode, axis: GroupingAxis): string =>
@@ -98,10 +101,16 @@ const groupKeyOf = (n: SystemModelNode, axis: GroupingAxis): string =>
 // With no focus, DOI == salience (the whole-system "what matters" view).
 // Nodes below salienceFloor AND not pulled in by focus proximity are folded.
 export function selectVisible(params: DoiParams): VisibleSet {
-  const { model, budget, salienceFloor, axis, focus, adjacency } = params
+  const { model, budget, axis, focus, adjacency, restrictToGroups } = params
   const penalty = params.distancePenalty ?? 0.25
+  // When restricted to a drilled component, drop the salience floor so all its
+  // members are eligible (the budget still caps them; the rest fold to "+N").
+  const salienceFloor = restrictToGroups ? 0 : params.salienceFloor
 
-  const prod = model.nodes.filter((n) => !n.is_test)
+  let prod = model.nodes.filter((n) => !n.is_test)
+  if (restrictToGroups) {
+    prod = prod.filter((n) => restrictToGroups.has(groupKeyOf(n, axis)))
+  }
 
   // distances from focus (cap at 4 hops; beyond is effectively "far")
   const dist = focus.length ? hopDistances(adjacency, focus, 4) : new Map<string, number>()
