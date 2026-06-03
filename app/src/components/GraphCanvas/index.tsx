@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef } from "react"
+import { useCallback, useEffect, useMemo, useRef } from "react"
 import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d"
 import { useGraphStore } from "@/store/graphStore"
 import { useAppStore } from "@/store/appStore"
 import { componentView } from "@/graph/doi"
 import { roleColor, subsystemColor, nodeRadius, classMarker } from "@/graph/style"
+import { SearchPalette } from "./SearchPalette"
 import type { SystemModelNode } from "@/api/types"
 
 interface GraphCanvasProps {
@@ -23,12 +24,74 @@ interface FGLink {
 }
 
 export function GraphCanvas({ className }: GraphCanvasProps) {
-  const { model, axis, level, visible } = useGraphStore()
+  const { model, axis, level, visible, hoveredId, adjacency, selectedQname } = useGraphStore()
+  const expandComponent = useGraphStore((s) => s.expandComponent)
+  const togglePin = useGraphStore((s) => s.togglePin)
+  const selectNode = useGraphStore((s) => s.selectNode)
+  const setHovered = useGraphStore((s) => s.setHovered)
+  const collapseTransient = useGraphStore((s) => s.collapseTransient)
   const { graphLoading, graphLoadingMessage } = useAppStore()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<ForceGraphMethods<any, any> | undefined>(undefined)
 
   const colorOf = axis === "role" ? roleColor : subsystemColor
+
+  // Neighbours of the hovered node (for the spotlight: highlight + dim the rest).
+  const highlightSet = useMemo(() => {
+    if (!hoveredId) return null
+    const s = new Set<string>([hoveredId])
+    const nbrs = adjacency?.neighbours.get(hoveredId)
+    if (nbrs) for (const w of nbrs) s.add(w)
+    return s
+  }, [hoveredId, adjacency])
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onNodeClick = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (node: any) => {
+      const n = node as FGNode
+      if (n.kind === "component") {
+        expandComponent(n.id)
+      } else if (n.kind === "aggregate") {
+        // expanding an aggregate: drill into its group (raises local detail)
+        expandComponent(n.id.replace(/^\+agg:[^:]+:/, ""))
+      } else if (n.kind === "symbol") {
+        selectNode(n.id)
+        window.dispatchEvent(
+          new CustomEvent("trie:node-selected", { detail: { qname: n.id } }),
+        )
+        if (fgRef.current) {
+          const p = node as { x: number; y: number }
+          fgRef.current.centerAt(p.x, p.y, 600)
+        }
+      }
+    },
+    [expandComponent, selectNode],
+  )
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onNodeRightClick = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (node: any) => {
+      const n = node as FGNode
+      if (n.kind === "component") togglePin(n.id)
+    },
+    [togglePin],
+  )
+
+  const onBackgroundClick = useCallback(() => {
+    collapseTransient()
+    selectNode(null)
+  }, [collapseTransient, selectNode])
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onNodeHover = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (node: any) => {
+      setHovered(node ? (node as FGNode).id : null)
+    },
+    [setHovered],
+  )
 
   // Build the graph data for the current level. L0 = component diagram; deeper
   // levels = the DOI-bounded symbol set + "+N" aggregate bubbles.
@@ -101,8 +164,38 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
 
   const maxWeight = useMemo(() => Math.max(1, ...data.links.map((l) => l.weight)), [data.links])
 
+  const { focusedExpansion, pinnedExpansions } = useGraphStore()
+
   return (
     <div className={`relative flex-1 bg-slate-950 ${className ?? ""}`}>
+      {/* breadcrumb / level affordance */}
+      {level !== "components" && (
+        <div className="absolute top-3 left-3 z-10 flex items-center gap-2 text-xs">
+          <button
+            className="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded px-2 py-1"
+            onClick={() => collapseTransient()}
+          >
+            ← System
+          </button>
+          {focusedExpansion && (
+            <span className="bg-slate-800/70 text-slate-300 border border-slate-700 rounded px-2 py-1 font-mono">
+              {focusedExpansion}
+            </span>
+          )}
+          {[...pinnedExpansions].map((k) => (
+            <span
+              key={k}
+              className="bg-indigo-900/50 text-indigo-200 border border-indigo-700 rounded px-2 py-1 font-mono flex items-center gap-1"
+            >
+              📌 {k}
+              <button className="hover:text-white" onClick={() => togglePin(k)}>
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <SearchPalette />
       {data.nodes.length > 0 && (
         <ForceGraph2D
           ref={fgRef}
@@ -113,12 +206,27 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
           cooldownTicks={120}
           warmupTicks={20}
           d3VelocityDecay={0.3}
-          linkColor={() => "rgba(148,163,184,0.22)"}
+          onNodeClick={onNodeClick}
+          onNodeRightClick={onNodeRightClick}
+          onNodeHover={onNodeHover}
+          onBackgroundClick={onBackgroundClick}
+          linkColor={(l) => {
+            const lk = l as unknown as { source: { id: string }; target: { id: string } }
+            if (highlightSet) {
+              const s = typeof lk.source === "object" ? lk.source.id : (lk.source as unknown as string)
+              const t = typeof lk.target === "object" ? lk.target.id : (lk.target as unknown as string)
+              return highlightSet.has(s) && highlightSet.has(t)
+                ? "rgba(148,163,184,0.55)"
+                : "rgba(148,163,184,0.06)"
+            }
+            return "rgba(148,163,184,0.22)"
+          }}
           linkWidth={(l) => 0.5 + 2.5 * ((l as FGLink).weight / maxWeight)}
           linkCurvature={0.12}
           nodeCanvasObject={(node, ctx, globalScale) => {
             const n = node as FGNode & { x: number; y: number }
-            paintNode(n, ctx, globalScale)
+            const dimmed = highlightSet ? !highlightSet.has(n.id) : false
+            paintNode(n, ctx, globalScale, dimmed, n.id === selectedQname)
           }}
           nodePointerAreaPaint={(node, color, ctx) => {
             const n = node as FGNode & { x: number; y: number }
@@ -152,8 +260,19 @@ function paintNode(
   n: FGNode & { x: number; y: number },
   ctx: CanvasRenderingContext2D,
   globalScale: number,
+  dimmed: boolean,
+  selected: boolean,
 ): void {
   const r = n.val
+  ctx.save()
+  if (dimmed) ctx.globalAlpha = 0.18
+  if (selected && n.kind === "symbol") {
+    ctx.beginPath()
+    ctx.arc(n.x, n.y, r + 4 / globalScale, 0, 2 * Math.PI)
+    ctx.strokeStyle = "#a3e635"
+    ctx.lineWidth = 2 / globalScale
+    ctx.stroke()
+  }
 
   if (n.kind === "aggregate") {
     // "+N" bubble: dashed, hollow — clearly a fold-out, not a real symbol
@@ -170,6 +289,7 @@ function paintNode(
     ctx.textBaseline = "middle"
     ctx.fillStyle = "#94a3b8"
     ctx.fillText(n.label, n.x, n.y)
+    ctx.restore()
     return
   }
 
@@ -189,6 +309,7 @@ function paintNode(
     ctx.fillStyle = "rgba(2,6,23,0.85)"
     ctx.font = `${Math.max(9, 10 / globalScale)}px ui-monospace, monospace`
     ctx.fillText(String(n.count), n.x, n.y)
+    ctx.restore()
     return
   }
 
@@ -239,4 +360,5 @@ function paintNode(
     ctx.fillStyle = "#cbd5e1"
     ctx.fillText(sym.name, n.x, n.y + r + fs)
   }
+  ctx.restore()
 }

@@ -38,6 +38,7 @@ interface GraphStore {
   // focus qnames feeding DOI (selection + agent location)
   focus: string[]
   selectedQname: string | null
+  hoveredId: string | null
 
   // --- live per-node runtime ---
   runtime: Map<string, NodeRuntime>
@@ -56,6 +57,7 @@ interface GraphStore {
   collapseTransient: () => void
   togglePin: (key: string) => void
   selectNode: (qname: string | null) => void
+  setHovered: (id: string | null) => void
   focusFile: (relPath: string) => void
 
   // --- actions: live runtime (driven by SSE) ---
@@ -84,6 +86,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   pinnedExpansions: new Set(),
   focus: [],
   selectedQname: null,
+  hoveredId: null,
 
   runtime: new Map(),
   visible: emptyVisible(),
@@ -107,11 +110,16 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   },
 
   recomputeVisible: () => {
-    const { model, adjacency, regime, axis, focus } = get()
+    const { model, adjacency, regime, axis, focus, focusedExpansion, pinnedExpansions } = get()
     if (!model || !adjacency || !regime) {
       set({ visible: emptyVisible() })
       return
     }
+    // When components are expanded (transient + pinned), restrict the symbol
+    // pool to their groups. Empty restriction = whole-system (no expansion).
+    const expanded = new Set(pinnedExpansions)
+    if (focusedExpansion) expanded.add(focusedExpansion)
+    const restrictToGroups = expanded.size > 0 ? expanded : undefined
     const visible = selectVisible({
       model,
       budget: regime.budget,
@@ -119,6 +127,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
       axis,
       focus,
       adjacency,
+      restrictToGroups,
     })
     set({ visible })
   },
@@ -133,20 +142,30 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   expandComponent: (key) => {
     // exactly one transient expansion: replaces the previous unpinned one
     set({ focusedExpansion: key, level: "landmarks" })
-  },
-
-  collapseTransient: () => {
-    set({ focusedExpansion: null, level: "components", focus: [], selectedQname: null })
     get().recomputeVisible()
   },
 
-  togglePin: (key) =>
+  collapseTransient: () => {
+    const { pinnedExpansions } = get()
+    // collapsing the transient expansion returns to L0 unless pins keep us at L1
+    set({
+      focusedExpansion: null,
+      level: pinnedExpansions.size > 0 ? "landmarks" : "components",
+      focus: [],
+      selectedQname: null,
+    })
+    get().recomputeVisible()
+  },
+
+  togglePin: (key) => {
     set((s) => {
       const pinned = new Set(s.pinnedExpansions)
       if (pinned.has(key)) pinned.delete(key)
       else pinned.add(key)
       return { pinnedExpansions: pinned }
-    }),
+    })
+    get().recomputeVisible()
+  },
 
   selectNode: (qname) => {
     set((s) => {
@@ -167,6 +186,8 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     })
     get().recomputeVisible()
   },
+
+  setHovered: (id) => set({ hoveredId: id }),
 
   focusFile: (relPath) => {
     const { model } = get()
