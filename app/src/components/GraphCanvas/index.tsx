@@ -552,7 +552,10 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
             const isolatedDim = isolatedGroup ? groupOf !== isolatedGroup : false
             const hoverDim = highlightSet ? !highlightSet.has(n.id) : false
             const anim = animatorRef.current.get(n.id)
-            const rt = n.kind === "symbol" ? useGraphStore.getState().runtime.get(n.id) : undefined
+            const st = useGraphStore.getState()
+            const rt = n.kind === "symbol" ? st.runtime.get(n.id) : undefined
+            const hovered = st.hoveredId === n.id
+            const active = (rt?.agentState ?? "idle") !== "idle" || (rt?.activity ?? 0) > 0.05
             paintNode(n, ctx, globalScale, {
               dimmed: isolatedDim || hoverDim,
               selected: n.id === selectedQname,
@@ -561,6 +564,8 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
               emphasis: anim?.emphasis.current ?? 0,
               agentState: rt?.agentState ?? "idle",
               heat: rt?.heat ?? 0,
+              // symbol labels only show on demand: hovered, selected, or active
+              showLabel: hovered || n.id === selectedQname || active,
             })
           }}
           nodePointerAreaPaint={(node, color, ctx) => {
@@ -629,6 +634,7 @@ interface PaintOpts {
   emphasis: number
   agentState: string
   heat: number
+  showLabel: boolean
 }
 
 function paintNode(
@@ -637,7 +643,7 @@ function paintNode(
   globalScale: number,
   opts: PaintOpts,
 ): void {
-  const { dimmed, selected, reveal, pulse, emphasis, agentState, heat } = opts
+  const { dimmed, selected, reveal, pulse, emphasis, agentState, heat, showLabel: wantLabel } = opts
   const scale = (0.4 + 0.6 * reveal) * (1 + 0.25 * emphasis)
   const r = n.val * scale
   ctx.save()
@@ -749,15 +755,22 @@ function paintNode(
     ctx.lineWidth = 1.5 / globalScale
     ctx.stroke()
   }
-  const showLabel =
-    globalScale >= 1.6 || ((sym.cls === "hub" || sym.cls === "door") && globalScale >= 0.7)
+  // Labels on demand only: hovered / selected / active (wantLabel), or when
+  // zoomed in far enough to read without collision. Keeps the map clean.
+  const showLabel = wantLabel || globalScale >= 2.6
   if (showLabel) {
-    const fs = Math.max(8, 11 / globalScale)
+    const fs = Math.max(9, 12 / globalScale)
+    const text = sym.name
     ctx.font = `${fs}px ui-sans-serif, system-ui, sans-serif`
     ctx.textAlign = "center"
     ctx.textBaseline = "top"
-    ctx.fillStyle = "#cbd5e1"
-    ctx.fillText(sym.name, n.x, n.y + r + 2 / globalScale)
+    // legibility backdrop so the label reads over neighbours
+    const tw = ctx.measureText(text).width
+    const ly = n.y + r + 3 / globalScale
+    ctx.fillStyle = "rgba(2,6,23,0.82)"
+    ctx.fillRect(n.x - tw / 2 - 3 / globalScale, ly - 1 / globalScale, tw + 6 / globalScale, fs + 3 / globalScale)
+    ctx.fillStyle = wantLabel ? "#f1f5f9" : "#cbd5e1"
+    ctx.fillText(text, n.x, ly)
   }
   ctx.restore()
 }
