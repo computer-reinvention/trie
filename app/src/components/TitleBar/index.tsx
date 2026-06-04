@@ -1,4 +1,4 @@
-import { useAppStore } from "@/store/appStore"
+import type { ReactNode } from "react"
 
 // Shared title-bar height. The macOS traffic lights live in this top strip;
 // every screen reserves it so content never overlaps the window controls.
@@ -7,51 +7,74 @@ export const TITLEBAR_H = 38
 export const TRAFFIC_LIGHT_CLEARANCE = 80
 
 interface TitleBarProps {
-  onOpenSettings: () => void
+  /** Primary title text shown after the traffic-light clearance. */
+  title?: string
+  /** Dimmed secondary text next to the title (e.g. stats). */
+  subtitle?: string
+  /** Right-aligned interactive controls (rendered inside app-no-drag). */
+  actions?: ReactNode
+  /** Override the whole content area (replaces title/subtitle). */
+  children?: ReactNode
 }
 
-// Custom macOS title bar paired with titleBarStyle:"hiddenInset". The left
-// padding clears the traffic-light buttons; the whole bar is a drag region
-// except the interactive controls (app-no-drag).
-export function TitleBar({ onOpenSettings }: TitleBarProps) {
-  const { projectName, totalSymbols, totalFiles } = useAppStore()
-
+// The single, reusable macOS title bar. Paired with titleBarStyle:"hiddenInset".
+// Used by EVERY screen so the strip height, traffic-light clearance, drag region,
+// and vertical alignment are defined exactly once.
+export function TitleBar({ title, subtitle, actions, children }: TitleBarProps) {
   return (
     <div
       className="app-drag shrink-0 flex items-center bg-slate-900 border-b border-slate-800 select-none"
       style={{ height: TITLEBAR_H }}
     >
       {/* traffic-light clearance */}
-      <div style={{ width: TRAFFIC_LIGHT_CLEARANCE }} />
+      <div className="shrink-0" style={{ width: TRAFFIC_LIGHT_CLEARANCE }} />
 
-      <div className="flex items-center gap-2 min-w-0 leading-none">
-        <span className="text-slate-200 text-xs font-medium truncate leading-none">
-          {projectName || "trie"}
-        </span>
-        {totalSymbols > 0 && (
-          <span className="text-slate-600 text-[11px] tabular-nums leading-none">
-            {totalSymbols} symbols · {totalFiles} files
-          </span>
-        )}
-      </div>
+      {children ?? (
+        <div className="flex items-center gap-2 min-w-0 leading-none">
+          {title && (
+            <span className="text-slate-200 text-xs font-semibold truncate leading-none">
+              {title}
+            </span>
+          )}
+          {subtitle && (
+            <span className="text-slate-600 text-[11px] tabular-nums leading-none truncate">
+              {subtitle}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="flex-1" />
 
-      <div className="app-no-drag flex items-center gap-1 pr-3">
-        <button
-          className="w-7 h-7 rounded flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
-          onClick={onOpenSettings}
-          title="Settings (⌘,)"
-          aria-label="Settings"
-        >
-          <GearIcon />
-        </button>
-      </div>
+      {actions && <div className="app-no-drag flex items-center gap-1 pr-3">{actions}</div>}
     </div>
   )
 }
 
-function GearIcon() {
+export function TitleBarIconButton({
+  onClick,
+  title,
+  label,
+  children,
+}: {
+  onClick: () => void
+  title?: string
+  label?: string
+  children: ReactNode
+}) {
+  return (
+    <button
+      className="w-7 h-7 rounded flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
+      onClick={onClick}
+      title={title}
+      aria-label={label ?? title}
+    >
+      {children}
+    </button>
+  )
+}
+
+export function GearIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <circle cx="12" cy="12" r="3" />

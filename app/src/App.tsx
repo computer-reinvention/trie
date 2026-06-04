@@ -4,7 +4,7 @@ import { Sidebar } from "@/components/Sidebar"
 import { Inspector } from "@/components/Inspector"
 import { InputBar } from "@/components/InputBar"
 import { TurnHistory } from "@/components/TurnHistory"
-import { TitleBar, TITLEBAR_H, TRAFFIC_LIGHT_CLEARANCE } from "@/components/TitleBar"
+import { TitleBar, TitleBarIconButton, GearIcon } from "@/components/TitleBar"
 import { Settings } from "@/components/Settings"
 import { useAppStore } from "@/store/appStore"
 import { useAgentStore } from "@/store/agentStore"
@@ -18,7 +18,7 @@ import { useGraphPopulation } from "@/hooks/useGraphPopulation"
 const trie = () => (window as any).trie
 
 function AppShell() {
-  const { opencodePort, projectDir } = useAppStore()
+  const { opencodePort, projectDir, projectName, totalSymbols, totalFiles } = useAppStore()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const showTurnHistory = useSetting<boolean>("agent.showTurnHistory")
   useOpenCodeSSE(opencodePort ?? 0)
@@ -42,7 +42,15 @@ function AppShell() {
 
   return (
     <div className="flex flex-col h-full text-slate-100 overflow-hidden" style={{ background: "var(--bg-app)" }}>
-      <TitleBar onOpenSettings={() => setSettingsOpen(true)} />
+      <TitleBar
+        title={projectName || "trie"}
+        subtitle={totalSymbols > 0 ? `${totalSymbols} symbols · ${totalFiles} files` : undefined}
+        actions={
+          <TitleBarIconButton onClick={() => setSettingsOpen(true)} title="Settings (⌘,)">
+            <GearIcon />
+          </TitleBarIconButton>
+        }
+      />
       <div className="flex-1 flex min-h-0 overflow-hidden relative">
         <Sidebar />
         <div className="flex-1 flex flex-col min-w-0">
@@ -106,17 +114,7 @@ function OpenProjectScreen({ onOpen }: { onOpen: () => void }) {
 
   return (
     <div className="flex flex-col h-full bg-slate-950">
-      {/* top drag strip — title aligned horizontally with the traffic lights */}
-      <div
-        className="app-drag shrink-0 flex items-center select-none"
-        style={{ height: TITLEBAR_H }}
-      >
-        <div style={{ width: TRAFFIC_LIGHT_CLEARANCE }} />
-        <span className="text-slate-200 text-sm font-semibold font-mono tracking-tight leading-none">
-          trie
-        </span>
-      </div>
-
+      <TitleBar title="trie" />
       <div className="flex-1 flex items-center justify-center">
       <div className="flex flex-col items-center gap-6">
         <div className="text-center">
