@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d"
 import { forceCollide } from "d3-force"
 import { useGraphStore } from "@/store/graphStore"
@@ -85,6 +85,9 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<ForceGraphMethods<any, any> | undefined>(undefined)
   const animatorRef = useRef(new GraphAnimator())
+  // live screen position of the focused role node, so the sub-graph panel can
+  // anchor to it (act like a graph node, panning/zooming with the canvas).
+  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null)
 
   // Neighbours of the hovered node (spotlight: highlight + dim the rest).
   const highlightSet = useMemo(() => {
@@ -301,7 +304,7 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
         </div>
       )}
       <SearchPalette />
-      <ExpandedPanel />
+      <ExpandedPanel anchor={anchor} />
       {data.nodes.length > 0 && (
         <ForceGraph2D
           ref={fgRef}
@@ -330,6 +333,22 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
               })
             }
             anim.tick(performance.now())
+
+            // track the focused role node's screen position for the panel anchor
+            const fg = fgRef.current
+            if (fg && focusedExpansion) {
+              const comp = data.nodes.find(
+                (n) => n.kind === "component" && n.id === focusedExpansion,
+              ) as (FGNode & { x?: number; y?: number }) | undefined
+              if (comp && comp.x != null && comp.y != null) {
+                const s = fg.graph2ScreenCoords(comp.x, comp.y)
+                setAnchor((prev) =>
+                  !prev || Math.abs(prev.x - s.x) > 1 || Math.abs(prev.y - s.y) > 1
+                    ? { x: s.x, y: s.y }
+                    : prev,
+                )
+              }
+            }
           }}
           onNodeClick={onNodeClick}
           onNodeRightClick={onNodeRightClick}

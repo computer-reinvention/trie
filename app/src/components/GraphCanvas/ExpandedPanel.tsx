@@ -37,7 +37,11 @@ interface Frame {
   members: SystemModelNode[]
 }
 
-export function ExpandedPanel() {
+interface ExpandedPanelProps {
+  anchor: { x: number; y: number } | null
+}
+
+export function ExpandedPanel({ anchor }: ExpandedPanelProps) {
   const model = useGraphStore((s) => s.model)
   const axis = useGraphStore((s) => s.axis)
   const adjacency = useGraphStore((s) => s.adjacency)
@@ -49,6 +53,7 @@ export function ExpandedPanel() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<ForceGraphMethods<any, any> | undefined>(undefined)
   const [stack, setStack] = useState<Frame[]>([])
+  const [hoveredMember, setHoveredMember] = useState<string | null>(null)
 
   // (re)initialize the drill stack when the focused expansion changes.
   useEffect(() => {
@@ -63,6 +68,16 @@ export function ExpandedPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusedExpansion, model, axis])
 
+  // Esc closes the sub-graph.
+  useEffect(() => {
+    if (!focusedExpansion) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") collapseTransient()
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [focusedExpansion, collapseTransient])
+
   const frame = stack[stack.length - 1]
 
   const maxDepth = useMemo(() => {
@@ -72,60 +87,71 @@ export function ExpandedPanel() {
     return m
   }, [model])
 
+  // Minimum node sizes (note #2).
+  const MIN_MEMBER_R = 5
+  const MIN_OUTSIDE_R = 4
+
   // Build the sub-graph for the current frame: member nodes + member<->member
-  // call edges + a ring of "outside" nodes (other groups/symbols the members
-  // call or are called by), so interdependence and external connections show.
+  // call edges + a ring of "outside" nodes. Unimportant members (called <=1
+  // time) are HIDDEN unless their neighbour is the hovered member (note #5).
   const graph = useMemo(() => {
     if (!frame || !adjacency) return { nodes: [] as PanelNode[], links: [] as PanelLink[] }
-    const memberIds = new Set(frame.members.map((m) => m.qname))
-    const nodes: PanelNode[] = frame.members.map((n) => ({
+
+    // a member is "minor" if it's depended on at most once (low inbound) and
+    // isn't itself a landmark (door/hub/bedrock/exit).
+    const isLandmark = (n: SystemModelNode) =>
+      n.cls === "door" || n.cls === "hub" || n.cls === "bedrock" || n.cls === "exit"
+    const isMinor = (n: SystemModelNode) => !isLandmark(n) && n.inbound_count <= 1
+
+    // visible members: landmarks + non-minor always; minor only when the hovered
+    // member is one of their neighbours (the "caller under focus" reveal).
+    const hoveredNbrs = hoveredMember ? adjacency.neighbours.get(hoveredMember) : undefined
+    const visibleMembers = frame.members.filter(
+      (n) =>
+        !isMinor(n) ||
+        n.qname === hoveredMember ||
+        (hoveredNbrs ? hoveredNbrs.has(n.qname) : false),
+    )
+    const memberIds = new Set(visibleMembers.map((m) => m.qname))
+
+    const nodes: PanelNode[] = visibleMembers.map((n) => ({
       id: n.qname,
       node: n,
       color: depthColor(n.depth >= 0 ? n.depth / maxDepth : 0.5),
-      val: Math.max(3, Math.min(10, nodeRadius(n.salience, n.cls))),
+      val: Math.max(MIN_MEMBER_R, Math.min(11, nodeRadius(n.salience, n.cls))),
     }))
     const links: PanelLink[] = []
     const seen = new Set<string>()
     const outsideDeg = new Map<string, number>()
 
-    for (const m of frame.members) {
+    for (const m of visibleMembers) {
       const nbrs = adjacency.neighbours.get(m.qname)
       if (!nbrs) continue
       for (const w of nbrs) {
         if (memberIds.has(w)) {
-          // internal interdependence edge
           const id = m.qname < w ? `${m.qname}|${w}` : `${w}|${m.qname}`
           if (!seen.has(id)) {
             seen.add(id)
             links.push({ source: m.qname, target: w })
           }
         } else {
-          // external connection — accumulate so we show the most-connected ones
           outsideDeg.set(w, (outsideDeg.get(w) ?? 0) + 1)
         }
       }
     }
 
-    // add the top external connections as peripheral nodes
     const outside = [...outsideDeg.entries()].sort((a, b) => b[1] - a[1]).slice(0, 24)
     for (const [qn] of outside) {
       const ext = nodesByQname.get(qn)
-      nodes.push({
-        id: qn,
-        node: ext,
-        outside: true,
-        color: "#475569",
-        val: 4,
-      })
-      // link each member that touches this external node
-      for (const m of frame.members) {
+      nodes.push({ id: qn, node: ext, outside: true, color: "#475569", val: MIN_OUTSIDE_R })
+      for (const m of visibleMembers) {
         if (adjacency.neighbours.get(m.qname)?.has(qn)) {
           links.push({ source: m.qname, target: qn, outside: true })
         }
       }
     }
     return { nodes, links }
-  }, [frame, adjacency, maxDepth, nodesByQname])
+  }, [frame, adjacency, maxDepth, nodesByQname, hoveredMember])
 
   useEffect(() => {
     if (!fgRef.current) return
@@ -167,8 +193,29 @@ export function ExpandedPanel() {
 
   const popTo = (idx: number) => setStack((s) => s.slice(0, idx + 1))
 
+  // Position the panel AS the role node (note #1): anchored at the node's screen
+  // position, opening down-right from it, clamped to the viewport. Falls back to
+  // a fixed spot before the first anchor frame arrives.
+  const PANEL_W = 560
+  const PANEL_H = 440
+  const pos = (() => {
+    if (!anchor) return { left: 80, top: 80 }
+    const margin = 12
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    // center horizontally on the node, sit just below it
+    let left = anchor.x - PANEL_W / 2
+    let top = anchor.y + 16
+    left = Math.max(margin, Math.min(left, vw - PANEL_W - margin))
+    top = Math.max(margin, Math.min(top, vh - PANEL_H - margin))
+    return { left, top }
+  })()
+
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-[640px] max-w-[80%] bg-[#0b1220] border border-slate-600 rounded-xl shadow-2xl flex flex-col overflow-hidden">
+    <div
+      className="absolute z-20 bg-[#0b1220] border border-slate-600 rounded-xl shadow-2xl flex flex-col overflow-hidden"
+      style={{ left: pos.left, top: pos.top, width: PANEL_W }}
+    >
       {/* header: depth breadcrumb (entrypoint > cli > ...) + close */}
       <div
         className="flex items-center gap-1.5 px-3 py-2 border-b border-slate-800"
@@ -201,18 +248,21 @@ export function ExpandedPanel() {
         </button>
       </div>
 
-      {/* the bounded, scrollable sub-graph */}
-      <div className="h-[420px] max-h-[60vh] overflow-hidden relative bg-[#0b1220]">
+      {/* the bounded sub-graph (pan/zoom to navigate within the box) */}
+      <div className="overflow-hidden relative bg-[#0b1220]" style={{ height: PANEL_H - 46 }}>
         {graph.nodes.length > 0 ? (
           <ForceGraph2D
             ref={fgRef}
-            width={640}
-            height={420}
+            width={PANEL_W}
+            height={PANEL_H - 46}
             graphData={graph}
             backgroundColor="#0b1220"
             nodeRelSize={1}
             nodeVal={(n) => (n as PanelNode).val}
             cooldownTicks={120}
+            onNodeHover={(node) =>
+              setHoveredMember(node ? (node as PanelNode).id : null)
+            }
             linkColor={(l) => ((l as PanelLink).outside ? "rgba(100,116,139,0.25)" : "rgba(148,163,184,0.45)")}
             linkWidth={(l) => ((l as PanelLink).outside ? 0.5 : 1)}
             linkDirectionalArrowLength={3}
@@ -235,36 +285,48 @@ export function ExpandedPanel() {
                 ctx.globalAlpha = 0.6
                 ctx.fill()
                 ctx.globalAlpha = 1
-                return
-              }
-              const marker = n.node ? classMarker(n.node.cls, n.color) : { shape: "circle" as const }
-              ctx.beginPath()
-              if (marker.shape === "diamond") {
-                ctx.moveTo(n.x, n.y - r)
-                ctx.lineTo(n.x + r, n.y)
-                ctx.lineTo(n.x, n.y + r)
-                ctx.lineTo(n.x - r, n.y)
-                ctx.closePath()
               } else {
-                ctx.arc(n.x, n.y, r, 0, 2 * Math.PI)
-              }
-              ctx.fillStyle = n.color
-              ctx.fill()
-              if (marker.ring) {
+                const marker = n.node ? classMarker(n.node.cls, n.color) : { shape: "circle" as const }
                 ctx.beginPath()
-                ctx.arc(n.x, n.y, r + 2 / scale, 0, 2 * Math.PI)
-                ctx.strokeStyle = marker.ring
-                ctx.lineWidth = 1.5 / scale
-                ctx.stroke()
+                if (marker.shape === "diamond") {
+                  ctx.moveTo(n.x, n.y - r)
+                  ctx.lineTo(n.x + r, n.y)
+                  ctx.lineTo(n.x, n.y + r)
+                  ctx.lineTo(n.x - r, n.y)
+                  ctx.closePath()
+                } else {
+                  ctx.arc(n.x, n.y, r, 0, 2 * Math.PI)
+                }
+                ctx.fillStyle = n.color
+                ctx.fill()
+                if (marker.ring) {
+                  ctx.beginPath()
+                  ctx.arc(n.x, n.y, r + 2 / scale, 0, 2 * Math.PI)
+                  ctx.strokeStyle = marker.ring
+                  ctx.lineWidth = 1.5 / scale
+                  ctx.stroke()
+                }
               }
-              // label visible when zoomed in or few nodes
-              if (scale >= 1.2 || graph.nodes.length <= 30) {
+              // Labels when the area is sparse enough (note #3): show when few
+              // nodes, zoomed in, hovered, or a landmark. Backdrop for legibility.
+              const isLandmark =
+                n.node &&
+                (n.node.cls === "door" || n.node.cls === "hub" || n.node.cls === "bedrock")
+              const sparse = graph.nodes.length <= 24
+              const wantLabel =
+                hoveredMember === n.id || sparse || scale >= 1.3 || (!n.outside && isLandmark)
+              if (wantLabel) {
                 const fs = Math.max(8, 10 / scale)
+                const text = n.node?.name ?? n.id
                 ctx.font = `${fs}px ui-sans-serif, system-ui, sans-serif`
                 ctx.textAlign = "center"
                 ctx.textBaseline = "top"
-                ctx.fillStyle = "#cbd5e1"
-                ctx.fillText(n.node?.name ?? n.id, n.x, n.y + r + 2 / scale)
+                const tw = ctx.measureText(text).width
+                const ly = n.y + r + 2 / scale
+                ctx.fillStyle = "rgba(11,18,32,0.85)"
+                ctx.fillRect(n.x - tw / 2 - 2 / scale, ly, tw + 4 / scale, fs + 2 / scale)
+                ctx.fillStyle = n.outside ? "#94a3b8" : "#e2e8f0"
+                ctx.fillText(text, n.x, ly)
               }
             }}
             nodePointerAreaPaint={(node, color, ctx) => {
