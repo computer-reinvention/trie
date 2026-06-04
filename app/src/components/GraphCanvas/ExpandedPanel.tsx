@@ -55,6 +55,7 @@ export function ExpandedPanel({ anchor }: ExpandedPanelProps) {
   const fgRef = useRef<ForceGraphMethods<any, any> | undefined>(undefined)
   const [stack, setStack] = useState<Frame[]>([])
   const [hoveredMember, setHoveredMember] = useState<string | null>(null)
+  const [mouse, setMouse] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
 
   // (re)initialize the drill stack when the focused expansion changes.
   useEffect(() => {
@@ -81,6 +82,9 @@ export function ExpandedPanel({ anchor }: ExpandedPanelProps) {
 
   const frame = stack[stack.length - 1]
 
+  // info for the hovered symbol (drives the VS Code-style tooltip)
+  const hoveredInfo = hoveredMember ? nodesByQname.get(hoveredMember) : undefined
+
   const maxDepth = useMemo(() => {
     if (!model) return 1
     let m = 1
@@ -92,42 +96,26 @@ export function ExpandedPanel({ anchor }: ExpandedPanelProps) {
   const MIN_MEMBER_R = 5
   const MIN_OUTSIDE_R = 4
 
-  // Build the sub-graph for the current frame: member nodes + member<->member
-  // call edges + a ring of "outside" nodes. Unimportant members (called <=1
-  // time) are HIDDEN unless their neighbour is the hovered member (note #5).
+  // Build the sub-graph for the current frame. STATIC: this does NOT depend on
+  // hover, so hovering never rebuilds the data or re-runs the simulation.
+  // Minor symbols (inbound<=1, non-landmark) and members folded into a visible
+  // owner are excluded; drilling reveals folded members.
   const graph = useMemo(() => {
     if (!frame || !adjacency) return { nodes: [] as PanelNode[], links: [] as PanelLink[] }
 
-    // a member is "minor" if it's depended on at most once (low inbound) and
-    // isn't itself a landmark (door/hub/bedrock/exit).
     const isLandmark = (n: SystemModelNode) =>
       n.cls === "door" || n.cls === "hub" || n.cls === "bedrock" || n.cls === "exit"
     const isMinor = (n: SystemModelNode) => !isLandmark(n) && n.inbound_count <= 1
 
-    // Containment fold: a member is represented BY its owner when the owner is
-    // also present in this frame. A method XYZ.abc folds into the class XYZ; we
-    // don't draw it separately unless revealed. Generalizes to any symbol whose
-    // owner (the symbol it belongs to) is a visible member.
     const frameIds = new Set(frame.members.map((m) => m.qname))
-    const ownerInFrame = (n: SystemModelNode): string | null => {
+    const ownerInFrame = (n: SystemModelNode): boolean => {
       const owner = ownerOf(n.qname)
-      return owner && frameIds.has(owner) ? owner : null
+      return !!owner && frameIds.has(owner)
     }
 
-    // reveal a folded/minor member when the hovered member is one of its
-    // neighbours (caller under focus) or is its owner.
-    const hoveredNbrs = hoveredMember ? adjacency.neighbours.get(hoveredMember) : undefined
-    const revealedByHover = (n: SystemModelNode) =>
-      n.qname === hoveredMember ||
-      (hoveredNbrs ? hoveredNbrs.has(n.qname) : false) ||
-      ownerOf(n.qname) === hoveredMember
-
     const visibleMembers = frame.members.filter((n) => {
-      if (revealedByHover(n)) return true
-      // folded into its owner -> hidden by default
-      if (ownerInFrame(n)) return false
-      // minor -> hidden by default
-      if (isMinor(n)) return false
+      if (ownerInFrame(n)) return false // folded into its owner
+      if (isMinor(n)) return false // unimportant
       return true
     })
     const memberIds = new Set(visibleMembers.map((m) => m.qname))
@@ -180,12 +168,15 @@ export function ExpandedPanel({ anchor }: ExpandedPanelProps) {
       }
     }
     return { nodes, links }
-  }, [frame, adjacency, maxDepth, nodesByQname, hoveredMember])
+  }, [frame, adjacency, maxDepth, nodesByQname])
 
+  // Configure forces once when the graph changes; the engine runs a short fixed
+  // warmup then stops (cooldownTicks). onEngineStop pins every node so the
+  // layout is fully STATIC afterward — no drift, no per-frame physics.
   useEffect(() => {
     if (!fgRef.current) return
     const fg = fgRef.current
-    fg.d3Force("charge")?.strength(-90)
+    fg.d3Force("charge")?.strength(-120)
     fg.d3Force(
       "collide",
       forceCollide<PanelNode>()
@@ -195,8 +186,6 @@ export function ExpandedPanel({ anchor }: ExpandedPanelProps) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const link = fg.d3Force("link") as any
     link?.distance?.((l: PanelLink) => (l.outside ? 90 : 40))
-    const t = setTimeout(() => fg.zoomToFit(500, 30), 250)
-    return () => clearTimeout(t)
   }, [graph])
 
   if (!focusedExpansion || !frame) return null
@@ -278,7 +267,34 @@ export function ExpandedPanel({ anchor }: ExpandedPanelProps) {
       </div>
 
       {/* the bounded sub-graph (pan/zoom to navigate within the box) */}
-      <div className="overflow-hidden relative bg-[#0b1220]" style={{ height: PANEL_H - 46 }}>
+      <div
+        className="overflow-hidden relative bg-[#0b1220]"
+        style={{ height: PANEL_H - 46 }}
+        onMouseMove={(e) => {
+          const r = e.currentTarget.getBoundingClientRect()
+          setMouse({ x: e.clientX - r.left, y: e.clientY - r.top })
+        }}
+      >
+        {/* VS Code-style hover info: name + one-liner for the hovered symbol */}
+        {hoveredInfo && (
+          <div
+            className="absolute z-30 pointer-events-none max-w-[280px] bg-[#1e1e1e] border border-slate-600 rounded shadow-xl px-2.5 py-1.5"
+            style={{
+              left: Math.min(mouse.x + 12, PANEL_W - 290),
+              top: Math.min(mouse.y + 12, PANEL_H - 90),
+            }}
+          >
+            <p className="text-slate-100 font-mono text-xs font-medium truncate">{hoveredInfo.name}</p>
+            <p className="text-slate-500 font-mono text-[10px] truncate">
+              {hoveredInfo.kind} · {hoveredInfo.file_path.split("/").pop()}
+            </p>
+            {hoveredInfo.one_liner ? (
+              <p className="text-slate-300 text-[11px] mt-1 leading-snug">{hoveredInfo.one_liner}</p>
+            ) : (
+              <p className="text-slate-600 text-[11px] mt-1 italic">no description</p>
+            )}
+          </div>
+        )}
         {graph.nodes.length > 0 ? (
           <ForceGraph2D
             ref={fgRef}
@@ -288,7 +304,21 @@ export function ExpandedPanel({ anchor }: ExpandedPanelProps) {
             backgroundColor="#0b1220"
             nodeRelSize={1}
             nodeVal={(n) => (n as PanelNode).val}
-            cooldownTicks={120}
+            warmupTicks={60}
+            cooldownTicks={0}
+            enableNodeDrag={false}
+            onEngineStop={() => {
+              const fg = fgRef.current
+              if (!fg) return
+              // pin every node so the layout is fully static afterward
+              for (const n of graph.nodes as Array<PanelNode & { x?: number; y?: number }>) {
+                if (n.x != null && n.y != null) {
+                  n.fx = n.x
+                  n.fy = n.y
+                }
+              }
+              fg.zoomToFit(400, 30)
+            }}
             onNodeHover={(node) =>
               setHoveredMember(node ? (node as PanelNode).id : null)
             }
