@@ -1,5 +1,11 @@
 import { useAppStore } from "@/store/appStore"
 
+// Shared title-bar height. The macOS traffic lights live in this top strip;
+// every screen reserves it so content never overlaps the window controls.
+export const TITLEBAR_H = 38
+// Left clearance so content never sits under the traffic lights.
+export const TRAFFIC_LIGHT_CLEARANCE = 80
+
 interface TitleBarProps {
   onOpenSettings: () => void
 }
@@ -11,16 +17,19 @@ export function TitleBar({ onOpenSettings }: TitleBarProps) {
   const { projectName, totalSymbols, totalFiles } = useAppStore()
 
   return (
-    <div className="app-drag h-9 shrink-0 flex items-center bg-slate-900 border-b border-slate-800 select-none">
+    <div
+      className="app-drag shrink-0 flex items-center bg-slate-900 border-b border-slate-800 select-none"
+      style={{ height: TITLEBAR_H }}
+    >
       {/* traffic-light clearance */}
-      <div className="w-[78px]" />
+      <div style={{ width: TRAFFIC_LIGHT_CLEARANCE }} />
 
-      <div className="flex items-center gap-2 min-w-0">
-        <span className="text-slate-200 text-xs font-medium truncate">
+      <div className="flex items-center gap-2 min-w-0 leading-none">
+        <span className="text-slate-200 text-xs font-medium truncate leading-none">
           {projectName || "trie"}
         </span>
         {totalSymbols > 0 && (
-          <span className="text-slate-600 text-[11px] tabular-nums">
+          <span className="text-slate-600 text-[11px] tabular-nums leading-none">
             {totalSymbols} symbols · {totalFiles} files
           </span>
         )}

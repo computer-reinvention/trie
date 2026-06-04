@@ -4,7 +4,7 @@ import { Sidebar } from "@/components/Sidebar"
 import { Inspector } from "@/components/Inspector"
 import { InputBar } from "@/components/InputBar"
 import { TurnHistory } from "@/components/TurnHistory"
-import { TitleBar } from "@/components/TitleBar"
+import { TitleBar, TITLEBAR_H, TRAFFIC_LIGHT_CLEARANCE } from "@/components/TitleBar"
 import { Settings } from "@/components/Settings"
 import { useAppStore } from "@/store/appStore"
 import { useAgentStore } from "@/store/agentStore"
@@ -41,9 +41,9 @@ function AppShell() {
   if (!projectDir) return null
 
   return (
-    <div className="flex flex-col h-screen text-slate-100 overflow-hidden" style={{ background: "var(--bg-app)" }}>
+    <div className="flex flex-col h-full text-slate-100 overflow-hidden" style={{ background: "var(--bg-app)" }}>
       <TitleBar onOpenSettings={() => setSettingsOpen(true)} />
-      <div className="flex-1 flex min-h-0 overflow-hidden">
+      <div className="flex-1 flex min-h-0 overflow-hidden relative">
         <Sidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <GraphCanvas className="flex-1 min-h-0" />
@@ -53,8 +53,9 @@ function AppShell() {
           </div>
         </div>
         <Inspector />
+        {/* Settings fills the area BELOW the title bar so traffic lights stay clear */}
+        {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
       </div>
-      {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
     </div>
   )
 }
@@ -104,7 +105,19 @@ function OpenProjectScreen({ onOpen }: { onOpen: () => void }) {
   }
 
   return (
-    <div className="flex h-screen bg-slate-950 items-center justify-center">
+    <div className="flex flex-col h-full bg-slate-950">
+      {/* top drag strip — title aligned horizontally with the traffic lights */}
+      <div
+        className="app-drag shrink-0 flex items-center select-none"
+        style={{ height: TITLEBAR_H }}
+      >
+        <div style={{ width: TRAFFIC_LIGHT_CLEARANCE }} />
+        <span className="text-slate-200 text-sm font-semibold font-mono tracking-tight leading-none">
+          trie
+        </span>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center">
       <div className="flex flex-col items-center gap-6">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-slate-100 font-mono tracking-tight">trie</h1>
@@ -147,6 +160,7 @@ function OpenProjectScreen({ onOpen }: { onOpen: () => void }) {
             )}
           </>
         )}
+      </div>
       </div>
     </div>
   )
@@ -203,9 +217,9 @@ export function App() {
     })
   }, [])
 
-  if (!projectOpened) {
-    return <OpenProjectScreen onOpen={() => setProjectOpened(true)} />
-  }
-
-  return <AppShell />
+  return (
+    <div className="h-screen w-screen overflow-hidden" style={{ background: "var(--bg-app)" }}>
+      {projectOpened ? <AppShell /> : <OpenProjectScreen onOpen={() => setProjectOpened(true)} />}
+    </div>
+  )
 }
