@@ -2,6 +2,9 @@ import { useEffect } from "react"
 import { graphClient } from "@/api/graphClient"
 import { useGraphStore } from "@/store/graphStore"
 import { useAppStore } from "@/store/appStore"
+import { useSettingsStore } from "@/store/settingsStore"
+import type { GroupingAxis } from "@/api/types"
+import type { MemberGrouping } from "@/store/graphStore"
 
 // Load the system model (the high-level "model of the system") + edges into the
 // graph store on project open. The model is cached server-side, so this is fast
@@ -17,8 +20,10 @@ export function useGraphPopulation(opencodePort: number | null): void {
     async function populate(): Promise<void> {
       appStore.setGraphLoading(true, "Building the system model…")
       try {
+        const settings = useSettingsStore.getState()
+        const includeTests = settings.get<boolean>("graph.showTests")
         const [model, edgesRes] = await Promise.all([
-          graphClient.systemModel(),
+          graphClient.systemModel({ includeTests }),
           graphClient.allEdges({ limit: 50000 }),
         ])
         if (cancelled) return
@@ -34,6 +39,9 @@ export function useGraphPopulation(opencodePort: number | null): void {
             `${edges.length} edges`,
         )
         graphStore.setModel(model, edges)
+        // apply user setting overrides for grouping
+        graphStore.setAxis(settings.get<GroupingAxis>("graph.defaultAxis"))
+        graphStore.setMemberGrouping(settings.get<MemberGrouping>("graph.memberGrouping"))
       } catch (err) {
         console.error("Graph population failed:", err)
       } finally {

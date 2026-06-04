@@ -143,6 +143,30 @@ export function registerIpcHandlers(pm: ProcessManager): void {
     return (prefs["recent-projects"] as string[] | undefined) ?? []
   })
 
+  // ---------------------------------------------------------------------------
+  // Settings — VS Code-style flat key/value config persisted in prefs.json
+  // under a `settings` namespace. The renderer owns the schema/defaults.
+  // ---------------------------------------------------------------------------
+  ipcMain.handle("settings-get-all", () => {
+    const prefs = readPrefs()
+    return (prefs["settings"] as Record<string, unknown> | undefined) ?? {}
+  })
+
+  ipcMain.handle("settings-set", (_event, key: string, value: unknown) => {
+    const prefs = readPrefs()
+    const settings = (prefs["settings"] as Record<string, unknown> | undefined) ?? {}
+    if (value === undefined || value === null) delete settings[key]
+    else settings[key] = value
+    writePrefs({ ...prefs, settings })
+    return { ok: true }
+  })
+
+  ipcMain.handle("settings-reset", () => {
+    const prefs = readPrefs()
+    writePrefs({ ...prefs, settings: {} })
+    return { ok: true }
+  })
+
   // API key — stored in macOS Keychain
   ipcMain.handle("get-api-key", async (_event, provider: string) => {
     try {

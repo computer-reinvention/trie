@@ -1,5 +1,86 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Theme tokens — driven by data-attributes set from the settings store.
+   Components mostly use Tailwind slate/indigo, but accent + font-size are
+   wired through CSS variables so settings take effect live.
+--------------------------------------------------------------------------- */
+:root {
+  --ui-font-size: 13px;
+  --accent: #6366f1; /* indigo-500 */
+  --accent-hover: #818cf8;
+  --bg-app: #020617;
+  --bg-panel: #0f172a;
+}
+
+:root[data-accent="indigo"] {
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+}
+:root[data-accent="violet"] {
+  --accent: #8b5cf6;
+  --accent-hover: #a78bfa;
+}
+:root[data-accent="emerald"] {
+  --accent: #10b981;
+  --accent-hover: #34d399;
+}
+:root[data-accent="amber"] {
+  --accent: #f59e0b;
+  --accent-hover: #fbbf24;
+}
+:root[data-accent="rose"] {
+  --accent: #f43f5e;
+  --accent-hover: #fb7185;
+}
+
+:root[data-theme="dark"] {
+  --bg-app: #020617;
+  --bg-panel: #0f172a;
+}
+:root[data-theme="midnight"] {
+  --bg-app: #000000;
+  --bg-panel: #0a0a0f;
+}
+:root[data-theme="slate"] {
+  --bg-app: #0b1120;
+  --bg-panel: #131c2e;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-size: var(--ui-font-size);
+  background: var(--bg-app);
+}
+
+/* Accent helper utilities (used where Tailwind's static palette isn't enough) */
+.bg-accent {
+  background-color: var(--accent);
+}
+.bg-accent:hover {
+  background-color: var(--accent-hover);
+}
+.text-accent {
+  color: var(--accent);
+}
+.border-accent {
+  border-color: var(--accent);
+}
+.ring-accent {
+  --tw-ring-color: var(--accent);
+}
+
+/* Compact density: tighten common spacing utilities a touch. */
+:root[data-density="compact"] {
+  --space-scale: 0.85;
+}
+
 @layer utilities {
   .animate-pulse-slow {
     animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -7,13 +88,35 @@
   .animate-pulse-fast {
     animation: pulse 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
+  /* draggable region for the custom macOS title bar */
+  .app-drag {
+    -webkit-app-region: drag;
+  }
+  .app-no-drag {
+    -webkit-app-region: no-drag;
+  }
+  /* thin, unobtrusive scrollbars (VS Code-like) */
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 transparent;
+  }
+  .scroll-thin::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  .scroll-thin::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  .scroll-thin::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+    background-clip: content-box;
+  }
 }
 
-/* React Flow overrides */
+/* React Flow / canvas font */
 .react-flow__node {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
-}
-
-.react-flow__edge-path {
-  transition: opacity 0.2s;
 }

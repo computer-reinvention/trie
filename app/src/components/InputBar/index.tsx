@@ -3,6 +3,7 @@ import { graphClient } from "@/api/graphClient"
 import { opencodeClient } from "@/api/opencodeClient"
 import { useAgentStore } from "@/store/agentStore"
 import { useAppStore } from "@/store/appStore"
+import { useSetting } from "@/store/settingsStore"
 
 interface Pill {
   qname: string
@@ -14,6 +15,7 @@ export function InputBar() {
   const [text, setText] = useState("")
   const { running, sessionId } = useAgentStore()
   const { serversReady } = useAppStore()
+  const sendOnEnter = useSetting<boolean>("agent.sendOnEnter")
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Listen for node-selected events from the graph canvas
@@ -80,7 +82,10 @@ export function InputBar() {
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter" && !e.shiftKey) {
+      // Send on Enter (Shift+Enter = newline) when enabled; otherwise require
+      // the modifier to send (Cmd/Ctrl+Enter).
+      const enterSends = sendOnEnter ? e.key === "Enter" && !e.shiftKey : e.key === "Enter" && (e.metaKey || e.ctrlKey)
+      if (enterSends) {
         e.preventDefault()
         handleSend()
       }
@@ -88,7 +93,7 @@ export function InputBar() {
         setPills((prev) => prev.slice(0, -1))
       }
     },
-    [handleSend, text, pills.length],
+    [handleSend, text, pills.length, sendOnEnter],
   )
 
   const disabled = running || !serversReady
@@ -131,9 +136,7 @@ export function InputBar() {
       {/* Send button */}
       <button
         className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-          disabled
-            ? "bg-slate-800 text-slate-600 cursor-not-allowed"
-            : "bg-indigo-600 hover:bg-indigo-500 text-white"
+          disabled ? "bg-slate-800 text-slate-600 cursor-not-allowed" : "bg-accent text-white"
         }`}
         onClick={handleSend}
         disabled={disabled}

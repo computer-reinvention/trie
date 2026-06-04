@@ -31,7 +31,7 @@ export function Sidebar() {
         <p className="text-slate-500 text-xs font-mono truncate">{projectDir.split("/").pop()}</p>
       </div>
       {/* top half: file tree */}
-      <div className="h-1/2 overflow-y-auto border-b border-slate-800">
+      <div className="h-1/2 overflow-y-auto scroll-thin border-b border-slate-800">
         <FileTree
           dir={projectDir}
           onFileClick={onFileClick}
