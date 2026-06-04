@@ -35,6 +35,11 @@ contextBridge.exposeInMainWorld("trie", {
   getApiKey: (provider: string) => ipcRenderer.invoke("get-api-key", provider),
   setApiKey: (provider: string, key: string) => ipcRenderer.invoke("set-api-key", provider, key),
 
+  // Settings (VS Code-style config persisted in prefs.json)
+  settingsGetAll: () => ipcRenderer.invoke("settings-get-all"),
+  settingsSet: (key: string, value: unknown) => ipcRenderer.invoke("settings-set", key, value),
+  settingsReset: () => ipcRenderer.invoke("settings-reset"),
+
   // File system (for sidebar tree)
   readDir: (dir: string) => ipcRenderer.invoke("read-dir", dir),
   readFile: (path: string) => ipcRenderer.invoke("read-file", path),

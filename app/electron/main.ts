@@ -10,10 +10,11 @@ function createWindow(): void {
   win = new BrowserWindow({
     width: 1440,
     height: 900,
-    minWidth: 900,
-    minHeight: 600,
+    minWidth: 960,
+    minHeight: 640,
     titleBarStyle: "hiddenInset",
-    backgroundColor: "#0a0a0a",
+    trafficLightPosition: { x: 14, y: 14 },
+    backgroundColor: "#020617",
     webPreferences: {
       preload: join(__dirname, "../preload/preload.js"),
       contextIsolation: true,

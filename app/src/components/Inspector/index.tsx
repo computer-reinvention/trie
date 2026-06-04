@@ -109,7 +109,7 @@ export function Inspector() {
       </div>
 
       {/* prose */}
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      <div className="flex-1 overflow-y-auto scroll-thin px-4 py-3">
         {detail?.signature && (
           <pre className="text-[11px] text-slate-400 font-mono whitespace-pre-wrap mb-3 bg-slate-950/50 rounded p-2 border border-slate-800">
             {detail.signature}

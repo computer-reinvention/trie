@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react"
-import { ReactFlowProvider } from "@xyflow/react"
 import { GraphCanvas } from "@/components/GraphCanvas"
 import { Sidebar } from "@/components/Sidebar"
 import { Inspector } from "@/components/Inspector"
 import { InputBar } from "@/components/InputBar"
 import { TurnHistory } from "@/components/TurnHistory"
+import { TitleBar } from "@/components/TitleBar"
+import { Settings } from "@/components/Settings"
 import { useAppStore } from "@/store/appStore"
 import { useAgentStore } from "@/store/agentStore"
+import { useSettingsStore, useSetting } from "@/store/settingsStore"
 import { setGraphClientBase, graphClient } from "@/api/graphClient"
 import { setOpenCodeClientBase } from "@/api/opencodeClient"
 import { useOpenCodeSSE } from "@/hooks/useOpenCodeSSE"
@@ -17,22 +19,42 @@ const trie = () => (window as any).trie
 
 function AppShell() {
   const { opencodePort, projectDir } = useAppStore()
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const showTurnHistory = useSetting<boolean>("agent.showTurnHistory")
   useOpenCodeSSE(opencodePort ?? 0)
   useGraphPopulation(opencodePort && opencodePort > 0 ? opencodePort : null)
+
+  // ⌘, opens settings; Esc closes it.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+        e.preventDefault()
+        setSettingsOpen((v) => !v)
+      } else if (e.key === "Escape" && settingsOpen) {
+        setSettingsOpen(false)
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [settingsOpen])
 
   if (!projectDir) return null
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden">
-      <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        <GraphCanvas className="flex-1 min-h-0" />
-        <div className="shrink-0">
-          <TurnHistory />
-          <InputBar />
+    <div className="flex flex-col h-screen text-slate-100 overflow-hidden" style={{ background: "var(--bg-app)" }}>
+      <TitleBar onOpenSettings={() => setSettingsOpen(true)} />
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        <Sidebar />
+        <div className="flex-1 flex flex-col min-w-0">
+          <GraphCanvas className="flex-1 min-h-0" />
+          <div className="shrink-0">
+            {showTurnHistory && <TurnHistory />}
+            <InputBar />
+          </div>
         </div>
+        <Inspector />
       </div>
-      <Inspector />
+      {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
     </div>
   )
 }
@@ -101,7 +123,7 @@ function OpenProjectScreen({ onOpen }: { onOpen: () => void }) {
         ) : (
           <>
             <button
-              className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-6 py-3 text-sm font-medium transition-colors disabled:opacity-50"
+              className="bg-accent text-white rounded-lg px-6 py-3 text-sm font-medium transition-colors disabled:opacity-50"
               onClick={handleOpen}
               disabled={loading}
             >
@@ -134,8 +156,17 @@ export function App() {
   const [projectOpened, setProjectOpened] = useState(false)
   const { setServers, setProject } = useAppStore()
   const { setSession } = useAgentStore()
+  const loadSettings = useSettingsStore((s) => s.load)
   // Track whether we've registered the listener to avoid duplicates
   const listenerRegistered = useRef(false)
+
+  // load persisted settings + apply theme as early as possible
+  useEffect(() => {
+    loadSettings().then(() => {
+      const model = useSettingsStore.getState().get<string>("agent.model")
+      useAppStore.getState().setModel("anthropic", model)
+    })
+  }, [loadSettings])
 
   useEffect(() => {
     if (listenerRegistered.current) return
@@ -176,9 +207,5 @@ export function App() {
     return <OpenProjectScreen onOpen={() => setProjectOpened(true)} />
   }
 
-  return (
-    <ReactFlowProvider>
-      <AppShell />
-    </ReactFlowProvider>
-  )
+  return <AppShell />
 }
