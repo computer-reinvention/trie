@@ -7,6 +7,7 @@ import { componentView, memberSubgroup } from "@/graph/doi"
 import { nodeRadius, classMarker, ACTIVITY, depthColor } from "@/graph/style"
 import { GraphAnimator } from "@/graph/animator"
 import { SearchPalette } from "./SearchPalette"
+import { ExpandedPanel } from "./ExpandedPanel"
 import type { SystemModelNode } from "@/api/types"
 
 interface GraphCanvasProps {
@@ -64,44 +65,16 @@ interface FGLink {
   kind?: "flow" | "member" | "call"
 }
 
-interface BinLayout {
-  key: string
-  x: number
-  y: number
-  w: number
-  h: number
-}
-
-interface ContainerLayout {
-  group: string
-  label: string
-  color: string
-  x: number
-  y: number
-  w: number
-  h: number
-  bins: BinLayout[]
-}
-
-// Depth order per group key, for color + x-position of member nodes.
-function maxDepthFor(nodes: SystemModelNode[]): number {
-  let m = 1
-  for (const n of nodes) if (n.depth > m) m = n.depth
-  return m
-}
-
 export function GraphCanvas({ className }: GraphCanvasProps) {
   const {
     model,
     axis,
-    visible,
     hoveredId,
     adjacency,
     selectedQname,
     isolatedGroup,
     focusedExpansion,
     pinnedExpansions,
-    memberGrouping,
   } = useGraphStore()
   const expandComponent = useGraphStore((s) => s.expandComponent)
   const togglePin = useGraphStore((s) => s.togglePin)
@@ -112,8 +85,6 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<ForceGraphMethods<any, any> | undefined>(undefined)
   const animatorRef = useRef(new GraphAnimator())
-
-  const maxDepth = useMemo(() => (model ? maxDepthFor(model.nodes) : 1), [model])
 
   // Neighbours of the hovered node (spotlight: highlight + dim the rest).
   const highlightSet = useMemo(() => {
@@ -137,7 +108,7 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
   // their members into a bounded community region tethered to the role anchor.
   const data = useMemo(() => {
     if (!model)
-      return { nodes: [] as FGNode[], links: [] as FGLink[], containers: [] as ContainerLayout[] }
+      return { nodes: [] as FGNode[], links: [] as FGLink[] }
 
     const view = componentView(model, axis)
     const expanded = new Set<string>(pinnedExpansions)
@@ -198,117 +169,12 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
       }
     }
 
-    // Expanded containers: the role node turns INTO its community. The container
-    // is anchored AT the role's own layout position (blooms in place), and
-    // collapses when focus shifts away. Members are binned by the chosen
-    // sub-grouping in a deterministic grid (fixed positions, no overlap).
-    const containers: ContainerLayout[] = []
-    if (expanded.size > 0) {
-      const groupKey = (n: SystemModelNode) =>
-        axis === "role" ? n.role || "untagged" : n.subsystem
-      const membersByGroup = new Map<string, SystemModelNode[]>()
-      for (const n of visible.nodes) {
-        const gk = groupKey(n)
-        if (!expanded.has(gk)) continue
-        if (!membersByGroup.has(gk)) membersByGroup.set(gk, [])
-        membersByGroup.get(gk)!.push(n)
-      }
-
-      for (const gk of membersByGroup.keys()) {
-        const members = membersByGroup.get(gk)!
-        const bins = new Map<string, SystemModelNode[]>()
-        for (const n of members) {
-          const b = memberSubgroup(n, memberGrouping)
-          if (!bins.has(b)) bins.set(b, [])
-          bins.get(b)!.push(n)
-        }
-        const binList = [...bins.entries()].sort((a, b) => b[1].length - a[1].length)
-
-        const PAD = 22
-        const BIN_GAP = 16
-        const CELL = 34
-        const COLS = 4
-        const BIN_HEADER = 18
-        const TITLE_H = 30
-
-        // first pass: measure container size
-        let measureY = 0
-        let containerW = 0
-        for (const [, binMembers] of binList) {
-          const rows = Math.ceil(binMembers.length / COLS)
-          const cols = Math.min(COLS, binMembers.length)
-          containerW = Math.max(containerW, cols * CELL)
-          measureY += BIN_HEADER + rows * CELL + BIN_GAP
-        }
-        const cw = containerW + PAD * 2
-        const ch = measureY + PAD + TITLE_H
-
-        // anchor: bloom from the role node's own position, centered horizontally
-        // on it, opening downward.
-        const origin = compPos.get(gk) ?? { x: 0, y: 0 }
-        const originX = origin.x - cw / 2
-        const originY = origin.y + 18 // just below the role node
-
-        let y = originY + TITLE_H + PAD
-        const binLayouts: BinLayout[] = []
-        for (const [binKey, binMembers] of binList) {
-          const rows = Math.ceil(binMembers.length / COLS)
-          const cols = Math.min(COLS, binMembers.length)
-          const binW = cols * CELL
-          const binH = BIN_HEADER + rows * CELL
-          binLayouts.push({ key: binKey, x: originX + PAD, y, w: binW, h: binH })
-          binMembers.forEach((n, i) => {
-            const r = Math.floor(i / COLS)
-            const c = i % COLS
-            const t = n.depth >= 0 ? n.depth / maxDepth : 0.5
-            nodes.push({
-              kind: "symbol",
-              id: n.qname,
-              node: n,
-              color: depthColor(t),
-              val: Math.min(9, nodeRadius(n.salience, n.cls)),
-              group: gk,
-              order: groupByKey.get(gk)?.order ?? 0.5,
-              fx: originX + PAD + c * CELL + CELL / 2,
-              fy: y + BIN_HEADER + r * CELL + CELL / 2,
-            })
-          })
-          y += binH + BIN_GAP
-        }
-
-        containers.push({
-          group: gk,
-          label: gk.split("/").pop() ?? gk,
-          color: depthColor(groupByKey.get(gk)?.order ?? 0.5),
-          x: originX,
-          y: originY,
-          w: cw,
-          h: ch,
-          bins: binLayouts,
-        })
-      }
-
-      // call edges among shown members (drawn subtly inside containers)
-      const shownIds = new Set(nodes.filter((n) => n.kind === "symbol").map((n) => n.id))
-      const adj = useGraphStore.getState().adjacency
-      const seen = new Set<string>()
-      for (const id of shownIds) {
-        const nbrs = adj?.neighbours.get(id)
-        if (!nbrs) continue
-        for (const w of nbrs) {
-          if (shownIds.has(w)) {
-            const lid = id < w ? `${id}|${w}` : `${w}|${id}`
-            if (!seen.has(lid)) {
-              seen.add(lid)
-              links.push({ source: id, target: w, weight: 1, kind: "call" })
-            }
-          }
-        }
-      }
-    }
-
-    return { nodes, links, containers }
-  }, [model, axis, visible, focusedExpansion, pinnedExpansions, maxDepth, memberGrouping])
+    // Members are NOT drawn on the main canvas anymore. Expansion opens a
+    // dedicated bounded, scrollable sub-graph panel (ExpandedPanel overlay) that
+    // shows the role's members as a real network with their interdependencies.
+    // The main canvas stays the clean L0 system map.
+    return { nodes, links }
+  }, [model, axis, focusedExpansion, pinnedExpansions])
 
   useEffect(() => {
     if (!data.nodes.length || !fgRef.current) return
@@ -360,52 +226,6 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
 
   const maxWeight = useMemo(() => Math.max(1, ...data.links.map((l) => l.weight)), [data.links])
   const anyExpanded = focusedExpansion !== null || pinnedExpansions.size > 0
-
-  // Draw OPAQUE community containers (fixed rects from the data builder) with
-  // labeled sub-group bins. Opaque so it's obvious which nodes belong inside;
-  // positioned in reserved space so it never overlaps the system.
-  const drawRegions = useCallback(
-    (ctx: CanvasRenderingContext2D) => {
-      for (const c of data.containers) {
-        // opaque panel
-        ctx.beginPath()
-        roundRect(ctx, c.x, c.y, c.w, c.h, 16)
-        ctx.fillStyle = "#0b1220" // solid dark panel — not see-through
-        ctx.globalAlpha = 1
-        ctx.fill()
-        ctx.lineWidth = 2
-        ctx.strokeStyle = c.color
-        ctx.globalAlpha = 0.9
-        ctx.stroke()
-        ctx.globalAlpha = 1
-        // accent bar + title
-        ctx.fillStyle = c.color
-        roundRectFillTop(ctx, c.x, c.y, c.w, 26, 16)
-        ctx.font = "700 14px ui-sans-serif, system-ui, sans-serif"
-        ctx.textAlign = "left"
-        ctx.textBaseline = "middle"
-        ctx.fillStyle = "#0b1220"
-        ctx.fillText(c.label, c.x + 12, c.y + 13)
-
-        // sub-group bins
-        for (const b of c.bins) {
-          ctx.font = "600 10px ui-sans-serif, system-ui, sans-serif"
-          ctx.textAlign = "left"
-          ctx.textBaseline = "top"
-          ctx.fillStyle = "#94a3b8"
-          ctx.fillText(b.key.split("/").pop() ?? b.key, b.x, b.y)
-          // faint divider under bin header
-          ctx.strokeStyle = "rgba(148,163,184,0.18)"
-          ctx.lineWidth = 1
-          ctx.beginPath()
-          ctx.moveTo(b.x, b.y + 14)
-          ctx.lineTo(b.x + b.w, b.y + 14)
-          ctx.stroke()
-        }
-      }
-    },
-    [data.containers],
-  )
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onNodeClick = useCallback(
@@ -481,6 +301,7 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
         </div>
       )}
       <SearchPalette />
+      <ExpandedPanel />
       {data.nodes.length > 0 && (
         <ForceGraph2D
           ref={fgRef}
@@ -492,8 +313,7 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
           warmupTicks={30}
           d3VelocityDecay={0.35}
           autoPauseRedraw={false}
-          onRenderFramePre={(ctx) => {
-            drawRegions(ctx as CanvasRenderingContext2D)
+          onRenderFramePre={() => {
             const anim = animatorRef.current
             const st = useGraphStore.getState()
             for (const fgn of data.nodes) {
@@ -594,37 +414,6 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
 }
 
 // --- canvas painting --------------------------------------------------------
-
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  const rr = Math.min(r, w / 2, h / 2)
-  ctx.moveTo(x + rr, y)
-  ctx.arcTo(x + w, y, x + w, y + h, rr)
-  ctx.arcTo(x + w, y + h, x, y + h, rr)
-  ctx.arcTo(x, y + h, x, y, rr)
-  ctx.arcTo(x, y, x + w, y, rr)
-  ctx.closePath()
-}
-
-// Filled rounded rect with only the TOP corners rounded (for the title bar).
-function roundRectFillTop(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number,
-) {
-  const rr = Math.min(r, w / 2, h)
-  ctx.beginPath()
-  ctx.moveTo(x, y + h)
-  ctx.lineTo(x, y + rr)
-  ctx.arcTo(x, y, x + rr, y, rr)
-  ctx.lineTo(x + w - rr, y)
-  ctx.arcTo(x + w, y, x + w, y + rr, rr)
-  ctx.lineTo(x + w, y + h)
-  ctx.closePath()
-  ctx.fill()
-}
 
 interface PaintOpts {
   dimmed: boolean
