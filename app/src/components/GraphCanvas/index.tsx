@@ -88,6 +88,22 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
   // live screen position of the focused role node, so the sub-graph panel can
   // anchor to it (act like a graph node, panning/zooming with the canvas).
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null)
+  // size the force graph to its container (not the window) so the input bar /
+  // turn history below it stay visible.
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dims, setDims] = useState<{ w: number; h: number }>({ w: 0, h: 0 })
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver((entries) => {
+      const cr = entries[0].contentRect
+      setDims({ w: Math.round(cr.width), h: Math.round(cr.height) })
+    })
+    ro.observe(el)
+    setDims({ w: el.clientWidth, h: el.clientHeight })
+    return () => ro.disconnect()
+  }, [])
 
   // Neighbours of the hovered node (spotlight: highlight + dim the rest).
   const highlightSet = useMemo(() => {
@@ -276,7 +292,7 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
   )
 
   return (
-    <div className={`relative flex-1 bg-slate-950 ${className ?? ""}`}>
+    <div ref={containerRef} className={`relative flex-1 bg-slate-950 overflow-hidden ${className ?? ""}`}>
       {anyExpanded && (
         <div className="absolute top-3 left-3 z-10 flex items-center gap-2 text-xs">
           <button
@@ -308,6 +324,8 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
       {data.nodes.length > 0 && (
         <ForceGraph2D
           ref={fgRef}
+          width={dims.w || undefined}
+          height={dims.h || undefined}
           graphData={data}
           backgroundColor="#020617"
           nodeRelSize={1}
