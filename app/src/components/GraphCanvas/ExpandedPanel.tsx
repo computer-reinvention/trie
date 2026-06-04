@@ -18,6 +18,7 @@ interface PanelNode {
   outside?: boolean // a peripheral system node this group connects to
   color: string
   val: number
+  folded?: number // count of members folded into this one (e.g. class methods)
   fx?: number
   fy?: number
   x?: number
@@ -103,22 +104,50 @@ export function ExpandedPanel({ anchor }: ExpandedPanelProps) {
       n.cls === "door" || n.cls === "hub" || n.cls === "bedrock" || n.cls === "exit"
     const isMinor = (n: SystemModelNode) => !isLandmark(n) && n.inbound_count <= 1
 
-    // visible members: landmarks + non-minor always; minor only when the hovered
-    // member is one of their neighbours (the "caller under focus" reveal).
+    // Containment fold: a member is represented BY its owner when the owner is
+    // also present in this frame. A method XYZ.abc folds into the class XYZ; we
+    // don't draw it separately unless revealed. Generalizes to any symbol whose
+    // owner (the symbol it belongs to) is a visible member.
+    const frameIds = new Set(frame.members.map((m) => m.qname))
+    const ownerInFrame = (n: SystemModelNode): string | null => {
+      const owner = ownerOf(n.qname)
+      return owner && frameIds.has(owner) ? owner : null
+    }
+
+    // reveal a folded/minor member when the hovered member is one of its
+    // neighbours (caller under focus) or is its owner.
     const hoveredNbrs = hoveredMember ? adjacency.neighbours.get(hoveredMember) : undefined
-    const visibleMembers = frame.members.filter(
-      (n) =>
-        !isMinor(n) ||
-        n.qname === hoveredMember ||
-        (hoveredNbrs ? hoveredNbrs.has(n.qname) : false),
-    )
+    const revealedByHover = (n: SystemModelNode) =>
+      n.qname === hoveredMember ||
+      (hoveredNbrs ? hoveredNbrs.has(n.qname) : false) ||
+      ownerOf(n.qname) === hoveredMember
+
+    const visibleMembers = frame.members.filter((n) => {
+      if (revealedByHover(n)) return true
+      // folded into its owner -> hidden by default
+      if (ownerInFrame(n)) return false
+      // minor -> hidden by default
+      if (isMinor(n)) return false
+      return true
+    })
     const memberIds = new Set(visibleMembers.map((m) => m.qname))
+
+    // count members folded into each visible owner (for the "contains more" cue)
+    const foldedCount = new Map<string, number>()
+    for (const n of frame.members) {
+      if (memberIds.has(n.qname)) continue
+      const owner = ownerOf(n.qname)
+      if (owner && memberIds.has(owner)) {
+        foldedCount.set(owner, (foldedCount.get(owner) ?? 0) + 1)
+      }
+    }
 
     const nodes: PanelNode[] = visibleMembers.map((n) => ({
       id: n.qname,
       node: n,
       color: depthColor(n.depth >= 0 ? n.depth / maxDepth : 0.5),
       val: Math.max(MIN_MEMBER_R, Math.min(11, nodeRadius(n.salience, n.cls))),
+      folded: foldedCount.get(n.qname) ?? 0,
     }))
     const links: PanelLink[] = []
     const seen = new Set<string>()
@@ -306,6 +335,17 @@ export function ExpandedPanel({ anchor }: ExpandedPanelProps) {
                   ctx.lineWidth = 1.5 / scale
                   ctx.stroke()
                 }
+                // "contains folded members" cue: a faint concentric ring +
+                // small count. Hover or click to reveal/drill into them.
+                if (n.folded && n.folded > 0) {
+                  ctx.beginPath()
+                  ctx.arc(n.x, n.y, r + 3.5 / scale, 0, 2 * Math.PI)
+                  ctx.strokeStyle = n.color
+                  ctx.globalAlpha = 0.45
+                  ctx.lineWidth = 1 / scale
+                  ctx.stroke()
+                  ctx.globalAlpha = 1
+                }
               }
               // Labels when the area is sparse enough (note #3): show when few
               // nodes, zoomed in, hovered, or a landmark. Backdrop for legibility.
@@ -357,10 +397,17 @@ export function ExpandedPanel({ anchor }: ExpandedPanelProps) {
   )
 }
 
-// owning class qname for a method, else null
-function ownerClassOf(qname: string): string | null {
+// Owner qname for a symbol that belongs to another (a method belongs to its
+// class, a nested member to its enclosing symbol), else null. `mod:A.b.c` ->
+// `mod:A.b`. Top-level `mod:A` has no owner.
+function ownerOf(qname: string): string | null {
   if (!qname.includes(":")) return null
   const [mod, local] = qname.split(":")
   if (!local.includes(".")) return null
   return `${mod}:${local.slice(0, local.lastIndexOf("."))}`
+}
+
+// owning class qname for a method (used by the drill logic), else null
+function ownerClassOf(qname: string): string | null {
+  return ownerOf(qname)
 }
