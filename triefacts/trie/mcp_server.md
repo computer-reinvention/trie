@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.5
 source: trie/mcp_server.py
-file_fingerprint: 0abaca90f69423ea1b8ba8d89705388f8f5a564c6caa46b150b5a1bab593e67d
-last_synced_at: '2026-06-03T20:38:10Z'
+file_fingerprint: 489e4b5eea470874bcdf3450ebc70a1ccdcfae056dce9a670a9a9dfa81bc4fce
+last_synced_at: '2026-06-04T00:38:21Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
 - kind: module
   qualified_name: trie/mcp_server:__module__
-  lines: 1-2116
+  lines: 1-2122
 - kind: class
   qualified_name: trie/mcp_server:RipgrepNotFoundError
   lines: 75-87
@@ -43,7 +43,7 @@ defines:
   lines: 219-238
 - kind: class
   qualified_name: trie/mcp_server:TrieTools
-  lines: 241-2063
+  lines: 241-2069
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.__init__
   lines: 255-282
@@ -70,79 +70,79 @@ defines:
   lines: 414-431
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.system_model
-  lines: 433-450
+  lines: 433-456
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.summary
-  lines: 452-478
+  lines: 458-484
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.symbols_by_file
-  lines: 480-519
+  lines: 486-525
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep
-  lines: 523-655
+  lines: 529-661
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._maybe_text_match_fallback
-  lines: 657-802
+  lines: 663-808
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._fuzzy_prose_fallback
-  lines: 804-880
+  lines: 810-886
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._text_match_in_scope
-  lines: 882-981
+  lines: 888-987
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._attribute_text_matches_to_symbols
-  lines: 983-1006
+  lines: 989-1012
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._candidate_matches_predicate
-  lines: 1008-1034
+  lines: 1014-1040
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._parse_predicate
-  lines: 1036-1114
+  lines: 1042-1120
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.read
-  lines: 1118-1188
+  lines: 1124-1194
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._prose_for
-  lines: 1190-1227
+  lines: 1196-1233
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._neighbour_summaries
-  lines: 1229-1254
+  lines: 1235-1260
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.trace
-  lines: 1258-1412
+  lines: 1264-1418
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_str
-  lines: 1416-1575
+  lines: 1422-1581
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_entry_points
-  lines: 1577-1660
+  lines: 1583-1666
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_symbol
-  lines: 1662-1763
+  lines: 1668-1769
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_symbol_and_neighbours
-  lines: 1765-1791
+  lines: 1771-1797
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_symbol
-  lines: 1793-1874
+  lines: 1799-1880
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_symbol_references
-  lines: 1876-1937
+  lines: 1882-1943
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.trace_flow
-  lines: 1939-1997
+  lines: 1945-2003
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_flow
-  lines: 1999-2043
+  lines: 2005-2049
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._suggest_for_qname
-  lines: 2047-2063
+  lines: 2053-2069
 - kind: function
   qualified_name: trie/mcp_server:build_server
-  lines: 2069-2105
+  lines: 2075-2111
 - kind: function
   qualified_name: trie/mcp_server:run_stdio
-  lines: 2108-2115
+  lines: 2114-2121
 incoming_refs: 6
 outgoing_refs: 54
 ---
@@ -227,10 +227,10 @@ Find the qname of the symbol whose line range contains `lineno`, preferring nest
 
 Iterates through the ordered list, updating `enclosing` with each symbol that brackets `lineno`. Since symbols are start-ordered, the last matching symbol is the most deeply nested one.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=b30a30b6a446c15603422d7528a84eb2b4c3415673e12cd511984b0ca2f22a43 body_fp=f873e2fbc649c1adac3fdff15fb2a202769b9b8311259b3e949420577b70b603 source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=efb5fd4e498468662d61be45dbf8be58537e5c68c184614798c223fef99a747a body_fp=33f4bad147656510152a0752bb44b830366c28230f72c4ee719b1827b2b45ba5 source_ref=b002a84e4f30d22b29fa6bf9f2f5d71998be7d82 -->
 Core interface for MCP tools as plain methods, testable without transport.
 
-Owns the Store and project config for process lifetime. Implements eleven MCP tools as methods: three core operations (`grep`, `read`, `trace`) plus eight agent-ergonomic wrappers. All methods return structured dicts with error envelopes; telemetry is captured on each call with configurable event names to distinguish MCP vs CLI usage.
+Owns the Store and project config for process lifetime. Implements fifteen MCP tools as methods: three core operations (`grep`, `read`, `trace`), eight agent-ergonomic wrappers, four patch operations, plus desktop app helpers. All methods return structured dicts with error envelopes; telemetry is captured on each call with configurable event names to distinguish MCP vs CLI usage.
 
 - `event_name`: controls telemetry event name emitted on each call ("mcp_call" for MCP server, "cli_call" for CLI)
 - `store`: SQLite store containing symbol graph and triefact metadata  
@@ -288,13 +288,15 @@ Return all call-graph edges for the desktop app's initial graph population.
 - `limit`: maximum number of edges to return (default 50000)
 - Returns `{edges: [{from, to}, ...]}` — flat list of directed edges from SQLite
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.system_model fingerprint=284f0384010d1ece51abc3a3b10b4762e32ad1f1b79360ef33b5b536620a0f28 body_fp=0c5114d93a22385931c01d091833b3efc207fe878f6804b17177cf0c6e0e7547 source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 -->
-Returns a high-level system model for desktop graph visualization with classified nodes, role summaries, and landmarks.
+<!-- trie:section symbol=trie/mcp_server:TrieTools.system_model fingerprint=172871e9e7f3321aa96d5cf81e8c08c11df7f77d7a5a2d7efe573091fbca9033 body_fp=e6cb2c4dc46624d3a9bde54016afa5ea29f3aa06a30386d5793c05c9515fb06d source_ref=b002a84e4f30d22b29fa6bf9f2f5d71998be7d82 -->
+Returns a high-level system model for desktop graph visualization with classified nodes, axis summaries, and landmarks.
 
-- `landmark_limit`: maximum number of landmark symbols to include in the L1 view (default 60)
-- returns: dict with `{nodes, roles, role_flows, landmarks}` containing graph topology and metadata
-- nodes are classified as door/hub/bedrock/exit/orphan/normal with salience scores and community data
-- includes aggregated role-to-role flow edges for architectural overview
+- `landmark_limit`: maximum number of landmark symbols to include in the L1 view (default 160)
+- `include_tests`: whether to include test symbols flagged as `is_test` (default False)
+- returns: dict with `{nodes, axes: {role, subsystem}, landmarks, stats}` containing graph topology and metadata
+- nodes are classified as door/hub/bedrock/exit/internal/orphan with salience scores and layout positions
+- includes aggregated component groups and thresholded flow edges for architectural overview
+- results cached on disk by graph fingerprint for instant repeat calls
 - pure graph analysis with no LLM calls required
 <!-- trie:end -->
 <!-- trie:section symbol=trie/mcp_server:TrieTools.summary fingerprint=ed9f6804bf456d31b6628a2ffc2d73eb903a7c3040160f5b6347896061dec46b body_fp=b1de55753ce5e944089a958c45d4a2f6c8f163328e8984a93635a45f5946f2d3 source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 -->
