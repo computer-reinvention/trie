@@ -9,6 +9,9 @@ import type {
   TraceResult,
   SymbolHit,
   SystemModel,
+  FileTriefactResult,
+  FileSourceResult,
+  ActivityResult,
 } from "./types"
 
 let baseUrl = ""
@@ -85,6 +88,21 @@ export const graphClient = {
 
   symbolsByFile(path: string): Promise<SymbolsByFileResult> {
     return get("/desktop/graph/symbols-by-file", { path })
+  },
+
+  // Full triefact (front matter + per-symbol sections) for a source file.
+  fileTriefact(path: string): Promise<FileTriefactResult> {
+    return get("/desktop/graph/file-triefact", { path })
+  },
+
+  // Raw source text for a file — feeds the editor's source view.
+  fileSource(path: string): Promise<FileSourceResult> {
+    return get("/desktop/graph/file-source", { path })
+  },
+
+  // Live writer status + working-tree stale set (polled by the activity store).
+  activity(): Promise<ActivityResult> {
+    return get("/desktop/graph/activity")
   },
 
   createSession(title?: string): Promise<{ id: string }> {

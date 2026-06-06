@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, type MouseEvent } from "react"
 
 interface DirEntry {
   name: string
@@ -9,7 +9,7 @@ interface DirEntry {
 interface FileTreeProps {
   dir: string
   onFileClick: (path: string) => void
-  onFileRightClick: (path: string) => void
+  onFileRightClick: (path: string, e: MouseEvent) => void
   depth?: number
 }
 
@@ -78,7 +78,7 @@ export function FileTree({ dir, onFileClick, onFileRightClick, depth = 0 }: File
               onClick={() => onFileClick(entry.path)}
               onContextMenu={(e) => {
                 e.preventDefault()
-                onFileRightClick(entry.path)
+                onFileRightClick(entry.path, e)
               }}
             >
               {entry.name}

@@ -75,6 +75,9 @@ interface GraphStore {
   // --- actions: live runtime (driven by SSE) ---
   setNodeAgentState: (qname: string, state: AgentState) => void
   setFileAgentState: (filePath: string, state: AgentState) => void
+  // Sustain a pulse across every symbol in a file (drives the glow ring while
+  // an external writer is regenerating that file's triefacts).
+  setFileActivity: (filePath: string, activity: number) => void
   bumpActivity: (qname: string, amount?: number) => void
   setHeat: (qname: string, heat: number) => void
   flowAlong: (from: string, to: string, durationMs?: number) => void
@@ -235,6 +238,19 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
         if (n.file_path === filePath || n.file_path.endsWith(filePath)) {
           const cur = runtime.get(n.qname) ?? { ...DEFAULT_RUNTIME }
           runtime.set(n.qname, { ...cur, agentState })
+        }
+      }
+      return { runtime }
+    }),
+
+  setFileActivity: (filePath, activity) =>
+    set((s) => {
+      if (!s.model) return {}
+      const runtime = new Map(s.runtime)
+      for (const n of s.model.nodes) {
+        if (n.file_path === filePath || n.file_path.endsWith(filePath)) {
+          const cur = runtime.get(n.qname) ?? { ...DEFAULT_RUNTIME }
+          runtime.set(n.qname, { ...cur, activity: Math.max(0, Math.min(1, activity)) })
         }
       }
       return { runtime }

@@ -3,6 +3,8 @@ import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d"
 import { forceCollide } from "d3-force"
 import { useGraphStore } from "@/store/graphStore"
 import { useAppStore } from "@/store/appStore"
+import { useTabsStore } from "@/store/tabsStore"
+import { openContextMenu } from "@/store/contextMenuStore"
 import { componentView, memberSubgroup } from "@/graph/doi"
 import { nodeRadius, classMarker, ACTIVITY, depthColor } from "@/graph/style"
 import { GraphAnimator } from "@/graph/animator"
@@ -272,9 +274,31 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onNodeRightClick = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (node: any) => {
+    (node: any, event: MouseEvent) => {
       const n = node as FGNode
-      if (n.kind === "component") togglePin(n.id)
+      if (n.kind === "component") {
+        togglePin(n.id)
+        return
+      }
+      if (n.kind === "symbol") {
+        const sym = n.node
+        const open = useTabsStore.getState().openFile
+        openContextMenu(event, [
+          {
+            label: "Open Source",
+            onSelect: () => open(sym.file_path, { view: "source", forceView: true }),
+          },
+          {
+            label: "Open Triefact",
+            onSelect: () =>
+              open(sym.file_path, {
+                view: "triefact",
+                forceView: true,
+                focusQname: sym.qname,
+              }),
+          },
+        ])
+      }
     },
     [togglePin],
   )
