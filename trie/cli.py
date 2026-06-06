@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import sys
+import threading
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -57,11 +59,13 @@ from trie.sync.incremental import (
     run_incremental,
 )
 from trie.sync.progress import ProgressCallback
+from trie.sync.roles import run_roles_only
 from trie.sync.single_file import (
     FileSyncResult,
     refresh_triefact_metadata,
     sync_single_file,
 )
+from trie.sync.taxonomy import taxonomy_path
 from trie.tool_override_install import (
     ToolOverrideInstallError,
     ToolOverrideInstallPlan,
@@ -99,12 +103,14 @@ class _ProgressAdapter:
         self.label = label
         self.handle: ProgressHandle | None = None
         self._prev_running_cost = 0.0
+        self._lock = threading.Lock()
 
     def _ensure(self, total: int) -> ProgressHandle:
-        if self.handle is None:
-            self.handle = self.reporter.start_progress(total=total, label=self.label)
-            self.handle.__enter__()
-        return self.handle
+        with self._lock:
+            if self.handle is None:
+                self.handle = self.reporter.start_progress(total=total, label=self.label)
+                self.handle.__enter__()
+            return self.handle
 
     def close(self) -> None:
         if self.handle is not None:
@@ -141,6 +147,87 @@ def _progress_callback(reporter: Reporter, label: str) -> Iterator[ProgressCallb
         yield adapter
     finally:
         adapter.close()
+
+
+@contextmanager
+def _activity_progress(
+    reporter: Reporter, label: str, *, op: str, project_root: Path
+) -> Iterator[ProgressCallback]:
+    """Like `_progress_callback`, but also mirrors progress into the shared
+    `.trie/` activity state (`status.json` + `activity.jsonl`) so any process —
+    a terminal sync, the hook, the desktop app — has a live, readable view of
+    what this run is doing. The Rich/JSONL reporter and the activity feed both
+    fire.
+    """
+    from trie.activity import ActivityProgress, ActivityWriter
+
+    adapter = _ProgressAdapter(reporter, label)
+    writer = ActivityWriter(project_root, op)
+    try:
+        with writer:
+            yield ActivityProgress(writer, inner=adapter)
+    finally:
+        adapter.close()
+
+
+class _JsonlProgress:
+    """ProgressCallback that emits one JSON object per line to a stream.
+
+    This is the machine-readable counterpart to `_ProgressAdapter`. Hosts that
+    drive trie as a subprocess (the desktop app's startup refresh, CI) parse
+    these lines to render their own progress UI instead of scraping Rich output.
+
+    Event schema (every line is a complete JSON object with a `kind` field):
+
+      {"kind": "start",   "rel_path": str, "idx": int, "total": int}
+      {"kind": "done",    "rel_path": str, "symbols": int, "cost_usd": float,
+                          "running_cost_usd": float}
+      {"kind": "skip",    "rel_path": str, "reason": str}
+
+    The `phase`/`summary` envelope events are emitted by the command itself
+    (see `refresh_cmd`), not here, so the host sees a single ordered stream.
+
+    Lines are flushed immediately so a host reading the pipe sees progress in
+    real time rather than at process exit.
+    """
+
+    def __init__(self, stream: Any = None):
+        self._stream = stream if stream is not None else sys.stdout
+
+    def _emit(self, payload: dict[str, Any]) -> None:
+        import json as _json
+
+        self._stream.write(_json.dumps(payload) + "\n")
+        self._stream.flush()
+
+    def on_start(self, rel_path: str, idx: int, total: int) -> None:
+        self._emit({"kind": "start", "rel_path": rel_path, "idx": idx, "total": total})
+
+    def on_done(self, rel_path: str, result: FileSyncResult, running_cost_usd: float) -> None:
+        self._emit(
+            {
+                "kind": "done",
+                "rel_path": rel_path,
+                "symbols": result.symbols_generated,
+                "running_cost_usd": running_cost_usd,
+            }
+        )
+
+    def on_skip(self, rel_path: str, reason: str) -> None:
+        self._emit({"kind": "skip", "rel_path": rel_path, "reason": reason})
+
+
+def emit_jsonl_event(payload: dict[str, Any], stream: Any = None) -> None:
+    """Emit a single envelope JSONL event (phase markers, summaries, errors).
+
+    Used by commands running in `--json` mode to bracket the per-file events
+    from `_JsonlProgress` with lifecycle markers the host can key on.
+    """
+    import json as _json
+
+    out = stream if stream is not None else sys.stdout
+    out.write(_json.dumps(payload) + "\n")
+    out.flush()
 
 
 @contextmanager
@@ -497,6 +584,95 @@ def verify_cmd(ctx: typer.Context) -> None:
     _verify_drift(reporter, exit_on_drift=True)
 
 
+@app.command("status")
+def status_cmd(
+    ctx: typer.Context,
+    as_json: bool = typer.Option(
+        False, "--json", help="Emit the status as a single JSON object instead of prose."
+    ),
+) -> None:
+    """Show trie's working state — like `git status` for the triefact tree.
+
+    Reports:
+      • the active writer (idle, or a running sync/refresh with live progress),
+      • the stale triefacts a `trie sync` would regenerate — computed from the
+        same offline content-drift check `trie verify` uses (source body
+        fingerprints vs. triefact sentinels), so it's authoritative, not a cached
+        guess. The refresh-computed `pending.json` set is unioned in.
+
+    Read-only and fast: a content-drift scan (no LLM, no DB writes). Safe to run
+    while a sync is in flight — it reflects that sync's live progress.
+    """
+    import json as _json
+
+    from trie.activity import read_pending, read_status
+    from trie.check import check_project
+
+    reporter = _get_reporter(ctx)
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    status = read_status(project_root)
+
+    # Authoritative drift via the same `check_project` call `trie verify` uses —
+    # status reports exactly what verify would, never an independent computation.
+    check = check_project(project_root=project_root, config=config)
+    drift_by_file: dict[str, int] = {}
+    for it in check.items:
+        drift_by_file[it.source_path] = drift_by_file.get(it.source_path, 0) + 1
+
+    # Union with the refresh-computed pending set (a graph-only refresh may have
+    # flagged cascade files whose own bodies didn't change but whose neighbours did).
+    pending = read_pending(project_root)
+    stale_set = set(drift_by_file) | set(pending.stale if pending else ())
+    stale = sorted(stale_set)
+
+    if as_json:
+        typer.echo(
+            _json.dumps(
+                {
+                    "state": status.state,
+                    "op": status.op,
+                    "pid": status.pid,
+                    "current_file": status.current_file,
+                    "done": status.done,
+                    "total": status.total,
+                    "stale_count": len(stale),
+                    "stale": stale,
+                    "drift_items": len(check.items),
+                },
+                default=str,
+            )
+        )
+        return
+
+    # Writer line.
+    if status.is_active:
+        prog = f" {status.done}/{status.total}" if status.total else ""
+        cur = f" · {status.current_file}" if status.current_file else ""
+        reporter.console.print(f"[cyan]●[/cyan] {status.op or status.state}{prog}{cur}")
+    elif status.state == "error":
+        reporter.console.print(f"[red]✗[/red] last run errored: {status.error or 'unknown'}")
+    else:
+        reporter.console.print("[green]●[/green] idle")
+
+    # Stale set.
+    if stale:
+        reporter.console.print(
+            f"\n[yellow]{len(stale)} triefact(s) stale[/yellow] "
+            f"({len(check.items)} drifted section(s)) — run `trie sync` to regenerate:"
+        )
+        for f in stale[:20]:
+            n = drift_by_file.get(f)
+            suffix = f" [dim]({n} section{'s' if n != 1 else ''})[/dim]" if n else ""
+            reporter.console.print(f"  [yellow]~[/yellow] {f}{suffix}")
+        if len(stale) > 20:
+            reporter.console.print(f"  … and {len(stale) - 20} more")
+
+
 @app.command("lock-check")
 def lock_check_cmd(ctx: typer.Context) -> None:
     """Probe whether another trie process holds the project's write lock.
@@ -576,6 +752,26 @@ def refresh_cmd(
         "--model",
         help="Override the configured model (only used when refresh fires a sync).",
     ),
+    sync_prose: bool = typer.Option(
+        False,
+        "--sync",
+        help=(
+            "Regenerate drifted triefact prose inline (the old behaviour). By "
+            "default refresh is graph-only and fast: it rebuilds the symbol graph "
+            "and marks drifted triefacts stale for a later `trie sync`, keeping "
+            "the turn boundary cheap."
+        ),
+    ),
+    as_json: bool = typer.Option(
+        False,
+        "--json",
+        help=(
+            "Emit machine-readable JSON-Lines progress to stdout instead of a "
+            'Rich progress bar. Each line is one event ({"kind": ...}); hosts '
+            "driving trie as a subprocess (the desktop app) parse this to render "
+            "their own status UI. Implies quiet Rich output."
+        ),
+    ),
 ) -> None:
     """Bring the graph + triefacts up to date with the working tree.
 
@@ -598,10 +794,19 @@ def refresh_cmd(
         reporter.error("--before-turn and --after-turn are mutually exclusive")
         raise typer.Exit(code=1)
 
+    # In --json mode the Rich progress bar and success lines would interleave
+    # with the JSONL stream and corrupt it. Mute the reporter so stdout carries
+    # only well-formed JSON events; errors still emit as {"kind": "error"}.
+    if as_json:
+        reporter.verbosity = Verbosity.MUTE
+
     try:
         config, project_root = Config.find_and_load(Path.cwd())
     except ConfigNotFoundError as exc:
-        reporter.error(str(exc))
+        if as_json:
+            emit_jsonl_event({"kind": "error", "message": str(exc)})
+        else:
+            reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
     model_id = model or config.models.cascade
@@ -610,6 +815,9 @@ def refresh_cmd(
 
     runner = ensure_fresh_before_turn if before_turn else ensure_fresh_after_turn
     mode_label = "before-turn" if before_turn else "after-turn"
+
+    if as_json:
+        emit_jsonl_event({"kind": "phase", "phase": "refresh", "mode": mode_label})
 
     # `trie refresh` runs as a per-turn hook, so two agent turns in quick
     # succession can fire two refresh processes that race the SQLite store
@@ -625,12 +833,17 @@ def refresh_cmd(
                 mode=mode_label,
                 action="queued",
             )
-            reporter.success(f"{mode_label}: another refresh is running; queued for tail pass.")
+            if as_json:
+                emit_jsonl_event(
+                    {"kind": "summary", "refreshed": False, "reason": "queued", "mode": mode_label}
+                )
+            else:
+                reporter.success(f"{mode_label}: another refresh is running; queued for tail pass.")
             return
 
         with (
             Store(db_path) as store,
-            _progress_callback(reporter, label="refreshing") as cb,
+            _refresh_progress(reporter, as_json, project_root=project_root) as cb,
         ):
             try:
                 result = runner(
@@ -639,11 +852,18 @@ def refresh_cmd(
                     store=store,
                     client=client,
                     progress=cb,
+                    sync_prose=sync_prose,
                 )
             except NotAGitRepoError as exc:
-                reporter.error(str(exc))
+                if as_json:
+                    emit_jsonl_event({"kind": "error", "message": str(exc)})
+                else:
+                    reporter.error(str(exc))
                 raise typer.Exit(code=1) from exc
-            _report_freshness(reporter, result, mode=mode_label)
+            if as_json:
+                _emit_freshness_json(result, mode=mode_label)
+            else:
+                _report_freshness(reporter, result, mode=mode_label)
 
             # Tail pass: at most one extra run, coalescing every refresh
             # request that arrived while we held the lock. We deliberately
@@ -661,8 +881,57 @@ def refresh_cmd(
                     store=store,
                     client=client,
                     progress=cb,
+                    sync_prose=sync_prose,
                 )
-                _report_freshness(reporter, tail, mode=f"{mode_label} (tail)")
+                if as_json:
+                    _emit_freshness_json(tail, mode=f"{mode_label} (tail)")
+                else:
+                    _report_freshness(reporter, tail, mode=f"{mode_label} (tail)")
+
+
+@contextmanager
+def _refresh_progress(
+    reporter: Reporter, as_json: bool, *, project_root: Path
+) -> Iterator[ProgressCallback]:
+    """Pick the progress sink for a refresh run, mirroring into the shared
+    `.trie/` activity state either way.
+
+    `--json` routes per-file events through `_JsonlProgress` (one JSON object
+    per line on stdout); otherwise the Rich-backed `_ProgressAdapter` renders a
+    live bar. Both are wrapped so `status.json` + `activity.jsonl` reflect the
+    run for `trie status` and the editor.
+    """
+    from trie.activity import ActivityProgress, ActivityWriter
+
+    writer = ActivityWriter(project_root, "refresh")
+    inner: ProgressCallback
+    with writer:
+        if as_json:
+            yield ActivityProgress(writer, inner=_JsonlProgress())
+        else:
+            with _progress_callback(reporter, label="refreshing") as cb:
+                inner = cb
+                yield ActivityProgress(writer, inner=inner)
+
+
+def _emit_freshness_json(result: FreshnessResult, *, mode: str) -> None:
+    """Emit the terminal `summary` JSONL event for a refresh outcome.
+
+    Mirrors `_report_freshness` but as a structured event the desktop app keys
+    on to close out its status display.
+    """
+    inc = result.incremental
+    emit_jsonl_event(
+        {
+            "kind": "summary",
+            "mode": mode,
+            "refreshed": result.refreshed,
+            "reason": result.reason,
+            "files_synced": inc.files_synced if inc is not None else 0,
+            "cost_usd": inc.actual_cost_usd if inc is not None else 0.0,
+            "stale_files": list(result.stale_files),
+        }
+    )
 
 
 def _report_freshness(reporter: Reporter, result: FreshnessResult, *, mode: str) -> None:
@@ -672,9 +941,16 @@ def _report_freshness(reporter: Reporter, result: FreshnessResult, *, mode: str)
         return
     inc = result.incremental
     if inc is None:
-        # Defensive: ensure_fresh_* never returns refreshed=True with incremental=None,
-        # but typed code shouldn't assume invariants the caller's eye can't see.
-        reporter.success(f"{mode}: refreshed ({result.reason})")
+        # Graph-only refresh (the fast default). When mtimes_moved marked files
+        # stale, nudge toward `trie sync`; otherwise it was a pure graph rebuild.
+        if result.stale_files:
+            n = len(result.stale_files)
+            reporter.success(
+                f"{mode}: refreshed graph ({result.reason}); "
+                f"{n} triefact(s) now stale — run `trie sync` to regenerate"
+            )
+        else:
+            reporter.success(f"{mode}: refreshed graph ({result.reason})")
         return
     reporter.success(
         f"{mode}: refreshed ({result.reason}); "
@@ -968,6 +1244,23 @@ def sync_cmd(
             "where edge counts moved but source did not."
         ),
     ),
+    roles_only: bool = typer.Option(
+        False,
+        "--roles-only",
+        help=(
+            "(Re)infer only the architectural role tag for every symbol against a "
+            "project-specific role vocabulary, without regenerating prose. Derives "
+            "the vocabulary first if none exists. Cheap relative to a full sync."
+        ),
+    ),
+    rederive_taxonomy: bool = typer.Option(
+        False,
+        "--rederive-taxonomy",
+        help=(
+            "With --roles-only, re-derive the role vocabulary from scratch even if one "
+            "is already saved. Use after large architectural change."
+        ),
+    ),
     model: str | None = typer.Option(
         None,
         "--model",
@@ -1010,6 +1303,14 @@ def sync_cmd(
             "--metadata-only cannot be combined with --file / --all / --dry-run / --budget / --limit"
         )
         raise typer.Exit(code=1)
+    if roles_only and (file is not None or all_ or dry_run or metadata_only):
+        reporter.error(
+            "--roles-only cannot be combined with --file / --all / --dry-run / --metadata-only"
+        )
+        raise typer.Exit(code=1)
+    if rederive_taxonomy and not roles_only:
+        reporter.error("--rederive-taxonomy requires --roles-only")
+        raise typer.Exit(code=1)
 
     # Resolve project root up front so we can guard every sync sub-mode with
     # the same write lock. Config errors stay exit-1; the lock guard is the
@@ -1023,6 +1324,10 @@ def sync_cmd(
     with _acquire_write_lock_or_exit(project_root, reporter, "sync"):
         if metadata_only:
             _run_metadata_only_refresh(reporter)
+            return
+
+        if roles_only:
+            _run_roles_only_sync(reporter, model=model, rederive_taxonomy=rederive_taxonomy)
             return
 
         if file is not None:
@@ -1112,7 +1417,9 @@ def _run_full_pass(
                 )
                 raise typer.Exit(code=1)
 
-        with _progress_callback(reporter, label="syncing") as cb:
+        with _activity_progress(
+            reporter, label="syncing", op="bootstrap", project_root=project_root
+        ) as cb:
             result = run_bootstrap(
                 plan=plan,
                 project_root=project_root,
@@ -1278,6 +1585,48 @@ def _run_metadata_only_refresh(reporter: Reporter) -> None:
     )
 
 
+def _run_roles_only_sync(reporter: Reporter, *, model: str | None, rederive_taxonomy: bool) -> None:
+    """(Re)infer the architectural role tag for every symbol against a derived vocab.
+
+    Scans first so the store reflects current source (the survey + classification
+    both read it), then runs the two-pass roles flow: derive/load the taxonomy, then
+    classify every symbol against it, persisting roles into both the triefact
+    sentinels and the store. No prose is regenerated.
+    """
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    model_id = model or config.models.cascade
+    client = make_client(model_id, sync_cfg=config.sync)
+    db_path = project_root / ".trie" / "graph.db"
+
+    with Store(db_path) as store:
+        with reporter.status("scanning project…"):
+            scan_project(project_root=project_root, config=config, store=store)
+        with _progress_callback(reporter, label="classifying roles") as cb:
+            result = run_roles_only(
+                project_root=project_root,
+                config=config,
+                store=store,
+                client=client,
+                progress=cb,
+                rederive_taxonomy=rederive_taxonomy,
+            )
+
+    if result.taxonomy_derived:
+        reporter.success(
+            f"derived role taxonomy ({result.taxonomy_size} roles) → "
+            f"{taxonomy_path(project_root, config).relative_to(project_root)}"
+        )
+    reporter.success(
+        f"classified {result.symbols_classified} symbol(s) across "
+        f"{result.files_processed} file(s); {result.roles_changed} role(s) changed"
+    )
+
+
 def _run_incremental_sync(
     *, reporter: Reporter, model: str | None, budget: float | None, limit: int | None
 ) -> None:
@@ -1292,7 +1641,10 @@ def _run_incremental_sync(
     client = make_client(model_id, sync_cfg=config.sync)
 
     db_path = project_root / ".trie" / "graph.db"
-    with Store(db_path) as store, _progress_callback(reporter, label="syncing") as cb:
+    with (
+        Store(db_path) as store,
+        _activity_progress(reporter, label="syncing", op="sync", project_root=project_root) as cb,
+    ):
         result = run_incremental(
             project_root=project_root,
             config=config,

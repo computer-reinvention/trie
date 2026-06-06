@@ -50,6 +50,9 @@ def backfill_section_records(
                     symbol_qname=qn,
                     section_fingerprint=section.fingerprint or "",
                     one_liner=extract_one_liner(section.body),
+                    # Restore the role tag from the persisted sentinel so a graph.db
+                    # rebuild recovers roles from disk without re-running the LLM.
+                    role=section.role,
                 )
 
 
@@ -496,6 +499,7 @@ def sync_single_file(
                 fingerprint=sym.body_normalized_hash,
                 body=gen.body,
                 source_ref=current_blob,
+                role=gen.role,
             )
             symbols_generated += 1
             totals["in"] += gen.input_tokens
@@ -562,6 +566,9 @@ def sync_single_file(
                         symbol_qname=qn,
                         section_fingerprint=section.fingerprint or "",
                         one_liner=extract_one_liner(section.body),
+                        # Preserve the role tag from the persisted sentinel so the
+                        # catch-all doesn't blank a role set by the generate path.
+                        role=section.role,
                     )
 
         tele["symbols_generated"] = symbols_generated

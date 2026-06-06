@@ -67,13 +67,33 @@ export function registerIpcHandlers(pm: ProcessManager): void {
   // ---------------------------------------------------------------------------
   // SSE proxy — subscribe to opencode's /desktop/event stream from main
   // process and relay events to the renderer via ipc.
+  //
+  // The renderer effect that drives this subscribes/unsubscribes more than
+  // once during startup: React StrictMode double-invokes effects, and the
+  // `opencodePort` dep flips 0 -> realPort once servers are ready. Without a
+  // guard, a stale unsubscribe (from the prior mount's cleanup) destroys the
+  // live request opened by the newer mount — the stream connects then drops
+  // and never comes back. We defend with a monotonic generation token: only
+  // the current generation may tear down the socket, and reconnects re-check
+  // their generation before retrying. The upstream also closes its bus
+  // subscription when the socket drops, so reconnecting re-establishes it.
   // ---------------------------------------------------------------------------
   let sseReq: http.ClientRequest | null = null
+  let sseGeneration = 0
+  let sseUrl: string | null = null
+  let sseReconnectTimer: NodeJS.Timeout | null = null
 
-  ipcMain.handle("sse-subscribe", (_event, url: string) => {
-    if (sseReq) { sseReq.destroy(); sseReq = null }
+  function relayToRenderers(channel: string, payload: string): void {
+    const { BrowserWindow } = require("electron")
+    for (const win of BrowserWindow.getAllWindows()) {
+      win.webContents.send(channel, payload)
+    }
+  }
 
-    const parsed = new URL(url)
+  function openSseStream(generation: number): void {
+    if (generation !== sseGeneration || !sseUrl) return
+
+    const parsed = new URL(sseUrl)
     const opts: http.RequestOptions = {
       hostname: parsed.hostname,
       port: parseInt(parsed.port || "80"),
@@ -82,37 +102,58 @@ export function registerIpcHandlers(pm: ProcessManager): void {
       headers: { Accept: "text/event-stream", "Cache-Control": "no-cache" },
     }
 
-    sseReq = http.request(opts, (res) => {
+    const scheduleReconnect = () => {
+      // Only the live generation reconnects, and only if not torn down.
+      if (generation !== sseGeneration || !sseUrl) return
+      if (sseReconnectTimer) return
+      sseReconnectTimer = setTimeout(() => {
+        sseReconnectTimer = null
+        openSseStream(generation)
+      }, 1000)
+    }
+
+    const req = http.request(opts, (res) => {
       let buf = ""
       res.on("data", (chunk: Buffer) => {
         buf += chunk.toString()
         const lines = buf.split("\n")
         buf = lines.pop() ?? ""
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            // Relay to all renderer windows
-            const { BrowserWindow } = require("electron")
-            for (const win of BrowserWindow.getAllWindows()) {
-              win.webContents.send("sse-event", line.slice(6))
-            }
-          }
+          if (line.startsWith("data: ")) relayToRenderers("sse-event", line.slice(6))
         }
       })
       res.on("error", (err) => {
-        const { BrowserWindow } = require("electron")
-        for (const win of BrowserWindow.getAllWindows()) {
-          win.webContents.send("sse-error", err.message)
-        }
+        relayToRenderers("sse-error", err.message)
+        scheduleReconnect()
       })
+      // Upstream closed the stream (server shutdown, idle GC, etc.) — retry.
+      res.on("end", scheduleReconnect)
+      res.on("close", scheduleReconnect)
     })
-    sseReq.on("error", () => { /* will reconnect from renderer */ })
-    sseReq.end()
+    req.on("error", () => { scheduleReconnect() })
+    req.end()
+    sseReq = req
+  }
+
+  ipcMain.handle("sse-subscribe", (_event, url: string) => {
+    // Bump the generation: any in-flight reconnect/teardown from a prior
+    // subscription is now stale and becomes a no-op.
+    sseGeneration += 1
+    const generation = sseGeneration
+    if (sseReconnectTimer) { clearTimeout(sseReconnectTimer); sseReconnectTimer = null }
+    if (sseReq) { sseReq.destroy(); sseReq = null }
+    sseUrl = url
+    openSseStream(generation)
     return { ok: true }
   })
 
   ipcMain.handle("sse-unsubscribe", () => {
+    // Invalidate the current generation so no reconnect fires, then tear down.
+    sseGeneration += 1
+    if (sseReconnectTimer) { clearTimeout(sseReconnectTimer); sseReconnectTimer = null }
     sseReq?.destroy()
     sseReq = null
+    sseUrl = null
     return { ok: true }
   })
 

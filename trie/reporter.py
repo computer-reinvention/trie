@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import threading
 import time
-from contextlib import AbstractContextManager
+from contextlib import AbstractContextManager, suppress
 from enum import IntEnum
 from types import TracebackType
 from typing import Any
@@ -15,10 +16,31 @@ try:
         SpinnerColumn,
         TaskID,
         TextColumn,
-        TimeRemainingColumn,
     )
-except ImportError:  # pragma: no cover
-    raise ImportError("rich is required: pip install rich")
+except ImportError as exc:  # pragma: no cover
+    raise ImportError("rich is required: pip install rich") from exc
+
+
+# The progress display mixes two kinds of task in one Progress: the determinate
+# overall bar (total=N) and per-file spinner rows (total=None, indeterminate).
+# Rich applies every column to every task, so a plain BarColumn/MofNCompleteColumn
+# would render a meaningless `━━━ 0/?` next to each in-flight file. These
+# subclasses render nothing for indeterminate tasks, so the bar + M/N appear only
+# on the overall row and per-file rows stay "spinner + filename".
+
+
+class _OverallOnlyBar(BarColumn):
+    def render(self, task):  # type: ignore[no-untyped-def]
+        if task.total is None:
+            return ""
+        return super().render(task)
+
+
+class _OverallOnlyMofN(MofNCompleteColumn):
+    def render(self, task):  # type: ignore[no-untyped-def]
+        if task.total is None:
+            return ""
+        return super().render(task)
 
 
 class Verbosity(IntEnum):
@@ -84,10 +106,22 @@ class _NullContext:
 
 
 class ProgressHandle:
-    """Per-file progress reporter. MEDIUM+ shows a Rich progress bar with ETA;
-    finished files print as `✓ rel_path · $cost` lines above the bar.
-    VERBOSE adds a `→ rel_path` line when each file starts.
-    MUTE is a complete no-op.
+    """`uv`-style live progress for parallel, out-of-order file processing.
+
+    The display has two regions, rendered together by one Rich ``Progress``:
+
+      • a pinned overall bar at the bottom (``label  ███  M/N • ETA``), and
+      • one ephemeral spinner line per *in-flight* file above it.
+
+    As files start, a per-file spinner line appears; as each finishes, its line
+    is removed and a permanent ``✓ rel_path · …`` line is printed above the live
+    region. Because every in-flight file owns its own Rich task (keyed by path),
+    concurrent ``start_file``/``finish_file`` calls from the wave scheduler never
+    stomp each other — the old single-description model garbled under parallelism.
+
+    Thread-safe: the wave scheduler calls these from worker-completion handling on
+    one thread today, but a lock guards the task map so it stays correct even if
+    callbacks fire from multiple threads. MUTE is a complete no-op.
     """
 
     def __init__(self, reporter: Reporter, total: int, label: str):
@@ -95,22 +129,33 @@ class ProgressHandle:
         self.total = total
         self.label = label
         self._progress: Progress | None = None
-        self._task_id: TaskID | None = None
+        self._overall: TaskID | None = None
+        self._file_tasks: dict[str, TaskID] = {}
+        self._lock = threading.Lock()
 
     def __enter__(self) -> ProgressHandle:
-        if self.reporter.verbosity >= Verbosity.MEDIUM and self.total > 0:
+        # Only drive a live render when attached to a real terminal. In a pipe,
+        # a redirected file, or any non-interactive shell, Rich's Live region
+        # writes cursor-control escapes that corrupt the output and can clobber
+        # the user's prompt on exit. There we fall back to plain printed lines
+        # (the `_progress is None` paths in start_file/finish_file/skip_file).
+        if (
+            self.reporter.verbosity >= Verbosity.MEDIUM
+            and self.total > 0
+            and self.reporter.console.is_terminal
+        ):
             progress = Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
-                BarColumn(),
-                MofNCompleteColumn(),
-                TextColumn("•"),
-                TimeRemainingColumn(),
+                _OverallOnlyBar(),
+                _OverallOnlyMofN(),
                 console=self.reporter.console,
                 transient=False,
             )
             progress.__enter__()
-            self._task_id = progress.add_task(self.label, total=self.total)
+            # Overall bar: a determinate task tracking completed files. Per-file
+            # spinner tasks are added with total=None (spinner + description only).
+            self._overall = progress.add_task(self.label, total=self.total)
             self._progress = progress
         return self
 
@@ -121,25 +166,53 @@ class ProgressHandle:
         tb: TracebackType | None,
     ) -> None:
         if self._progress is not None:
+            # Drop any lingering per-file spinner rows so the live region tears
+            # down cleanly, then close it (restores the cursor / shows it again).
+            with self._lock:
+                for task in self._file_tasks.values():
+                    with suppress(KeyError):
+                        self._progress.remove_task(task)
+                self._file_tasks.clear()
             self._progress.__exit__(exc_type, exc, tb)
             self._progress = None
-            self._task_id = None
+            self._overall = None
+            # Belt-and-braces: Rich hides the cursor during the Live render and
+            # restores it on normal exit, but an interrupted/odd teardown can
+            # leave it hidden — which looks like the shell "ate" the prompt.
+            # Force it visible.
+            with suppress(Exception):
+                self.reporter.console.show_cursor(True)
 
     def _print(self, line: str) -> None:
-        # When the progress bar is live, route through its console so output lands
-        # above the bar instead of fighting with it.
+        # Route through the live Progress's console so output lands above the
+        # live region instead of fighting with it.
         if self._progress is not None:
             self._progress.console.print(line)
         else:
             self.reporter.console.print(line)
 
     def start_file(self, rel_path: str) -> None:
-        if self._progress is not None and self._task_id is not None:
-            self._progress.update(
-                self._task_id, description=f"{self.label} [cyan]{rel_path}[/cyan]"
-            )
-        if self.reporter.verbosity >= Verbosity.VERBOSE:
-            self._print(f"  [dim]→[/dim] {rel_path}")
+        if self._progress is None:
+            if self.reporter.verbosity >= Verbosity.VERBOSE:
+                self._print(f"  [dim]→[/dim] {rel_path}")
+            return
+        with self._lock:
+            if rel_path in self._file_tasks:
+                return
+            # An indeterminate (total=None) task renders as spinner + description
+            # with no progress bar — one live line per in-flight file.
+            task = self._progress.add_task(f"[cyan]{rel_path}[/cyan]", total=None)
+            self._file_tasks[rel_path] = task
+
+    def _end_file_task(self, rel_path: str) -> None:
+        if self._progress is None:
+            return
+        with self._lock:
+            task = self._file_tasks.pop(rel_path, None)
+            if self._overall is not None:
+                self._progress.advance(self._overall)
+            if task is not None:
+                self._progress.remove_task(task)
 
     def finish_file(
         self,
@@ -152,8 +225,7 @@ class ProgressHandle:
         cache_read: int | None = None,
         cache_write: int | None = None,
     ) -> None:
-        if self._progress is not None and self._task_id is not None:
-            self._progress.advance(self._task_id)
+        self._end_file_task(rel_path)
 
         if self.reporter.verbosity < Verbosity.MEDIUM:
             return
@@ -176,7 +248,6 @@ class ProgressHandle:
                 self._print(f"      [dim]{' · '.join(detail_bits)}[/dim]")
 
     def skip_file(self, rel_path: str, reason: str) -> None:
-        if self._progress is not None and self._task_id is not None:
-            self._progress.advance(self._task_id)
+        self._end_file_task(rel_path)
         if self.reporter.verbosity >= Verbosity.MEDIUM:
             self._print(f"  [yellow]⊘[/yellow] {rel_path} · skipped: {reason}")

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from hashlib import sha256
 from typing import Any
 
@@ -36,13 +36,15 @@ import yaml
 # line is allowed, but trailing text is not).
 #
 # Field-order rule: the renderer emits fields in a fixed order (symbol, fingerprint,
-# body_fp, source_ref) so two regenerations of the same section produce byte-identical
-# sentinels when nothing has changed. The parser accepts any order via named groups.
-
+# body_fp, source_ref, role) so two regenerations of the same section produce
+# byte-identical sentinels when nothing has changed. The parser accepts any order
+# via named groups. `role` is appended last so sections written before role
+# persistence existed render identically until they're next regenerated with a role.
 SECTION_OPEN_RE = re.compile(
     r"(?m)^<!--\s*trie:section\s+symbol=(?P<symbol>\S+)\s+fingerprint=(?P<fp>\S*)"
     r"(?:\s+body_fp=(?P<body_fp>\S+))?"
     r"(?:\s+source_ref=(?P<source_ref>\S+))?"
+    r"(?:\s+role=(?P<role>\S+))?"
     r"\s*-->[ \t]*$"
 )
 SECTION_CLOSE_RE = re.compile(r"(?m)^<!--\s*trie:end\s*-->[ \t]*$")
@@ -118,6 +120,10 @@ class Section:
     body: str  # text between sentinels, leading/trailing newlines stripped
     body_fingerprint: str | None = None  # SHA-256 over `body`; None for legacy sections
     source_ref: str | None = None  # git blob hash of the file at generation time
+    role: str = ""  # LLM-inferred architectural role; "" when unknown/legacy.
+    # Persisted in the sentinel so the role survives a graph.db wipe: the DB is a
+    # rebuildable cache, the triefact files are the source of truth. Without this
+    # the role lived only in triefact_sections.role and was lost on any rebuild.
 
 
 @dataclass(frozen=True)
@@ -126,6 +132,37 @@ class Prose:
 
 
 Chunk = Section | Prose
+
+
+def _dedupe_sections(chunks: list[Chunk]) -> list[Chunk]:
+    """Collapse duplicate sections (same qualified_name) to a single, freshest copy.
+
+    A correct triefact has exactly one section per symbol. A bug or an interrupted/
+    concurrent write can leave two sections for the same qname; left alone they
+    accumulate and the symbol reads as permanently drifted (the drift check sees
+    one fingerprint, sync rewrites another). We defend at the parse boundary:
+    keep the LAST occurrence of each qname (the most recently written, hence
+    freshest), at the position of its FIRST occurrence (so source-order layout is
+    preserved). Non-section prose is passed through untouched. This makes any
+    accumulated duplication self-heal on the next read → render round-trip.
+    """
+    seen: set[str] = set()
+    # Walk once to find the last Section per qname.
+    last_by_qname: dict[str, Section] = {}
+    for c in chunks:
+        if isinstance(c, Section):
+            last_by_qname[c.qualified_name] = c
+
+    out: list[Chunk] = []
+    for c in chunks:
+        if isinstance(c, Section):
+            if c.qualified_name in seen:
+                continue  # a later duplicate handled at the first position
+            seen.add(c.qualified_name)
+            out.append(last_by_qname[c.qualified_name])
+        else:
+            out.append(c)
+    return out
 
 
 @dataclass
@@ -176,11 +213,13 @@ class TriefactFile:
                     body=body,
                     body_fingerprint=open_match.group("body_fp"),
                     source_ref=open_match.group("source_ref"),
+                    role=open_match.group("role") or "",
                 )
             )
             cursor = close_match.end()
         if cursor < len(rest):
             chunks.append(Prose(rest[cursor:]))
+        chunks = _dedupe_sections(chunks)
         return cls(front_matter=fm, chunks=chunks)
 
     @classmethod
@@ -207,6 +246,7 @@ class TriefactFile:
         fingerprint: str,
         body: str,
         source_ref: str | None = None,
+        role: str = "",
     ) -> None:
         """Replace an existing section by qualified_name, or append a new one at the end.
 
@@ -215,6 +255,9 @@ class TriefactFile:
         `source_ref` is non-None, it's stamped too. Callers that don't have a git
         blob hash available (no git repo, ad-hoc generation) can pass None and the
         field is simply omitted from the rendered sentinel.
+
+        `role` is the LLM-inferred architectural role tag; "" omits the field from
+        the sentinel. It's stamped so the role survives a graph.db rebuild.
         """
         new = Section(
             qualified_name=qualified_name,
@@ -222,12 +265,29 @@ class TriefactFile:
             body=body,
             body_fingerprint=hash_body(body),
             source_ref=source_ref,
+            role=role,
         )
         for i, c in enumerate(self.chunks):
             if isinstance(c, Section) and c.qualified_name == qualified_name:
                 self.chunks[i] = new
                 return
         self._append_section(new)
+
+    def set_section_role(self, qualified_name: str, role: str) -> bool:
+        """Update only the role tag of an existing section, preserving its body and
+        all other fields. Returns True if the section existed and was updated.
+
+        This is the durable half of `trie sync --roles-only`: it stamps the
+        inferred role into the sentinel without touching prose or fingerprints, so
+        a roles-only pass produces a minimal diff (only role= changes).
+        """
+        for i, c in enumerate(self.chunks):
+            if isinstance(c, Section) and c.qualified_name == qualified_name:
+                if c.role == role:
+                    return True
+                self.chunks[i] = replace(c, role=role)
+                return True
+        return False
 
     def sort_sections(self, start_line_by_qname: dict[str, int]) -> None:
         """Reorder Section chunks to match source-line order.
@@ -304,6 +364,8 @@ class TriefactFile:
                 ]
                 if c.source_ref:
                     fields.append(f"source_ref={c.source_ref}")
+                if c.role:
+                    fields.append(f"role={c.role}")
                 parts.append("<!-- trie:section " + " ".join(fields) + " -->\n")
                 parts.append(c.body)
                 if not c.body.endswith("\n"):

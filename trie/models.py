@@ -4,7 +4,8 @@ import asyncio
 import random
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from typing import Any
 
 from anthropic import (
@@ -38,6 +39,51 @@ def _thread_event_loop() -> asyncio.AbstractEventLoop:
         loop = asyncio.new_event_loop()
         _thread_local.loop = loop
     return loop
+
+
+# ---------------------------------------------------------------------------
+# Global in-flight request governor.
+#
+# Wave-based sync over-subscribes worker threads (file_workers x per-file
+# concurrency) deliberately, so the actual throttle is this process-wide
+# semaphore that caps the number of LLM calls hitting the provider at once.
+# It is acquired per network attempt (not across retry sleeps), so a backed-off
+# request frees its slot for someone else while it waits out a 429.
+#
+# Lazily (re)sized: `configure_inflight_limit(n)` is idempotent and only rebuilds
+# the semaphore when the bound changes. A bound of 0 means "no cap".
+# ---------------------------------------------------------------------------
+_inflight_lock = threading.Lock()
+_inflight_sem: threading.BoundedSemaphore | None = None
+_inflight_bound: int = 0
+
+
+def configure_inflight_limit(bound: int) -> None:
+    """Set the global cap on concurrent LLM requests. 0 disables the cap.
+
+    Idempotent: re-calling with the same bound is a no-op. Safe to call from the
+    sync entrypoint before fanning out workers.
+    """
+    global _inflight_sem, _inflight_bound
+    with _inflight_lock:
+        if bound == _inflight_bound:
+            return
+        _inflight_bound = bound
+        _inflight_sem = threading.BoundedSemaphore(bound) if bound > 0 else None
+
+
+@contextmanager
+def _inflight_slot() -> Iterator[None]:
+    """Hold one global request slot for the duration of a single network attempt."""
+    sem = _inflight_sem
+    if sem is None:
+        yield
+        return
+    sem.acquire()
+    try:
+        yield
+    finally:
+        sem.release()
 
 
 # ---------------------------------------------------------------------------
@@ -83,6 +129,66 @@ class SectionBody(BaseModel):
             "not just its name. When a symbol both is invoked from outside and "
             "reaches outside, prefer 'entry'. Most symbols are 'internal'."
         ),
+    )
+
+
+class ProposedRole(BaseModel):
+    """One role in a derived, project-specific role taxonomy."""
+
+    name: str = Field(
+        description=(
+            "A short lowercase role name (one or two words, hyphenated if two), e.g. "
+            "'request-handler', 'persistence', 'parser'. Names must be distinct and "
+            "non-overlapping within the taxonomy."
+        )
+    )
+    description: str = Field(
+        description=(
+            "One sentence defining what kind of symbol belongs to this role, concrete "
+            "enough that a classifier can decide membership unambiguously."
+        )
+    )
+
+
+class RoleTaxonomy(BaseModel):
+    """A coherent, project-specific set of architectural roles derived by trie.
+
+    Pass 1 of role tagging: rather than letting each symbol pick an arbitrary role
+    in isolation (which yields an incoherent long tail of near-synonyms), trie
+    surveys the whole codebase once and has the model propose a small fixed
+    vocabulary fitted to THIS project. Pass 2 then classifies every symbol against
+    exactly these names.
+    """
+
+    roles: list[ProposedRole] = Field(
+        description=(
+            "The complete role vocabulary for this codebase. Prefer 6-14 roles: enough "
+            "to capture the real architectural divisions, few enough to stay legible. "
+            "Cover every major kind of work the codebase does; avoid redundant or "
+            "overlapping roles."
+        )
+    )
+
+
+class RoleTag(BaseModel):
+    """Classification of a single symbol against a fixed role vocabulary.
+
+    Pass 2 of role tagging, and the unit of `trie sync --roles-only`. The allowed
+    role names are injected into the prompt at call time (from the derived
+    `RoleTaxonomy`), so this model intentionally carries no hardcoded vocabulary —
+    `role` must be one of the names the prompt lists. `boundary` reuses the static
+    entry/exit/internal classification shared with `SectionBody`.
+    """
+
+    role: str = Field(
+        default="",
+        description=(
+            "The single best-fitting role for this symbol. Must be exactly one of the "
+            "role names listed in the prompt's taxonomy — do not invent new names."
+        ),
+    )
+    boundary: str = Field(
+        default="internal", description=SectionBody.model_fields["boundary"].description
     )
 
 
@@ -341,18 +447,30 @@ class TrieClient:
                 user_input: str | list[Any] = [cache_prefix, CachePoint(), user_prompt]
             else:
                 user_input = user_prompt
+
             # Drive the async API on a per-thread loop (see ``_thread_event_loop``)
             # rather than ``run_sync``, which spins up — and leaks — a fresh loop
-            # per call under the parallel fan-out.
-            loop = _thread_event_loop()
-            result = loop.run_until_complete(
-                agent.run(
-                    user_input,
-                    model_settings=AnthropicModelSettings(
-                        max_tokens=max_tokens,
-                        anthropic_cache_instructions=True,
-                    ),
-                )
+            # per call under the parallel fan-out. Each attempt holds one global
+            # in-flight slot and is retried on 429/529 with backoff — essential
+            # under wave parallelism where many files generate at once.
+            def _attempt() -> Any:
+                loop = _thread_event_loop()
+                with _inflight_slot():
+                    return loop.run_until_complete(
+                        agent.run(
+                            user_input,
+                            model_settings=AnthropicModelSettings(
+                                max_tokens=max_tokens,
+                                anthropic_cache_instructions=True,
+                            ),
+                        )
+                    )
+
+            result = _run_with_retry(
+                _attempt,
+                cfg=self._sync_cfg,
+                kind="generate",
+                model_id=self.full_model_id,
             )
             usage = result.usage
             tele["input_tokens"] = usage.input_tokens

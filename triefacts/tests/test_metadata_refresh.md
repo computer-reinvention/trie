@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: tests/test_metadata_refresh.py
 file_fingerprint: 2bea858f50a5d11432e54ce0156a70e43c81025119d87ce6a8965da7a4561aa6
-last_synced_at: '2026-06-03T20:57:32Z'
+last_synced_at: '2026-06-06T13:22:13Z'
 description: Metadata-only triefact refresh.
 defines:
 - kind: module
@@ -50,7 +50,7 @@ defines:
 incoming_refs: 0
 outgoing_refs: 22
 ---
-<!-- trie:section symbol=tests/test_metadata_refresh:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=e0acd0f0c6d0faba30442e3f338ec464327730d56cca06682812c0838af3e5fd source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+<!-- trie:section symbol=tests/test_metadata_refresh:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=e0acd0f0c6d0faba30442e3f338ec464327730d56cca06682812c0838af3e5fd source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test-infrastructure -->
 Tests metadata-only triefact refresh functionality that updates front matter without calling the LLM.
 
 - Verifies `refresh_triefact_metadata` preserves section bodies byte-for-byte
@@ -58,59 +58,135 @@ Tests metadata-only triefact refresh functionality that updates front matter wit
 - Tests edge count updates when graph changes between syncs
 - Validates idempotent behavior and CLI integration with mutex flag checking
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:project fingerprint=65fd0b8d1c2fe0511dfb8e02ca8712e1da978440f17e1e72a14ebc38292a6981 body_fp=c36ae8c9572e996eedcfece16091e50a6b13c986768a7d9f2825ec12311a7b37 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+<!-- trie:section symbol=tests/test_metadata_refresh:project fingerprint=65fd0b8d1c2fe0511dfb8e02ca8712e1da978440f17e1e72a14ebc38292a6981 body_fp=c36ae8c9572e996eedcfece16091e50a6b13c986768a7d9f2825ec12311a7b37 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test-infrastructure -->
 Creates a temporary project with two Python modules and a cross-file import for testing metadata refresh.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:_sync_both fingerprint=34f3862f727710588e479ae81af4b72c3d861240fedba9be071fe5ad9af64a17 body_fp=0374351e47d042ac2f4542e1018c6c1eec6acace16633c985ed42bc81f442c22 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+<!-- trie:section symbol=tests/test_metadata_refresh:_sync_both fingerprint=34f3862f727710588e479ae81af4b72c3d861240fedba9be071fe5ad9af64a17 body_fp=0374351e47d042ac2f4542e1018c6c1eec6acace16633c985ed42bc81f442c22 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test-infrastructure -->
 Scans and syncs both alpha.py and beta.py modules using a fake client to create triefacts for testing.
 
 - Returns an open Store instance that the caller must close
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:_read_yaml_front fingerprint=7e5679b0a04dfddc9fdfb4811524e98777352d0e45971091c9817ede8816a4a2 body_fp=8129c8357526adcf4ab3b7a965ac7508db7cdc9321270ac1464d914ae9d26d85 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+<!-- trie:section symbol=tests/test_metadata_refresh:_read_yaml_front fingerprint=7e5679b0a04dfddc9fdfb4811524e98777352d0e45971091c9817ede8816a4a2 body_fp=8129c8357526adcf4ab3b7a965ac7508db7cdc9321270ac1464d914ae9d26d85 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test-infrastructure -->
 Parses YAML front matter from a triefact file, asserting its presence and returning the loaded dictionary.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:_section_bodies fingerprint=a78be54ef29af611dbd8e6b081cebdb4f8bf91b70f60e801bb64fc6705ca735a body_fp=0bb05559eae603697f5e7ebf3a407dda0030d3aafb731b13279c5cb8ad5e1bac source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+<!-- trie:section symbol=tests/test_metadata_refresh:_section_bodies fingerprint=a78be54ef29af611dbd8e6b081cebdb4f8bf91b70f60e801bb64fc6705ca735a body_fp=0bb05559eae603697f5e7ebf3a407dda0030d3aafb731b13279c5cb8ad5e1bac source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test-infrastructure -->
 Extracts symbol qualified names mapped to their section body text from a triefact file by parsing trie comment sentinels.
 
 - Used to verify that section content remains byte-identical across metadata refreshes
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_does_not_call_the_llm fingerprint=10efbe7f965fac4bfe13d5fb4ca4d3823e9bbe88e28e269add9756d9241929f6 body_fp=d10f916c7ee56e09dc78e386a505ddf82600de641b2dbb46b642d7d28942343c source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_does_not_call_the_llm fingerprint=10efbe7f965fac4bfe13d5fb4ca4d3823e9bbe88e28e269add9756d9241929f6 body_fp=d10f916c7ee56e09dc78e386a505ddf82600de641b2dbb46b642d7d28942343c source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test -->
 Verifies that `refresh_triefact_metadata` operates without requiring an LLM client, confirming the metadata refresh is cost-free.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_preserves_section_bodies_byte_for_byte fingerprint=31af1871d315749a9c025d6b02b4438439f67bf623d93180d8dd9362c6159957 body_fp=8158449cd8a2d7fe8126fd2ceae08f4b7edcade76888a4882b43b70a826e9f9c source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_preserves_section_bodies_byte_for_byte fingerprint=31af1871d315749a9c025d6b02b4438439f67bf623d93180d8dd9362c6159957 body_fp=8158449cd8a2d7fe8126fd2ceae08f4b7edcade76888a4882b43b70a826e9f9c source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test -->
 Verifies that refreshing triefact metadata preserves section bodies and sentinels byte-for-byte.
 
 - Captures section content and HTML sentinels before refresh operation
 - Asserts content remains identical after metadata refresh completes
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_preserves_last_synced_at fingerprint=347a26e83a5aa2b48ca7bf04dafc020f7cd666df80981ad495d005d3baaf8f53 body_fp=c36fc7f9b6efbe1c9ed4c98b18ddde05366d81789aff386d022665eacf8293e4 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_preserves_last_synced_at fingerprint=347a26e83a5aa2b48ca7bf04dafc020f7cd666df80981ad495d005d3baaf8f53 body_fp=c36fc7f9b6efbe1c9ed4c98b18ddde05366d81789aff386d022665eacf8293e4 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test -->
 Tests that `refresh_triefact_metadata` preserves the `last_synced_at` timestamp from the original triefact.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_picks_up_new_edges_in_front_matter fingerprint=6263b0a5f31e8703e1010346c981e743ea8bfd5e1648e1ff930951164076bc6c body_fp=0a84185f9ddc71d60e53dcf9f8b1aa22b932557cc5a2ca6d87dcd4d028235be4 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_picks_up_new_edges_in_front_matter fingerprint=6263b0a5f31e8703e1010346c981e743ea8bfd5e1648e1ff930951164076bc6c body_fp=0a84185f9ddc71d60e53dcf9f8b1aa22b932557cc5a2ca6d87dcd4d028235be4 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test -->
 Tests that metadata refresh updates reference counts when graph edges change between syncs.
 
 - Adds a third module that imports `alpha_fn` after initial sync to increase incoming references
 - Verifies `incoming_refs` count increments by one in alpha's triefact front matter after refresh
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_is_idempotent fingerprint=0c9ddae21b38445f7612817c1a778908943e8e78e7f37def01bdefe1c08774de body_fp=a4c9684629d5ceb4418ce46e713af1f613093817bf440ba5f45aba00aa6d1f52 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_is_idempotent fingerprint=0c9ddae21b38445f7612817c1a778908943e8e78e7f37def01bdefe1c08774de body_fp=a4c9684629d5ceb4418ce46e713af1f613093817bf440ba5f45aba00aa6d1f52 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test -->
 Verifies that running `refresh_triefact_metadata` twice produces no changes on the second call.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_skips_missing_triefact fingerprint=f78515fc126a5e94dc695fb2c41fc0a47424413eb197cf2c80054305065d3589 body_fp=ab8284541ad1dae65c03a43c483d10ef28b291bd8b045508d52fbec6352a7a65 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_skips_missing_triefact fingerprint=f78515fc126a5e94dc695fb2c41fc0a47424413eb197cf2c80054305065d3589 body_fp=ab8284541ad1dae65c03a43c483d10ef28b291bd8b045508d52fbec6352a7a65 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test -->
 Tests that `refresh_triefact_metadata` is a no-op when called on a source file with no existing triefact.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:test_verify_passes_after_refresh fingerprint=4eaa18dfe98b605a6c3f831c8389b56cb62a3a1a6c9516dcd97cb212e9e1049d body_fp=1a82b36e8c897df28d9c76f366c098c44b449a4917537cf4be3ae422365f04a2 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_verify_passes_after_refresh fingerprint=4eaa18dfe98b605a6c3f831c8389b56cb62a3a1a6c9516dcd97cb212e9e1049d body_fp=1a82b36e8c897df28d9c76f366c098c44b449a4917537cf4be3ae422365f04a2 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test -->
 Verifies that `trie verify` passes after refreshing metadata to ensure no detectable fingerprint drift occurs.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:test_cli_sync_metadata_only_mutex_with_other_flags fingerprint=bcc16ea751d379805d3dcab93e5c08c3d015fa75936a750c7d0720dad41bc5e8 body_fp=645c38b359f41c7509d1c3fc16a365643b0bb85b8aaf2ecd0051e4b7e1a2a231 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_cli_sync_metadata_only_mutex_with_other_flags fingerprint=bcc16ea751d379805d3dcab93e5c08c3d015fa75936a750c7d0720dad41bc5e8 body_fp=645c38b359f41c7509d1c3fc16a365643b0bb85b8aaf2ecd0051e4b7e1a2a231 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=cli-interface -->
 Verifies that `--metadata-only` flag is mutually exclusive with other sync command flags.
 
 - Tests that combining `--metadata-only` with `--all`, `--dry-run`, `--budget`, `--limit`, or `--file` exits with code 1
 - Ensures error message contains "cannot be combined"
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:test_cli_sync_metadata_only_runs fingerprint=638512cb71cdff8c21b134ba723f92f1951cce6873edf584fb30513f4b34677e body_fp=d1b28d4756eab530e9ed67f22b589ce298a078a88c634abe6d9925398e1f567d source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_cli_sync_metadata_only_runs fingerprint=638512cb71cdff8c21b134ba723f92f1951cce6873edf584fb30513f4b34677e body_fp=d1b28d4756eab530e9ed67f22b589ce298a078a88c634abe6d9925398e1f567d source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=cli-interface -->
 Tests that `trie sync --metadata-only` CLI command runs successfully and reports refresh count without invoking the LLM.
 
 - Sets up project with existing triefacts via cold sync
 - Patches make_client to fail if LLM client construction is attempted  
 - Verifies command exits cleanly and outputs "refreshed metadata" message
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_metadata_refresh:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=3c16a1d6c0df615766baa0df7332a78ce75269150f5a3c1e9782aea5082a767b source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+Tests metadata-only triefact refresh functionality to ensure it updates front matter without calling the LLM.
+
+- Verifies section bodies and fingerprints remain byte-identical after refresh
+- Tests that `last_synced_at` timestamp preservation indicates LLM didn't run
+- Confirms refresh picks up new graph edges in `incoming_refs`/`outgoing_refs`
+- Validates idempotent behavior and CLI integration with exclusive flag handling
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_metadata_refresh:project fingerprint=65fd0b8d1c2fe0511dfb8e02ca8712e1da978440f17e1e72a14ebc38292a6981 body_fp=5669ab3764386acfaf697a5e395ed605ef9e44dea3157eeaa5e50f32a9c24fdb source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+Creates a test project with two Python modules where beta imports from alpha.
+
+- Returns the temporary project root directory path
+- Sets up complete trie configuration in `trie.toml`
+- Creates `src/alpha.py` with `alpha_fn()` function
+- Creates `src/beta.py` that imports and calls `alpha_fn()`
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_metadata_refresh:_sync_both fingerprint=34f3862f727710588e479ae81af4b72c3d861240fedba9be071fe5ad9af64a17 body_fp=9c6ceb451bec85a6d49987a3bbaf95cac989ebdcada1a4ec37abc72137e6d260 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+Scans and syncs both alpha.py and beta.py modules to create real triefacts on disk for testing refresh functionality.
+
+- Returns an open Store that the caller must close
+- Uses FakeTrieClient with deterministic prose output
+- Creates .trie/graph.db database and performs initial sync
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_metadata_refresh:_read_yaml_front fingerprint=7e5679b0a04dfddc9fdfb4811524e98777352d0e45971091c9817ede8816a4a2 body_fp=ca057f42415fe59fc01fa8a5b6b430e6405c7ba30652f888dc1c09ea60cbc09f source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+Parse YAML front matter from a triefact file and return it as a dictionary.
+
+- Raises AssertionError if no YAML front matter is found
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_metadata_refresh:_section_bodies fingerprint=a78be54ef29af611dbd8e6b081cebdb4f8bf91b70f60e801bb64fc6705ca735a body_fp=10b8fb5b9aed4f785d71c86828ffe6d5e6e0f679119a3065c60acbfe23234b23 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+Extracts section bodies from a triefact file as a qualified name to content mapping.
+
+- Returns: dict mapping symbol qualified names to their section body text between HTML comment sentinels
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_does_not_call_the_llm fingerprint=10efbe7f965fac4bfe13d5fb4ca4d3823e9bbe88e28e269add9756d9241929f6 body_fp=d8b778b27825fc6fa7d5447f12d455679da5c9d04dcdb4900ae3ccca7f5f0b8d source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+Verifies that `refresh_triefact_metadata` runs without requiring an LLM client, confirming metadata refresh is free and returns a `MetadataRefreshResult`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_preserves_section_bodies_byte_for_byte fingerprint=31af1871d315749a9c025d6b02b4438439f67bf623d93180d8dd9362c6159957 body_fp=687f939c940c3eeeecf5f5bfe252cb560569c6c7229293255da60f897e874dd4 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+Verifies that refresh_triefact_metadata preserves section body content and sentinel comments unchanged.
+
+- Captures section bodies and sentinels before metadata refresh operation
+- Asserts bodies and sentinels remain byte-identical after refresh completes
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_preserves_last_synced_at fingerprint=347a26e83a5aa2b48ca7bf04dafc020f7cd666df80981ad495d005d3baaf8f53 body_fp=671916952fdd8eeea783acb39ff35992e23eabf313aa5c8b63b2d7fb14c4d8c7 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+Verifies that metadata refresh preserves the `last_synced_at` timestamp from triefact front matter.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_picks_up_new_edges_in_front_matter fingerprint=6263b0a5f31e8703e1010346c981e743ea8bfd5e1648e1ff930951164076bc6c body_fp=50ceffdbad93cc7407eea2e5784ca78cffaf24225ac240f4f58ba916a3ed672b source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+Tests that metadata refresh detects new cross-module references and updates ref counts in triefact front matter.
+
+- Adds a new module referencing an existing function after initial sync
+- Verifies `incoming_refs` count increases by 1 after refresh
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_is_idempotent fingerprint=0c9ddae21b38445f7612817c1a778908943e8e78e7f37def01bdefe1c08774de body_fp=1d9a45506f319c37ad5b07382d390aa556fc57a8f95f67973978f5a783c77b90 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+Tests that `refresh_triefact_metadata` is idempotent by verifying consecutive refresh calls return `changed=False` on the second call.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_skips_missing_triefact fingerprint=f78515fc126a5e94dc695fb2c41fc0a47424413eb197cf2c80054305065d3589 body_fp=f79a59e614738825e291135950689d4425cfcc232433be809d9b42a81de0dd20 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+Tests that `refresh_triefact_metadata` returns unchanged result when triefact file doesn't exist yet.
+
+- Creates new source file without syncing it first
+- Verifies refresh returns `changed=False` for missing triefact
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_verify_passes_after_refresh fingerprint=4eaa18dfe98b605a6c3f831c8389b56cb62a3a1a6c9516dcd97cb212e9e1049d body_fp=6015a4be8533412ef8fc589ab8720867ea463be3131ec00e3d47b8418ee45140 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+Tests that `trie verify` passes after metadata refresh, ensuring no drift in section fingerprints.
+
+- Verifies project is clean before and after refreshing metadata for both test modules
+- Confirms metadata refresh preserves section content that verify checks against
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_cli_sync_metadata_only_mutex_with_other_flags fingerprint=bcc16ea751d379805d3dcab93e5c08c3d015fa75936a750c7d0720dad41bc5e8 body_fp=8595072b5d03e6bbe46c76ce2fd56eebdcea3844bc893b5f9c4b768287bfab6d source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+Tests that `--metadata-only` flag is mutually exclusive with other sync command flags.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_cli_sync_metadata_only_runs fingerprint=638512cb71cdff8c21b134ba723f92f1951cce6873edf584fb30513f4b34677e body_fp=e55821ffff268fce8d824d8ff079d6676e210163ea18519d53e2e68cad36181a source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 -->
+Tests end-to-end CLI execution of `trie sync --metadata-only` after cold sync, verifying it runs without invoking the LLM.
+
+- Patches `make_client` to fail if the LLM client is constructed during metadata-only refresh
+- Asserts CLI exits cleanly and reports refresh count in output
 <!-- trie:end -->

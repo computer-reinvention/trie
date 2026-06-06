@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+import threading
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -164,10 +165,19 @@ class Store:
     def __init__(self, db_path: Path) -> None:
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        # Re-entrant lock guarding all connection access. Wave-based sync runs
+        # multiple files concurrently; each may read (file_ref_counts) or write
+        # (upsert_section_record) the store from a worker thread. SQLite forbids
+        # concurrent use of one connection, so every public method that touches
+        # `_conn` does so under this lock. DB ops are microseconds next to the
+        # multi-second LLM calls, so serialising them costs nothing measurable.
+        self._lock = threading.RLock()
         self._open()
 
     def _open(self) -> None:
-        self._conn = sqlite3.connect(str(self.db_path))
+        # check_same_thread=False because the lock — not thread affinity —
+        # provides the mutual exclusion sqlite requires.
+        self._conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
         self._conn.execute("PRAGMA foreign_keys = ON")
         # Detect a stale schema and nuke the DB before applying the current one. The DB is
         # a regenerable cache under .trie/, so a bump triggers a clean rebuild on the next
@@ -290,6 +300,25 @@ class Store:
     def count_section_records(self) -> int:
         """Return the number of rows in ``triefact_sections``."""
         return int(self._conn.execute("SELECT COUNT(*) FROM triefact_sections").fetchone()[0])
+
+    def count_symbols_missing_role(self) -> int:
+        """Count symbols with no non-empty role tag in ``triefact_sections``.
+
+        A symbol is "missing a role" if it has no section record, or its section's
+        role is the empty string. Drives the role auto-backfill's short-circuit:
+        zero means every symbol is tagged and no LLM classification is needed.
+        """
+        return int(
+            self._conn.execute(
+                """
+                SELECT COUNT(*) FROM symbols s
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM triefact_sections ts
+                    WHERE ts.symbol_id = s.id AND ts.role != ''
+                )
+                """
+            ).fetchone()[0]
+        )
 
     # --- edge ops ---
 
@@ -448,28 +477,29 @@ class Store:
         Intra-file edges are excluded — they aren't "callers from elsewhere" or "calls
         out to elsewhere", which is what these counts surface in the triefact metadata.
         """
-        inbound = int(
-            self._conn.execute(
-                """
-                SELECT COUNT(*) FROM edges e
-                JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
-                JOIN symbols s_src ON s_src.id = e.src_symbol_id
-                WHERE s_dst.file_path = ? AND s_src.file_path != ?
-                """,
-                (file_path, file_path),
-            ).fetchone()[0]
-        )
-        outbound = int(
-            self._conn.execute(
-                """
-                SELECT COUNT(*) FROM edges e
-                JOIN symbols s_src ON s_src.id = e.src_symbol_id
-                JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
-                WHERE s_src.file_path = ? AND s_dst.file_path != ?
-                """,
-                (file_path, file_path),
-            ).fetchone()[0]
-        )
+        with self._lock:
+            inbound = int(
+                self._conn.execute(
+                    """
+                    SELECT COUNT(*) FROM edges e
+                    JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
+                    JOIN symbols s_src ON s_src.id = e.src_symbol_id
+                    WHERE s_dst.file_path = ? AND s_src.file_path != ?
+                    """,
+                    (file_path, file_path),
+                ).fetchone()[0]
+            )
+            outbound = int(
+                self._conn.execute(
+                    """
+                    SELECT COUNT(*) FROM edges e
+                    JOIN symbols s_src ON s_src.id = e.src_symbol_id
+                    JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
+                    WHERE s_src.file_path = ? AND s_dst.file_path != ?
+                    """,
+                    (file_path, file_path),
+                ).fetchone()[0]
+            )
         return inbound, outbound
 
     def file_stats(self) -> list[FileStats]:
@@ -521,35 +551,36 @@ class Store:
         metadata-only refresh that lacks LLM inference preserves the existing tags.
         """
         ts = now if now is not None else int(time.time())
-        row = self._conn.execute(
-            "SELECT id FROM symbols WHERE qualified_name = ? LIMIT 1",
-            (symbol_qname,),
-        ).fetchone()
-        if row is None:
-            return
-        symbol_id = int(row[0])
-        self._conn.execute(
-            """
-            INSERT INTO triefact_sections
-                (triefact_path, symbol_id, section_fingerprint, one_liner, role,
-                 boundary, last_generated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(triefact_path, symbol_id) DO UPDATE SET
-                section_fingerprint = excluded.section_fingerprint,
-                one_liner = excluded.one_liner,
-                role = CASE
-                    WHEN excluded.role != '' THEN excluded.role
-                    ELSE triefact_sections.role
-                END,
-                boundary = CASE
-                    WHEN excluded.boundary != '' THEN excluded.boundary
-                    ELSE triefact_sections.boundary
-                END,
-                last_generated_at = excluded.last_generated_at
-            """,
-            (triefact_path, symbol_id, section_fingerprint, one_liner, role, boundary, ts),
-        )
-        self._conn.commit()
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT id FROM symbols WHERE qualified_name = ? LIMIT 1",
+                (symbol_qname,),
+            ).fetchone()
+            if row is None:
+                return
+            symbol_id = int(row[0])
+            self._conn.execute(
+                """
+                INSERT INTO triefact_sections
+                    (triefact_path, symbol_id, section_fingerprint, one_liner, role,
+                     boundary, last_generated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(triefact_path, symbol_id) DO UPDATE SET
+                    section_fingerprint = excluded.section_fingerprint,
+                    one_liner = excluded.one_liner,
+                    role = CASE
+                        WHEN excluded.role != '' THEN excluded.role
+                        ELSE triefact_sections.role
+                    END,
+                    boundary = CASE
+                        WHEN excluded.boundary != '' THEN excluded.boundary
+                        ELSE triefact_sections.boundary
+                    END,
+                    last_generated_at = excluded.last_generated_at
+                """,
+                (triefact_path, symbol_id, section_fingerprint, one_liner, role, boundary, ts),
+            )
+            self._conn.commit()
 
     def one_liner_for(self, qualified_name: str) -> str:
         """Return the cached one-liner for a symbol, or '' if no section exists yet."""
@@ -882,6 +913,27 @@ class Store:
         """All qualified names. Used to suggest near-misses on explain/walk not-found."""
         rows = self._conn.execute("SELECT qualified_name FROM symbols").fetchall()
         return [row[0] for row in rows]
+
+    def survey_symbols(self, *, public_only: bool = False) -> list[tuple[str, str, str, str]]:
+        """Return `(qualified_name, kind, one_liner, file_path)` for every symbol.
+
+        Feeds role-taxonomy derivation: a compact, codebase-wide picture (names +
+        one-line descriptions + location) the model uses to propose a coherent role
+        vocabulary. The one_liner is the section's, '' when no triefact exists yet.
+        """
+        where = "WHERE s.is_public = 1" if public_only else ""
+        rows = self._conn.execute(
+            f"""
+            SELECT s.qualified_name, s.kind,
+                   COALESCE(ts.one_liner, '') AS one_liner,
+                   s.file_path
+            FROM symbols s
+            LEFT JOIN triefact_sections ts ON ts.symbol_id = s.id
+            {where}
+            ORDER BY s.file_path, s.start_line
+            """
+        ).fetchall()
+        return [(r[0], r[1], r[2], r[3]) for r in rows]
 
     def find_paths(
         self,

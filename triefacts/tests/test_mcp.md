@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: tests/test_mcp.py
 file_fingerprint: 84281240afaf8272fbc86b16d6ea3dc4701d63021e4ec1aad04b74713fc3a453
-last_synced_at: '2026-06-04T00:38:27Z'
+last_synced_at: '2026-06-06T13:21:10Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: module
@@ -161,7 +161,7 @@ defines:
 incoming_refs: 0
 outgoing_refs: 12
 ---
-<!-- trie:section symbol=tests/test_mcp:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=ba0aac06062a7cf422c9fa5151a89bcf728b124ae7d0f1e8296bcb8c9008dd5b source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=ba0aac06062a7cf422c9fa5151a89bcf728b124ae7d0f1e8296bcb8c9008dd5b source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Test suite for MCP tools (`grep`, `read`, `trace`) exercised via TrieTools directly.
 
 - **Fixtures**: Create temporary projects with code samples and populated triefact databases
@@ -171,13 +171,13 @@ Test suite for MCP tools (`grep`, `read`, `trace`) exercised via TrieTools direc
 - **Extended toolset**: Test fuzzy matching tools like `grep_entry_points`, `grep_symbol`
 - **Server construction**: Verify FastMCP server registration and tool binding
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:PROJECT_TOML fingerprint=3f524fd58415aac9f548f19d4ad2554a2e411c44f7f8907ce1944fa2fa35a62e body_fp=9a192c06eeff08fa186de5836a33a8641403f275187736fee2dee04558c97f7b source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:PROJECT_TOML fingerprint=3f524fd58415aac9f548f19d4ad2554a2e411c44f7f8907ce1944fa2fa35a62e body_fp=9a192c06eeff08fa186de5836a33a8641403f275187736fee2dee04558c97f7b source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 TOML configuration string containing test project settings for trie.
 
 - Defines scope includes/excludes, triefacts paths, model choices, and MCP tool limits
 - Used by test fixtures to create temporary projects with realistic config
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:project fingerprint=3e4b4f7d19d96699d52f90f1396ef4a3c695e286383233613202fea1c0b09b6b body_fp=94e918ec7308b2d2652ebb31bc767f1ae80ca9d891c825b9738860f8e30dcafc source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:project fingerprint=3e4b4f7d19d96699d52f90f1396ef4a3c695e286383233613202fea1c0b09b6b body_fp=94e918ec7308b2d2652ebb31bc767f1ae80ca9d891c825b9738860f8e30dcafc source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 ## project
 
 Creates a temporary project directory with trie configuration and Python modules for testing.
@@ -186,119 +186,119 @@ Creates a temporary project directory with trie configuration and Python modules
 - `lib.py` contains `slugify` and `capitalize` functions with docstrings
 - `app.py` imports `slugify` and defines `make_url` function that uses it
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:populated_project fingerprint=a54e186816ee0ef181cf7cc6e7058686a0354458a8b46b1d8f711321355a76b5 body_fp=8455313342aec3495670ebe8d35cacfe422a0582bc4360a8f31bf72cc9a71166 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:populated_project fingerprint=a54e186816ee0ef181cf7cc6e7058686a0354458a8b46b1d8f711321355a76b5 body_fp=8455313342aec3495670ebe8d35cacfe422a0582bc4360a8f31bf72cc9a71166 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Pytest fixture that creates a project with scanned symbols and synchronized triefacts for MCP tool testing.
 
 - Runs scan_project to populate the graph database with symbol relationships
 - Syncs lib.py and app.py with fake triefact content using FakeTrieClient
 - Returns the project path with .trie/graph.db ready for MCP tool queries
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:tools fingerprint=b89f3ca1611ed5226f820d82ffc6f4d3db27942f64390976744c1fbf0d5e67de body_fp=b3e2925cf9fca4a40b6393a4fc86442b09d99a13504093c90ee6bab38814ec3f source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:tools fingerprint=b89f3ca1611ed5226f820d82ffc6f4d3db27942f64390976744c1fbf0d5e67de body_fp=b3e2925cf9fca4a40b6393a4fc86442b09d99a13504093c90ee6bab38814ec3f source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Creates a TrieTools instance for the populated project and yields it, closing on teardown.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing fingerprint=2ea97d1b02ea695fbca32b81cfd8377a7e1da3159c9b30a1815fe2099d25638b body_fp=baf1d269da23210b2de412b024416fd6955e8530680e82f315eae4b5dd5d8ad7 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing fingerprint=2ea97d1b02ea695fbca32b81cfd8377a7e1da3159c9b30a1815fe2099d25638b body_fp=baf1d269da23210b2de412b024416fd6955e8530680e82f315eae4b5dd5d8ad7 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests that TrieTools initialization raises RipgrepNotFoundError when the `rg` binary is missing.
 
 - Patches `shutil.which` to return None, simulating missing ripgrep dependency
 - Verifies the error message mentions "rg" and includes installation guidance
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_name_contains_returns_matches fingerprint=13a70b013b95687914be7cf11a6a2926e39e6d256ed6ee0fc19ec38c6f2bcffb body_fp=4d9298120df94bdf6f6c182b56fc40d37f135254cf328b9da65bb8611d53c011 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_name_contains_returns_matches fingerprint=13a70b013b95687914be7cf11a6a2926e39e6d256ed6ee0fc19ec38c6f2bcffb body_fp=4d9298120df94bdf6f6c182b56fc40d37f135254cf328b9da65bb8611d53c011 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests that TrieTools.grep returns matching symbols when name_contains filter finds hits.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_returns_one_liner_from_section_body fingerprint=37a68231e58a6658814f1e064b7c136eeaa7a7f879f70bdfd4eaa836d69779ad body_fp=643c43c1d084523b079d100e26f1bdda76b7e7ecbb93ae5a5dc985ff3bedb958 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_returns_one_liner_from_section_body fingerprint=37a68231e58a6658814f1e064b7c136eeaa7a7f879f70bdfd4eaa836d69779ad body_fp=643c43c1d084523b079d100e26f1bdda76b7e7ecbb93ae5a5dc985ff3bedb958 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that TrieTools.grep extracts a truncated one-liner from symbol documentation body.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_returns_file_pointer fingerprint=fd44c10f827063015b2af6e12727ce6f8e2d67973fc32ea706be0a403274f87e body_fp=d2096309fef3358e2c572a63734e3a63a1a7eb7919595d82e53bfb2e0ab89bda source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_returns_file_pointer fingerprint=fd44c10f827063015b2af6e12727ce6f8e2d67973fc32ea706be0a403274f87e body_fp=d2096309fef3358e2c572a63734e3a63a1a7eb7919595d82e53bfb2e0ab89bda source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that TrieTools.grep returns file_pointer field in format "filename:line_number".
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_kind_filter fingerprint=05f736a15cd7708beed46d7beef0835ba93bb4867f848cec7c0d4da66a5d31bf body_fp=fd275224debc89469827ad45a9cb034675e5d5d801cf31d5f7853ff724ed14f6 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_kind_filter fingerprint=05f736a15cd7708beed46d7beef0835ba93bb4867f848cec7c0d4da66a5d31bf body_fp=fd275224debc89469827ad45a9cb034675e5d5d801cf31d5f7853ff724ed14f6 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies TrieTools.grep filters results by symbol kind, returning empty hits when filtering for classes in a function-only fixture.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_invalid_kind_returns_error fingerprint=93c63e643ced72ef46d974b15a6f15362abaa72e8e7b439e17f8d46411602d2e body_fp=c75e01d638974573d53d24913fb83abc3e4a42520761be287a3452fb110457cd source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_invalid_kind_returns_error fingerprint=93c63e643ced72ef46d974b15a6f15362abaa72e8e7b439e17f8d46411602d2e body_fp=c75e01d638974573d53d24913fb83abc3e4a42520761be287a3452fb110457cd source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies TrieTools.grep returns an invalid_argument error when given an unsupported kind filter.
 
 - Uses "macro" as an invalid kind value to trigger the error condition
 - Asserts the error response has the expected structure and error code
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_accepts_constant_and_module_kinds fingerprint=a7b0b5f6a91e85c5d7b2effde7c148be97b61ecfd7966d405518b3d26526bbed body_fp=f36b4216b2f09fbf4c3a24470ae850788a88af3cc73a4ca84dffa7aeaddc1840 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_accepts_constant_and_module_kinds fingerprint=a7b0b5f6a91e85c5d7b2effde7c148be97b61ecfd7966d405518b3d26526bbed body_fp=f36b4216b2f09fbf4c3a24470ae850788a88af3cc73a4ca84dffa7aeaddc1840 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that TrieTools.grep accepts "constant" and "module" as valid kind filter values without returning validation errors.
 
 - Tests both `kind: "constant"` and `kind: "module"` predicates
 - Asserts no `invalid_argument` error envelope is returned
 - Does not verify hit content since fixture may lack these symbol types
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_scope_prefix_filter fingerprint=4087ec669cf402755c9ebcba58be379db4f126a23aaa314712e20b33ffa6a9f0 body_fp=62ced56e86cd34802febadb13dcea21dc7a3f784993549438b7e6c47a149aa48 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_scope_prefix_filter fingerprint=4087ec669cf402755c9ebcba58be379db4f126a23aaa314712e20b33ffa6a9f0 body_fp=62ced56e86cd34802febadb13dcea21dc7a3f784993549438b7e6c47a149aa48 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 ## test_grep_scope_prefix_filter
 
 Tests that `TrieTools.grep` respects the `scope_prefix` predicate by filtering hits to files starting with the specified prefix.
 
 - Verifies all returned file paths begin with "lib"
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_scope_exclude_filter fingerprint=d9ed58e0d2cb505d72e32ca79f8f8032c881eff47584a5bf9377a006626e5793 body_fp=5215a2fbfb6bb02d573dac4f570c45eb140daa62abc20f489ba498aa02d901e4 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_scope_exclude_filter fingerprint=d9ed58e0d2cb505d72e32ca79f8f8032c881eff47584a5bf9377a006626e5793 body_fp=5215a2fbfb6bb02d573dac4f570c45eb140daa62abc20f489ba498aa02d901e4 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Validates TrieTools.grep excludes symbols from files matching scope_exclude patterns.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_inbound_count_predicate fingerprint=29ed9feb09b2e5254bd1cef76cabd75536142afaac8b064dcc196599c69f7b0b body_fp=e8b9c24f271ac62ac2355ae3c30fd472c186372a84a859b6240df62d8666b030 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_inbound_count_predicate fingerprint=29ed9feb09b2e5254bd1cef76cabd75536142afaac8b064dcc196599c69f7b0b body_fp=e8b9c24f271ac62ac2355ae3c30fd472c186372a84a859b6240df62d8666b030 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=mcp-server -->
 Tests that `grep` correctly filters symbols by minimum inbound edge count using the `inbound_count` predicate.
 
 - Verifies symbols with at least one caller (like `lib:slugify`) appear in results
 - Confirms symbols with no callers (like `app:make_url`) are excluded from results
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_rank_by_inbound_count fingerprint=956741b97e66e5508ccc0365fd3a6a04e6e7c6f3cb7da4770fc673b73a03477e body_fp=e1fa8d3674b12b59613d2115477df6fc4209607070124788fcebadf926a66e27 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_rank_by_inbound_count fingerprint=956741b97e66e5508ccc0365fd3a6a04e6e7c6f3cb7da4770fc673b73a03477e body_fp=e1fa8d3674b12b59613d2115477df6fc4209607070124788fcebadf926a66e27 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verify that `TrieTools.grep` returns results sorted by inbound count descending when `rank_by="inbound_count"` is specified.
 
 - Uses `public_only: True` predicate to avoid empty-predicate rejection
 - Asserts first hit has highest inbound_count relative to last hit
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_limit_respected fingerprint=80407aa581af3497200f623a81e718ea1e94ee91389ac126830562e3b69348af body_fp=223014f29a2264aa3b55d7d8885c1d2d51e359b946d14e12e0a67b04149a82e8 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_limit_respected fingerprint=80407aa581af3497200f623a81e718ea1e94ee91389ac126830562e3b69348af body_fp=223014f29a2264aa3b55d7d8885c1d2d51e359b946d14e12e0a67b04149a82e8 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies TrieTools.grep respects limit parameter by asserting result contains exactly one hit.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_empty_predicate_returns_invalid_argument fingerprint=b276ee91748c22279c9a40988da4c4daaebfea8382927b5fe18d9f2f3c5b17ce body_fp=e9e07f2458336744f492f7e98a0658fb1f8f202e656734bcbfc14bb6084d9314 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_empty_predicate_returns_invalid_argument fingerprint=b276ee91748c22279c9a40988da4c4daaebfea8382927b5fe18d9f2f3c5b17ce body_fp=e9e07f2458336744f492f7e98a0658fb1f8f202e656734bcbfc14bb6084d9314 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests that TrieTools.grep rejects empty predicates with invalid_argument error and helpful suggestion.
 
 - Tests rejection of None, {}, {"name_contains": ""}, {"kind": "any"} predicates
 - Verifies error.code is "invalid_argument" for each case  
 - Confirms suggestion mentions usable filter like "name_contains" or "scope_prefix"
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_empty_predicate_rejected_regardless_of_rank_by fingerprint=173c7d0e853ec0b26f7e6b2344e5c2c4c42c2b1245b1081fca21ec158813dd8d body_fp=86d9e5b9f7645bb0adfdebf069575adcfd24d3906eb5cd4268df43b989ec1c6b source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_empty_predicate_rejected_regardless_of_rank_by fingerprint=173c7d0e853ec0b26f7e6b2344e5c2c4c42c2b1245b1081fca21ec158813dd8d body_fp=86d9e5b9f7645bb0adfdebf069575adcfd24d3906eb5cd4268df43b989ec1c6b source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that `TrieTools.grep` rejects empty predicates even when `rank_by` is specified.
 
 - Tests that `rank_by` parameter doesn't bypass empty predicate validation
 - Asserts error code is "invalid_argument" for empty dict predicate
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_unknown_predicate_field_silently_ignored fingerprint=d932c0e53093906441747dbaef79cf5c314d42057b100dc5b2f257cc7518c2f0 body_fp=433aa302ea332001f720288746887490122dfe206555a664961d29f17fe84717 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_unknown_predicate_field_silently_ignored fingerprint=d932c0e53093906441747dbaef79cf5c314d42057b100dc5b2f257cc7518c2f0 body_fp=433aa302ea332001f720288746887490122dfe206555a664961d29f17fe84717 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that TrieTools.grep ignores unknown predicate fields without raising errors.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_invalid_predicate_returns_error fingerprint=a7cc46c17ae0d8aa0cd7f2ea984b0423139fb7ac60d05209e81e0ff92529668d body_fp=5d94fd4cbc122c16bcf75ee840b5b265eae99c395620fd440d0aba4172d26917 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_invalid_predicate_returns_error fingerprint=a7cc46c17ae0d8aa0cd7f2ea984b0423139fb7ac60d05209e81e0ff92529668d body_fp=5d94fd4cbc122c16bcf75ee840b5b265eae99c395620fd440d0aba4172d26917 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that TrieTools.grep returns an "invalid_argument" error when passed a non-dict predicate.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_kind_none_when_no_name_contains fingerprint=4e6e6519556d6b7fd8d18bba3fffc5f082582756e2362308de5d5c28e746be5e body_fp=2d13c68e8736765a17845297b37decf61ecd2f1cce97c29e9ab0461dd74b09c3 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_kind_none_when_no_name_contains fingerprint=4e6e6519556d6b7fd8d18bba3fffc5f082582756e2362308de5d5c28e746be5e body_fp=2d13c68e8736765a17845297b37decf61ecd2f1cce97c29e9ab0461dd74b09c3 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies grep fallback returns `kind="none"` when predicate lacks `name_contains` and finds no symbol matches.
 
 - Tests predicate `{"inbound_count": {"min": 999}}` which matches no symbols in fixture
 - Asserts `hits` is empty and `fallback.kind` is "none" 
 - Confirms fallback note mentions "name_contains" to explain why text search was skipped
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_kind_text_match_empty_for_unseen_string fingerprint=69f80642424418ade7fb9f362dc9f273b6a72bb84ecb843ccc644431f6056736 body_fp=0bdc2ae1004237ded351277a28d24846149ff57087aa7997fcf0ed9e1fa3e071 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_kind_text_match_empty_for_unseen_string fingerprint=69f80642424418ade7fb9f362dc9f273b6a72bb84ecb843ccc644431f6056736 body_fp=0bdc2ae1004237ded351277a28d24846149ff57087aa7997fcf0ed9e1fa3e071 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests that `grep` returns `text_match_empty` fallback when `name_contains` string doesn't exist in source.
 
 - Verifies fallback kind is `text_match_empty` for nonexistent query strings
 - Confirms fallback query field matches the original search term
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_kind_text_match_redirects_via_body_match fingerprint=d62ca25bade3109437990a6051d0a8e8811a4c2b569a8dc05e9bff1f79505cb8 body_fp=49d93bea4dcd0f3a85fb53672dcafcc0441183b9daab31dc84a13590e135ba34 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_kind_text_match_redirects_via_body_match fingerprint=d62ca25bade3109437990a6051d0a8e8811a4c2b569a8dc05e9bff1f79505cb8 body_fp=49d93bea4dcd0f3a85fb53672dcafcc0441183b9daab31dc84a13590e135ba34 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests that grep text-match fallback returns enclosing symbols when query appears in symbol bodies but not names.
 
 - Verifies fallback.kind is "text_match" when name_contains query appears in source bodies
 - Asserts fallback returns symbols containing the text with text_match_hits_in_body count
 - Confirms returned matches include standard fields for agent hub-ranking
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_ranks_by_inbound_count_desc fingerprint=ef3ac182e9ce5a40ceecd0150cf8383538870bd63efa253d6c0217440cccaa12 body_fp=e1a58dd97421baa18d5db63c4f93541d0e0439fd321c9d91f0b1f9197e6e45b1 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_ranks_by_inbound_count_desc fingerprint=ef3ac182e9ce5a40ceecd0150cf8383538870bd63efa253d6c0217440cccaa12 body_fp=e1a58dd97421baa18d5db63c4f93541d0e0439fd321c9d91f0b1f9197e6e45b1 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that grep fallback text matches rank by inbound_count descending when multiple symbols contain the query string.
 
 - Uses "title" query which appears in multiple symbols but isn't a symbol name
 - Skips test if fixture changes create actual symbol name matches or insufficient candidates
 - Asserts fallback matches are ordered by descending inbound reference count
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_caps_matches_and_notes_truncation fingerprint=ecfb2d89504fa8c1d8605600e0862e1c961e5ed2840d64902cb9fc4e173cb723 body_fp=5f111a862c0e689d58e33aaf4a3576e1b5d58f8614fa0dc6377eba332fe1d94d source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_caps_matches_and_notes_truncation fingerprint=ecfb2d89504fa8c1d8605600e0862e1c961e5ed2840d64902cb9fc4e173cb723 body_fp=5f111a862c0e689d58e33aaf4a3576e1b5d58f8614fa0dc6377eba332fe1d94d source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests that grep fallback truncates many matches and includes a note indicating partial results.
 
 - Forces a tiny match cap (1) to exercise truncation behavior on the test fixture
@@ -306,66 +306,66 @@ Tests that grep fallback truncates many matches and includes a note indicating p
 - Asserts truncation note contains "of" to communicate partial results to the agent
 - Confirms returned match includes standard fields like qname and inbound_count
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_omits_truncation_note_when_under_cap fingerprint=cf99e3b6a8f38acee3321f95f67be04eb837de301219103c85baec04b0a7bad0 body_fp=d6752e8cbb8a130e50ac81b925354846e361238409b2b868104445f8a76fc223 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_omits_truncation_note_when_under_cap fingerprint=cf99e3b6a8f38acee3321f95f67be04eb837de301219103c85baec04b0a7bad0 body_fp=d6752e8cbb8a130e50ac81b925354846e361238409b2b868104445f8a76fc223 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests grep fallback omits truncation note when matches fit within the configured limit.
 
 Verifies that when grep's text fallback finds matches that don't exceed `grep_fallback_match_limit`, no "showing top N of M" note is appended to the response. The agent sees the complete result set without truncation warnings.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_honours_scope_prefix fingerprint=31b191790a84b0b474a2cc9861f586ab8ea42430ceded08fcc62bdb2df882d24 body_fp=7feb4724e46d63f31c27a4ed8c48741ccecc2eae5be69c5ce5bb7c81a14d9d5f source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_honours_scope_prefix fingerprint=31b191790a84b0b474a2cc9861f586ab8ea42430ceded08fcc62bdb2df882d24 body_fp=7feb4724e46d63f31c27a4ed8c48741ccecc2eae5be69c5ce5bb7c81a14d9d5f source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that TrieTools.grep fallback text search respects scope_prefix filters, excluding symbols outside the specified scope even when their source contains the query text.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_normal_hits_path_omits_fallback_key fingerprint=e4d4fa9ea51cf2db4cfeb5df2b356f09c2f3af9fb4af96059369c25e6b38f07d body_fp=8642769c24669fab980dbeffa0cda962a4c220a6fa6b7fdd58d495d2469957c0 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_normal_hits_path_omits_fallback_key fingerprint=e4d4fa9ea51cf2db4cfeb5df2b356f09c2f3af9fb4af96059369c25e6b38f07d body_fp=8642769c24669fab980dbeffa0cda962a4c220a6fa6b7fdd58d495d2469957c0 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that `TrieTools.grep` omits the `fallback` key when returning hits to avoid unnecessary response tokens.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_returns_prose_and_neighbours fingerprint=8c1f77548638b430933ea0f0fab8a398b6ee3ac0f3dce12584d0dc79166d6f8e body_fp=aa6fca2f04a3e37437a2c3cdf8be3ab2b1c101e63364467cb0cc1c696208a869 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_read_returns_prose_and_neighbours fingerprint=8c1f77548638b430933ea0f0fab8a398b6ee3ac0f3dce12584d0dc79166d6f8e body_fp=aa6fca2f04a3e37437a2c3cdf8be3ab2b1c101e63364467cb0cc1c696208a869 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Test that `TrieTools.read` returns qname, prose content, and caller/callee neighborhoods.
 
 - Verifies prose contains documentation text and neighbor lists are populated correctly
 - Asserts callees is empty when symbol has no outbound references
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_source_pointer_shape fingerprint=420bf61a94fb75358593559620c310977d02c1bfeeb15481f3806550aeb73e97 body_fp=74bb12b9455d7d3b447e1400071f4d730ef84d046c54a33aba54bf967fe2bca8 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_read_source_pointer_shape fingerprint=420bf61a94fb75358593559620c310977d02c1bfeeb15481f3806550aeb73e97 body_fp=74bb12b9455d7d3b447e1400071f4d730ef84d046c54a33aba54bf967fe2bca8 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that TrieTools.read returns a source_pointer field formatted as "filename:start-end".
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_neighbour_carries_one_liner fingerprint=51c2f2f644f316fdeabf34c1c1d3b0dc3b57ec9e2f746d8c04d682b4cf8fd044 body_fp=c161eabf26c3028e464e6acb4d25fcb65cb5aa047de81ecfdada1d68d4d4407f source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_read_neighbour_carries_one_liner fingerprint=51c2f2f644f316fdeabf34c1c1d3b0dc3b57ec9e2f746d8c04d682b4cf8fd044 body_fp=c161eabf26c3028e464e6acb4d25fcb65cb5aa047de81ecfdada1d68d4d4407f source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that TrieTools.read includes one-liner summaries in caller/callee neighbour records.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_unknown_qname_returns_not_found fingerprint=3265a0090391b2d6756d124cacb28e9a01e3e19ee7b45fe0032c752b36efb7f7 body_fp=01130405e011a3b39e89b16ca167f5a676f3876dd2b434e6721dc5ac1c8411d1 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_read_unknown_qname_returns_not_found fingerprint=3265a0090391b2d6756d124cacb28e9a01e3e19ee7b45fe0032c752b36efb7f7 body_fp=01130405e011a3b39e89b16ca167f5a676f3876dd2b434e6721dc5ac1c8411d1 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests that TrieTools.read returns a not_found error for nonexistent qualified names.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_fuzzy_suggestion_for_typo fingerprint=656607d4483ca9d33fd84a8e21cd913fd53f6dfb9c395347ff19d836dabaa261 body_fp=d9bb4cc04e58dea01cf815b187c09b747a3670046fb5b8d5d447076c61755da9 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_read_fuzzy_suggestion_for_typo fingerprint=656607d4483ca9d33fd84a8e21cd913fd53f6dfb9c395347ff19d836dabaa261 body_fp=d9bb4cc04e58dea01cf815b187c09b747a3670046fb5b8d5d447076c61755da9 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that `TrieTools.read` provides a helpful suggestion when given a typo in the qname.
 
 - Uses "lib:slugfy" as a deliberate typo of "lib:slugify"
 - Expects either direct qname suggestion or guidance to use `grep()`
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trace_callers_returns_topology fingerprint=ba52df6ec0918227c8a41b6a0d14ab17f8fca12de24f0684dd8eb190b5e31c9d body_fp=96b227fa86194df5c7c5edc3c1a7bc7e9278d99399a6f07fb669835541a065eb source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_callers_returns_topology fingerprint=ba52df6ec0918227c8a41b6a0d14ab17f8fca12de24f0684dd8eb190b5e31c9d body_fp=96b227fa86194df5c7c5edc3c1a7bc7e9278d99399a6f07fb669835541a065eb source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that TrieTools.trace returns caller topology with root qname, nodes dict containing callers, and directed edges from callers to root symbol.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trace_callees_returns_outbound fingerprint=0f7a79554ab1ccc241fd5da78d98609b43458bbc13f8ab26ace19fde87547dde body_fp=06b23e58c46c4b81978b304d2a6fce4672166539c4812b058fbf461c039d75c4 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_callees_returns_outbound fingerprint=0f7a79554ab1ccc241fd5da78d98609b43458bbc13f8ab26ace19fde87547dde body_fp=06b23e58c46c4b81978b304d2a6fce4672166539c4812b058fbf461c039d75c4 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests that `TrieTools.trace` with `direction="callees"` returns outbound edges from a symbol to its dependencies.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trace_both_directions fingerprint=d982c36f43d513419ade4e39cc8a34a1405626cf97bdb9cf3043e5dc8e96bab0 body_fp=563cf907e90d1ea2b1dd115f52e9480f65aaef621804e424c263b29ee5660cc1 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_both_directions fingerprint=d982c36f43d513419ade4e39cc8a34a1405626cf97bdb9cf3043e5dc8e96bab0 body_fp=563cf907e90d1ea2b1dd115f52e9480f65aaef621804e424c263b29ee5660cc1 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies TrieTools.trace with direction="both" includes callers and marks edge directions correctly.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trace_invalid_direction_returns_error fingerprint=ee66239794f468126ebd3f5e9d557088e75a14791456cb94d3242b919f9a1712 body_fp=221012ceabcd6b78a015ba3c7cec2362fe68d462675e8872edda0b6f744f9cd1 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_invalid_direction_returns_error fingerprint=ee66239794f468126ebd3f5e9d557088e75a14791456cb94d3242b919f9a1712 body_fp=221012ceabcd6b78a015ba3c7cec2362fe68d462675e8872edda0b6f744f9cd1 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Asserts that TrieTools.trace rejects invalid direction values with `invalid_argument` error code.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trace_unknown_qname_returns_not_found fingerprint=4a972421a152c7b560db28c9f942d12a1917d194cc1acb5041774f2b39f1b89d body_fp=5556804909d8983046712bc0031dcf3380338e322cbb02e4fef171567276aaf6 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_unknown_qname_returns_not_found fingerprint=4a972421a152c7b560db28c9f942d12a1917d194cc1acb5041774f2b39f1b89d body_fp=5556804909d8983046712bc0031dcf3380338e322cbb02e4fef171567276aaf6 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Test that TrieTools.trace returns `not_found` error for a non-existent qname.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trace_depth_zero_returns_only_root fingerprint=76be5ecaba8cb2a295a796f304e77c718a9dcc8d23868995efa57a5182d2a1c2 body_fp=8a19f9df92f68756777595f2fefefd6d54514bedd7f51ec843223cda4c8363e1 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_depth_zero_returns_only_root fingerprint=76be5ecaba8cb2a295a796f304e77c718a9dcc8d23868995efa57a5182d2a1c2 body_fp=8a19f9df92f68756777595f2fefefd6d54514bedd7f51ec843223cda4c8363e1 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies trace() returns only the root symbol when depth is zero, with empty edges list.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trace_depth_clamp_adds_note fingerprint=c455960b8dcfb8693c4e826945685a9217238b8705ee7806c1ca182dccf62c13 body_fp=1761ac64281d12dc5e62ad4e9507097a2c765460055af5c264df182099098ea2 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_depth_clamp_adds_note fingerprint=c455960b8dcfb8693c4e826945685a9217238b8705ee7806c1ca182dccf62c13 body_fp=1761ac64281d12dc5e62ad4e9507097a2c765460055af5c264df182099098ea2 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests that TrieTools.trace adds a note when depth exceeds trace_max_depth configuration.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_build_server_registers_three_verbs fingerprint=6b9681c689a428da5e4f2498ee941fd5a83453ab2b5fb8299f484f077f69d5a3 body_fp=881215c889ecd41271b5ee83b004fe40b8a8e1612a31450148ebe93dd534f1bc source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_build_server_registers_three_verbs fingerprint=6b9681c689a428da5e4f2498ee941fd5a83453ab2b5fb8299f484f077f69d5a3 body_fp=881215c889ecd41271b5ee83b004fe40b8a8e1612a31450148ebe93dd534f1bc source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that `build_server` registers the core MCP tools (`grep`, `read`, `trace`) plus the extended toolset (8 additional tools) with matching wire names.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_build_server_wire_names_bind_to_internal_methods fingerprint=a480374391cd52c59bd6c51db2664d53e9150773ce64b5a08555c94f8cf832c5 body_fp=bf5cee3a9b499fb766e1b4d2c61e59bb49ba0a885a0d2e2c366cf8fee86533d8 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_build_server_wire_names_bind_to_internal_methods fingerprint=a480374391cd52c59bd6c51db2664d53e9150773ce64b5a08555c94f8cf832c5 body_fp=bf5cee3a9b499fb766e1b4d2c61e59bb49ba0a885a0d2e2c366cf8fee86533d8 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies MCP tool wire names dispatch to matching TrieTools methods to prevent silent behaviour swaps.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:dual_rank_project fingerprint=ddb09bc1e817a930bec9a532e1c272d2dfef3a3e605bc48f4679ba42ed216ee6 body_fp=4db26fd017a10427abce271fbc0882698693afe59afa2e6a72516dfa82a9a95c source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:dual_rank_project fingerprint=ddb09bc1e817a930bec9a532e1c272d2dfef3a3e605bc48f4679ba42ed216ee6 body_fp=4db26fd017a10427abce271fbc0882698693afe59afa2e6a72516dfa82a9a95c source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Creates a test project with two auth-related symbols having different inbound reference counts.
 
 - `hub_authenticate` — receives 3 inbound references from separate files (hub symbol)
@@ -374,7 +374,7 @@ Creates a test project with two auth-related symbols having different inbound re
 - Used to test ranking behavior where niche symbols rank before hubs at equal scores
 - Project includes scanned symbols and synced documentation for complete test coverage
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_niche_ranks_before_hub fingerprint=a5bf02d8993e8282336d29b02cec7ebb34624737bcbad9c62cbda7acad54290e body_fp=07244a835752fed0e1e370755ed08328f125ff9df608530ed6d0b0a8f7632ff9 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_niche_ranks_before_hub fingerprint=a5bf02d8993e8282336d29b02cec7ebb34624737bcbad9c62cbda7acad54290e body_fp=07244a835752fed0e1e370755ed08328f125ff9df608530ed6d0b0a8f7632ff9 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=mcp-server -->
 Tests that TrieTools.grep_entry_points ranks niche symbols before hubs when scores are equal.
 
 - Uses `dual_rank_project` fixture with auth_check (2 inbounds) and hub_authenticate (3 inbounds)
@@ -382,29 +382,29 @@ Tests that TrieTools.grep_entry_points ranks niche symbols before hubs when scor
 - Asserts auth_check ranks higher than hub_authenticate due to lower inbound count
 - Sort key is (score DESC, inbound_count ASC)
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_hits_carry_score fingerprint=bf76df08b996d67ba20379770a38f838d8fe1c762948d49445555df41368cc37 body_fp=025eb6fde75c1ca362253dbb086e19af383fe994e77bac0bba4feaf5d90f7e5a source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_hits_carry_score fingerprint=bf76df08b996d67ba20379770a38f838d8fe1c762948d49445555df41368cc37 body_fp=025eb6fde75c1ca362253dbb086e19af383fe994e77bac0bba4feaf5d90f7e5a source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verify that every hit from TrieTools.grep_entry_points includes a positive numeric score field.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_symbol_typo_tolerance fingerprint=998a77d9bbc63dc7fa9771cbe44d66c7262382670d46446093a4c0102cb98e51 body_fp=b805007a8ef0fd66ee07fb0d43b37674b188a972ebdc696623ae5d4d49b7d742 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_symbol_typo_tolerance fingerprint=998a77d9bbc63dc7fa9771cbe44d66c7262382670d46446093a4c0102cb98e51 body_fp=b805007a8ef0fd66ee07fb0d43b37674b188a972ebdc696623ae5d4d49b7d742 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that TrieTools.grep_symbol resolves single-character typos using fuzzy matching.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_symbol_returns_score_field fingerprint=d875689a783594250d150f3a147a935eeeb38aeb1fadede0bc7712cc65914a22 body_fp=e4fe63fc6d00dda6a748695850fbb56aef67dd4e2100176fbe430762b9d2be67 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_symbol_returns_score_field fingerprint=d875689a783594250d150f3a147a935eeeb38aeb1fadede0bc7712cc65914a22 body_fp=e4fe63fc6d00dda6a748695850fbb56aef67dd4e2100176fbe430762b9d2be67 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that `TrieTools.grep_symbol` returns symbols with numeric score fields in both match and similar results.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_fuzzy_prose_fallback fingerprint=0bdb61dcf7c038d93f1a7a4598b1a770d003ba2609b446451546db3192d4dd4e body_fp=dd23f77da76fd31d4a4ccd5dbc86b599528e26311c797d57c1668d1ef4409e50 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fuzzy_prose_fallback fingerprint=0bdb61dcf7c038d93f1a7a4598b1a770d003ba2609b446451546db3192d4dd4e body_fp=dd23f77da76fd31d4a4ccd5dbc86b599528e26311c797d57c1668d1ef4409e50 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests fuzzy prose fallback when name_contains finds no direct symbol name matches.
 
 - Verifies `grep` with phrase "lowercase dash separate" triggers fallback since no symbol has that name
 - Asserts fallback kind is either "text_match" or "fuzzy_prose" 
 - For fuzzy_prose fallback, validates it returns matches and finds "slugify" symbol whose triefact body contains the concept
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_str_fuzzy_fallback fingerprint=67380bf7bf45fed97698909288b028bd324ec109f63ba4924f1ec5a14d9de327 body_fp=e593e9a60a6f76f5b6f844b90339b0a9cb2e7cd9dc5e763f71ab0a56bb2a10fc source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_str_fuzzy_fallback fingerprint=67380bf7bf45fed97698909288b028bd324ec109f63ba4924f1ec5a14d9de327 body_fp=e593e9a60a6f76f5b6f844b90339b0a9cb2e7cd9dc5e763f71ab0a56bb2a10fc source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests that `TrieTools.grep_str` returns fuzzy fallback when regex pattern finds no matches.
 
 - Verifies empty hits list when pattern has no literal source matches
 - Confirms presence of hits key in response structure regardless of match results
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_str_fuzzy_fallback_finds_close_name fingerprint=0dc0ff2f1a636680859fd46f2db38dac736a30e6bc5ada90d65313099d97ec0b body_fp=9818be19f15a4780a888b7031e360e1e6431f8bf1d3223473d6ae3e4fa7f8937 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_str_fuzzy_fallback_finds_close_name fingerprint=0dc0ff2f1a636680859fd46f2db38dac736a30e6bc5ada90d65313099d97ec0b body_fp=9818be19f15a4780a888b7031e360e1e6431f8bf1d3223473d6ae3e4fa7f8937 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 ## test_grep_str_fuzzy_fallback_finds_close_name
 
 Tests that `grep_str` returns fuzzy fallback when regex search fails but close symbol name exists.
@@ -412,4 +412,255 @@ Tests that `grep_str` returns fuzzy fallback when regex search fails but close s
 - Uses "slugufy" typo to verify fuzzy matching surfaces "slugify" symbol
 - Expects `fallback.kind == "fuzzy_one_liner"` when regex finds no literal matches
 - Skips assertion if regex accidentally matches something in source
+<!-- trie:end -->
+
+<!-- trie:section symbol=tests/test_mcp:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8aae9c0160792068985e2d8f76d0fb26134f6f6b03e5f03d32d39b128db471ad source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Tests for MCP tool surface (grep, read, trace) via direct TrieTools invocation.
+
+- Uses FakeTrieClient to mock LLM responses during sync operations
+- Sets up fixtures with sample Python code to test symbol resolution and graph navigation
+- Exercises error conditions including missing ripgrep dependency and invalid parameters
+- Tests fallback mechanisms when primary symbol lookups fail
+- Validates wire protocol compatibility between CLI and MCP server interfaces
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:PROJECT_TOML fingerprint=3f524fd58415aac9f548f19d4ad2554a2e411c44f7f8907ce1944fa2fa35a62e body_fp=b996dcbae629f612c5f407796eb861fa2c62508470068b2ea245465383bdd52e source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+String constant containing a complete TOML configuration for test projects.
+
+- Configures scope to include Python files excluding cache directories
+- Sets triefacts root directory and source root paths
+- Specifies Claude Sonnet 4.6 for bootstrap and cascade operations
+- Defines MCP limits for grep results, trace depth, and node counts
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:project fingerprint=3e4b4f7d19d96699d52f90f1396ef4a3c695e286383233613202fea1c0b09b6b body_fp=9f79c581505467fc1c1c2ceb1a210ac1474951fe551c0183018cfd7fd0389843 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Creates a minimal test project with trie.toml config and two Python files.
+
+- `lib.py`: Contains `slugify` (lowercase + dash-separate) and `capitalize` functions
+- `app.py`: Contains `make_url` function that imports and uses `slugify`
+- Returns the temporary directory path containing the project structure
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:populated_project fingerprint=a54e186816ee0ef181cf7cc6e7058686a0354458a8b46b1d8f711321355a76b5 body_fp=6982558aa1138901afc6357534efbacc8fa47ffc11035f0c948f6a5cbf2e94a0 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Creates a test project fixture with scanned symbols and generated triefacts for MCP tool testing.
+
+- Scans the project to populate the graph database with symbol relationships
+- Syncs `lib.py` and `app.py` using FakeTrieClient to generate documentation
+- Returns the project path with `.trie/graph.db` containing queryable data
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:tools fingerprint=b89f3ca1611ed5226f820d82ffc6f4d3db27942f64390976744c1fbf0d5e67de body_fp=03851a485a0bfaf6da9ce7379e6be9bbf9d979aecffc4d8f0ba33a8ec4d47b67 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Creates a TrieTools fixture for the populated test project and ensures cleanup after use.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing fingerprint=2ea97d1b02ea695fbca32b81cfd8377a7e1da3159c9b30a1815fe2099d25638b body_fp=4df7c8bf2d3fc78317a7bf684cf1bca16d55c1971b6168ee2217d647e9423267 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Tests that TrieTools initialization fails with clear error message when ripgrep binary is missing.
+
+- Simulates missing `rg` by stubbing `shutil.which` to return `None`
+- Verifies `RipgrepNotFoundError` is raised with helpful installation guidance
+- Ensures error message names the missing binary and provides recovery path
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_name_contains_returns_matches fingerprint=13a70b013b95687914be7cf11a6a2926e39e6d256ed6ee0fc19ec38c6f2bcffb body_fp=38a98c12720cc9939e66af58022964661ece443f86b7ff155573f5f4ef252ad2 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies grep returns symbols with names containing the query string and omits fallback data when matches exist.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_returns_one_liner_from_section_body fingerprint=37a68231e58a6658814f1e064b7c136eeaa7a7f879f70bdfd4eaa836d69779ad body_fp=c79025cdf684f5b4a75f59f5575f378cff7a2df84451c549678d219d2e0891b5 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies that TrieTools.grep extracts truncated one-liner summaries from triefact bodies.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_returns_file_pointer fingerprint=fd44c10f827063015b2af6e12727ce6f8e2d67973fc32ea706be0a403274f87e body_fp=916c63b90bf1a9714abe16d868b8d57fc080bae1889cb642c41bdb393496afba source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies grep returns file_pointer with filename:line format for symbol locations.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_kind_filter fingerprint=05f736a15cd7708beed46d7beef0835ba93bb4867f848cec7c0d4da66a5d31bf body_fp=0dff48f54ba25b4cd87f4484b381080bd95cd7e919c913a97cfdb4aafe650052 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Tests that grep's kind filter correctly excludes symbols not matching the specified type.
+
+- Uses `kind: "class"` filter with fixtures containing only functions, expecting empty hits
+- Verifies fallback still triggers when `name_contains` is present but no symbols match the kind
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_invalid_kind_returns_error fingerprint=93c63e643ced72ef46d974b15a6f15362abaa72e8e7b439e17f8d46411602d2e body_fp=3c4f53351d79ae0a76ab3868a3ae90158f1665fe6bb74e7cffeac97b4617bdf8 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Test that `TrieTools.grep` rejects invalid `kind` filter values with `invalid_argument` error code.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_accepts_constant_and_module_kinds fingerprint=a7b0b5f6a91e85c5d7b2effde7c148be97b61ecfd7966d405518b3d26526bbed body_fp=2d0b57f4708c3e42dbaad9871be155671f3733d669b53446c4f3961f11bb710c source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies that `TrieTools.grep` accepts `"constant"` and `"module"` as valid `kind` filter values without raising an `invalid_argument` error.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_scope_prefix_filter fingerprint=4087ec669cf402755c9ebcba58be379db4f126a23aaa314712e20b33ffa6a9f0 body_fp=623a642584e244aa5b4e4633eb9790d271db0e76af602baf4356776d23c5a09f source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verify TrieTools.grep filters results to symbols whose file paths start with the given scope prefix.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_scope_exclude_filter fingerprint=d9ed58e0d2cb505d72e32ca79f8f8032c881eff47584a5bf9377a006626e5793 body_fp=43d92b68d7a88808d9897f43dba8eb557f7ef0444c7dcaf80ddb74bca8cca7a6 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verify that `TrieTools.grep` excludes symbols from specified scopes via `scope_exclude` predicate.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_inbound_count_predicate fingerprint=29ed9feb09b2e5254bd1cef76cabd75536142afaac8b064dcc196599c69f7b0b body_fp=bb0d8f174d90c0da2df164feb5af60fef25555505fbc7ab38942a4595d9c10c5 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verify that `tools.grep` with `inbound_count` filter returns symbols with at least the specified minimum incoming references.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_rank_by_inbound_count fingerprint=956741b97e66e5508ccc0365fd3a6a04e6e7c6f3cb7da4770fc673b73a03477e body_fp=7175b186b0eb3efd9b0dbd48981602733e903c01556f959d1290a5d1a1ffc285 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies that `TrieTools.grep` results are correctly ranked by inbound_count when `rank_by="inbound_count"` is specified.
+
+- Uses `public_only: True` predicate to avoid empty-predicate rejection
+- Asserts first hit has highest `inbound_count` value among returned results
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_limit_respected fingerprint=80407aa581af3497200f623a81e718ea1e94ee91389ac126830562e3b69348af body_fp=f42cd78b9652dcb9ef6069ca81af49cddaea97b6e056dafe43cfca3eea1455ff source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies TrieTools.grep respects the limit parameter by requesting only 1 result and asserting exactly 1 hit is returned.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_empty_predicate_returns_invalid_argument fingerprint=b276ee91748c22279c9a40988da4c4daaebfea8382927b5fe18d9f2f3c5b17ce body_fp=970401a29fe2d63d38ec1360b51f699418963a12f83e8c41a9d8e1d0f653dbee source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Tests that TrieTools.grep rejects empty predicates with invalid_argument error and helpful suggestion.
+
+- Validates rejection for None, {}, {"name_contains": ""}, {"kind": "any"}
+- Requires error.code == "invalid_argument" 
+- Requires suggestion mentioning "name_contains" or "scope_prefix"
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_empty_predicate_rejected_regardless_of_rank_by fingerprint=173c7d0e853ec0b26f7e6b2344e5c2c4c42c2b1245b1081fca21ec158813dd8d body_fp=304e6ad1c39e44e4583ff581aade57b6f63cd2a2c211eb9018beb01dea1c1b47 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies that TrieTools.grep rejects empty predicates even when rank_by and limit are specified.
+
+- Tests rejection occurs before ranking is consulted
+- Expects error.code of "invalid_argument"
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_unknown_predicate_field_silently_ignored fingerprint=d932c0e53093906441747dbaef79cf5c314d42057b100dc5b2f257cc7518c2f0 body_fp=6cef2b69149e11ce0c3cd36871c32e5f3eb9b30c86ff428012b7d18ad970b246 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies that TrieTools.grep ignores unknown predicate fields without raising errors.
+
+- Uses predicate with valid `name_contains` and invalid `totally_made_up_field`
+- Confirms grep still returns hits despite the unknown field
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_invalid_predicate_returns_error fingerprint=a7cc46c17ae0d8aa0cd7f2ea984b0423139fb7ac60d05209e81e0ff92529668d body_fp=e01540afb59124e809757bcbf4348e89e83371542c9b3567c0a2187c539e4bbd source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies grep rejects non-dictionary predicates with invalid_argument error code.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_kind_none_when_no_name_contains fingerprint=4e6e6519556d6b7fd8d18bba3fffc5f082582756e2362308de5d5c28e746be5e body_fp=808be44eca8add42062a7c6afeec9c843c474cbe665a93c014bbe159f59cda50 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Test that grep returns a fallback envelope with kind "none" when a predicate without name_contains yields no matches.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_kind_text_match_empty_for_unseen_string fingerprint=69f80642424418ade7fb9f362dc9f273b6a72bb84ecb843ccc644431f6056736 body_fp=ceea1ee2fe24393fa09592d6589d0ab2a6e29a7fb13ae5a76ac364c048e7a369 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Tests TrieTools.grep fallback behavior when name_contains query matches no source text.
+
+- Verifies fallback reports `text_match_empty` kind for non-existent strings
+- Confirms query string is preserved in fallback response
+- Ensures empty hits list signals clear "doesn't exist" rather than ambiguous result
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_kind_text_match_redirects_via_body_match fingerprint=d62ca25bade3109437990a6051d0a8e8811a4c2b569a8dc05e9bff1f79505cb8 body_fp=a9f9890677f220139eb8d5bcaee30548fdc6d40c8bb8c6d75e5bb980734e9922 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Tests TrieTools.grep fallback text matching when query appears in symbol bodies but not names.
+
+- Uses "replace" which appears in lib:slugify's body but is not a symbol name
+- Verifies fallback returns text_match kind with enclosing symbols as matches
+- Confirms matches include text_match_hits_in_body count and standard hit fields
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_ranks_by_inbound_count_desc fingerprint=ef3ac182e9ce5a40ceecd0150cf8383538870bd63efa253d6c0217440cccaa12 body_fp=4c047f8c4876a0041c77428401f6928bc800900ab0dde5ae5c7c81e00526778b source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies that grep's fallback text-match results rank by descending inbound_count.
+
+- Queries for "title" which appears in source but not as symbol name
+- Confirms fallback ordering prioritizes hub symbols before leaf symbols
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_caps_matches_and_notes_truncation fingerprint=ecfb2d89504fa8c1d8605600e0862e1c961e5ed2840d64902cb9fc4e173cb723 body_fp=4defd77865a767ffb2f597072ddfcb3b196f615707169a8589a6e57facaaade9 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Tests that grep's fallback mechanism caps excessive matches and includes truncation notes.
+
+- Forces a tiny match limit to exercise truncation on the small test fixture
+- Verifies fallback returns exactly one match when capped at 1 
+- Checks that `unique_symbols` indicates more candidates were found
+- Ensures truncation note contains "of" to communicate incomplete results
+- Confirms returned matches still carry standard fields like `qname` and `inbound_count`
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_omits_truncation_note_when_under_cap fingerprint=cf99e3b6a8f38acee3321f95f67be04eb837de301219103c85baec04b0a7bad0 body_fp=a9548def3accc79b05d07ca23e28d0657120c151ae5ed0b29d520d382f4d5e8a source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Tests that grep fallback omits truncation warnings when match count stays within limit.
+
+- Searches for "replace" which appears in source but isn't a symbol name
+- Verifies fallback response excludes "showing top" language when results fit within cap
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_honours_scope_prefix fingerprint=31b191790a84b0b474a2cc9861f586ab8ea42430ceded08fcc62bdb2df882d24 body_fp=5b8b6c3a21bade6f9b855fef7b8af18c47c88c3ae07aa73de1db6192da4bba7c source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verify that TrieTools.grep respects scope_prefix filter when falling back to text search for non-matching symbol names.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_normal_hits_path_omits_fallback_key fingerprint=e4d4fa9ea51cf2db4cfeb5df2b356f09c2f3af9fb4af96059369c25e6b38f07d body_fp=3a3f17e5a24da2b03ebf5366361c6f3ec8b60bdf54c478993e5c91b9f0779225 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Asserts that `TrieTools.grep` omits the `fallback` key when primary search returns hits.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_returns_prose_and_neighbours fingerprint=8c1f77548638b430933ea0f0fab8a398b6ee3ac0f3dce12584d0dc79166d6f8e body_fp=16835740c35ea08067deb52b701db95fbba764e04fe7e686d325bc2f1aa438b4 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Test that TrieTools.read returns structured output containing qname, prose documentation, and caller/callee neighbor lists.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_source_pointer_shape fingerprint=420bf61a94fb75358593559620c310977d02c1bfeeb15481f3806550aeb73e97 body_fp=cbd3a6570ef2967647c16c1c10cf7de4fed58d730970e3bd9507f3f726d293e6 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies that TrieTools.read returns a source_pointer field formatted as "file:start-end".
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_neighbour_carries_one_liner fingerprint=51c2f2f644f316fdeabf34c1c1d3b0dc3b57ec9e2f746d8c04d682b4cf8fd044 body_fp=23502f8d944170f55cbc44fe71314f48a1b892622d23e5a76988ef8b11a31a2e source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies that `read` returns caller/callee neighbours with a populated `one_liner` field from their triefact body.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_unknown_qname_returns_not_found fingerprint=3265a0090391b2d6756d124cacb28e9a01e3e19ee7b45fe0032c752b36efb7f7 body_fp=b60c7785a5ebf34813505cb2b42f5e28a9b0424e6cc9f344b300fbeaa7aebe57 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verify TrieTools read method returns error envelope with not_found code for unknown symbol names.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_fuzzy_suggestion_for_typo fingerprint=656607d4483ca9d33fd84a8e21cd913fd53f6dfb9c395347ff19d836dabaa261 body_fp=1e16595f82f06d08d3af11310c2ed4e77f4fca84de607b81906dbf94fa9f0d91 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Tests that the read tool returns a fuzzy suggestion when given a qname with a typo.
+
+- Calls `tools.read("lib:slugfy")` with a misspelled qname ("slugfy" instead of "slugify")
+- Verifies the response contains an error with a suggestion that either mentions "slugify" directly or guides the user to use `grep()`
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_callers_returns_topology fingerprint=ba52df6ec0918227c8a41b6a0d14ab17f8fca12de24f0684dd8eb190b5e31c9d body_fp=97b4192f602a4fc81208a94636a971a6351aa38b31de0eb75dae3450189ceb73 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies that TrieTools.trace returns correct topology with root, nodes, and caller edges for direction="callers".
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_callees_returns_outbound fingerprint=0f7a79554ab1ccc241fd5da78d98609b43458bbc13f8ab26ace19fde87547dde body_fp=e73e4d139ff8588d39ce912ac1e7dcb7ef7aeb2ebb6a2bce35ee473aa92feecb source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Test that `TrieTools.trace` with `direction="callees"` returns outbound references in the graph structure.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_both_directions fingerprint=d982c36f43d513419ade4e39cc8a34a1405626cf97bdb9cf3043e5dc8e96bab0 body_fp=38689dcece06e7c171172026c580aa12515acfe64c14f7d790201953f04bad11 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Tests TrieTools.trace with bidirectional flow discovery.
+
+- Verifies callers appear in nodes when direction is "both"
+- Checks edges carry directional metadata for visualization
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_invalid_direction_returns_error fingerprint=ee66239794f468126ebd3f5e9d557088e75a14791456cb94d3242b919f9a1712 body_fp=2f43d622b30b94e9c276107d37bbdb29e1e4abfd55bd1723cf00714e386c0da0 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies that TrieTools.trace rejects an invalid direction parameter with an "invalid_argument" error code.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_unknown_qname_returns_not_found fingerprint=4a972421a152c7b560db28c9f942d12a1917d194cc1acb5041774f2b39f1b89d body_fp=9bc63f81e450e1bf480f07438eb1499e75152f77ac2c6d456b68f74caca42605 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+## test_trace_unknown_qname_returns_not_found
+
+Verifies that TrieTools.trace returns a not_found error for nonexistent symbols.
+
+- Tests the error envelope structure when an invalid qname is passed to trace
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_depth_zero_returns_only_root fingerprint=76be5ecaba8cb2a295a796f304e77c718a9dcc8d23868995efa57a5182d2a1c2 body_fp=11c567dde7da9bc8423d8827a4f588b836dddc74664fc8fd360db71e6bf9bcd0 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies that trace with depth=0 returns only the root symbol with no edges.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_depth_clamp_adds_note fingerprint=c455960b8dcfb8693c4e826945685a9217238b8705ee7806c1ca182dccf62c13 body_fp=08f8f6001272fdf61e7b1e11b14cfdb2422712187f89ab03ab670e2f46a66336 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Tests that TrieTools.trace adds a note when depth exceeds the configured maximum.
+
+- Requests depth=99 against default max of 5 and verifies "clamped" appears in response notes
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_build_server_registers_three_verbs fingerprint=6b9681c689a428da5e4f2498ee941fd5a83453ab2b5fb8299f484f077f69d5a3 body_fp=10ba7f1359654a3c30aae2d0fe93b17004beff410dd48f55cdfb9f1371dddd87 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verify that build_server registers all expected tools in the FastMCP server.
+
+- Core tools: `grep`, `read`, `trace` must be available
+- Extended toolset: 8 additional tools including `grep_str`, `explain_symbol`, `trace_flow`
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_build_server_wire_names_bind_to_internal_methods fingerprint=a480374391cd52c59bd6c51db2664d53e9150773ce64b5a08555c94f8cf832c5 body_fp=924f52c92dae919032980f65f3862c35e5efa14c489cb3b1e96fd0205a28b840 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies that MCP tool names directly dispatch to corresponding TrieTools methods.
+
+- Pins the mapping `grep -> grep`, `read -> read`, `trace -> trace`
+- Ensures CLI and MCP surfaces share one implementation per verb
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:dual_rank_project fingerprint=ddb09bc1e817a930bec9a532e1c272d2dfef3a3e605bc48f4679ba42ed216ee6 body_fp=f30f5d13836baf183f630d87fce9b19ec54d81ac3941644340d7026b3add5bae source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Creates test project with two auth symbols ranked by inbound count for fuzzy matching tests.
+
+- Returns populated temporary project with hub_authenticate (3 callers) and auth_check (2 callers)  
+- Both symbols contain "auth" for equal text relevance but different centrality scores
+- Tests sorting behavior where niche symbols rank before hubs at equal relevance
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_niche_ranks_before_hub fingerprint=a5bf02d8993e8282336d29b02cec7ebb34624737bcbad9c62cbda7acad54290e body_fp=5cf31bb5473fa0a0eca8dcd6199277e19d4abd1e61a76ed4f2d5d93228875539 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies `grep_entry_points` ranks niche symbols before hubs when relevance scores are equal.
+
+- Uses `dual_rank_project` fixture with `auth_check` (2 inbound) and `hub_authenticate` (3 inbound)
+- Queries "auth" to match both symbols with equal text relevance
+- Asserts `auth_check` appears before `hub_authenticate` in results
+- Tests the sort key: score DESC, inbound_count ASC
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_hits_carry_score fingerprint=bf76df08b996d67ba20379770a38f838d8fe1c762948d49445555df41368cc37 body_fp=249bc8f0cd416cd5944a6883261bdef30bb3eeacddb4863ef73ff7af41c2adb8 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies that grep_entry_points results include a numeric score field for ranking.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_symbol_typo_tolerance fingerprint=998a77d9bbc63dc7fa9771cbe44d66c7262382670d46446093a4c0102cb98e51 body_fp=ba9922e48ca93082d1577f0aabfc32b42abc69ada104d608576ddc406a05d3e4 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies that TrieTools.grep_symbol resolves single-character typos using fuzzy matching at cutoff 45.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_symbol_returns_score_field fingerprint=d875689a783594250d150f3a147a935eeeb38aeb1fadede0bc7712cc65914a22 body_fp=b6522a8833f3c05954c06fb29adf9f56aa321ed8df6b0c53d4036121ee5d9a46 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Validates that `TrieTools.grep_symbol` returns symbols with numeric score fields in both match and similar arrays.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fuzzy_prose_fallback fingerprint=0bdb61dcf7c038d93f1a7a4598b1a770d003ba2609b446451546db3192d4dd4e body_fp=bbf5eef1f7e55f55c6a8149e2e35aa003eec554fd6c338e9f75af34114541326 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verifies grep's fuzzy prose fallback surfaces symbols containing concept words when name_contains finds no exact symbol name matches.
+
+- Uses "lowercase dash separate" as a test phrase that appears in slugify's triefact body but not its name
+- Expects either text_match (ripgrep literal match) or fuzzy_prose (fuzzy scoring) fallback types
+- When fuzzy_prose fallback activates, validates slugify appears in the returned matches
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_str_fuzzy_fallback fingerprint=67380bf7bf45fed97698909288b028bd324ec109f63ba4924f1ec5a14d9de327 body_fp=9673fa25de4a0d63b8514286b76c720885febfc2e3b82f185b3c9511f11453df source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Tests that `grep_str` returns fuzzy fallback when pattern matches nothing in source.
+
+- Verifies empty hits array when nonsense pattern finds no regex matches
+- Confirms response includes `hits` key to prevent crashes on malformed responses
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_str_fuzzy_fallback_finds_close_name fingerprint=0dc0ff2f1a636680859fd46f2db38dac736a30e6bc5ada90d65313099d97ec0b body_fp=4712f18aa206c321f984553fd76b716f1c4b2eac2154ca80152bb5a6d3e7f9b6 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab -->
+Verify grep_str returns fuzzy fallback when regex search fails but symbol name is close to query.
+
+- Tests grep_str with typo "slugufy" expecting fuzzy_one_liner fallback to surface "slugify"
+- Skips assertion if ripgrep accidentally finds literal matches in source
+- Validates fallback contains expected symbol via name matching
 <!-- trie:end -->

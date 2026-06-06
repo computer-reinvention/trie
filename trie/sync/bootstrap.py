@@ -13,9 +13,10 @@ from trie.cost import (
     get_pricing,
 )
 from trie.graph.store import Store
-from trie.models import TrieClient
+from trie.models import TrieClient, configure_inflight_limit
 from trie.sync.generator import SYSTEM_PROMPT, FileGenerationContext, build_cached_context
 from trie.sync.progress import NULL_PROGRESS, ProgressCallback
+from trie.sync.scheduler import FileTask, run_waves
 from trie.sync.single_file import FileSyncResult, sync_single_file
 
 
@@ -151,53 +152,59 @@ def run_bootstrap(
     "I asked for N files and got N files" semantics when --limit is set.
     """
     cb: ProgressCallback = progress if progress is not None else NULL_PROGRESS
-    sync_results: list[FileSyncResult] = []
-    actual_cost = 0.0
-    estimated_cost = 0.0
-    skipped = 0
-    total = len(plan.items)
 
-    for idx, item in enumerate(plan.items, start=1):
-        if limit is not None and len(sync_results) >= limit:
-            skipped += 1
-            cb.on_skip(item.file_path, "limit reached")
-            continue
-        if budget_usd is not None and actual_cost >= budget_usd:
-            skipped += 1
-            cb.on_skip(item.file_path, "budget reached")
-            continue
+    # Bootstrap is a full cold pass — no cascade dependencies between files, so
+    # every file is hop 0 and the whole plan runs as one parallel wave. The
+    # global request cap (the real throttle) is configured here.
+    configure_inflight_limit(config.sync.max_inflight_requests)
 
-        abs_path = project_root / item.file_path
-        if not abs_path.is_file():
-            skipped += 1
-            cb.on_skip(item.file_path, "source missing")
-            continue
+    estimate_by_path = {item.file_path: item.estimated.cost_usd for item in plan.items}
+    tasks = [
+        FileTask(rel_path=item.file_path, hop=0)
+        for item in plan.items
+        if (project_root / item.file_path).is_file()
+    ]
+    missing = len(plan.items) - len(tasks)
 
-        cb.on_start(item.file_path, idx, total)
-        result = sync_single_file(
-            abs_path,
+    def _process(task: FileTask) -> FileSyncResult | None:
+        return sync_single_file(
+            project_root / task.rel_path,
             project_root=project_root,
             config=config,
             client=client,
             store=store,
         )
-        sync_results.append(result)
-        estimated_cost += item.estimated.cost_usd
-        file_cost = 0.0
-        if pricing is not None:
-            file_cost = estimate_actual_cost(
-                cache_creation_input_tokens=result.cache_creation_input_tokens,
-                cache_read_input_tokens=result.cache_read_input_tokens,
-                input_tokens=result.input_tokens,
-                output_tokens=result.output_tokens,
-                pricing=pricing,
-            )
-            actual_cost += file_cost
-        cb.on_done(item.file_path, result, actual_cost)
+
+    def _cost(result: FileSyncResult) -> float:
+        if pricing is None:
+            return 0.0
+        return estimate_actual_cost(
+            cache_creation_input_tokens=result.cache_creation_input_tokens,
+            cache_read_input_tokens=result.cache_read_input_tokens,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+            pricing=pricing,
+        )
+
+    sched = run_waves(
+        tasks,
+        process_file=_process,
+        file_workers=config.sync.file_workers,
+        progress=cb,
+        budget_usd=budget_usd,
+        limit=limit,
+        cost_of=_cost,
+    )
+    sync_results = sched.results
+    actual_cost = sum(_cost(r) for r in sync_results)
+    estimated_cost = sum(
+        estimate_by_path.get(str(r.source_path.relative_to(project_root)), 0.0)
+        for r in sync_results
+    )
 
     return BootstrapResult(
         files_synced=len(sync_results),
-        files_skipped_no_budget=skipped,
+        files_skipped_no_budget=sched.skipped_budget + missing,
         actual_cost_usd=actual_cost,
         estimated_cost_usd=estimated_cost,
         sync_results=sync_results,

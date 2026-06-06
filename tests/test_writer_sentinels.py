@@ -90,6 +90,41 @@ def test_parse_unterminated_section_raises():
         TriefactFile.parse(text)
 
 
+def test_parse_dedupes_duplicate_sections_keeping_last():
+    """A corrupted/interrupted write can leave two sections for one symbol. Parse
+    collapses them to a single copy (last-written wins, at the first position) so
+    the duplication self-heals on the next read → render and the symbol can't read
+    as permanently drifted."""
+    text = (
+        "<!-- trie:section symbol=mod:a fingerprint=OLD body_fp=o -->\n"
+        "old body\n"
+        "<!-- trie:end -->\n"
+        "<!-- trie:section symbol=mod:b fingerprint=B body_fp=b -->\n"
+        "b body\n"
+        "<!-- trie:end -->\n"
+        "<!-- trie:section symbol=mod:a fingerprint=NEW body_fp=n -->\n"
+        "new body\n"
+        "<!-- trie:end -->\n"
+    )
+    tf = TriefactFile.parse(text)
+    sections = [c for c in tf.chunks if isinstance(c, Section)]
+    qnames = [s.qualified_name for s in sections]
+    # Exactly one section per symbol.
+    assert qnames.count("mod:a") == 1
+    assert qnames.count("mod:b") == 1
+    # The surviving mod:a is the last-written one.
+    a = tf.get_section("mod:a")
+    assert a is not None
+    assert a.fingerprint == "NEW"
+    assert a.body == "new body"
+    # First-occurrence position preserved: mod:a still comes before mod:b.
+    assert qnames == ["mod:a", "mod:b"]
+    # Re-rendering is now stable — a second parse sees no duplicates.
+    assert [
+        c.qualified_name for c in TriefactFile.parse(tf.render()).chunks if isinstance(c, Section)
+    ] == ["mod:a", "mod:b"]
+
+
 # --- round-trip ---
 
 
