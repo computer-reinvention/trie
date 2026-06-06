@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState } from "react"
 import { Editor } from "@/components/Editor"
 import { Sidebar } from "@/components/Sidebar"
-import { Inspector } from "@/components/Inspector"
-import { InputBar } from "@/components/InputBar"
-import { TurnHistory } from "@/components/TurnHistory"
+import { AgentPanel } from "@/components/AgentPanel"
 import { TitleBar, TitleBarIconButton, GearIcon } from "@/components/TitleBar"
 import { Settings } from "@/components/Settings"
 import { useAppStore } from "@/store/appStore"
-import { useAgentStore } from "@/store/agentStore"
-import { useSettingsStore, useSetting } from "@/store/settingsStore"
+import { useSettingsStore } from "@/store/settingsStore"
 import { setGraphClientBase, graphClient } from "@/api/graphClient"
 import { setOpenCodeClientBase } from "@/api/opencodeClient"
 import { useOpenCodeSSE } from "@/hooks/useOpenCodeSSE"
@@ -25,7 +22,6 @@ const trie = () => (window as any).trie
 function AppShell() {
   const { opencodePort, projectDir, projectName, totalSymbols, totalFiles } = useAppStore()
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const showTurnHistory = useSetting<boolean>("agent.showTurnHistory")
   useOpenCodeSSE(opencodePort ?? 0)
   const { repopulate } = useGraphPopulation(opencodePort && opencodePort > 0 ? opencodePort : null)
   // Stream startup-refresh progress into the status display, and re-pull the
@@ -68,12 +64,8 @@ function AppShell() {
         <Sidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <Editor />
-          <div className="shrink-0">
-            {showTurnHistory && <TurnHistory />}
-            <InputBar />
-          </div>
         </div>
-        <Inspector />
+        <AgentPanel />
         {/* Settings fills the area BELOW the title bar so traffic lights stay clear */}
         {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
       </div>
@@ -182,7 +174,6 @@ function OpenProjectScreen({ onOpen }: { onOpen: () => void }) {
 export function App() {
   const [projectOpened, setProjectOpened] = useState(false)
   const { setServers, setProject } = useAppStore()
-  const { setSession } = useAgentStore()
   const loadSettings = useSettingsStore((s) => s.load)
   // Track whether we've registered the listener to avoid duplicates
   const listenerRegistered = useRef(false)
@@ -218,14 +209,8 @@ export function App() {
         console.error("Failed to fetch project summary:", err)
       }
 
-      try {
-        const session = await graphClient.createSession("trie desktop")
-        if (session?.id) setSession(session.id)
-      } catch (err) {
-        console.error("Failed to create session:", err)
-      }
-
-      // Transition to AppShell only after state is fully set
+      // Sessions are loaded/created by the agent panel (useSessions) once
+      // serversReady flips true. Transition to AppShell now that state is set.
       setProjectOpened(true)
     })
   }, [])

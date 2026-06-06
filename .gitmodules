@@ -1,3 +1,4 @@
 [submodule "opencode"]
 	path = opencode
 	url = git@github.com:computer-reinvention/opencode.git
+	branch = dev

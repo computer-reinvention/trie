@@ -124,6 +124,15 @@ export const SETTINGS: SettingDef[] = [
     max: 1000,
     step: 25,
   },
+  {
+    id: "graph.followAgent",
+    title: "Follow Agent in Graph",
+    description:
+      "Automatically expand and centre the symbol the agent is reading or editing as it works.",
+    category: "Graph",
+    type: "boolean",
+    default: true,
+  },
 
   // ── Agent ───────────────────────────────────────────────────────────────
   {
@@ -148,9 +157,9 @@ export const SETTINGS: SettingDef[] = [
     default: true,
   },
   {
-    id: "agent.showTurnHistory",
-    title: "Show Turn History",
-    description: "Display the agent turn-history panel above the input bar.",
+    id: "agent.autoSwitchToGraph",
+    title: "Auto-switch to Graph on Activity",
+    description: "Jump to the graph tab when the agent starts touching symbols.",
     category: "Agent",
     type: "boolean",
     default: true,

@@ -500,7 +500,12 @@ function paintNode(
   ctx.globalAlpha = dimmed ? 0.15 : reveal
 
   if (pulse > 0.01 && n.kind === "symbol") {
-    const ringColor = agentState === "writing" ? ACTIVITY.write : ACTIVITY.read
+    const ringColor =
+      agentState === "writing"
+        ? ACTIVITY.write
+        : agentState === "scanning"
+          ? ACTIVITY.scan
+          : ACTIVITY.read
     ctx.beginPath()
     ctx.arc(n.x, n.y, r + (4 + 18 * (1 - pulse)) / globalScale, 0, 2 * Math.PI)
     ctx.strokeStyle = ringColor

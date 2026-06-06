@@ -27,7 +27,7 @@ function CloseIcon() {
 
 function TabButton({ tab, active }: { tab: Tab; active: boolean }) {
   const { activate, close, toggleView, setView, tabs } = useTabsStore()
-  const focusFile = useGraphStore((s) => s.focusFile)
+  const revealFile = useGraphStore((s) => s.revealFile)
 
   const base =
     "group flex items-center gap-1.5 h-8 px-3 text-xs font-mono border-r border-slate-800 select-none cursor-pointer whitespace-nowrap"
@@ -58,7 +58,13 @@ function TabButton({ tab, active }: { tab: Tab; active: boolean }) {
             label: tab.view === "triefact" ? "Show Source" : "Show Triefact",
             onSelect: () => setView(tab.id, tab.view === "triefact" ? "source" : "triefact"),
           },
-          { label: "Reveal in Graph", onSelect: () => focusFile(tab.relPath) },
+          {
+            label: "Reveal in Graph",
+            onSelect: () => {
+              revealFile(tab.relPath)
+              activate(GRAPH_TAB_ID)
+            },
+          },
           { label: "-", onSelect: () => {} },
           { label: "Close", onSelect: () => close(tab.id) },
           {
