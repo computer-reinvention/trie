@@ -71,6 +71,14 @@ interface GraphStore {
   selectNode: (qname: string | null) => void
   setHovered: (id: string | null) => void
   focusFile: (relPath: string) => void
+  // Reveal a file on the canvas: focus all its symbols and expand the component
+  // its most-salient symbol lives in. Returns false when the file has no nodes.
+  revealFile: (relPath: string) => boolean
+  // Reveal a single symbol on the canvas: expand the component (role/subsystem
+  // on the current axis) it lives in so the ExpandedPanel shows it, then select
+  // it. Returns false when the qname isn't in the model. Used by deep-links from
+  // the editor (triefact cards, tabs, file tree).
+  revealSymbol: (qname: string) => boolean
 
   // --- actions: live runtime (driven by SSE) ---
   setNodeAgentState: (qname: string, state: AgentState) => void
@@ -212,6 +220,17 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 
   setHovered: (id) => set({ hoveredId: id }),
 
+  revealSymbol: (qname) => {
+    const { nodesByQname, axis } = get()
+    const node = nodesByQname.get(qname)
+    if (!node) return false
+    // The ExpandedPanel keys its frame on the group value for the active axis.
+    const groupKey = axis === "role" ? node.role || "untagged" : node.subsystem
+    get().expandComponent(groupKey)
+    get().selectNode(qname)
+    return true
+  },
+
   focusFile: (relPath) => {
     const { model } = get()
     if (!model) return
@@ -220,6 +239,23 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
       .map((n) => n.qname)
     set({ focus: qnames })
     get().recomputeVisible()
+  },
+
+  revealFile: (relPath) => {
+    const { model } = get()
+    if (!model) return false
+    const fileNodes = model.nodes.filter(
+      (n) => n.file_path === relPath || n.file_path.endsWith(relPath),
+    )
+    if (fileNodes.length === 0) return false
+    get().focusFile(relPath)
+    // Expand the component of the file's most-salient symbol (skip the synthetic
+    // module node so we land on a real, drillable member).
+    const top = [...fileNodes]
+      .filter((n) => n.kind !== "module")
+      .sort((a, b) => b.salience - a.salience)[0]
+    if (top) get().revealSymbol(top.qname)
+    return true
   },
 
   setNodeAgentState: (qname, agentState) =>

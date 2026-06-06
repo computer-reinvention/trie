@@ -88,8 +88,9 @@ export function classMarker(cls: NodeClass, color: string): ClassMarker {
 
 // Agent-activity colors (live monitor).
 export const ACTIVITY = {
-  read: "#3b82f6", // cool blue breath
-  write: "#f59e0b", // urgent amber
+  read: "#3b82f6", // cool blue breath (read / explain / trace target)
+  write: "#f59e0b", // urgent amber (patch / write / edit)
+  scan: "#8b5cf6", // violet (grep hit — the agent is searching/scanning)
   heat: "#ef4444", // residual edit warmth
 }
 

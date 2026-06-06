@@ -2,7 +2,7 @@
 // and the opencode desktop event protocol.
 
 export type SymbolKind = "function" | "class" | "method" | "constant" | "module"
-export type AgentState = "idle" | "reading" | "writing" | "stale"
+export type AgentState = "idle" | "reading" | "writing" | "scanning" | "stale"
 
 export interface SymbolHit {
   qname: string
@@ -194,6 +194,124 @@ export interface ActivityResult {
   pending: ActivityPending | null
 }
 
+// ---------------------------------------------------------------------------
+// opencode session + message model (mirrors packages/opencode message-v2.ts)
+// ---------------------------------------------------------------------------
+
+export interface OpencodeSession {
+  id: string
+  title?: string
+  directory?: string
+  parentID?: string
+  time?: { created?: number; updated?: number }
+  // opencode returns more; we only type what the UI uses.
+  [k: string]: unknown
+}
+
+// A message's `info` — discriminated on role.
+export interface OpencodeUserInfo {
+  id: string
+  sessionID: string
+  role: "user"
+  time: { created: number }
+  agent?: string
+  model?: { providerID: string; modelID: string }
+}
+
+export interface OpencodeTokens {
+  total?: number
+  input: number
+  output: number
+  reasoning: number
+  cache: { read: number; write: number }
+}
+
+export interface OpencodeAssistantInfo {
+  id: string
+  sessionID: string
+  role: "assistant"
+  time: { created: number; completed?: number }
+  parentID?: string
+  modelID?: string
+  providerID?: string
+  agent?: string
+  cost?: number
+  tokens?: OpencodeTokens
+  finish?: string
+  error?: { name?: string; message?: string; statusCode?: number; isRetryable?: boolean }
+}
+
+export type OpencodeMessageInfo = OpencodeUserInfo | OpencodeAssistantInfo
+
+// Parts — discriminated on `type`. Only the fields the transcript renders.
+export interface TextPart {
+  id: string
+  type: "text"
+  text: string
+  synthetic?: boolean
+  ignored?: boolean
+}
+export interface ReasoningPart {
+  id: string
+  type: "reasoning"
+  text: string
+}
+export type ToolPartStatus = "pending" | "running" | "completed" | "error"
+export interface ToolPart {
+  id: string
+  type: "tool"
+  callID: string
+  tool: string
+  state: {
+    status: ToolPartStatus
+    input?: Record<string, unknown>
+    output?: string
+    error?: string
+    title?: string
+    time?: { start?: number; end?: number }
+    metadata?: Record<string, unknown>
+  }
+}
+export interface FilePartT {
+  id: string
+  type: "file"
+  mime: string
+  filename?: string
+  url: string
+}
+export interface PatchPartT {
+  id: string
+  type: "patch"
+  hash: string
+  files: string[]
+}
+export interface GenericPart {
+  id: string
+  type: string
+  [k: string]: unknown
+}
+
+export type OpencodePart = TextPart | ReasoningPart | ToolPart | FilePartT | PatchPartT | GenericPart
+
+export interface OpencodeMessage {
+  info: OpencodeMessageInfo
+  parts: OpencodePart[]
+}
+
+// Permission request (mirrors permission/index.ts Request).
+export type PermissionReply = "once" | "always" | "reject"
+export interface PermissionRequest {
+  id: string
+  sessionID: string
+  permission: string
+  patterns: string[]
+  metadata: Record<string, unknown>
+  always: string[]
+  // correlation to the originating tool call
+  callID?: string
+  messageID?: string
+}
+
 // Desktop SSE event types
 export interface DesktopEvent {
   id: string
@@ -237,6 +355,43 @@ export interface DesktopSessionStatusEvent {
 
 export interface DesktopFileEditedEvent {
   file: string
+}
+
+export interface DesktopReasoningDeltaEvent {
+  sessionID: string
+  messageID: string
+  partID: string
+  delta: string
+}
+
+// Full message-info upsert (cost/tokens/finish/error) — desktop.message.updated
+export interface DesktopMessageUpdatedEvent {
+  sessionID: string
+  info: OpencodeMessageInfo
+}
+
+// Full part upsert — desktop.part.updated (carries the whole part)
+export interface DesktopPartUpdatedEvent {
+  sessionID: string
+  messageID: string
+  part: OpencodePart
+}
+
+export interface DesktopPermissionAskedEvent {
+  id: string
+  sessionID: string
+  permission: string
+  patterns: string[]
+  metadata: Record<string, unknown>
+  always: string[]
+  callID?: string
+  messageID?: string
+}
+
+export interface DesktopPermissionRepliedEvent {
+  sessionID: string
+  requestID: string
+  reply: PermissionReply
 }
 
 // Graph node data — stored in React Flow node.data

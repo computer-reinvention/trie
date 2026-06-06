@@ -8,10 +8,12 @@ import { Legend } from "@/components/GraphCanvas/Legend"
 
 export function Sidebar() {
   const { projectDir } = useAppStore()
-  const { focusFile } = useGraphStore()
+  const focusFile = useGraphStore((s) => s.focusFile)
+  const revealFile = useGraphStore((s) => s.revealFile)
   const openFile = useTabsStore((s) => s.openFile)
   // Whether single-clicking a file opens its Source or its Triefact (Prose).
   const [treeMode, setTreeMode] = useState<TabView>("source")
+  const [legendOpen, setLegendOpen] = useState(false)
 
   const toRel = useCallback(
     (filePath: string) => (projectDir ? filePath.replace(projectDir + "/", "") : filePath),
@@ -40,7 +42,7 @@ export function Sidebar() {
           onSelect: () => openFile(rel, { view: "triefact", forceView: true }),
         },
         { label: "-", onSelect: () => {} },
-        { label: "Reveal in Graph", onSelect: () => focusFile(rel) },
+        { label: "Reveal in Graph", onSelect: () => revealFile(rel) },
       ])
     },
     [toRel, openFile, focusFile],
@@ -50,7 +52,7 @@ export function Sidebar() {
 
   return (
     <aside className="w-60 shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col overflow-hidden">
-      <div className="px-3 py-2 border-b border-slate-800 flex items-center justify-between gap-2">
+      <div className="px-3 py-2 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
         <p className="text-slate-500 text-xs font-mono truncate">{projectDir.split("/").pop()}</p>
         <div className="flex rounded overflow-hidden border border-slate-700 text-[9px] font-mono shrink-0">
           <button
@@ -75,17 +77,27 @@ export function Sidebar() {
           </button>
         </div>
       </div>
-      {/* top half: file tree */}
-      <div className="h-1/2 overflow-y-auto scroll-thin border-b border-slate-800">
-        <FileTree
-          dir={projectDir}
-          onFileClick={onFileClick}
-          onFileRightClick={onFileRightClick}
-        />
+
+      {/* File tree takes all available height and scrolls. */}
+      <div className="flex-1 min-h-0 overflow-y-auto scroll-thin">
+        <FileTree dir={projectDir} onFileClick={onFileClick} onFileRightClick={onFileRightClick} />
       </div>
-      {/* bottom half: legend / controls */}
-      <div className="h-1/2 min-h-0">
-        <Legend />
+
+      {/* Legend is a collapsible drawer pinned to the bottom; collapsed by
+          default so the tree gets the room. Its own bounded scroll when open. */}
+      <div className="shrink-0 border-t border-slate-800">
+        <button
+          className="w-full px-3 py-1.5 flex items-center gap-1.5 text-left hover:bg-slate-800/50"
+          onClick={() => setLegendOpen((v) => !v)}
+        >
+          <span className="text-slate-600 text-xs">{legendOpen ? "▾" : "▸"}</span>
+          <span className="text-slate-500 text-[10px] uppercase tracking-wide">Graph legend</span>
+        </button>
+        {legendOpen && (
+          <div className="max-h-[45vh] overflow-y-auto scroll-thin border-t border-slate-800">
+            <Legend />
+          </div>
+        )}
       </div>
     </aside>
   )

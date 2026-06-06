@@ -13,8 +13,7 @@ export function FileTabContent({ tab }: { tab: FileTab }) {
   const activate = useTabsStore((s) => s.activate)
   const clearPendingFocus = useTabsStore((s) => s.clearPendingFocus)
   const clearPendingLine = useTabsStore((s) => s.clearPendingLine)
-  const focusFile = useGraphStore((s) => s.focusFile)
-  const selectNode = useGraphStore((s) => s.selectNode)
+  const revealSymbol = useGraphStore((s) => s.revealSymbol)
   // One-shot line to scroll the source view to, set when crossing from triefact
   // or when the graph deep-links straight to a symbol's source line.
   const [pendingLine, setPendingLine] = useState<number | undefined>(undefined)
@@ -72,8 +71,7 @@ export function FileTabContent({ tab }: { tab: FileTab }) {
               setView(tab.id, "source")
             }}
             onRevealInGraph={(qname) => {
-              focusFile(tab.relPath)
-              selectNode(qname)
+              revealSymbol(qname)
               activate(GRAPH_TAB_ID)
             }}
           />

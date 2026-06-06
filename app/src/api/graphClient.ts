@@ -104,8 +104,4 @@ export const graphClient = {
   activity(): Promise<ActivityResult> {
     return get("/desktop/graph/activity")
   },
-
-  createSession(title?: string): Promise<{ id: string }> {
-    return post("/desktop/session", title ? { title } : {})
-  },
 }
