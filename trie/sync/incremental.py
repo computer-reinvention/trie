@@ -7,11 +7,12 @@ from trie.check import check_project
 from trie.config import Config
 from trie.cost import ModelPricing, estimate_actual_cost
 from trie.graph.store import Store
-from trie.models import TrieClient
+from trie.models import TrieClient, configure_inflight_limit
 from trie.scan import scan_project
 from trie.sync.cascade import compute_cascade
 from trie.sync.progress import NULL_PROGRESS, ProgressCallback
 from trie.sync.reconcile import find_orphan_triefacts
+from trie.sync.scheduler import FileTask, run_waves
 from trie.sync.single_file import FileSyncResult, backfill_section_records, sync_single_file
 
 
@@ -191,86 +192,111 @@ def run_incremental(
         )
 
     cb: ProgressCallback = progress if progress is not None else NULL_PROGRESS
-    sync_results: list[FileSyncResult] = []
-    actual_cost = 0.0
-    skipped_budget = 0
-    skipped_no_symbols = 0
 
-    # Sync directly-stale files first, then cascade-pulled files ordered by hop
-    # distance from any seed (depth-1 callers before depth-2, etc.). This ordering
-    # is the precondition for diff-aware regen: closest-to-the-change cascade
-    # sections are the ones whose prose is most likely to need real updates, and
-    # regenerating them earlier means later (further-out) sections can reference
-    # the already-refreshed prose of their upstream neighbours.
-    #
-    # `worklist.affected_files` (the alphabetically-sorted union) stays unchanged
-    # so `trie plan`'s preview surface remains stable.
+    # Build depth-banded tasks: directly-stale files are hop 0, cascade-pulled
+    # files carry their cascade hop. The scheduler runs band 0 fully before band 1
+    # so diff-aware regen of a caller can reference its already-refreshed callee
+    # prose. `affected_files` (the sorted union) is unchanged so `trie plan`'s
+    # preview stays stable.
     stale_set = set(worklist.directly_stale)
-    cascade_pulled = sorted(
-        (f for f in worklist.affected_files if f not in stale_set),
-        key=lambda f: (worklist.hop_by_file.get(f, 0), f),
-    )
-    ordered_files = list(worklist.directly_stale) + cascade_pulled
-    total = len(ordered_files)
-
-    for idx, rel in enumerate(ordered_files, start=1):
-        if limit is not None and len(sync_results) >= limit:
-            skipped_budget += 1
-            cb.on_skip(rel, "limit reached")
+    tasks: list[FileTask] = []
+    for rel in worklist.directly_stale:
+        if (src_root / rel).is_file():
+            tasks.append(
+                FileTask(rel_path=rel, hop=0, regen_qnames=worklist.regen_qnames_by_file.get(rel))
+            )
+    for rel in worklist.affected_files:
+        if rel in stale_set:
             continue
-        if budget_usd is not None and actual_cost >= budget_usd:
-            skipped_budget += 1
-            cb.on_skip(rel, "budget reached")
+        if not (src_root / rel).is_file():
             continue
+        tasks.append(
+            FileTask(
+                rel_path=rel,
+                hop=max(1, worklist.hop_by_file.get(rel, 1)),
+                regen_qnames=worklist.regen_qnames_by_file.get(rel),
+            )
+        )
 
-        abs_path = src_root / rel
-        if not abs_path.is_file():
-            # Source removed since the cascade was computed; reconcile_deletions handles it.
-            continue
+    # Cap total concurrent LLM requests for this run; the scheduler over-subscribes
+    # workers and this is the real throttle.
+    configure_inflight_limit(config.sync.max_inflight_requests)
 
-        cb.on_start(rel, idx, total)
-        # Symbol-level regen target. Absence from the map means "full-file regen"
-        # (cold-write path, e.g. MISSING_TRIEFACT). A present entry restricts the
-        # LLM to exactly those qnames; everything else in the file is pass-through.
-        regen_set = worklist.regen_qnames_by_file.get(rel)
+    def _process(task: FileTask) -> FileSyncResult | None:
         result = sync_single_file(
-            abs_path,
+            src_root / task.rel_path,
             project_root=project_root,
             config=config,
             client=client,
             store=store,
-            symbols_to_regen=regen_set,
+            symbols_to_regen=task.regen_qnames,
         )
+        # A file with no symbols at all is a skip (None). Symbol-level pass-through
+        # still counts as synced (front matter updated), distinguished by skipped>0.
         if (
             result.symbols_generated == 0
             and result.sections_removed == 0
             and result.symbols_skipped == 0
         ):
-            # The file had no symbols at all — nothing to do. Distinct from the
-            # symbol-level case where every target was a pass-through; in that case
-            # `symbols_skipped > 0` and the front matter still updated, so we count
-            # the file as synced even though no LLM call ran.
-            skipped_no_symbols += 1
-            cb.on_skip(rel, "no symbols to document")
-            continue
-        sync_results.append(result)
-        file_cost = 0.0
-        if pricing is not None:
-            file_cost = estimate_actual_cost(
-                cache_creation_input_tokens=result.cache_creation_input_tokens,
-                cache_read_input_tokens=result.cache_read_input_tokens,
-                input_tokens=result.input_tokens,
-                output_tokens=result.output_tokens,
-                pricing=pricing,
-            )
-            actual_cost += file_cost
-        cb.on_done(rel, result, actual_cost)
+            return None
+        return result
+
+    def _cost(result: FileSyncResult) -> float:
+        if pricing is None:
+            return 0.0
+        return estimate_actual_cost(
+            cache_creation_input_tokens=result.cache_creation_input_tokens,
+            cache_read_input_tokens=result.cache_read_input_tokens,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+            pricing=pricing,
+        )
+
+    sched = run_waves(
+        tasks,
+        process_file=_process,
+        file_workers=config.sync.file_workers,
+        progress=cb,
+        budget_usd=budget_usd,
+        limit=limit,
+        cost_of=_cost,
+    )
+    sync_results = sched.results
+    skipped_budget = sched.skipped_budget
+    skipped_no_symbols = sched.skipped_other
+    actual_cost = sum(_cost(r) for r in sync_results)
 
     # Backfill any missing triefact_sections records. This ensures the
     # one-liner cache is populated even when sources were synced by an
     # older version that didn't store section metadata.
     if store.count_section_records() < store.count_symbols():
         backfill_section_records(project_root, config, store)
+
+    # Auto-backfill role tags for any symbol still missing one. We're already in
+    # the LLM-spending path, so filling the gaps now keeps the graph's role axis
+    # complete without the user ever invoking `trie sync --roles-only`. The call
+    # short-circuits for free when every symbol is already tagged (the steady
+    # state — full syncs write roles inline). Imported lazily to avoid a module
+    # import cycle (roles → single_file → … ).
+    from trie.sync.roles import run_roles_only
+
+    run_roles_only(
+        project_root=project_root,
+        config=config,
+        store=store,
+        client=client,
+        progress=progress,
+        only_missing=True,
+    )
+
+    # Clear the files we just regenerated from the pending (stale) set so
+    # `trie status` and the editor reflect that the working tree is now coherent.
+    from trie.activity import clear_pending
+    from trie.git_helpers import current_head
+
+    synced_rel = [str(r.source_path.relative_to(src_root)) for r in sync_results]
+    if synced_rel:
+        clear_pending(project_root, synced=synced_rel, head=current_head(project_root) or "")
 
     return IncrementalResult(
         files_synced=len(sync_results),

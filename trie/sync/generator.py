@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from trie.models import SectionBody, TrieClient
+from trie.models import RoleTag, SectionBody, TrieClient
 from trie.parse.python import Symbol
 
 # Domain knowledge — what makes good triefact prose.
@@ -174,4 +174,88 @@ def generate_section(
         mode=mode,
         role=section_body.role.strip().lower(),
         boundary=section_body.boundary.strip().lower(),
+    )
+
+
+ROLE_SYSTEM_PROMPT = """\
+You are trie, classifying the architectural role of a Python source symbol against
+a fixed, project-specific role vocabulary supplied in the prompt.
+
+You are given the allowed roles, the symbol's source, and (when available) its
+existing documentation prose. Return ONLY the classification fields — do not write
+any prose. Pick exactly one role NAME from the supplied vocabulary; never invent a
+new name. Judge by what the symbol actually does in the source. Be consistent:
+symbols doing the same kind of work get the same role.
+"""
+
+
+@dataclass(frozen=True)
+class InferredRole:
+    """Role/boundary classification for one symbol, plus the call's token usage."""
+
+    qualified_name: str
+    role: str
+    boundary: str
+    input_tokens: int
+    output_tokens: int
+    cache_creation_input_tokens: int
+    cache_read_input_tokens: int
+
+
+def _taxonomy_clause(allowed_roles: list[tuple[str, str]]) -> str:
+    """Render the fixed role vocabulary into the prompt. Each entry is (name, desc)."""
+    lines = [f"- {name}: {desc}" if desc else f"- {name}" for name, desc in allowed_roles]
+    return "Choose exactly one role from this vocabulary:\n" + "\n".join(lines)
+
+
+def infer_role(
+    *,
+    symbol: Symbol,
+    file_ctx: FileGenerationContext,
+    client: TrieClient,
+    allowed_roles: list[tuple[str, str]],
+    existing_prose: str | None = None,
+    max_tokens: int = 128,
+) -> InferredRole:
+    """Classify a symbol against a fixed role vocabulary, without regenerating prose.
+
+    This is the per-symbol unit of `trie sync --roles-only` (pass 2). `allowed_roles`
+    is the derived taxonomy as `(name, description)` pairs — injected into the prompt
+    so the model picks one existing role rather than coining a new one. Reuses the
+    cached file context (source billed once per file) and feeds the symbol's existing
+    prose as an extra signal. The output is role + boundary only, so the call stays
+    tiny relative to a full section regeneration.
+    """
+    prose_clause = (
+        f"\n\n<existing_prose>\n{existing_prose}\n</existing_prose>" if existing_prose else ""
+    )
+    user_prompt = (
+        f"{_taxonomy_clause(allowed_roles)}\n\n"
+        f"Classify the symbol `{symbol.qualified_name}` "
+        f"({_symbol_context_clause(symbol)}, lines {symbol.start_line}-{symbol.end_line}).\n\n"
+        f"<source>\n{_symbol_source(symbol)}\n</source>{prose_clause}"
+    )
+    result = client.run(
+        RoleTag,
+        system_prompt=ROLE_SYSTEM_PROMPT,
+        user_prompt=user_prompt,
+        cache_prefix=build_cached_context(file_ctx),
+        max_tokens=max_tokens,
+    )
+    tag: RoleTag = result.output
+    # Clamp to the vocabulary: if the model returns a name outside the taxonomy
+    # (rare, but the field is a free string), drop it to "" rather than pollute the
+    # role axis with a one-off. "" is treated as untagged downstream.
+    role = tag.role.strip().lower()
+    allowed_names = {name for name, _ in allowed_roles}
+    if role and role not in allowed_names:
+        role = ""
+    return InferredRole(
+        qualified_name=symbol.qualified_name,
+        role=role,
+        boundary=tag.boundary.strip().lower(),
+        input_tokens=result.input_tokens,
+        output_tokens=result.output_tokens,
+        cache_creation_input_tokens=result.cache_creation_input_tokens,
+        cache_read_input_tokens=result.cache_read_input_tokens,
     )

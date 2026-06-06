@@ -25,11 +25,21 @@ export class ProcessManager {
 
     this.opencodePort = await findFreePort(4096)
 
-    const { opencodeBin, trieMcpBin } = resolveResourcePaths()
+    const { opencodeBin, trieMcpBin, trieCliBin } = resolveResourcePaths()
 
     // Write / merge an .opencode/opencode.json in the project directory so
     // opencode uses the bundled trie-mcp binary instead of whatever is on PATH.
     writeOpencodeConfig(projectDir, trieMcpBin)
+
+    // Guarantee the graph is populated before the canvas queries it. A fresh
+    // checkout (or a wiped/regenerated .trie/graph.db) leaves the graph empty,
+    // which surfaces as "No system model loaded". `trie refresh` is the
+    // freshness gate: cheap when fresh, a scan-only rebuild when the store is
+    // empty (no LLM spend), and a sync when local edits drift prose. Run it
+    // before signalling servers-ready, streaming JSONL progress to the
+    // renderer's triefact-generation status display. Fire-and-forget: a
+    // refresh failure must never block the app from opening.
+    this.runRefresh(projectDir, trieCliBin)
 
     this.opencodeProc = spawn(
       opencodeBin,
@@ -86,6 +96,79 @@ export class ProcessManager {
     })
   }
 
+  /**
+   * Run `trie refresh --before-turn --json` in the project directory and relay
+   * its JSONL progress stream to the renderer as `ipc:trie-refresh` events.
+   *
+   * The renderer's TriefactStatus component renders these. Each stdout line is
+   * one JSON event ({"kind": "phase"|"start"|"done"|"skip"|"summary"|"error"}).
+   * A trailing partial line is buffered across chunks. We never throw: a failed
+   * refresh degrades to "graph may be stale", not a broken app launch.
+   */
+  private runRefresh(projectDir: string, trieCliBin: string): void {
+    let proc: ChildProcess
+    try {
+      proc = spawn(trieCliBin, ["refresh", "--before-turn", "--json"], {
+        cwd: projectDir,
+        env: { ...process.env },
+        stdio: ["ignore", "pipe", "pipe"],
+      })
+    } catch (err) {
+      this.win.webContents.send("ipc:trie-refresh", {
+        kind: "error",
+        message: `failed to spawn trie refresh: ${String(err)}`,
+      })
+      return
+    }
+
+    this.win.webContents.send("ipc:trie-refresh", { kind: "spawned" })
+
+    let buf = ""
+    proc.stdout?.on("data", (d: Buffer) => {
+      buf += d.toString()
+      const lines = buf.split("\n")
+      buf = lines.pop() ?? ""
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed) continue
+        try {
+          this.win.webContents.send("ipc:trie-refresh", JSON.parse(trimmed))
+        } catch {
+          // Non-JSON line (stray stderr-on-stdout); ignore.
+        }
+      }
+    })
+
+    const stderrLines: string[] = []
+    proc.stderr?.on("data", (d: Buffer) => {
+      stderrLines.push(d.toString().trimEnd())
+    })
+
+    proc.on("exit", (code) => {
+      // Flush any buffered final line.
+      const trimmed = buf.trim()
+      if (trimmed) {
+        try {
+          this.win.webContents.send("ipc:trie-refresh", JSON.parse(trimmed))
+        } catch {
+          /* ignore */
+        }
+      }
+      this.win.webContents.send("ipc:trie-refresh", {
+        kind: "exit",
+        code: code ?? 0,
+        stderr: code && code !== 0 ? stderrLines.slice(-10).join("\n") : undefined,
+      })
+    })
+
+    proc.on("error", (err) => {
+      this.win.webContents.send("ipc:trie-refresh", {
+        kind: "error",
+        message: String(err),
+      })
+    })
+  }
+
   killAll(): void {
     if (this.opencodeProc && !this.opencodeProc.killed) {
       this.opencodeProc.kill("SIGTERM")
@@ -137,7 +220,7 @@ function writeOpencodeConfig(projectDir: string, trieMcpBin: string): void {
 // ---------------------------------------------------------------------------
 // Resource path resolution
 // ---------------------------------------------------------------------------
-function resolveResourcePaths(): { opencodeBin: string; trieMcpBin: string } {
+function resolveResourcePaths(): { opencodeBin: string; trieMcpBin: string; trieCliBin: string } {
   let resourcesDir: string
 
   if (app.isPackaged) {
@@ -161,6 +244,7 @@ function resolveResourcePaths(): { opencodeBin: string; trieMcpBin: string } {
 
   const opencodeBin = path.join(resourcesDir, "opencode-server")
   const trieMcpBin  = path.join(resourcesDir, "trie-mcp")
+  const trieCliBin  = path.join(resourcesDir, "trie-cli")
 
   for (const bin of [opencodeBin, trieMcpBin]) {
     if (!fs.existsSync(bin)) {
@@ -172,10 +256,19 @@ function resolveResourcePaths(): { opencodeBin: string; trieMcpBin: string } {
     fs.chmodSync(bin, 0o755)
   }
 
+  // trie-cli is best-effort: the app still opens (graph just won't auto-refresh)
+  // if it's missing. Chmod when present; don't hard-fail when absent.
+  if (fs.existsSync(trieCliBin)) {
+    fs.chmodSync(trieCliBin, 0o755)
+  } else {
+    console.warn("[trie] trie-cli wrapper not found; startup auto-refresh disabled:", trieCliBin)
+  }
+
   console.log("[trie] opencode-server:", opencodeBin)
   console.log("[trie] trie-mcp:", trieMcpBin)
+  console.log("[trie] trie-cli:", trieCliBin)
 
-  return { opencodeBin, trieMcpBin }
+  return { opencodeBin, trieMcpBin, trieCliBin }
 }
 
 // ---------------------------------------------------------------------------

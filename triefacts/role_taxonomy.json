@@ -1,0 +1,52 @@
+{
+  "roles": [
+    {
+      "name": "test-infrastructure",
+      "description": "Test fixtures, mocks, helper classes, and test data that support testing other components."
+    },
+    {
+      "name": "cli-interface",
+      "description": "Command-line interface handlers that parse arguments, coordinate operations, and format output for human users."
+    },
+    {
+      "name": "config-management",
+      "description": "Configuration loading, validation, and data structures for project settings and runtime parameters."
+    },
+    {
+      "name": "source-parsing",
+      "description": "Source code analysis that extracts symbols, references, and structural information from Python files using tree-sitter."
+    },
+    {
+      "name": "graph-database",
+      "description": "SQLite-backed storage layer that persists symbols, references, and metadata with query capabilities."
+    },
+    {
+      "name": "llm-client",
+      "description": "Language model integration including prompt construction, response handling, token counting, and retry logic."
+    },
+    {
+      "name": "documentation-sync",
+      "description": "Core documentation generation pipeline that creates and updates triefact files by coordinating parsing, LLM calls, and file writing."
+    },
+    {
+      "name": "change-detection",
+      "description": "Freshness tracking and cascade analysis that determines which files need regeneration when source code changes."
+    },
+    {
+      "name": "mcp-server",
+      "description": "Model Context Protocol server implementation that exposes trie's capabilities to AI coding agents via stdio."
+    },
+    {
+      "name": "agent-integration",
+      "description": "Installation and configuration utilities for integrating trie with AI coding environments and IDEs."
+    },
+    {
+      "name": "code-editing",
+      "description": "Patch application pipeline that uses LLM inference to edit source code and update documentation based on implementation notes."
+    },
+    {
+      "name": "monitoring-telemetry",
+      "description": "Telemetry collection, audit trail generation, and operational monitoring for debugging and cost tracking."
+    }
+  ]
+}

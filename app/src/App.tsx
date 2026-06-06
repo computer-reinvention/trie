@@ -13,6 +13,8 @@ import { setGraphClientBase, graphClient } from "@/api/graphClient"
 import { setOpenCodeClientBase } from "@/api/opencodeClient"
 import { useOpenCodeSSE } from "@/hooks/useOpenCodeSSE"
 import { useGraphPopulation } from "@/hooks/useGraphPopulation"
+import { useTrieRefresh } from "@/hooks/useTrieRefresh"
+import { TriefactStatus } from "@/components/TriefactStatus"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const trie = () => (window as any).trie
@@ -22,7 +24,10 @@ function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const showTurnHistory = useSetting<boolean>("agent.showTurnHistory")
   useOpenCodeSSE(opencodePort ?? 0)
-  useGraphPopulation(opencodePort && opencodePort > 0 ? opencodePort : null)
+  const { repopulate } = useGraphPopulation(opencodePort && opencodePort > 0 ? opencodePort : null)
+  // Stream startup-refresh progress into the status display, and re-pull the
+  // graph once the refresh rebuilds/updates it (fresh-checkout population).
+  useTrieRefresh(repopulate)
 
   // ⌘, opens settings; Esc closes it.
   useEffect(() => {
@@ -64,6 +69,7 @@ function AppShell() {
         {/* Settings fills the area BELOW the title bar so traffic lights stay clear */}
         {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
       </div>
+      <TriefactStatus />
     </div>
   )
 }

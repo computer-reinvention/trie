@@ -170,7 +170,9 @@ def test_ensure_fresh_raises_outside_git(tmp_path: Path):
 # ---------------------------------------------------------------------------
 
 
-def _run_before_turn(project: Path, client: FakeTrieClient | None = None):
+def _run_before_turn(
+    project: Path, client: FakeTrieClient | None = None, *, sync_prose: bool = False
+):
     """Run the pre-turn gate, returning the FreshnessResult.
 
     A caller that needs to inspect LLM call counts after the run can pass its
@@ -186,6 +188,7 @@ def _run_before_turn(project: Path, client: FakeTrieClient | None = None):
             config=config,
             store=store,
             client=client or FakeTrieClient(output_body="## `body`\n\nDeterministic."),
+            sync_prose=sync_prose,
         )
 
 
@@ -203,19 +206,66 @@ def _run_after_turn(project: Path, client: FakeTrieClient | None = None):
 
 
 def test_no_stamp_triggers_scan_without_llm(project: Path):
-    """First run in a fresh checkout: no stamp exists, graph scan fires but
-    the LLM is NOT called. Trie does not auto-spend dollars on first contact;
-    the user opts into prose regen by running `trie sync` explicitly."""
+    """First run in a fresh checkout: no stamp exists (and the store starts
+    empty), graph scan fires but the LLM is NOT called. Trie does not auto-spend
+    dollars on first contact; the user opts into prose regen by running
+    `trie sync` explicitly.
+
+    The store is empty on first contact, so the empty-store guard reports
+    `empty_store` — which drives the same scan-only, no-LLM rebuild as
+    `no_stamp`. Both paths converge; the reason label just records which guard
+    fired first.
+    """
     client = FakeTrieClient(output_body="## `body`\n\nDeterministic.")
     result = _run_before_turn(project, client=client)
     assert result.refreshed is True
-    assert result.reason == "no_stamp"
-    assert result.incremental is None, "no_stamp must not invoke run_incremental"
-    assert client.calls == 0, "no_stamp must not invoke the LLM"
+    assert result.reason == "empty_store"
+    assert result.incremental is None, "first contact must not invoke run_incremental"
+    assert client.calls == 0, "first contact must not invoke the LLM"
     # The stamp now exists and records current HEAD.
     stamp = read_stamp(project)
     assert stamp is not None
     assert stamp.head == result.head
+
+
+def test_empty_store_with_valid_stamp_self_heals(project: Path):
+    """Regression: a wiped graph.db with an otherwise-valid stamp must rebuild,
+    not no-op.
+
+    The stamp records *when* we last refreshed, not *whether the graph still
+    exists*. If `.trie/graph.db` is wiped or regenerated empty while the stamp
+    still points at the current HEAD with matching mtimes, the stamp-based
+    verdict would be `unchanged` and return a no-op against an empty graph.
+    That surfaces downstream as "No system model loaded". The empty-store guard
+    must override the stamp and force a scan-only rebuild.
+    """
+    # Prime a full refresh so a valid stamp exists and the graph is populated.
+    first = _run_before_turn(project)
+    assert first.refreshed is True
+    stamp_before = read_stamp(project)
+    assert stamp_before is not None
+
+    # Wipe the graph data but leave the stamp untouched: simulate a corrupted
+    # or externally-regenerated empty DB. Deleting the file and reopening a
+    # fresh Store gives us an empty schema with the stamp still in place.
+    db = project / ".trie" / "graph.db"
+    with Store(db) as store:
+        assert store.count_symbols() > 0
+    db.unlink()
+    with Store(db) as store:
+        assert store.count_symbols() == 0
+
+    # Stamp still matches HEAD + mtimes, but the store is empty.
+    client = FakeTrieClient(output_body="## `body`\n\nDeterministic.")
+    healed = _run_before_turn(project, client=client)
+    assert healed.refreshed is True
+    assert healed.reason == "empty_store"
+    assert healed.incremental is None, "self-heal must not invoke run_incremental"
+    assert client.calls == 0, "self-heal rebuilds from triefacts; no LLM"
+
+    # The graph is repopulated.
+    with Store(db) as store:
+        assert store.count_symbols() > 0
 
 
 def test_unchanged_state_is_a_noop(project: Path):
@@ -249,10 +299,12 @@ def test_head_moved_triggers_scan_without_llm(project: Path):
     assert after_head != before_head
 
 
-def test_mtimes_moved_triggers_sync_with_llm(project: Path):
-    """Edit a file without committing: HEAD unchanged, but mtime moved. This
-    is the only path that fires the LLM — local edits drift prose from source,
-    so we resync with the diff-aware rubric handling cost-vs-correctness."""
+def test_mtimes_moved_is_graph_only_and_marks_stale(project: Path):
+    """Edit a file without committing: HEAD unchanged, mtime moved. By default
+    refresh is FAST — it rebuilds the graph (no LLM) and records the drifted
+    triefacts as stale in pending.json rather than regenerating prose inline."""
+    from trie.activity import read_pending
+
     _run_before_turn(project)
     before_head = read_stamp(project).head
 
@@ -264,14 +316,35 @@ def test_mtimes_moved_triggers_sync_with_llm(project: Path):
     result = _run_before_turn(project, client=client)
     assert result.refreshed is True
     assert result.reason == "mtimes_moved"
-    assert result.incremental is not None, "mtimes_moved must invoke run_incremental"
-    # The tweak above is a comment-only change to a file that already has a
-    # triefact, so diff-aware regen *might* keep prose unchanged. The contract
-    # we pin here is "the LLM path was available," not "every comment edit
-    # fires N calls." The presence of an IncrementalResult is the load-bearing
-    # signal that run_incremental ran rather than scan-only.
-    # HEAD didn't move; the stamp's head field is unchanged.
+    assert result.incremental is None, "default mtimes_moved must NOT invoke run_incremental"
+    assert client.calls == 0, "default refresh must not touch the LLM"
+    assert "src/alpha.py" in result.stale_files
+    # The stale set is persisted for `trie status` / the editor to read.
+    pending = read_pending(project)
+    assert pending is not None
+    assert "src/alpha.py" in pending.stale
     assert read_stamp(project).head == before_head
+
+
+def test_mtimes_moved_with_sync_prose_runs_inline(project: Path):
+    """The opt-in `sync_prose=True` path restores inline LLM regen and clears
+    the pending set."""
+    from trie.activity import read_pending
+
+    _run_before_turn(project)
+    time.sleep(0.01)
+    alpha = project / "src" / "alpha.py"
+    alpha.write_text(alpha.read_text() + "\n# tweak\n")
+
+    client = FakeTrieClient(output_body="## `body`\n\nDeterministic.")
+    result = _run_before_turn(project, client=client, sync_prose=True)
+    assert result.refreshed is True
+    assert result.reason == "mtimes_moved"
+    assert result.incremental is not None, "sync_prose=True must invoke run_incremental"
+    # Inline sync leaves the working tree clean.
+    pending = read_pending(project)
+    assert pending is not None
+    assert pending.stale == ()
 
 
 def test_new_file_added_triggers_refresh(project: Path):

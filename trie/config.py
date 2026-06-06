@@ -94,9 +94,19 @@ class Sync:
     """
 
     concurrency: int = 4
-    max_retries: int = 5
+    max_retries: int = 8
     retry_base_delay_seconds: float = 1.0
     retry_cap_seconds: float = 60.0
+
+    # Wave-based cross-file parallelism. `file_workers` is how many files the
+    # scheduler generates concurrently; within each file, `concurrency` symbols
+    # run in parallel. The product can exceed the provider's rate ceiling, so
+    # `max_inflight_requests` is a process-wide semaphore capping the TOTAL
+    # number of concurrent LLM calls regardless of how files/symbols fan out.
+    # It is the real throttle: set it to your tier's safe concurrency and let
+    # the 429 backoff absorb the rest. 0 disables the global cap.
+    file_workers: int = 8
+    max_inflight_requests: int = 8
 
 
 @dataclass
@@ -173,9 +183,10 @@ class Mcp:
 
     # trace
     trace_max_depth: int = 5
-    trace_hub_threshold: int = (
-        10_000_000  # effectively unlimited; raise to disable hub skipping in trace_flow / trace
-    )
+    trace_hub_threshold: int = 50  # skip expanding symbols with >50 inbound refs during
+    # trace/trace_flow so navigation never fans out through utility hubs. Higher than the
+    # cascade guard (20) because read-side traversal tolerates more breadth than write-side
+    # regen; set very high to effectively disable hub skipping.
     trace_max_nodes: int = 200
     trace_prose_at_depth: int = 0  # 0 = no prose on trace
     trace_prose_budget: int = 10
@@ -283,12 +294,17 @@ hub_symbol_threshold = 20
 # network I/O so threads are sufficient. 4 is conservative under Anthropic tier-1
 # RPM/ITPM ceilings; raise for larger tiers, set to 1 to force serial execution.
 concurrency = 4
+# Wave-based cross-file parallelism. `file_workers` files generate concurrently;
+# `max_inflight_requests` is a process-wide cap on TOTAL concurrent LLM calls
+# (the real throttle — set to your tier's safe concurrency; 0 disables the cap).
+file_workers = 8
+max_inflight_requests = 8
 # Retry-on-rate-limit settings for the underlying model client. `retry-after`
 # headers from 429s are honoured exactly. For 429s without a header and for
 # 529 (overloaded) responses, the client uses exponential backoff with jitter
 # (base * 2**attempt + jitter, capped at retry_cap_seconds) for up to
 # max_retries attempts before propagating the error.
-max_retries = 5
+max_retries = 8
 retry_base_delay_seconds = 1.0
 retry_cap_seconds = 60.0
 
@@ -309,7 +325,7 @@ read_prose_max_chars = 0                       # 0 = unlimited
 
 # trace
 trace_max_depth = 5
-trace_hub_threshold = 20                       # mirrors cascade.hub_symbol_threshold
+trace_hub_threshold = 50                       # skip hubs >50 inbound in trace/trace_flow
 trace_max_nodes = 200
 trace_prose_at_depth = 0                       # 0 = no prose on trace
 trace_prose_budget = 10

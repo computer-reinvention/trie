@@ -51,4 +51,13 @@ contextBridge.exposeInMainWorld("trie", {
   onOpencodeExited: (cb: (info: { code: number | null }) => void) => {
     ipcRenderer.on("ipc:opencode-exited", (_event, v) => cb(v))
   },
+
+  // trie refresh progress relay — JSONL events from `trie refresh --json`,
+  // drives the triefact-generation status display. Returns an unsubscribe fn.
+  onTrieRefresh: (cb: (event: Record<string, unknown>) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, v: Record<string, unknown>) => cb(v)
+    ipcRenderer.removeAllListeners("ipc:trie-refresh")
+    ipcRenderer.on("ipc:trie-refresh", listener)
+    return () => ipcRenderer.removeListener("ipc:trie-refresh", listener)
+  },
 })
