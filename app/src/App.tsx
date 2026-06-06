@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { GraphCanvas } from "@/components/GraphCanvas"
+import { Editor } from "@/components/Editor"
 import { Sidebar } from "@/components/Sidebar"
 import { Inspector } from "@/components/Inspector"
 import { InputBar } from "@/components/InputBar"
@@ -14,7 +14,10 @@ import { setOpenCodeClientBase } from "@/api/opencodeClient"
 import { useOpenCodeSSE } from "@/hooks/useOpenCodeSSE"
 import { useGraphPopulation } from "@/hooks/useGraphPopulation"
 import { useTrieRefresh } from "@/hooks/useTrieRefresh"
+import { useActivityPoll } from "@/hooks/useActivityPoll"
 import { TriefactStatus } from "@/components/TriefactStatus"
+import { ContextMenu } from "@/components/ContextMenu"
+import { ActivityBadge } from "@/components/ActivityBadge"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const trie = () => (window as any).trie
@@ -28,6 +31,8 @@ function AppShell() {
   // Stream startup-refresh progress into the status display, and re-pull the
   // graph once the refresh rebuilds/updates it (fresh-checkout population).
   useTrieRefresh(repopulate)
+  // Poll the cross-process activity DB to glow syncing/stale files + badge.
+  useActivityPoll(!!opencodePort && opencodePort > 0)
 
   // ⌘, opens settings; Esc closes it.
   useEffect(() => {
@@ -51,15 +56,18 @@ function AppShell() {
         title={projectName || "trie"}
         subtitle={totalSymbols > 0 ? `${totalSymbols} symbols · ${totalFiles} files` : undefined}
         actions={
-          <TitleBarIconButton onClick={() => setSettingsOpen(true)} title="Settings (⌘,)">
-            <GearIcon />
-          </TitleBarIconButton>
+          <>
+            <ActivityBadge />
+            <TitleBarIconButton onClick={() => setSettingsOpen(true)} title="Settings (⌘,)">
+              <GearIcon />
+            </TitleBarIconButton>
+          </>
         }
       />
       <div className="flex-1 flex min-h-0 overflow-hidden relative">
         <Sidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <GraphCanvas className="flex-1 min-h-0" />
+          <Editor />
           <div className="shrink-0">
             {showTurnHistory && <TurnHistory />}
             <InputBar />
@@ -70,6 +78,7 @@ function AppShell() {
         {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
       </div>
       <TriefactStatus />
+      <ContextMenu />
     </div>
   )
 }

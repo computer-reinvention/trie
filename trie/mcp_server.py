@@ -468,9 +468,9 @@ class TrieTools:
         public_symbols: int = conn.execute(
             "SELECT COUNT(*) FROM symbols WHERE is_public = 1"
         ).fetchone()[0]
-        total_files: int = conn.execute(
-            "SELECT COUNT(DISTINCT file_path) FROM symbols"
-        ).fetchone()[0]
+        total_files: int = conn.execute("SELECT COUNT(DISTINCT file_path) FROM symbols").fetchone()[
+            0
+        ]
         total_edges: int = conn.execute("SELECT COUNT(*) FROM edges").fetchone()[0]
 
         return {
@@ -481,6 +481,45 @@ class TrieTools:
             "total_files": total_files,
             "total_edges": total_edges,
             "trie_version": getattr(trie_pkg, "__version__", "unknown"),
+        }
+
+    def activity(self) -> dict[str, Any]:
+        """Return the live writer status + working-tree stale set for the editor.
+
+        Reads the ephemeral `.trie/activity.db` (see `trie.activity`). Any process
+        — a terminal `trie sync`, the end-of-turn refresh hook, the desktop's own
+        refresh — updates that DB, so the editor can poll this to glow the
+        currently-syncing file and show a "N stale" badge regardless of which
+        process is doing the work. A crashed writer reads back as idle.
+
+        Returns {status: {...}, pending: {count, stale, head} | null}.
+        """
+        from trie import activity as activity_mod
+
+        status = activity_mod.read_status(self.root)
+        pending = activity_mod.read_pending(self.root)
+        return {
+            "status": {
+                "state": status.state,
+                "op": status.op,
+                "pid": status.pid,
+                "is_active": status.is_active,
+                "current_file": status.current_file,
+                "done": status.done,
+                "total": status.total,
+                "error": status.error,
+                "updated_at": status.updated_at,
+            },
+            "pending": (
+                None
+                if pending is None
+                else {
+                    "count": pending.count,
+                    "stale": list(pending.stale),
+                    "head": pending.head,
+                    "computed_at": pending.computed_at,
+                }
+            ),
         }
 
     def symbols_by_file(self, file_path: str) -> dict[str, Any]:
@@ -523,6 +562,69 @@ class TrieTools:
             for r in rows
         ]
         return {"file_path": file_path, "symbols": symbols}
+
+    def file_triefact(self, file_path: str) -> dict[str, Any]:
+        """Return the whole triefact for a source file: front matter + ordered
+        per-symbol sections (prose body, role, fingerprints, source line range).
+
+        The desktop app's triefact view renders this. `file_path` is source-root
+        relative (e.g. `trie/sync/writer.py`). Returns
+        `{file_path, triefact_path, exists, front_matter, sections: [...]}`;
+        `exists` is False (with empty sections) when the file has no triefact yet.
+        """
+        from trie.sync.writer import TriefactFile, extract_one_liner
+
+        rel_md = Path(file_path).with_suffix(".md")
+        triefact_path = self.triefacts_root / rel_md
+        triefact_rel = str(triefact_path.relative_to(self.root))
+        if not triefact_path.exists():
+            return {
+                "file_path": file_path,
+                "triefact_path": triefact_rel,
+                "exists": False,
+                "front_matter": {},
+                "sections": [],
+            }
+
+        triefact = TriefactFile.parse(triefact_path.read_text())
+
+        # Line ranges + kind come from the store (the sentinel doesn't carry them).
+        lines_by_qname: dict[str, tuple[int, int]] = {}
+        kind_by_qname: dict[str, str] = {}
+        for row in self.store._conn.execute(
+            "SELECT qualified_name, start_line, end_line, kind FROM symbols WHERE file_path = ?",
+            (file_path,),
+        ).fetchall():
+            lines_by_qname[row[0]] = (row[1], row[2])
+            kind_by_qname[row[0]] = row[3]
+
+        sections = []
+        for qn in triefact.section_qnames():
+            sec = triefact.get_section(qn)
+            if sec is None:
+                continue
+            start, end = lines_by_qname.get(qn, (0, 0))
+            sections.append(
+                {
+                    "qname": qn,
+                    "kind": kind_by_qname.get(qn, ""),
+                    "role": sec.role,
+                    "body": sec.body,
+                    "one_liner": extract_one_liner(sec.body),
+                    "fingerprint": sec.fingerprint,
+                    "body_fingerprint": sec.body_fingerprint or "",
+                    "start_line": start,
+                    "end_line": end,
+                }
+            )
+
+        return {
+            "file_path": file_path,
+            "triefact_path": triefact_rel,
+            "exists": True,
+            "front_matter": triefact.front_matter,
+            "sections": sections,
+        }
 
     # --- grep --------------------------------------------------------------
 
@@ -2105,6 +2207,8 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     # Desktop app helpers — project summary + symbols by file + all symbols
     server.tool(name="summary")(tools.summary)
     server.tool(name="symbols_by_file")(tools.symbols_by_file)
+    server.tool(name="file_triefact")(tools.file_triefact)
+    server.tool(name="activity")(tools.activity)
     server.tool(name="all_symbols")(tools.all_symbols)
     server.tool(name="all_edges")(tools.all_edges)
     server.tool(name="system_model")(tools.system_model)

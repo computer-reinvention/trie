@@ -1,0 +1,84 @@
+import { useEffect, useState } from "react"
+import { SourceView } from "./SourceView"
+import { TriefactView } from "./TriefactView"
+import { useTabsStore, GRAPH_TAB_ID, type FileTab } from "@/store/tabsStore"
+import { useGraphStore } from "@/store/graphStore"
+
+// Renders a single file tab's body and the per-tab Source⇄Triefact toggle.
+// Deep-linking within a tab: clicking "view source" on a triefact card flips
+// the face to source and scrolls to the symbol's line.
+
+export function FileTabContent({ tab }: { tab: FileTab }) {
+  const setView = useTabsStore((s) => s.setView)
+  const activate = useTabsStore((s) => s.activate)
+  const clearPendingFocus = useTabsStore((s) => s.clearPendingFocus)
+  const clearPendingLine = useTabsStore((s) => s.clearPendingLine)
+  const focusFile = useGraphStore((s) => s.focusFile)
+  const selectNode = useGraphStore((s) => s.selectNode)
+  // One-shot line to scroll the source view to, set when crossing from triefact
+  // or when the graph deep-links straight to a symbol's source line.
+  const [pendingLine, setPendingLine] = useState<number | undefined>(undefined)
+
+  // Adopt a deep-link line that arrived via the store (e.g. graph "Open Source").
+  useEffect(() => {
+    if (tab.pendingFocusLine != null) {
+      setPendingLine(tab.pendingFocusLine)
+      clearPendingLine(tab.id)
+    }
+  }, [tab.pendingFocusLine, tab.id, clearPendingLine])
+
+  return (
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-slate-800 bg-slate-900/40 shrink-0">
+        <span className="font-mono text-[11px] text-slate-400 truncate flex-1">{tab.relPath}</span>
+        <div className="flex rounded overflow-hidden border border-slate-700 text-[10px] font-mono">
+          <button
+            className={`px-2 py-0.5 ${
+              tab.view === "source"
+                ? "bg-slate-700 text-slate-100"
+                : "text-slate-500 hover:text-slate-300"
+            }`}
+            onClick={() => setView(tab.id, "source")}
+          >
+            source
+          </button>
+          <button
+            className={`px-2 py-0.5 ${
+              tab.view === "triefact"
+                ? "bg-indigo-500/30 text-indigo-200"
+                : "text-slate-500 hover:text-slate-300"
+            }`}
+            onClick={() => setView(tab.id, "triefact")}
+          >
+            triefact
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 min-h-0">
+        {tab.view === "source" ? (
+          <SourceView
+            relPath={tab.relPath}
+            focusLine={pendingLine}
+            onFocusConsumed={() => setPendingLine(undefined)}
+          />
+        ) : (
+          <TriefactView
+            relPath={tab.relPath}
+            focusQname={tab.pendingFocusQname}
+            onFocusConsumed={() => clearPendingFocus(tab.id)}
+            onOpenSource={(line) => {
+              setPendingLine(line)
+              setView(tab.id, "source")
+            }}
+            onRevealInGraph={(qname) => {
+              focusFile(tab.relPath)
+              selectNode(qname)
+              activate(GRAPH_TAB_ID)
+            }}
+          />
+        )}
+      </div>
+    </div>
+  )
+}

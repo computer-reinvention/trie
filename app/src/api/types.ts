@@ -138,6 +138,62 @@ export interface SymbolsByFileResult {
   symbols: SymbolHit[]
 }
 
+// File triefact — full triefact document for one source file.
+// Mirrors TrieTools.file_triefact() in trie/mcp_server.py.
+export interface TriefactSection {
+  qname: string
+  kind: string
+  role: string
+  body: string
+  one_liner: string
+  fingerprint: string
+  body_fingerprint: string
+  start_line: number
+  end_line: number
+}
+
+export interface FileTriefactResult {
+  file_path: string
+  triefact_path: string
+  exists: boolean
+  front_matter: Record<string, unknown>
+  sections: TriefactSection[]
+}
+
+// File source — raw source text for the editor source view.
+// Mirrors the /desktop/graph/file-source endpoint.
+export interface FileSourceResult {
+  path: string
+  type: "text" | "binary" | "image" | "patch"
+  content: string
+}
+
+// Live activity — writer status + working-tree stale set.
+// Mirrors TrieTools.activity() in trie/mcp_server.py.
+export interface ActivityStatus {
+  state: "idle" | "scanning" | "syncing" | "refreshing" | "error"
+  op: string
+  pid: number
+  is_active: boolean
+  current_file: string | null
+  done: number
+  total: number
+  error: string | null
+  updated_at: number
+}
+
+export interface ActivityPending {
+  count: number
+  stale: string[]
+  head: string
+  computed_at: number
+}
+
+export interface ActivityResult {
+  status: ActivityStatus
+  pending: ActivityPending | null
+}
+
 // Desktop SSE event types
 export interface DesktopEvent {
   id: string
