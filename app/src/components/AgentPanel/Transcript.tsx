@@ -149,7 +149,7 @@ function PartView({
     const t = part as TextPart
     if (!t.text.trim()) return null
     return (
-      <div className="prose prose-sm prose-invert max-w-none text-sm">
+      <div className="md">
         <ReactMarkdown>{t.text}</ReactMarkdown>
       </div>
     )

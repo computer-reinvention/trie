@@ -76,7 +76,7 @@ function SectionCard({
           </button>
         )}
       </div>
-      <div className="px-3 py-2 prose prose-sm prose-invert max-w-none text-xs">
+      <div className="px-3 py-2 md md-sm">
         {section.body ? (
           <ReactMarkdown>{section.body}</ReactMarkdown>
         ) : (
