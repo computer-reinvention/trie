@@ -121,6 +121,27 @@ body {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
 }
 
+/* Lockstep pulse — chat tool-rows / patch rows breathe while their symbol is
+   live on the graph (docs/choreography-prd.md §3). Reduced-motion disables it. */
+@keyframes trie-pulse-bar {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.trie-pulse {
+  animation: trie-pulse-bar 0.9s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .trie-pulse {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 /* ---------------------------------------------------------------------------
    Rendered markdown (chat responses, triefact prose, inspector). The Tailwind
    typography plugin is not installed; this gives comfortable, dark-theme
