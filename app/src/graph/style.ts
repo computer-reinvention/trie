@@ -86,12 +86,35 @@ export function classMarker(cls: NodeClass, color: string): ClassMarker {
   }
 }
 
-// Agent-activity colors (live monitor).
+// Agent-activity colors (live monitor) — CVD-safe, soft dark-theme glows.
+// See docs/choreography-prd.md §1.2.
 export const ACTIVITY = {
-  read: "#3b82f6", // cool blue breath (read / explain / trace target)
-  write: "#f59e0b", // urgent amber (patch / write / edit)
-  scan: "#8b5cf6", // violet (grep hit — the agent is searching/scanning)
+  read: "#3b82f6", // blue — read / explain / trace target
+  scan: "#2dd4bf", // teal — grep / search
+  write: "#f59e0b", // amber — write / edit
+  patch: "#fb923c", // orange — staged patch
+  cascade: "#a78bfa", // violet — cascade wavefront
+  stale: "#94a3b8", // slate — stale
+  error: "#f43f5e", // rose — error
   heat: "#ef4444", // residual edit warmth
+}
+
+// Map an agent state to its activity color.
+export function activityColor(state: string): string {
+  switch (state) {
+    case "writing":
+      return ACTIVITY.write
+    case "scanning":
+      return ACTIVITY.scan
+    case "cascade":
+      return ACTIVITY.cascade
+    case "stale":
+      return ACTIVITY.stale
+    case "error":
+      return ACTIVITY.error
+    default:
+      return ACTIVITY.read
+  }
 }
 
 // Aggregate "+N" bubble styling.

@@ -314,6 +314,55 @@ class TrieTools:
             "pending_patch_count": detail.pending_patch_count if detail else 1,
         }
 
+    def blast_radius(self, qname: str) -> dict[str, Any]:
+        """Compute the cascade blast radius of editing `qname` — free graph math.
+
+        Resolves the symbol's file and reuses the mature `compute_cascade` walk to
+        find every symbol whose triefact would be regenerated if `qname` changed,
+        with each one's BFS hop distance from the seed (so the desktop can animate
+        the cascade as a staggered wavefront).
+
+        Returns {qname, file, direct, cascade:[{qname, hop, file}], cascade_count,
+        hubs_stopped_at}. LLM-free.
+        """
+        from trie.sync.cascade import compute_cascade
+
+        detail = self.store.get_symbol_detail(qname)
+        if detail is None:
+            return _error(
+                "not_found",
+                f"Symbol {qname!r} not found in the graph.",
+                "Use grep({'name_contains': '...'}) to find the exact qname.",
+            )
+        file_path = detail.file_path
+        result = compute_cascade(
+            changed_files=[file_path],
+            store=self.store,
+            depth=2,
+            hub_threshold=self.config.cascade.hub_symbol_threshold,
+        )
+        cascade = [
+            {
+                "qname": qn,
+                "hop": result.hop_by_qname.get(qn, 1),
+                "file": result.file_by_cascaded_qname.get(qn, ""),
+            }
+            for qn in sorted(
+                result.cascaded_qnames,
+                key=lambda q: (result.hop_by_qname.get(q, 99), q),
+            )
+        ]
+        # "direct" = symbols reached at hop 1 (immediate callers across the file).
+        direct = sum(1 for c in cascade if c["hop"] <= 1)
+        return {
+            "qname": qname,
+            "file": file_path,
+            "direct": direct,
+            "cascade": cascade,
+            "cascade_count": len(cascade),
+            "hubs_stopped_at": [],
+        }
+
     def patch_drop(
         self,
         qname: str | None = None,
@@ -2209,6 +2258,7 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     server.tool(name="symbols_by_file")(tools.symbols_by_file)
     server.tool(name="file_triefact")(tools.file_triefact)
     server.tool(name="activity")(tools.activity)
+    server.tool(name="blast_radius")(tools.blast_radius)
     server.tool(name="all_symbols")(tools.all_symbols)
     server.tool(name="all_edges")(tools.all_edges)
     server.tool(name="system_model")(tools.system_model)

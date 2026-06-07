@@ -91,11 +91,36 @@ export function AgentActivityCards({ fgRef, componentPos, width, height }: Cards
     state: AgentState
     fade: number
   }> = []
+  // Off-screen homing chevrons (docs/choreography-prd.md §4): point to activity
+  // outside the viewport so a flare across the canvas is never missed.
+  const chevrons: Array<{
+    key: string
+    left: number
+    top: number
+    angle: number
+    color: string
+    fade: number
+    gx: number
+    gy: number
+  }> = []
   for (const [group, arr] of byGroup.entries()) {
     const gp = componentPos.get(group)
     if (!gp) continue
     const s = fg.graph2ScreenCoords(gp.x, gp.y)
-    if (s.x < -50 || s.y < -50 || s.x > width + 50 || s.y > height + 50) continue
+    const off = s.x < 0 || s.y < 0 || s.x > width || s.y > height
+    if (off) {
+      const latest = arr.sort((a, b) => b.ts - a.ts)[0]
+      const age = now - latest.ts
+      const fade = age < NOTE_TTL - NOTE_FADE ? 1 : Math.max(0, (NOTE_TTL - age) / NOTE_FADE)
+      const m = 22
+      const cx = width / 2
+      const cy = height / 2
+      const angle = Math.atan2(s.y - cy, s.x - cx)
+      const left = Math.max(m, Math.min(width - m, s.x))
+      const top = Math.max(m, Math.min(height - m, s.y))
+      chevrons.push({ key: group, left, top, angle, color: actionColor(latest.state), fade, gx: gp.x, gy: gp.y })
+      continue
+    }
     const recent = arr.sort((a, b) => b.ts - a.ts).slice(0, STACK_MAX)
     recent.forEach((note, i) => {
       const age = now - note.ts
@@ -114,10 +139,36 @@ export function AgentActivityCards({ fgRef, componentPos, width, height }: Cards
     })
   }
 
-  if (cards.length === 0) return null
+  if (cards.length === 0 && chevrons.length === 0) return null
 
   return (
     <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+      {chevrons.map((ch) => (
+        <button
+          key={`chev-${ch.key}`}
+          className="absolute pointer-events-auto"
+          style={{
+            left: ch.left,
+            top: ch.top,
+            transform: "translate(-50%, -50%)",
+            opacity: ch.fade,
+          }}
+          title="Agent active off-screen — click to follow"
+          onClick={() => fg.centerAt?.(ch.gx, ch.gy, 700)}
+        >
+          <div
+            style={{
+              width: 0,
+              height: 0,
+              transform: `rotate(${ch.angle}rad)`,
+              borderTop: "7px solid transparent",
+              borderBottom: "7px solid transparent",
+              borderLeft: `12px solid ${ch.color}`,
+              filter: `drop-shadow(0 0 5px ${ch.color})`,
+            }}
+          />
+        </button>
+      ))}
       {cards.map((c) => {
         const col = actionColor(c.state)
         return (

@@ -2,7 +2,20 @@ import { useState } from "react"
 import { opencodeClient } from "@/api/opencodeClient"
 import { useGraphStore } from "@/store/graphStore"
 import { useTabsStore, GRAPH_TAB_ID } from "@/store/tabsStore"
+import { ACTIVITY } from "@/graph/style"
 import type { ToolPart, PermissionRequest, PermissionReply } from "@/api/types"
+
+// Lockstep color: the same intent hue the graph uses for this tool, so the chat
+// row and the graph node read as one event (docs/choreography-prd.md §3).
+function intentColor(tool: string): string {
+  const t = tool.startsWith("trie_") ? tool.slice(5) : tool
+  if (t.startsWith("grep")) return ACTIVITY.scan
+  if (t === "patch" || t === "patch_apply") return ACTIVITY.patch
+  if (t === "write" || t === "edit" || t === "write_file" || t === "str_replace_editor")
+    return ACTIVITY.write
+  if (t.startsWith("read") || t.startsWith("explain") || t.startsWith("trace")) return ACTIVITY.read
+  return "#475569"
+}
 
 // A single tool invocation in the transcript: name, a short input summary, a
 // status glyph, and (collapsible) the raw input/output. When a permission
@@ -62,7 +75,10 @@ export function ToolRow({
   }
 
   return (
-    <div className="rounded border border-slate-800 bg-slate-900/40 text-xs">
+    <div
+      className="rounded border border-slate-800 bg-slate-900/40 text-xs overflow-hidden"
+      style={{ borderLeft: `2px solid ${intentColor(part.tool)}` }}
+    >
       <button
         className="w-full flex items-center gap-2 px-2 py-1 text-left hover:bg-slate-800/40"
         onClick={() => setOpen((v) => !v)}

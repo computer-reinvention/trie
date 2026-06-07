@@ -3,6 +3,7 @@ import { usePatchesStore } from "@/store/patchesStore"
 import { useGraphStore } from "@/store/graphStore"
 import { useTabsStore, GRAPH_TAB_ID } from "@/store/tabsStore"
 import { usePatches } from "@/hooks/usePatches"
+import { playCascade } from "@/graph/conductor"
 import type { ApplyReport, PatchEntry, PatchKind } from "@/api/types"
 
 // The patch review surface: every symbol with staged edits, its notes, origin,
@@ -37,6 +38,9 @@ export function PatchesPanel() {
 
   const onApply = async () => {
     setReport(null)
+    // play the cascade wavefront for each patched symbol as it applies
+    const staged = patches.map((p) => p.qname)
+    staged.slice(0, 12).forEach((q, i) => setTimeout(() => playCascade(q), i * 120))
     const r = await apply()
     if (r) setReport(r)
   }

@@ -2,7 +2,14 @@
 // and the opencode desktop event protocol.
 
 export type SymbolKind = "function" | "class" | "method" | "constant" | "module"
-export type AgentState = "idle" | "reading" | "writing" | "scanning" | "stale"
+export type AgentState =
+  | "idle"
+  | "reading"
+  | "writing"
+  | "scanning"
+  | "cascade"
+  | "stale"
+  | "error"
 
 export interface SymbolHit {
   qname: string
@@ -331,6 +338,21 @@ export interface PatchNote {
 export interface BlastRadius {
   direct: number
   cascade: number
+  cascade_count: number
+  hubs_stopped_at: string[]
+}
+
+// Full blast-radius result from /desktop/graph/blast-radius (real compute_cascade).
+export interface CascadeImpactNode {
+  qname: string
+  hop: number
+  file: string
+}
+export interface BlastRadiusResult {
+  qname: string
+  file: string
+  direct: number
+  cascade: CascadeImpactNode[]
   cascade_count: number
   hubs_stopped_at: string[]
 }
