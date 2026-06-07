@@ -421,7 +421,20 @@ class TrieTools:
                 )
             client = make_client(self.config.models.edits)
             try:
-                result = apply_patches(self.store, self.config, client, self.root)
+                # apply_patches drives LLM calls via `loop.run_until_complete` on
+                # the CALLING thread (merge_notes / pre-filter run inline, not in
+                # the pool). When invoked from the MCP server that calling thread
+                # IS the asyncio event-loop thread, so run_until_complete raises
+                # "Cannot run the event loop while another loop is running". Run
+                # the whole apply on a dedicated worker thread, which has no
+                # running loop, so the sync-over-async path works. (The CLI path
+                # already runs on a loop-free main thread and is unaffected.)
+                import concurrent.futures
+
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    result = pool.submit(
+                        apply_patches, self.store, self.config, client, self.root
+                    ).result()
             except Exception as exc:
                 return _error("internal", f"patch apply failed: {exc}")
             return result
