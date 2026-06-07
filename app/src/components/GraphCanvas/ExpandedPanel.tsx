@@ -3,15 +3,8 @@ import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d"
 import { forceCollide } from "d3-force"
 import { useGraphStore } from "@/store/graphStore"
 import { usePatchesStore } from "@/store/patchesStore"
-import { depthColor, classMarker, nodeRadius, ACTIVITY } from "@/graph/style"
-import type { AgentState, SystemModelNode } from "@/api/types"
-
-// Colour for an agent state's pulse ring.
-function activityColor(state: AgentState): string {
-  if (state === "writing") return ACTIVITY.write
-  if (state === "scanning") return ACTIVITY.scan
-  return ACTIVITY.read
-}
+import { depthColor, classMarker, nodeRadius, activityColor, ACTIVITY } from "@/graph/style"
+import type { SystemModelNode } from "@/api/types"
 
 // A bounded, scrollable sub-graph panel that opens when a role/subsystem is
 // expanded. It shows the focused group's members as a REAL network (their call

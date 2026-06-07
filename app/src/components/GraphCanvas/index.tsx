@@ -8,7 +8,7 @@ import { useSettingsStore } from "@/store/settingsStore"
 import { usePatchesStore } from "@/store/patchesStore"
 import { openContextMenu } from "@/store/contextMenuStore"
 import { componentView, memberSubgroup } from "@/graph/doi"
-import { nodeRadius, classMarker, ACTIVITY, depthColor } from "@/graph/style"
+import { nodeRadius, classMarker, ACTIVITY, depthColor, activityColor } from "@/graph/style"
 import { GraphAnimator } from "@/graph/animator"
 import { SearchPalette } from "./SearchPalette"
 import { ExpandedPanel } from "./ExpandedPanel"
@@ -267,7 +267,8 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
   // detail. Gated by the "Follow Agent in Graph" setting.
   useEffect(() => {
     if (!lastTouched) return
-    if (!useSettingsStore.getState().get<boolean>("graph.followAgent")) return
+    const camera = useSettingsStore.getState().get<string>("motion.camera") ?? "edge-only"
+    if (camera === "off") return
     const fg = fgRef.current
     if (!fg) return
     const st = useGraphStore.getState()
@@ -278,9 +279,13 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
       | (FGNode & { x?: number; y?: number })
       | undefined
     if (!comp || comp.x == null || comp.y == null) return
-    // Only pan if the component is near the viewport edge / off-screen, so we
-    // don't jiggle the camera for every hop.
     const s = fg.graph2ScreenCoords(comp.x, comp.y)
+    if (camera === "cinematic") {
+      // follow closely (but eased)
+      fg.centerAt(comp.x, comp.y, 700)
+      return
+    }
+    // edge-only: pan only when the target drifts toward the viewport edge.
     const m = 120
     if (s.x < m || s.y < m || s.x > dims.w - m || s.y > dims.h - m) {
       fg.centerAt(comp.x, comp.y, 900)
@@ -704,12 +709,7 @@ function paintNode(
   ctx.globalAlpha = dimmed ? 0.15 : reveal
 
   if (pulse > 0.01 && n.kind === "symbol") {
-    const ringColor =
-      agentState === "writing"
-        ? ACTIVITY.write
-        : agentState === "scanning"
-          ? ACTIVITY.scan
-          : ACTIVITY.read
+    const ringColor = activityColor(agentState)
     ctx.beginPath()
     ctx.arc(n.x, n.y, r + (4 + 18 * (1 - pulse)) / globalScale, 0, 2 * Math.PI)
     ctx.strokeStyle = ringColor

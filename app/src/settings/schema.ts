@@ -125,13 +125,46 @@ export const SETTINGS: SettingDef[] = [
     step: 25,
   },
   {
-    id: "graph.followAgent",
-    title: "Follow Agent in Graph",
+    id: "motion.intensity",
+    title: "Choreography Intensity",
     description:
-      "Automatically expand and centre the symbol the agent is reading or editing as it works.",
+      "How expressive the live agent animations are. Cinematic = full motion (governed); Restrained = subtle; Off = static color only.",
     category: "Graph",
-    type: "boolean",
-    default: true,
+    type: "enum",
+    default: "cinematic",
+    enum: [
+      { value: "cinematic", label: "Cinematic" },
+      { value: "restrained", label: "Restrained" },
+      { value: "off", label: "Off" },
+    ],
+  },
+  {
+    id: "motion.camera",
+    title: "Camera Follow",
+    description:
+      "How the camera tracks agent activity. Edge-only pans only when the target drifts off-screen; Cinematic follows closely; Off never moves.",
+    category: "Graph",
+    type: "enum",
+    default: "edge-only",
+    enum: [
+      { value: "edge-only", label: "Edge-only" },
+      { value: "cinematic", label: "Cinematic" },
+      { value: "off", label: "Off" },
+    ],
+  },
+  {
+    id: "motion.reducedMotion",
+    title: "Reduced Motion",
+    description:
+      "Auto honors your system setting (keeps color cues, drops movement). Force-on always reduces; Force-off keeps full motion regardless of the OS.",
+    category: "Graph",
+    type: "enum",
+    default: "auto",
+    enum: [
+      { value: "auto", label: "Auto (follow system)" },
+      { value: "force-on", label: "Always reduce" },
+      { value: "force-off", label: "Always full motion" },
+    ],
   },
 
   // ── Agent ───────────────────────────────────────────────────────────────

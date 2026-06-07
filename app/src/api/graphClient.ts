@@ -14,6 +14,7 @@ import type {
   ActivityResult,
   PatchList,
   ApplyReport,
+  BlastRadiusResult,
 } from "./types"
 
 let baseUrl = ""
@@ -120,5 +121,10 @@ export const graphClient = {
   // Apply all pending patches → ApplyReport.
   patchApply(): Promise<ApplyReport> {
     return post("/desktop/graph/patch-apply", {})
+  },
+
+  // Cascade impact (with hop distances) of editing a symbol.
+  blastRadius(qname: string): Promise<BlastRadiusResult> {
+    return get("/desktop/graph/blast-radius", { qname })
   },
 }

@@ -2,6 +2,8 @@ import { useEffect } from "react"
 import { useGraphStore } from "@/store/graphStore"
 import { useAgentStore } from "@/store/agentStore"
 import { choreographFor } from "@/graph/agentChoreography"
+import { motionPrefs, playCascade, ghostCascade } from "@/graph/conductor"
+import { usePatchesStore } from "@/store/patchesStore"
 import type { ToolPart } from "@/api/types"
 
 // Bridges the opencode event bus (the general /event SSE stream) to the
@@ -84,7 +86,7 @@ export function useOpenCodeSSE(opencodePort: number): void {
       const g = graph()
       const c = choreographFor(part)
       // edges connecting prior attention to this step (before pushing new trail)
-      animateConnections([...c.reads, ...c.scans, ...c.writes])
+      if (!motionPrefs().reduceMotion) animateConnections([...c.reads, ...c.scans, ...c.writes])
       for (const q of c.reads) {
         g.setNodeAgentState(q, "reading")
         g.bumpActivity(q, 0.85)
@@ -105,12 +107,26 @@ export function useOpenCodeSSE(opencodePort: number): void {
         g.setNote(q, noteFor(q, part), "writing")
       }
       for (const f of c.files) g.setFileAgentState(f, "writing")
-      // explicit trace/flow edges still animate as before
-      c.flows.slice(0, 40).forEach((e, i) => setTimeout(() => g.flowAlong(e.from, e.to), i * 160))
+      // explicit trace/flow edges animate as comets — unless reduced-motion.
+      if (!motionPrefs().reduceMotion) {
+        c.flows.slice(0, 40).forEach((e, i) => setTimeout(() => g.flowAlong(e.from, e.to), i * 160))
+      }
       if (part.state.status === "completed" || part.state.status === "error") {
         const settle = [...c.reads, ...c.scans]
         setTimeout(() => settle.forEach((q) => g.setNodeAgentState(q, "idle")), 900)
         for (const f of c.files) g.setFileAgentState(f, "stale")
+      }
+
+      // --- patch / cascade choreography (real compute_cascade) ---
+      const tool = part.tool.startsWith("trie_") ? part.tool.slice(5) : part.tool
+      const input = part.state.input ?? {}
+      if (tool === "patch" && part.state.status === "completed" && typeof input.qname === "string") {
+        ghostCascade(input.qname) // faint preview of the blast radius
+      }
+      if (tool === "patch_apply" && part.state.status === "running") {
+        // play the wavefront for every symbol that had a staged patch
+        const staged = [...usePatchesStore.getState().patchedQnames]
+        staged.slice(0, 12).forEach((q, i) => setTimeout(() => playCascade(q), i * 120))
       }
     }
 
