@@ -13,6 +13,8 @@ import { GraphAnimator } from "@/graph/animator"
 import { SearchPalette } from "./SearchPalette"
 import { ExpandedPanel } from "./ExpandedPanel"
 import { AgentActivityCards } from "./AgentActivityCards"
+import { ChoreographyOverlay } from "./ChoreographyOverlay"
+import { useConductor, replayTurn } from "@/graph/conductor"
 import type { SystemModelNode } from "@/api/types"
 
 interface GraphCanvasProps {
@@ -511,7 +513,9 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
         </div>
       )}
       <SearchPalette />
+      <ReplayControl />
       <ExpandedPanel anchor={anchor} />
+      <ChoreographyOverlay fgRef={fgRef} componentPos={componentPos} width={dims.w} height={dims.h} />
       <AgentActivityCards fgRef={fgRef} componentPos={componentPos} width={dims.w} height={dims.h} />
       {data.nodes.length > 0 && (
         <ForceGraph2D
@@ -678,6 +682,23 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
         </div>
       )}
     </div>
+  )
+}
+
+// Replay transport — re-plays the recorded choreography of the last turn.
+function ReplayControl() {
+  const count = useConductor((s) => s.cueLog.length)
+  const replaying = useConductor((s) => s.replaying)
+  if (count === 0) return null
+  return (
+    <button
+      className="absolute top-3 right-3 z-30 rounded-md border border-slate-700 bg-slate-900/90 px-2.5 py-1 text-xs text-slate-300 hover:bg-slate-800 hover:text-slate-100 disabled:opacity-50"
+      onClick={() => replayTurn()}
+      disabled={replaying}
+      title="Replay the agent's last turn"
+    >
+      {replaying ? "▶ replaying…" : "↻ replay turn"}
+    </button>
   )
 }
 

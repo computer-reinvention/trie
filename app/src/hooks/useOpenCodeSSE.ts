@@ -2,7 +2,7 @@ import { useEffect } from "react"
 import { useGraphStore } from "@/store/graphStore"
 import { useAgentStore } from "@/store/agentStore"
 import { choreographFor } from "@/graph/agentChoreography"
-import { motionPrefs, playCascade, ghostCascade } from "@/graph/conductor"
+import { motionPrefs, playCascade, ghostCascade, conductGlance } from "@/graph/conductor"
 import { usePatchesStore } from "@/store/patchesStore"
 import type { ToolPart } from "@/api/types"
 
@@ -92,6 +92,7 @@ export function useOpenCodeSSE(opencodePort: number): void {
         g.bumpActivity(q, 0.85)
         g.pushTrail(q, "reading")
         g.setNote(q, noteFor(q, part), "reading")
+        conductGlance(q, "reading")
       }
       for (const q of c.scans) {
         g.setNodeAgentState(q, "scanning")
@@ -105,6 +106,7 @@ export function useOpenCodeSSE(opencodePort: number): void {
         g.bumpActivity(q, 1)
         g.pushTrail(q, "writing")
         g.setNote(q, noteFor(q, part), "writing")
+        conductGlance(q, "writing")
       }
       for (const f of c.files) g.setFileAgentState(f, "writing")
       // explicit trace/flow edges animate as comets — unless reduced-motion.
