@@ -1,5 +1,6 @@
-import { useTabsStore, GRAPH_TAB_ID, type Tab } from "@/store/tabsStore"
+import { useTabsStore, GRAPH_TAB_ID, PATCHES_TAB_ID, type Tab } from "@/store/tabsStore"
 import { useGraphStore } from "@/store/graphStore"
+import { usePatchesStore } from "@/store/patchesStore"
 import { openContextMenu } from "@/store/contextMenuStore"
 
 // The tab strip across the top of the editor area. Tab #1 is the graph
@@ -25,6 +26,31 @@ function CloseIcon() {
   )
 }
 
+function PatchesTabButton({
+  base,
+  tone,
+  onClick,
+}: {
+  base: string
+  tone: string
+  onClick: () => void
+}) {
+  const count = usePatchesStore((s) => s.patches.length)
+  const applying = usePatchesStore((s) => s.applyInProgress)
+  return (
+    <div className={`${base} ${tone}`} onClick={onClick} title="Pending patches">
+      <span>patches</span>
+      {applying ? (
+        <span className="w-2.5 h-2.5 border-2 border-slate-600 border-t-amber-400 rounded-full animate-spin" />
+      ) : count > 0 ? (
+        <span className="rounded-full bg-amber-500/25 text-amber-300 text-[10px] px-1.5 leading-4 min-w-4 text-center">
+          {count}
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
 function TabButton({ tab, active }: { tab: Tab; active: boolean }) {
   const { activate, close, toggleView, setView, tabs } = useTabsStore()
   const revealFile = useGraphStore((s) => s.revealFile)
@@ -42,6 +68,10 @@ function TabButton({ tab, active }: { tab: Tab; active: boolean }) {
         <span>graph</span>
       </div>
     )
+  }
+
+  if (tab.kind === "patches") {
+    return <PatchesTabButton base={base} tone={tone} onClick={() => activate(PATCHES_TAB_ID)} />
   }
 
   return (

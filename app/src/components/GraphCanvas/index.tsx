@@ -5,6 +5,7 @@ import { useGraphStore } from "@/store/graphStore"
 import { useAppStore } from "@/store/appStore"
 import { useTabsStore } from "@/store/tabsStore"
 import { useSettingsStore } from "@/store/settingsStore"
+import { usePatchesStore } from "@/store/patchesStore"
 import { openContextMenu } from "@/store/contextMenuStore"
 import { componentView, memberSubgroup } from "@/graph/doi"
 import { nodeRadius, classMarker, ACTIVITY, depthColor } from "@/graph/style"
@@ -98,6 +99,8 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
   // groups (role/subsystem) containing a symbol the agent touched THIS turn —
   // persists until the next turn so the component bubble stays marked.
   const touchedGroupsRef = useRef<Set<string>>(new Set())
+  // count of symbols with pending patches per group, for the bubble pip.
+  const patchedGroupCountRef = useRef<Map<string, number>>(new Map())
   // live screen position of the focused role node, so the sub-graph panel can
   // anchor to it (act like a graph node, panning/zooming with the canvas).
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null)
@@ -328,6 +331,22 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hoveredId, notes, axis, componentPos, nodesByQname])
 
+  // Pending-patch symbols inside the hovered component bubble — explained in the
+  // hover tooltip so it's clear the subsystem holds staged edits.
+  const patchEntries = usePatchesStore((s) => s.patches)
+  const hoveredGroupPatches = useMemo(() => {
+    if (!hoveredId || !componentPos.has(hoveredId)) return []
+    const out: Array<{ qname: string; name: string; count: number; origin: string }> = []
+    for (const p of patchEntries) {
+      const node = nodesByQname.get(p.qname)
+      if (!node) continue
+      const g = axis === "role" ? node.role || "untagged" : node.subsystem
+      if (g === hoveredId) out.push({ qname: p.qname, name: node.name, count: p.count, origin: p.origin })
+    }
+    return out.slice(0, 8)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hoveredId, patchEntries, axis, componentPos, nodesByQname])
+
   const maxWeight = useMemo(() => Math.max(1, ...data.links.map((l) => l.weight)), [data.links])
   const anyExpanded = focusedExpansion !== null || pinnedExpansions.size > 0
 
@@ -409,34 +428,55 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
         setMouse({ x: e.clientX - r.left, y: e.clientY - r.top })
       }}
     >
-      {hoveredGroupNotes.length > 0 && (
+      {(hoveredGroupNotes.length > 0 || hoveredGroupPatches.length > 0) && (
         <div
           className="absolute z-30 pointer-events-none max-w-[300px] rounded-md border border-slate-600 bg-slate-950/95 shadow-xl px-2.5 py-2"
           style={{
             left: Math.min(mouse.x + 14, (dims.w || 600) - 310),
-            top: Math.min(mouse.y + 14, (dims.h || 400) - 12 - hoveredGroupNotes.length * 42),
+            top: Math.min(mouse.y + 14, (dims.h || 400) - 24 - (hoveredGroupNotes.length + hoveredGroupPatches.length) * 40),
           }}
         >
-          <p className="text-[10px] uppercase tracking-wide text-slate-500 mb-1">
-            agent touched here
-          </p>
-          <div className="space-y-1.5">
-            {hoveredGroupNotes.map((n) => {
-              const col =
-                n.state === "writing" ? ACTIVITY.write : n.state === "scanning" ? ACTIVITY.scan : ACTIVITY.read
-              return (
-                <div key={n.qname}>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: col }} />
-                    <span className="text-[11px] font-mono text-slate-200 truncate">{n.name}</span>
+          {hoveredGroupPatches.length > 0 && (
+            <div className={hoveredGroupNotes.length > 0 ? "mb-2 pb-2 border-b border-slate-800" : ""}>
+              <p className="text-[10px] uppercase tracking-wide text-amber-400/90 mb-1 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                {hoveredGroupPatches.length} pending patch
+                {hoveredGroupPatches.length !== 1 ? "es" : ""} in this {axis}
+              </p>
+              <div className="space-y-0.5">
+                {hoveredGroupPatches.map((p) => (
+                  <div key={p.qname} className="flex items-center gap-1.5">
+                    <span className="text-amber-300/80 text-[10px]">✎</span>
+                    <span className="text-[11px] font-mono text-slate-200 truncate">{p.name}</span>
+                    {p.count > 1 && <span className="text-[9px] text-slate-500">×{p.count}</span>}
+                    <span className="text-[9px] text-slate-500">{p.origin}</span>
                   </div>
-                  {n.text && (
-                    <p className="text-[11px] text-slate-400 leading-snug line-clamp-2 pl-3">{n.text}</p>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {hoveredGroupNotes.length > 0 && (
+            <>
+              <p className="text-[10px] uppercase tracking-wide text-slate-500 mb-1">agent touched here</p>
+              <div className="space-y-1.5">
+                {hoveredGroupNotes.map((n) => {
+                  const col =
+                    n.state === "writing" ? ACTIVITY.write : n.state === "scanning" ? ACTIVITY.scan : ACTIVITY.read
+                  return (
+                    <div key={n.qname}>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: col }} />
+                        <span className="text-[11px] font-mono text-slate-200 truncate">{n.name}</span>
+                      </div>
+                      {n.text && (
+                        <p className="text-[11px] text-slate-400 leading-snug line-clamp-2 pl-3">{n.text}</p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          )}
         </div>
       )}
       {anyExpanded && (
@@ -504,6 +544,18 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
                 const node = st.nodesByQname.get(qn)
                 if (!node) continue
                 touchedGroups.add(axis === "role" ? node.role || "untagged" : node.subsystem)
+              }
+            }
+            // pending-patch count per group, for the component-bubble pip
+            const patchedGroupCount = patchedGroupCountRef.current
+            patchedGroupCount.clear()
+            const patched = usePatchesStore.getState().patchedQnames
+            if (patched.size) {
+              for (const qn of patched) {
+                const node = st.nodesByQname.get(qn)
+                if (!node) continue
+                const g = axis === "role" ? node.role || "untagged" : node.subsystem
+                patchedGroupCount.set(g, (patchedGroupCount.get(g) ?? 0) + 1)
               }
             }
             for (const fgn of data.nodes) {
@@ -596,6 +648,7 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
               // symbol labels only show on demand: hovered, selected, or active
               showLabel: hovered || n.id === selectedQname || active,
               touchedGroup: n.kind === "component" && touchedGroupsRef.current.has(n.id),
+              patchedCount: n.kind === "component" ? (patchedGroupCountRef.current.get(n.id) ?? 0) : 0,
             })
           }}
           nodePointerAreaPaint={(node, color, ctx) => {
@@ -635,6 +688,7 @@ interface PaintOpts {
   heat: number
   showLabel: boolean
   touchedGroup?: boolean
+  patchedCount?: number
 }
 
 function paintNode(
@@ -643,7 +697,7 @@ function paintNode(
   globalScale: number,
   opts: PaintOpts,
 ): void {
-  const { dimmed, selected, reveal, pulse, emphasis, agentState, heat, showLabel: wantLabel, touchedGroup } = opts
+  const { dimmed, selected, reveal, pulse, emphasis, agentState, heat, showLabel: wantLabel, touchedGroup, patchedCount } = opts
   const scale = (0.4 + 0.6 * reveal) * (1 + 0.25 * emphasis)
   const r = n.val * scale
   ctx.save()
@@ -699,6 +753,24 @@ function paintNode(
   }
 
   if (n.kind === "component") {
+    // PENDING-PATCH ring — an amber halo + dashed ring marks subsystems that
+    // contain symbols with staged edits, so patches are obvious at the L0 map.
+    if (patchedCount && patchedCount > 0) {
+      ctx.beginPath()
+      ctx.arc(n.x, n.y, r + (7 + 4) / globalScale, 0, 2 * Math.PI)
+      ctx.fillStyle = "#f59e0b"
+      ctx.globalAlpha = dimmed ? 0.06 : 0.12
+      ctx.fill()
+      ctx.beginPath()
+      ctx.arc(n.x, n.y, r + 6 / globalScale, 0, 2 * Math.PI)
+      ctx.setLineDash([3 / globalScale, 2 / globalScale])
+      ctx.strokeStyle = "#f59e0b"
+      ctx.globalAlpha = dimmed ? 0.3 : 0.9
+      ctx.lineWidth = 1.75 / globalScale
+      ctx.stroke()
+      ctx.setLineDash([])
+      ctx.globalAlpha = dimmed ? 0.15 : reveal
+    }
     // PERSISTENT "touched this turn" ring — stays after the live pulse fades so
     // it's clear which subsystems the agent used to answer the question.
     if (touchedGroup) {
@@ -753,6 +825,22 @@ function paintNode(
     ctx.font = `${Math.max(8, 9 / globalScale)}px ui-monospace, monospace`
     ctx.fillStyle = "#64748b"
     ctx.fillText(`${n.count}`, n.x, n.y + r + 4 / globalScale + fs * 1.05)
+    // pending-patch pip: amber badge with the count of patched symbols inside.
+    if (patchedCount && patchedCount > 0) {
+      const px = n.x + r * 0.8
+      const py = n.y - r * 0.8
+      const pr = 5 / globalScale
+      ctx.beginPath()
+      ctx.arc(px, py, pr, 0, 2 * Math.PI)
+      ctx.fillStyle = "#f59e0b"
+      ctx.globalAlpha = 1
+      ctx.fill()
+      ctx.fillStyle = "#1e1206"
+      ctx.font = `600 ${Math.max(7, 8 / globalScale)}px ui-sans-serif, system-ui, sans-serif`
+      ctx.textAlign = "center"
+      ctx.textBaseline = "middle"
+      ctx.fillText(`${patchedCount}`, px, py)
+    }
     ctx.restore()
     return
   }
