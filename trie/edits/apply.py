@@ -505,6 +505,15 @@ def apply_patches(
                 "error": f"refresh failed for {fp}: {exc}",
             }
 
+    # Clear the pending patches for everything that was written + refreshed
+    # cleanly, BEFORE the whole-tree verify gate. The patch represents "apply
+    # this edit to this symbol"; once the file is written and its triefact
+    # refreshed, that intent is fulfilled. The global verify can be dirty for
+    # unrelated reasons (other stale files in the tree), and letting it block
+    # patch cleanup left applied patches stuck "pending" forever.
+    for qn in all_qnames:
+        store.delete_patches(qname=qn)
+
     if progress:
         progress.stage("verify — checking project consistency")
     result = check_project(project_root=project_root, config=config)
@@ -519,9 +528,6 @@ def apply_patches(
             "files": file_results,
             "error": f"verify failed: {', '.join(stale[:5])}",
         }
-
-    for qn in all_qnames:
-        store.delete_patches(qname=qn)
 
     if progress:
         progress.stage(
