@@ -2,7 +2,7 @@ import { useState } from "react"
 import { opencodeClient } from "@/api/opencodeClient"
 import { useGraphStore } from "@/store/graphStore"
 import { useTabsStore, GRAPH_TAB_ID } from "@/store/tabsStore"
-import { ACTIVITY } from "@/graph/style"
+import { ACTIVITY, activityColor } from "@/graph/style"
 import type { ToolPart, PermissionRequest, PermissionReply } from "@/api/types"
 
 // Lockstep color: the same intent hue the graph uses for this tool, so the chat
@@ -63,6 +63,21 @@ export function ToolRow({
   const summary = inputSummary(part.tool, part.state.input)
   const name = bareTool(part.tool)
 
+  // Lockstep: pulse the row's accent while its target symbol is live on the graph.
+  const target =
+    (part.state.input?.qname as string) ??
+    (part.state.input?.sym as string) ??
+    (part.state.input?.from_qname as string) ??
+    undefined
+  const liveState = useGraphStore((s) => {
+    if (!target) return ""
+    const r = s.runtime.get(target)
+    if (!r) return ""
+    return r.agentState !== "idle" || r.activity > 0.05 ? r.agentState : ""
+  })
+  const live = liveState !== ""
+  const barColor = live ? activityColor(liveState) : intentColor(part.tool)
+
   // Clicking a symbol-bearing tool reveals it in the graph.
   const reveal = () => {
     const q =
@@ -76,8 +91,11 @@ export function ToolRow({
 
   return (
     <div
-      className="rounded border border-slate-800 bg-slate-900/40 text-xs overflow-hidden"
-      style={{ borderLeft: `2px solid ${intentColor(part.tool)}` }}
+      className={`rounded border border-slate-800 bg-slate-900/40 text-xs overflow-hidden ${live ? "trie-pulse" : ""}`}
+      style={{
+        borderLeft: `${live ? 3 : 2}px solid ${barColor}`,
+        boxShadow: live ? `inset 2px 0 8px -4px ${barColor}` : undefined,
+      }}
     >
       <button
         className="w-full flex items-center gap-2 px-2 py-1 text-left hover:bg-slate-800/40"

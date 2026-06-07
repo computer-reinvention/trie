@@ -4,6 +4,7 @@ import { useGraphStore } from "@/store/graphStore"
 import { useTabsStore, GRAPH_TAB_ID } from "@/store/tabsStore"
 import { usePatches } from "@/hooks/usePatches"
 import { playCascade } from "@/graph/conductor"
+import { activityColor } from "@/graph/style"
 import type { ApplyReport, PatchEntry, PatchKind } from "@/api/types"
 
 // The patch review surface: every symbol with staged edits, its notes, origin,
@@ -126,8 +127,18 @@ function PatchRow({ patch, onDrop }: { patch: PatchEntry; onDrop: () => void }) 
   const kind = KIND_STYLE[patch.kind ?? "modify"]
   const br = patch.blast_radius
   const name = patch.qname.split(":").pop() ?? patch.qname
+  // Lockstep: pulse this row while its symbol is live on the graph (apply/cascade).
+  const liveState = useGraphStore((s) => {
+    const r = s.runtime.get(patch.qname)
+    if (!r) return ""
+    return r.agentState !== "idle" || r.activity > 0.05 ? r.agentState : ""
+  })
+  const live = liveState !== ""
   return (
-    <li className="px-3 py-2">
+    <li
+      className={`px-3 py-2 ${live ? "trie-pulse" : ""}`}
+      style={live ? { boxShadow: `inset 2px 0 10px -5px ${activityColor(liveState)}` } : undefined}
+    >
       <div className="flex items-center gap-2">
         <span className={`rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide ${kind.cls}`}>
           {patch.kind === "rename" && patch.rename_to ? `rename→${patch.rename_to}` : kind.label}
