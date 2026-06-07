@@ -5,7 +5,7 @@
 [![Source available](https://img.shields.io/badge/source-available-blue.svg)](#license)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](#status)
-[![Tests](https://img.shields.io/badge/tests-513%20passing-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/tests-663%20passing-brightgreen.svg)](#)
 
 ---
 
@@ -21,7 +21,6 @@ the agent navigate and edit instead of reading raw diffs.
 
 It's an early work-in-progress, tracked on the
 [**`pg/editor` draft PR (#1)**](https://github.com/computer-reinvention/trie/pull/1).
-**Contributions are welcome** — try it, file issues, or open a PR.
 
 ---
 
@@ -39,6 +38,71 @@ A pre-commit gate (`trie verify`) refuses to merge when the tree drifts. The che
 > **Status:** pre-alpha · v0.1 in active development · not ready for general use.
 
 ---
+
+## Quick start
+
+### Prerequisites
+
+- **Python 3.11+** and [`uv`](https://docs.astral.sh/uv/) on PATH.
+- **[ripgrep](https://github.com/BurntSushi/ripgrep)** (`rg`) on PATH —
+  trie's MCP server uses it for the `grep` tool's text-match fallback
+  and refuses to start without it. Install with `brew install ripgrep` on macOS,
+  `apt install ripgrep` on Debian/Ubuntu.
+- An Anthropic API key in `ANTHROPIC_API_KEY` (default model is
+  `anthropic/claude-sonnet-4-6`).
+
+```bash
+# 1. Install (pick one)
+uv tool install git+ssh://git@github.com/pankajgarkoti/trie    # persistent, on $PATH
+uvx --from git+ssh://git@github.com/pankajgarkoti/trie trie    # ephemeral, run-anywhere
+
+# 2. Initialise your project
+cd /path/to/your/project
+export ANTHROPIC_API_KEY=...             # default model is anthropic/claude-sonnet-4-6
+trie init                                # writes trie.toml, scans, prompts to run `trie setup` next
+
+# 3. Wire up your agent end-to-end (MCP + turn hook + agent docs + tool overrides)
+trie setup                               # auto-detects opencode / claude-code / cursor / etc.
+
+# 4. Smoke test the LLM path on a single file
+trie sync --file src/some_module.py
+
+# 5. Preview the bootstrap plan + cost (free count_tokens calls, no generation)
+trie plan
+
+# 6. Bootstrap with a guardrail — auto-detected on first run
+trie sync --limit 10                     # top-ranked 10 files
+trie sync --budget 5.00                  # OR spend at most $5
+trie sync                                # OR commit to the full plan
+
+# 7. Day-to-day: incremental cascade
+trie sync                                # re-syncs stale + cascade
+trie sync --dry-run                      # preview unified diffs (makes API calls)
+
+# 8. Drift gate — fast, offline, pre-commit-friendly
+trie verify
+
+# 9. Query the graph from a shell (same envelope as the MCP wire)
+trie grep --name compute_cascade --scope-prefix src/
+trie read src/auth/middleware:require_auth
+trie trace src/graph/store:Store.replace_all_edges --direction callers --depth 2
+```
+
+### Recommended workflow
+
+- **First run:** `trie init` (says yes when it offers to run `trie setup`) → `trie plan`
+  (see the bill) → `trie sync --limit 10` (sample the quality) → review one or two
+  triefacts → `trie sync` to complete the bootstrap.
+- **After every code change:** `trie sync` regenerates exactly the stale sections plus
+  their cascade. Run it before opening a PR so reviewers see the prose change too. (If
+  `trie setup` installed the turn-boundary hook for your agent, the agent runs
+  `trie refresh --after-turn` for you between turns.)
+- **In CI / pre-commit:** `trie verify` only — it's deterministic, offline, and
+  exits non-zero on drift. Never let CI call the LLM path.
+- **For agents:** `trie setup` once. The MCP server is read-only; agents query the
+  graph via MCP (or via `trie grep` / `trie read` / `trie trace` from a shell); only
+  `trie sync` modifies the triefact tree.
+
 
 ## The idea
 
@@ -145,70 +209,6 @@ regen plan:
 A pre-commit gate (`trie verify`) refuses to merge when fingerprints don't match. Drift is a build break, not a TODO. The check is fast and offline — every section sentinel carries two SHA-256 hashes (over the source symbol and over the triefact body) so drift is detected in both directions: source changes that haven't been regenerated, and triefact bodies that were edited or corrupted between sentinels. No LLM in the loop.
 
 The hub-symbol cap matters: a `utils.py` referenced everywhere can't invalidate the world on every edit. trie skips cascade through symbols with more than ~20 inbound references by default, configurable per project.
-
-## Quick start
-
-### Prerequisites
-
-- **Python 3.11+** and [`uv`](https://docs.astral.sh/uv/) on PATH.
-- **[ripgrep](https://github.com/BurntSushi/ripgrep)** (`rg`) on PATH —
-  trie's MCP server uses it for the `grep` tool's text-match fallback
-  and refuses to start without it. Install with `brew install ripgrep` on macOS,
-  `apt install ripgrep` on Debian/Ubuntu.
-- An Anthropic API key in `ANTHROPIC_API_KEY` (default model is
-  `anthropic/claude-sonnet-4-6`).
-
-```bash
-# 1. Install (pick one)
-uv tool install git+ssh://git@github.com/pankajgarkoti/trie    # persistent, on $PATH
-uvx --from git+ssh://git@github.com/pankajgarkoti/trie trie    # ephemeral, run-anywhere
-
-# 2. Initialise your project
-cd /path/to/your/project
-export ANTHROPIC_API_KEY=...             # default model is anthropic/claude-sonnet-4-6
-trie init                                # writes trie.toml, scans, prompts to run `trie setup` next
-
-# 3. Wire up your agent end-to-end (MCP + turn hook + agent docs + tool overrides)
-trie setup                               # auto-detects opencode / claude-code / cursor / etc.
-
-# 4. Smoke test the LLM path on a single file
-trie sync --file src/some_module.py
-
-# 5. Preview the bootstrap plan + cost (free count_tokens calls, no generation)
-trie plan
-
-# 6. Bootstrap with a guardrail — auto-detected on first run
-trie sync --limit 10                     # top-ranked 10 files
-trie sync --budget 5.00                  # OR spend at most $5
-trie sync                                # OR commit to the full plan
-
-# 7. Day-to-day: incremental cascade
-trie sync                                # re-syncs stale + cascade
-trie sync --dry-run                      # preview unified diffs (makes API calls)
-
-# 8. Drift gate — fast, offline, pre-commit-friendly
-trie verify
-
-# 9. Query the graph from a shell (same envelope as the MCP wire)
-trie grep --name compute_cascade --scope-prefix src/
-trie read src/auth/middleware:require_auth
-trie trace src/graph/store:Store.replace_all_edges --direction callers --depth 2
-```
-
-### Recommended workflow
-
-- **First run:** `trie init` (says yes when it offers to run `trie setup`) → `trie plan`
-  (see the bill) → `trie sync --limit 10` (sample the quality) → review one or two
-  triefacts → `trie sync` to complete the bootstrap.
-- **After every code change:** `trie sync` regenerates exactly the stale sections plus
-  their cascade. Run it before opening a PR so reviewers see the prose change too. (If
-  `trie setup` installed the turn-boundary hook for your agent, the agent runs
-  `trie refresh --after-turn` for you between turns.)
-- **In CI / pre-commit:** `trie verify` only — it's deterministic, offline, and
-  exits non-zero on drift. Never let CI call the LLM path.
-- **For agents:** `trie setup` once. The MCP server is read-only; agents query the
-  graph via MCP (or via `trie grep` / `trie read` / `trie trace` from a shell); only
-  `trie sync` modifies the triefact tree.
 
 ## Golden example
 
@@ -464,6 +464,7 @@ Hand-written prose between sentinels is still indexed by GitHub's search; only t
 - **M10** ✓ — symbol-set expansion: `constant` (module-level `NAME = value`) and `module` (synthetic per-file behaviour) symbol kinds, so triefacts cover what files *do* at import time, not just their helper functions
 - **M11** ✓ — telemetry split: per-call `cli_call` and `mcp_call` events with surface-aware audit aggregation, including a `mode` breakdown for the `read` override (qname / triefact / source / show_source)
 - **M12** ✓ — agent-surface trim: the `read` override's full mode strips trie's internal frontmatter (`trie_version`, `file_fingerprint`, `last_synced_at`, `source`) and every section sentinel (with their fingerprints) before handing the triefact to the agent. Mirrored in `trie.sync.writer.render_for_agent` for the Python side. Agents see prose; machinery stays out of context
+- **Desktop (in progress)** — native macOS graph-view editor: live system graph, embedded coding agent with real-time graph choreography, source/triefact tabs, multi-session chat, and a patch-review surface. Tracked on the [`pg/editor` draft PR (#1)](https://github.com/computer-reinvention/trie/pull/1).
 - **v0.2** — SCIP precision (replace tree-sitter heuristic with `scip-python` for type-aware references), TypeScript support, vector-over-triefacts retrieval, `trie watch` daemon, rename detection in reconcile
 
 ## License
