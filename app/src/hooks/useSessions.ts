@@ -3,6 +3,7 @@ import { opencodeClient } from "@/api/opencodeClient"
 import { useAgentStore } from "@/store/agentStore"
 import { useAppStore } from "@/store/appStore"
 import { useGraphStore } from "@/store/graphStore"
+import { useConductor } from "@/graph/conductor"
 import { isDefaultTitle } from "@/lib/sessionTitle"
 
 // Orchestrates opencode sessions for the agent panel:
@@ -113,8 +114,9 @@ export function useSessions() {
     async (text: string) => {
       const id = store.getState().activeId
       if (!id) return
-      // New turn → reset the graph activity trail/notes so cards start fresh.
+      // New turn → reset the graph activity trail/notes + choreography FX/cues.
       useGraphStore.getState().clearTrail()
+      useConductor.getState().clearTurn()
       store.getState().appendLocalUser(id, text)
       await opencodeClient.sendMessage(id, text)
     },
