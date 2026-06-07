@@ -219,7 +219,7 @@ export async function playCascade(qname: string): Promise<void> {
   const g = useGraphStore.getState()
   const c = useConductor.getState()
   g.setNodeAgentState(qname, "writing")
-  g.bumpActivity(qname, 1)
+  if (!prefs.reduceMotion) g.bumpActivity(qname, 1) // pulse is movement
   g.pushTrail(qname, "writing")
   c.emitRipple(qname, "writing")
   c.record({ kind: "write", to: qname, state: "writing" })
@@ -248,7 +248,7 @@ export async function playCascade(qname: string): Promise<void> {
       const cc = useConductor.getState()
       for (const q of byHop.get(hop) ?? []) {
         cur.setNodeAgentState(q, "cascade")
-        cur.bumpActivity(q, 0.7)
+        cur.bumpActivity(q, 0.7) // reached only when !reduceMotion (guarded above)
         cur.pushTrail(q, "cascade")
         cur.setNote(q, `cascade (hop ${hop}) · ${qname.split(":").pop()} changed`, "cascade")
         cc.emitRipple(q, "cascade")
