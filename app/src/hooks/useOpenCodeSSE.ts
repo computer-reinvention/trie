@@ -1,8 +1,6 @@
-import { useEffect, useRef } from "react"
+import { useEffect } from "react"
 import { useGraphStore } from "@/store/graphStore"
 import { useAgentStore } from "@/store/agentStore"
-import { useTabsStore, GRAPH_TAB_ID } from "@/store/tabsStore"
-import { useSettingsStore } from "@/store/settingsStore"
 import { choreographFor } from "@/graph/agentChoreography"
 import type { ToolPart } from "@/api/types"
 
@@ -20,13 +18,11 @@ import type { ToolPart } from "@/api/types"
 //   permission.asked/.replied -> inline approve-deny
 //   file.edited           -> mark graph nodes stale
 //
-// Tool activity colours nodes (read=blue, scan=violet, write=amber), animates
-// flow comets, and — when graph.followAgent is on — expands + softly centres the
-// symbol the agent is focused on (debounced so grep bursts never thrash).
+// Tool activity colours nodes (read=blue, scan=violet, write=amber) and animates
+// flow comets along edges between the symbols the agent touches. It never moves
+// the camera or expands a component — just flashes/highlights, leaving the user
+// in control of the view.
 export function useOpenCodeSSE(opencodePort: number): void {
-  const followQueue = useRef<string | null>(null)
-  const followTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
   useEffect(() => {
     if (!opencodePort) return
 
@@ -38,41 +34,79 @@ export function useOpenCodeSSE(opencodePort: number): void {
 
     const graph = () => useGraphStore.getState()
     const agent = () => useAgentStore.getState()
-    const settings = () => useSettingsStore.getState()
 
-    const scheduleFollow = (qname: string) => {
-      if (!settings().get<boolean>("graph.followAgent")) return
-      followQueue.current = qname
-      if (followTimer.current) clearTimeout(followTimer.current)
-      followTimer.current = setTimeout(() => {
-        const q = followQueue.current
-        followQueue.current = null
-        if (!q) return
-        const ok = graph().revealSymbol(q)
-        if (ok && settings().get<boolean>("agent.autoSwitchToGraph")) {
-          useTabsStore.getState().activate(GRAPH_TAB_ID)
+    // Highlight-only choreography: flash the symbols the agent touches and let
+    // their glow linger, but never move the camera or expand a component. The
+    // user stays in control of the view; activity rolls up to the component
+    // bubbles so you can still see *where* the agent is working.
+    // Fire a comet along any REAL call-graph edge that connects a symbol the
+    // agent just touched to one it touched recently. This visualises the agent
+    // "moving" through connected code even without an explicit trace.
+    const animateConnections = (touched: string[]) => {
+      const g = graph()
+      const adj = g.adjacency
+      if (!adj || touched.length === 0) return
+      // recent trail = the agent's recent attention; cap to keep it cheap
+      const recent = g.trail.slice(-8)
+      const seen = new Set<string>()
+      for (const q of touched) {
+        const nbrs = adj.neighbours.get(q)
+        if (!nbrs) continue
+        for (const prev of recent) {
+          if (prev === q) continue
+          if (!nbrs.has(prev)) continue // only animate edges that actually exist
+          const key = q < prev ? `${q}|${prev}` : `${prev}|${q}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          // direction: from where it was -> to where it is now
+          g.flowAlong(prev, q)
         }
-      }, 250)
+      }
+    }
+
+    // A short, readable line describing why a node lit up: prefer the first
+    // line of the tool's own output, then its title, then the symbol one-liner.
+    const noteFor = (q: string, part: ToolPart): string => {
+      const out = part.state.output
+      if (out) {
+        const line = out
+          .split("\n")
+          .map((s) => s.trim())
+          .find((s) => s.length > 0 && !s.startsWith("{") && !s.startsWith("["))
+        if (line) return line.length > 160 ? line.slice(0, 157) + "…" : line
+      }
+      if (part.state.title) return part.state.title
+      const ol = graph().nodesByQname.get(q)?.one_liner
+      return ol ?? ""
     }
 
     const applyChoreography = (part: ToolPart) => {
       const g = graph()
       const c = choreographFor(part)
+      // edges connecting prior attention to this step (before pushing new trail)
+      animateConnections([...c.reads, ...c.scans, ...c.writes])
       for (const q of c.reads) {
         g.setNodeAgentState(q, "reading")
-        g.bumpActivity(q, 0.8)
+        g.bumpActivity(q, 0.85)
+        g.pushTrail(q, "reading")
+        g.setNote(q, noteFor(q, part), "reading")
       }
       for (const q of c.scans) {
         g.setNodeAgentState(q, "scanning")
-        g.bumpActivity(q, 0.5)
+        g.bumpActivity(q, 0.6)
+        g.pushTrail(q, "scanning")
+        const ol = g.nodesByQname.get(q)?.one_liner ?? ""
+        g.setNote(q, ol, "scanning")
       }
       for (const q of c.writes) {
         g.setNodeAgentState(q, "writing")
         g.bumpActivity(q, 1)
+        g.pushTrail(q, "writing")
+        g.setNote(q, noteFor(q, part), "writing")
       }
       for (const f of c.files) g.setFileAgentState(f, "writing")
+      // explicit trace/flow edges still animate as before
       c.flows.slice(0, 40).forEach((e, i) => setTimeout(() => g.flowAlong(e.from, e.to), i * 160))
-      if (c.follow) scheduleFollow(c.follow)
       if (part.state.status === "completed" || part.state.status === "error") {
         const settle = [...c.reads, ...c.scans]
         setTimeout(() => settle.forEach((q) => g.setNodeAgentState(q, "idle")), 900)
@@ -114,11 +148,22 @@ export function useOpenCodeSSE(opencodePort: number): void {
           if (info) a.applyMessageInfo(info.sessionID, info)
           break
         }
+        case "session.updated": {
+          // Carries the full session info incl. the auto-generated title — keep
+          // the switcher live as opencode names the chat.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const info = (p as any).info
+          if (info?.id) a.upsertSession(info)
+          break
+        }
         case "session.status": {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const status = (p as any).status
           const sid = (p as any).sessionID
           if (!status || !sid) break
+          // NOTE: busy/idle flip multiple times per turn (once per step), so we
+          // must NOT clear the trail here — that caused activity cards to blip.
+          // The trail is reset when the user sends a new message instead.
           if (status.type === "idle") a.setRunning(sid, false)
           else if (status.type === "busy") a.setRunning(sid, true)
           break
@@ -170,7 +215,6 @@ export function useOpenCodeSSE(opencodePort: number): void {
     return () => {
       trie.sseUnsubscribe()
       if (typeof unlisten === "function") unlisten()
-      if (followTimer.current) clearTimeout(followTimer.current)
     }
   }, [opencodePort])
 }
