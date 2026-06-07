@@ -3,7 +3,7 @@ import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d"
 import { forceCollide } from "d3-force"
 import { useGraphStore } from "@/store/graphStore"
 import { usePatchesStore } from "@/store/patchesStore"
-import { depthColor, classMarker, nodeRadius, activityColor, ACTIVITY } from "@/graph/style"
+import { depthColor, classMarker, nodeRadius, activityColor, activityDash, ACTIVITY } from "@/graph/style"
 import type { SystemModelNode } from "@/api/types"
 
 // A bounded, scrollable sub-graph panel that opens when a role/subsystem is
@@ -461,7 +461,10 @@ export function ExpandedPanel({ anchor }: ExpandedPanelProps) {
                   ctx.strokeStyle = tcol
                   ctx.globalAlpha = 0.85
                   ctx.lineWidth = 1.75 / scale
+                  // redundant-with-colour: line style encodes the state too
+                  ctx.setLineDash(activityDash(touched.state).map((d) => d / scale))
                   ctx.stroke()
+                  ctx.setLineDash([])
                   ctx.globalAlpha = 1
                 }
                 // live pulse ring coloured by what the agent is doing

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react"
 import { useConductor } from "@/graph/conductor"
 import { useGraphStore } from "@/store/graphStore"
+import { activityDash } from "@/graph/style"
 
 // A dedicated FX canvas layered over the force graph. One rAF reads the
 // Conductor's transient FX (ripples, comet-tails, breadcrumbs) and the agent's
@@ -82,7 +83,9 @@ export function ChoreographyOverlay({ fgRef, componentPos, width, height }: Prop
         ctx.strokeStyle = r.color
         ctx.globalAlpha = (1 - age) * 0.7
         ctx.lineWidth = 2
+        ctx.setLineDash(activityDash(r.state)) // state legible without colour
         ctx.stroke()
+        ctx.setLineDash([])
       }
       ctx.globalAlpha = 1
 
