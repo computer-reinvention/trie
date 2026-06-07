@@ -466,15 +466,25 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
           )}
           {hoveredGroupNotes.length > 0 && (
             <>
-              <p className="text-[10px] uppercase tracking-wide text-slate-500 mb-1">agent touched here</p>
+              <p className="text-[10px] uppercase tracking-wide text-slate-500 mb-1">
+                Agent activity ({hoveredGroupNotes.length})
+              </p>
               <div className="space-y-1.5">
                 {hoveredGroupNotes.map((n) => {
                   const col =
                     n.state === "writing" ? ACTIVITY.write : n.state === "scanning" ? ACTIVITY.scan : ACTIVITY.read
+                  const verb =
+                    n.state === "writing" ? "EDITED" : n.state === "scanning" ? "FOUND" : "READ"
                   return (
                     <div key={n.qname}>
                       <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: col }} />
+                        <span
+                          className="text-[9px] font-semibold uppercase tracking-wide shrink-0"
+                          style={{ color: col }}
+                        >
+                          {verb}
+                        </span>
                         <span className="text-[11px] font-mono text-slate-200 truncate">{n.name}</span>
                       </div>
                       {n.text && (

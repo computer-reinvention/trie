@@ -115,6 +115,8 @@ export function ChoreographyOverlay({ fgRef, componentPos, width, height }: Prop
         const a = screenOf(c.from)
         const b = screenOf(c.to)
         if (!a || !b) continue
+        // skip degenerate comets (same component bubble → zero-length, invisible)
+        if (Math.abs(a.x - b.x) + Math.abs(a.y - b.y) < 6) continue
         const age = (epoch - c.born) / c.ttl
         if (age >= 1) continue
         const x = a.x + (b.x - a.x) * age
