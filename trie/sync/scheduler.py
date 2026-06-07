@@ -69,6 +69,13 @@ def run_waves(
 ) -> SchedulerResult:
     """Run `tasks` in depth-banded parallel waves.
 
+    The main scheduler entry point that coordinates wave-based parallel file
+    processing with budget and limit enforcement. When budget_usd or limit is
+    active, concurrency is forced to 1 for deterministic cost/limit caps without
+    concurrent overshoot. Files are grouped into hop-distance bands and executed
+    band-by-band to preserve dependency ordering, with full parallelism within
+    each band.
+
     `process_file(task)` performs the actual sync for one file and returns its
     `FileSyncResult` (or None to signal "nothing to do, skip"). It must be
     thread-safe with respect to shared state (the Store handles its own locking;
