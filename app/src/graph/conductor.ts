@@ -199,6 +199,10 @@ export function conductGlance(qname: string, state: AgentState): void {
   const c = useConductor.getState()
   const prev = c.lastGlance
   c.emitBreadcrumb(qname, state)
+  // Always emit a ripple at the touched symbol. On the component map many
+  // symbols collapse to one bubble, so a comet between same-group symbols is
+  // zero-length and invisible — the ripple guarantees a visible pulse there.
+  c.emitRipple(qname, state)
   if (prev && prev !== qname) {
     c.emitComet(prev, qname, state)
     c.record({ kind: "flow", from: prev, to: qname, state })
