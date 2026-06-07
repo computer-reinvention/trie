@@ -99,6 +99,42 @@ export const ACTIVITY = {
   heat: "#ef4444", // residual edit warmth
 }
 
+// Redundant-with-color line style per state (research E11): so the state is
+// legible without color (CVD / monochrome). Returns a canvas dash pattern.
+export function activityDash(state: string): number[] {
+  switch (state) {
+    case "scanning":
+      return [3, 2] // dashed — searching
+    case "cascade":
+      return [1, 2] // dotted — propagation
+    case "stale":
+      return [4, 3] // long dash — stale
+    case "error":
+      return [5, 2, 1, 2] // dash-dot — error
+    default:
+      return [] // solid — read / write
+  }
+}
+
+// Soft, tinted halo primitive for dark UIs (research E13): semi-transparent,
+// no pure white. Draws a filled glow at (x,y).
+export function drawHalo(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  color: string,
+  alpha: number,
+): void {
+  ctx.save()
+  ctx.beginPath()
+  ctx.arc(x, y, radius, 0, 2 * Math.PI)
+  ctx.fillStyle = color
+  ctx.globalAlpha = Math.max(0, Math.min(1, alpha))
+  ctx.fill()
+  ctx.restore()
+}
+
 // Map an agent state to its activity color.
 export function activityColor(state: string): string {
   switch (state) {

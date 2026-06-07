@@ -54,6 +54,7 @@ export interface Ripple {
   id: number
   qname: string
   color: string
+  state: AgentState
   born: number
   ttl: number
 }
@@ -125,7 +126,10 @@ export const useConductor = create<ConductorStore>((set, get) => ({
   emitRipple: (qname, state) =>
     set((s) => {
       if (motionPrefs().reduceMotion) return {}
-      const ripples = [...s.ripples, { id: nextId(), qname, color: activityColor(state), born: Date.now(), ttl: RIPPLE_TTL }]
+      const ripples = [
+        ...s.ripples,
+        { id: nextId(), qname, color: activityColor(state), state, born: Date.now(), ttl: RIPPLE_TTL },
+      ]
       // governance: keep most-recent MAX_RIPPLES
       return { ripples: ripples.slice(-MAX_RIPPLES) }
     }),
