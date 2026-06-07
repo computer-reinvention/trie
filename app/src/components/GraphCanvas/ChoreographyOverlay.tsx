@@ -22,6 +22,8 @@ export function ChoreographyOverlay({ fgRef, componentPos, width, height }: Prop
 
   useEffect(() => {
     let raf = 0
+    let lastSig = ""
+    let cleared = false
     const draw = () => {
       const cv = canvasRef.current
       const fg = fgRef.current
@@ -34,12 +36,31 @@ export function ChoreographyOverlay({ fgRef, componentPos, width, height }: Prop
         raf = requestAnimationFrame(draw)
         return
       }
-      const now = performance.now()
       const epoch = Date.now()
       useConductor.getState().tick(epoch)
-      const { ripples, comets, breadcrumbs } = useConductor.getState()
+      const { ripples, comets, breadcrumbs, replaying } = useConductor.getState()
       const gs = useGraphStore.getState()
       const axis = gs.axis
+
+      // Perf: only repaint when something actually changed — live FX present, a
+      // replay running, or the camera transform moved (which shifts anchors).
+      const liveFx = ripples.length > 0 || comets.length > 0 || replaying
+      let sig = `${breadcrumbs.length}`
+      if (fg.graph2ScreenCoords) {
+        const o = fg.graph2ScreenCoords(0, 0)
+        const u = fg.graph2ScreenCoords(100, 0)
+        sig += `:${Math.round(o.x)},${Math.round(o.y)},${Math.round(u.x)}`
+      }
+      if (!liveFx && sig === lastSig) {
+        if (!cleared && breadcrumbs.length === 0) {
+          ctx.clearRect(0, 0, width, height)
+          cleared = true
+        }
+        raf = requestAnimationFrame(draw)
+        return
+      }
+      lastSig = sig
+      cleared = false
 
       // resolve a symbol qname → screen point via its component bubble
       const screenOf = (qname: string): { x: number; y: number } | null => {
