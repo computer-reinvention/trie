@@ -2,35 +2,61 @@ import { useCallback, useEffect, useRef } from "react"
 import { opencodeClient } from "@/api/opencodeClient"
 import { useAgentStore } from "@/store/agentStore"
 import { useAppStore } from "@/store/appStore"
+import { useGraphStore } from "@/store/graphStore"
+import { isDefaultTitle } from "@/lib/sessionTitle"
 
-// Orchestrates opencode sessions for the agent panel: loads the session list on
-// connect, ensures at least one session exists, lazily fetches transcript
-// history when a session becomes active, and exposes new/switch/send/abort.
+// Orchestrates opencode sessions for the agent panel:
+//  - loads the session list on connect, hides empty stub chats, and selects the
+//    most-recent real one (creating a fresh chat only when none exist)
+//  - lazily fetches transcript history when a session becomes active
+//  - exposes new/switch/delete/send/abort + a one-click "clear empty chats"
+//
+// Chats are NOT given a hardcoded title: opencode's title agent auto-names them
+// from the first message (it only does so while the title is still its default).
 export function useSessions() {
   const serversReady = useAppStore((s) => s.serversReady)
   const activeId = useAgentStore((s) => s.activeId)
   const loadedRef = useRef<Set<string>>(new Set())
-
   const store = useAgentStore
 
-  // Initial load: list sessions, create one if none, select the first.
+  // Decide which sessions are "real": a non-default title means it was used and
+  // auto-named; otherwise probe for any messages. Empty stubs are hidden.
+  const loadAndPrune = useCallback(async () => {
+    const list = await opencodeClient.listSessions()
+    if (list.length === 0) {
+      const created = await opencodeClient.createSession()
+      if (created) store.getState().upsertSession(created)
+      return
+    }
+    const checks = await Promise.all(
+      list.map(async (s) => {
+        if (!isDefaultTitle(s.title)) return true
+        try {
+          return await opencodeClient.hasMessages(s.id)
+        } catch {
+          return false
+        }
+      }),
+    )
+    const real = list.filter((_, i) => checks[i])
+    if (real.length === 0) {
+      const created = await opencodeClient.createSession()
+      if (created) store.getState().upsertSession(created)
+      return
+    }
+    store.getState().setSessions(real)
+  }, [store])
+
   useEffect(() => {
     if (!serversReady) return
     let cancelled = false
     ;(async () => {
-      const list = await opencodeClient.listSessions()
-      if (cancelled) return
-      if (list.length === 0) {
-        const created = await opencodeClient.createSession("trie desktop")
-        if (created && !cancelled) store.getState().upsertSession(created)
-      } else {
-        store.getState().setSessions(list)
-      }
+      if (!cancelled) await loadAndPrune()
     })()
     return () => {
       cancelled = true
     }
-  }, [serversReady, store])
+  }, [serversReady, loadAndPrune])
 
   // Lazily load history the first time a session is activated.
   useEffect(() => {
@@ -43,19 +69,15 @@ export function useSessions() {
   }, [activeId, store])
 
   const newSession = useCallback(async () => {
-    const created = await opencodeClient.createSession("New chat")
+    // No title — let opencode auto-name it from the first message.
+    const created = await opencodeClient.createSession()
     if (created) {
       store.getState().upsertSession(created)
       store.getState().setActive(created.id)
     }
   }, [store])
 
-  const switchSession = useCallback(
-    (id: string) => {
-      store.getState().setActive(id)
-    },
-    [store],
-  )
+  const switchSession = useCallback((id: string) => store.getState().setActive(id), [store])
 
   const deleteSession = useCallback(
     async (id: string) => {
@@ -66,10 +88,33 @@ export function useSessions() {
     [store],
   )
 
+  // Delete every server-side session that has no messages (reclaims old stubs).
+  const clearEmpty = useCallback(async () => {
+    const list = await opencodeClient.listSessions()
+    const active = store.getState().activeId
+    for (const s of list) {
+      if (s.id === active) continue
+      if (!isDefaultTitle(s.title)) continue
+      let empty = true
+      try {
+        empty = !(await opencodeClient.hasMessages(s.id))
+      } catch {
+        empty = false
+      }
+      if (empty) {
+        await opencodeClient.deleteSession(s.id)
+        loadedRef.current.delete(s.id)
+        store.getState().removeSession(s.id)
+      }
+    }
+  }, [store])
+
   const send = useCallback(
     async (text: string) => {
       const id = store.getState().activeId
       if (!id) return
+      // New turn → reset the graph activity trail/notes so cards start fresh.
+      useGraphStore.getState().clearTrail()
       store.getState().appendLocalUser(id, text)
       await opencodeClient.sendMessage(id, text)
     },
@@ -83,5 +128,5 @@ export function useSessions() {
     store.getState().setRunning(id, false)
   }, [store])
 
-  return { newSession, switchSession, deleteSession, send, abort }
+  return { newSession, switchSession, deleteSession, clearEmpty, send, abort }
 }

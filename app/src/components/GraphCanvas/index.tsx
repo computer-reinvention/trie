@@ -4,12 +4,14 @@ import { forceCollide } from "d3-force"
 import { useGraphStore } from "@/store/graphStore"
 import { useAppStore } from "@/store/appStore"
 import { useTabsStore } from "@/store/tabsStore"
+import { useSettingsStore } from "@/store/settingsStore"
 import { openContextMenu } from "@/store/contextMenuStore"
 import { componentView, memberSubgroup } from "@/graph/doi"
 import { nodeRadius, classMarker, ACTIVITY, depthColor } from "@/graph/style"
 import { GraphAnimator } from "@/graph/animator"
 import { SearchPalette } from "./SearchPalette"
 import { ExpandedPanel } from "./ExpandedPanel"
+import { AgentActivityCards } from "./AgentActivityCards"
 import type { SystemModelNode } from "@/api/types"
 
 interface GraphCanvasProps {
@@ -83,10 +85,19 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
   const selectNode = useGraphStore((s) => s.selectNode)
   const setHovered = useGraphStore((s) => s.setHovered)
   const collapseTransient = useGraphStore((s) => s.collapseTransient)
+  // the symbol currently under the agent's attention (drives the gentle camera)
+  const lastTouched = useGraphStore((s) => s.lastTouched)
+  const notes = useGraphStore((s) => s.notes)
+  const nodesByQname = useGraphStore((s) => s.nodesByQname)
   const { graphLoading, graphLoadingMessage } = useAppStore()
+  // mouse position within the canvas (for the hover-note tooltip)
+  const [mouse, setMouse] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<ForceGraphMethods<any, any> | undefined>(undefined)
   const animatorRef = useRef(new GraphAnimator())
+  // groups (role/subsystem) containing a symbol the agent touched THIS turn —
+  // persists until the next turn so the component bubble stays marked.
+  const touchedGroupsRef = useRef<Set<string>>(new Set())
   // live screen position of the focused role node, so the sub-graph panel can
   // anchor to it (act like a graph node, panning/zooming with the canvas).
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null)
@@ -118,11 +129,27 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const linkIsActive = useCallback((l: any) => {
-    const flows = useGraphStore.getState().activeFlows
+    const st = useGraphStore.getState()
+    const flows = st.activeFlows
     if (!flows.size) return false
     const s = typeof l.source === "object" ? l.source.id : l.source
     const t = typeof l.target === "object" ? l.target.id : l.target
-    return flows.has(`${s}|${t}`) || flows.has(`${t}|${s}`)
+    // direct symbol-edge match (used inside the expanded panel)
+    if (flows.has(`${s}|${t}`) || flows.has(`${t}|${s}`)) return true
+    // component-level rollup: a flow whose endpoints live in these two groups
+    // (on the current axis) lights the component->component backbone link.
+    const groupOf = (qn: string) => {
+      const n = st.nodesByQname.get(qn)
+      if (!n) return null
+      return st.axis === "role" ? n.role || "untagged" : n.subsystem
+    }
+    for (const key of flows.keys()) {
+      const [from, to] = key.split("|")
+      const gf = groupOf(from)
+      const gt = groupOf(to)
+      if (gf && gt && gf !== gt && ((gf === s && gt === t) || (gf === t && gt === s))) return true
+    }
+    return false
   }, [])
 
   // Build the graph. L0 component backbone always present; expanded roles bloom
@@ -231,6 +258,32 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
     return () => clearTimeout(t)
   }, [data, focusedExpansion, pinnedExpansions])
 
+  // --- gentle agent-following camera ---------------------------------------
+  // Softly keep the component the agent is working in within view — a calm pan,
+  // no zoom yanking, no auto-drill. The HTML activity cards (below) carry the
+  // detail. Gated by the "Follow Agent in Graph" setting.
+  useEffect(() => {
+    if (!lastTouched) return
+    if (!useSettingsStore.getState().get<boolean>("graph.followAgent")) return
+    const fg = fgRef.current
+    if (!fg) return
+    const st = useGraphStore.getState()
+    const node = st.nodesByQname.get(lastTouched.qname)
+    if (!node) return
+    const group = axis === "role" ? node.role || "untagged" : node.subsystem
+    const comp = data.nodes.find((n) => n.kind === "component" && n.id === group) as
+      | (FGNode & { x?: number; y?: number })
+      | undefined
+    if (!comp || comp.x == null || comp.y == null) return
+    // Only pan if the component is near the viewport edge / off-screen, so we
+    // don't jiggle the camera for every hop.
+    const s = fg.graph2ScreenCoords(comp.x, comp.y)
+    const m = 120
+    if (s.x < m || s.y < m || s.x > dims.w - m || s.y > dims.h - m) {
+      fg.centerAt(comp.x, comp.y, 900)
+    }
+  }, [lastTouched, axis, data, dims.w, dims.h])
+
   // decay activity + heat on a rAF loop
   useEffect(() => {
     let raf = 0
@@ -244,6 +297,36 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
   }, [])
+
+  // component (role/subsystem) bubble positions in graph space — anchors for
+  // the live agent-activity cards.
+  const componentPos = useMemo(() => {
+    const m = new Map<string, { x: number; y: number }>()
+    for (const n of data.nodes) {
+      if (n.kind === "component") {
+        const c = n as FGNode & { fx?: number; fy?: number; x?: number; y?: number }
+        const x = c.fx ?? c.x
+        const y = c.fy ?? c.y
+        if (x != null && y != null) m.set(n.id, { x, y })
+      }
+    }
+    return m
+  }, [data])
+
+  // When hovering a component bubble, the tool-output snippets for the symbols
+  // the agent touched inside that group — shown as a tooltip.
+  const hoveredGroupNotes = useMemo(() => {
+    if (!hoveredId || !componentPos.has(hoveredId)) return []
+    const out: Array<{ qname: string; name: string; text: string; state: string; ts: number }> = []
+    for (const [qn, note] of notes.entries()) {
+      const node = nodesByQname.get(qn)
+      if (!node) continue
+      const g = axis === "role" ? node.role || "untagged" : node.subsystem
+      if (g === hoveredId) out.push({ qname: qn, name: node.name, ...note })
+    }
+    return out.sort((a, b) => b.ts - a.ts).slice(0, 6)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hoveredId, notes, axis, componentPos, nodesByQname])
 
   const maxWeight = useMemo(() => Math.max(1, ...data.links.map((l) => l.weight)), [data.links])
   const anyExpanded = focusedExpansion !== null || pinnedExpansions.size > 0
@@ -316,7 +399,46 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
   )
 
   return (
-    <div ref={containerRef} className={`relative flex-1 bg-slate-950 overflow-hidden ${className ?? ""}`}>
+    <div
+      ref={containerRef}
+      className={`relative flex-1 bg-slate-950 overflow-hidden ${className ?? ""}`}
+      onMouseMove={(e) => {
+        const el = containerRef.current
+        if (!el) return
+        const r = el.getBoundingClientRect()
+        setMouse({ x: e.clientX - r.left, y: e.clientY - r.top })
+      }}
+    >
+      {hoveredGroupNotes.length > 0 && (
+        <div
+          className="absolute z-30 pointer-events-none max-w-[300px] rounded-md border border-slate-600 bg-slate-950/95 shadow-xl px-2.5 py-2"
+          style={{
+            left: Math.min(mouse.x + 14, (dims.w || 600) - 310),
+            top: Math.min(mouse.y + 14, (dims.h || 400) - 12 - hoveredGroupNotes.length * 42),
+          }}
+        >
+          <p className="text-[10px] uppercase tracking-wide text-slate-500 mb-1">
+            agent touched here
+          </p>
+          <div className="space-y-1.5">
+            {hoveredGroupNotes.map((n) => {
+              const col =
+                n.state === "writing" ? ACTIVITY.write : n.state === "scanning" ? ACTIVITY.scan : ACTIVITY.read
+              return (
+                <div key={n.qname}>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: col }} />
+                    <span className="text-[11px] font-mono text-slate-200 truncate">{n.name}</span>
+                  </div>
+                  {n.text && (
+                    <p className="text-[11px] text-slate-400 leading-snug line-clamp-2 pl-3">{n.text}</p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
       {anyExpanded && (
         <div className="absolute top-3 left-3 z-10 flex items-center gap-2 text-xs">
           <button
@@ -345,6 +467,7 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
       )}
       <SearchPalette />
       <ExpandedPanel anchor={anchor} />
+      <AgentActivityCards fgRef={fgRef} componentPos={componentPos} width={dims.w} height={dims.h} />
       {data.nodes.length > 0 && (
         <ForceGraph2D
           ref={fgRef}
@@ -361,9 +484,34 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
           onRenderFramePre={() => {
             const anim = animatorRef.current
             const st = useGraphStore.getState()
+            // Roll up live symbol activity to the component (role/subsystem) it
+            // belongs to, so the system-level bubbles glow when the agent is
+            // working inside them even while not drilled in.
+            const groupActivity = new Map<string, number>()
+            if (st.runtime.size && st.model) {
+              for (const node of st.model.nodes) {
+                const a = st.runtime.get(node.qname)?.activity ?? 0
+                if (a <= 0.01) continue
+                const key = axis === "role" ? node.role || "untagged" : node.subsystem
+                groupActivity.set(key, Math.max(groupActivity.get(key) ?? 0, a))
+              }
+            }
+            // persistent "touched this turn" group set, from the notes map
+            const touchedGroups = touchedGroupsRef.current
+            touchedGroups.clear()
+            if (st.notes.size) {
+              for (const qn of st.notes.keys()) {
+                const node = st.nodesByQname.get(qn)
+                if (!node) continue
+                touchedGroups.add(axis === "role" ? node.role || "untagged" : node.subsystem)
+              }
+            }
             for (const fgn of data.nodes) {
               if (fgn.kind !== "symbol") {
                 anim.ensure(fgn.id)
+                if (fgn.kind === "component") {
+                  anim.setTargets(fgn.id, { pulse: groupActivity.get(fgn.id) ?? 0 })
+                }
                 continue
               }
               const rt = st.runtime.get(fgn.id)
@@ -447,6 +595,7 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
               heat: rt?.heat ?? 0,
               // symbol labels only show on demand: hovered, selected, or active
               showLabel: hovered || n.id === selectedQname || active,
+              touchedGroup: n.kind === "component" && touchedGroupsRef.current.has(n.id),
             })
           }}
           nodePointerAreaPaint={(node, color, ctx) => {
@@ -485,6 +634,7 @@ interface PaintOpts {
   agentState: string
   heat: number
   showLabel: boolean
+  touchedGroup?: boolean
 }
 
 function paintNode(
@@ -493,7 +643,7 @@ function paintNode(
   globalScale: number,
   opts: PaintOpts,
 ): void {
-  const { dimmed, selected, reveal, pulse, emphasis, agentState, heat, showLabel: wantLabel } = opts
+  const { dimmed, selected, reveal, pulse, emphasis, agentState, heat, showLabel: wantLabel, touchedGroup } = opts
   const scale = (0.4 + 0.6 * reveal) * (1 + 0.25 * emphasis)
   const r = n.val * scale
   ctx.save()
@@ -549,6 +699,33 @@ function paintNode(
   }
 
   if (n.kind === "component") {
+    // PERSISTENT "touched this turn" ring — stays after the live pulse fades so
+    // it's clear which subsystems the agent used to answer the question.
+    if (touchedGroup) {
+      ctx.beginPath()
+      ctx.arc(n.x, n.y, r + 5 / globalScale, 0, 2 * Math.PI)
+      ctx.strokeStyle = ACTIVITY.read
+      ctx.globalAlpha = dimmed ? 0.2 : 0.7
+      ctx.lineWidth = 1.5 / globalScale
+      ctx.stroke()
+      ctx.globalAlpha = dimmed ? 0.15 : reveal
+    }
+    // agent-activity glow: a soft halo + ring when symbols inside this group
+    // are live, so you can see WHERE the agent is at the system level.
+    if (pulse > 0.02) {
+      ctx.beginPath()
+      ctx.arc(n.x, n.y, r + (6 + 22 * pulse) / globalScale, 0, 2 * Math.PI)
+      ctx.fillStyle = ACTIVITY.read
+      ctx.globalAlpha = 0.1 * pulse
+      ctx.fill()
+      ctx.beginPath()
+      ctx.arc(n.x, n.y, r + (4 + 8 * (1 - pulse)) / globalScale, 0, 2 * Math.PI)
+      ctx.strokeStyle = ACTIVITY.read
+      ctx.globalAlpha = Math.min(1, 0.5 + pulse)
+      ctx.lineWidth = 2 / globalScale
+      ctx.stroke()
+      ctx.globalAlpha = 1
+    }
     const expanded = n.expanded
     ctx.beginPath()
     ctx.arc(n.x, n.y, r, 0, 2 * Math.PI)

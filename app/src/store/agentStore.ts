@@ -6,6 +6,7 @@ import type {
   OpencodeSession,
   PermissionRequest,
 } from "@/api/types"
+import { byRecency } from "@/lib/sessionTitle"
 
 // The agent store models a real, multi-session opencode conversation.
 //
@@ -96,7 +97,8 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
           ? { ...sessions[info.id], info }
           : emptySession(info)
       }
-      const order = list.map((i) => i.id)
+      // Most-recent-first so the freshest chats sit at the top of the switcher.
+      const order = [...list].sort(byRecency).map((i) => i.id)
       const activeId = s.activeId && sessions[s.activeId] ? s.activeId : (order[0] ?? null)
       return { sessions, order, activeId }
     }),

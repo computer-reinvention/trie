@@ -47,17 +47,17 @@ export function Legend() {
 
   return (
     <div className="flex flex-col text-xs overflow-hidden">
-      <div className="px-3 py-2 border-b border-slate-800 flex items-center gap-2">
+      <div className="px-3 py-2 border-b border-slate-800">
         <span className="text-slate-500 uppercase tracking-wide text-[10px]">Group by</span>
-        <div className="flex rounded overflow-hidden border border-slate-700 ml-auto">
+        <div className="mt-1 flex rounded overflow-hidden border border-slate-700">
           <button
-            className={`px-2 py-0.5 ${axis === "role" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"}`}
+            className={`flex-1 px-1 py-0.5 text-center ${axis === "role" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"}`}
             onClick={() => setAxis("role")}
           >
             roles
           </button>
           <button
-            className={`px-2 py-0.5 ${axis === "subsystem" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"}`}
+            className={`flex-1 px-1 py-0.5 text-center ${axis === "subsystem" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"}`}
             onClick={() => setAxis("subsystem")}
           >
             subsystems
@@ -104,21 +104,19 @@ export function Legend() {
 
       {/* member sub-grouping selector */}
       <div className="px-3 py-2 border-t border-slate-800">
-        <div className="flex items-center gap-2">
-          <span className="text-slate-500 uppercase tracking-wide text-[10px]">Members by</span>
-          <div className="flex rounded overflow-hidden border border-slate-700 ml-auto">
-            {MEMBER_GROUPINGS.map((m) => (
-              <button
-                key={m.key}
-                className={`px-1.5 py-0.5 ${
-                  memberGrouping === m.key ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"
-                }`}
-                onClick={() => setMemberGrouping(m.key)}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
+        <span className="text-slate-500 uppercase tracking-wide text-[10px]">Members by</span>
+        <div className="mt-1 flex rounded overflow-hidden border border-slate-700">
+          {MEMBER_GROUPINGS.map((m) => (
+            <button
+              key={m.key}
+              className={`flex-1 px-1 py-0.5 text-center ${
+                memberGrouping === m.key ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"
+              }`}
+              onClick={() => setMemberGrouping(m.key)}
+            >
+              {m.label}
+            </button>
+          ))}
         </div>
       </div>
 

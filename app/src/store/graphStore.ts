@@ -52,6 +52,14 @@ interface GraphStore {
   // transient "the agent just traversed here" edges -> expiry timestamp (ms).
   // Drives directional comet particles along the real call edges.
   activeFlows: Map<string, number>
+  // ordered list of symbols the agent has touched this turn (the "trail"),
+  // most-recent last. Drives the breadcrumb + persistent trail highlight.
+  trail: string[]
+  // the symbol + intent the agent touched most recently (drives the caption).
+  lastTouched: { qname: string; state: AgentState } | null
+  // short, readable note per symbol — a snippet of the tool output that put it
+  // under the agent's attention. Rendered as a popup near the pulsing node.
+  notes: Map<string, { text: string; state: AgentState; ts: number }>
 
   // --- derived visible set (recomputed by recomputeVisible) ---
   visible: VisibleSet
@@ -79,6 +87,11 @@ interface GraphStore {
   // it. Returns false when the qname isn't in the model. Used by deep-links from
   // the editor (triefact cards, tabs, file tree).
   revealSymbol: (qname: string) => boolean
+
+  // --- agent trail (driven by SSE) ---
+  pushTrail: (qname: string, state: AgentState) => void
+  setNote: (qname: string, text: string, state: AgentState) => void
+  clearTrail: () => void
 
   // --- actions: live runtime (driven by SSE) ---
   setNodeAgentState: (qname: string, state: AgentState) => void
@@ -116,6 +129,9 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 
   runtime: new Map(),
   activeFlows: new Map(),
+  trail: [],
+  lastTouched: null,
+  notes: new Map(),
   visible: emptyVisible(),
 
   setModel: (model, edges) => {
@@ -221,12 +237,17 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   setHovered: (id) => set({ hoveredId: id }),
 
   revealSymbol: (qname) => {
-    const { nodesByQname, axis } = get()
+    const { nodesByQname, axis, focusedExpansion } = get()
     const node = nodesByQname.get(qname)
     if (!node) return false
     // The ExpandedPanel keys its frame on the group value for the active axis.
     const groupKey = axis === "role" ? node.role || "untagged" : node.subsystem
-    get().expandComponent(groupKey)
+    // Continuity: only re-expand (which rebuilds the panel) when the agent has
+    // actually left the currently-open group. Staying in the same group keeps
+    // the stage stable; we just re-select + soft-pan to the new symbol.
+    if (focusedExpansion !== groupKey) {
+      get().expandComponent(groupKey)
+    }
     get().selectNode(qname)
     return true
   },
@@ -257,6 +278,22 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     if (top) get().revealSymbol(top.qname)
     return true
   },
+
+  pushTrail: (qname, state) =>
+    set((s) => {
+      // keep last 24, no immediate duplicate
+      const trail = s.trail[s.trail.length - 1] === qname ? s.trail : [...s.trail, qname]
+      return { trail: trail.slice(-24), lastTouched: { qname, state } }
+    }),
+
+  setNote: (qname, text, state) =>
+    set((s) => {
+      const notes = new Map(s.notes)
+      notes.set(qname, { text, state, ts: Date.now() })
+      return { notes }
+    }),
+
+  clearTrail: () => set({ trail: [], lastTouched: null, notes: new Map() }),
 
   setNodeAgentState: (qname, agentState) =>
     set((s) => {

@@ -93,7 +93,17 @@ function MessageView({
   onResolvePermission: (requestID: string, reply: PermissionReply) => void
 }) {
   const isUser = message.info.role === "user"
-  const parts = message.parts.filter((p) => !(p.type === "text" && (p as TextPart).ignored))
+  // Drop server-injected text parts: `ignored` (excluded from model input) and
+  // `synthetic` (system plumbing like the plan→build mode notice, file-mention
+  // expansions, etc.). These are not real conversation content.
+  const isHiddenText = (p: OpencodePart) => {
+    if (p.type !== "text") return false
+    const tp = p as TextPart
+    if (tp.ignored || tp.synthetic) return true
+    // Defensive: hide raw system-reminder plumbing even if flags are absent.
+    return tp.text.trimStart().startsWith("<system-reminder>")
+  }
+  const parts = message.parts.filter((p) => !isHiddenText(p))
 
   if (isUser) {
     const text = parts

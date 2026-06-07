@@ -86,6 +86,12 @@ export const opencodeClient = {
     return Array.isArray(data) ? data : []
   },
 
+  // Cheap "has any messages?" probe (limit=1) for pruning empty stub sessions.
+  async hasMessages(sessionId: string): Promise<boolean> {
+    const { data } = await req<OpencodeMessage[]>("GET", `/session/${sessionId}/message?limit=1`)
+    return Array.isArray(data) && data.length > 0
+  },
+
   // Stop a running turn.
   async abort(sessionId: string): Promise<void> {
     await req("POST", `/session/${sessionId}/abort`)
