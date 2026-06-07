@@ -85,25 +85,26 @@ export function useOpenCodeSSE(opencodePort: number): void {
     const applyChoreography = (part: ToolPart) => {
       const g = graph()
       const c = choreographFor(part)
+      const rm = motionPrefs().reduceMotion
       // edges connecting prior attention to this step (before pushing new trail)
-      if (!motionPrefs().reduceMotion) animateConnections([...c.reads, ...c.scans, ...c.writes])
+      if (!rm) animateConnections([...c.reads, ...c.scans, ...c.writes])
       for (const q of c.reads) {
         g.setNodeAgentState(q, "reading")
-        g.bumpActivity(q, 0.85)
+        if (!rm) g.bumpActivity(q, 0.85) // pulse is movement — skip when reduced
         g.pushTrail(q, "reading")
         g.setNote(q, noteFor(q, part), "reading")
         conductGlance(q, "reading")
       }
       for (const q of c.scans) {
         g.setNodeAgentState(q, "scanning")
-        g.bumpActivity(q, 0.6)
+        if (!rm) g.bumpActivity(q, 0.6)
         g.pushTrail(q, "scanning")
         const ol = g.nodesByQname.get(q)?.one_liner ?? ""
         g.setNote(q, ol, "scanning")
       }
       for (const q of c.writes) {
         g.setNodeAgentState(q, "writing")
-        g.bumpActivity(q, 1)
+        if (!rm) g.bumpActivity(q, 1)
         g.pushTrail(q, "writing")
         g.setNote(q, noteFor(q, part), "writing")
         conductGlance(q, "writing")
