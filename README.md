@@ -7,6 +7,24 @@
 [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](#status)
 [![Tests](https://img.shields.io/badge/tests-513%20passing-brightgreen.svg)](#)
 
+---
+
+## 🖥️ trie on Mac — a graph-view editor for agentic engineering *(in development)*
+
+![trie on Mac — live graph view with an embedded coding agent](docs/assets/trie-mac-app.png)
+
+A native **macOS app** is in active development: a live **graph view** of your codebase
+— roles, subsystems and call edges — with an embedded coding agent whose every
+`read` / `search` / `edit` lights up the graph in real time. It pairs the graph with
+source + triefact tabs, multi-session chat, and a patch-review surface, so you watch
+the agent navigate and edit instead of reading raw diffs.
+
+It's an early work-in-progress, tracked on the
+[**`pg/editor` draft PR (#1)**](https://github.com/computer-reinvention/trie/pull/1).
+**Contributions are welcome** — try it, file issues, or open a PR.
+
+---
+
 trie generates a Markdown description of every source file in your project. The descriptions live in a tree that mirrors your source tree, joined by the same reference graph the code has. Edit a function and the cascade regenerates the descriptions of every caller too. Humans review English prose; agents read the same prose instead of grepping code under context pressure.
 
 ```
