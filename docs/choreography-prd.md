@@ -175,6 +175,21 @@ core signal survives, satisfying the "override OS if it breaks the core" rule vi
 
 ---
 
+## 8a. Implemented status (v2)
+
+Shipped: the Conductor store (FX + cue log + governance + path tail), a layered
+FX overlay canvas (ripple rings, comet particles, comet-tail path, numbered
+breadcrumbs), real hop-ordered cascade wavefront from `compute_cascade`,
+off-screen homing chevrons, ambient HUD chip for non-symbol tools, full lockstep
+(graph nodes + chat tool-rows + patch rows pulse from node state), redundant
+line-style encoding per state + soft-glow primitive, full reduced-motion
+compliance, camera modes, far-zoom edge fade, perf gating (overlay repaints only
+on change), and the turn-replay transport.
+
+Known follow-ups: fold the activity-cards rAF into the single FX scheduler;
+offscreen sprite cache + particle pooling (current scale doesn't need it);
+literal ghost-ripple visual on patch stage (currently notes only).
+
 ## 9. Acceptance scenarios
 
 - **Explore parallel sync** (grep + read + trace): teal scan flashes on hits →
