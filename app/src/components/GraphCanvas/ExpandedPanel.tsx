@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d"
 import { forceCollide } from "d3-force"
 import { useGraphStore } from "@/store/graphStore"
+import { usePatchesStore } from "@/store/patchesStore"
 import { depthColor, classMarker, nodeRadius, ACTIVITY } from "@/graph/style"
 import type { AgentState, SystemModelNode } from "@/api/types"
 
@@ -446,6 +447,7 @@ export function ExpandedPanel({ anchor }: ExpandedPanelProps) {
               } else {
                 // --- agent-activity overlays (under the node) ---
                 const st = useGraphStore.getState()
+                const patchedQnames = usePatchesStore.getState().patchedQnames
                 const rt = st.runtime.get(n.id)
                 const pulse = pulseRef.current.get(n.id) ?? 0
                 const touched = st.notes.get(n.id) // touched this turn (persists)
@@ -495,6 +497,19 @@ export function ExpandedPanel({ anchor }: ExpandedPanelProps) {
                   ctx.strokeStyle = "#e2e8f0"
                   ctx.lineWidth = 1.5 / scale
                   ctx.stroke()
+                }
+                // pending-patch badge: amber dashed ring marks symbols with
+                // staged edits awaiting apply.
+                if (patchedQnames.has(n.id)) {
+                  ctx.beginPath()
+                  ctx.arc(n.x, n.y, r + 6 / scale, 0, 2 * Math.PI)
+                  ctx.setLineDash([3 / scale, 2 / scale])
+                  ctx.strokeStyle = "#f59e0b"
+                  ctx.globalAlpha = 0.95
+                  ctx.lineWidth = 1.5 / scale
+                  ctx.stroke()
+                  ctx.setLineDash([])
+                  ctx.globalAlpha = 1
                 }
                 const marker = n.node ? classMarker(n.node.cls, n.color) : { shape: "circle" as const }
                 ctx.beginPath()

@@ -12,6 +12,8 @@ import type {
   FileTriefactResult,
   FileSourceResult,
   ActivityResult,
+  PatchList,
+  ApplyReport,
 } from "./types"
 
 let baseUrl = ""
@@ -103,5 +105,20 @@ export const graphClient = {
   // Live writer status + working-tree stale set (polled by the activity store).
   activity(): Promise<ActivityResult> {
     return get("/desktop/graph/activity")
+  },
+
+  // Pending patches grouped by symbol.
+  patches(): Promise<PatchList> {
+    return get("/desktop/graph/patches")
+  },
+
+  // Drop pending patches for a symbol (omit qname to drop all this session).
+  patchDrop(qname?: string): Promise<{ removed: number }> {
+    return post("/desktop/graph/patch-drop", qname ? { qname } : {})
+  },
+
+  // Apply all pending patches → ApplyReport.
+  patchApply(): Promise<ApplyReport> {
+    return post("/desktop/graph/patch-apply", {})
   },
 }

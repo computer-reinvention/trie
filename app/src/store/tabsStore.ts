@@ -9,10 +9,16 @@ import { create } from "zustand"
 export type TabView = "source" | "triefact"
 
 export const GRAPH_TAB_ID = "graph"
+export const PATCHES_TAB_ID = "patches"
 
 export interface GraphTab {
   id: typeof GRAPH_TAB_ID
   kind: "graph"
+}
+
+export interface PatchesTab {
+  id: typeof PATCHES_TAB_ID
+  kind: "patches"
 }
 
 export interface FileTab {
@@ -29,7 +35,7 @@ export interface FileTab {
   pendingFocusLine?: number
 }
 
-export type Tab = GraphTab | FileTab
+export type Tab = GraphTab | PatchesTab | FileTab
 
 interface TabsStore {
   tabs: Tab[]
@@ -60,7 +66,10 @@ function basename(relPath: string): string {
 }
 
 export const useTabsStore = create<TabsStore>((set, get) => ({
-  tabs: [{ id: GRAPH_TAB_ID, kind: "graph" }],
+  tabs: [
+    { id: GRAPH_TAB_ID, kind: "graph" },
+    { id: PATCHES_TAB_ID, kind: "patches" },
+  ],
   activeId: GRAPH_TAB_ID,
 
   openFile: (relPath, opts) => {
@@ -98,7 +107,7 @@ export const useTabsStore = create<TabsStore>((set, get) => ({
   activate: (id) => set({ activeId: id }),
 
   close: (id) => {
-    if (id === GRAPH_TAB_ID) return // graph tab is permanent
+    if (id === GRAPH_TAB_ID || id === PATCHES_TAB_ID) return // permanent tabs
     set((s) => {
       const idx = s.tabs.findIndex((t) => t.id === id)
       if (idx === -1) return {}

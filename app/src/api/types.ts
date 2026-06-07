@@ -312,6 +312,81 @@ export interface PermissionRequest {
   messageID?: string
 }
 
+// ---------------------------------------------------------------------------
+// Patch / cascade editing model (mirrors docs/cascade-editing-plan.md).
+// Fields beyond the current backend (kind, blast_radius, cascade) are optional
+// so the UI renders today's patch_list and lights up extra detail as it lands.
+// ---------------------------------------------------------------------------
+
+export type PatchKind = "modify" | "create" | "delete" | "rename"
+export type PatchOrigin = "agent" | "cascade" | "mixed"
+
+export interface PatchNote {
+  note?: string
+  reason?: string
+  session_id?: string
+  created_at?: number
+}
+
+export interface BlastRadius {
+  direct: number
+  cascade: number
+  cascade_count: number
+  hubs_stopped_at: string[]
+}
+
+// One symbol's pending patches (grouped), as returned by patch_list.
+export interface PatchEntry {
+  qname: string
+  count: number
+  origin: PatchOrigin
+  notes: PatchNote[]
+  // cascade-plan extensions (optional until the pipeline lands)
+  kind?: PatchKind
+  rename_to?: string
+  blast_radius?: BlastRadius
+}
+
+export interface PatchList {
+  patches: PatchEntry[]
+  // cascade-plan extensions
+  session_note?: string
+  apply_in_progress?: boolean
+}
+
+// Live apply progress (cascade-plan: activity().apply sub-object).
+export interface ApplyProgress {
+  phase: string // "merge" | "generate" | "fixup" | "commit" | ...
+  done: number
+  total: number
+  session_note?: string
+}
+
+// The hand-off artifact from commit() (cascade-plan §9).
+export interface ApplyReport {
+  ok: boolean
+  session_note?: string
+  applied?: {
+    symbols: number
+    files: number
+    files_detail?: Array<{ path: string; ok: boolean; symbols: number; lsp_iterations?: number }>
+  }
+  cascade_applied?: Array<{ qname: string; note?: string; origin?: PatchOrigin }>
+  unresolved?: Array<{
+    qname: string
+    stage?: string
+    code?: string
+    message?: string
+    source_pointer?: string
+    repatch?: { tool: string; args: Record<string, unknown> }
+  }>
+  totals?: { requested: number; applied: number; unresolved: number }
+  // current backend (patch_apply) returns a looser shape; keep it open
+  applied_count?: number
+  failed?: number
+  error?: { code?: string; message?: string }
+}
+
 // Desktop SSE event types
 export interface DesktopEvent {
   id: string

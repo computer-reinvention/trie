@@ -1,7 +1,8 @@
 import { GraphCanvas } from "@/components/GraphCanvas"
 import { TabStrip } from "./TabStrip"
 import { FileTabContent } from "./FileTabContent"
-import { useTabsStore, GRAPH_TAB_ID } from "@/store/tabsStore"
+import { PatchesPanel } from "./PatchesPanel"
+import { useTabsStore, GRAPH_TAB_ID, PATCHES_TAB_ID } from "@/store/tabsStore"
 
 // The central editor area: a tab strip over a stacked content region. The
 // graph canvas is mounted once and kept alive (so its force layout / zoom
@@ -13,6 +14,7 @@ export function Editor() {
   const tabs = useTabsStore((s) => s.tabs)
   const activeId = useTabsStore((s) => s.activeId)
   const graphActive = activeId === GRAPH_TAB_ID
+  const patchesActive = activeId === PATCHES_TAB_ID
 
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0">
@@ -24,6 +26,14 @@ export function Editor() {
           style={{ visibility: graphActive ? "visible" : "hidden", zIndex: graphActive ? 1 : 0 }}
         >
           <GraphCanvas className="h-full min-h-0" />
+        </div>
+
+        {/* Patches: permanent review surface, shown when its tab is active. */}
+        <div
+          className="absolute inset-0"
+          style={{ visibility: patchesActive ? "visible" : "hidden", zIndex: patchesActive ? 2 : 0 }}
+        >
+          <PatchesPanel />
         </div>
 
         {/* File tabs: each kept mounted once opened, shown only when active. */}
