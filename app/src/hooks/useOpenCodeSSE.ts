@@ -2,7 +2,7 @@ import { useEffect } from "react"
 import { useGraphStore } from "@/store/graphStore"
 import { useAgentStore } from "@/store/agentStore"
 import { choreographFor } from "@/graph/agentChoreography"
-import { motionPrefs, playCascade, ghostCascade, conductGlance } from "@/graph/conductor"
+import { motionPrefs, playCascade, ghostCascade, conductGlance, useConductor } from "@/graph/conductor"
 import { usePatchesStore } from "@/store/patchesStore"
 import type { ToolPart } from "@/api/types"
 
@@ -108,6 +108,24 @@ export function useOpenCodeSSE(opencodePort: number): void {
         g.pushTrail(q, "writing")
         g.setNote(q, noteFor(q, part), "writing")
         conductGlance(q, "writing")
+      }
+      // Non-symbol tools (bash, shell, fetch, …) have no graph target — surface
+      // them as an ambient HUD chip so the agent's off-graph actions are visible.
+      if (
+        part.state.status === "running" &&
+        !c.reads.length &&
+        !c.scans.length &&
+        !c.writes.length &&
+        !c.files.length
+      ) {
+        const t = part.tool.startsWith("trie_") ? part.tool.slice(5) : part.tool
+        const inp = part.state.input ?? {}
+        const txt =
+          (typeof inp.command === "string" && inp.command) ||
+          (typeof inp.description === "string" && inp.description) ||
+          (typeof inp.url === "string" && inp.url) ||
+          ""
+        useConductor.getState().setHud(t, String(txt).slice(0, 80))
       }
       for (const f of c.files) g.setFileAgentState(f, "writing")
       // explicit trace/flow edges animate as comets — unless reduced-motion.

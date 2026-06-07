@@ -103,6 +103,8 @@ interface ConductorStore {
   replaying: boolean
   crumbSeq: number
   lastGlance: string | null
+  // ambient HUD for non-symbol tools (bash, shell, fetch) that have no node
+  hud: { tool: string; text: string; ts: number } | null
 
   emitRipple: (qname: string, state: AgentState) => void
   emitComet: (from: string, to: string, state: AgentState) => void
@@ -111,6 +113,7 @@ interface ConductorStore {
   tick: (now: number) => boolean
   clearTurn: () => void
   setReplaying: (v: boolean) => void
+  setHud: (tool: string, text: string) => void
 }
 
 export const useConductor = create<ConductorStore>((set, get) => ({
@@ -122,6 +125,7 @@ export const useConductor = create<ConductorStore>((set, get) => ({
   replaying: false,
   crumbSeq: 0,
   lastGlance: null,
+  hud: null,
 
   emitRipple: (qname, state) =>
     set((s) => {
@@ -180,6 +184,8 @@ export const useConductor = create<ConductorStore>((set, get) => ({
     }),
 
   setReplaying: (replaying) => set({ replaying }),
+
+  setHud: (tool, text) => set({ hud: { tool, text, ts: Date.now() } }),
 }))
 
 // ---------------------------------------------------------------------------

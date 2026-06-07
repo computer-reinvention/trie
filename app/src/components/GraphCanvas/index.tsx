@@ -98,6 +98,8 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<ForceGraphMethods<any, any> | undefined>(undefined)
   const animatorRef = useRef(new GraphAnimator())
+  // current zoom factor — fade edges out when zoomed far (legibility + perf).
+  const zoomRef = useRef(1)
   // groups (role/subsystem) containing a symbol the agent touched THIS turn —
   // persists until the next turn so the component bubble stays marked.
   const touchedGroupsRef = useRef<Set<string>>(new Set())
@@ -514,6 +516,7 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
       )}
       <SearchPalette />
       <ReplayControl />
+      <ToolHud />
       <ExpandedPanel anchor={anchor} />
       <ChoreographyOverlay fgRef={fgRef} componentPos={componentPos} width={dims.w} height={dims.h} />
       <AgentActivityCards fgRef={fgRef} componentPos={componentPos} width={dims.w} height={dims.h} />
@@ -605,6 +608,9 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
           onNodeRightClick={onNodeRightClick}
           onNodeHover={onNodeHover}
           onBackgroundClick={onBackgroundClick}
+          onZoom={(z: { k: number }) => {
+            zoomRef.current = z.k
+          }}
           linkColor={(l) => {
             const lk = l as unknown as {
               kind?: string
@@ -613,6 +619,8 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
             }
             const s = typeof lk.source === "object" ? lk.source.id : lk.source
             const t = typeof lk.target === "object" ? lk.target.id : lk.target
+            // far-zoom: fade edges so the whole-system shape reads cleanly.
+            if (!highlightSet && zoomRef.current < 0.35) return "rgba(148,163,184,0.05)"
             if (highlightSet) {
               return highlightSet.has(s) && highlightSet.has(t)
                 ? "rgba(203,213,225,0.6)"
@@ -681,6 +689,26 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
           <p className="text-slate-600 text-sm">No system model loaded.</p>
         </div>
       )}
+    </div>
+  )
+}
+
+// Ambient HUD for non-symbol tools (bash/shell/fetch) — keeps off-graph agent
+// actions visible. Auto-hides a few seconds after the last such tool.
+function ToolHud() {
+  const hud = useConductor((s) => s.hud)
+  const [, force] = useState(0)
+  useEffect(() => {
+    if (!hud) return
+    const t = setTimeout(() => force((n) => n + 1), 3500)
+    return () => clearTimeout(t)
+  }, [hud])
+  if (!hud || Date.now() - hud.ts > 3500) return null
+  return (
+    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/90 px-3 py-1 text-xs">
+      <span className="w-3 h-3 border-2 border-slate-600 border-t-slate-300 rounded-full animate-spin" />
+      <span className="font-mono text-slate-300">{hud.tool}</span>
+      {hud.text && <span className="text-slate-500 font-mono truncate max-w-[280px]">{hud.text}</span>}
     </div>
   )
 }
