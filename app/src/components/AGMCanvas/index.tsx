@@ -7,15 +7,9 @@
 // camera (the attention centroid never moves the view). Minimal aesthetic: heat
 // reads through opacity/glow/size over fixed role geography.
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { useAGMStore } from "@/store/agmStore"
-import {
-  step as gravityStep,
-  clusterCentroidOf,
-  DEFAULT_GRAVITY,
-  type Body,
-  type Vec,
-} from "@/agm/gravity"
+import { computeTargets, easeToTargets, type Body } from "@/agm/gravity"
 import {
   roleColor,
   tierFor,
@@ -44,44 +38,18 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
   const bodiesRef = useRef<Map<string, Body>>(new Map())
   const rafRef = useRef<number | null>(null)
   const restRef = useRef(false)
-  const [, force] = useState(0)
 
   const systemModel = useAGMStore((s) => s.systemModel)
   const roleWells = useAGMStore((s) => s.roleWells)
   const roleByQname = useAGMStore((s) => s.roleByQname)
+  // Drives the idle hint: true until any symbol has accrued attention.
+  const hasAttention = useAGMStore((s) => s.massByQname.size > 0)
 
-  // Build/refresh bodies when the topology changes. Role wells are pinned bodies
-  // (fixed geography); symbols are free bodies seeded near their well.
+  // Bodies are created LAZILY — only when a symbol first receives attention.
+  // We never instantiate all 810 nodes (that scattered the canvas). The role map
+  // tells us where each active symbol belongs. Topology load just wakes the loop.
   useEffect(() => {
     if (!systemModel) return
-    const bodies = bodiesRef.current
-    // Role-well bodies (pinned).
-    for (const [role, well] of roleWells) {
-      const key = `role:${role}`
-      if (!bodies.has(key)) {
-        bodies.set(key, {
-          qname: key,
-          role,
-          pos: { ...well },
-          vel: { x: 0, y: 0 },
-          mass: 0,
-          pinned: true,
-        })
-      }
-    }
-    // Symbol bodies — keep existing positions across refresh (continuity).
-    for (const n of systemModel.nodes) {
-      if (bodies.has(n.qname)) continue
-      const well = roleWells.get(n.role || "untagged") ?? { x: 0, y: 0 }
-      bodies.set(n.qname, {
-        qname: n.qname,
-        role: n.role || "untagged",
-        pos: { x: well.x + (Math.random() - 0.5) * 80, y: well.y + (Math.random() - 0.5) * 80 },
-        vel: { x: 0, y: 0 },
-        mass: 0,
-        pinned: false,
-      })
-    }
     kick()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [systemModel, roleWells])
@@ -112,37 +80,51 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     const now = Date.now() / 1000
     store.recompute(now)
 
-    // Sync body masses from the current display-mass snapshot (+ propagation).
     const bodies = bodiesRef.current
     const mass = store.massByQname
     const prop = store.propagated
+    const roleByQ = store.roleByQname
+
+    // The set of qnames that currently carry attention (direct or propagated).
+    const active = new Set<string>(mass.keys())
+    for (const [q, v] of prop) if (v > 0) active.add(q)
+
+    // Lazily create a body the first time a qname becomes active; place it at its
+    // role well so it emerges from the right geography.
     let maxDisplay = 0
-    for (const b of bodies.values()) {
-      if (b.pinned) continue
-      const m = mass.get(b.qname)
-      const propAdd = prop.get(b.qname) ?? 0
+    for (const q of active) {
+      const m = mass.get(q)
+      const propAdd = prop.get(q) ?? 0
       const d = m ? m.display : propAdd > 0 ? displayMass(propAdd) : 0
+      if (d <= 0) continue
+      let b = bodies.get(q)
+      if (!b) {
+        const role = roleByQ.get(q) || "untagged"
+        const well = roleWells.get(role) ?? { x: 0, y: 0 }
+        b = { qname: q, role, pos: { ...well }, target: { ...well }, mass: d }
+        bodies.set(q, b)
+      }
       b.mass = d
       if (d > maxDisplay) maxDisplay = d
     }
-
-    // Investigation cluster pull (confidence scales the pull strength).
-    const inv = store.investigations.active()
-    const members = new Set(inv?.scope ?? [])
-    const bodyList = [...bodies.values()]
-    const clusterCentroid = members.size ? clusterCentroidOf(bodyList, members) : null
-    const cfg = {
-      ...DEFAULT_GRAVITY,
-      clusterPull: DEFAULT_GRAVITY.clusterPull * (inv ? inv.confidence : 0),
+    // Decay-out: drop bodies that have gone cold so they don't linger.
+    for (const [q, b] of bodies) {
+      if (!active.has(q)) {
+        bodies.delete(q)
+        continue
+      }
+      b.mass = mass.get(q)?.display ?? (prop.get(q) ? displayMass(prop.get(q)!) : 0)
     }
 
-    const energy = gravityStep(bodyList, roleWells, clusterCentroid, members, cfg)
+    // Deterministic attention layout: arrange active symbols around their role
+    // wells (hot = nearer centre), then ease toward targets (calm, no physics).
+    const bodyList = [...bodies.values()]
+    computeTargets(bodyList, roleWells, maxDisplay)
+    const motion = easeToTargets(bodyList, roleWells)
     draw(maxDisplay)
 
-    // Stop when settled AND no residual heat motion. Recompute keeps decaying
-    // mass, so we keep looping a bit while there's live mass to fade.
-    const hasHeat = maxDisplay > 0
-    if (energy < cfg.restThreshold && !hasHeat) {
+    // Stop when nothing is animating and nothing is hot.
+    if (motion < 0.5 && maxDisplay <= 0) {
       restRef.current = true
       rafRef.current = null
       return
@@ -173,17 +155,35 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     const bodies = bodiesRef.current
     const store = useAGMStore.getState()
 
-    // Role wells (continents) — always visible, low-key.
-    for (const [role, well] of roleWells) {
+    // Progressive emergence: a role well (ring + label) is drawn ONLY when the
+    // role has at least one VISIBLE symbol this frame — i.e. the agent has
+    // actually attended to something in it and that symbol is above the
+    // visibility tier. Roles with only sub-threshold mass draw nothing, so there
+    // are never empty labeled circles. Derive visible roles from the symbols we
+    // are about to render, not from the raw role-mass sum.
+    const visibleRoleHeat = new Map<string, number>()
+    for (const b of bodies.values()) {
+      if (b.mass <= 0) continue
+      if (tierFor(b.mass, maxDisplay) === "hidden") continue
+      visibleRoleHeat.set(b.role, Math.max(visibleRoleHeat.get(b.role) ?? 0, b.mass))
+    }
+    for (const [role, heat] of visibleRoleHeat) {
+      const well = roleWells.get(role)
+      if (!well) continue
+      const intensity = maxDisplay > 0 ? Math.min(1, heat / maxDisplay) : 0
       ctx.beginPath()
       ctx.arc(well.x, well.y, 90, 0, Math.PI * 2)
       ctx.strokeStyle = ROLE_RING_COLOR
+      ctx.globalAlpha = 0.25 + 0.4 * intensity
       ctx.lineWidth = 1
       ctx.stroke()
+      ctx.globalAlpha = 1
       ctx.fillStyle = ROLE_LABEL_COLOR
+      ctx.globalAlpha = 0.5 + 0.5 * intensity
       ctx.font = "12px ui-sans-serif, system-ui"
       ctx.textAlign = "center"
       ctx.fillText(role, well.x, well.y - 98)
+      ctx.globalAlpha = 1
     }
 
     // Attention-graph (reasoning) edges — violet, over the (omitted) repo edges.
@@ -204,7 +204,7 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
 
     // Symbol nodes — only those above the relative visibility tier.
     for (const b of bodies.values()) {
-      if (b.pinned || b.mass <= 0) continue
+      if (b.mass <= 0) continue
       const tier = tierFor(b.mass, maxDisplay)
       if (tier === "hidden") continue
       const r = nodeRadius(b.mass, maxDisplay)
@@ -281,7 +281,10 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const empty = useMemo(() => !systemModel, [systemModel])
+  // The canvas is blank by design until the agent moves. Show a quiet idle hint
+  // only when there's no attention yet (and clear it the moment any appears).
+  const showIdleHint = useMemo(() => !hasAttention, [hasAttention])
+  void systemModel
 
   return (
     <div className={className} style={{ position: "relative" }}>
@@ -289,7 +292,7 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
         ref={canvasRef}
         style={{ width: "100%", height: "100%", display: "block", cursor: "grab" }}
       />
-      {empty && (
+      {showIdleHint && (
         <div
           style={{
             position: "absolute",
@@ -297,12 +300,12 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "#64748b",
+            color: "#3f4a5a",
             fontSize: 13,
             pointerEvents: "none",
           }}
         >
-          Attention map — waiting for the graph…
+          No attention yet — the map fills in as the agent works.
         </div>
       )}
       {/* roleByQname referenced to keep the subscription live for refreshes */}
