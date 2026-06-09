@@ -5,6 +5,16 @@ trie available to an agent and `hook_install` makes it automatic, this module
 makes trie *unavoidable* — it replaces or supplements the agent's built-in
 tools so the agent reaches for trie reflexively, not just when prompted.
 
+NOTE — trie-native opencode fork: the `computer-reinvention/opencode` fork
+ships the trie tools as first-class native tools (`trie_*`), demotes the stock
+file tools to backup, and injects the trie usage guide into its system prompt
+(see `docs/core/trie-tool-extensions.md` and the fork's
+`packages/opencode/src/tool/trie/`). On that fork these injected `.opencode/
+tools/*.ts` wrappers are REDUNDANT — they duplicate native tools. When
+installing against the fork, prefer MCP registration + the refresh hook only,
+and skip the tool-override files (delete `.opencode/tools/*.ts` if present).
+Stock upstream opencode still needs the wrappers below; that path is unchanged.
+
 The interception story differs per harness:
 
 - **opencode** supports drop-in tool replacement via `.opencode/tools/<name>.ts`.
