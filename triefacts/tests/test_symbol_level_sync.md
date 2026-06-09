@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: tests/test_symbol_level_sync.py
 file_fingerprint: 557cc0ef4d2d6936d9449cad54b52e04caa6f9bc6c9c0b5ae7dabf808cdebcd5
-last_synced_at: '2026-06-06T13:44:40Z'
+last_synced_at: '2026-06-07T05:47:07Z'
 description: 'Symbol-level sync: regenerate only the symbols actually asked for.'
 defines:
 - kind: module

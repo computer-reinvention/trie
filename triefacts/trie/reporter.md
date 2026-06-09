@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.5
 source: trie/reporter.py
-file_fingerprint: 1324c7f2bf019151e6a13c3bd4f2c30fb44304177b10b233c5a10f0fc364393f
-last_synced_at: '2026-06-06T14:11:16Z'
+file_fingerprint: 7984f26bb818a3e310c930b90450211dc2e3cc828dd8edde6a9180ddd0b29008
+last_synced_at: '2026-06-07T03:56:58Z'
 defines:
 - kind: module
   qualified_name: trie/reporter:__module__
@@ -91,13 +91,14 @@ defines:
 incoming_refs: 17
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=trie/reporter:__module__ fingerprint=fe52c04599ad070a010d6054d6a5ff2dd139d46ddaa3ce920695ca8a44a76ba6 body_fp=4621d6e6415e209fea4bcc8503eb2ea11a45abebb3d9267369b72cee6a2b7ff5 source_ref=3ba652d6105715f40601b888262fe8cfd75296ee role=io -->
-Provides console reporting infrastructure with verbosity-gated output and progress tracking.
+<!-- trie:section symbol=trie/reporter:__module__ fingerprint=9ab13fd9b838c6b87fb62b143ba0330db33c452a4409281be3f3ebc0c84d440b body_fp=37df5d1ba79a59a9b669823577300a1026d9e66b729f96885fac6f36a7ac5234 source_ref=6577d244da82eb536e12f7501ed4b0e6350a4b25 role=io -->
+Provides console reporting infrastructure with verbosity controls and Rich-based progress tracking.
 
-- **Verbosity**: Three-level enum controlling output volume (MUTE/MEDIUM/VERBOSE)
-- **Reporter**: Main console wrapper with info/success/error logging and status display
-- **ProgressHandle**: Context manager for file-by-file progress bars with metrics
-- **_NullContext**: No-op context manager for silent mode operations
+- Requires Rich library for terminal output
+- `Reporter` class handles verbosity-gated console messages and status displays
+- `ProgressHandle` implements uv-style parallel file processing progress with overall bar and per-file spinners
+- `Verbosity` enum defines three output levels: MUTE, MEDIUM, VERBOSE
+- Custom Rich column classes prevent progress bars on spinner-only tasks
 <!-- trie:end -->
 <!-- trie:section symbol=trie/reporter:_OverallOnlyBar fingerprint=58f9db3e4a84b1b7f35702ae67cfa05ff79e119d01c584588483109d88aa79cf body_fp=4bf55886024d7ea526bdd9d452e92d3f6eb259b7cc0550249f9d7c6d1932d247 source_ref=b952f8c0f670efda761b03e342b67367021c2ed6 role=util -->
 Renders a progress bar only for determinate tasks, hiding bars from indeterminate spinner tasks.

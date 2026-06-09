@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/cli.py
 file_fingerprint: 14c66f0a1a83676faa4f5a69200fd92ed2c90f6adcac11e87352cdc17bab1a00
-last_synced_at: '2026-06-06T14:22:38Z'
+last_synced_at: '2026-06-07T05:47:18Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
@@ -325,29 +325,26 @@ Configured with name "trie" and help text describing trie as an artefact tree th
 <!-- trie:section symbol=trie/cli:console fingerprint=dff6104fc5140b6d96afa42ceddb0c4c0d1e4b0cb6686a2debb687f087a24c7e body_fp=e2c2c01956b6de43e5d529c487368909586063344bab7f6e2a55e75a75c243fe source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
 Creates a Rich Console instance for styled terminal output across CLI commands.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_get_reporter fingerprint=cf94ab09cbdb7bfbbbc6f18b1aef37b7bc59939b02d3ec4ba5d2b3408cd3d2a4 body_fp=0e802d7357b1bee3d9b066b46322f35ad61c415e9cd79afdc2ae6aa2ff619701 source_ref=085640f358eb2ab2e288a4afb6fcf64a4d2c2fb5 role=util -->
-Resolves the Reporter instance attached to the Typer context, returning a default MEDIUM Reporter when none exists.
+<!-- trie:section symbol=trie/cli:_get_reporter fingerprint=cf94ab09cbdb7bfbbbc6f18b1aef37b7bc59939b02d3ec4ba5d2b3408cd3d2a4 body_fp=536931cb5076506af220165194276b5929ce98bdf3a9e0df216f4a4003f7a41c source_ref=9d6af9f4846cf0306a04729544588f9feb4f105e role=util -->
+Resolve the Reporter set up by the root callback or return a default MEDIUM reporter.
 
-- Returns the `ctx.obj` Reporter when available, otherwise a new Reporter with default settings
-- Designed for subcommands that may run outside normal Typer dispatch (e.g. tests)
+- Returns the Reporter stored in `ctx.obj` if present, otherwise creates a new Reporter with default settings
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_ProgressAdapter fingerprint=0022daa3067edef11e4325eaefa822c8738456151b41bc82923a7c95c106acf9 body_fp=15bff763510408b0bced46bb2e6fe63a9886ac002614b3a9a645a5e1a25fe16f source_ref=085640f358eb2ab2e288a4afb6fcf64a4d2c2fb5 role=util -->
-Bridge from sync's ProgressCallback Protocol to a Reporter ProgressHandle.
+<!-- trie:section symbol=trie/cli:_ProgressAdapter fingerprint=0022daa3067edef11e4325eaefa822c8738456151b41bc82923a7c95c106acf9 body_fp=5f654bfe97d23cbcce758ade32fa9d351f2f093ebcd333f840c7483e1b4aa2bd source_ref=9d6af9f4846cf0306a04729544588f9feb4f105e role=util -->
+Bridges sync's ProgressCallback protocol to a Reporter's ProgressHandle, creating the handle lazily on first use.
 
-Creates the underlying ProgressHandle lazily on the first `on_start` call so callers don't need to know the total upfront. The sync internals report the total along with the per-file index. Implements the ProgressCallback interface by forwarding events to the Reporter's progress tracking system.
-
-- Tracks cumulative cost to compute per-file cost deltas
-- Thread-safe ProgressHandle creation via `_lock`
-- Forwards start/done/skip events to the underlying ProgressHandle
-- Automatically enters/exits the ProgressHandle context manager
+- Thread-safe lazy initialization via `_lock` to support concurrent sync operations
+- Tracks per-file cost deltas by subtracting previous running total from current
+- Auto-enters/exits the ProgressHandle context manager lifecycle
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_ProgressAdapter.__init__ fingerprint=62d7f3387263067099a16c5c411db665b3dabb0d0c2701008d99dd22a9a9d982 body_fp=11f902d0544ef2808b6f6d2a94e483521395acb90795924dfe2c089fd785173a source_ref=085640f358eb2ab2e288a4afb6fcf64a4d2c2fb5 role=util -->
-Initializes _ProgressAdapter with a Reporter and label for lazy progress handle creation.
+<!-- trie:section symbol=trie/cli:_ProgressAdapter.__init__ fingerprint=62d7f3387263067099a16c5c411db665b3dabb0d0c2701008d99dd22a9a9d982 body_fp=ef2785eae06937242380641ce06c73b2bb9c36809f1dca9cc128c1fb8c2d89bb source_ref=9d6af9f4846cf0306a04729544588f9feb4f105e role=util -->
+Initializes _ProgressAdapter with a Reporter and progress label.
 
-- Stores provided reporter and label for later handle creation
-- Sets handle to None (created on first `on_start` call)
-- Initializes running cost tracker to 0.0
-- Creates threading lock for thread-safe handle creation
+- `reporter`: Reporter instance that will create the actual ProgressHandle
+- `label`: Display label for the progress bar
+- `handle`: Lazily created on first `on_start` call to avoid requiring upfront totals
+- `_prev_running_cost`: Tracks cumulative cost to compute per-file deltas
+- `_lock`: Ensures thread-safe handle creation across concurrent progress callbacks
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:_ProgressAdapter._ensure fingerprint=67aef789d4a34e8f4c519362a59b70a41784bc0e2039ff8ee536353e1ab334ac body_fp=2b9ab181186d3a4784511cf0c24bbd7afe3afc3c240577d1b3875950f4836ebc source_ref=085640f358eb2ab2e288a4afb6fcf64a4d2c2fb5 role=util -->
 _ProgressAdapter._ensure creates and enters the underlying ProgressHandle lazily on first call.
@@ -432,14 +429,14 @@ Context manager that acquires a write lock for the duration of a command or exit
 - Hook-driven refresh commands get queuing semantics instead
 - Exit code 2 is transient (retry), exit code 1 is non-transient (fix input)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_root fingerprint=cb38f4f23c7d70341f3303813bbf16946ba34f8eb595e29d5976b6172f7ec356 body_fp=0730ef357cf13cb909f2d489667f5a21f5a8e22868c4a61180bd00ae80aa6c48 source_ref=085640f358eb2ab2e288a4afb6fcf64a4d2c2fb5 role=entrypoint -->
-Root callback that sets up verbosity, handles --version, shows help when no subcommand is given, and initializes telemetry.
+<!-- trie:section symbol=trie/cli:_root fingerprint=cb38f4f23c7d70341f3303813bbf16946ba34f8eb595e29d5976b6172f7ec356 body_fp=46c454dfcd7ddbba6f775067e9b71169d75d2af9ef95b366c3725fe3b28f01ce source_ref=9d6af9f4846cf0306a04729544588f9feb4f105e role=entrypoint -->
+Typer root callback that processes global flags, sets up the Reporter, and bootstraps telemetry.
 
-- Validates that --quiet and --verbose are mutually exclusive (exits with code 2 if both set)
-- Creates Reporter with appropriate verbosity level and stores in context object  
-- Shows version and exits if --version flag set
-- Shows help and exits if no subcommand specified
-- Records command invocation via telemetry bootstrap
+- Validates that `--quiet` and `--verbose` are mutually exclusive
+- Sets verbosity level based on flags and attaches Reporter to context object
+- Exits with version string if `--version` is given
+- Shows help and exits if no subcommand is provided
+- Initializes telemetry tracking for the command invocation
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:_telemetry_bootstrap fingerprint=f6f6f0318c080e04dbad6edbf345f40a4e69fcc84f49dc4d7d452fe5aa73c0cb body_fp=f3a40c9f16db60e4660ec4c1670dc066e71d4e0d90c0eeafbdf048ae11362284 source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=monitoring-telemetry -->
 Configures telemetry from trie.toml debug settings and emits a CLI invocation event.
@@ -477,7 +474,7 @@ _NoOpStatus.__enter__ returns self to implement the context manager protocol as 
 
 - Always returns None regardless of exception arguments
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:plan_cmd fingerprint=373611a9d3e4483138772bfb37fc6df782949064514db26f320d72889ab86b34 body_fp=096967cbfb059eb00835ca8b327e555e0b3ad960d1a1450c36a0341c921cbd9b source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
+<!-- trie:section symbol=trie/cli:plan_cmd fingerprint=373611a9d3e4483138772bfb37fc6df782949064514db26f320d72889ab86b34 body_fp=096967cbfb059eb00835ca8b327e555e0b3ad960d1a1450c36a0341c921cbd9b source_ref=9d6af9f4846cf0306a04729544588f9feb4f105e role=entrypoint -->
 Scans project for drift, computes either incremental or full-bootstrap worklist, and displays estimated cost before any LLM work begins.
 
 - Auto-detects incremental mode (stale files + cascade) vs full re-bootstrap based on existing triefacts unless `--all` forces full mode
@@ -508,17 +505,14 @@ Probe whether another trie process holds the project's write lock, exiting 2 if 
 - Exit code 2: lock held by another process, caller should retry
 - Uses acquire-then-immediately-release pattern that never blocks or interferes
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:refresh_cmd fingerprint=36681f941b735fea43dbb79b8fe4f1ebec74c7dac32dfbb7cd157e00d598086c body_fp=dd8c546b9808eb3ebe6e856477abb35fa3c252f20368d3d62dfa02170f8201c5 source_ref=085640f358eb2ab2e288a4afb6fcf64a4d2c2fb5 role=entrypoint -->
-CLI command that brings the graph and triefacts up to date with the working tree.
+<!-- trie:section symbol=trie/cli:refresh_cmd fingerprint=36681f941b735fea43dbb79b8fe4f1ebec74c7dac32dfbb7cd157e00d598086c body_fp=63174663dd5c1843bb2300b1fbc0756ece2730568c1e12ab01ae137c99053051 source_ref=9d6af9f4846cf0306a04729544588f9feb4f105e role=entrypoint -->
+Handles the `trie refresh` command, which brings the symbol graph and triefact tree current with filesystem changes.
 
-Implements the "freshness gate" for agent harnesses:
-- `--before-turn`: cheap pre-turn check, full sync only if HEAD or files moved
-- `--after-turn`: post-turn sweep to detect filesystem changes and sync affected files
-- Neither flag defaults to `--after-turn` behavior
-- `--json` emits machine-readable JSONL progress instead of Rich UI
-- `--sync` enables prose regeneration (default is graph-only refresh)
+Runs in two modes:
+- `--before-turn`: Pre-turn freshness gate that no-ops if nothing changed since last refresh
+- `--after-turn`: Post-turn sweep that detects and syncs filesystem changes from agent edits
 
-Uses refresh lock to serialize concurrent invocations and implements queued tail pass to coalesce rapid contests.
+By default runs graph-only refresh (fast) unless `--sync` forces prose regeneration. Uses a file lock to serialize concurrent refresh processes and implements tail-pass coalescing to handle rapid successive invocations. Supports `--json` mode for machine-readable progress output.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:_refresh_progress fingerprint=a7a68c1865cf0d4dd8de503731d2996168a5c600ba65cda8fbb577fc17bf8005 body_fp=db51678de4e0f2c2e33478ca2b4db672eabdf8b923a1fa2f0cc8e3957ceeeadb source_ref=085640f358eb2ab2e288a4afb6fcf64a4d2c2fb5 role=orchestration -->
 Context manager that selects the appropriate progress sink for refresh operations, wrapping it to mirror events into the shared `.trie/` activity state.
@@ -605,15 +599,14 @@ Supports single-file sync, dry-run preview, metadata-only refresh, roles-only cl
 <!-- trie:section symbol=trie/cli:_has_existing_triefacts fingerprint=e3127b5904f703ca364034223353af7b38d3aa9ec4c1fa155e0f4f69852c6b1c body_fp=0a62d5928c91a171e378bd5fab17ad701335a6b91b910ea6c795000ccad9b267 source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
 Returns True if the triefacts directory exists and contains at least one markdown file.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_run_full_pass fingerprint=7d95a1915492c124bf4e1cd57c890fddd3506f3c704b834bb11aa7bd1d0282e7 body_fp=53c5b7edffca7b18f7580653f574a8ddf59386de9050e6bc70dfecea7bb089c6 source_ref=085640f358eb2ab2e288a4afb6fcf64a4d2c2fb5 role=orchestration -->
-Executes first-run or forced full re-pass bootstrap sync for all in-scope files.
+<!-- trie:section symbol=trie/cli:_run_full_pass fingerprint=7d95a1915492c124bf4e1cd57c890fddd3506f3c704b834bb11aa7bd1d0282e7 body_fp=a3f63996eabb54f19bfaa9b0a9c5d12125b87ab13bc285598a28131753953fc1 source_ref=9d6af9f4846cf0306a04729544588f9feb4f105e role=orchestration -->
+Executes first-run bootstrap sync: scans project, builds plan, prompts for confirmation, then generates triefacts.
 
-- Scans project to build symbol graph and token estimation plan
-- Requires interactive confirmation or explicit budget/limit for cost control
-- Reports progress to shared activity state for cross-process visibility
-- Reports actual vs estimated costs and files synced/skipped due to caps
+- Requires budget/limit or interactive confirmation when no cap is set
+- Scans project and builds token estimation plan before proceeding
+- Reports final cost comparison (estimated vs actual) and files processed
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_run_dry_run_diff fingerprint=ea340e6fb3ae76699d84d7c95cb3dbffd3a8307777a7fada12178a997f8133c5 body_fp=aef73997fa835e6c4cb57d5089fed793e34be8fbd933335d2ba9ff6d1f88985f source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
+<!-- trie:section symbol=trie/cli:_run_dry_run_diff fingerprint=ea340e6fb3ae76699d84d7c95cb3dbffd3a8307777a7fada12178a997f8133c5 body_fp=aef73997fa835e6c4cb57d5089fed793e34be8fbd933335d2ba9ff6d1f88985f source_ref=9d6af9f4846cf0306a04729544588f9feb4f105e role=orchestration -->
 Implements `trie sync --dry-run` by regenerating stale triefacts into `.trie/preview/` and printing unified diffs.
 
 - **model**: Uses `models.bootstrap` if not overridden
@@ -621,7 +614,7 @@ Implements `trie sync --dry-run` by regenerating stale triefacts into `.trie/pre
 - **output**: Prints per-file diffs or notes fingerprint-only changes
 - **exit**: Reports total cost and skipped files due to budget constraints
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_run_single_file_sync fingerprint=17df35b7143b22bb3651c9e3571e4496066301f0b00f39213054f3b892dbda71 body_fp=c35712090a9c65e3a57bcfb675c014574380f58867ea42c70aa201a7be19af8b source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
+<!-- trie:section symbol=trie/cli:_run_single_file_sync fingerprint=17df35b7143b22bb3651c9e3571e4496066301f0b00f39213054f3b892dbda71 body_fp=c35712090a9c65e3a57bcfb675c014574380f58867ea42c70aa201a7be19af8b source_ref=9d6af9f4846cf0306a04729544588f9feb4f105e role=orchestration -->
 Sync a single file specified by `--file` option in the `sync` command.
 
 - `file`: Path to the source file to sync; must exist
@@ -639,22 +632,20 @@ Refreshes triefact front matter from the live store without LLM calls, designed 
 - Skips files outside source_root and no-ops when metadata already matches
 - Reports changed count vs total processed files
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_run_roles_only_sync fingerprint=22454bb15b78ae54b3e1a5b86539b90e887f62c4a09831c904b19c783d7248d5 body_fp=996c1a3cbf5c4a5f95bf697a987f735dcafe16bfd5c79e66dae459ecfe7bb79e source_ref=173b70d2a0789e0a1b8d64b4c2eeb18dc6a5a50c role=orchestration -->
-Runs role-only sync mode: derives/loads architectural taxonomy then classifies every symbol without regenerating prose.
+<!-- trie:section symbol=trie/cli:_run_roles_only_sync fingerprint=22454bb15b78ae54b3e1a5b86539b90e887f62c4a09831c904b19c783d7248d5 body_fp=42115c362dad4734b761057c0fdea134a726f44d4334c1aa37664e793e736ae6 source_ref=9d6af9f4846cf0306a04729544588f9feb4f105e role=orchestration -->
+Runs the roles-only sync mode: derives/loads role taxonomy then classifies every symbol against it without regenerating prose.
 
-- Scans project to refresh symbol store before classification
-- Uses cascade model by default, overridden by model parameter
-- Reports taxonomy derivation when rederive_taxonomy forces fresh vocabulary
-- Shows classification summary: symbols processed, files touched, roles changed
+- Scans project first to ensure store reflects current source
+- Uses cascade model (or override) for role classification
+- Reports taxonomy derivation, symbols classified, and role changes
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_run_incremental_sync fingerprint=f9d0480c1c4ff3cdc1921900aed8e4f09e3e91d710286d21a362fb8284352bdc body_fp=f8108f0fb1d772de066f11655d3a1837adec2747464429a4e7cb02308bfbcd19 source_ref=085640f358eb2ab2e288a4afb6fcf64a4d2c2fb5 role=orchestration -->
-Executes incremental sync after drift detection, regenerating only stale triefacts and their cascade dependencies.
+<!-- trie:section symbol=trie/cli:_run_incremental_sync fingerprint=f9d0480c1c4ff3cdc1921900aed8e4f09e3e91d710286d21a362fb8284352bdc body_fp=2b16655553becaf9d2a82406503ac8a80c0305f39f70be0b7a9549f9c8e4c790 source_ref=9d6af9f4846cf0306a04729544588f9feb4f105e role=orchestration -->
+Execute an incremental sync that regenerates only stale triefacts and their cascade dependencies.
 
-- Loads project config and resolves model from `--model` flag or `config.models.cascade`
-- Calls `run_incremental` to detect drift and regenerate affected triefacts within budget/limit constraints
-- Reports orphan triefact cleanup, sync counts (directly stale vs cascaded), and actual cost
-- Exits early with success message if no work needed
-- Mirrors progress into `.trie/activity.jsonl` for cross-process status visibility
+- Loads project config and opens the SQLite store with activity progress tracking
+- Calls `run_incremental` to sync directly stale files and their cascade neighbors
+- Reports orphan triefact removals and sync statistics to the user
+- Honors budget/limit constraints and reports any files skipped due to those caps
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:setup_cmd fingerprint=0051558e5dd44636f47dea98a8f82c433c1de0f0d9efa31fbd1dd98e4cd9d1e1 body_fp=2c404ef25f92f2844eb0bf457b69f65575ebc192368579bb130b4198137c29af source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=agent-integration -->
 Integrates trie into coding agents by installing hooks, tool overrides, and documentation.
@@ -692,7 +683,7 @@ Formats an installation action result as a display string with optional path suf
 - Returns `action` alone when `path` is None, otherwise `"action → path"`
 - Used by setup command renderers for consistent MCP and hook line formatting
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_open_tools fingerprint=9ff890870c2306ffd8bde89af77920adb349e44244a0688aa15babc3e845bd9b body_fp=21c17059efeb9d659493f91f06cd3aea63b05d387ef3446792e9d5aa97a2a34e source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
+<!-- trie:section symbol=trie/cli:_open_tools fingerprint=9ff890870c2306ffd8bde89af77920adb349e44244a0688aa15babc3e845bd9b body_fp=21c17059efeb9d659493f91f06cd3aea63b05d387ef3446792e9d5aa97a2a34e source_ref=9d6af9f4846cf0306a04729544588f9feb4f105e role=util -->
 Resolves project root from trie.toml and returns TrieTools instance configured for CLI telemetry.
 
 • Returns TrieTools with event_name="cli_call" to distinguish CLI usage from MCP calls in audit logs
@@ -905,14 +896,14 @@ Creates a fire-and-forget edit patch against a symbol in the trie graph store.
 - Generates a unique session ID for tracking related patches together
 - Returns the patch ID after successful creation
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:patch_apply_cmd fingerprint=9cf11ef78cef5d13cb4857a8bc0ecc6754882d3d1d57682b241f6af79429ae30 body_fp=2cfec0d03c76b1ca7e5123e335fac1b16000a12f3ab244f9442352bd826db597 source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
+<!-- trie:section symbol=trie/cli:patch_apply_cmd fingerprint=9cf11ef78cef5d13cb4857a8bc0ecc6754882d3d1d57682b241f6af79429ae30 body_fp=d5ed727e2ec9bd0051cf28b2bd8e6d2793f31a393a10b87faa575b9e13e6d655 source_ref=9d6af9f4846cf0306a04729544588f9feb4f105e role=api -->
 Executes all pending patches by merging them, generating updated source and prose, cascading changes, and committing results.
 
 - Uses configured edit model unless overridden via `--model`
-- Shows detailed per-symbol progress when `--verbose` is enabled
+- Shows detailed per-symbol progress when `--verbose` is enabled  
 - Exits with code 1 if patch application fails
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:patch_preview_cmd fingerprint=5ecdfc45e6454337fb86ebe6924f33a93e19cdc782fe0ed3e553ac2199acaae7 body_fp=f94dacf003102922486a8b112e1d9578db6a53a1d39651c0ec99b1c7bc16c0ae source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
+<!-- trie:section symbol=trie/cli:patch_preview_cmd fingerprint=5ecdfc45e6454337fb86ebe6924f33a93e19cdc782fe0ed3e553ac2199acaae7 body_fp=f94dacf003102922486a8b112e1d9578db6a53a1d39651c0ec99b1c7bc16c0ae source_ref=9d6af9f4846cf0306a04729544588f9feb4f105e role=api -->
 Previews what `trie patch apply` would execute without running it.
 
 Displays a Rich table showing pending patches grouped by symbol with cascade indicators. Reports zero patches with an info message if none are pending.
@@ -939,7 +930,7 @@ Run the trie MCP server over stdio as a Typer command.
 
 Delegates to `_run_mcp_serve()` for the actual server implementation.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_run_mcp_serve fingerprint=ae7533faa0329509290b89496e7a1965bcac67339cfb61c9d2092872d3505fb6 body_fp=73c11dc03b04976bf9a2fc8e80637299abc238437977e34a37ba8ed763f61b6e source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=mcp-server -->
+<!-- trie:section symbol=trie/cli:_run_mcp_serve fingerprint=ae7533faa0329509290b89496e7a1965bcac67339cfb61c9d2092872d3505fb6 body_fp=73c11dc03b04976bf9a2fc8e80637299abc238437977e34a37ba8ed763f61b6e source_ref=9d6af9f4846cf0306a04729544588f9feb4f105e role=entrypoint -->
 Starts the MCP server over stdio after validating the project configuration.
 
 - Locates trie.toml and validates config structure without using its contents

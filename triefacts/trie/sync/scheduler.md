@@ -105,6 +105,6 @@ Groups tasks by hop distance into sequential bands for wave-based execution.
 - Returns bands in ascending hop order so directly-changed files complete before callers
 - Tasks with identical hop values share a band and run in parallel
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/scheduler:run_waves fingerprint=92a7447fd39fac0a5482425e7db502ec5df91cf249715247ed57310759e91216 body_fp=f45d9d8af78513664f3b2ab036218da5ad97e07994ff32fdb9eeec5544c911c0 -->
+<!-- trie:section symbol=trie/sync/scheduler:run_waves fingerprint=92a7447fd39fac0a5482425e7db502ec5df91cf249715247ed57310759e91216 body_fp=f45d9d8af78513664f3b2ab036218da5ad97e07994ff32fdb9eeec5544c911c0 role=documentation-sync -->
 Executes file sync tasks in depth-banded parallel waves with budget and limit enforcement. Coordinates wave-based parallel file processing by grouping tasks into hop-distance bands that execute sequentially, preserving dependency ordering while allowing full parallelism within each band. When budget or limit constraints are active, forces single-threaded execution to prevent concurrent overshoot of caps.
 <!-- trie:end -->

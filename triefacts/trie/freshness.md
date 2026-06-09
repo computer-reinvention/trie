@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/freshness.py
 file_fingerprint: 6667a9d9073e66122b06cf34d53d4644f1e6880d1097dfc5cc726682e13e9bca
-last_synced_at: '2026-06-06T14:03:40Z'
+last_synced_at: '2026-06-07T05:47:25Z'
 description: 'Freshness gate: keep the graph + triefact tree current with respect
   to disk and HEAD.'
 defines:
@@ -120,14 +120,14 @@ Returns True if two mtime dictionaries disagree on any file path or modification
 - Detects new files (in `b` but not `a`), removed files (in `a` but not `b`), and modified files (different mtime)
 - Uses exact float comparison since filesystem mtimes have fixed precision
 <!-- trie:end -->
-<!-- trie:section symbol=trie/freshness:FreshnessResult fingerprint=816abdf4f2c58da17b2e70bf2657d6a3129edae01b967d49e8fad0bafdf1f19b body_fp=4c8412693d21e09c217801ef0fa53907a4355795a9d891143e9567bf4e8db8e4 source_ref=14929b2b4fde4589611c3467f8350de2b33f88a9 role=model -->
-Records the outcome of a freshness check operation.
+<!-- trie:section symbol=trie/freshness:FreshnessResult fingerprint=816abdf4f2c58da17b2e70bf2657d6a3129edae01b967d49e8fad0bafdf1f19b body_fp=49f08a6f25c8cd0fdd11f233a48b5f42ee83a6b7db413b02f729eb8694c0912c source_ref=c6ce1d9dad031d3054b2bceb7224cbf06f70da61 role=model -->
+Immutable result of a freshness check containing rebuild status and metadata.
 
-- `refreshed`: whether the graph was rebuilt during the check
-- `reason`: why the freshness check took its specific action path
-- `head`: git SHA at check time for telemetry and debugging
-- `incremental`: underlying incremental sync result when inline LLM sync ran
-- `stale_files`: triefacts whose prose now lags source after a mtimes_moved refresh
+- `refreshed`: whether the graph was rebuilt during this check
+- `reason`: why the check triggered (unchanged, head_moved, mtimes_moved, no_stamp, empty_store)
+- `head`: git HEAD SHA at time of check
+- `incremental`: LLM sync result when `sync_prose=True`, otherwise None
+- `stale_files`: triefact files needing regeneration after mtimes_moved refresh
 <!-- trie:end -->
 <!-- trie:section symbol=trie/freshness:ensure_fresh_before_turn fingerprint=2ab9f9c71b811b89d971b1353c6d8caf51709091ea4b8e0d36261d6723e89dc6 body_fp=df55c6f6b80b896848d26ce6b52dffaf96e5c95d332627a130c6c8d68235bbdd source_ref=14929b2b4fde4589611c3467f8350de2b33f88a9 role=orchestration -->
 Runs a cheap freshness probe at the start of an agent turn to ensure the graph and triefacts reflect current state.
@@ -141,7 +141,7 @@ Runs freshness sweep after agent turn to catch files edited during the just-fini
 
 - `sync_prose`: whether to regenerate prose inline instead of marking files stale
 <!-- trie:end -->
-<!-- trie:section symbol=trie/freshness:_ensure_fresh fingerprint=90bcf94f867b3a92154d10bf07e4212c396f7fd58fc4fca4bafbe1e54fd56450 body_fp=4cd1516dc444d4af3b78852ce3f19ad62ddb9d1d5f33459bc0ce75dec3f2279c source_ref=c6ce1d9dad031d3054b2bceb7224cbf06f70da61 role=orchestration -->
+<!-- trie:section symbol=trie/freshness:_ensure_fresh fingerprint=90bcf94f867b3a92154d10bf07e4212c396f7fd58fc4fca4bafbe1e54fd56450 body_fp=4cd1516dc444d4af3b78852ce3f19ad62ddb9d1d5f33459bc0ce75dec3f2279c source_ref=c6ce1d9dad031d3054b2bceb7224cbf06f70da61 role=domain -->
 Core freshness gate implementation that rebuilds the graph when git HEAD or file mtimes change since last refresh.
 
 - Checks git HEAD, stamp file, and current mtimes to determine refresh reason

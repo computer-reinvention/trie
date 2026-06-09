@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from trie import telemetry
 from trie.check import check_project
 from trie.config import Config
 from trie.cost import ModelPricing, estimate_actual_cost
@@ -280,14 +281,25 @@ def run_incremental(
     # import cycle (roles → single_file → … ).
     from trie.sync.roles import run_roles_only
 
-    run_roles_only(
-        project_root=project_root,
-        config=config,
-        store=store,
-        client=client,
-        progress=progress,
-        only_missing=True,
-    )
+    # Best-effort: the prose sync above already wrote its triefacts. A failure in
+    # this opportunistic gap-fill (e.g. the network drops past max_retries midway)
+    # must not crash the run and discard that completed work — the missing roles
+    # will simply be picked up on the next sync. Log and carry on.
+    try:
+        run_roles_only(
+            project_root=project_root,
+            config=config,
+            store=store,
+            client=client,
+            progress=progress,
+            only_missing=True,
+        )
+    except Exception as exc:  # backfill is opportunistic, never fatal
+        telemetry.emit(
+            "roles_backfill_failed",
+            error=type(exc).__name__,
+            message=str(exc),
+        )
 
     # Clear the files we just regenerated from the pending (stale) set so
     # `trie status` and the editor reflect that the working tree is now coherent.

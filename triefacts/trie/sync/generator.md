@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/sync/generator.py
 file_fingerprint: e4b08356ce52f5baceac62a8adbd1450fd449e782259df83185eddcb560f71fe
-last_synced_at: '2026-06-06T13:44:50Z'
+last_synced_at: '2026-06-07T05:47:19Z'
 defines:
 - kind: module
   qualified_name: trie/sync/generator:__module__
@@ -106,7 +106,7 @@ Builds a user prompt for diff-aware documentation generation that compares previ
 - **previous_prose**: Existing documentation to potentially preserve
 - **current_source**: Current version of the symbol's source code
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/generator:generate_section fingerprint=ce4cab4168c3b93f3e1cedb7680f1a179adffb56e9c298754ee1afad94da334d body_fp=4b0558ca4e045c434a17185848d00f28d714026ca40421b3d88fc727e23e0bc5 source_ref=f21aebb2ba00fc12bbd954ea8c5fbeba249f65e7 role=domain -->
+<!-- trie:section symbol=trie/sync/generator:generate_section fingerprint=ce4cab4168c3b93f3e1cedb7680f1a179adffb56e9c298754ee1afad94da334d body_fp=4b0558ca4e045c434a17185848d00f28d714026ca40421b3d88fc727e23e0bc5 source_ref=f21aebb2ba00fc12bbd954ea8c5fbeba249f65e7 role=orchestration -->
 Generates documentation for a Python symbol using an LLM client, optionally using diff-aware regeneration.
 
 - `previous_source` and `previous_prose`: when both provided, enables diff-aware mode that preserves existing prose unless behavior changed

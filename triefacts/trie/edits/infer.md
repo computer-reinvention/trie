@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/edits/infer.py
 file_fingerprint: d2cce33aa120782d568d41b352cb21c73882c0976f289693162f086943835601
-last_synced_at: '2026-06-06T13:44:49Z'
+last_synced_at: '2026-06-07T05:47:19Z'
 defines:
 - kind: module
   qualified_name: trie/edits/infer:__module__
@@ -79,7 +79,7 @@ Template string for prompting an LLM to fix Python diagnostics errors in file co
 <!-- trie:section symbol=trie/edits/infer:_format_bullets fingerprint=276d8d146737b65b171b6b1d440db66fa18b94a20cbc45c2cf752f35f5cd26d4 body_fp=2b929f50319b728e7169b14c5aae6b74989318303d98f0b88d5b234601c5fa79 source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=code-editing -->
 Formats lists of notes and reasons into bullet-point text with `<bullet>` prefixes.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:merge_notes fingerprint=94dfc8addb1bd5773ab4bb3e59e5f6e274f144ce32f80b8cb25fb89f64ee037c body_fp=db377d7618c36731c51edfd5bb863c1ca91f2608dd50c578137928aae6d71676 source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=util -->
+<!-- trie:section symbol=trie/edits/infer:merge_notes fingerprint=94dfc8addb1bd5773ab4bb3e59e5f6e274f144ce32f80b8cb25fb89f64ee037c body_fp=db377d7618c36731c51edfd5bb863c1ca91f2608dd50c578137928aae6d71676 source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=orchestration -->
 Deduplicates and merges implementation note patches, returning consolidated notes and reasons.
 
 - patches: list of dicts with "note" and "reason" keys
