@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: tests/fake_client.py
 file_fingerprint: 0d18b2c2cab5e0a1aae7dff95ef472d83c9b84faace25f84f24ffab23089bcaf
-last_synced_at: '2026-06-07T05:47:10Z'
+last_synced_at: '2026-06-09T09:58:37Z'
 defines:
 - kind: module
   qualified_name: tests/fake_client:__module__
@@ -25,7 +25,7 @@ defines:
 - kind: method
   qualified_name: tests/fake_client:FakeTrieClient.count_tokens
   lines: 163-164
-incoming_refs: 90
+incoming_refs: 91
 outgoing_refs: 2
 ---
 <!-- trie:section symbol=tests/fake_client:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8ab7322b142a256effc96283d1b1444a68ae807ab35f52ec049dfa548d1ad88f source_ref=8dfa8300f3e84c7193b607f32b1fe8d92821397a role=test-infrastructure -->

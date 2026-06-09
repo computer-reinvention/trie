@@ -1,136 +1,142 @@
 ---
 trie_version: 0.1.5
 source: trie/models.py
-file_fingerprint: 1b11dd46adbef17895fb99591d4897fe75f003573690f084020647f7e8a94994
-last_synced_at: '2026-06-09T09:38:34Z'
+file_fingerprint: c949d343f70edfaa3ad425b773374a89ef1f4c24d9e888cda40dd4b302f824c2
+last_synced_at: '2026-06-09T09:58:26Z'
 defines:
 - kind: module
   qualified_name: trie/models:__module__
-  lines: 1-570
+  lines: 1-647
 - kind: class
   qualified_name: trie/models:_LoopHolder
-  lines: 42-55
+  lines: 55-78
 - kind: method
   qualified_name: trie/models:_LoopHolder.__init__
-  lines: 45-46
+  lines: 58-66
 - kind: method
   qualified_name: trie/models:_LoopHolder.__del__
-  lines: 48-55
+  lines: 68-78
 - kind: constant
   qualified_name: trie/models:_thread_local
-  lines: 58-58
+  lines: 81-81
 - kind: function
-  qualified_name: trie/models:_thread_event_loop
-  lines: 61-66
+  qualified_name: trie/models:_thread_holder
+  lines: 84-100
 - kind: constant
   qualified_name: trie/models:_inflight_lock
-  lines: 81-81
+  lines: 115-115
 - kind: constant
   qualified_name: trie/models:_inflight_sem
-  lines: 82-82
+  lines: 116-116
 - kind: constant
   qualified_name: trie/models:_inflight_bound
-  lines: 83-83
+  lines: 117-117
 - kind: function
   qualified_name: trie/models:configure_inflight_limit
-  lines: 86-97
+  lines: 120-131
 - kind: function
   qualified_name: trie/models:_inflight_slot
-  lines: 101-111
+  lines: 135-145
 - kind: class
   qualified_name: trie/models:SectionBody
-  lines: 120-157
+  lines: 154-191
 - kind: class
   qualified_name: trie/models:ProposedRole
-  lines: 160-175
+  lines: 194-209
 - kind: class
   qualified_name: trie/models:RoleTaxonomy
-  lines: 178-195
+  lines: 212-229
 - kind: class
   qualified_name: trie/models:RoleTag
-  lines: 198-217
+  lines: 232-251
 - kind: class
   qualified_name: trie/models:MergeNotesOutput
-  lines: 220-224
+  lines: 254-258
 - kind: class
   qualified_name: trie/models:SymbolEdit
-  lines: 227-231
+  lines: 261-265
 - kind: class
   qualified_name: trie/models:SymbolProse
-  lines: 234-238
+  lines: 268-272
 - kind: class
   qualified_name: trie/models:FileEdit
-  lines: 241-245
+  lines: 275-279
 - kind: class
   qualified_name: trie/models:CallerDecision
-  lines: 248-254
+  lines: 282-288
 - kind: class
   qualified_name: trie/models:BatchFilterOutput
-  lines: 257-260
+  lines: 291-294
 - kind: class
   qualified_name: trie/models:FixupOutput
-  lines: 263-266
+  lines: 297-300
 - kind: class
   qualified_name: trie/models:ModelResult
-  lines: 274-305
+  lines: 308-339
 - kind: method
   qualified_name: trie/models:ModelResult.__init__
-  lines: 281-283
+  lines: 315-317
 - kind: method
   qualified_name: trie/models:ModelResult.output
-  lines: 286-287
+  lines: 320-321
 - kind: method
   qualified_name: trie/models:ModelResult.input_tokens
-  lines: 290-291
+  lines: 324-325
 - kind: method
   qualified_name: trie/models:ModelResult.output_tokens
-  lines: 294-295
+  lines: 328-329
 - kind: method
   qualified_name: trie/models:ModelResult.cache_creation_input_tokens
-  lines: 298-300
+  lines: 332-334
 - kind: method
   qualified_name: trie/models:ModelResult.cache_read_input_tokens
-  lines: 303-305
+  lines: 337-339
 - kind: function
   qualified_name: trie/models:_retry_after_seconds
-  lines: 314-324
+  lines: 348-358
+- kind: constant
+  qualified_name: trie/models:_RETRYABLE_ANTHROPIC
+  lines: 361-361
 - kind: function
   qualified_name: trie/models:_is_retryable
-  lines: 327-333
+  lines: 364-387
 - kind: function
   qualified_name: trie/models:_backoff_delay
-  lines: 336-338
+  lines: 390-392
 - kind: function
   qualified_name: trie/models:_run_with_retry
-  lines: 341-395
+  lines: 395-449
 - kind: constant
   qualified_name: trie/models:T
-  lines: 398-398
+  lines: 452-452
 - kind: constant
   qualified_name: trie/models:_MODEL_ID_ALIASES
-  lines: 406-410
+  lines: 460-464
 - kind: function
   qualified_name: trie/models:_pydantic_ai_model_id
-  lines: 413-415
+  lines: 467-469
 - kind: function
   qualified_name: trie/models:_anthropic_model_name
-  lines: 418-422
+  lines: 472-476
 - kind: class
   qualified_name: trie/models:TrieClient
-  lines: 425-553
+  lines: 479-630
 - kind: method
   qualified_name: trie/models:TrieClient.__init__
-  lines: 436-455
+  lines: 490-511
+- kind: method
+  qualified_name: trie/models:TrieClient._make_thread_model
+  lines: 513-528
 - kind: method
   qualified_name: trie/models:TrieClient.run
-  lines: 457-528
+  lines: 530-605
 - kind: method
   qualified_name: trie/models:TrieClient.count_tokens
-  lines: 530-553
+  lines: 607-630
 - kind: function
   qualified_name: trie/models:make_client
-  lines: 556-569
-incoming_refs: 93
+  lines: 633-646
+incoming_refs: 95
 outgoing_refs: 6
 ---
 <!-- trie:section symbol=trie/models:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=9b387fda13f0c60ba17cbe1d813fca36e81accdb48ac1477cbbc51fd87ee73ba source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
@@ -141,24 +147,30 @@ Provides LLM client infrastructure with structured output models and retry logic
 - ModelResult: Wrapper combining structured output with token usage counters
 - Per-thread event loop management to prevent file descriptor leaks in parallel execution
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:_LoopHolder fingerprint=51950ccfb6ff20464fa838fd0ce832c84fd2e1b83e6baee1fec7a4575c051e25 body_fp=05cecdf8ec4e05370e11a21ba504e1b95af917ad5b5868b3c44685f57a14d059 source_ref=b80d20b1306fa37c369f12494d2c4a3fff683036 role=util -->
-Holds an asyncio event loop and closes it on garbage collection to prevent file descriptor leaks.
+<!-- trie:section symbol=trie/models:_LoopHolder fingerprint=368e77d045832e716820fc45620135226aab0d923c1f08fc2e5a3bb556c9d897 body_fp=2d1cb4322a97c4c276fed7ea17a8b08e7dff14443167a52142f5505b2a4a6bdc source_ref=ed7528610d689f316f521122951d852adcfc8a59 role=util -->
+Holds an asyncio event loop, AnthropicModel, and AsyncAnthropic client, closing them on garbage collection to prevent resource leaks.
 
-- `__del__`: closes the held event loop when the holder is garbage collected
+- `__del__`: closes the async client and event loop when the holder is garbage collected
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:_LoopHolder.__init__ fingerprint=58b2c05fdd50648b7c9635b9f41d52170568b748a682cce4380d2e689ce742d0 body_fp=46e0ea68860740b2b7885bf73b4f8f5456ad63c08e026f518a98611f1a85500d source_ref=b80d20b1306fa37c369f12494d2c4a3fff683036 role=model -->
-Stores the given event loop in the `_LoopHolder` instance for later cleanup.
+<!-- trie:section symbol=trie/models:_LoopHolder.__init__ fingerprint=33c49a7c589f13c5384cfce20135ad9a0bb28df187ada4b53a53bd158295dfb5 body_fp=398f433083d7a07268568c24b99892752a2fbc03a5410b5f28fb86096770d869 source_ref=ed7528610d689f316f521122951d852adcfc8a59 role=model -->
+Stores the given event loop, model, and async client in the `_LoopHolder` instance for later cleanup.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:_LoopHolder.__del__ fingerprint=4154bab67f5828c4c2f71d31907c5c88efdb25733d90de5971af60a5a433b19b body_fp=12cfb1c8ca5b4a53dc5249d73390cd48065f8dd37c310422fe8ea99c55130001 source_ref=b80d20b1306fa37c369f12494d2c4a3fff683036 role=util -->
-Closes the _LoopHolder's event loop during finalisation if it exists and isn't already closed.
+<!-- trie:section symbol=trie/models:_LoopHolder.__del__ fingerprint=9a5adc2c916888d98ac53d665239c7a98d296c9713f8800d3d55fcdc6dfd8521 body_fp=4bce2b66f9e0e3866e13bc710ddbccb8400e70b486cbea839b3bef514e89e67c source_ref=ed7528610d689f316f521122951d852adcfc8a59 role=util -->
+Closes the _LoopHolder's async client and event loop during finalisation if they exist and aren't already closed.
 
+- Closes the AsyncAnthropic client first to clean up its connection pool before closing the loop
 - Swallows all exceptions to prevent teardown of worker threads from raising
 <!-- trie:end -->
 <!-- trie:section symbol=trie/models:_thread_local fingerprint=75569d7b1b6c68e79f0dea5d5361a3b4eee93cb9a73570765a3f2ede6ca769e0 body_fp=fd490c0b1ea42acca479054ee3666f11d574aa7e09d1b8f93db04b5035d45872 source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
 Thread-local storage for per-thread event loops to prevent file descriptor leaks in parallel execution.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:_thread_event_loop fingerprint=2346af89d961e3da6936d0d3eeb8e2d1aa8f3cb81f2a25219d787596c8593baf body_fp=e11ebe66b5eefa1002dd5523a6b0fd345ff7cba713912de43fe51f870be04ff3 source_ref=b80d20b1306fa37c369f12494d2c4a3fff683036 role=util -->
-Returns a persistent event loop for the current thread, creating one if none exists or the existing one is closed.
+<!-- trie:section symbol=trie/models:_thread_holder fingerprint=570b0740f4f3a7b4739581452e005f0f259298489dea20e2efc79ad031b91eba body_fp=d7240a849e3f7923011a6c916e2241e08a7f82c54ebc9f18069fe0897981d709 source_ref=ed7528610d689f316f521122951d852adcfc8a59 role=util -->
+Returns this thread's reusable event loop and model holder, creating them on first access.
+
+- `make_model`: Factory function called once per thread to build AnthropicModel + AsyncAnthropic client
+- Creates new event loop and sets it as the thread's default when no holder exists
+- Stores holder in thread-local storage to prevent fd leaks from repeated loop creation
+- Ensures each thread gets its own client bound to its own loop to avoid cross-loop errors
 <!-- trie:end -->
 <!-- trie:section symbol=trie/models:_inflight_lock fingerprint=0b0591e19fe812560f6db6c78c194433716b609e388f21b34daf63dcc61a9ef9 body_fp=7b3cb3945c721fb91fcaea9dffaa2e74df60e7dffe043a2bc5d121f5ea33bba0 source_ref=7b6978ad15fe0381f84e0d22885ce10437c8dfb5 role=util -->
 Protects access to global inflight semaphore state during reconfiguration.
@@ -271,8 +283,18 @@ Returns the number of input tokens read from cache during ModelResult generation
 <!-- trie:section symbol=trie/models:_retry_after_seconds fingerprint=eea4acb8b1e16f87411463e5b36f7296696e1226574047bf6b26e59be639801c body_fp=5400da1da68ecff033d8015e310ecf6ae1eb1f77d67ed65dbf8154f4d90d88ae source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
 Extracts the retry delay in seconds from an APIStatusError's retry-after header, returning None if unavailable or invalid.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:_is_retryable fingerprint=bea2105277ba4c6f333f68b3b6c1ac502431df076d907eeda0a9b75455594da3 body_fp=324d787fad441b1b54feb99c36e82a91f14b7b09b395b2efb9c4d2798b84e0df source_ref=ab49f962e9a178707553fcf6ad796ef550b20bc2 role=util -->
-Returns True if the exception is retryable (rate limit, internal server error, timeout, or connection error).
+<!-- trie:section symbol=trie/models:_RETRYABLE_ANTHROPIC fingerprint=65ad6ef7351b0db0b68bde9666510219c3424bc92968901cb1a17a3472129abb body_fp=1472be58de3e343c0ee861c15ed199daac35c195aff9c32e9d85106fe435cdb6 source_ref=ed7528610d689f316f521122951d852adcfc8a59 role=config -->
+Tuple of Anthropic API exception types that should trigger retry attempts.
+
+- Contains `RateLimitError`, `InternalServerError`, `APITimeoutError`, and `APIConnectionError` from the Anthropic SDK
+- Used by `_is_retryable()` to determine if an exception warrants a backoff retry
+<!-- trie:end -->
+<!-- trie:section symbol=trie/models:_is_retryable fingerprint=7811fe83fe85afd52bcc9523b0569e3b49f15456e664278d6235011b3c7c941e body_fp=5812dda8f235fd8c69d486fa891ba12c9dfc267b7b9f534767723323d82f2927 source_ref=ed7528610d689f316f521122951d852adcfc8a59 role=util -->
+Returns True if the exception is retryable, walking the exception chain to handle wrapped ModelAPIError cases.
+
+- Checks direct Anthropic exceptions (rate limit, server error, timeout, connection)
+- Inspects ModelAPIError messages for connection/timeout keywords
+- Traverses __cause__/__context__ chain to find wrapped retryable exceptions
 <!-- trie:end -->
 <!-- trie:section symbol=trie/models:_backoff_delay fingerprint=77f4e3c66b993cc965f7254cdc34761c6af37a46bcee27228820a1f4647a0475 body_fp=db499c0114246d369fa21a973c4cc466d777071d1f99d8535ad718efe61464f4 source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
 Calculates exponential backoff delay with jitter, returning a random duration between zero and the capped window.
@@ -296,24 +318,31 @@ Converts trie's provider/model format to pydantic_ai's provider:model format usi
 <!-- trie:section symbol=trie/models:_anthropic_model_name fingerprint=3c87d22ca61cada7c6dd2721cf27ba2000942a7010fc3dac57aeb0cd6ca74261 body_fp=9f60ebe4d744a72dcf3f42d216efade5c4613aa01f6d939ef3729a3781e6bf20 source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
 Extract the bare Anthropic model name from a full trie model ID by stripping the provider prefix.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:TrieClient fingerprint=2da7f35aa156533a5dca7719fcdfee550a547cebf03bc82b98f074fed245a606 body_fp=c04b1f1833c627020d2fc417defc12d426594c4c2fade96c1b2090070b1c9259 source_ref=b80d20b1306fa37c369f12494d2c4a3fff683036 role=model -->
+<!-- trie:section symbol=trie/models:TrieClient fingerprint=fc4faafbef96bccfe252a93640a26ac33a8f0141aa7f9b8b8c4133ef3264cb0e body_fp=a7469f91d72676ff1feddbd49669ad7c3299f589e01e9e0fbfedfb4fe688b529 source_ref=ed7528610d689f316f521122951d852adcfc8a59 role=io -->
 Wraps Pydantic AI agent creation and execution with structured output, prompt caching, and retry logic.
 
 - `run`: Creates one-shot agent with structured output type, handles prompt caching via cache_prefix
 - `count_tokens`: Uses raw Anthropic SDK to estimate token costs without generation
-- Manages per-thread event loops to avoid file descriptor leaks under parallel execution
+- Manages per-thread event loops and HTTP clients to avoid file descriptor leaks and connection errors
 - Applies exponential backoff retry on rate limits and server errors
-- Pre-constructs and reuses a single AnthropicModel instance to prevent HTTP client fd exhaustion
+- Configures request timeouts to prevent hung connections from blocking worker threads indefinitely
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:TrieClient.__init__ fingerprint=1ba0bc94b18d62da77945c4fdbe64518d5dfe65ca6c6f72e5f414dc3dc56b26c body_fp=66bfa91c1ddb7f849fc942bea84f8dfc39a71cd618095507f03fd744198b78b2 source_ref=b80d20b1306fa37c369f12494d2c4a3fff683036 role=model -->
-Initializes TrieClient with model ID conversion, configuration setup, and reusable pydantic-ai model.
+<!-- trie:section symbol=trie/models:TrieClient.__init__ fingerprint=5ea067cab1ad71d37698daec406cb31c07a5b9df936a7ce4902ac6f4796b706c body_fp=dfe7c5ca5571689413f666f132f5f10e054e51d4fc49bb10b2ef084f0db137a6 source_ref=ed7528610d689f316f521122951d852adcfc8a59 role=model -->
+Initializes TrieClient with model ID conversion, timeout configuration, and raw Anthropic client.
 
 - `full_model_id`: trie's provider/model format (e.g., "anthropic/claude-sonnet-4-6")
 - `sync_cfg`: retry configuration, defaults to Sync() if None
-- Creates raw Anthropic client with retries disabled (handled by wrapper)
-- Constructs shared AnthropicModel instance to prevent file descriptor leaks from per-run model creation
+- Sets bounded HTTP timeout to prevent infinite stalls that hang sync operations
+- Creates raw Anthropic client with retries disabled and timeout configured
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:TrieClient.run fingerprint=782c9f6e0e302f33b48a43dff97a55b1bfc395691722d575743fe9f7d33ca5e2 body_fp=2f9903af898f3d680b16c5fb4cce8dc43a619b18aa3efc684f7067a01eac9a31 source_ref=7b6978ad15fe0381f84e0d22885ce10437c8dfb5 role=io -->
+<!-- trie:section symbol=trie/models:TrieClient._make_thread_model fingerprint=2a029517b0d2fb7f61d46e28d3f7624aacaa0a94a130879675017e983c7c80c3 body_fp=1823bab63f9601ee4d0073a7c50e31b88cbb85fd91a96789b22eb8d68f1f1450 source_ref=ed7528610d689f316f521122951d852adcfc8a59 role=io -->
+Creates thread-specific AnthropicModel and AsyncAnthropic client instances to avoid cross-thread event loop conflicts.
+
+- Called once per worker thread by `_thread_holder`
+- Returns tuple of model and async client with configured timeout
+- Prevents file descriptor leaks and connection errors from shared clients
+<!-- trie:end -->
+<!-- trie:section symbol=trie/models:TrieClient.run fingerprint=41726034e870623632878ddb4a449ceb8f59711930d067efba2d179591ed7463 body_fp=2f9903af898f3d680b16c5fb4cce8dc43a619b18aa3efc684f7067a01eac9a31 source_ref=ed7528610d689f316f521122951d852adcfc8a59 role=io -->
 TrieClient.run creates a pydantic-ai Agent with structured output and executes it with retry logic and rate limiting.
 
 • cache_prefix: when provided, cached as a shared prefix across multiple calls for cost efficiency

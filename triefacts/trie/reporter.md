@@ -1,97 +1,103 @@
 ---
 trie_version: 0.1.5
 source: trie/reporter.py
-file_fingerprint: 7984f26bb818a3e310c930b90450211dc2e3cc828dd8edde6a9180ddd0b29008
-last_synced_at: '2026-06-07T03:56:58Z'
+file_fingerprint: 5f09dde7f78ebe9c4f4bd6aa94bf86456f49c99139d87fdffc586554611b4fc0
+last_synced_at: '2026-06-09T10:02:49Z'
 defines:
 - kind: module
   qualified_name: trie/reporter:__module__
-  lines: 1-254
+  lines: 1-293
 - kind: class
   qualified_name: trie/reporter:_OverallOnlyBar
-  lines: 32-36
+  lines: 33-37
 - kind: method
   qualified_name: trie/reporter:_OverallOnlyBar.render
-  lines: 33-36
+  lines: 34-37
 - kind: class
   qualified_name: trie/reporter:_OverallOnlyMofN
-  lines: 39-43
+  lines: 40-44
 - kind: method
   qualified_name: trie/reporter:_OverallOnlyMofN.render
-  lines: 40-43
+  lines: 41-44
+- kind: class
+  qualified_name: trie/reporter:_BottomBarProgress
+  lines: 47-68
+- kind: method
+  qualified_name: trie/reporter:_BottomBarProgress.get_renderables
+  lines: 58-68
 - kind: class
   qualified_name: trie/reporter:Verbosity
-  lines: 46-49
+  lines: 71-74
 - kind: class
   qualified_name: trie/reporter:Reporter
-  lines: 52-97
+  lines: 77-122
 - kind: method
   qualified_name: trie/reporter:Reporter.__init__
-  lines: 60-63
+  lines: 85-88
 - kind: method
   qualified_name: trie/reporter:Reporter.info
-  lines: 65-67
+  lines: 90-92
 - kind: method
   qualified_name: trie/reporter:Reporter.detail
-  lines: 69-71
+  lines: 94-96
 - kind: method
   qualified_name: trie/reporter:Reporter.success
-  lines: 73-75
+  lines: 98-100
 - kind: method
   qualified_name: trie/reporter:Reporter.warn
-  lines: 77-80
+  lines: 102-105
 - kind: method
   qualified_name: trie/reporter:Reporter.error
-  lines: 82-83
+  lines: 107-108
 - kind: method
   qualified_name: trie/reporter:Reporter.status
-  lines: 85-89
+  lines: 110-114
 - kind: method
   qualified_name: trie/reporter:Reporter.elapsed
-  lines: 91-94
+  lines: 116-119
 - kind: method
   qualified_name: trie/reporter:Reporter.start_progress
-  lines: 96-97
+  lines: 121-122
 - kind: class
   qualified_name: trie/reporter:_NullContext
-  lines: 100-105
+  lines: 125-130
 - kind: method
   qualified_name: trie/reporter:_NullContext.__enter__
-  lines: 101-102
+  lines: 126-127
 - kind: method
   qualified_name: trie/reporter:_NullContext.__exit__
-  lines: 104-105
+  lines: 129-130
 - kind: class
   qualified_name: trie/reporter:ProgressHandle
-  lines: 108-253
+  lines: 133-292
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.__init__
-  lines: 127-134
+  lines: 152-162
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.__enter__
-  lines: 136-160
+  lines: 164-188
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.__exit__
-  lines: 162-184
+  lines: 190-212
 - kind: method
   qualified_name: trie/reporter:ProgressHandle._print
-  lines: 186-192
+  lines: 214-220
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.start_file
-  lines: 194-205
+  lines: 222-240
 - kind: method
   qualified_name: trie/reporter:ProgressHandle._end_file_task
-  lines: 207-215
+  lines: 242-250
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.finish_file
-  lines: 217-248
+  lines: 252-286
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.skip_file
-  lines: 250-253
-incoming_refs: 17
+  lines: 288-292
+incoming_refs: 18
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=trie/reporter:__module__ fingerprint=9ab13fd9b838c6b87fb62b143ba0330db33c452a4409281be3f3ebc0c84d440b body_fp=37df5d1ba79a59a9b669823577300a1026d9e66b729f96885fac6f36a7ac5234 source_ref=6577d244da82eb536e12f7501ed4b0e6350a4b25 role=io -->
+<!-- trie:section symbol=trie/reporter:__module__ fingerprint=07290628d1de53b4706aea1dc1f836f538577d35dc30a41a16720a177edab4df body_fp=37df5d1ba79a59a9b669823577300a1026d9e66b729f96885fac6f36a7ac5234 source_ref=5d5181cfe117f8d9faaf106bc52b54cb076eec58 role=io -->
 Provides console reporting infrastructure with verbosity controls and Rich-based progress tracking.
 
 - Requires Rich library for terminal output
@@ -113,6 +119,18 @@ Custom Rich column that renders M/N completion counts only for determinate tasks
 <!-- trie:end -->
 <!-- trie:section symbol=trie/reporter:_OverallOnlyMofN.render fingerprint=f5dd789c2297600a905c4625c9c7ad2779b586f0cc7b44c6921d25cd064d0c09 body_fp=4ad671809db549ccac4f4e8444810fa9872cf10baf1b7ec6436691a8b7528a86 source_ref=b952f8c0f670efda761b03e342b67367021c2ed6 role=util -->
 Returns empty string for indeterminate tasks, otherwise delegates to MofNCompleteColumn.render.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/reporter:_BottomBarProgress fingerprint=fbbcb76a44b1281dc7988c76a8d15448fae2d2f67968f039e860318eb9cda092 body_fp=97aa82401ccd690e56c5efa0ab87179d09c05983669135073c56760e63b37b57 source_ref=5d5181cfe117f8d9faaf106bc52b54cb076eec58 role=util -->
+Extends Rich Progress to render the overall progress bar at bottom instead of top.
+
+- Separates indeterminate file tasks (spinners) from determinate overall tasks (progress bars)
+- Adds blank line separator between file list and overall bar when both are present
+<!-- trie:end -->
+<!-- trie:section symbol=trie/reporter:_BottomBarProgress.get_renderables fingerprint=4fd7d2f1f8d4f8593abefd7d25ffdeadb8b23cfaf1b1014648f164979bb08126 body_fp=b751513f1224b81973b6d5116c53113651c79d71acf43704e27e53751ef3cef6 source_ref=5d5181cfe117f8d9faaf106bc52b54cb076eec58 role=io -->
+Renders _BottomBarProgress tasks with indeterminate file tasks first, then a separator, then determinate overall tasks last.
+
+- Yields file tasks (total=None) before overall tasks (total is not None)
+- Inserts blank Text separator only when both task types exist
 <!-- trie:end -->
 <!-- trie:section symbol=trie/reporter:Verbosity fingerprint=68167be5fddb8748e7165d3e1141f0c0c352b1dcef0f7a2e6430f8fd2efa74be body_fp=324af3e729efa07d0d1ece1cf916d741109f2f048d5fee6f8ce71260e850dab2 source_ref=28f57b77c1af9ed66d987b41f89a42b11a006e0e role=cli-interface -->
 Defines integer enum levels for controlling Reporter output verbosity.
@@ -173,23 +191,29 @@ Returns the _NullContext instance itself to satisfy the context manager protocol
 <!-- trie:section symbol=trie/reporter:_NullContext.__exit__ fingerprint=9f730a1a70a6144b0dc8da4942d9093cd268d625eafac5188775d0d6b8b25f08 body_fp=5c0b19c96fc480a1a85ce448370405955de677a65f6966eb39ec6bdb859a34f8 source_ref=28f57b77c1af9ed66d987b41f89a42b11a006e0e role=cli-interface -->
 Implements context manager exit protocol for _NullContext, returning None to allow any exceptions to propagate.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/reporter:ProgressHandle fingerprint=7c37e0354ca69800ae8d23e8ded1d6690c16bbc0d4a6deaee82a3b6d97046194 body_fp=e18a9ac739d1c194d4b4edad9c4632caa69b349e9903ff4b159c83ae759ec4cc source_ref=b952f8c0f670efda761b03e342b67367021c2ed6 role=io -->
-Manages live progress display with overall progress bar and per-file spinners for parallel processing.
+<!-- trie:section symbol=trie/reporter:ProgressHandle fingerprint=3541aef8bc1224001d54815593778ad51464f3ff74f3388d3a36cec871c6d1d2 body_fp=3da3d03a9fcd5f658393056ad43bf232247c33d6f67f63f80347ae9db0c37924 source_ref=4c23c22ea99f201078bf3db965430f378e9b9521 role=io -->
+Context manager providing thread-safe live progress display for parallel file processing operations.
 
-- Thread-safe for concurrent start_file/finish_file calls from multiple workers
-- Falls back to plain text output when not in terminal or at MUTE verbosity
-- Context manager that sets up Rich Progress with custom columns on enter
-- Tracks individual file tasks by path to avoid conflicts in parallel execution
+- Uses Rich to render an overall progress bar pinned to bottom with ephemeral per-file spinner lines above
+- Thread-safe via internal lock protecting file task map from concurrent access
+- Falls back to plain text output when not attached to terminal or in MUTE mode
+- `start_file()` adds spinner line for in-flight file, with optional cascade marker
+- `finish_file()` removes spinner, prints permanent completion line with optional cost/token stats
+- `skip_file()` removes spinner and prints skip reason
 <!-- trie:end -->
-<!-- trie:section symbol=trie/reporter:ProgressHandle.__init__ fingerprint=94f49138b10bd106f67f53cbeba4b0f27997d16f2b4301210af9612687792d65 body_fp=688baa04b3e6d27561f0730700505972145dc4a605d893412003edcea44492a3 source_ref=73579df29bd5d7b8d08ffd3baa92f5bf60385325 role=model -->
-Initialize ProgressHandle with reporter, total count, and label for progress tracking.
-<!-- trie:end -->
-<!-- trie:section symbol=trie/reporter:ProgressHandle.__enter__ fingerprint=d6a6cf322cd20046b13d068931dd415303d4216a6d729cbecb0a31c61e2c9ea0 body_fp=0d070d6c307d0f2674d2b68121649bbdd7d656c99c74cf1fbe920e510adb3f43 source_ref=b952f8c0f670efda761b03e342b67367021c2ed6 role=util -->
-Initializes Rich Progress display for ProgressHandle if terminal supports live rendering.
+<!-- trie:section symbol=trie/reporter:ProgressHandle.__init__ fingerprint=d99731260f64d86081d126201fcdf50470ba4af00456087d7bb3b543d30643b9 body_fp=bf620ff8e22ef43457a510a67f05db1da8a55c5f127341419311fd3b39d7c888 source_ref=9e8839433bf791dcd4d8c0b22356111cbefb404b role=model -->
+Initializes ProgressHandle with reporter, file count, and progress label, setting up internal state for progress tracking.
 
-- Only creates live progress if verbosity is MEDIUM+, total > 0, and console is a terminal
-- Falls back to plain print mode for pipes/redirected output to avoid escape sequence corruption
-- Sets up overall progress bar and prepares for per-file spinner tasks
+- `total`: number of files to process
+- `label`: display text for the overall progress bar
+- `_cascade_files`: tracks files pulled in by symbol references rather than direct changes
+<!-- trie:end -->
+<!-- trie:section symbol=trie/reporter:ProgressHandle.__enter__ fingerprint=a9c264073b53093f3660c6e538c2e182c13dc246090fff335152bb2ddd04cdbc body_fp=f4edb6ae4985b93b6e6f513fb84a9be467bba7cd6a1e90fb37472ef41364648c source_ref=5d5181cfe117f8d9faaf106bc52b54cb076eec58 role=orchestration -->
+Initializes ProgressHandle's live progress display for terminal output with verbosity checks.
+
+- Only creates Rich progress UI when attached to terminal with MEDIUM+ verbosity and total > 0
+- Falls back to plain print mode for pipes/redirected output to avoid cursor escape corruption
+- Sets up bottom-pinned overall progress bar and prepares for per-file spinner tasks
 <!-- trie:end -->
 <!-- trie:section symbol=trie/reporter:ProgressHandle.__exit__ fingerprint=68c9ab8452f2c2ea52662b54d85b27889c2c44f43099fbc03ef619f5215b6bd2 body_fp=151d7adf8524e04a696a0817895fbba9a38023277c086c267f53f3d32e1b9a43 source_ref=3ba652d6105715f40601b888262fe8cfd75296ee role=io -->
 ProgressHandle.__exit__ cleans up the Rich progress display and ensures the console cursor remains visible.
@@ -200,12 +224,10 @@ ProgressHandle.__exit__ cleans up the Rich progress display and ensures the cons
 <!-- trie:section symbol=trie/reporter:ProgressHandle._print fingerprint=0587173aa56c0bd7479119eebcdf7b3056cc2980f27405895f6a4532541fd28f body_fp=5705026bf13df5de41ece1f16f648d782853f2dd6d19039d30f891775184d43a source_ref=28f57b77c1af9ed66d987b41f89a42b11a006e0e role=cli-interface -->
 Prints a line through the active progress bar's console if available, otherwise through ProgressHandle's reporter console.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/reporter:ProgressHandle.start_file fingerprint=fc544b93e10844cf41a30de33c44894d6fa43c8b5a0f0d8410b7d01e5383eded body_fp=8bc327fb9ee8b8afa0ff6f1b7272fa49f7a12b9741985d3c2effdde8f5b38ee0 source_ref=73579df29bd5d7b8d08ffd3baa92f5bf60385325 role=io -->
-Creates a new spinner task for the given file path and tracks it in the in-flight file tasks map.
+<!-- trie:section symbol=trie/reporter:ProgressHandle.start_file fingerprint=0850eaeb3aed5197e9de71ca66a3d52ffaabec1cc7ce550633cc1b4d8806d91b body_fp=fcaa2d7dff3dffa3fcaf515d5cc1362aa30ec27426a5d2f367d18ecb9dcb6496 source_ref=4c23c22ea99f201078bf3db965430f378e9b9521 role=api -->
+Initiates progress tracking for a file, adding a spinner line to the live display if progress is enabled.
 
-- Skips if file already has an active task
-- Uses thread-safe locking for task map updates
-- Returns early if progress display is disabled
+- `cascade`: marks the file as cascade-pulled (referenced by a changed symbol) for visual distinction
 <!-- trie:end -->
 <!-- trie:section symbol=trie/reporter:ProgressHandle._end_file_task fingerprint=37c5419b2c3ecaad84462bc64b85a5915fa67af6391256147462d97c3ccac616 body_fp=933d0f1cc3e0f218ca1561fe546d35e31b90b2acf1e4659944a075d5d631ed2d source_ref=73579df29bd5d7b8d08ffd3baa92f5bf60385325 role=util -->
 ProgressHandle._end_file_task removes a file's spinner task and advances the overall progress bar.
@@ -213,14 +235,16 @@ ProgressHandle._end_file_task removes a file's spinner task and advances the ove
 - Synchronizes access to shared task state via lock
 - Advances overall progress counter regardless of whether file task existed
 <!-- trie:end -->
-<!-- trie:section symbol=trie/reporter:ProgressHandle.finish_file fingerprint=83f34c660a267fab6e0d02c104fa0ec753ab0e8c1f2d6e3f91586e3d3405a630 body_fp=1170c335d846dc6601f7e2c665e88b34ac2efc22accb8c7a99dfee3a4a06b859 source_ref=73579df29bd5d7b8d08ffd3baa92f5bf60385325 role=io -->
-Removes per-file task and advances ProgressHandle progress bar, then prints completion status for a processed file with optional metrics.
+<!-- trie:section symbol=trie/reporter:ProgressHandle.finish_file fingerprint=1ccf311e081ba7a3d7ccac53323295880522bbf65a504f12909bae2411b2b68b body_fp=ebb5af160e911418ba6bba3b63b7d125fce9ec01e34b234c38b1bcc5aa2a20f9 source_ref=9e8839433bf791dcd4d8c0b22356111cbefb404b role=io -->
+Marks a file as completed in ProgressHandle, removing its spinner task and printing completion message with optional metrics.
 
-- `cost_usd`: displays cost formatted as currency
-- `symbols`: shows symbol count with "sym" suffix  
-- `tokens_in`/`tokens_out`: token usage stats (verbose mode only)
-- `cache_read`/`cache_write`: cache hit/miss counts (verbose mode only)
+- `cost_usd`: USD cost to include in summary line
+- `symbols`: Symbol count to include in summary line  
+- `tokens_in`/`tokens_out`: Token counts shown in verbose detail line
+- `cache_read`/`cache_write`: Cache hit/miss counts shown in verbose detail line
 <!-- trie:end -->
-<!-- trie:section symbol=trie/reporter:ProgressHandle.skip_file fingerprint=d4fd5b8e272b1712a1297c3f450cf73856853ae050991f3de0b74d981a842e86 body_fp=505c77e345ed6867f204f9c7640424e142ea8105cd96346c4ad365fb0042fb71 source_ref=73579df29bd5d7b8d08ffd3baa92f5bf60385325 role=io -->
-Records a skipped file in ProgressHandle progress tracking, removing its task and printing a skip message at medium verbosity or higher.
+<!-- trie:section symbol=trie/reporter:ProgressHandle.skip_file fingerprint=285fae9be169fbf189fddfa16ab948599b58c4abf2b2a9ba3653e4d19f1a1a36 body_fp=d1c31b6b4a1ff9c6b86b8d5a095c1e9bbc8bbff37a8d5d344dfcbdf8a1ef0239 source_ref=9e8839433bf791dcd4d8c0b22356111cbefb404b role=io -->
+Marks a file as skipped in ProgressHandle, removing its spinner and printing a skip notice.
+
+- `reason`: descriptive text explaining why the file was skipped
 <!-- trie:end -->

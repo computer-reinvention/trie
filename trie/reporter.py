@@ -17,6 +17,7 @@ try:
         TaskID,
         TextColumn,
     )
+    from rich.text import Text  # type: ignore[import-untyped,import-not-found]
 except ImportError as exc:  # pragma: no cover
     raise ImportError("rich is required: pip install rich") from exc
 
@@ -41,6 +42,30 @@ class _OverallOnlyMofN(MofNCompleteColumn):
         if task.total is None:
             return ""
         return super().render(task)
+
+
+class _BottomBarProgress(Progress):
+    """Progress that pins the determinate overall bar to the BOTTOM.
+
+    Rich renders tasks in insertion order, and we add the overall bar first so
+    it would sit on top of the in-flight file rows. We instead want the live
+    layout to read top-to-bottom as: in-flight files, a blank separator, then the
+    ``syncing ━━━ M/N`` bar last — so the moving bar stays anchored at the bottom
+    just above the shell prompt. Override the render order: indeterminate (file)
+    tasks first, then a spacer, then determinate (overall) tasks.
+    """
+
+    def get_renderables(self):  # type: ignore[no-untyped-def]
+        file_tasks = [t for t in self.tasks if t.total is None]
+        overall_tasks = [t for t in self.tasks if t.total is not None]
+        if file_tasks:
+            yield self.make_tasks_table(file_tasks)
+        # Blank line separating the file list from the overall bar. Only emit it
+        # when the bar is actually shown, so a trailing blank line never dangles.
+        if overall_tasks:
+            if file_tasks:
+                yield Text("")
+            yield self.make_tasks_table(overall_tasks)
 
 
 class Verbosity(IntEnum):
@@ -131,6 +156,9 @@ class ProgressHandle:
         self._progress: Progress | None = None
         self._overall: TaskID | None = None
         self._file_tasks: dict[str, TaskID] = {}
+        # Remember which in-flight files were cascade-pulled so the persistent
+        # ✓ line can carry the same marker the spinner showed.
+        self._cascade_files: set[str] = set()
         self._lock = threading.Lock()
 
     def __enter__(self) -> ProgressHandle:
@@ -144,7 +172,7 @@ class ProgressHandle:
             and self.total > 0
             and self.reporter.console.is_terminal
         ):
-            progress = Progress(
+            progress = _BottomBarProgress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
                 _OverallOnlyBar(),
@@ -191,17 +219,24 @@ class ProgressHandle:
         else:
             self.reporter.console.print(line)
 
-    def start_file(self, rel_path: str) -> None:
+    def start_file(self, rel_path: str, *, cascade: bool = False) -> None:
+        # Cascade files (pulled in because they reference a directly-changed
+        # symbol, not because their own source drifted) get a marker so the
+        # operator can see why N files sync when only a few drifted.
+        marker = " [magenta](cascade)[/magenta]" if cascade else ""
+        if cascade:
+            self._cascade_files.add(rel_path)
         if self._progress is None:
             if self.reporter.verbosity >= Verbosity.VERBOSE:
-                self._print(f"  [dim]→[/dim] {rel_path}")
+                plain = " (cascade)" if cascade else ""
+                self._print(f"  [dim]→[/dim] {rel_path}{plain}")
             return
         with self._lock:
             if rel_path in self._file_tasks:
                 return
             # An indeterminate (total=None) task renders as spinner + description
             # with no progress bar — one live line per in-flight file.
-            task = self._progress.add_task(f"[cyan]{rel_path}[/cyan]", total=None)
+            task = self._progress.add_task(f"File: [cyan]{rel_path}[/cyan]{marker}", total=None)
             self._file_tasks[rel_path] = task
 
     def _end_file_task(self, rel_path: str) -> None:
@@ -226,11 +261,14 @@ class ProgressHandle:
         cache_write: int | None = None,
     ) -> None:
         self._end_file_task(rel_path)
+        is_cascade = rel_path in self._cascade_files
+        self._cascade_files.discard(rel_path)
 
         if self.reporter.verbosity < Verbosity.MEDIUM:
             return
 
-        parts: list[str] = [f"  [green]✓[/green] {rel_path}"]
+        marker = " [magenta](cascade)[/magenta]" if is_cascade else ""
+        parts: list[str] = [f"  [green]✓[/green] {rel_path}{marker}"]
         if cost_usd is not None:
             parts.append(f"${cost_usd:.4f}")
         if symbols is not None:
@@ -249,5 +287,6 @@ class ProgressHandle:
 
     def skip_file(self, rel_path: str, reason: str) -> None:
         self._end_file_task(rel_path)
+        self._cascade_files.discard(rel_path)
         if self.reporter.verbosity >= Verbosity.MEDIUM:
             self._print(f"  [yellow]⊘[/yellow] {rel_path} · skipped: {reason}")

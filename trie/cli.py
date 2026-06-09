@@ -140,8 +140,33 @@ class _ProgressAdapter:
             self.handle.__exit__(None, None, None)
             self.handle = None
 
-    def on_start(self, rel_path: str, idx: int, total: int) -> None:
-        self._ensure(total).start_file(rel_path)
+    def on_plan(self, *, direct: int, cascade: int) -> None:
+        # Printed once before any file starts. Summarises the worklist split so
+        # the operator understands why N files sync when only a few drifted.
+        if self.reporter.verbosity < Verbosity.MEDIUM:
+            return
+        total = direct + cascade
+        if total == 0:
+            return
+        self.reporter.console.print(
+            f"[bold]syncing {total} file(s)[/bold]: "
+            f"[cyan]{direct} directly stale[/cyan] · "
+            f"[magenta]{cascade} pulled in by the cascade[/magenta]"
+        )
+
+    def on_section(self, *, label: str, count: int) -> None:
+        # A separator + heading printed above the live region before each group
+        # of files (directly stale, then cascade) begins.
+        if self.reporter.verbosity < Verbosity.MEDIUM or count == 0:
+            return
+        line = f"\n[dim]── {label} ({count}) ──[/dim]"
+        if self.handle is not None:
+            self.handle._print(line)
+        else:
+            self.reporter.console.print(line)
+
+    def on_start(self, rel_path: str, idx: int, total: int, *, cascade: bool = False) -> None:
+        self._ensure(total).start_file(rel_path, cascade=cascade)
 
     def on_done(self, rel_path: str, result: FileSyncResult, running_cost_usd: float) -> None:
         per_file_cost = running_cost_usd - self._prev_running_cost
@@ -223,8 +248,10 @@ class _JsonlProgress:
         self._stream.write(_json.dumps(payload) + "\n")
         self._stream.flush()
 
-    def on_start(self, rel_path: str, idx: int, total: int) -> None:
-        self._emit({"kind": "start", "rel_path": rel_path, "idx": idx, "total": total})
+    def on_start(self, rel_path: str, idx: int, total: int, *, cascade: bool = False) -> None:
+        self._emit(
+            {"kind": "start", "rel_path": rel_path, "idx": idx, "total": total, "cascade": cascade}
+        )
 
     def on_done(self, rel_path: str, result: FileSyncResult, running_cost_usd: float) -> None:
         self._emit(

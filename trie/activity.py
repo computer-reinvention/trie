@@ -375,10 +375,21 @@ class ActivityProgress:
         self._writer = writer
         self._inner = inner
 
-    def on_start(self, rel_path: str, idx: int, total: int) -> None:
+    def on_plan(self, *, direct: int, cascade: int) -> None:
+        # Purely informational; mirror to the inner host callback if it cares.
+        hook = getattr(self._inner, "on_plan", None)
+        if callable(hook):
+            hook(direct=direct, cascade=cascade)
+
+    def on_section(self, *, label: str, count: int) -> None:
+        hook = getattr(self._inner, "on_section", None)
+        if callable(hook):
+            hook(label=label, count=count)
+
+    def on_start(self, rel_path: str, idx: int, total: int, *, cascade: bool = False) -> None:
         self._writer.file_start(rel_path, idx, total)
         if self._inner is not None:
-            self._inner.on_start(rel_path, idx, total)  # type: ignore[attr-defined]
+            self._inner.on_start(rel_path, idx, total, cascade=cascade)  # type: ignore[attr-defined]
 
     def on_done(self, rel_path: str, result: object, running_cost_usd: float) -> None:
         symbols = getattr(result, "symbols_generated", 0)

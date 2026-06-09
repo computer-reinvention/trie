@@ -107,7 +107,7 @@ def test_activity_progress_mirrors_to_writer_and_inner(tmp_path: Path):
     calls: list[str] = []
 
     class Inner:
-        def on_start(self, rel_path, idx, total):
+        def on_start(self, rel_path, idx, total, *, cascade=False):
             calls.append(f"start:{rel_path}")
 
         def on_done(self, rel_path, result, running_cost_usd):

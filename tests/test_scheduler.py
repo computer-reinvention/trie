@@ -80,10 +80,10 @@ def test_limit_caps_and_reports_skips():
     skips: list[str] = []
 
     class Rec:
-        def on_start(self, *a):
+        def on_start(self, *a, **k):
             pass
 
-        def on_done(self, *a):
+        def on_done(self, *a, **k):
             pass
 
         def on_skip(self, rel, reason):

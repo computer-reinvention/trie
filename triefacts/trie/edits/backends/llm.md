@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/edits/backends/llm.py
 file_fingerprint: c3b3ec518de4871852248ea4449e909e7c069306001955bc654049e4e2104adf
-last_synced_at: '2026-06-09T09:25:33Z'
+last_synced_at: '2026-06-09T09:58:50Z'
 description: "In-process LLM edit backend \u2014 the default `SymbolEditBackend`."
 defines:
 - kind: module
@@ -70,7 +70,7 @@ Initializes an InProcessLLMBackend with a TrieClient and maximum token limit.
 
 - `max_tokens`: limits the LLM response length (default 4096)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/backends/llm:InProcessLLMBackend.generate fingerprint=d5f61bbaf4c47e8b48dbb2f635411c4ad84b260da764aefd84999bd433a2444c body_fp=e85dc44c1b706ee9a4975334e607c5e17c79a21f39bfd89ec70530527421fed1 source_ref=eb90916dfbd9c9ba0da5fcc7686aa9fd79380eca role=io -->
+<!-- trie:section symbol=trie/edits/backends/llm:InProcessLLMBackend.generate fingerprint=d5f61bbaf4c47e8b48dbb2f635411c4ad84b260da764aefd84999bd433a2444c body_fp=e85dc44c1b706ee9a4975334e607c5e17c79a21f39bfd89ec70530527421fed1 source_ref=eb90916dfbd9c9ba0da5fcc7686aa9fd79380eca role=domain -->
 InProcessLLMBackend.generate processes an EditRequest through the LLM client and returns an EditResult with generated source and prose.
 
 - Returns EditResult with ok=False and error message on any exception

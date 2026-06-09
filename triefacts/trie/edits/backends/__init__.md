@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/edits/backends/__init__.py
 file_fingerprint: bfd44fa52b7a753a52322311bc7cde6269d211c7afac0b1dd33af97366db09eb
-last_synced_at: '2026-06-09T09:38:51Z'
+last_synced_at: '2026-06-09T09:58:45Z'
 description: Pluggable per-symbol edit backends.
 defines:
 - kind: module

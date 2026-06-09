@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/edits/apply.py
 file_fingerprint: f02b108f7d1bb53723f2fa43559b961cb307a568d73e7c191f94780b375671aa
-last_synced_at: '2026-06-09T09:38:50Z'
+last_synced_at: '2026-06-09T09:58:44Z'
 defines:
 - kind: module
   qualified_name: trie/edits/apply:__module__

@@ -269,7 +269,7 @@ def test_run_incremental_invokes_progress_callback(project: Path):
     dones: list[str] = []
 
     class Recorder:
-        def on_start(self, rel_path, idx, total):
+        def on_start(self, rel_path, idx, total, *, cascade=False):
             starts.append((rel_path, idx, total))
 
         def on_done(self, rel_path, result, running_cost_usd):

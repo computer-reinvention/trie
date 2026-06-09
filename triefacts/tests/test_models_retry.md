@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.5
 source: tests/test_models_retry.py
-file_fingerprint: 7b1fef48b0206dccd3f3dc889e679494db1224e7ebe1eac6e75de9b135e54c51
-last_synced_at: '2026-06-07T05:46:55Z'
+file_fingerprint: a5309de55fd03bd05db3a25c39f8ebd73bbfe3cc202e811b6f822520a663ba29
+last_synced_at: '2026-06-09T09:58:19Z'
 description: Retry-on-rate-limit behaviour of `AnthropicClient`.
 defines:
 - kind: module
   qualified_name: tests/test_models_retry:__module__
-  lines: 1-273
+  lines: 1-326
 - kind: function
   qualified_name: tests/test_models_retry:_fake_response
   lines: 42-48
@@ -39,40 +39,46 @@ defines:
   qualified_name: tests/test_models_retry:test_is_retryable_rejects_auth_and_other_4xx
   lines: 105-107
 - kind: function
+  qualified_name: tests/test_models_retry:test_is_retryable_unwraps_pydantic_ai_model_api_error
+  lines: 110-128
+- kind: function
+  qualified_name: tests/test_models_retry:test_per_thread_models_are_distinct_and_reused
+  lines: 131-160
+- kind: function
   qualified_name: tests/test_models_retry:test_retry_after_reads_header_when_present
-  lines: 110-112
+  lines: 163-165
 - kind: function
   qualified_name: tests/test_models_retry:test_retry_after_none_when_header_missing_or_unparseable
-  lines: 115-117
+  lines: 168-170
 - kind: function
   qualified_name: tests/test_models_retry:test_backoff_delay_within_cap
-  lines: 120-128
+  lines: 173-181
 - kind: function
   qualified_name: tests/test_models_retry:test_run_with_retry_honours_retry_after_exactly
-  lines: 134-152
+  lines: 187-205
 - kind: function
   qualified_name: tests/test_models_retry:test_run_with_retry_caps_retry_after
-  lines: 155-172
+  lines: 208-225
 - kind: function
   qualified_name: tests/test_models_retry:test_run_with_retry_uses_backoff_when_no_retry_after
-  lines: 175-191
+  lines: 228-244
 - kind: function
   qualified_name: tests/test_models_retry:test_run_with_retry_backs_off_on_overloaded
-  lines: 194-209
+  lines: 247-262
 - kind: function
   qualified_name: tests/test_models_retry:test_run_with_retry_gives_up_after_max_retries
-  lines: 212-224
+  lines: 265-277
 - kind: function
   qualified_name: tests/test_models_retry:test_run_with_retry_propagates_non_retryable_immediately
-  lines: 227-238
+  lines: 280-291
 - kind: function
   qualified_name: tests/test_models_retry:test_count_tokens_retries_on_rate_limit
-  lines: 244-256
+  lines: 297-309
 - kind: function
   qualified_name: tests/test_models_retry:test_trie_client_disables_sdk_internal_retries
-  lines: 259-272
+  lines: 312-325
 incoming_refs: 0
-outgoing_refs: 22
+outgoing_refs: 24
 ---
 <!-- trie:section symbol=tests/test_models_retry:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=6230e0b6dac96c666f4c643a238e8932016fce96586b9091c4f78ad67994b7c1 source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=test-infrastructure -->
 Tests retry behavior of `AnthropicClient` against rate limits, server errors, timeouts, and non-retryable exceptions.
@@ -117,6 +123,16 @@ Tests that `_is_retryable` correctly identifies `APIConnectionError` as retryabl
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_models_retry:test_is_retryable_rejects_auth_and_other_4xx fingerprint=ad1733d7e18cc28b638ccebae3dbd460280fc5547172d8d6b73456101792f9ea body_fp=5d8e0ae7d24399fcea49939c98ddeb21cf3558f66278b976a23349cf6270c1ec source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=llm-client -->
 Verifies `_is_retryable` returns False for authentication errors and non-API exceptions.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_models_retry:test_is_retryable_unwraps_pydantic_ai_model_api_error fingerprint=3d88bbfec2cfe3c0211f9ac1e50594a8126e088e50452d10f07d0950f39a9bcc body_fp=9c8baab32cc5644582b792f5c2d6dc53e1c0ba77bbf9f87eade043a979f1e478 source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
+Tests that `_is_retryable` correctly handles pydantic-ai's ModelAPIError wrappers around retryable exceptions.
+
+- Tests message-based matching for connection errors
+- Tests __cause__ chain unwrapping for wrapped anthropic exceptions
+- Verifies non-retryable errors remain non-retryable when wrapped
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_models_retry:test_per_thread_models_are_distinct_and_reused fingerprint=8d223b1bbd94023b408c389bf435b8f82b4f09420d56812fd38db9b00df4e288 body_fp=e757240910fa9b0821f116037fc3052396546a73b41f92a73a89c33a49a3cfb0 source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
+Tests that TrieClient creates distinct models per thread but reuses within threads.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_models_retry:test_retry_after_reads_header_when_present fingerprint=8a962d853de085e033e2f8972799ca75d5534b32d48aca2c5962f79497c57210 body_fp=a87690f558ffe11f70c34dec1565177c138b6a32af0c708170bc583bc22a5051 source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=llm-client -->
 Tests that `_retry_after_seconds` correctly parses numeric retry-after header values from rate limit errors.

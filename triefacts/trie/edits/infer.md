@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/edits/infer.py
 file_fingerprint: afdf2df5e2a3a859f2fb1d76788b94c5cb2cb57c8578807d53b70e9808f0db37
-last_synced_at: '2026-06-09T09:39:02Z'
+last_synced_at: '2026-06-09T09:58:52Z'
 defines:
 - kind: module
   qualified_name: trie/edits/infer:__module__
@@ -79,7 +79,7 @@ Template string for prompting an LLM to fix Python diagnostics errors in file co
 <!-- trie:section symbol=trie/edits/infer:_format_bullets fingerprint=276d8d146737b65b171b6b1d440db66fa18b94a20cbc45c2cf752f35f5cd26d4 body_fp=2b929f50319b728e7169b14c5aae6b74989318303d98f0b88d5b234601c5fa79 source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=code-editing -->
 Formats lists of notes and reasons into bullet-point text with `<bullet>` prefixes.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:merge_notes fingerprint=94dfc8addb1bd5773ab4bb3e59e5f6e274f144ce32f80b8cb25fb89f64ee037c body_fp=db377d7618c36731c51edfd5bb863c1ca91f2608dd50c578137928aae6d71676 source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=domain -->
+<!-- trie:section symbol=trie/edits/infer:merge_notes fingerprint=94dfc8addb1bd5773ab4bb3e59e5f6e274f144ce32f80b8cb25fb89f64ee037c body_fp=db377d7618c36731c51edfd5bb863c1ca91f2608dd50c578137928aae6d71676 source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=orchestration -->
 Deduplicates and merges implementation note patches, returning consolidated notes and reasons.
 
 - patches: list of dicts with "note" and "reason" keys
@@ -108,7 +108,7 @@ Builds caller summary dictionaries with symbol metadata, prose from triefact fil
 <!-- trie:section symbol=trie/edits/infer:_read_prose fingerprint=e1a7046a605c3879cfdfc6f1f5061c1f7d0d2767cc919b6ca7bb05b92321a738 body_fp=38174f97de3023d749cde3168198b7cf9038182109fb23db13ad6e2e14565922 source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=documentation-sync -->
 Extracts prose documentation for a symbol from its triefact markdown file.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:pre_filter_batch fingerprint=9d38b535f74cd6dfc4386afc93e14976a77f214e2b9e085824cbb09c0e36e9b2 body_fp=0a1e12bbc862446219ef3bf68ed513a2fa6c57e5f4c6a33c5f0d0cd1f6afe520 source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=orchestration -->
+<!-- trie:section symbol=trie/edits/infer:pre_filter_batch fingerprint=9d38b535f74cd6dfc4386afc93e14976a77f214e2b9e085824cbb09c0e36e9b2 body_fp=0a1e12bbc862446219ef3bf68ed513a2fa6c57e5f4c6a33c5f0d0cd1f6afe520 source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=io -->
 Determines which callers need updates when their callees change by batching LLM requests.
 
 - `callee_pairs`: tuples of (callee_qname, old_prose, callers_list, notes_reasons_list)

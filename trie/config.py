@@ -112,6 +112,14 @@ class Sync:
     retry_base_delay_seconds: float = 1.0
     retry_cap_seconds: float = 60.0
 
+    # Per-request timeout (seconds) for a single LLM call. Without an explicit
+    # timeout a stalled connection (no response, half-open socket) makes the
+    # async request — and the worker thread driving it — block forever, so the
+    # file never finishes and the sync appears to hang. With a bound the request
+    # raises APITimeoutError, which the retry loop catches and retries, then
+    # ultimately surfaces as a per-file error instead of an indefinite spin.
+    request_timeout_seconds: float = 120.0
+
     # Wave-based cross-file parallelism. `file_workers` is how many files the
     # scheduler generates concurrently; within each file, `concurrency` symbols
     # run in parallel. The product can exceed the provider's rate ceiling, so
