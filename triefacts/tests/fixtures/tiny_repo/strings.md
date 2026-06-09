@@ -17,13 +17,8 @@ outgoing_refs: 0
 <!-- trie:section symbol=tests/fixtures/tiny_repo/strings:shout fingerprint=1d10d56594df40a91357c18f7f14b9551ccd74b0de1de3d68a296802a3f94094 body_fp=145c4ca7b758146938ec475e643e542ae0cf9afb8a1a2fbffbecf65f069aa184 source_ref=bb1fd351d835d5ee9516479bac7a26c3c2541488 role=test-infrastructure -->
 Converts string to uppercase and appends an exclamation mark.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/fixtures/tiny_repo/strings:whisper fingerprint=f351c011a0fdd6ad18e98a2adef4f29d680d8f31fe7c50ca721b49012c6f7d8e body_fp=c67e9625cf1c6d5b5becbeabed8b297e338c44299fc0597cf418b92bd4ec8704 source_ref=bb1fd351d835d5ee9516479bac7a26c3c2541488 role=test-infrastructure -->
-Converts a string to lowercase.
-<!-- trie:end -->
-
-<!-- trie:section symbol=tests/fixtures/tiny_repo/strings:shout fingerprint=1d10d56594df40a91357c18f7f14b9551ccd74b0de1de3d68a296802a3f94094 body_fp=145c4ca7b758146938ec475e643e542ae0cf9afb8a1a2fbffbecf65f069aa184 source_ref=bb1fd351d835d5ee9516479bac7a26c3c2541488 -->
-Converts string to uppercase and appends an exclamation mark.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/fixtures/tiny_repo/strings:whisper fingerprint=f351c011a0fdd6ad18e98a2adef4f29d680d8f31fe7c50ca721b49012c6f7d8e body_fp=a5703fb5ad6e3e5e0cd8950a107baddf8bbbcca7728a74eb8d4788251dc5cca0 source_ref=bb1fd351d835d5ee9516479bac7a26c3c2541488 -->
+<!-- trie:section symbol=tests/fixtures/tiny_repo/strings:whisper fingerprint=f351c011a0fdd6ad18e98a2adef4f29d680d8f31fe7c50ca721b49012c6f7d8e body_fp=a5703fb5ad6e3e5e0cd8950a107baddf8bbbcca7728a74eb8d4788251dc5cca0 source_ref=bb1fd351d835d5ee9516479bac7a26c3c2541488 role=test-infrastructure -->
 Converts string to lowercase.
 <!-- trie:end -->
+
+

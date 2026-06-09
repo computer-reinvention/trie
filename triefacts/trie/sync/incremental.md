@@ -1,26 +1,26 @@
 ---
 trie_version: 0.1.5
 source: trie/sync/incremental.py
-file_fingerprint: 630b9a0b2546e55e68348fa469e1506eb6a6f3d4fc6e0ef80048088f17719ac8
-last_synced_at: '2026-06-06T13:43:43Z'
+file_fingerprint: f914dd3128be6edd574df711ed0327434590effec8e982f8514944e9b91610fb
+last_synced_at: '2026-06-07T05:46:57Z'
 defines:
 - kind: module
   qualified_name: trie/sync/incremental:__module__
-  lines: 1-311
+  lines: 1-323
 - kind: class
   qualified_name: trie/sync/incremental:IncrementalWorklist
-  lines: 20-52
+  lines: 21-53
 - kind: class
   qualified_name: trie/sync/incremental:IncrementalResult
-  lines: 56-64
+  lines: 57-65
 - kind: function
   qualified_name: trie/sync/incremental:compute_incremental_worklist
-  lines: 67-143
+  lines: 68-144
 - kind: function
   qualified_name: trie/sync/incremental:run_incremental
-  lines: 146-310
+  lines: 147-322
 incoming_refs: 20
-outgoing_refs: 14
+outgoing_refs: 15
 ---
 <!-- trie:section symbol=trie/sync/incremental:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=cb313a4fac70ff6dc3bad02de5c44f9c60afef2c3f9792c5becb424681fa0201 source_ref=549bb001d03e465de4697570041eabaf93893a7f role=documentation-sync -->
 Incremental synchronization engine that refreshes stale triefacts and cascades changes through dependent files.
@@ -55,10 +55,10 @@ Scans project, identifies stale triefacts, computes cascade dependencies, and re
 - `regen_qnames_by_file` maps files to specific symbols needing regeneration (excludes full-file regen cases)
 - Returns empty worklist if no directly stale files found
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/incremental:run_incremental fingerprint=ea7dca53515dfa6eac9c5edddb21b9c7f54cd3bf5b49ba5994ce06495c7a28d4 body_fp=124748a7083087ca069b3140598812a06a815453f6a550f4ab9d9fa845e7a523 source_ref=8c6f07432189bef5eede3f7621397622eacd7d6b role=orchestration -->
+<!-- trie:section symbol=trie/sync/incremental:run_incremental fingerprint=af32bcc03bf89bb4a9221730842af39354b54dbc3e5a2a97470655620280de19 body_fp=2d9ea6df2086b8fed7ab140df2fcaeb4e76c00559d2d352491dc58b7fe822527 source_ref=319d5dde2dc074582af1ce4ea40dc1d43db5fc03 role=orchestration -->
 Regenerates stale triefacts and cascade-dependent files using LLM, respecting budget and concurrency limits.
 
 • Scans project, checks staleness, computes cascade, then syncs affected files in hop-ordered waves
-• Removes orphaned triefacts, backfills missing metadata, auto-fills role tags, clears pending status
+• Removes orphaned triefacts, backfills missing metadata, auto-fills role tags with error handling, clears pending status
 • Returns statistics including files synced, skipped counts, actual cost, and detailed sync results
 <!-- trie:end -->

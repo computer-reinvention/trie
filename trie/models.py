@@ -10,6 +10,7 @@ from typing import Any
 
 from anthropic import (
     Anthropic,
+    APIConnectionError,
     APIStatusError,
     APITimeoutError,
     InternalServerError,
@@ -300,7 +301,12 @@ def _retry_after_seconds(exc: APIStatusError) -> float | None:
 
 
 def _is_retryable(exc: BaseException) -> bool:
-    return isinstance(exc, (RateLimitError, InternalServerError, APITimeoutError))
+    # APIConnectionError covers transient network failures (DNS lookup failure,
+    # connection refused, reset) and is the parent of APITimeoutError. Listing
+    # both keeps the timeout reason label distinct in `_run_with_retry`.
+    return isinstance(
+        exc, (RateLimitError, InternalServerError, APITimeoutError, APIConnectionError)
+    )
 
 
 def _backoff_delay(*, attempt: int, base: float, cap: float, rng: random.Random) -> float:
@@ -345,7 +351,12 @@ def _run_with_retry(
                     cap=cfg.retry_cap_seconds,
                     rng=rng,
                 )
-                reason = "overloaded" if isinstance(exc, InternalServerError) else "timeout"
+                if isinstance(exc, InternalServerError):
+                    reason = "overloaded"
+                elif isinstance(exc, APITimeoutError):
+                    reason = "timeout"
+                else:
+                    reason = "connection"
             delay = min(delay, cfg.retry_cap_seconds)
             telemetry.emit(
                 "model_call_retry",

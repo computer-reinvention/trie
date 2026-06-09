@@ -1,127 +1,127 @@
 ---
 trie_version: 0.1.5
 source: trie/models.py
-file_fingerprint: 07e77bcdc74877b7ae0a5cb597725cf5c2ad647c51b438feddfc837c85212810
-last_synced_at: '2026-06-06T14:03:52Z'
+file_fingerprint: 23e5282f7a8242896926e178744eb2ebd8f842db34d851cdf1445e8f03c1487a
+last_synced_at: '2026-06-07T05:46:57Z'
 defines:
 - kind: module
   qualified_name: trie/models:__module__
-  lines: 1-526
+  lines: 1-537
 - kind: constant
   qualified_name: trie/models:_thread_local
-  lines: 33-33
+  lines: 34-34
 - kind: function
   qualified_name: trie/models:_thread_event_loop
-  lines: 36-41
+  lines: 37-42
 - kind: constant
   qualified_name: trie/models:_inflight_lock
-  lines: 56-56
-- kind: constant
-  qualified_name: trie/models:_inflight_sem
   lines: 57-57
 - kind: constant
-  qualified_name: trie/models:_inflight_bound
+  qualified_name: trie/models:_inflight_sem
   lines: 58-58
+- kind: constant
+  qualified_name: trie/models:_inflight_bound
+  lines: 59-59
 - kind: function
   qualified_name: trie/models:configure_inflight_limit
-  lines: 61-72
+  lines: 62-73
 - kind: function
   qualified_name: trie/models:_inflight_slot
-  lines: 76-86
+  lines: 77-87
 - kind: class
   qualified_name: trie/models:SectionBody
-  lines: 95-132
+  lines: 96-133
 - kind: class
   qualified_name: trie/models:ProposedRole
-  lines: 135-150
+  lines: 136-151
 - kind: class
   qualified_name: trie/models:RoleTaxonomy
-  lines: 153-170
+  lines: 154-171
 - kind: class
   qualified_name: trie/models:RoleTag
-  lines: 173-192
+  lines: 174-193
 - kind: class
   qualified_name: trie/models:MergeNotesOutput
-  lines: 195-199
+  lines: 196-200
 - kind: class
   qualified_name: trie/models:SymbolEdit
-  lines: 202-206
+  lines: 203-207
 - kind: class
   qualified_name: trie/models:SymbolProse
-  lines: 209-213
+  lines: 210-214
 - kind: class
   qualified_name: trie/models:FileEdit
-  lines: 216-220
+  lines: 217-221
 - kind: class
   qualified_name: trie/models:CallerDecision
-  lines: 223-229
+  lines: 224-230
 - kind: class
   qualified_name: trie/models:BatchFilterOutput
-  lines: 232-235
+  lines: 233-236
 - kind: class
   qualified_name: trie/models:FixupOutput
-  lines: 238-241
+  lines: 239-242
 - kind: class
   qualified_name: trie/models:ModelResult
-  lines: 249-280
+  lines: 250-281
 - kind: method
   qualified_name: trie/models:ModelResult.__init__
-  lines: 256-258
+  lines: 257-259
 - kind: method
   qualified_name: trie/models:ModelResult.output
-  lines: 261-262
+  lines: 262-263
 - kind: method
   qualified_name: trie/models:ModelResult.input_tokens
-  lines: 265-266
+  lines: 266-267
 - kind: method
   qualified_name: trie/models:ModelResult.output_tokens
-  lines: 269-270
+  lines: 270-271
 - kind: method
   qualified_name: trie/models:ModelResult.cache_creation_input_tokens
-  lines: 273-275
+  lines: 274-276
 - kind: method
   qualified_name: trie/models:ModelResult.cache_read_input_tokens
-  lines: 278-280
+  lines: 279-281
 - kind: function
   qualified_name: trie/models:_retry_after_seconds
-  lines: 289-299
+  lines: 290-300
 - kind: function
   qualified_name: trie/models:_is_retryable
-  lines: 302-303
+  lines: 303-309
 - kind: function
   qualified_name: trie/models:_backoff_delay
-  lines: 306-308
+  lines: 312-314
 - kind: function
   qualified_name: trie/models:_run_with_retry
-  lines: 311-360
+  lines: 317-371
 - kind: constant
   qualified_name: trie/models:T
-  lines: 363-363
+  lines: 374-374
 - kind: constant
   qualified_name: trie/models:_MODEL_ID_ALIASES
-  lines: 371-375
+  lines: 382-386
 - kind: function
   qualified_name: trie/models:_pydantic_ai_model_id
-  lines: 378-380
+  lines: 389-391
 - kind: function
   qualified_name: trie/models:_anthropic_model_name
-  lines: 383-387
+  lines: 394-398
 - kind: class
   qualified_name: trie/models:TrieClient
-  lines: 390-509
+  lines: 401-520
 - kind: method
   qualified_name: trie/models:TrieClient.__init__
-  lines: 401-411
+  lines: 412-422
 - kind: method
   qualified_name: trie/models:TrieClient.run
-  lines: 413-484
+  lines: 424-495
 - kind: method
   qualified_name: trie/models:TrieClient.count_tokens
-  lines: 486-509
+  lines: 497-520
 - kind: function
   qualified_name: trie/models:make_client
-  lines: 512-525
-incoming_refs: 76
+  lines: 523-536
+incoming_refs: 77
 outgoing_refs: 6
 ---
 <!-- trie:section symbol=trie/models:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=9b387fda13f0c60ba17cbe1d813fca36e81accdb48ac1477cbbc51fd87ee73ba source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
@@ -249,13 +249,13 @@ Returns the number of input tokens read from cache during ModelResult generation
 <!-- trie:section symbol=trie/models:_retry_after_seconds fingerprint=eea4acb8b1e16f87411463e5b36f7296696e1226574047bf6b26e59be639801c body_fp=5400da1da68ecff033d8015e310ecf6ae1eb1f77d67ed65dbf8154f4d90d88ae source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
 Extracts the retry delay in seconds from an APIStatusError's retry-after header, returning None if unavailable or invalid.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:_is_retryable fingerprint=3102381eafa779dde25bd3c1b78f96c2a221ecf27d9293d304a187bd683db7e9 body_fp=60c831a3cfe4324799d6eaafc47a1aced01594a4e73150e4c6db47ad7592ac93 source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
-Returns True if the exception is retryable (rate limit, internal server error, or timeout).
+<!-- trie:section symbol=trie/models:_is_retryable fingerprint=bea2105277ba4c6f333f68b3b6c1ac502431df076d907eeda0a9b75455594da3 body_fp=324d787fad441b1b54feb99c36e82a91f14b7b09b395b2efb9c4d2798b84e0df source_ref=ab49f962e9a178707553fcf6ad796ef550b20bc2 role=util -->
+Returns True if the exception is retryable (rate limit, internal server error, timeout, or connection error).
 <!-- trie:end -->
 <!-- trie:section symbol=trie/models:_backoff_delay fingerprint=77f4e3c66b993cc965f7254cdc34761c6af37a46bcee27228820a1f4647a0475 body_fp=db499c0114246d369fa21a973c4cc466d777071d1f99d8535ad718efe61464f4 source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
 Calculates exponential backoff delay with jitter, returning a random duration between zero and the capped window.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:_run_with_retry fingerprint=1f73637cad1c2281d26eaecd1c1730346db5df3a12e9f483704db5bddb25d204 body_fp=cafd3a5922db59b734b54de48ef860147f7595cafc2c321fa3a01f9b5b9bcb47 source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
+<!-- trie:section symbol=trie/models:_run_with_retry fingerprint=74ca4f2a16ec6fbc5e31d4fbce56fec10a5ebcd72eec0e14800b2f3690e1a2f2 body_fp=cafd3a5922db59b734b54de48ef860147f7595cafc2c321fa3a01f9b5b9bcb47 source_ref=ab49f962e9a178707553fcf6ad796ef550b20bc2 role=util -->
 Executes a callable with exponential backoff retry logic for rate limits, timeouts, and server errors.
 
 - Respects `retry-after` headers for rate limit exceptions

@@ -22,6 +22,7 @@ from unittest.mock import MagicMock
 import httpx
 import pytest
 from anthropic import (
+    APIConnectionError,
     APITimeoutError,
     AuthenticationError,
     InternalServerError,
@@ -92,6 +93,13 @@ def test_is_retryable_picks_up_rate_limit_and_5xx_and_timeout():
     assert _is_retryable(_rate_limit())
     assert _is_retryable(_overloaded())
     assert _is_retryable(APITimeoutError(httpx.Request("POST", "https://x")))
+
+
+def test_is_retryable_picks_up_connection_errors():
+    # Transient network failures (DNS lookup failure, connection refused) surface
+    # as APIConnectionError and must be retried, not crash the whole sync.
+    exc = APIConnectionError(request=httpx.Request("POST", "https://x"))
+    assert _is_retryable(exc)
 
 
 def test_is_retryable_rejects_auth_and_other_4xx():

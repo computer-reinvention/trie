@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.5
 source: trie/edits/apply.py
-file_fingerprint: 6872cb464280b74ac7932f505cb23d4221c2fda56e0817ab80bbf073679b1d24
-last_synced_at: '2026-06-06T13:44:39Z'
+file_fingerprint: f02b108f7d1bb53723f2fa43559b961cb307a568d73e7c191f94780b375671aa
+last_synced_at: '2026-06-07T05:47:12Z'
 defines:
 - kind: module
   qualified_name: trie/edits/apply:__module__
-  lines: 1-616
+  lines: 1-622
 - kind: function
   qualified_name: trie/edits/apply:_parse_pyright_output
   lines: 27-43
@@ -36,16 +36,16 @@ defines:
   lines: 179-188
 - kind: function
   qualified_name: trie/edits/apply:apply_patches
-  lines: 191-537
+  lines: 191-543
 - kind: function
   qualified_name: trie/edits/apply:_read_source_span
-  lines: 540-543
+  lines: 546-549
 - kind: function
   qualified_name: trie/edits/apply:_write_prose_section
-  lines: 546-584
+  lines: 552-590
 - kind: function
   qualified_name: trie/edits/apply:preview_patches
-  lines: 587-615
+  lines: 593-621
 incoming_refs: 24
 outgoing_refs: 2
 ---
@@ -86,7 +86,7 @@ Runs LSP backends sequentially against a file and returns diagnostics from the f
 <!-- trie:section symbol=trie/edits/apply:_format_diagnostics fingerprint=f8f1a2a1db2af1f7d97e5492cd064ae2f56b6574b386af817e0a4e13e5490c56 body_fp=dd40ea53611c19768ecf0ce91283a911c80749520b7b9390e3e3a7fef52351aa source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 role=code-editing -->
 Formats diagnostic messages from LSP backends into a human-readable string with line:column positions.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/apply:_file_fixup fingerprint=bbadd2dda12f9b9865bdf44285d919b279240223f85f1fca9335ac9413ccd9e7 body_fp=a62a14c70277c17d6757e988996b7a48867adaced13d0de6e86b9aec7c2b5344 source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 role=orchestration -->
+<!-- trie:section symbol=trie/edits/apply:_file_fixup fingerprint=bbadd2dda12f9b9865bdf44285d919b279240223f85f1fca9335ac9413ccd9e7 body_fp=a62a14c70277c17d6757e988996b7a48867adaced13d0de6e86b9aec7c2b5344 source_ref=fda8d865f5854a6e1d6ea5ce64cf35f8776b45dc role=orchestration -->
 Uses LLM client to fix diagnostic issues in file content, returning corrected code or original if no diagnostics.
 
 - Returns None if LLM fails to generate fix, original content if diagnostics are empty
@@ -104,13 +104,13 @@ Expands seed symbols to include their callers up to cascade_depth levels, skippi
 <!-- trie:section symbol=trie/edits/apply:_refresh_file fingerprint=cb12cf48ef733d72f2273ca2661a206c03fd153e474426a121e05919824950cf body_fp=955ded022f1c7bd954e595349b4351a1c217a03811eeb235cbfe4e97dcad3124 source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 role=documentation-sync -->
 Updates triefact metadata for a single file after source code changes.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/apply:apply_patches fingerprint=34152c4a10101626598cdf65b430179eaebdc1213a49e9710db538fcb37aee10 body_fp=4c0e509848276e6bb2558bda3fb5122414ced0db033038adaf8519a35e7cab1b source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 role=code-editing -->
+<!-- trie:section symbol=trie/edits/apply:apply_patches fingerprint=b411312d1e51179183a893eee54a84f485a6766817c2e6032704d596ae09e72b body_fp=3219db8500790fdd654351a42dc528c0ebdf53840e84136371d5e9ae960357f9 source_ref=fda8d865f5854a6e1d6ea5ce64cf35f8776b45dc role=orchestration -->
 Applies all pending patches by cascading changes, generating source and prose, running LSP fixups, and verifying project consistency.
 
 - **patches**: groups patches by symbol, expands to caller symbols via cascade
 - **generation**: uses LLM to generate new source code and triefact prose
 - **fixups**: runs configured LSP backends to fix diagnostics iteratively
-- **verification**: checks project consistency and refreshes metadata
+- **verification**: clears patches before checking project consistency and refreshes metadata
 - **concurrency**: processes files in parallel using ThreadPoolExecutor
 - **progress**: optional callback interface for progress reporting
 - **returns**: dict with ok status, file/symbol counts, per-file results, and error details
