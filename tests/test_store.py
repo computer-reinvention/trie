@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from pathlib import Path
 
 import pytest
@@ -397,3 +398,37 @@ def test_delete_create_patches_by_session_and_all(store: Store):
     assert store.delete_create_patches(session_id="s1") == 1
     assert store.delete_create_patches(all=True) == 1
     assert store.get_create_patches_grouped() == {}
+
+
+def test_concurrent_access_does_not_raise(store: Store):
+    """Many threads hammering the single shared connection must not race.
+
+    Reproduces the sync failure mode: wave-based sync drives `file_workers`
+    threads through Store methods on one sqlite3 connection. Before the
+    @_synchronize_store decorator, the unguarded methods raced and surfaced
+    spurious errors (OperationalError / recursive cursor use). This stresses
+    a mix of read + write methods concurrently and asserts none of them blow up.
+    """
+    errors: list[BaseException] = []
+    barrier = threading.Barrier(16)
+
+    def worker(n: int) -> None:
+        try:
+            barrier.wait()
+            for i in range(50):
+                path = f"src/mod_{n}_{i}.py"
+                store.upsert_file(path=path, fingerprint=f"fp{i}", now=1000 + i)
+                store.get_file(path)
+                store.list_files()
+                store.count_symbols()
+                store.count_edges()
+        except BaseException as exc:
+            errors.append(exc)
+
+    threads = [threading.Thread(target=worker, args=(n,)) for n in range(16)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert not errors, f"concurrent Store access raised: {errors[:3]}"

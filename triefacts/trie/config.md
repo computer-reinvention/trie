@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.5
 source: trie/config.py
-file_fingerprint: f291c477946f706816fb0189693cef21acb0ed4df2e764d79014db06e80c8bf6
-last_synced_at: '2026-06-06T14:02:58Z'
+file_fingerprint: cbfccc42779f3ee79d4c65a76f5326a11e3910d7366cdebc5d5a2f613cac68d2
+last_synced_at: '2026-06-09T09:24:18Z'
 defines:
 - kind: module
   qualified_name: trie/config:__module__
-  lines: 1-358
+  lines: 1-372
 - kind: class
   qualified_name: trie/config:TrieMeta
   lines: 9-10
@@ -21,41 +21,41 @@ defines:
   lines: 33-36
 - kind: class
   qualified_name: trie/config:Cascade
-  lines: 40-43
+  lines: 40-46
 - kind: class
   qualified_name: trie/config:LspBackend
-  lines: 47-63
+  lines: 50-66
 - kind: class
   qualified_name: trie/config:Edits
-  lines: 67-75
+  lines: 70-89
 - kind: class
   qualified_name: trie/config:Sync
-  lines: 79-109
+  lines: 93-123
 - kind: class
   qualified_name: trie/config:Debug
-  lines: 113-132
+  lines: 127-146
 - kind: class
   qualified_name: trie/config:Mcp
-  lines: 136-192
+  lines: 150-206
 - kind: class
   qualified_name: trie/config:Config
-  lines: 196-245
+  lines: 210-259
 - kind: method
   qualified_name: trie/config:Config.from_dict
-  lines: 208-223
+  lines: 222-237
 - kind: method
   qualified_name: trie/config:Config.load
-  lines: 226-229
+  lines: 240-243
 - kind: method
   qualified_name: trie/config:Config.find_and_load
-  lines: 232-245
+  lines: 246-259
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
-  lines: 248-249
+  lines: 262-263
 - kind: constant
   qualified_name: trie/config:DEFAULT_CONFIG_TOML
-  lines: 252-357
-incoming_refs: 188
+  lines: 266-371
+incoming_refs: 207
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/config:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=73508aef5ccf98a204e6bf0fa288e0420baac8315fc2fb1aa7e8d1bf91d72a01 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
@@ -98,10 +98,11 @@ Specifies default model identifiers for different trie operations.
 - `cascade`: Model used for cascaded reference updates  
 - `edits`: Model used for patch application and code fixes
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Cascade fingerprint=9a685f1d6a6008e1bc16ca1ea29a753bdf3f64fc881a94cb31cf485d6ee42b01 body_fp=1d7b8a2a09490d3154cf72f4f010ef0739004c2e594ee3387432e088d9c0090c source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
+<!-- trie:section symbol=trie/config:Cascade fingerprint=f75ec172dcb1f95fecfbf0a537fe3f1fed8dd874f90ff0fed3493c9b45b0b52f body_fp=ba914fb87d9a2eaf94e9bfa6080e00cd81768c53283d16f9846c9c3c65748ad6 source_ref=804cbe955566bb7dc234ec68033f1e84827f016f role=config -->
 Configuration for cascade analysis that determines incremental sync depth and hub symbol handling.
 
 - `max_judgments`: hard cap on pre_filter_cascade calls per apply run
+- `surface_unresolved`: surface second-order cascades as ApplyReport.unresolved rather than chasing in-pipeline
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:LspBackend fingerprint=b9c2864ea0cd6bcd2cdb18b855ee096c71423d6f619e3d8132b5a2ee64091d4a body_fp=8d00d617494f8391cb23f825be93d94c4eff427ca707b5cca97e557956c5b1ed source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
 Configures a language server backend for diagnostics during patch application.
@@ -109,11 +110,14 @@ Configures a language server backend for diagnostics during patch application.
 - `output_format`: determines stdout parsing format - "pyright" or "ruff"
 - `exit_ok_codes`: exit codes interpreted as "no diagnostics found"
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Edits fingerprint=981676998916a9eb811467dfc40523109336af054a86d94aaa07898c1fdfc1d0 body_fp=675a8133bfc2f789d009cc960146c2a8499eecf68a828726f3a008b27a4181ff source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
+<!-- trie:section symbol=trie/config:Edits fingerprint=18a8d3e0df78081ea47e08cd712835fea37ff36a2acc32f7965cfcf75845c865 body_fp=1df955f8f9569268b2202114a02a1bf068d3d2c782a0b2bdc6496493bafed6f4 source_ref=804cbe955566bb7dc234ec68033f1e84827f016f role=config -->
 Configures patch-apply pipeline and LSP backend settings for code editing operations.
 
 - `lsp_max_retries`: maximum retry attempts when LSP diagnostics fail
 - `lsp_backends`: ordered list of language server configurations, first available backend is used
+- `backend`: edit generation backend, either "llm" or "opencode"
+- `commit_mode`: partial failure handling, one of "all_or_nothing", "per_item", or "per_group"
+- `compile_retry_cap`: maximum regeneration attempts for symbols with compilation errors
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:Sync fingerprint=1d2cc3d22d744e4bc691bb719df31b592f4ec7e83562507eb0aa5afea030a84c body_fp=32e299dc9fef9f368e1794a54ae3a69995384c46d45f5f95ff937ce11862130f source_ref=6e0c09981b45ff5a650aded507505c52801d4c8d role=config -->
 Configuration dataclass for controlling parallelism and retry behavior during sync operations.

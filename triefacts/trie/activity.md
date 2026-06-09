@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.5
 source: trie/activity.py
-file_fingerprint: 9c08d6257bd3b3edf1847daf2fb18bdef3c7c4b6f7571c500ddca934f0c7378d
-last_synced_at: '2026-06-06T14:03:34Z'
+file_fingerprint: 9b718d89cd73097148c5a3d66ac6a8b6a2631d8070b2ebca242f289ec1419fd4
+last_synced_at: '2026-06-09T09:23:55Z'
 description: Ephemeral local activity state for trie, backed by SQLite.
 defines:
 - kind: module
   qualified_name: trie/activity:__module__
-  lines: 1-357
+  lines: 1-393
 - kind: constant
   qualified_name: trie/activity:DB_FILENAME
   lines: 38-38
@@ -20,79 +20,88 @@ defines:
 - kind: function
   qualified_name: trie/activity:_connect
   lines: 70-85
+- kind: function
+  qualified_name: trie/activity:get_meta
+  lines: 93-103
+- kind: function
+  qualified_name: trie/activity:set_meta
+  lines: 106-112
+- kind: function
+  qualified_name: trie/activity:clear_meta
+  lines: 115-121
 - kind: class
   qualified_name: trie/activity:Pending
-  lines: 94-101
+  lines: 130-137
 - kind: method
   qualified_name: trie/activity:Pending.count
-  lines: 100-101
+  lines: 136-137
 - kind: function
   qualified_name: trie/activity:write_pending
-  lines: 104-118
+  lines: 140-154
 - kind: function
   qualified_name: trie/activity:read_pending
-  lines: 121-144
+  lines: 157-180
 - kind: function
   qualified_name: trie/activity:clear_pending
-  lines: 147-154
+  lines: 183-190
 - kind: class
   qualified_name: trie/activity:Status
-  lines: 163-176
+  lines: 199-212
 - kind: method
   qualified_name: trie/activity:Status.is_active
-  lines: 175-176
+  lines: 211-212
 - kind: function
   qualified_name: trie/activity:_pid_alive
-  lines: 179-190
+  lines: 215-226
 - kind: function
   qualified_name: trie/activity:read_status
-  lines: 193-224
+  lines: 229-260
 - kind: class
   qualified_name: trie/activity:ActivityWriter
-  lines: 232-313
+  lines: 268-349
 - kind: method
   qualified_name: trie/activity:ActivityWriter.__init__
-  lines: 241-252
+  lines: 277-288
 - kind: method
   qualified_name: trie/activity:ActivityWriter.__enter__
-  lines: 254-256
+  lines: 290-292
 - kind: method
   qualified_name: trie/activity:ActivityWriter.__exit__
-  lines: 258-262
+  lines: 294-298
 - kind: method
   qualified_name: trie/activity:ActivityWriter.set_total
-  lines: 264-266
+  lines: 300-302
 - kind: method
   qualified_name: trie/activity:ActivityWriter.file_start
-  lines: 268-270
+  lines: 304-306
 - kind: method
   qualified_name: trie/activity:ActivityWriter.file_done
-  lines: 272-274
+  lines: 308-310
 - kind: method
   qualified_name: trie/activity:ActivityWriter.file_skip
-  lines: 276-278
+  lines: 312-314
 - kind: method
   qualified_name: trie/activity:ActivityWriter._write
-  lines: 280-313
+  lines: 316-349
 - kind: function
   qualified_name: trie/activity:activity_writer
-  lines: 317-321
+  lines: 353-357
 - kind: class
   qualified_name: trie/activity:ActivityProgress
-  lines: 331-356
+  lines: 367-392
 - kind: method
   qualified_name: trie/activity:ActivityProgress.__init__
-  lines: 338-340
+  lines: 374-376
 - kind: method
   qualified_name: trie/activity:ActivityProgress.on_start
-  lines: 342-345
+  lines: 378-381
 - kind: method
   qualified_name: trie/activity:ActivityProgress.on_done
-  lines: 347-351
+  lines: 383-387
 - kind: method
   qualified_name: trie/activity:ActivityProgress.on_skip
-  lines: 353-356
-incoming_refs: 19
+  lines: 389-392
+incoming_refs: 26
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/activity:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=14c1d957e81320f2a43c5f5cc90535b8747974f04adac72d17bd69ae06b4cddc source_ref=2f462a970066470f2a553a12b94d8ecdc7c9d2d9 role=persistence -->
@@ -123,6 +132,15 @@ Opens ephemeral SQLite activity database with WAL journaling and schema initiali
 - Creates `.trie` directory and database file if missing
 - Enables WAL mode for concurrent reads during writes
 - Sets 5-second timeout for lock contention retry
+<!-- trie:end -->
+<!-- trie:section symbol=trie/activity:get_meta fingerprint=5c53113e190974614145cfefe536cf4b846e5757523fd0ed9a332e79d6b25bdd body_fp=09d36a28b0e3c2980d184e2a38de372ed0c083cf679f67c2b0ba62d8bf40f10e source_ref=c4c8fffb97eb7849d22babb462a59d2b2ab0f821 role=persistence -->
+Retrieves a meta value by key from the activity database, returning None if the key or database doesn't exist.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/activity:set_meta fingerprint=694baf44dfba103017e8753ccdb569fbbb04c22b1c8546a1e7d5655832f5d9c3 body_fp=57cd0226f81ebea86745a5699675cc4c848d25f373642a0b8173e1f53b54ebe5 source_ref=c4c8fffb97eb7849d22babb462a59d2b2ab0f821 role=persistence -->
+Upserts a meta key/value pair into the activity database, swallowing any SQLite errors.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/activity:clear_meta fingerprint=d4e29514cefb5ba413402ad57a85eb00d16787b36c6fe17b18314f8546365b66 body_fp=4398feed23835c855325bb47874104c88275295ef4678735f1d9a886dd5ed4ac source_ref=c4c8fffb97eb7849d22babb462a59d2b2ab0f821 role=persistence -->
+Deletes a meta key from the activity database, swallowing any SQLite errors.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/activity:Pending fingerprint=6a433a570089775c0f496c5c89261697ebe8b2f3621392dacc01563b0f5e4425 body_fp=16e48de335594be8c5cdca8ecfffafad8cb2f24d7c20d233cc9a63833d91c006 source_ref=2f462a970066470f2a553a12b94d8ecdc7c9d2d9 role=model -->
 Represents the stale file set recorded on disk for tracking which triefacts need regeneration.
