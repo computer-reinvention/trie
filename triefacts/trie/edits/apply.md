@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/edits/apply.py
 file_fingerprint: f02b108f7d1bb53723f2fa43559b961cb307a568d73e7c191f94780b375671aa
-last_synced_at: '2026-06-07T05:47:12Z'
+last_synced_at: '2026-06-09T09:38:50Z'
 defines:
 - kind: module
   qualified_name: trie/edits/apply:__module__
@@ -46,7 +46,7 @@ defines:
 - kind: function
   qualified_name: trie/edits/apply:preview_patches
   lines: 593-621
-incoming_refs: 24
+incoming_refs: 30
 outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/edits/apply:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a240e61e0147c739eb5cd28dd5d4841e0cc3638151c3dc00315a599b3dfc1b23 source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 role=code-editing -->
@@ -86,7 +86,7 @@ Runs LSP backends sequentially against a file and returns diagnostics from the f
 <!-- trie:section symbol=trie/edits/apply:_format_diagnostics fingerprint=f8f1a2a1db2af1f7d97e5492cd064ae2f56b6574b386af817e0a4e13e5490c56 body_fp=dd40ea53611c19768ecf0ce91283a911c80749520b7b9390e3e3a7fef52351aa source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 role=code-editing -->
 Formats diagnostic messages from LSP backends into a human-readable string with line:column positions.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/apply:_file_fixup fingerprint=bbadd2dda12f9b9865bdf44285d919b279240223f85f1fca9335ac9413ccd9e7 body_fp=a62a14c70277c17d6757e988996b7a48867adaced13d0de6e86b9aec7c2b5344 source_ref=fda8d865f5854a6e1d6ea5ce64cf35f8776b45dc role=orchestration -->
+<!-- trie:section symbol=trie/edits/apply:_file_fixup fingerprint=bbadd2dda12f9b9865bdf44285d919b279240223f85f1fca9335ac9413ccd9e7 body_fp=a62a14c70277c17d6757e988996b7a48867adaced13d0de6e86b9aec7c2b5344 source_ref=fda8d865f5854a6e1d6ea5ce64cf35f8776b45dc role=io -->
 Uses LLM client to fix diagnostic issues in file content, returning corrected code or original if no diagnostics.
 
 - Returns None if LLM fails to generate fix, original content if diagnostics are empty

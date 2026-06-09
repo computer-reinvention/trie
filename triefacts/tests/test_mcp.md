@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.5
 source: tests/test_mcp.py
-file_fingerprint: 84281240afaf8272fbc86b16d6ea3dc4701d63021e4ec1aad04b74713fc3a453
-last_synced_at: '2026-06-07T03:57:16Z'
+file_fingerprint: 57cbd904fe83b73f073eb426fdcf36426be9241ec20841e124e2b08ab7d67a8b
+last_synced_at: '2026-06-09T09:24:26Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: module
   qualified_name: tests/test_mcp:__module__
-  lines: 1-691
+  lines: 1-829
 - kind: constant
   qualified_name: tests/test_mcp:PROJECT_TOML
   lines: 21-30
@@ -158,6 +158,60 @@ defines:
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_fuzzy_fallback_finds_close_name
   lines: 674-690
+- kind: function
+  qualified_name: tests/test_mcp:test_grep_str_all_finds_non_indexed_file
+  lines: 696-702
+- kind: function
+  qualified_name: tests/test_mcp:test_grep_str_all_attributes_indexed_hits_to_symbols
+  lines: 705-709
+- kind: function
+  qualified_name: tests/test_mcp:test_grep_str_default_does_not_see_non_indexed
+  lines: 712-717
+- kind: function
+  qualified_name: tests/test_mcp:test_find_files_by_extension
+  lines: 720-724
+- kind: function
+  qualified_name: tests/test_mcp:test_find_files_by_bare_name
+  lines: 727-730
+- kind: function
+  qualified_name: tests/test_mcp:test_find_files_indexed_only
+  lines: 733-737
+- kind: function
+  qualified_name: tests/test_mcp:test_find_files_prunes_trie_dir
+  lines: 740-743
+- kind: function
+  qualified_name: tests/test_mcp:test_read_source_non_indexed_file
+  lines: 746-751
+- kind: function
+  qualified_name: tests/test_mcp:test_read_source_offset_limit
+  lines: 754-759
+- kind: function
+  qualified_name: tests/test_mcp:test_read_source_missing_file_errors
+  lines: 762-766
+- kind: function
+  qualified_name: tests/test_mcp:test_read_source_directory_errors
+  lines: 769-773
+- kind: function
+  qualified_name: tests/test_mcp:test_blast_radius_reports_cascade
+  lines: 776-782
+- kind: function
+  qualified_name: tests/test_mcp:test_blast_radius_unknown_symbol_errors
+  lines: 785-789
+- kind: function
+  qualified_name: tests/test_mcp:test_write_file_creates_new_file
+  lines: 792-798
+- kind: function
+  qualified_name: tests/test_mcp:test_write_file_refuses_clobber_without_overwrite
+  lines: 801-806
+- kind: function
+  qualified_name: tests/test_mcp:test_write_file_overwrite_flag
+  lines: 809-814
+- kind: function
+  qualified_name: tests/test_mcp:test_write_file_indexed_path_flags_needs_sync
+  lines: 817-821
+- kind: function
+  qualified_name: tests/test_mcp:test_write_file_outside_root_errors
+  lines: 824-828
 incoming_refs: 0
 outgoing_refs: 12
 ---
@@ -410,4 +464,100 @@ Verify grep_str returns fuzzy fallback when regex search fails but symbol name i
 - Tests grep_str with typo "slugufy" expecting fuzzy_one_liner fallback to surface "slugify"
 - Skips assertion if ripgrep accidentally finds literal matches in source
 - Validates fallback contains expected symbol via name matching
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_str_all_finds_non_indexed_file fingerprint=dc3e9e6b1e196c6e51059cbdcecb830a3116e01b8410665633c730fb2cc90ef5 body_fp=a813374f678cbb00c569bcae1c861e09dfc3754f4212ae56f5008d9ccab47d35 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Tests that TrieTools.grep_str_all searches the entire repository including non-indexed files.
+
+- Creates a package.json file with "WIDGET_MARKER" content outside the indexed scope
+- Verifies the search result includes the non-indexed file in text_hits
+- Confirms text_match_count reflects the found occurrence
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_str_all_attributes_indexed_hits_to_symbols fingerprint=df6205a39150a2009abb81500fad1584543648c73cb153c08b54c6cd57f835e7 body_fp=7fc268ea45df03ff0296a3cd7e64bb80810080e229174a99695736acf8ab4e47 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Verifies that TrieTools.grep_str_all attributes in-scope code hits to their enclosing symbols.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_str_default_does_not_see_non_indexed fingerprint=9db8d225679c2dce1b468229e31ae87ec020b5b954d63908f3a4c4f108635f3f body_fp=b6b30af08bf25371ea2fac746528fc932624d0886a298d7ec0bfa949aa2864ef source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Verifies that `grep_str` does not search non-indexed files outside project scope.
+
+- Creates a `.txt` file with `ZEBRA_MARKER` pattern outside the indexed scope
+- Asserts `grep_str` returns no hits, confirming scoped-only behavior
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_find_files_by_extension fingerprint=3a8a987763b83aaae5d875cdb249319b978d351ebbb637b3eb004bbd584b159c body_fp=52e8f090c31503683ea4480da33cdd3bebd7d9df7966c9659aa5b1ba8581a656 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Test function verifying TrieTools.find_files locates files by glob pattern across the entire repository tree.
+
+- Creates a JSON file and searches with `**/*.json` pattern
+- Asserts the created file appears in the matches list
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_find_files_by_bare_name fingerprint=f972eb5809a15bbb04979f3fbce83b3413132ff55e7b5efaa8f378f0ba5a0297 body_fp=a093de2a5687f78e448f5f1df78c91210f29809ea56e189b79db68cdbe6f1a45 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Test that `TrieTools.find_files` matches bare filename "trie.toml" anywhere in the project tree.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_find_files_indexed_only fingerprint=d654cd5e6aa952fa1f1123ea0a428e93948c4c9cc5b0d6cfac02074ae277e6d7 body_fp=59f6bff9552e5a280a1f9326052ad8e32da9f9c42ee011914501f9f30eb8a408 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Verifies that `find_files` with `all_files=False` excludes files outside the configured project scope.
+
+- Creates a `.json` file outside the indexed scope and confirms it doesn't appear in results
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_find_files_prunes_trie_dir fingerprint=5ff63a50b6fdfa1486e9b58342409a001ed12ea65d96cfecfd6942a8158bcce9 body_fp=c498a582e2ab15dc5cf1e88855c902ac318e6d8cca740a35b68db90a106a6fe5 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+## test_find_files_prunes_trie_dir
+
+Asserts that `find_files("**/*")` excludes .trie/ cache directory from results.
+
+- Verifies no returned match starts with ".trie/"
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_source_non_indexed_file fingerprint=7bcc643759c4d737b2eaa5be5f86a2f4e6f512276ad440593df4406669703efb body_fp=5d90c0f743b2a2f00f234c6cb194ad1ecb42068aac3974bc87b0c9d6d86eea14 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Tests that `TrieTools.read_source` returns line-numbered content for files outside the indexed scope.
+
+- Creates a YAML config file with test content
+- Verifies the returned lines include proper 1-based line numbering prefixes
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_source_offset_limit fingerprint=1407d19f8963802f0fae065677fb9df4505f542ccb0fd625e11a248501483758 body_fp=06d1ec3f44822a52558930dcf3ee8175bb05a92576ce8db6b92a784995b4b44b source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Tests that read_source respects offset/limit parameters for windowed file content with line-number prefixes.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_source_missing_file_errors fingerprint=67f22f208b6e898839363540a119cef953279fef21d75cceb7ef35b60251f3be body_fp=f505525d4965d91be06ff403712c44a1bc9a77262690c41a88c1010c524e6dc5 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Tests that `read_source` returns a structured `not_found` error for missing files.
+
+- Verifies error envelope format and error code when file doesn't exist
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_source_directory_errors fingerprint=0432aeb65c449a586591abad24f301a936208df89b04fcefba1af36edeb8ebf3 body_fp=372a6b0dce4dc5e3da89821063a0f53007101cc607a1797f779055f6cc51b4f2 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Verifies that TrieTools.read_source rejects directory paths with an invalid_argument error.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_blast_radius_reports_cascade fingerprint=d64d9faa1ca0fa081d2b8b0c081b4a7f35faab7d756d308316140c02a66f64be body_fp=139749a900344b93505dc2bfd86d9d96efea5bceeeb37ba9d11afdfcb02745cd source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Verifies that TrieTools.blast_radius returns the cascade set of symbols affected by editing a given symbol.
+
+- Tests with "lib:slugify" and asserts "make_url" appears in the cascade (symbols that reference slugify)
+- Validates the response contains the original qname and no error field
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_blast_radius_unknown_symbol_errors fingerprint=5043abdf9e81ce86f69ffb20bce9e767e715283736669d4b5a376ff86a728711 body_fp=9b8e3de2e17030987e08b5c1e087f567d35824ea3b0e01c3a2222f723648be70 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Tests that blast_radius returns a structured not_found error for unknown qnames.
+
+- Verifies the error envelope contains code "not_found" for missing symbols
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_write_file_creates_new_file fingerprint=a625baeab49c1742208ace6e441a610b4522a4201b6c8c4fd509965b94b8133c body_fp=68174f41b435b6433744cefd120a8dadd5ef62d30c0294492560ff0a01e3be4b source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Verifies that TrieTools.write_file creates new files at arbitrary paths under the project root.
+
+- Tests creation of a markdown file at `docs/GUIDE.md` with provided content
+- Asserts `created` field is True in the response
+- Verifies file content matches exactly what was written
+- Confirms `needs_sync` is False for non-indexed files
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_write_file_refuses_clobber_without_overwrite fingerprint=6ca5633b82491578fc4bcb80623ea8727a340c20e211f4f4c775bb62b9a9868b body_fp=b3e712ac45b80bff584d42d1598e9e629163dd2d837d964cb3cdaf70c05f8fd8 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Tests that TrieTools write_file prevents overwriting existing files without explicit overwrite flag.
+
+- Creates existing file with "original" content
+- Attempts write without overwrite=True should return error result
+- Original file content must remain unchanged after failed write attempt
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_write_file_overwrite_flag fingerprint=890ca72e91e1add4c80c109ca4bd73e2e72e09750c27c8c4cf2ebd002a64dcbc body_fp=daa746334410da152ccb032ac90ebdbddcbddc346bcd79b18648f121fb518a79 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Tests that TrieTools write_file method replaces existing files when overwrite=True is specified.
+
+- Creates an existing file then overwrites it with overwrite=True
+- Verifies the created flag is False for replaced files
+- Confirms the file content is actually replaced
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_write_file_indexed_path_flags_needs_sync fingerprint=a2e493e8b0c884519bdc58108821684efe510ef34a74485af80fff2e00065c95 body_fp=3d5bd4392ef5096eb92a1f8a86f1dfe93bd9c1f30c313231b46018a6fbbfabdb source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Verify that writing a Python file in scope sets the `needs_sync` flag to True.
+
+- Tests the `write_file` method on TrieTools by creating a new `.py` file
+- Asserts that `created` is True and `needs_sync` is True for indexed file types
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_write_file_outside_root_errors fingerprint=ffdc9ecc8c71ab21b24a1e08a3111cc2cb3d83f2a4372ef9fe180f1686049b11 body_fp=75744372034835aae59ee6cb4e5d92bc6cb2cc13fe7b10be8b3b524e414cce47 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+Tests that TrieTools.write_file rejects paths outside the project root with an "out_of_scope" error.
 <!-- trie:end -->

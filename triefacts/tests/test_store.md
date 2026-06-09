@@ -1,89 +1,119 @@
 ---
 trie_version: 0.1.5
 source: tests/test_store.py
-file_fingerprint: 5b0ca061e713690a8161eac959468358abf65b6641c42e59a55b34262d85bacc
-last_synced_at: '2026-06-06T13:44:40Z'
+file_fingerprint: e545ba31c90987f93a7e73415a9fdee3e2ea4b13839b609bf2bf4e14ddbb0f19
+last_synced_at: '2026-06-09T09:32:47Z'
 defines:
 - kind: module
   qualified_name: tests/test_store:__module__
-  lines: 1-310
+  lines: 1-435
 - kind: function
   qualified_name: tests/test_store:store
-  lines: 12-15
+  lines: 13-16
 - kind: function
   qualified_name: tests/test_store:test_schema_version_recorded
-  lines: 18-20
+  lines: 19-21
 - kind: function
   qualified_name: tests/test_store:test_upsert_and_get_file
-  lines: 23-27
+  lines: 24-28
 - kind: function
   qualified_name: tests/test_store:test_upsert_overwrites_existing
-  lines: 30-36
+  lines: 31-37
 - kind: function
   qualified_name: tests/test_store:test_list_files_sorted
-  lines: 39-43
+  lines: 40-44
 - kind: function
   qualified_name: tests/test_store:test_delete_file_cascades_symbols
-  lines: 46-56
+  lines: 47-57
 - kind: function
   qualified_name: tests/test_store:test_replace_file_symbols_replaces_atomically
-  lines: 59-75
+  lines: 60-76
 - kind: function
   qualified_name: tests/test_store:test_count_symbols_public_only
-  lines: 78-88
+  lines: 79-89
 - kind: function
   qualified_name: tests/test_store:test_file_stats
-  lines: 91-111
+  lines: 92-112
 - kind: function
   qualified_name: tests/test_store:test_context_manager_closes
-  lines: 114-120
+  lines: 115-121
 - kind: function
   qualified_name: tests/test_store:test_transaction_rolls_back_on_error
-  lines: 123-130
+  lines: 124-131
 - kind: function
   qualified_name: tests/test_store:test_patches_table_exists
-  lines: 136-141
+  lines: 137-142
 - kind: function
   qualified_name: tests/test_store:test_add_patch_creates_row
-  lines: 144-152
+  lines: 145-153
 - kind: function
   qualified_name: tests/test_store:test_add_patch_unknown_qname_raises
-  lines: 155-157
+  lines: 156-158
 - kind: function
   qualified_name: tests/test_store:test_get_patches_for_qname
-  lines: 160-173
+  lines: 161-174
 - kind: function
   qualified_name: tests/test_store:test_get_patches_for_unknown_qname_returns_empty
-  lines: 176-177
+  lines: 177-178
 - kind: function
   qualified_name: tests/test_store:test_get_all_patches_grouped
-  lines: 180-193
+  lines: 181-194
 - kind: function
   qualified_name: tests/test_store:test_patch_count_for_symbol
-  lines: 196-207
+  lines: 197-208
 - kind: function
   qualified_name: tests/test_store:test_delete_patches_by_qname
-  lines: 210-220
+  lines: 211-221
 - kind: function
   qualified_name: tests/test_store:test_delete_patches_all
-  lines: 223-233
+  lines: 224-234
 - kind: function
   qualified_name: tests/test_store:test_delete_patches_by_session
-  lines: 236-249
+  lines: 237-250
 - kind: function
   qualified_name: tests/test_store:test_get_patched_qnames
-  lines: 252-261
+  lines: 253-262
 - kind: function
   qualified_name: tests/test_store:test_get_symbol_detail_includes_patches
-  lines: 264-281
+  lines: 265-282
 - kind: function
   qualified_name: tests/test_store:test_grep_symbols_includes_patch_count
-  lines: 284-296
+  lines: 285-297
 - kind: function
   qualified_name: tests/test_store:test_patches_cascaded_on_symbol_delete
-  lines: 299-309
+  lines: 300-310
+- kind: function
+  qualified_name: tests/test_store:_seed_greet
+  lines: 316-320
+- kind: function
+  qualified_name: tests/test_store:test_add_patch_defaults_to_modify_kind
+  lines: 323-328
+- kind: function
+  qualified_name: tests/test_store:test_add_delete_patch
+  lines: 331-335
+- kind: function
+  qualified_name: tests/test_store:test_add_rename_patch_carries_new_name
+  lines: 338-343
+- kind: function
+  qualified_name: tests/test_store:test_delete_and_rename_patches_require_existing_symbol
+  lines: 346-350
+- kind: function
+  qualified_name: tests/test_store:test_grouped_patches_include_kind
+  lines: 353-359
+- kind: function
+  qualified_name: tests/test_store:test_add_and_group_create_patches
+  lines: 362-376
+- kind: function
+  qualified_name: tests/test_store:test_delete_create_patches_by_target
+  lines: 379-388
+- kind: function
+  qualified_name: tests/test_store:test_delete_create_patches_by_session_and_all
+  lines: 391-400
+- kind: function
+  qualified_name: tests/test_store:test_concurrent_access_does_not_raise
+  lines: 403-434
 incoming_refs: 0
-outgoing_refs: 19
+outgoing_refs: 20
 ---
 <!-- trie:section symbol=tests/test_store:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=2d1341b8890e47f362cedf6a759abc378781b43a6f94b51c35b858f92b1a8f77 source_ref=a95486d535aed1c6b87b5026c7d31274c719666f role=test-infrastructure -->
 Test suite for the `trie.graph.store` module, verifying Store database operations and patch management functionality.
@@ -162,4 +192,38 @@ Verifies that Store.grep_symbols returns results with accurate pending patch cou
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_store:test_patches_cascaded_on_symbol_delete fingerprint=0bec0a50276615fa649a442fa7ed2d8a5203852f243f7241672781c016e62d80 body_fp=f2608840ce38d7625b5a64ffe09d5f9b6e6e4fdc8c15f279d8fe1baab3d05ee4 source_ref=a95486d535aed1c6b87b5026c7d31274c719666f role=test-infrastructure -->
 Verifies that patches are automatically deleted when their associated symbol is removed from the store.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_store:_seed_greet fingerprint=b4f933e9d0fc5f1b3df00d2ecaddadf5acff9c3de6c5276bba5e2df543e155ef body_fp=6cede5dfaafb62598b41b6540260e85f13ac251b6cab4de92c6de01401a9fcbb source_ref=459b5c5d3e63364c6de2c5475ae57476758c3a65 role=test -->
+Creates test file `a.py` with a `greet` function and populates the Store with its symbols.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_store:test_add_patch_defaults_to_modify_kind fingerprint=606e8dc48e5e2fe6013da111d3a82e4eaeaa94aafddec9495a0d4174c0039186 body_fp=a73a3102cb7fcca9933fc2388f146152a3d75447552975a619f33579883db98c source_ref=459b5c5d3e63364c6de2c5475ae57476758c3a65 role=test -->
+Verifies that Store.add_patch() creates patches with "modify" kind and null rename_to by default.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_store:test_add_delete_patch fingerprint=33dddbd1aa68979161707f029260a460c813e2a4f445052ece97ff1c18071d3c body_fp=6a5ea260ba308f2cfc7949334898d24a0b1d3e634dc608a873314a52d29b6344 source_ref=459b5c5d3e63364c6de2c5475ae57476758c3a65 role=test -->
+Tests Store.add_delete_patch creates a patch record with "delete" kind.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_store:test_add_rename_patch_carries_new_name fingerprint=0345c8c472cc1210507249cce3f4707a9e49eb1a9067c88e10ff357ca0d39eed body_fp=82409b89d89a1d291bb6ee6b7c9494b49bf12ac4207f4ff09364093b6585ba76 source_ref=459b5c5d3e63364c6de2c5475ae57476758c3a65 role=test -->
+Tests that Store.add_rename_patch correctly stores the new name in the rename_to field.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_store:test_delete_and_rename_patches_require_existing_symbol fingerprint=0f82fc6ea84900e12de2e436c4605cc3e70f58bc630e6853a35e11bbecfaf703 body_fp=4f101ad548df42002e716199a738d14220068057c5602b8a066ac19deb251bdc source_ref=459b5c5d3e63364c6de2c5475ae57476758c3a65 role=test -->
+Verifies that Store.add_delete_patch and Store.add_rename_patch raise KeyError for nonexistent symbols.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_store:test_grouped_patches_include_kind fingerprint=6ed5a206b6d18f5184ebb566b17e6471b1fb1ed8f89b7b34756d662a69eff126 body_fp=a93d730495828e4fbaa4bbfe001903b1f15f30c8f80092a0278592d2d4106dcc source_ref=459b5c5d3e63364c6de2c5475ae57476758c3a65 role=test -->
+Tests that grouped patches include kind and rename_to fields when retrieving all patches grouped by symbol.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_store:test_add_and_group_create_patches fingerprint=a5714e3fcef688d462c9f2c02ec982d9b2c6c6f8c10d79c7cc3711b841162938 body_fp=9c0c25fa5370773567e4338f67a4c8024a3fdc836c33d2a0c36a6e1e44b89ce5 source_ref=459b5c5d3e63364c6de2c5475ae57476758c3a65 role=test -->
+Tests that Store can add create patches and group them by target file.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_store:test_delete_create_patches_by_target fingerprint=5779d676f4d936f6ad0cfb6fa4a8f322af52636776ff73404506da7b501bdea8 body_fp=417ca9378d124dbaa4b66791e6f6bc50ba14357ab07e54d10bcba501c7ae91bb source_ref=459b5c5d3e63364c6de2c5475ae57476758c3a65 role=test -->
+Tests that Store.delete_create_patches removes only the patch matching the specified target_qname.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_store:test_delete_create_patches_by_session_and_all fingerprint=60d3b3d4f38da1eed2dcb3f0644e5c4de216b985873c7367c4b5842abccf6833 body_fp=7a6f8b30fa5c7009fea955745a2b4b5c82e809a7b920b94651f7068f33649dfa source_ref=459b5c5d3e63364c6de2c5475ae57476758c3a65 role=test -->
+Verifies Store can delete create patches by session ID and delete all remaining patches.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_store:test_concurrent_access_does_not_raise fingerprint=f77f538ec993ec2bd6ed39e22e21e9b442d79ae54bbc55a3754cd3a8d4932cf3 body_fp=e7aaf940b082ca19f7696fb37501d9fad9586457d04d837738eb4c1d1765133a source_ref=3df998e45be4b2a697de43a24a7dc9bdd57b152b role=test -->
+Tests that concurrent Store access from 16 threads does not raise threading-related errors.
+
+- Creates 16 worker threads that each perform 50 iterations of Store operations
+- Uses threading.Barrier to synchronize thread startup for maximum contention
+- Verifies no OperationalError or recursive cursor use exceptions occur
 <!-- trie:end -->

@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: tests/test_models.py
 file_fingerprint: 8f1edbf377de7342617fc8884113224228431515ab09acca8bd8f2aea0c5b83d
-last_synced_at: '2026-06-07T05:47:08Z'
+last_synced_at: '2026-06-09T09:38:43Z'
 defines:
 - kind: module
   qualified_name: tests/test_models:__module__
@@ -47,7 +47,7 @@ Tests for the `trie.models` module, focusing on `TrieClient` token counting and 
 - Ensures prompt caching integration works correctly with pydantic-ai Agent
 - Tests edge cases like empty prompts and system message handling
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models:_make_client fingerprint=a87fc52a2f0cb01b6398fe71cfd598d23333ce14a768a02b8cadfec453057b6e body_fp=59c2016d33cb90c7c93194cb9d923e4e6492004e2888658b1ebd7acb4b0c57f8 source_ref=cd01e48f99e715d106504085b600e52b32176ce5 role=util -->
+<!-- trie:section symbol=tests/test_models:_make_client fingerprint=a87fc52a2f0cb01b6398fe71cfd598d23333ce14a768a02b8cadfec453057b6e body_fp=59c2016d33cb90c7c93194cb9d923e4e6492004e2888658b1ebd7acb4b0c57f8 source_ref=cd01e48f99e715d106504085b600e52b32176ce5 role=test -->
 Creates a TrieClient with a mocked Anthropic client for testing token counting functionality.
 
 - `input_tokens`: configures the mock to return this token count from count_tokens calls

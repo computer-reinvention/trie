@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.5
 source: trie/edits/infer.py
-file_fingerprint: d2cce33aa120782d568d41b352cb21c73882c0976f289693162f086943835601
-last_synced_at: '2026-06-07T05:47:19Z'
+file_fingerprint: afdf2df5e2a3a859f2fb1d76788b94c5cb2cb57c8578807d53b70e9808f0db37
+last_synced_at: '2026-06-09T09:39:02Z'
 defines:
 - kind: module
   qualified_name: trie/edits/infer:__module__
-  lines: 1-274
+  lines: 1-295
 - kind: constant
   qualified_name: trie/edits/infer:MERGE_PROMPT
   lines: 13-19
@@ -15,35 +15,35 @@ defines:
   lines: 21-22
 - kind: constant
   qualified_name: trie/edits/infer:BATCH_PRE_FILTER_PROMPT
-  lines: 24-31
+  lines: 24-35
 - kind: constant
   qualified_name: trie/edits/infer:FILE_GEN_PROMPT
-  lines: 33-45
+  lines: 37-49
 - kind: constant
   qualified_name: trie/edits/infer:FILE_FIXUP_PROMPT
-  lines: 47-57
+  lines: 51-61
 - kind: function
   qualified_name: trie/edits/infer:_format_bullets
-  lines: 60-64
+  lines: 64-68
 - kind: function
   qualified_name: trie/edits/infer:merge_notes
-  lines: 67-82
+  lines: 71-86
 - kind: function
   qualified_name: trie/edits/infer:infer_source_and_prose
-  lines: 85-113
+  lines: 89-117
 - kind: function
   qualified_name: trie/edits/infer:infer_file_source
-  lines: 116-151
+  lines: 120-155
 - kind: function
   qualified_name: trie/edits/infer:_build_caller_summaries
-  lines: 154-188
+  lines: 158-205
 - kind: function
   qualified_name: trie/edits/infer:_read_prose
-  lines: 191-211
+  lines: 208-228
 - kind: function
   qualified_name: trie/edits/infer:pre_filter_batch
-  lines: 214-273
-incoming_refs: 12
+  lines: 231-294
+incoming_refs: 13
 outgoing_refs: 4
 ---
 <!-- trie:section symbol=trie/edits/infer:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=51e52733e963bf3d48183853d2dfa4df351467373cac1a8e7cf5a3b4a9cf592a source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=code-editing -->
@@ -79,35 +79,36 @@ Template string for prompting an LLM to fix Python diagnostics errors in file co
 <!-- trie:section symbol=trie/edits/infer:_format_bullets fingerprint=276d8d146737b65b171b6b1d440db66fa18b94a20cbc45c2cf752f35f5cd26d4 body_fp=2b929f50319b728e7169b14c5aae6b74989318303d98f0b88d5b234601c5fa79 source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=code-editing -->
 Formats lists of notes and reasons into bullet-point text with `<bullet>` prefixes.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:merge_notes fingerprint=94dfc8addb1bd5773ab4bb3e59e5f6e274f144ce32f80b8cb25fb89f64ee037c body_fp=db377d7618c36731c51edfd5bb863c1ca91f2608dd50c578137928aae6d71676 source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=orchestration -->
+<!-- trie:section symbol=trie/edits/infer:merge_notes fingerprint=94dfc8addb1bd5773ab4bb3e59e5f6e274f144ce32f80b8cb25fb89f64ee037c body_fp=db377d7618c36731c51edfd5bb863c1ca91f2608dd50c578137928aae6d71676 source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=domain -->
 Deduplicates and merges implementation note patches, returning consolidated notes and reasons.
 
 - patches: list of dicts with "note" and "reason" keys
 - Returns: tuple of deduplicated notes list and corresponding reasons list
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:infer_source_and_prose fingerprint=6a6b9a2bd30ede6d692c4097578a5ba2440d3e24f2a42aa4ea5d4ba051f91a8d body_fp=4ca260804d6f6d0ee4de8c294ab9ffa5c320653a7bb5bf3d40fd2014d5b3206a source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=orchestration -->
+<!-- trie:section symbol=trie/edits/infer:infer_source_and_prose fingerprint=6a6b9a2bd30ede6d692c4097578a5ba2440d3e24f2a42aa4ea5d4ba051f91a8d body_fp=4ca260804d6f6d0ee4de8c294ab9ffa5c320653a7bb5bf3d40fd2014d5b3206a source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=orchestration -->
 Generates updated source code and prose documentation for a symbol using implementation notes via LLM inference.
 
 - Returns tuple of (new_source, new_prose)
 - Uses INFER_SYSTEM_PROMPT to guide LLM behavior  
 - Formats notes and reasons as bulleted implementation notes in prompt
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:infer_file_source fingerprint=9addb0f4c9d475f9f098ba59262116ec023f13c570665f8bb39c7326bb164db1 body_fp=267c8570762e9b3e70b576a54d8f9481d76760ef5f1bccd62899cef2dd2f2f2a source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=orchestration -->
+<!-- trie:section symbol=trie/edits/infer:infer_file_source fingerprint=9addb0f4c9d475f9f098ba59262116ec023f13c570665f8bb39c7326bb164db1 body_fp=267c8570762e9b3e70b576a54d8f9481d76760ef5f1bccd62899cef2dd2f2f2a source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=orchestration -->
 Generates updated file content and symbol prose by applying multiple symbol changes through LLM inference.
 
 - `symbols_data`: list of dicts containing `qname`, `old_source`, `old_prose`, `merged_notes`, and `merged_reasons`
 - Returns updated file content and mapping of symbol qnames to updated prose descriptions
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:_build_caller_summaries fingerprint=0c8f7cd3556632d62b031c157ae585fcf54543078428521b391f3f5f80c8aac9 body_fp=dbe5e7dce041d2824aa7fc36964f52728970f9b31bf751694625b336c962eb0d source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=code-editing -->
-Builds caller summary dictionaries with symbol metadata and truncated prose from triefact files.
+<!-- trie:section symbol=trie/edits/infer:_build_caller_summaries fingerprint=59cf63540993328f1a80d75600d7fb74fa0a58b329dae24318e5d01529c485ab body_fp=7cceef828f3fd8ecd38945e34b895bd968a0e5cbe55f30349fc8f3b356a536d3 source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=util -->
+Builds caller summary dictionaries with symbol metadata, prose from triefact files, and source code.
 
 - `prose` truncated to 200 characters from triefact section body
+- `source` truncated to 800 characters from actual source file when `src_root` provided
 - Returns empty list if caller has no symbol detail in store
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/infer:_read_prose fingerprint=e1a7046a605c3879cfdfc6f1f5061c1f7d0d2767cc919b6ca7bb05b92321a738 body_fp=38174f97de3023d749cde3168198b7cf9038182109fb23db13ad6e2e14565922 source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=documentation-sync -->
 Extracts prose documentation for a symbol from its triefact markdown file.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:pre_filter_batch fingerprint=326577084ea9bfa1bac4f27dd77047736f358a461af89380db54a0e7df3f99ea body_fp=0a1e12bbc862446219ef3bf68ed513a2fa6c57e5f4c6a33c5f0d0cd1f6afe520 source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=orchestration -->
+<!-- trie:section symbol=trie/edits/infer:pre_filter_batch fingerprint=9d38b535f74cd6dfc4386afc93e14976a77f214e2b9e085824cbb09c0e36e9b2 body_fp=0a1e12bbc862446219ef3bf68ed513a2fa6c57e5f4c6a33c5f0d0cd1f6afe520 source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=orchestration -->
 Determines which callers need updates when their callees change by batching LLM requests.
 
 - `callee_pairs`: tuples of (callee_qname, old_prose, callers_list, notes_reasons_list)

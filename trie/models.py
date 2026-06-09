@@ -18,11 +18,12 @@ from anthropic import (
 )
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, CachePoint
-from pydantic_ai.models.anthropic import AnthropicModelSettings
+from pydantic_ai.models.anthropic import AnthropicModel, AnthropicModelSettings
 from pydantic_ai.usage import Usage
 
 from trie import telemetry
 from trie.config import Sync
+
 
 # Per-thread event loop. ``Agent.run_sync`` creates a fresh event loop on every
 # call when invoked from a worker thread, and each loop allocates a socketpair
@@ -31,15 +32,38 @@ from trie.config import Sync
 # many open files``. We instead keep one long-lived loop per thread and drive
 # the async ``Agent.run`` on it, so a thread allocates its loop once and reuses
 # it for every symbol it generates.
+#
+# Crucially the loop must be *closed* when its owning thread dies. Sync nests
+# short-lived ThreadPoolExecutors (one inner pool per file), so the set of
+# worker threads churns constantly — without teardown each dead thread's loop
+# leaks its socketpair and we hit Errno 24 anyway. We store the loop inside a
+# holder whose ``__del__`` closes it; CPython runs that finaliser when the
+# thread's thread-local storage is released at thread exit.
+class _LoopHolder:
+    __slots__ = ("loop",)
+
+    def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
+        self.loop = loop
+
+    def __del__(self) -> None:
+        loop = self.loop
+        try:
+            if loop is not None and not loop.is_closed():
+                loop.close()
+        except Exception:
+            # Best-effort: never let teardown of a worker thread raise.
+            pass
+
+
 _thread_local = threading.local()
 
 
 def _thread_event_loop() -> asyncio.AbstractEventLoop:
-    loop = getattr(_thread_local, "loop", None)
-    if loop is None or loop.is_closed():
+    holder = getattr(_thread_local, "loop_holder", None)
+    if holder is None or holder.loop.is_closed():
         loop = asyncio.new_event_loop()
-        _thread_local.loop = loop
-    return loop
+        _thread_local.loop_holder = _LoopHolder(loop)
+    return _thread_local.loop_holder.loop
 
 
 # ---------------------------------------------------------------------------
@@ -416,10 +440,19 @@ class TrieClient:
         sync_cfg: Sync | None = None,
     ) -> None:
         self.full_model_id = full_model_id
-        self._pai_model = _pydantic_ai_model_id(full_model_id)
+        self._pai_model_id = _pydantic_ai_model_id(full_model_id)
         self._anthropic_model = _anthropic_model_name(full_model_id)
         self._sync_cfg = sync_cfg or Sync()
         self._raw_client = Anthropic(max_retries=0)
+        # Build the pydantic-ai model ONCE and reuse it for every Agent. Passing
+        # a model *string* to Agent(...) makes pydantic-ai call infer_model() on
+        # each run, constructing a fresh AnthropicModel -> AsyncAnthropic ->
+        # httpx.AsyncClient every time. Under the parallel sync fan-out those
+        # per-call HTTP clients (each holding socket fds) pile up far faster than
+        # GC reclaims them and the process hits ``OSError: [Errno 24] Too many
+        # open files``. One shared model => one connection pool for the whole run.
+        anthropic_model_name = self._pai_model_id.split(":", 1)[-1]
+        self._pai_model = AnthropicModel(anthropic_model_name)
 
     def run(
         self,

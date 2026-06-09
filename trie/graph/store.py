@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import functools
 import sqlite3
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -172,6 +173,47 @@ class GrepPredicate:
     outbound_count_max: int | None = None
 
 
+def _synchronized(method: Callable) -> Callable:
+    """Wrap a Store method so its whole body runs under ``self._lock``.
+
+    Store reuses a single sqlite3 connection across all sync workers
+    (``check_same_thread=False``), and SQLite forbids concurrent use of one
+    connection from multiple threads. Without serialisation the races surface
+    as misleading errors — ``OperationalError: unable to open database file``,
+    spurious "database is locked", or ``recursive use of cursors`` — rather
+    than a clean failure. The re-entrant lock makes the documented invariant
+    real: every public method holds it for the duration of its DB work.
+    """
+
+    @functools.wraps(method)
+    def wrapper(self: Store, *args: object, **kwargs: object) -> object:
+        with self._lock:
+            return method(self, *args, **kwargs)
+
+    return wrapper
+
+
+def _synchronize_store(cls: type) -> type:
+    """Class decorator: apply ``_synchronized`` to every public method.
+
+    Skips dunders (``__init__`` / ``__enter__`` / ``__exit__`` manage the lock's
+    own lifecycle) and the ``transaction`` contextmanager, which yields control
+    back to caller code and must not hold the lock across that yield — callers
+    that use ``transaction`` are already responsible for serialising access, and
+    the methods they call inside it re-acquire the re-entrant lock harmlessly.
+    """
+    skip = {"transaction"}
+    for name, attr in list(vars(cls).items()):
+        if name.startswith("__"):
+            continue
+        if name in skip:
+            continue
+        if callable(attr) and not isinstance(attr, (staticmethod, classmethod)):
+            setattr(cls, name, _synchronized(attr))
+    return cls
+
+
+@_synchronize_store
 class Store:
     """SQLite-backed persistence for trie's symbol graph and file fingerprints.
 
@@ -187,9 +229,12 @@ class Store:
         # Re-entrant lock guarding all connection access. Wave-based sync runs
         # multiple files concurrently; each may read (file_ref_counts) or write
         # (upsert_section_record) the store from a worker thread. SQLite forbids
-        # concurrent use of one connection, so every public method that touches
-        # `_conn` does so under this lock. DB ops are microseconds next to the
-        # multi-second LLM calls, so serialising them costs nothing measurable.
+        # concurrent use of one connection, so every public method must hold this
+        # lock for its whole body — enforced automatically by the
+        # @_synchronize_store class decorator rather than by hand. The lock is
+        # re-entrant so methods that call other Store methods nest safely. DB ops
+        # are microseconds next to the multi-second LLM calls, so serialising them
+        # costs nothing measurable.
         self._lock = threading.RLock()
         self._open()
 
@@ -210,7 +255,10 @@ class Store:
         if existing_version is not None and existing_version != SCHEMA_VERSION:
             self._conn.close()
             self.db_path.unlink(missing_ok=True)
-            self._conn = sqlite3.connect(str(self.db_path))
+            # Same check_same_thread=False as the primary open above: the lock,
+            # not thread affinity, provides sqlite's required mutual exclusion.
+            # Dropping it here broke threaded sync immediately after a schema bump.
+            self._conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
             self._conn.execute("PRAGMA foreign_keys = ON")
             existing_version = None
         self._conn.executescript(SCHEMA_SQL)
