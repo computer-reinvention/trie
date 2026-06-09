@@ -2,8 +2,16 @@
 
 Status: **active**. The trie-native opencode fork is built, tested, and
 behaviour-validated against a live model (branch `feat/trie-native`, vendored as
-the `opencode/` submodule). This file tracks the extensions still needed in
-core trie to retire the remaining backup tools.
+the `opencode/` submodule).
+
+**Implemented so far (in core trie + wired into the fork):** EXT-1 (`grep-str
+--all-files` / `grep_str_all`), EXT-2 (`trie find` / `find_files`), EXT-3 + EXT-4
+(`trie read --source` / `read_source`), EXT-8 (`trie write` / `write_file`),
+EXT-11 (`trie blast-radius` + `trie_blast_radius` tool). Remaining: EXT-7
+(sub-symbol/non-symbol line edits — deeper pipeline work), EXT-9 (multi-language
+indexing — the structural unlock), and the deliberately-out-of-scope EXT-5
+(binaries), EXT-6 (dir listing — partly covered by `find`), EXT-10 (external
+dirs).
 
 This file tracks the functionality a coding agent **loses** if it uses trie
 tools *only* (no stock opencode file tools). The fork ships the replacements
@@ -54,7 +62,7 @@ umbrella fix; the others are useful even before that lands.
 
 ---
 
-## EXT-1 — Unscoped text search  ·  Critical
+## EXT-1 — Unscoped text search  ·  Critical · ✅ DONE
 
 - **Lost:** searching text in non-indexed files (TS/JS, Go, JSON, YAML, md,
   lockfiles). Stock `grep`/`grep_str` search the whole tree.
@@ -71,7 +79,7 @@ umbrella fix; the others are useful even before that lands.
   generalize its glob filter.
 - **Acceptance:** finds a literal string inside a `.ts` and a `.md` file.
 
-## EXT-2 — Filename / path glob search  ·  Critical
+## EXT-2 — Filename / path glob search  ·  Critical · ✅ DONE
 
 - **Lost:** finding files by name/path pattern (`**/*.tsx`, `Dockerfile`,
   `*.config.*`). Stock `glob`.
@@ -86,7 +94,7 @@ umbrella fix; the others are useful even before that lands.
   and a raw walk for `--all-files`.
 - **Acceptance:** `trie find '**/*.ts'` lists TS files repo-wide.
 
-## EXT-3 — `read` line-range + line-number prefixes  ·  Medium
+## EXT-3 — `read` line-range + line-number prefixes  ·  Medium · ✅ DONE
 
 - **Lost:** arbitrary line-window reads with `<line>:` prefixes (`offset`,
   `limit`, 1-indexed) on any file. Stock `read`.
@@ -101,7 +109,7 @@ umbrella fix; the others are useful even before that lands.
 - **Acceptance:** output matches stock `read` for a non-indexed file with
   offset/limit.
 
-## EXT-4 — Read arbitrary (non-indexed) file contents  ·  Critical
+## EXT-4 — Read arbitrary (non-indexed) file contents  ·  Critical · ✅ DONE
 
 - **Lost:** "show me this file" for configs/docs/TS source not in scope.
 - **Trie today:** `read` qname/triefact only; no plain-file path for unsynced
@@ -148,7 +156,7 @@ umbrella fix; the others are useful even before that lands.
 - **Acceptance:** change one line in a function with no LLM call; edit a
   module-level constant via patch.
 
-## EXT-8 — Create/write arbitrary files  ·  Critical
+## EXT-8 — Create/write arbitrary files  ·  Critical · ✅ DONE
 
 - **Lost:** creating new non-Python files (configs, scripts, README, JSON) and
   whole new Python *files*. Stock `write`.
@@ -171,7 +179,7 @@ umbrella fix; the others are useful even before that lands.
   as a sub-checklist.
 - **Acceptance:** a `.ts` file is grep/read/trace/patch-able.
 
-## EXT-11 — Expose `blast_radius` as a CLI command  ·  Low
+## EXT-11 — Expose `blast_radius` as a CLI command  ·  Low · ✅ DONE
 
 - **Lost:** the fork wanted a `trie_blast_radius` tool, but `blast_radius` is
   MCP-only — there is no `trie blast-radius` CLI subcommand, so the native tool
@@ -196,15 +204,23 @@ umbrella fix; the others are useful even before that lands.
 
 ## Fork ↔ extension cross-reference
 
-| Backup tool (fork) | Retired by |
-|---|---|
-| `fs_grep`  | EXT-1, EXT-9 |
-| `fs_glob`  | EXT-2 |
-| `fs_read`  | EXT-3, EXT-4 (binaries EXT-5, dirs EXT-6 stay) |
-| `fs_edit`  | EXT-7, EXT-9 |
-| `fs_write` | EXT-8, EXT-9 |
-| `apply_patch` | (model-specific; keep) |
-| external-dir on all | EXT-10 (stays backup) |
+| Backup tool (fork) | Retired by | Status |
+|---|---|---|
+| `fs_grep`  | EXT-1, EXT-9 | ✅ EXT-1 done (`trie_grep_str all_files`); non-Python *symbol* search still needs EXT-9 |
+| `fs_glob`  | EXT-2 | ✅ done (`trie_find`) — kept as backup for parity/edge cases |
+| `fs_read`  | EXT-3, EXT-4 (binaries EXT-5, dirs EXT-6 stay) | ✅ text reads done (`trie_read` path mode + `read_source`); binaries/dirs stay |
+| `fs_edit`  | EXT-7, EXT-9 | ⬜ pending (sub-symbol/non-symbol line edits) |
+| `fs_write` | EXT-8, EXT-9 | ✅ `trie write`/`write_file` exists; fork keeps `fs_write` as the new-file tool (no graph benefit for new non-code files), so not wired as a competing fork tool |
+| `apply_patch` | (model-specific; keep) | — |
+| external-dir on all | EXT-10 (stays backup) | — |
+
+> **Note on EXT-8 in the fork:** `trie write` / `write_file` is implemented in
+> core trie (creates any file under the root, flags `needs_sync` for in-scope
+> paths). It is intentionally *not* exposed as a separate `trie_write` fork
+> tool: creating a brand-new non-code file gains nothing from routing through
+> trie, and a competing write tool would muddy the main-vs-backup story the
+> prompt teaches. The fork keeps `fs_write` for new files; the CLI/MCP
+> `write_file` is available for scripted/parity use.
 
 ## Bugs found during fork scenario testing (fixed)
 

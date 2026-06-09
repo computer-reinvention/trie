@@ -1933,6 +1933,316 @@ class TrieTools:
             tele_ctx["response_bytes"] = len(_json.dumps(result, default=str))
             return result
 
+    def grep_str_all(self, regexp: str) -> dict[str, Any]:
+        """Regex search across the WHOLE repo, not just indexed source bodies.
+
+        EXT-1: `grep_str` only sees in-scope (indexed) files; this variant runs
+        gitignore-aware ripgrep over the entire project root so non-indexed
+        files (TS/JS, configs, docs, lockfiles) are searchable too. In-scope
+        hits are still attributed to their enclosing symbol; out-of-scope hits
+        come back as plain `file:line:text` rows under `text_hits`.
+
+        Returns `{hits: [...symbol hits...], text_hits: [{file, line, text}],
+        text_match_count}`.
+        """
+        import json as _json
+        import subprocess as _subprocess
+
+        tele_args = {"regexp": regexp} if telemetry.capture_args() else {}
+        with telemetry.timed(self.event_name, tool="grep_str_all", args=tele_args) as tele_ctx:
+            if not regexp or not regexp.strip():
+                tele_ctx["result_kind"] = "error"
+                return _error("invalid_argument", "`regexp` must be a non-empty string.")
+
+            proc = _subprocess.run(
+                [
+                    self.rg_path,
+                    "--json",
+                    "--line-number",
+                    "--ignore-case",
+                    "--no-messages",
+                    "--",
+                    regexp,
+                    str(self.root),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if proc.returncode not in (0, 1):
+                tele_ctx["result_kind"] = "error"
+                return _error(
+                    "internal", f"rg failed (exit {proc.returncode}): {proc.stderr.strip()}"
+                )
+
+            # Build the set of in-scope relative paths (relative to src_root) so
+            # we can split hits into "attributable to a symbol" vs "plain text".
+            scope_set: set[str] = set()
+            for abs_path in __import__("trie.scope", fromlist=["discover_files"]).discover_files(
+                self.root, self.config.scope
+            ):
+                if abs_path.is_relative_to(self.src_root):
+                    scope_set.add(str(abs_path.relative_to(self.src_root)))
+
+            src_root_str = str(self.src_root)
+            root_str = str(self.root)
+            rg_hits: dict[str, list[int]] = {}
+            text_hits: list[dict[str, Any]] = []
+            text_cap = 100
+            for raw_line in proc.stdout.splitlines():
+                if not raw_line:
+                    continue
+                try:
+                    event = _json.loads(raw_line)
+                except _json.JSONDecodeError:
+                    continue
+                if event.get("type") != "match":
+                    continue
+                data = event.get("data") or {}
+                abs_path_str = (data.get("path") or {}).get("text")
+                lineno = data.get("line_number")
+                if not isinstance(abs_path_str, str) or not isinstance(lineno, int):
+                    continue
+                # In-scope, indexed → attribute to a symbol.
+                if abs_path_str.startswith(src_root_str):
+                    rel = abs_path_str[len(src_root_str) :].lstrip("/")
+                    if rel in scope_set:
+                        rg_hits.setdefault(rel, []).append(lineno)
+                        continue
+                # Otherwise it's an out-of-scope text hit.
+                if len(text_hits) < text_cap:
+                    rel_repo = (
+                        abs_path_str[len(root_str) :].lstrip("/")
+                        if abs_path_str.startswith(root_str)
+                        else abs_path_str
+                    )
+                    line_text = ((data.get("lines") or {}).get("text") or "").rstrip("\n")
+                    text_hits.append({"file": rel_repo, "line": lineno, "text": line_text[:300]})
+
+            per_symbol = self._attribute_text_matches_to_symbols(rg_hits)
+            candidates = sorted(
+                ((self.store.get_symbol_detail(q), c) for q, c in per_symbol.items()),
+                key=lambda x: (
+                    -(x[0].inbound_count if x[0] else 0),
+                    x[0].qualified_name if x[0] else "",
+                ),
+            )
+            one_liner_cap = self.mcp_cfg.grep_one_liner_max_chars
+            hits = [
+                {
+                    "qname": d.qualified_name,
+                    "signature": d.signature or "",
+                    "file_pointer": f"{d.file_path}:{d.start_line}",
+                    "one_liner": _truncate(d.one_liner, one_liner_cap),
+                    "match_count": count,
+                }
+                for d, count in candidates
+                if d is not None
+            ]
+            result = {
+                "hits": hits,
+                "text_hits": text_hits,
+                "text_match_count": len(text_hits),
+            }
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["result_count"] = len(hits) + len(text_hits)
+            return result
+
+    def read_source(
+        self, path: str, offset: int | None = None, limit: int | None = None
+    ) -> dict[str, Any]:
+        """Read raw source of an ARBITRARY file (EXT-3/EXT-4), indexed or not.
+
+        `read` is qname/triefact-centric and only covers indexed files; this
+        returns the raw bytes of any path under the project root with optional
+        1-indexed `offset` + `limit` windowing, line-number prefixed
+        (`<n>: <text>`), matching stock editor read semantics. Long lines are
+        clipped at 2000 chars.
+
+        Returns `{path, lines: "<numbered text>", line_count, offset, more}`.
+        """
+        tele_args = {"path": path} if telemetry.capture_args() else {}
+        with telemetry.timed(self.event_name, tool="read_source", args=tele_args) as tele_ctx:
+            target = Path(path)
+            target = target.resolve() if target.is_absolute() else (self.root / path).resolve()
+            # Keep reads inside the project root.
+            if not (target == self.root or target.is_relative_to(self.root)):
+                tele_ctx["result_kind"] = "error"
+                return _error(
+                    "out_of_scope",
+                    f"{path!r} is outside the project root.",
+                    "read_source only serves files under the trie project root.",
+                )
+            if not target.exists():
+                tele_ctx["result_kind"] = "error"
+                return _error("not_found", f"No file at {path!r}.")
+            if target.is_dir():
+                tele_ctx["result_kind"] = "error"
+                return _error(
+                    "invalid_argument",
+                    f"{path!r} is a directory; use `find` to list its contents.",
+                )
+            try:
+                text = target.read_text(encoding="utf-8", errors="replace")
+            except OSError as exc:
+                tele_ctx["result_kind"] = "error"
+                return _error("internal", f"could not read {path!r}: {exc}")
+
+            all_lines = text.split("\n")
+            start = max(0, (offset - 1)) if offset else 0
+            end = (start + limit) if limit else len(all_lines)
+            sliced = all_lines[start:end]
+            numbered = "\n".join(
+                f"{start + i + 1}: {(line[:2000] if len(line) > 2000 else line)}"
+                for i, line in enumerate(sliced)
+            )
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["result_count"] = len(sliced)
+            return {
+                "path": target.relative_to(self.root).as_posix()
+                if target.is_relative_to(self.root)
+                else str(target),
+                "lines": numbered,
+                "line_count": len(sliced),
+                "offset": start + 1,
+                "more": end < len(all_lines),
+            }
+
+    def write_file(self, path: str, content: str, overwrite: bool = False) -> dict[str, Any]:
+        """Create or overwrite a file under the project root (EXT-8).
+
+        Fills the gap where `create_symbol` only adds a Python symbol to an
+        existing indexed file — this writes an ARBITRARY new file (configs,
+        docs, scripts, a fresh module). Parent directories are created. Refuses
+        to clobber an existing file unless `overwrite=True`.
+
+        If the written path is in trie's scope (an indexed file type), the
+        response flags `needs_sync=True` — the caller should run a sync/refresh
+        so the new file enters the graph (incremental in-process indexing is
+        intentionally left to the sync pipeline to keep the graph consistent).
+
+        Returns `{path, bytes_written, created, needs_sync}`.
+        """
+        tele_args = {"path": path} if telemetry.capture_args() else {}
+        with telemetry.timed(self.event_name, tool="write_file", args=tele_args) as tele_ctx:
+            target = Path(path)
+            target = target.resolve() if target.is_absolute() else (self.root / path).resolve()
+            if not (target == self.root or target.is_relative_to(self.root)):
+                tele_ctx["result_kind"] = "error"
+                return _error(
+                    "out_of_scope",
+                    f"{path!r} is outside the project root.",
+                    "write_file only writes under the trie project root.",
+                )
+            if target.is_dir():
+                tele_ctx["result_kind"] = "error"
+                return _error("invalid_argument", f"{path!r} is a directory.")
+            existed = target.exists()
+            if existed and not overwrite:
+                tele_ctx["result_kind"] = "error"
+                return _error(
+                    "invalid_argument",
+                    f"{path!r} already exists. Pass overwrite=true to replace it, "
+                    "or use the patch pipeline to change indexed code.",
+                )
+            try:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content, encoding="utf-8")
+            except OSError as exc:
+                tele_ctx["result_kind"] = "error"
+                return _error("internal", f"could not write {path!r}: {exc}")
+
+            from trie.scope import _matches
+
+            rel = (
+                target.relative_to(self.root).as_posix()
+                if target.is_relative_to(self.root)
+                else str(target)
+            )
+            in_scope = any(_matches(rel, pat) for pat in self.config.scope.include) and not any(
+                _matches(rel, pat) for pat in self.config.scope.exclude
+            )
+            tele_ctx["result_kind"] = "ok"
+            return {
+                "path": rel,
+                "bytes_written": len(content.encode("utf-8")),
+                "created": not existed,
+                "needs_sync": in_scope,
+            }
+
+    def find_files(self, pattern: str, all_files: bool = True, limit: int = 100) -> dict[str, Any]:
+        """Find files by name/path glob (EXT-2). Fills the gap where trie has no
+        filename search — only symbol search.
+
+        With `all_files=True` (default) the match runs over the whole project
+        tree (respecting scope excludes so vendored/`.venv`/`node_modules`
+        subtrees are skipped); with `all_files=False` it restricts to indexed
+        files. Results are mtime-sorted (newest first) and capped at `limit`.
+
+        `pattern` uses glob semantics, e.g. `**/*.ts`, `Dockerfile`,
+        `src/**/*.tsx`. A bare name like `config.json` matches that basename
+        anywhere in the tree.
+
+        Returns `{matches: [path, ...], match_count, truncated}`.
+        """
+        import os as _os
+
+        tele_args = {"pattern": pattern} if telemetry.capture_args() else {}
+        with telemetry.timed(self.event_name, tool="find_files", args=tele_args) as tele_ctx:
+            if not pattern or not pattern.strip():
+                tele_ctx["result_kind"] = "error"
+                return _error("invalid_argument", "`pattern` must be a non-empty string.")
+
+            from trie.scope import _matches, discover_files
+
+            root = self.root
+            if all_files:
+                # Walk the tree, pruning excluded dirs, matching the glob against
+                # each relative path (and its basename for bare-name patterns).
+                bare = "/" not in pattern and "*" not in pattern
+                candidates: list[Path] = []
+                excludes = self.config.scope.exclude
+                for dirpath, dirnames, filenames in _os.walk(root, topdown=True):
+                    abs_dir = Path(dirpath)
+                    rel_dir = abs_dir.relative_to(root).as_posix()
+                    kept: list[str] = []
+                    for d in dirnames:
+                        child_rel = d if rel_dir == "." else f"{rel_dir}/{d}"
+                        if any(_matches(child_rel + "/x", pat) for pat in excludes) or d in {
+                            ".git",
+                            ".trie",
+                        }:
+                            continue
+                        kept.append(d)
+                    dirnames[:] = kept
+                    for fname in filenames:
+                        rel = fname if rel_dir == "." else f"{rel_dir}/{fname}"
+                        if bare:
+                            if fname == pattern:
+                                candidates.append(root / rel)
+                        elif _matches(rel, pattern):
+                            candidates.append(root / rel)
+            else:
+                candidates = [
+                    p
+                    for p in discover_files(root, self.config.scope)
+                    if _matches(p.relative_to(root).as_posix(), pattern)
+                ]
+
+            # Sort by mtime descending (mirror stock glob), cap at limit.
+            def _mtime(p: Path) -> float:
+                try:
+                    return p.stat().st_mtime
+                except OSError:
+                    return 0.0
+
+            candidates.sort(key=_mtime, reverse=True)
+            truncated = len(candidates) > limit
+            matches = [p.relative_to(root).as_posix() for p in candidates[:limit]]
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["result_count"] = len(matches)
+            return {"matches": matches, "match_count": len(matches), "truncated": truncated}
+
     def grep_entry_points(self, query: str) -> dict[str, Any]:
         """Find architectural entry points (high inbound-count public symbols) whose
         triefact prose fuzzy-matches `query`.
@@ -2443,6 +2753,10 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     server.tool(name="read")(tools.read)
     server.tool(name="trace")(tools.trace)
     server.tool(name="grep_str")(tools.grep_str)
+    server.tool(name="grep_str_all")(tools.grep_str_all)
+    server.tool(name="find_files")(tools.find_files)
+    server.tool(name="read_source")(tools.read_source)
+    server.tool(name="write_file")(tools.write_file)
     server.tool(name="grep_entry_points")(tools.grep_entry_points)
     server.tool(name="grep_symbol")(tools.grep_symbol)
     server.tool(name="grep_symbol_and_neighbours")(tools.grep_symbol_and_neighbours)

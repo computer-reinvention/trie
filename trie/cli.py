@@ -2478,7 +2478,22 @@ def read_cmd(
     ctx: typer.Context,
     qname: str = typer.Argument(
         ...,
-        help="Fully-qualified symbol name (e.g. 'trie/sync/cascade:compute_cascade').",
+        help="Symbol qname (e.g. 'trie/sync/cascade:compute_cascade'), or a file path with --source.",
+    ),
+    source: bool = typer.Option(
+        False,
+        "--source",
+        help="Treat the argument as a FILE PATH and return raw line-numbered source (any file, indexed or not).",
+    ),
+    offset: int | None = typer.Option(
+        None,
+        "--offset",
+        help="With --source: 1-indexed first line to include.",
+    ),
+    limit: int | None = typer.Option(
+        None,
+        "--limit",
+        help="With --source: maximum number of lines to return from offset.",
     ),
     as_json: bool = typer.Option(
         False,
@@ -2486,26 +2501,47 @@ def read_cmd(
         help="Emit the raw MCP envelope as JSON instead of a human-readable summary.",
     ),
 ) -> None:
-    """Read a symbol's prose plus its immediate callers and callees.
+    """Read a symbol's prose + neighbours, or raw file source with --source.
 
-    Mirror of the MCP `read` tool. Use after `trie grep` once you know
-    the qname you want to understand. Returns the symbol's signature,
-    triefact prose, source pointer, and one-liner descriptions of every
-    caller and callee — one round trip for the entire one-hop
-    neighbourhood.
+    Default (qname): mirror of the MCP `read` tool — the symbol's signature,
+    triefact prose, source pointer, and one-liner descriptions of every caller
+    and callee in one round trip.
+
+    With `--source` (EXT-3/EXT-4): treat the argument as a file path and return
+    raw, line-numbered source for ANY file under the project root — indexed or
+    not — with optional `--offset`/`--limit` windowing.
 
     Examples:
 
       trie read trie/sync/cascade:compute_cascade
-      trie read --json trie/graph/store:Store.replace_all_edges
+      trie read --source package.json
+      trie read --source src/app.ts --offset 1 --limit 40
     """
     reporter = _get_reporter(ctx)
     tools = _open_tools(reporter)
     try:
-        envelope = tools.read(qname)
+        if source:
+            envelope = tools.read_source(qname, offset=offset, limit=limit)
+        else:
+            envelope = tools.read(qname)
     finally:
         tools.close()
-    _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_read)
+    if source:
+        _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_read_source)
+    else:
+        _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_read)
+
+
+def _render_read_source(envelope: dict[str, object], reporter: Reporter) -> None:
+    """Human-readable render of a read_source envelope."""
+    err = envelope.get("error")
+    if isinstance(err, dict):
+        _render_error_envelope(err, reporter)
+        return
+    lines = envelope.get("lines", "")
+    reporter.console.print(str(lines))
+    if envelope.get("more"):
+        reporter.info("(more lines available; pass --offset/--limit to page)")
 
 
 @app.command("trace")
@@ -2554,6 +2590,73 @@ def trace_cmd(
     _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_trace)
 
 
+@app.command("blast-radius")
+def blast_radius_cmd(
+    ctx: typer.Context,
+    qname: str = typer.Argument(
+        ...,
+        help="Fully-qualified symbol name to compute the edit blast radius for.",
+    ),
+    as_json: bool = typer.Option(
+        False,
+        "--json",
+        help="Emit the raw MCP envelope as JSON instead of a human-readable summary.",
+    ),
+) -> None:
+    """Compute the cascade blast radius of editing a symbol — free graph math.
+
+    Mirror of the MCP `blast_radius` tool. Reports every symbol whose
+    triefact/source would be regenerated if `qname` changed, with each
+    one's BFS hop distance from the seed. No LLM calls. Use before a risky
+    delete/rename/modify to gauge impact.
+
+    Examples:
+
+      trie blast-radius trie/graph/store:Store.replace_all_edges
+      trie blast-radius --json some_qname
+    """
+    reporter = _get_reporter(ctx)
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.blast_radius(qname)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_blast_radius)
+
+
+def _render_blast_radius(envelope: dict[str, object], reporter: Reporter) -> None:
+    """Human-readable render of a blast_radius envelope."""
+    err = envelope.get("error")
+    if isinstance(err, dict):
+        _render_error_envelope(err, reporter)
+        return
+    qname = envelope.get("qname", "")
+    file = envelope.get("file", "")
+    cascade = envelope.get("cascade", [])
+    count = envelope.get("cascade_count", 0)
+    direct = envelope.get("direct", 0)
+    reporter.console.print(f"[bold]{qname}[/bold]  [dim]({file})[/dim]")
+    reporter.console.print(
+        f"  blast radius: {count} symbol(s) regenerated · {direct} direct caller(s)"
+    )
+    if isinstance(cascade, list) and cascade:
+        from rich.table import Table
+
+        table = Table(title="Cascade")
+        table.add_column("hop", style="magenta", justify="right")
+        table.add_column("symbol", style="cyan")
+        table.add_column("file", style="dim")
+        for item in cascade:
+            if not isinstance(item, dict):
+                continue
+            table.add_row(
+                str(item.get("hop", "")), str(item.get("qname", "")), str(item.get("file", ""))
+            )
+        reporter.console.print(table)
+    else:
+        reporter.info("nothing else depends on this symbol")
+
+
 # ---------------------------------------------------------------------------
 # Extended agent tools: grep_str, grep_entry_points, grep_symbol,
 # grep_symbol_and_neighbours, explain_symbol, explain_symbol_references,
@@ -2582,19 +2685,137 @@ def _print_plain(envelope: dict[str, object], reporter: Reporter) -> None:
 def grep_str_cmd(
     ctx: typer.Context,
     regexp: str = typer.Argument(..., help="Regex pattern to search source bodies with."),
+    all_files: bool = typer.Option(
+        False,
+        "--all-files",
+        help="Search the WHOLE repo (incl. non-indexed files), not just indexed source bodies.",
+    ),
 ) -> None:
     """Search source bodies with a regex; attribute hits to enclosing symbols.
 
-    Example:
+    By default only indexed (in-scope) source bodies are searched. Pass
+    `--all-files` to run ripgrep over the entire project (EXT-1): in-scope
+    hits are still attributed to their enclosing symbol, and out-of-scope
+    hits (TS/JS, configs, docs, lockfiles) come back as `file:line:text`.
+
+    Examples:
       trie grep-str 'raise.*Error'
+      trie grep-str 'TODO' --all-files
     """
     reporter = _get_reporter(ctx)
     tools = _open_tools(reporter)
     try:
-        envelope = tools.grep_str(regexp)
+        envelope = tools.grep_str_all(regexp) if all_files else tools.grep_str(regexp)
     finally:
         tools.close()
     _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+
+
+@app.command("find")
+def find_cmd(
+    ctx: typer.Context,
+    pattern: str = typer.Argument(
+        ..., help="Glob pattern, e.g. '**/*.ts', 'Dockerfile', 'src/**/*.tsx'."
+    ),
+    indexed_only: bool = typer.Option(
+        False,
+        "--indexed-only",
+        help="Restrict to indexed files only (default searches the whole tree).",
+    ),
+    limit: int = typer.Option(100, "--limit", "-l", help="Maximum number of paths to return."),
+) -> None:
+    """Find files by name/path glob (EXT-2) — the filename-search trie lacked.
+
+    Walks the whole project tree by default (pruning excluded/vendored dirs),
+    mtime-sorted, newest first. Pass `--indexed-only` to restrict to files in
+    trie's scope.
+
+    Examples:
+      trie find '**/*.ts'
+      trie find 'trie.toml'
+      trie find 'src/**/*.tsx' --limit 50
+    """
+    reporter = _get_reporter(ctx)
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.find_files(pattern, all_files=not indexed_only, limit=limit)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_render_find)
+
+
+@app.command("write")
+def write_cmd(
+    ctx: typer.Context,
+    path: str = typer.Argument(
+        ..., help="File path to create/overwrite, relative to the project root."
+    ),
+    content: str | None = typer.Option(
+        None,
+        "--content",
+        "-c",
+        help="File content. If omitted, content is read from stdin.",
+    ),
+    overwrite: bool = typer.Option(
+        False,
+        "--overwrite",
+        help="Allow replacing an existing file.",
+    ),
+) -> None:
+    """Create or overwrite an arbitrary file under the project root (EXT-8).
+
+    Fills the gap where `create-symbol` only adds a Python symbol to an
+    existing indexed file. Use for new config/doc/script files. If the path is
+    an indexed file type, the output notes that a `trie sync`/refresh is needed
+    to bring it into the graph.
+
+    Examples:
+      trie write README.md --content "# Project\n"
+      cat body.txt | trie write notes.md
+    """
+    reporter = _get_reporter(ctx)
+    if content is None:
+        import sys as _sys
+
+        body = _sys.stdin.read()
+    else:
+        body = content
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.write_file(path, body, overwrite=overwrite)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_render_write)
+
+
+def _render_write(envelope: dict[str, object], reporter: Reporter) -> None:
+    """Human-readable render of a write_file envelope."""
+    err = envelope.get("error")
+    if isinstance(err, dict):
+        _render_error_envelope(err, reporter)
+        return
+    verb = "created" if envelope.get("created") else "overwrote"
+    reporter.success(f"{verb} {envelope.get('path')} ({envelope.get('bytes_written')} bytes)")
+    if envelope.get("needs_sync"):
+        reporter.info("this file is in trie's scope — run `trie sync` / `trie refresh` to index it")
+
+
+def _render_find(envelope: dict[str, object], reporter: Reporter) -> None:
+    """Human-readable render of a find_files envelope."""
+    err = envelope.get("error")
+    if isinstance(err, dict):
+        _render_error_envelope(err, reporter)
+        return
+    matches = envelope.get("matches", [])
+    count = envelope.get("match_count", 0)
+    truncated = envelope.get("truncated", False)
+    if not isinstance(matches, list) or not matches:
+        reporter.info("no files match")
+        return
+    for m in matches:
+        reporter.console.print(str(m))
+    suffix = " (truncated; raise --limit for more)" if truncated else ""
+    reporter.info(f"{count} file(s){suffix}")
 
 
 @app.command("grep-entry-points")
@@ -3108,7 +3329,9 @@ def patch_list_cmd(ctx: typer.Context) -> None:
             ctable.add_column("File", style="cyan")
             for _file, rows in creates.items():
                 for row in rows:
-                    ctable.add_row(str(row.get("target_qname", "")), str(row.get("target_file", "")))
+                    ctable.add_row(
+                        str(row.get("target_qname", "")), str(row.get("target_file", ""))
+                    )
             reporter.console.print(ctable)
     finally:
         store.close()
