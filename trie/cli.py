@@ -3036,10 +3036,15 @@ def patch_preview_cmd(ctx: typer.Context) -> None:
     store = Store(project_root / ".trie" / "graph.db")
     try:
         result = preview_patches(store, config)
+        # preview_patches covers modify/structural patches; staged creates live
+        # in a separate table, so pull them in so the preview reflects them too.
+        creates = store.get_create_patches_grouped()
     finally:
         store.close()
 
-    if result["total_patches"] == 0:
+    create_qnames = [str(row.get("target_qname", "")) for rows in creates.values() for row in rows]
+
+    if result["total_patches"] == 0 and not create_qnames:
         reporter.info("no pending patches")
         return
 
@@ -3051,6 +3056,8 @@ def patch_preview_cmd(ctx: typer.Context) -> None:
 
     for qname in result["patched_list"]:
         table.add_row(qname, "patched")
+    for qname in create_qnames:
+        table.add_row(qname, "create")
     # Cascade neighbours are DISTINCT symbols (callers) reached from the patched
     # set — shown as their own rows, not a flag on the patched symbols.
     for qname in result.get("cascade_list", []):
@@ -3059,7 +3066,7 @@ def patch_preview_cmd(ctx: typer.Context) -> None:
     reporter.console.print(table)
     reporter.info(
         f"{result['total_patches']} patch(es) across {result['patched_symbols']} symbol(s); "
-        f"{result['cascade_symbols']} cascade neighbour(s)"
+        f"{len(create_qnames)} create(s); {result['cascade_symbols']} cascade neighbour(s)"
     )
 
 
@@ -3076,21 +3083,33 @@ def patch_list_cmd(ctx: typer.Context) -> None:
     store = Store(project_root / ".trie" / "graph.db")
     try:
         qnames = store.get_patched_qnames()
-        if not qnames:
+        # Create-symbol patches live in a separate table; include them so the
+        # listing reflects the full pending queue (otherwise staged creates are
+        # invisible here even though `patch apply` processes them).
+        creates = store.get_create_patches_grouped()
+        if not qnames and not creates:
             reporter.info("no pending patches")
             return
 
         from rich.table import Table
 
-        table = Table(title="Pending Patches")
-        table.add_column("QName", style="cyan")
-        table.add_column("Patches", style="magenta")
+        if qnames:
+            table = Table(title="Pending Patches")
+            table.add_column("QName", style="cyan")
+            table.add_column("Patches", style="magenta")
+            for qname in qnames:
+                patches = store.get_patches_for_qname(qname)
+                table.add_row(qname, str(len(patches)))
+            reporter.console.print(table)
 
-        for qname in qnames:
-            patches = store.get_patches_for_qname(qname)
-            table.add_row(qname, str(len(patches)))
-
-        reporter.console.print(table)
+        if creates:
+            ctable = Table(title="Pending Creates")
+            ctable.add_column("New QName", style="green")
+            ctable.add_column("File", style="cyan")
+            for _file, rows in creates.items():
+                for row in rows:
+                    ctable.add_row(str(row.get("target_qname", "")), str(row.get("target_file", "")))
+            reporter.console.print(ctable)
     finally:
         store.close()
 
@@ -3116,12 +3135,18 @@ def patch_drop_cmd(
 
     store = Store(project_root / ".trie" / "graph.db")
     try:
+        # Drop from BOTH the modify/structural patch table and the separate
+        # create_patches table so a single drop clears the whole pending queue
+        # (otherwise staged creates linger after `drop --all`).
         if qname:
             count = store.delete_patches(qname=qname)
+            count += store.delete_create_patches(target_qname=qname)
         elif session_id:
             count = store.delete_patches(session_id=session_id)
+            count += store.delete_create_patches(session_id=session_id)
         elif all:
             count = store.delete_patches(all=True)
+            count += store.delete_create_patches(all=True)
         else:
             reporter.error("specify --qname, --session, or --all")
             raise typer.Exit(code=1)

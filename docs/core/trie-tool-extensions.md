@@ -190,6 +190,31 @@ umbrella fix; the others are useful even before that lands.
 | `apply_patch` | (model-specific; keep) |
 | external-dir on all | EXT-10 (stays backup) |
 
+## Bugs found during fork scenario testing (fixed)
+
+These surfaced while exercising the native tools end-to-end against a live
+synced project; all are fixed in the same change set.
+
+- **Edit guard symlink miss (fork).** `makeTrieProbes.synced` compared an
+  agent-supplied path against the realpath'd project root with a raw
+  `startsWith`. On macOS (`/tmp` → `/private/tmp`) and any symlinked path the
+  guard silently failed to fire, so `fs_edit` could modify indexed code
+  unchecked. Fixed by resolving both sides via `AppFileSystem.resolve`
+  (realpathSync, ENOENT-safe) before comparison. `normalizePath` was a no-op
+  off Windows — do not use it for this.
+- **`patch apply` dumped raw tracebacks (fork).** On a crash (e.g. missing API
+  key) the tool returned the full multi-line Python traceback to the agent.
+  Fixed: only exit-1-with-stdout is treated as a structured ApplyReport;
+  otherwise a `summarizeError` helper extracts the final exception line.
+- **`patch list` / `patch preview` omit staged creates (trie core).** Create
+  patches live in the `create_patches` table; the list/preview commands only
+  read the modify/structural table, so a staged `create-symbol` showed "no
+  pending patches" even though `apply` would process it. Fixed both commands
+  to include creates.
+- **`patch drop` leaves creates behind (trie core).** `delete_patches` doesn't
+  touch `create_patches`; `drop --all`/`--qname`/`--session` now also call
+  `delete_create_patches`, so the agent can actually undo a staged creation.
+
 ## Suggested implementation order
 
 1. EXT-1, EXT-2 (search/glob over all files) — biggest day-one relief.
