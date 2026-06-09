@@ -16,7 +16,7 @@ import { AttentionModel, type NodeMass } from "@/agm/attentionModel"
 import { AttentionGraph } from "@/agm/attentionGraph"
 import { InvestigationRegistry } from "@/agm/investigations"
 import { buildTypedAdjacency, propagate, type TypedAdjacency } from "@/agm/propagation"
-import { computeRoleWells, type Vec } from "@/agm/gravity"
+
 import { syntheticRoleEntries } from "@/agm/synthetic"
 
 interface AGMState {
@@ -25,11 +25,16 @@ interface AGMState {
   graph: AttentionGraph
   investigations: InvestigationRegistry
   adjacency: TypedAdjacency | null
-  roleWells: Map<string, Vec>
 
   // --- loaded topology ---
   systemModel: SystemModel | null
   roleByQname: Map<string, string>
+  // sorted unique role list (for stable angular geography in the layout)
+  roles: string[]
+  // per-symbol historical mass (decayed), for stable angular placement
+  historicalByQname: Map<string, number>
+  // typed out-edges by qname, for drawing repo "spring" edges between visible nodes
+  edgesByQname: Map<string, Array<{ to: string; kind: string }>>
 
   // --- derived snapshots (set by recompute, read by the canvas) ---
   massByQname: Map<string, NodeMass>
@@ -54,10 +59,12 @@ export const useAGMStore = create<AGMState>((set, get) => ({
   graph: new AttentionGraph(),
   investigations: new InvestigationRegistry(),
   adjacency: null,
-  roleWells: new Map(),
 
   systemModel: null,
   roleByQname: new Map(),
+  roles: [],
+  historicalByQname: new Map(),
+  edgesByQname: new Map(),
 
   massByQname: new Map(),
   propagated: new Map(),
@@ -77,16 +84,36 @@ export const useAGMStore = create<AGMState>((set, get) => ({
     // handled via onRename/onDelete from edit events; here we just refresh roles
     // + historical seeds for everything currently present.
     model.setRoles(roleByQname)
+    const historicalByQname = new Map<string, number>()
     for (const n of systemModel.nodes) {
       const hist = (n as { historical_mass?: number }).historical_mass ?? 0
-      if (hist > 0) model.seedHistorical(n.qname, hist)
+      if (hist > 0) {
+        model.seedHistorical(n.qname, hist)
+        historicalByQname.set(n.qname, hist)
+      }
     }
 
     const adjacency = buildTypedAdjacency(edges)
-    const roles = [...new Set(roleByQname.values())]
-    const roleWells = computeRoleWells(roles)
+    const roles = [...new Set(roleByQname.values())].sort()
+    // typed out-edges by qname, for repo spring edges between visible nodes
+    const edgesByQname = new Map<string, Array<{ to: string; kind: string }>>()
+    for (const e of edges) {
+      let list = edgesByQname.get(e.from)
+      if (!list) {
+        list = []
+        edgesByQname.set(e.from, list)
+      }
+      list.push({ to: e.to, kind: e.kind })
+    }
 
-    set({ systemModel, roleByQname, adjacency, roleWells })
+    set({
+      systemModel,
+      roleByQname,
+      roles,
+      historicalByQname,
+      edgesByQname,
+      adjacency,
+    })
     get().recompute()
   },
 
