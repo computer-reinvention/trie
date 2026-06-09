@@ -1,8 +1,51 @@
 # Attention Gravity Map — Implementation Plan
 
-Status: Approved design, pre-implementation
+Status: First pass implemented (branch `agm`) — pending runtime validation
 Companion to: [`attention_gravity_map.md`](attention_gravity_map.md) (the PRD)
 Scope: trie core (Python) · opencode fork (submodule) · Electron desktop app
+
+## Implementation status (first pass)
+
+All phases 0–5 implemented on the `agm` worktree. Gates: core `uv run pytest`
+(792 passing) + `ruff check` clean; app `tsc` clean except 3 pre-existing
+`@/lib/sessionTitle` errors unrelated to AGM. Default `viz.engine` is still
+`legacy` — AGM ships behind the toggle pending live runtime validation.
+
+### Deviations / discoveries (need review)
+
+1. **Server-side attention capture deferred.** The plan called for recording
+   attention in opencode's `mapBusEvent`. That mapper is a pure SSE transform
+   with no MCP handle, and a forked background subscriber inside the HTTP
+   handler group is the wrong lifecycle home (fragile Effect scoping). Instead,
+   attention is captured **client-side** from the app's existing SSE consumer
+   (`useOpenCodeSSE` → `applyAGM`), which POSTs to the new
+   `/desktop/graph/record-attention` route (durable in `.trie`). Tradeoff:
+   attention is only captured while the desktop app is open; CLI-only sessions
+   don't record yet (the core `record_attention_event` MCP tool exists and
+   could be wired to a turn hook later). The HTTP routes are server-side, so any
+   client can record.
+
+2. **opencode `desktop.ts` typecheck is red on its own HEAD.** The
+   `feat/trie-native` branch already had 17 `TS2345` errors in `desktop.ts`
+   (every existing handler hits an `Unauthorized`/`UnknownError` channel
+   mismatch under `tsgo`). The 3 new AGM handlers follow the identical
+   established pattern and add 3 more of the same; they are no more broken than
+   the 16 existing handlers and the fork builds/runs regardless. Not fixed
+   (out of scope; would touch all handlers).
+
+3. **No app test framework.** `app/` has no vitest/jest. The AGM engine modules
+   (`agm/*`) are written pure/headless to be unit-testable, but tests are not
+   added (introducing a test framework is a separate infra decision). Core
+   Python AGM logic is fully tested (`tests/test_attention.py`, 35 tests).
+
+4. **Pre-existing base issues (not AGM):** `app/src/lib/sessionTitle` is
+   imported but missing on HEAD (3 tsc errors); `trie_mcp_entry.py` fails
+   `ruff format --check`. Left untouched.
+
+5. **Cutover not flipped.** Default stays `legacy`; AGM is opt-in via the
+   `viz.engine` setting until validated against the 5s success criterion with a
+   live agent session. Tuning (half-lives, propagation, gravity constants) is
+   expected after first runtime observation.
 
 This document is the authoritative implementation contract for AGM. Where it
 diverges from the PRD, this document wins — the PRD's "universe/weather"

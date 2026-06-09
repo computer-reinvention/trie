@@ -116,11 +116,6 @@ body {
   }
 }
 
-/* React Flow / canvas font */
-.react-flow__node {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
-}
-
 /* Lockstep pulse — chat tool-rows / patch rows breathe while their symbol is
    live on the graph (docs/choreography-prd.md §3). Reduced-motion disables it. */
 @keyframes trie-pulse-bar {

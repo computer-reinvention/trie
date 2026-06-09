@@ -491,32 +491,6 @@ export interface DesktopPermissionRepliedEvent {
   reply: PermissionReply
 }
 
-// Graph node data — stored in React Flow node.data
-// Index signature required by React Flow v12's Record<string, unknown> constraint.
-export interface SymbolNodeData extends Record<string, unknown> {
-  qname: string
-  name: string
-  kind: SymbolKind
-  filePath: string
-  startLine: number
-  endLine: number
-  signature: string | null
-  oneLiner: string
-  isPublic: boolean
-  inboundCount: number
-  outboundCount: number
-  prose: string | null // null = not yet loaded
-  isProseLoading: boolean
-  isExpanded: boolean
-  agentState: AgentState
-  isSelected: boolean
-  isHighlighted: boolean
-}
-
-export interface EdgeData extends Record<string, unknown> {
-  kind: "calls" | "imports" | "inherits"
-}
-
 // Turn history
 export interface TurnEvent {
   id: string
