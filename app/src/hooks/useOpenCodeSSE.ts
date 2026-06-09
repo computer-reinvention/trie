@@ -1,7 +1,10 @@
 import { useEffect } from "react"
 import { useGraphStore } from "@/store/graphStore"
 import { useAgentStore } from "@/store/agentStore"
+import { useAGMStore } from "@/store/agmStore"
 import { choreographFor } from "@/graph/agentChoreography"
+import { classifyTool, syntheticTarget } from "@/agm/toolClassify"
+import { graphClient } from "@/api/graphClient"
 import { motionPrefs, playCascade, ghostCascade, conductGlance, useConductor } from "@/graph/conductor"
 import { usePatchesStore } from "@/store/patchesStore"
 import type { ToolPart } from "@/api/types"
@@ -151,6 +154,43 @@ export function useOpenCodeSSE(opencodePort: number): void {
       }
     }
 
+    // AGM ingestion: feed the live attention engine from the same tool parts the
+    // choreography uses. Only fires on completion so output qnames are present.
+    // Records durably via the desktop endpoint (best-effort) AND ingests into the
+    // in-memory model for the live canvas.
+    const applyAGM = (part: ToolPart) => {
+      if (part.state.status !== "completed") return
+      const agm = useAGMStore.getState()
+      const now = Date.now() / 1000
+      const c = choreographFor(part)
+      const eventType = classifyTool(part.tool)
+
+      const record = (qname: string, type: "grep" | "read" | "trace" | "write") => {
+        agm.ingest(qname, type, now)
+        graphClient.recordAttention({ type, qname }).catch(() => {})
+      }
+
+      for (const q of c.reads) record(q, "read")
+      for (const q of c.scans) record(q, "grep")
+      for (const q of c.writes) record(q, "write")
+      // trace/flow chains build the attention graph (the reasoning trail).
+      if (c.flows.length) {
+        // reconstruct ordered chains from consecutive flow pairs
+        const chain: string[] = []
+        for (const f of c.flows) {
+          if (chain[chain.length - 1] !== f.from) chain.push(f.from)
+          chain.push(f.to)
+        }
+        if (chain.length > 1) agm.ingestTrace(chain, now)
+      }
+      // Non-code surfaces (bash/web/fs) → synthetic node attention.
+      const synthetic = syntheticTarget(part.tool)
+      if (synthetic && eventType) {
+        record(synthetic, eventType as "grep" | "read" | "trace" | "write")
+      }
+      agm.recompute(now)
+    }
+
     const handleEvent = (rawData: string) => {
       let ev: { type: string; properties: Record<string, unknown> }
       try {
@@ -167,7 +207,10 @@ export function useOpenCodeSSE(opencodePort: number): void {
           const part = (p as any).part
           if (!part) break
           a.applyPartUpdated(part.sessionID, part.messageID, part)
-          if (part.type === "tool") applyChoreography(part as ToolPart)
+          if (part.type === "tool") {
+            applyChoreography(part as ToolPart)
+            applyAGM(part as ToolPart)
+          }
           break
         }
         case "message.part.delta": {
