@@ -307,3 +307,93 @@ def test_patches_cascaded_on_symbol_delete(store: Store, tmp_path: Path):
     store.replace_file_symbols("a.py", [])  # Remove the symbol
     remaining = store.get_patches_for_qname("a:greet")
     assert remaining == []
+
+
+# --- WS6: structural patch kinds + create_patches ---------------------------
+
+
+def _seed_greet(store: Store, tmp_path: Path) -> None:
+    src = tmp_path / "a.py"
+    src.write_text("def greet():\n    return 'hello'\n")
+    store.upsert_file(path="a.py", fingerprint="x")
+    store.replace_file_symbols("a.py", extract_symbols(src))
+
+
+def test_add_patch_defaults_to_modify_kind(store: Store, tmp_path: Path):
+    _seed_greet(store, tmp_path)
+    store.add_patch("a:greet", "n", "r", "s1")
+    p = store.get_patches_for_qname("a:greet")[0]
+    assert p["kind"] == "modify"
+    assert p["rename_to"] is None
+
+
+def test_add_delete_patch(store: Store, tmp_path: Path):
+    _seed_greet(store, tmp_path)
+    store.add_delete_patch("a:greet", "obsolete", "s1")
+    p = store.get_patches_for_qname("a:greet")[0]
+    assert p["kind"] == "delete"
+
+
+def test_add_rename_patch_carries_new_name(store: Store, tmp_path: Path):
+    _seed_greet(store, tmp_path)
+    store.add_rename_patch("a:greet", "salute", "clarity", "s1")
+    p = store.get_patches_for_qname("a:greet")[0]
+    assert p["kind"] == "rename"
+    assert p["rename_to"] == "salute"
+
+
+def test_delete_and_rename_patches_require_existing_symbol(store: Store):
+    with pytest.raises(KeyError):
+        store.add_delete_patch("nope:x", "r", "s1")
+    with pytest.raises(KeyError):
+        store.add_rename_patch("nope:x", "y", "r", "s1")
+
+
+def test_grouped_patches_include_kind(store: Store, tmp_path: Path):
+    _seed_greet(store, tmp_path)
+    store.add_rename_patch("a:greet", "salute", "r", "s1")
+    grouped = store.get_all_patches_grouped()
+    rows = next(iter(grouped.values()))
+    assert rows[0]["kind"] == "rename"
+    assert rows[0]["rename_to"] == "salute"
+
+
+def test_add_and_group_create_patches(store: Store):
+    store.add_create_patch(
+        target_file="a.py",
+        target_qname="a:new_fn",
+        note="a brand new helper",
+        reason="needed",
+        session_id="s1",
+        anchor_qname="a:greet",
+    )
+    grouped = store.get_create_patches_grouped()
+    assert "a.py" in grouped
+    cp = grouped["a.py"][0]
+    assert cp["target_qname"] == "a:new_fn"
+    assert cp["anchor_qname"] == "a:greet"
+    assert cp["note"] == "a brand new helper"
+
+
+def test_delete_create_patches_by_target(store: Store):
+    store.add_create_patch(
+        target_file="a.py", target_qname="a:x", note="n", reason="r", session_id="s1"
+    )
+    store.add_create_patch(
+        target_file="a.py", target_qname="a:y", note="n", reason="r", session_id="s1"
+    )
+    assert store.delete_create_patches(target_qname="a:x") == 1
+    grouped = store.get_create_patches_grouped()
+    assert [c["target_qname"] for c in grouped.get("a.py", [])] == ["a:y"]
+
+
+def test_delete_create_patches_by_session_and_all(store: Store):
+    store.add_create_patch(
+        target_file="a.py", target_qname="a:x", note="n", reason="r", session_id="s1"
+    )
+    store.add_create_patch(
+        target_file="b.py", target_qname="b:z", note="n", reason="r", session_id="s2"
+    )
+    assert store.delete_create_patches(session_id="s1") == 1
+    assert store.delete_create_patches(all=True) == 1
+    assert store.get_create_patches_grouped() == {}

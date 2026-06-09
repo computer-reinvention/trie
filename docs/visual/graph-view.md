@@ -25,7 +25,7 @@ The canvas never draws all symbols at once. It shows two levels:
   symbol pulses, comets, notes, selection and patch badges live here.
 
 > Key consequence: **symbol-level decoration only shows inside the ExpandedPanel.**
-> The L0 map shows symbol activity *rolled up* to the owning component bubble.
+> The L0 map shows symbol activity _rolled up_ to the owning component bubble.
 > If you add per-symbol visuals, add the L0 rollup too (see §6.1).
 
 The bounded visible-set math (DOI = salience − k·distance(focus), budgeted) lives
@@ -38,6 +38,7 @@ symbol set for an expanded frame.
 ## 2. File map
 
 ### Components — `app/src/components/GraphCanvas/`
+
 - `index.tsx` — **GraphCanvas**: the L0 `ForceGraph2D`, layout, camera, hover
   tooltip, `paintNode` (canvas painter), live-activity rollups, patch pips/rings.
 - `ExpandedPanel.tsx` — the drill-in sub-graph: symbol network, agent-activity
@@ -50,6 +51,7 @@ symbol set for an expanded frame.
 - `SearchPalette.tsx` — ⌘-style symbol search.
 
 ### Editor host — `app/src/components/Editor/`
+
 - `index.tsx` — tab host. Permanent tabs: **graph** (`GRAPH_TAB_ID`) and
   **patches** (`PATCHES_TAB_ID`); file tabs are dynamic. Each tab is mounted once
   and shown/hidden (graph keeps its layout/zoom alive).
@@ -60,6 +62,7 @@ symbol set for an expanded frame.
 - `SourceView.tsx` / `TriefactView.tsx` / `FileTabContent.tsx` — file tabs.
 
 ### State — `app/src/store/`
+
 - `graphStore.ts` — **the graph's brain.** Immutable `model` + derived
   `nodesByQname`/`adjacency`; view state (`axis`, `focusedExpansion`,
   `pinnedExpansions`, `selectedQname`, `isolatedGroup`); live runtime
@@ -76,6 +79,7 @@ symbol set for an expanded frame.
 - `appStore.ts` — project/servers/model; `contextMenuStore.ts` — shared menu.
 
 ### Graph helpers — `app/src/graph/`
+
 - `doi.ts` — visible-set selection, `componentView`, `buildAdjacency`,
   member sub-grouping. Pure, no React/canvas.
 - `style.ts` — all colors + shapes: `ACTIVITY` (read/scan/write/heat), `roleColor`,
@@ -87,6 +91,7 @@ symbol set for an expanded frame.
 - `regime.ts` — budget/salience-floor tuning per model size.
 
 ### API — `app/src/api/`
+
 - `graphClient.ts` — typed client for the `/desktop/graph/*` HTTP endpoints
   (routed through the Electron IPC proxy; renderer can't reach 127.0.0.1).
 - `types.ts` — every wire shape (SystemModel, SymbolHit, patches, ApplyReport,
@@ -94,6 +99,7 @@ symbol set for an expanded frame.
 - `opencodeClient.ts` — session/message/permission HTTP for the chat.
 
 ### Hooks — `app/src/hooks/`
+
 - `useGraphPopulation.ts` — fetches `system-model` + `all-edges` → `setModel`.
 - `useOpenCodeSSE.ts` — subscribes the raw `/event` bus stream, maps bus events
   to transcript + **graph choreography** (the live animation driver).
@@ -102,7 +108,9 @@ symbol set for an expanded frame.
 - `useSessions.ts` — chat session lifecycle.
 
 ### Backend (opencode submodule)
+
 `opencode/packages/opencode/src/server/routes/instance/httpapi/`
+
 - `groups/desktop.ts` — endpoint declarations (paths + schemas).
 - `handlers/desktop.ts` — handlers; most proxy a trie MCP tool via
   `callTrieTool(tools, "<tool>", args)`. `mapBusEvent` is the SSE event mapper
@@ -117,6 +125,7 @@ The trie MCP tools the endpoints proxy live in `trie/mcp_server.py`
 ## 3. Data flow
 
 ### Initial population
+
 1. Electron spawns the bundled `opencode-server` in the project dir and emits
    `ipc:servers-ready` with the port.
 2. `App.tsx` → `setGraphClientBase(port)` → `useGraphPopulation` waits for the
@@ -125,6 +134,7 @@ The trie MCP tools the endpoints proxy live in `trie/mcp_server.py`
 3. `GraphCanvas` renders the L0 component map from the model.
 
 ### Live agent activity (the animation)
+
 1. `useOpenCodeSSE` subscribes `http://127.0.0.1:<port>/event` via the IPC SSE
    proxy (`trie.sseSubscribe`).
 2. On `message.part.updated` with a **tool** part → `choreographFor(part)` →
@@ -136,6 +146,7 @@ The trie MCP tools the endpoints proxy live in `trie/mcp_server.py`
    (`clearTrail` fires in `useSessions.send`).
 
 ### Patches
+
 1. `usePatches` polls `graphClient.patches()` → `patchesStore.setPatches` →
    derives `patchedQnames`.
 2. `PatchesPanel` lists them; `GraphCanvas` draws amber ring + count pip on
@@ -180,6 +191,7 @@ Component graph-space positions are memoized as `componentPos` in `index.tsx`.
 ## 6. Extension recipes
 
 ### 6.1 Add a new per-symbol decoration (ring/badge)
+
 1. Source the data into a store (e.g. extend `graphStore` runtime or a new store)
    keyed by qname.
 2. Draw it in `ExpandedPanel.tsx`'s `nodeCanvasObject` (read via `getState()`).
@@ -190,23 +202,27 @@ Component graph-space positions are memoized as `componentPos` in `index.tsx`.
    `touchedGroup` for the exact pattern.)
 
 ### 6.2 Add a new live-activity type/color
+
 1. Add the state to `AgentState` in `api/types.ts`.
 2. Add its color to `ACTIVITY` in `graph/style.ts`.
 3. Handle it in `paintNode` (L0 ring color) and `ExpandedPanel` (`activityColor`).
 4. Emit it from `agentChoreography.ts` / `useOpenCodeSSE.ts`.
 
 ### 6.3 Teach the graph a new agent tool
+
 Edit `choreographFor` in `graph/agentChoreography.ts`: match the tool name
 (prefix-stripped via `bareTool`), pull the symbol(s) from `part.state.input`
 and/or parse `part.state.output`, and return them in `reads`/`scans`/`writes`/
 `flows`. The SSE hook does the rest.
 
 ### 6.4 Add an HTML overlay anchored to the graph
+
 Model it on `AgentActivityCards.tsx`: take `fgRef` + `componentPos` + `width/height`,
 run a rAF to re-read `graph2ScreenCoords` while the data is fresh, render absolutely
 positioned cards inside the `GraphCanvas` container (`pointer-events-none`).
 
 ### 6.5 Add a new desktop data endpoint
+
 1. **Backend (submodule):** add a path to `DesktopPaths` + an `HttpApiEndpoint`
    in `groups/desktop.ts`; add a handler in `handlers/desktop.ts` (usually
    `callTrieTool(tools, "<mcp_tool>", args)`) and wire it in the `.handle(...)`
@@ -218,12 +234,14 @@ positioned cards inside the `GraphCanvas` container (`pointer-events-none`).
    and consume it (store + poll/hook + component).
 
 ### 6.6 Add a new tab
+
 1. Add an id + `kind` + tab interface to `tabsStore.ts`; include it in the
    permanent `tabs` array (or open dynamically), and guard it in `close`.
 2. Render its button in `Editor/TabStrip.tsx`.
 3. Render its content (mounted-hidden) in `Editor/index.tsx`.
 
 ### 6.7 Adjust the agent-following camera
+
 The gentle follow lives in `index.tsx` (effect on `lastTouched`): it pans only
 when the active component drifts near the viewport edge. Gate via the
 `graph.followAgent` setting. There is intentionally **no** auto-zoom/auto-drill.
@@ -259,4 +277,4 @@ cd app && npm run pack               # package .app for manual testing
 For backend endpoint changes also typecheck the submodule:
 `cd opencode/packages/opencode && bun typecheck` (a known pre-existing baseline of
 effect-beta errors in `httpapi/handlers/desktop.ts` + `server.ts` is expected;
-don't add *new* error categories).
+don't add _new_ error categories).

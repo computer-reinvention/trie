@@ -11,7 +11,7 @@ from pathlib import Path
 from trie.parse.python import Symbol
 from trie.parse.references import Reference
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 # All schema is created if not present. The DB is a regenerable cache under .trie/;
 # bumping SCHEMA_VERSION blows it away and triggers a re-scan on next connect.
@@ -72,10 +72,29 @@ CREATE TABLE IF NOT EXISTS patches (
     note TEXT NOT NULL,
     reason TEXT NOT NULL,
     session_id TEXT NOT NULL,
-    created_at INTEGER NOT NULL
+    created_at INTEGER NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'modify',
+    rename_to TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_patches_symbol ON patches(symbol_id);
 CREATE INDEX IF NOT EXISTS idx_patches_session ON patches(session_id);
+
+-- Create patches target a symbol that does NOT yet exist, so they cannot key on
+-- symbol_id (which is NOT NULL elsewhere). Kept in their own table to avoid
+-- threading NULLs through every symbol_id consumer.
+CREATE TABLE IF NOT EXISTS create_patches (
+    id INTEGER PRIMARY KEY,
+    target_file TEXT NOT NULL,
+    target_qname TEXT NOT NULL,
+    anchor_qname TEXT,
+    parent_class TEXT,
+    note TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_create_patches_file ON create_patches(target_file);
+CREATE INDEX IF NOT EXISTS idx_create_patches_session ON create_patches(session_id);
 """
 
 
@@ -620,10 +639,15 @@ class Store:
         note: str,
         reason: str,
         session_id: str,
+        *,
+        kind: str = "modify",
+        rename_to: str | None = None,
     ) -> int:
-        """Add a new patch row for the given symbol qname.
+        """Add a new patch row for the given (existing) symbol qname.
 
-        Returns the new patch id, or raises KeyError if qname is not found.
+        `kind` is one of 'modify' | 'delete' | 'rename'. `rename_to` is the new
+        local name, required when kind == 'rename'. Returns the new patch id, or
+        raises KeyError if qname is not found.
         """
         row = self._conn.execute(
             "SELECT id FROM symbols WHERE qualified_name = ? LIMIT 1",
@@ -634,13 +658,100 @@ class Store:
         symbol_id = int(row[0])
         now = int(time.time())
         cur = self._conn.execute(
-            """INSERT INTO patches (symbol_id, note, reason, session_id, created_at)
-               VALUES (?, ?, ?, ?, ?)""",
-            (symbol_id, note, reason, session_id, now),
+            """INSERT INTO patches
+               (symbol_id, note, reason, session_id, created_at, kind, rename_to)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (symbol_id, note, reason, session_id, now, kind, rename_to),
         )
         self._conn.commit()
         assert cur.lastrowid is not None, "INSERT of patch should produce a rowid"
         return int(cur.lastrowid)
+
+    def add_delete_patch(self, qname: str, reason: str, session_id: str) -> int:
+        """Stage a deletion of an existing symbol. Raises KeyError if absent."""
+        return self.add_patch(qname, "", reason, session_id, kind="delete")
+
+    def add_rename_patch(self, qname: str, new_name: str, reason: str, session_id: str) -> int:
+        """Stage a rename of an existing symbol to `new_name` (local name)."""
+        return self.add_patch(qname, "", reason, session_id, kind="rename", rename_to=new_name)
+
+    def add_create_patch(
+        self,
+        *,
+        target_file: str,
+        target_qname: str,
+        note: str,
+        reason: str,
+        session_id: str,
+        anchor_qname: str | None = None,
+        parent_class: str | None = None,
+    ) -> int:
+        """Stage creation of a NEW symbol that does not yet exist in the graph.
+
+        Returns the new create_patch id. Does not validate that target_qname is
+        absent — callers (the MCP tool) enforce that for a clean error message.
+        """
+        now = int(time.time())
+        cur = self._conn.execute(
+            """INSERT INTO create_patches
+               (target_file, target_qname, anchor_qname, parent_class, note, reason,
+                session_id, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (target_file, target_qname, anchor_qname, parent_class, note, reason, session_id, now),
+        )
+        self._conn.commit()
+        assert cur.lastrowid is not None, "INSERT of create_patch should produce a rowid"
+        return int(cur.lastrowid)
+
+    def get_create_patches_grouped(self) -> dict[str, list[dict]]:
+        """Return all pending create patches grouped by target_file."""
+        rows = self._conn.execute(
+            """SELECT id, target_file, target_qname, anchor_qname, parent_class,
+                      note, reason, session_id, created_at
+               FROM create_patches ORDER BY target_file, id"""
+        ).fetchall()
+        result: dict[str, list[dict]] = {}
+        for r in rows:
+            result.setdefault(str(r[1]), []).append(
+                {
+                    "id": int(r[0]),
+                    "target_file": r[1],
+                    "target_qname": r[2],
+                    "anchor_qname": r[3],
+                    "parent_class": r[4],
+                    "note": r[5],
+                    "reason": r[6],
+                    "session_id": r[7],
+                    "created_at": int(r[8]),
+                }
+            )
+        return result
+
+    def delete_create_patches(
+        self,
+        *,
+        target_qname: str | None = None,
+        session_id: str | None = None,
+        all: bool = False,
+    ) -> int:
+        """Delete create patches by target_qname / session_id / all."""
+        if all:
+            count = self._conn.execute("DELETE FROM create_patches").rowcount
+            self._conn.commit()
+            return count
+        if target_qname is not None:
+            count = self._conn.execute(
+                "DELETE FROM create_patches WHERE target_qname = ?", (target_qname,)
+            ).rowcount
+            self._conn.commit()
+            return count
+        if session_id is not None:
+            count = self._conn.execute(
+                "DELETE FROM create_patches WHERE session_id = ?", (session_id,)
+            ).rowcount
+            self._conn.commit()
+            return count
+        return 0
 
     def get_patches_for_qname(self, qname: str) -> list[dict]:
         """Return all pending patches for the given symbol as dicts."""
@@ -655,7 +766,8 @@ class Store:
 
     def _get_patches_by_symbol_id(self, symbol_id: int) -> list[dict]:
         rows = self._conn.execute(
-            "SELECT id, note, reason, session_id, created_at FROM patches WHERE symbol_id = ? ORDER BY id",
+            """SELECT id, note, reason, session_id, created_at, kind, rename_to
+               FROM patches WHERE symbol_id = ? ORDER BY id""",
             (symbol_id,),
         ).fetchall()
         return [
@@ -665,6 +777,8 @@ class Store:
                 "reason": r[2],
                 "session_id": r[3],
                 "created_at": int(r[4]),
+                "kind": r[5] or "modify",
+                "rename_to": r[6],
             }
             for r in rows
         ]
@@ -675,7 +789,7 @@ class Store:
         Result maps symbol_id -> list of patch dicts.
         """
         rows = self._conn.execute(
-            """SELECT id, symbol_id, note, reason, session_id, created_at
+            """SELECT id, symbol_id, note, reason, session_id, created_at, kind, rename_to
                FROM patches ORDER BY symbol_id, id"""
         ).fetchall()
         result: dict[int, list[dict]] = {}
@@ -688,6 +802,8 @@ class Store:
                     "reason": r[3],
                     "session_id": r[4],
                     "created_at": int(r[5]),
+                    "kind": r[6] or "modify",
+                    "rename_to": r[7],
                 }
             )
         return result
@@ -745,6 +861,37 @@ class Store:
             (symbol_id,),
         ).fetchone()
         return int(row[0]) if row else 0
+
+    def patch_summary(self) -> dict[str, object]:
+        """Aggregate pending-patch state — the single shared reader for status /
+        activity() / patch_list.
+
+        Returns {total_patches, symbol_count, create_count, by_origin, qnames}.
+        `by_origin` buckets symbols by patch session origin (agent/cascade/mixed).
+        """
+        patch_rows = self._conn.execute(
+            """SELECT s.qualified_name, p.session_id
+               FROM patches p JOIN symbols s ON s.id = p.symbol_id"""
+        ).fetchall()
+        sessions_by_qname: dict[str, set[str]] = {}
+        for qname, sid in patch_rows:
+            sessions_by_qname.setdefault(qname, set()).add(sid)
+        by_origin = {"agent": 0, "cascade": 0, "mixed": 0}
+        for sessions in sessions_by_qname.values():
+            if sessions == {"cascade"}:
+                by_origin["cascade"] += 1
+            elif len(sessions) > 1:
+                by_origin["mixed"] += 1
+            else:
+                by_origin["agent"] += 1
+        create_count = int(self._conn.execute("SELECT COUNT(*) FROM create_patches").fetchone()[0])
+        return {
+            "total_patches": len(patch_rows),
+            "symbol_count": len(sessions_by_qname),
+            "create_count": create_count,
+            "by_origin": by_origin,
+            "qnames": sorted(sessions_by_qname.keys()),
+        }
 
     # --- symbol detail / locate ---
 

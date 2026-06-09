@@ -12,7 +12,7 @@ system** at a chosen level of abstraction. Implications:
 
 - **Default view = the tag/role layer**, not the symbol layer. ~10-15 role
   nodes with aggregated role-to-role flow. You drill down to reveal detail.
-- **Not every symbol earns a place.** A *salience* model decides what is worth
+- **Not every symbol earns a place.** A _salience_ model decides what is worth
   drawing; trivial helpers and accessors stay hidden until you drill into
   their neighborhood.
 - **Some nodes are special**: entry points (system boundaries) and hubs
@@ -28,7 +28,7 @@ from outside: a user at a CLI, an HTTP client, an agent calling an MCP tool,
 the OS), **not a topological one.** The call graph cannot see the
 outside-world edge that invokes it. Therefore:
 
-- `inbound == 0` is unreliable — entry points *are* called by tests and
+- `inbound == 0` is unreliable — entry points _are_ called by tests and
   scripts, so their inbound is not actually 0; and unresolved calls make
   inbound noisy in general.
 - `outbound` is noisy and incomplete — the scanner only captures direct,
@@ -37,14 +37,14 @@ outside-world edge that invokes it. Therefore:
 
 So no single degree rule works. Use a **multi-signal weighted score**:
 
-| Signal | Strength | Source | Notes |
-|---|---|---|---|
-| **Framework decorator** (`@app.command`, `@router.get/post`, `@*.route`, `@mcp.tool`, `@click.command`, `@task`) | strongest | parser (decorators already extracted; NOT yet persisted) | The framework literally declares "outside calls this." Catches every CLI cmd / route cleanly. Validated on trie: every `*_cmd` carries `@app.command("...")`. |
-| **`[project.scripts]` / entry_points** | ground truth | `pyproject.toml` | Console entries by definition. trie: `trie = "trie.cli:app"`. |
-| **Production-only inbound == 0** | strong | edges + caller `file_path` | inbound count **excluding callers in `tests/` and `scripts/`**. Directly fixes the "tests call entry points" problem. |
-| **LLM `boundary` field** | strong, semantic | LLM (piggyback on tagging pass) | `entry` / `exit` / `internal`. The model reading the source knows intent. Same cost model as `role`. |
-| **Name/convention** | weak, corroborating | name | `main`, `run`, `serve`, `handle`, `*_cmd`. |
-| **High outbound** | tiebreaker | edges | Orchestrator shape; ranks active doors above bedrock-roots. |
+| Signal                                                                                                           | Strength            | Source                                                   | Notes                                                                                                                                                         |
+| ---------------------------------------------------------------------------------------------------------------- | ------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Framework decorator** (`@app.command`, `@router.get/post`, `@*.route`, `@mcp.tool`, `@click.command`, `@task`) | strongest           | parser (decorators already extracted; NOT yet persisted) | The framework literally declares "outside calls this." Catches every CLI cmd / route cleanly. Validated on trie: every `*_cmd` carries `@app.command("...")`. |
+| **`[project.scripts]` / entry_points**                                                                           | ground truth        | `pyproject.toml`                                         | Console entries by definition. trie: `trie = "trie.cli:app"`.                                                                                                 |
+| **Production-only inbound == 0**                                                                                 | strong              | edges + caller `file_path`                               | inbound count **excluding callers in `tests/` and `scripts/`**. Directly fixes the "tests call entry points" problem.                                         |
+| **LLM `boundary` field**                                                                                         | strong, semantic    | LLM (piggyback on tagging pass)                          | `entry` / `exit` / `internal`. The model reading the source knows intent. Same cost model as `role`.                                                          |
+| **Name/convention**                                                                                              | weak, corroborating | name                                                     | `main`, `run`, `serve`, `handle`, `*_cmd`.                                                                                                                    |
+| **High outbound**                                                                                                | tiebreaker          | edges                                                    | Orchestrator shape; ranks active doors above bedrock-roots.                                                                                                   |
 
 The score yields **salience**, not a boolean — show the most-certain doors
 first, degrade gracefully.
@@ -54,7 +54,7 @@ first, degrade gracefully.
 The system boundary has two sides:
 
 - **Entry / doors**: outside calls in (above).
-- **Exit points**: the system calls *out* — subprocess, sockets, filesystem,
+- **Exit points**: the system calls _out_ — subprocess, sockets, filesystem,
   the Anthropic client, external APIs. Detectable via the same LLM `boundary`
   field (`exit`) plus structural hints (calls to `subprocess`, `socket`,
   `open`, `requests`, `anthropic`, etc.). Drawing exits makes the model's
@@ -62,7 +62,7 @@ The system boundary has two sides:
 - **Bedrock / foundations**: `outbound == 0` with high inbound — the
   most-depended-on primitives (constants, value types, leaf utils). Validated
   on trie: `cli:app` (in=91/out=0), `ModelResult`, `Config.Sync`. These are
-  the *floor* of the system (flows end here). The user's original "low
+  the _floor_ of the system (flows end here). The user's original "low
   outbound" instinct names this real, valuable class — it is the dual of an
   entry point, not an entry point itself.
 
@@ -95,7 +95,7 @@ reaches outside.
 **CHEAP — one new signal:**
 
 8. **Churn heat**: `git log` per file → recently/frequently edited symbols
-   carry standing "heat." The persistent *monitor* dimension on top of live
+   carry standing "heat." The persistent _monitor_ dimension on top of live
    agent pulses. One git call per file at scan time.
 
 **LATER — LLM pass (like tagging):**
@@ -132,32 +132,32 @@ system. Concretely, the things that make it feel that way:
 
 - **Nodes are rectangular cards** (220px, kind badge + name + one-liner +
   footer + ↓/↑ counts). Cards read as "rows in a table" or "steps in a
-  pipeline." A system map wants *points*, not *forms*.
+  pipeline." A system map wants _points_, not _forms_.
 - **Edges are orthogonal smoothstep connectors** (`getSmoothStepPath`). Right
   angles are the visual language of flowcharts and BPMN diagrams — the exact
   "automation dashboard" cue we want to kill.
 - **Layout is a rigid grid** (`gridLayout`, files in columns). Grids say
   "spreadsheet." Spatial meaning is arbitrary — position encodes nothing.
 - **Grouping is by file** (FileGroupNode rectangles). Files are a storage
-  detail, not how anyone *thinks* about a system. Boxes-within-boxes is more
+  detail, not how anyone _thinks_ about a system. Boxes-within-boxes is more
   dashboard chrome.
 - **Everything is shown at full detail always.** No semantic zoom that
-  actually changes what the graph *means* at different scales.
+  actually changes what the graph _means_ at different scales.
 
 The result: it looks like something you'd configure, not something you'd
 explore.
 
 ## 2. What makes Obsidian's graph feel good
 
-Obsidian's graph view is loved despite being *less* functional than ours
+Obsidian's graph view is loved despite being _less_ functional than ours
 because it nails **form**. The mechanics that produce the feeling:
 
 1. **Dots, not cards.** A node is a small circle. Its label floats beside it
    and only appears when you're zoomed in enough or hovering. Low cognitive
    load; the eye sees structure, not text.
-2. **Force-directed layout.** Nodes repel, links pull. Clusters *emerge*
+2. **Force-directed layout.** Nodes repel, links pull. Clusters _emerge_
    from connectivity — tightly-coupled things drift together, loners drift
-   out. Position becomes meaningful for free. It also *breathes*: the gentle
+   out. Position becomes meaningful for free. It also _breathes_: the gentle
    settling motion makes it feel alive, not static.
 3. **Size encodes importance.** Node radius scales with degree (number of
    links). Hubs are visibly big; leaves are small. You read architecture at a
@@ -171,10 +171,10 @@ because it nails **form**. The mechanics that produce the feeling:
    context.
 6. **Curved links.** Slight curvature (bezier), not right angles. Organic,
    not engineered.
-7. **Smooth zoom + pan as the primary verb.** You *fly through* the space.
+7. **Smooth zoom + pan as the primary verb.** You _fly through_ the space.
    Click-to-focus centers and zooms on a node.
 
-None of these are about showing more data. They're about showing the *same*
+None of these are about showing more data. They're about showing the _same_
 data as a **landscape you navigate** rather than a **form you read**.
 
 ## 3. The core recommendation: switch the renderer
@@ -191,7 +191,7 @@ built on — canvas + `d3-force`).
 
 Why this specific library:
 
-- It gives us *every* Obsidian behavior natively, no reinvention:
+- It gives us _every_ Obsidian behavior natively, no reinvention:
   - `nodeAutoColorBy('role')` → color clusters by our role tags
   - `nodeVal` (size by degree) → hubs visibly larger
   - `onNodeHover` + neighbor sets → highlight-and-dim (§2.5)
@@ -213,7 +213,7 @@ a pane; the graph stays a graph).
 
 ### Alternative considered: keep React Flow, add d3-force
 
-We *could* keep React Flow and drive `node.position` from a `d3-force`
+We _could_ keep React Flow and drive `node.position` from a `d3-force`
 simulation (React Flow + d3-force is a documented pattern). This avoids a
 renderer swap and keeps DOM nodes. But it does **not** fix the root feel: the
 nodes are still cards, performance with 1.4k live-simulated DOM nodes is
@@ -229,7 +229,7 @@ principle**:
 - **Color** every node by `role` (stable hue per role; shared legend).
 - **Cluster** by role via a weak `forceX`/`forceY` per-role centroid, OR a
   `forceCluster`-style custom force, so same-role nodes gravitate together
-  *without* hard rectangular containers. Clusters are felt, not boxed.
+  _without_ hard rectangular containers. Clusters are felt, not boxed.
 - **Legend / filter rail**: a small overlay listing roles with their colors.
   Clicking a role isolates it (dims all other roles) — the Obsidian
   "tag filter" interaction. This answers "show me the persistence layer"
@@ -238,28 +238,28 @@ principle**:
   inspector and as a secondary grouping option in a dropdown
   (Group by: ▸ Role / File / None).
 
-This makes the graph answer *architectural* questions ("what are the layers,
-how big is each, what crosses between them") instead of *filesystem*
+This makes the graph answer _architectural_ questions ("what are the layers,
+how big is each, what crosses between them") instead of _filesystem_
 questions.
 
 ## 5. The graph as a live monitor (the part that matters most)
 
 The ask: "display stuff as it is touched / modified" — an intuitive monitor
-of the system *and the changes*. The force-graph particle + highlight system
+of the system _and the changes_. The force-graph particle + highlight system
 is purpose-built for this. Map agent activity (we already get it over the
 `/desktop/event` SSE stream) onto canvas affordances:
 
-| Agent action (SSE) | Canvas response |
-|---|---|
-| `trie_read` / `trie_trace` a symbol | Node **pulses** (radius + glow ease up and back); a soft ring lingers briefly. "The agent is looking here." |
-| Traversal (`trace` returns edges) | **Directional particles** fire along those exact links, in sequence — you literally watch attention flow through the call graph. |
-| `write_file` / patch on a symbol | Node flares **amber** and grows; stays enlarged while "hot." |
-| File edited (`file.edited`) | Node tinted **stale** until refresh; a subtle decay animation. |
-| Idle | Everything settles back to rest size/color. |
+| Agent action (SSE)                  | Canvas response                                                                                                                  |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `trie_read` / `trie_trace` a symbol | Node **pulses** (radius + glow ease up and back); a soft ring lingers briefly. "The agent is looking here."                      |
+| Traversal (`trace` returns edges)   | **Directional particles** fire along those exact links, in sequence — you literally watch attention flow through the call graph. |
+| `write_file` / patch on a symbol    | Node flares **amber** and grows; stays enlarged while "hot."                                                                     |
+| File edited (`file.edited`)         | Node tinted **stale** until refresh; a subtle decay animation.                                                                   |
+| Idle                                | Everything settles back to rest size/color.                                                                                      |
 
-Because the layout is force-directed and *persistent*, the user builds a
+Because the layout is force-directed and _persistent_, the user builds a
 mental map of where things live — so when a node lights up across the canvas,
-they know *where* in the system the agent just went, without reading a label.
+they know _where_ in the system the agent just went, without reading a label.
 That spatial memory is the whole point of a monitor vs. a log. The current
 turn-history panel becomes the textual ledger; the graph becomes the
 **ambient, spatial** view of the same events.
@@ -273,14 +273,14 @@ agent moved from A to B," and it's one line of config.
 Three regimes, driven by `globalScale` in `nodeCanvasObject`:
 
 - **Far (whole system):** dots only, sized by degree, colored by role. No
-  labels. You see the *shape* of the codebase and its layers. Role clusters
+  labels. You see the _shape_ of the codebase and its layers. Role clusters
   are obvious.
 - **Mid:** labels fade in for hubs (high-degree nodes) only. You see the
   landmarks.
 - **Near:** labels for everything; hover shows the one-liner as a tooltip.
   Click opens the inspector with full prose (from `/desktop/graph/read`).
 
-This is "less is more" — the graph is *quietest* when zoomed out, which is
+This is "less is more" — the graph is _quietest_ when zoomed out, which is
 when you want to read structure, and most detailed only where you're looking.
 
 ## 7. Concrete component plan
@@ -299,6 +299,7 @@ GraphCanvas/
 ```
 
 State changes:
+
 - `graphStore`: keep nodes/edges as data (drop React Flow `position` — the
   sim owns positions now). Add `role` to node data (already on the wire).
   Add `hoveredQname`, `isolatedRole`, and a derived neighbor index.
@@ -307,6 +308,7 @@ State changes:
   pulses/particles.
 
 Data we already have (no backend work needed):
+
 - `role` on every symbol (just shipped).
 - `inbound_count` / `outbound_count` → node size (degree).
 - `all-edges` endpoint → links.
@@ -315,7 +317,7 @@ Data we already have (no backend work needed):
 ## 8. Suggested build order
 
 1. **Renderer swap + force layout + color-by-role + size-by-degree.** Static
-   graph that already *looks* right. Biggest perceptual win, lowest risk.
+   graph that already _looks_ right. Biggest perceptual win, lowest risk.
 2. **Hover-highlight-and-dim + curved links + zoom-fade labels.** The
    Obsidian "feel."
 3. **Inspector panel** (click → prose) replacing in-node prose.
@@ -336,4 +338,7 @@ Steps 1–2 alone convert the feel from dashboard to map. Step 4 is the
 - **Edge density:** 2,524 edges may be visually noisy at full-system zoom.
   Option: hide edges below a zoom threshold and show only role-to-role
   aggregate flows when zoomed out. (Recommend: fade edges out at far zoom.)
+
+```
+
 ```

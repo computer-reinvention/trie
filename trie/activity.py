@@ -86,6 +86,42 @@ def _connect(project_root: Path) -> Iterator[sqlite3.Connection]:
 
 
 # ---------------------------------------------------------------------------
+# meta — small key/value runtime state (apply session note, cli session id, ...).
+# ---------------------------------------------------------------------------
+
+
+def get_meta(project_root: Path, key: str) -> str | None:
+    """Return the meta value for `key`, or None. Never raises on a missing DB."""
+    path = db_path(project_root)
+    if not path.exists():
+        return None
+    try:
+        with _connect(project_root) as conn:
+            row = conn.execute("SELECT value FROM meta WHERE key = ?", (key,)).fetchone()
+    except sqlite3.Error:
+        return None
+    return row[0] if row else None
+
+
+def set_meta(project_root: Path, key: str, value: str) -> None:
+    """Upsert a meta key/value. Best-effort; swallows DB errors."""
+    try:
+        with _connect(project_root) as conn, conn:
+            conn.execute("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)", (key, value))
+    except sqlite3.Error:
+        pass
+
+
+def clear_meta(project_root: Path, key: str) -> None:
+    """Delete a meta key. Best-effort."""
+    try:
+        with _connect(project_root) as conn, conn:
+            conn.execute("DELETE FROM meta WHERE key = ?", (key,))
+    except sqlite3.Error:
+        pass
+
+
+# ---------------------------------------------------------------------------
 # pending — the working-tree (stale) set.
 # ---------------------------------------------------------------------------
 

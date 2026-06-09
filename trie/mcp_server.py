@@ -109,15 +109,21 @@ def _error(
     code: str,
     message: str,
     suggestion: str | None = None,
+    *,
+    fix: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Build the canonical error envelope: `{error: {code, message, suggestion?}}`.
+    """Build the canonical error envelope: `{error: {code, message, suggestion?, fix?}}`.
 
     Agents read these as authoritative — a `suggestion` is included whenever there
-    is a concrete next step to recommend.
+    is a concrete next step to recommend. `fix` is an executable, ready-to-replay
+    tool call (`{tool, args}`) with the corrected argument pre-filled, so recovery
+    is "resend `fix`" — one step, zero re-querying.
     """
     body: dict[str, Any] = {"code": code, "message": message}
     if suggestion is not None:
         body["suggestion"] = suggestion
+    if fix is not None:
+        body["fix"] = fix
     return {"error": body}
 
 
@@ -275,11 +281,13 @@ class TrieTools:
         self.triefacts_root = self.root / self.config.triefacts.root
         self.src_root = (self.root / self.config.triefacts.source_root).resolve()
         self.store = Store(self.root / ".trie" / "graph.db")
-        # Session id for patch operations — lives for the MCP server lifetime,
-        # which maps 1:1 to an agent session.
+        # Session id for patch operations. Injectable via TRIE_SESSION_ID so a
+        # host (e.g. an opencode fork) can align trie's patch session with its own
+        # session boundaries; falls back to a per-server-lifetime UUID standalone.
+        import os
         import uuid
 
-        self._session_id = uuid.uuid4().hex[:12]
+        self._session_id = os.environ.get("TRIE_SESSION_ID") or uuid.uuid4().hex[:12]
 
     def close(self) -> None:
         self.store.close()
@@ -289,30 +297,140 @@ class TrieTools:
     def patch(
         self,
         qname: str,
-        note: str,
+        note: str = "",
+        source: str = "",
         reason: str = "",
     ) -> dict[str, Any]:
-        """Post an implementation note against a symbol.
+        """Stage a change to an existing symbol's body.
 
-        Fire-and-forget. Returns {patch_id, qname, pending_patch_count}.
-        Use patch_list() to view all pending; patch_drop() to undo.
+        Provide exactly one of `note` (let the model generate the change) or
+        `source` (supply the exact new body — deterministic, no inference). Returns
+        {patch_id, qname, pending_patch_count, blast_radius}. Fire-and-forget; the
+        change is generated + applied later by commit().
+        """
+        if bool(note.strip()) == bool(source.strip()):
+            return _error(
+                "invalid_argument",
+                "provide exactly one of `note` or `source`.",
+                "use `note` to describe the change, or `source` for the exact body.",
+            )
+        # `source=` is carried as the note payload with a sentinel reason so the
+        # backend path can pass it through verbatim (a future deterministic lane).
+        payload_note = note if note.strip() else source
+        payload_reason = reason if note.strip() else (reason or "verbatim-source")
+        try:
+            patch_id = self.store.add_patch(qname, payload_note, payload_reason, self._session_id)
+        except KeyError:
+            return _error(
+                "not_found",
+                f"Symbol {qname!r} not found in the graph.",
+                "Use grep({'name_contains': '...'}) to find the exact qname.",
+                fix={"tool": "patch", "args": {"qname": qname, "note": note or ""}},
+            )
+        detail = self.store.get_symbol_detail(qname)
+        return {
+            "patch_id": int(patch_id),
+            "qname": qname,
+            "mode": "note" if note.strip() else "source",
+            "pending_patch_count": detail.pending_patch_count if detail else 1,
+            "blast_radius": self._blast_radius_brief(qname),
+        }
+
+    def _blast_radius_brief(self, qname: str) -> dict[str, Any]:
+        """Compact blast-radius for patch returns (no LLM). Best-effort."""
+        try:
+            br = self.blast_radius(qname)
+            if "error" in br:
+                return {"direct": 0, "cascade": [], "cascade_count": 0, "hubs_stopped_at": []}
+            return {
+                "direct": br["direct"],
+                "cascade": [c["qname"] for c in br["cascade"]],
+                "cascade_count": br["cascade_count"],
+                "hubs_stopped_at": br["hubs_stopped_at"],
+            }
+        except Exception:
+            return {"direct": 0, "cascade": [], "cascade_count": 0, "hubs_stopped_at": []}
+
+    def create_symbol(
+        self,
+        qname: str,
+        note: str,
+        file_path: str = "",
+        anchor_qname: str = "",
+        reason: str = "",
+    ) -> dict[str, Any]:
+        """Stage creation of a NEW symbol (does not yet exist in the graph).
+
+        `qname` is the intended qualified name (e.g. 'src/foo:helper'); `note`
+        describes what it should do; `file_path` is the target source file
+        (derived from qname's module part when omitted); `anchor_qname` optionally
+        places it after an existing symbol. Returns {create_patch_id, qname}.
         """
         if not note.strip():
-            return _error("invalid_argument", "note must be non-empty.")
+            return _error("invalid_argument", "note must describe the new symbol.")
+        if self.store.get_symbol_detail(qname) is not None:
+            return _error(
+                "already_exists",
+                f"{qname!r} already exists.",
+                "use patch(qname=..., note=...) to change its body instead.",
+                fix={"tool": "patch", "args": {"qname": qname, "note": note}},
+            )
+        target_file = file_path or (qname.split(":", 1)[0] + ".py")
+        cid = self.store.add_create_patch(
+            target_file=target_file,
+            target_qname=qname,
+            note=note,
+            reason=reason,
+            session_id=self._session_id,
+            anchor_qname=anchor_qname or None,
+        )
+        return {"create_patch_id": int(cid), "qname": qname, "target_file": target_file}
+
+    def delete_symbol(self, qname: str, reason: str = "") -> dict[str, Any]:
+        """Stage deletion of an existing symbol. Returns {patch_id, qname, dependents}.
+
+        `dependents` lists symbols that reference this one — they will reference a
+        deleted symbol unless you also patch them. commit proceeds regardless; the
+        agent owns deciding whether the dependents need updating.
+        """
         try:
-            patch_id = self.store.add_patch(qname, note, reason, self._session_id)
+            pid = self.store.add_delete_patch(qname, reason, self._session_id)
         except KeyError:
             return _error(
                 "not_found",
                 f"Symbol {qname!r} not found in the graph.",
                 "Use grep({'name_contains': '...'}) to find the exact qname.",
             )
-        detail = self.store.get_symbol_detail(qname)
-        return {
-            "patch_id": int(patch_id),
-            "qname": qname,
-            "pending_patch_count": detail.pending_patch_count if detail else 1,
-        }
+        dependents = []
+        for src in self.store.references_in(qname):
+            d = self.store.get_symbol_detail(src)
+            if d is not None:
+                dependents.append({"qname": src, "source_pointer": f"{d.file_path}:{d.start_line}"})
+        return {"patch_id": int(pid), "qname": qname, "dependents": dependents}
+
+    def rename_symbol(self, qname: str, new_name: str, reason: str = "") -> dict[str, Any]:
+        """Stage a rename of an existing symbol to `new_name` (the local name).
+
+        Returns {patch_id, qname, new_name, references}. References are the callers
+        whose call sites trie can see; rename refuses at commit if it cannot rewrite
+        the definition unambiguously.
+        """
+        if not new_name.isidentifier():
+            return _error(
+                "invalid_argument",
+                f"{new_name!r} is not a valid identifier.",
+                "choose a valid Python identifier for new_name.",
+            )
+        try:
+            pid = self.store.add_rename_patch(qname, new_name, reason, self._session_id)
+        except KeyError:
+            return _error(
+                "not_found",
+                f"Symbol {qname!r} not found in the graph.",
+                "Use grep({'name_contains': '...'}) to find the exact qname.",
+            )
+        refs = list(self.store.references_in(qname))
+        return {"patch_id": int(pid), "qname": qname, "new_name": new_name, "references": refs}
 
     def blast_radius(self, qname: str) -> dict[str, Any]:
         """Compute the cascade blast radius of editing `qname` — free graph math.
@@ -379,36 +497,84 @@ class TrieTools:
         return {"removed": removed}
 
     def patch_list(self) -> dict[str, Any]:
-        """List all pending patches grouped by symbol.
+        """List all pending patches grouped by symbol, plus pending creates.
 
-        Returns {patches: [{qname, count, origin, notes: [...]}, ...]}.
+        Returns {patches: [{qname, count, origin, kind, notes}], creates: [...],
+        apply_in_progress: bool}.
         """
+        from trie import activity as activity_mod
+
         qnames = self.store.get_patched_qnames()
         patches: list[dict[str, Any]] = []
         for qn in qnames:
             notes = self.store.get_patches_for_qname(qn)
-            # Determine origin from session_id of patches
             origins = set(p.get("session_id", "") for p in notes)
             origin = (
                 "cascade" if origins == {"cascade"} else "mixed" if len(origins) > 1 else "agent"
             )
+            # Structural kind, if any patch on this symbol set one.
+            kind = "modify"
+            for p in notes:
+                if p.get("kind") in ("delete", "rename"):
+                    kind = p["kind"]
             patches.append(
                 {
                     "qname": qn,
                     "count": len(notes),
                     "origin": origin,
+                    "kind": kind,
                     "notes": notes,
                 }
             )
-        return {"patches": patches}
+        creates = [
+            {"target_qname": c["target_qname"], "target_file": c["target_file"], "note": c["note"]}
+            for v in self.store.get_create_patches_grouped().values()
+            for c in v
+        ]
+        status = activity_mod.read_status(self.root)
+        return {
+            "patches": patches,
+            "creates": creates,
+            "apply_in_progress": status.op == "apply" and status.is_active,
+        }
 
-    def patch_apply(self) -> dict[str, Any]:
-        """Apply all pending patches: merge, generate, cascade, commit.
+    def preview(self) -> dict[str, Any]:
+        """Show what commit would do, without writing or paying for generation.
 
-        Uses an exclusive lock to prevent concurrent apply runs.
-        Returns {ok, applied, failed, error?}.
+        Free, idempotent. Returns {pending, creates, cascade, totals,
+        ready_to_commit}. Call before commit to see the blast radius and any
+        blockers (e.g. a missing session note for a multi-symbol apply).
         """
-        from trie.edits.apply import apply_patches
+        from trie.edits.apply import preview_patches
+
+        pv = preview_patches(self.store, self.config)
+        creates = self.store.get_create_patches_grouped()
+        create_list = [c["target_qname"] for v in creates.values() for c in v]
+        total = pv["patched_symbols"] + len(create_list)
+        return {
+            "pending": pv["patched_list"],
+            "creates": create_list,
+            "cascade": pv["cascade_list"],
+            "totals": {
+                "patches": pv["total_patches"],
+                "symbols": total,
+                "cascade_symbols": pv["cascade_symbols"],
+            },
+            "ready_to_commit": total > 0,
+            "needs_session_note": total > 1,
+        }
+
+    def commit(self, session_note: str = "", backend: str = "") -> dict[str, Any]:
+        """Stage + apply all pending patches and creates; return the ApplyReport.
+
+        `session_note` is required for multi-symbol applies (the unifying intent).
+        `backend` overrides the configured edit backend ('llm' default). Uses an
+        exclusive lock to prevent concurrent applies.
+        """
+        import concurrent.futures
+
+        from trie.edits.backends import make_backend
+        from trie.edits.pipeline import stage_and_commit
         from trie.models import make_client
         from trie.refresh_lock import try_acquire
 
@@ -419,25 +585,31 @@ class TrieTools:
                     "another patch apply is already in progress",
                     "retry when the current apply finishes.",
                 )
-            client = make_client(self.config.models.edits)
             try:
-                # apply_patches drives LLM calls via `loop.run_until_complete` on
-                # the CALLING thread (merge_notes / pre-filter run inline, not in
-                # the pool). When invoked from the MCP server that calling thread
-                # IS the asyncio event-loop thread, so run_until_complete raises
-                # "Cannot run the event loop while another loop is running". Run
-                # the whole apply on a dedicated worker thread, which has no
-                # running loop, so the sync-over-async path works. (The CLI path
-                # already runs on a loop-free main thread and is unaffected.)
-                import concurrent.futures
+                client = make_client(self.config.models.edits, sync_cfg=self.config.sync)
+                edit_backend = make_backend(self.config, backend=backend or None, client=client)
 
+                def _run() -> dict[str, Any]:
+                    report = stage_and_commit(
+                        self.store,
+                        self.config,
+                        edit_backend,
+                        self.root,
+                        client=client,
+                        session_note=session_note,
+                    )
+                    return report.to_dict()
+
+                # Run off the event-loop thread (sync-over-async generation path).
                 with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                    result = pool.submit(
-                        apply_patches, self.store, self.config, client, self.root
-                    ).result()
+                    return pool.submit(_run).result()
             except Exception as exc:
-                return _error("internal", f"patch apply failed: {exc}")
-            return result
+                return _error("internal", f"commit failed: {exc}")
+
+    # Back-compat alias for the older tool name.
+    def patch_apply(self) -> dict[str, Any]:
+        """Deprecated alias for commit() with no session note (single-symbol use)."""
+        return self.commit(session_note="")
 
     # --- desktop app helpers -----------------------------------------------
 
@@ -554,12 +726,22 @@ class TrieTools:
         currently-syncing file and show a "N stale" badge regardless of which
         process is doing the work. A crashed writer reads back as idle.
 
-        Returns {status: {...}, pending: {count, stale, head} | null}.
+        Returns {status: {...}, pending: {count, stale, head} | null,
+        patches: {total_patches, symbol_count, create_count, by_origin}, apply: {...}|null}.
         """
         from trie import activity as activity_mod
 
         status = activity_mod.read_status(self.root)
         pending = activity_mod.read_pending(self.root)
+        summary = self.store.patch_summary()
+        apply_block = None
+        if status.op == "apply" and status.is_active:
+            apply_block = {
+                "phase": status.current_file,
+                "done": status.done,
+                "total": status.total,
+                "session_note": activity_mod.get_meta(self.root, "apply_session_note") or "",
+            }
         return {
             "status": {
                 "state": status.state,
@@ -582,6 +764,13 @@ class TrieTools:
                     "computed_at": pending.computed_at,
                 }
             ),
+            "patches": {
+                "total_patches": summary["total_patches"],
+                "symbol_count": summary["symbol_count"],
+                "create_count": summary["create_count"],
+                "by_origin": summary["by_origin"],
+            },
+            "apply": apply_block,
         }
 
     def symbols_by_file(self, file_path: str) -> dict[str, Any]:
@@ -2261,8 +2450,13 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     server.tool(name="explain_symbol_references")(tools.explain_symbol_references)
     server.tool(name="trace_flow")(tools.trace_flow)
     server.tool(name="explain_flow")(tools.explain_flow)
-    # Patch tools — implementation notes + apply
+    # Edit tools — declare intent (modify/create/delete/rename) then preview/commit
     server.tool(name="patch")(tools.patch)
+    server.tool(name="create_symbol")(tools.create_symbol)
+    server.tool(name="delete_symbol")(tools.delete_symbol)
+    server.tool(name="rename_symbol")(tools.rename_symbol)
+    server.tool(name="preview")(tools.preview)
+    server.tool(name="commit")(tools.commit)
     server.tool(name="patch_drop")(tools.patch_drop)
     server.tool(name="patch_list")(tools.patch_list)
     server.tool(name="patch_apply")(tools.patch_apply)

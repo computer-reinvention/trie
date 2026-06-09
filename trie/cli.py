@@ -25,7 +25,7 @@ from trie.docs_install import (
 from trie.docs_install import (
     install as docs_run_install,
 )
-from trie.edits.apply import apply_patches, preview_patches
+from trie.edits.apply import preview_patches
 from trie.freshness import (
     FreshnessResult,
     NotAGitRepoError,
@@ -88,6 +88,29 @@ def _get_reporter(ctx: typer.Context) -> Reporter:
     if isinstance(obj, Reporter):
         return obj
     return Reporter()
+
+
+def _cli_session_id(project_root: Path) -> str:
+    """Stable patch session id for CLI invocations.
+
+    Reads TRIE_SESSION_ID if set; else a value persisted in activity.db so repeated
+    `trie patch ...` calls in one project share a session and `--session` drop works
+    (fixes the prior per-invocation-UUID bug). Minted once, then reused.
+    """
+    import os
+    import uuid
+
+    from trie import activity
+
+    env = os.environ.get("TRIE_SESSION_ID")
+    if env:
+        return env
+    existing = activity.get_meta(project_root, "cli_session_id")
+    if existing:
+        return existing
+    sid = uuid.uuid4().hex[:12]
+    activity.set_meta(project_root, "cli_session_id", sid)
+    return sid
 
 
 class _ProgressAdapter:
@@ -630,6 +653,22 @@ def status_cmd(
     stale_set = set(drift_by_file) | set(pending.stale if pending else ())
     stale = sorted(stale_set)
 
+    # Pending edit patches (durable, from graph.db) — the shared patch_summary reader.
+    patch_summary: dict[str, object] = {
+        "total_patches": 0,
+        "symbol_count": 0,
+        "create_count": 0,
+        "by_origin": {},
+    }
+    try:
+        _pstore = Store(project_root / ".trie" / "graph.db")
+        try:
+            patch_summary = _pstore.patch_summary()
+        finally:
+            _pstore.close()
+    except Exception:
+        pass
+
     if as_json:
         typer.echo(
             _json.dumps(
@@ -643,6 +682,7 @@ def status_cmd(
                     "stale_count": len(stale),
                     "stale": stale,
                     "drift_items": len(check.items),
+                    "patches": patch_summary,
                 },
                 default=str,
             )
@@ -671,6 +711,23 @@ def status_cmd(
             reporter.console.print(f"  [yellow]~[/yellow] {f}{suffix}")
         if len(stale) > 20:
             reporter.console.print(f"  … and {len(stale) - 20} more")
+
+    # Pending edit patches.
+    def _as_int(v: object) -> int:
+        return int(v) if isinstance(v, int) else 0
+
+    total_patches = _as_int(patch_summary.get("total_patches", 0))
+    create_count = _as_int(patch_summary.get("create_count", 0))
+    sym_count = _as_int(patch_summary.get("symbol_count", 0))
+    if total_patches or create_count:
+        bits = []
+        if total_patches:
+            bits.append(f"{total_patches} patch(es) across {sym_count} symbol(s)")
+        if create_count:
+            bits.append(f"{create_count} pending create(s)")
+        reporter.console.print(
+            f"\n[magenta]◐ {' · '.join(bits)}[/magenta] — run `trie patch apply` to commit"
+        )
 
 
 @app.command("lock-check")
@@ -2760,11 +2817,9 @@ def patch_create_cmd(
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
-    import uuid
-
     store = Store(project_root / ".trie" / "graph.db")
     try:
-        session_id = uuid.uuid4().hex[:12]
+        session_id = _cli_session_id(project_root)
         patch_id = store.add_patch(qname, note, reason, session_id)
     except KeyError:
         reporter.error(f"symbol {qname!r} not found in the graph")
@@ -2775,22 +2830,136 @@ def patch_create_cmd(
     reporter.success(f"patch #{patch_id} posted for {qname}")
 
 
+@patch_app.command("create-symbol")
+def patch_create_symbol_cmd(
+    ctx: typer.Context,
+    qname: str = typer.Argument(..., help="Intended qualified name, e.g. 'pkg/mod:new_fn'."),
+    note: str = typer.Option(..., "--note", "-n", help="What the new symbol should do."),
+    file: str = typer.Option(
+        "", "--file", "-f", help="Target source file (derived from qname when omitted)."
+    ),
+    anchor: str = typer.Option(
+        "", "--anchor", "-a", help="Place the new symbol after this existing qname."
+    ),
+    reason: str = typer.Option("", "--reason", "-r", help="Why this symbol is needed."),
+) -> None:
+    """Stage creation of a NEW symbol (applied by `trie patch apply`)."""
+    reporter = _get_reporter(ctx)
+    try:
+        _config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        if store.get_symbol_detail(qname) is not None:
+            reporter.error(f"{qname!r} already exists — use `trie patch create` to change it")
+            raise typer.Exit(code=1)
+        target_file = file or (qname.split(":", 1)[0] + ".py")
+        cid = store.add_create_patch(
+            target_file=target_file,
+            target_qname=qname,
+            note=note,
+            reason=reason,
+            session_id=_cli_session_id(project_root),
+            anchor_qname=anchor or None,
+        )
+    finally:
+        store.close()
+    reporter.success(f"create patch #{cid} staged for {qname} in {target_file}")
+
+
+@patch_app.command("delete-symbol")
+def patch_delete_symbol_cmd(
+    ctx: typer.Context,
+    qname: str = typer.Argument(..., help="Qualified name of the symbol to delete."),
+    reason: str = typer.Option("", "--reason", "-r", help="Why it's being removed."),
+) -> None:
+    """Stage deletion of an existing symbol (applied by `trie patch apply`)."""
+    reporter = _get_reporter(ctx)
+    try:
+        _config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        pid = store.add_delete_patch(qname, reason, _cli_session_id(project_root))
+        dependents = store.references_in(qname)
+    except KeyError:
+        reporter.error(f"symbol {qname!r} not found in the graph")
+        raise typer.Exit(code=1) from None
+    finally:
+        store.close()
+    reporter.success(f"delete patch #{pid} staged for {qname}")
+    if dependents:
+        reporter.console.print(
+            f"  [yellow]{len(dependents)} dependent(s)[/yellow] will reference a deleted "
+            f"symbol unless patched: {', '.join(dependents[:5])}"
+        )
+
+
+@patch_app.command("rename-symbol")
+def patch_rename_symbol_cmd(
+    ctx: typer.Context,
+    qname: str = typer.Argument(..., help="Qualified name of the symbol to rename."),
+    new_name: str = typer.Argument(..., help="New local name (not a qualified name)."),
+    reason: str = typer.Option("", "--reason", "-r", help="Why it's being renamed."),
+) -> None:
+    """Stage a rename of an existing symbol (applied by `trie patch apply`)."""
+    reporter = _get_reporter(ctx)
+    try:
+        _config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    if not new_name.isidentifier():
+        reporter.error(f"{new_name!r} is not a valid identifier")
+        raise typer.Exit(code=1)
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        pid = store.add_rename_patch(qname, new_name, reason, _cli_session_id(project_root))
+        refs = store.references_in(qname)
+    except KeyError:
+        reporter.error(f"symbol {qname!r} not found in the graph")
+        raise typer.Exit(code=1) from None
+    finally:
+        store.close()
+    reporter.success(f"rename patch #{pid} staged: {qname} → {new_name}")
+    if refs:
+        reporter.console.print(f"  [dim]{len(refs)} caller(s) reference it[/dim]")
+
+
 @patch_app.command("apply")
 def patch_apply_cmd(
     ctx: typer.Context,
+    note: str = typer.Option(
+        "",
+        "--note",
+        "-N",
+        help="Session note: the unifying intent (required for multi-symbol applies).",
+    ),
     model: str | None = typer.Option(
         None,
         "--model",
         help="Override the configured edit model for this apply run.",
     ),
-    verbose: bool = typer.Option(
-        False,
-        "--verbose",
-        "-v",
-        help="Show per-symbol detail during apply.",
+    backend: str | None = typer.Option(
+        None,
+        "--backend",
+        help="Override the edit backend ('llm' default; 'opencode' is Phase 2).",
+    ),
+    commit_mode: str | None = typer.Option(
+        None,
+        "--commit-mode",
+        help="all_or_nothing (default) | per_item | per_group.",
     ),
 ) -> None:
-    """Merge all patches, generate source+prose, cascade, and commit."""
+    """Stage + commit all pending patches via the cascade-editing pipeline."""
     reporter = _get_reporter(ctx)
     try:
         config, project_root = Config.find_and_load(Path.cwd())
@@ -2798,30 +2967,60 @@ def patch_apply_cmd(
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
-    model_id = model or config.models.edits
-    client = make_client(model_id)
+    from trie.edits.backends import make_backend
+    from trie.edits.pipeline import stage_and_commit
 
-    progress = _RichApplyProgress(reporter.console, verbose=verbose)
+    client = make_client(model or config.models.edits, sync_cfg=config.sync)
+    try:
+        edit_backend = make_backend(config, backend=backend, client=client)
+    except (ValueError, NotImplementedError) as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
 
     store = Store(project_root / ".trie" / "graph.db")
     try:
-        result = apply_patches(store, config, client, project_root, progress=progress)
+        report = stage_and_commit(
+            store,
+            config,
+            edit_backend,
+            project_root,
+            client=client,
+            session_note=note,
+            commit_mode=commit_mode,
+        )
     finally:
         store.close()
 
-    if result["ok"]:
-        n = result["total_files"]
-        s = result["total_symbols"]
-        reporter.success(f"applied {s} symbol(s) across {n} file(s)")
-    else:
+    d = report.to_dict()
+    if report.committed and report.ok:
+        reporter.success(
+            f"applied {d['totals']['applied']} symbol(s) across {d['applied']['files']} file(s)"
+        )
+    elif report.error == "session_note_required":
         reporter.error(
-            f"apply failed: {result.get('error', 'unknown')} "
-            f"(files: {result.get('total_files', 0)}, "
-            f"symbols: {result.get('total_symbols', 0)})"
+            "multi-symbol apply requires --note (the unifying intent). "
+            "Suggested: "
+            + (report.unresolved[0].repatch or {}).get("args", {}).get("session_note", "")
         )
         raise typer.Exit(code=1)
+    else:
+        reporter.error(f"apply incomplete: {report.error or 'see unresolved items'}")
+
+    # Render unresolved residue (blocking first, then advisory).
+    blocking = [u for u in report.unresolved if u.blocking]
+    advisory = [u for u in report.unresolved if not u.blocking]
+    if blocking:
+        reporter.console.print(f"\n[red]{len(blocking)} need attention:[/red]")
+        for u in blocking:
+            reporter.console.print(f"  [red]✗[/red] {u.qname} [dim]({u.code})[/dim] — {u.message}")
+    if advisory:
+        reporter.console.print(f"\n[yellow]{len(advisory)} advisory (cascade):[/yellow]")
+        for u in advisory[:10]:
+            reporter.console.print(f"  [yellow]~[/yellow] {u.qname} [dim]({u.code})[/dim]")
 
     reporter.info(reporter.elapsed())
+    if blocking:
+        raise typer.Exit(code=1)
 
 
 @patch_app.command("preview")
@@ -2848,17 +3047,19 @@ def patch_preview_cmd(ctx: typer.Context) -> None:
 
     table = Table(title="Patch Preview")
     table.add_column("Symbol", style="cyan")
-    table.add_column("Patches", style="magenta")
-    table.add_column("Cascade", style="yellow")
+    table.add_column("Origin", style="magenta")
 
     for qname in result["patched_list"]:
-        cascade_str = "yes" if qname in result.get("cascade_list", []) else "no"
-        table.add_row(qname, "1", cascade_str)
+        table.add_row(qname, "patched")
+    # Cascade neighbours are DISTINCT symbols (callers) reached from the patched
+    # set — shown as their own rows, not a flag on the patched symbols.
+    for qname in result.get("cascade_list", []):
+        table.add_row(qname, "cascade")
 
     reporter.console.print(table)
     reporter.info(
-        f"{result['total_patches']} patches across {result['patched_symbols']} symbols, "
-        f"{result['cascade_symbols']} cascaded neighbours"
+        f"{result['total_patches']} patch(es) across {result['patched_symbols']} symbol(s); "
+        f"{result['cascade_symbols']} cascade neighbour(s)"
     )
 
 
