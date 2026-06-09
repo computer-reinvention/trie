@@ -1,13 +1,29 @@
 # trie tool extensions — capability-gap spec
 
-Status: **proposed**. Source: capability-gap analysis done while building the
-trie-native opencode fork (`feat/trie-native` in the opencode fork).
+Status: **active**. The trie-native opencode fork is built, tested, and
+behaviour-validated against a live model (branch `feat/trie-native`, vendored as
+the `opencode/` submodule). This file tracks the extensions still needed in
+core trie to retire the remaining backup tools.
 
 This file tracks the functionality a coding agent **loses** if it uses trie
-tools *only* (no stock opencode file tools). The trie-native fork ships the
-replacements anyway — it demotes the stock `grep`/`read`/`glob`/`edit`/`write`
-tools to renamed "backup" tools and steers the agent to trie. Each backup tool
-is a crutch; this spec is the plan to remove each crutch by widening core trie.
+tools *only* (no stock opencode file tools). The fork ships the replacements
+anyway — it demotes the stock `grep`/`read`/`glob`/`edit`/`write` tools to
+renamed "backup" tools and steers the agent to trie. Each backup tool is a
+crutch; this spec is the plan to remove each crutch by widening core trie.
+
+**Validated behaviour (live model, claude-haiku-4-5, via `opencode run`):**
+
+- Code search → the model picks `trie_grep` / `trie_read` / `trie_trace`, never
+  stock grep/read.
+- Modify indexed code → the model uses `trie_patch` → `trie_patch_preview` →
+  `trie_patch_apply`, never `fs_edit`; the change cascades to callers and is
+  runtime-correct.
+- Rename → the model traces the blast radius first, then drives
+  `trie_rename_symbol`; the definition, imports, and call sites all cascade.
+- New / non-indexed files → the model falls back to `fs_write` / `fs_edit`.
+- Non-symbol-region edit on indexed code → the guard refuses the first
+  `fs_edit`, the model reads the refusal and retries with `force: true` (the
+  EXT-7 case below).
 
 When an extension below lands in core trie, the fork can flip the corresponding
 backup tool off (or stop steering around it). Every entry names the backup tool
