@@ -1,9 +1,10 @@
 import { useCallback, useEffect } from "react"
 import { graphClient } from "@/api/graphClient"
 import { useGraphStore } from "@/store/graphStore"
+import { useAGMStore } from "@/store/agmStore"
 import { useAppStore } from "@/store/appStore"
 import { useSettingsStore } from "@/store/settingsStore"
-import type { GroupingAxis } from "@/api/types"
+import type { GroupingAxis, AttentionEventType, TypedEdge } from "@/api/types"
 import type { MemberGrouping } from "@/store/graphStore"
 
 // Load the system model (the high-level "model of the system") + edges into the
@@ -48,6 +49,25 @@ export function useGraphPopulation(opencodePort: number | null): { repopulate: (
         // apply user setting overrides for grouping
         graphStore.setAxis(settings.get<GroupingAxis>("graph.defaultAxis"))
         graphStore.setMemberGrouping(settings.get<MemberGrouping>("graph.memberGrouping"))
+
+        // AGM: load the same model + typed edges into the attention engine, then
+        // hydrate recent attention events (replay across app restarts / CLI
+        // sessions). Attention-preserving setModel keeps any live state.
+        useAGMStore.getState().setModel(model, edges as TypedEdge[])
+        try {
+          const att = await graphClient.attention({ since: 0 })
+          if (!isCancelled() && att?.events?.length) {
+            const agm = useAGMStore.getState()
+            for (const e of att.events) {
+              if (e.investigation_id) agm.graph.setInvestigation(e.investigation_id)
+              agm.ingest(e.target, e.event_type as AttentionEventType, e.ts)
+            }
+            agm.recompute()
+          }
+        } catch (err) {
+          console.warn("[agm] attention hydrate skipped:", err)
+        }
+
         appStore.setGraphLoading(false)
       } catch (err) {
         console.error("Graph population failed:", err)

@@ -3,6 +3,8 @@ import { opencodeClient } from "@/api/opencodeClient"
 import { useAgentStore } from "@/store/agentStore"
 import { useAppStore } from "@/store/appStore"
 import { useGraphStore } from "@/store/graphStore"
+import { useAGMStore } from "@/store/agmStore"
+import { graphClient } from "@/api/graphClient"
 import { useConductor } from "@/graph/conductor"
 import { isDefaultTitle } from "@/lib/sessionTitle"
 
@@ -117,6 +119,13 @@ export function useSessions() {
       // New turn → reset the graph activity trail/notes + choreography FX/cues.
       useGraphStore.getState().clearTrail()
       useConductor.getState().clearTurn()
+      // AGM: a user message is an explicit investigation boundary (the unit of
+      // continuity, not turns). Open a new investigation labelled from the prompt
+      // (user prompt first; an LLM summary could refine it later). Best-effort.
+      const invId = `inv-${Date.now().toString(36)}`
+      const label = text.trim().slice(0, 80) || "investigation"
+      useAGMStore.getState().setInvestigation(invId, label, "active")
+      graphClient.setInvestigation({ label, status: "active", investigation_id: invId }).catch(() => {})
       store.getState().appendLocalUser(id, text)
       await opencodeClient.sendMessage(id, text)
     },
