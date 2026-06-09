@@ -212,7 +212,7 @@ explain(qname: str) -> {
 - `explain_max_neighbours_per_direction`: cap on `callers` / `callees`
   length. Default 0 (unlimited). When hub symbols flood the response,
   cap and add a note: `"showed 20 of 47 callers; use walk(direction='callers')
-  for full topology"`.
+for full topology"`.
 - `explain_prose_max_chars`: truncate prose past this length with
   `"...(truncated; see source)"`. Default 0 (unlimited).
 
@@ -222,10 +222,10 @@ The agent reads `notes` as authoritative. We populate it only when
 there's something specific to say:
 
 - `"callees may be incomplete: this function dispatches via handlers[name]();
-  the call sites are dynamic"` — emitted when the symbol's body contains
+the call sites are dynamic"` — emitted when the symbol's body contains
   dynamic dispatch patterns the analyzer couldn't resolve.
 - `"this symbol has 47 inbound edges and is treated as a hub; cascade
-  expansion stops here"` — emitted when the symbol exceeds the hub threshold.
+expansion stops here"` — emitted when the symbol exceeds the hub threshold.
 - `"no triefact exists for this symbol's file; prose is empty"` — emitted
   when the symbol is in scope but hasn't been synced yet.
 
@@ -304,7 +304,7 @@ walk(
 - `walk_max_nodes`: hard cap on total nodes returned. Default 200. Belt-
   and-suspenders against pathological fan-outs the hub-skip doesn't catch.
   Truncation adds a note: `"walk reached max_nodes=200; result is
-  BFS-ordered from root"`.
+BFS-ordered from root"`.
 - `walk_prose_at_depth`: if non-zero, attach prose to nodes up to this
   BFS distance from root. Default 0 (off). The lever for the "should
   walk carry prose?" experiment.
@@ -450,12 +450,12 @@ The agent sees one stable contract; we adjust behaviour underneath.
 
 The current tools in `trie/mcp_server.py`:
 
-| Current | Successor | Notes |
-| --- | --- | --- |
-| `get_triefact(source_path)` | _removed_ | Whole-file reads are a debugging affordance, not an agent primitive. |
-| `find_symbol(name, limit)` | `locate(predicate, ...)` | Predicate object replaces flat parameters; adds graph-property filters. |
-| `references_to(qname)` | `explain(qname).callers` + `walk(qname, "callers", depth)` | Same data, prose joined, edges precise. |
-| `references_from(qname)` | `explain(qname).callees` + `walk(qname, "callees", depth)` | Same data, prose joined, edges precise. |
+| Current                     | Successor                                                  | Notes                                                                   |
+| --------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `get_triefact(source_path)` | _removed_                                                  | Whole-file reads are a debugging affordance, not an agent primitive.    |
+| `find_symbol(name, limit)`  | `locate(predicate, ...)`                                   | Predicate object replaces flat parameters; adds graph-property filters. |
+| `references_to(qname)`      | `explain(qname).callers` + `walk(qname, "callers", depth)` | Same data, prose joined, edges precise.                                 |
+| `references_from(qname)`    | `explain(qname).callees` + `walk(qname, "callees", depth)` | Same data, prose joined, edges precise.                                 |
 
 The shift is from four nouns to three verbs, with the verbs aligned to the
 cognitive moves an agent makes when navigating a codebase.

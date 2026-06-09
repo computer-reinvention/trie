@@ -28,29 +28,29 @@ and `docs/cascade-editing-plan.md` (the patch pipeline).
 
 ### 1.1 Motion grammar (numbers)
 
-| Token | Duration | Easing |
-|---|---|---|
-| Glance pulse (read/scan) | 90–140 ms | ease-out `cubic-bezier(0.2,0,0.38,0.9)` |
-| Working loop (write/patch) | ~900 ms | sine ease-in-out (breathing) |
-| Settle to rest | 250 ms | ease-out `cubic-bezier(0,0,0.38,0.9)` |
-| Stagger between items | 20 ms | — (sequence ≤ 500 ms) |
-| Comet speed | ≤ 0.5 link/frame | linear |
-| Cascade ring | 20 ms/hop | ease-out |
+| Token                      | Duration         | Easing                                  |
+| -------------------------- | ---------------- | --------------------------------------- |
+| Glance pulse (read/scan)   | 90–140 ms        | ease-out `cubic-bezier(0.2,0,0.38,0.9)` |
+| Working loop (write/patch) | ~900 ms          | sine ease-in-out (breathing)            |
+| Settle to rest             | 250 ms           | ease-out `cubic-bezier(0,0,0.38,0.9)`   |
+| Stagger between items      | 20 ms            | — (sequence ≤ 500 ms)                   |
+| Comet speed                | ≤ 0.5 link/frame | linear                                  |
+| Cascade ring               | 20 ms/hop        | ease-out                                |
 
 Concurrency cap: **6** bright elements; older → static touched ring; keep the
 **most-recent N**.
 
 ### 1.2 Palette (CVD-safe, redundant cue, soft dark-theme glow)
 
-| State | Color | Redundant cue |
-|---|---|---|
-| read | `#3b82f6` blue | solid focus ring |
-| scan | `#2dd4bf` teal | dashed ring |
-| write | `#f59e0b` amber | filled glow |
-| patch (staged) | `#fb923c` orange | dashed ring + ✎ |
-| cascade | `#a78bfa` violet | expanding ripple |
-| stale | `#94a3b8` slate | dashed, no glow |
-| error | `#f43f5e` rose | ✕ badge |
+| State          | Color            | Redundant cue    |
+| -------------- | ---------------- | ---------------- |
+| read           | `#3b82f6` blue   | solid focus ring |
+| scan           | `#2dd4bf` teal   | dashed ring      |
+| write          | `#f59e0b` amber  | filled glow      |
+| patch (staged) | `#fb923c` orange | dashed ring + ✎  |
+| cascade        | `#a78bfa` violet | expanding ripple |
+| stale          | `#94a3b8` slate  | dashed, no glow  |
+| error          | `#f43f5e` rose   | ✕ badge          |
 
 Glows are tinted (node color), semi-transparent, ~20% desaturated, never pure
 white.
@@ -62,7 +62,7 @@ white.
 `app/src/graph/conductor.ts` — a single frame-driven scheduler.
 
 - **Cue**: `{ id, kind, target (qname|edge|file), color, startAt, duration, easing,
-  loop?, surfaces: ("graph"|"chat"|"patches")[] }`.
+loop?, surfaces: ("graph"|"chat"|"patches")[] }`.
 - **Intake**: `useOpenCodeSSE` → `agentChoreography.choreographFor(part)` → emits
   cues to the conductor (never pokes stores directly).
 - **Scheduler**: one `requestAnimationFrame` loop advances all active cues,
@@ -89,18 +89,18 @@ breadcrumbs.
 Faithful extraction lives in `agentChoreography.choreographFor`. Each row paints
 graph + chat tool-row + (where relevant) patch row in the same color/clock.
 
-| Event / tool | Symbols/edges | Graph | Chat tool-row | Patches |
-|---|---|---|---|---|
-| `trie_read`, `trie_explain_symbol(_references)` | `sym`/`qname` | blue glance pulse + focus; add to trail; comet from previous trail node along real edge | left bar blue, ◐→✓ | — |
-| `trie_trace`, `trie_trace_flow`, `trie_explain_flow` | `from`/`symbol1/2` + result edges/paths | blue pulse on targets; **sequential comets** along returned edges | blue bar | — |
-| `trie_grep*` | result `hits` | teal scan flash on hits (no camera move) | teal bar | — |
-| `trie_patch` | `qname` | orange staged ring; **ghost ripple** of blast radius (pre-fetched) | amber bar | row appears, orange pulse |
-| `trie_patch_apply` / commit | patched + cascade | amber write on patched → **violet wavefront** by `hop_by_qname` → green settle | amber bar | rows pulse in ring order; ApplyReport lands |
-| `write`/`edit`/`str_replace` | `path` | amber on file's symbols → stale | amber bar | — |
-| `file.edited` | `file` | stale tint (skip `triefacts/`) | — | — |
-| `permission.asked` | tool callID | pulsing ring on the awaiting symbol | amber prompt row | — |
-| `session.status busy/idle` | — | start/cease working loops; idle → settle, keep persistent touched rings | running spinner | — |
-| `session.error` | — | rose flash on last active | rose row | — |
+| Event / tool                                         | Symbols/edges                           | Graph                                                                                   | Chat tool-row      | Patches                                     |
+| ---------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------- | ------------------ | ------------------------------------------- |
+| `trie_read`, `trie_explain_symbol(_references)`      | `sym`/`qname`                           | blue glance pulse + focus; add to trail; comet from previous trail node along real edge | left bar blue, ◐→✓ | —                                           |
+| `trie_trace`, `trie_trace_flow`, `trie_explain_flow` | `from`/`symbol1/2` + result edges/paths | blue pulse on targets; **sequential comets** along returned edges                       | blue bar           | —                                           |
+| `trie_grep*`                                         | result `hits`                           | teal scan flash on hits (no camera move)                                                | teal bar           | —                                           |
+| `trie_patch`                                         | `qname`                                 | orange staged ring; **ghost ripple** of blast radius (pre-fetched)                      | amber bar          | row appears, orange pulse                   |
+| `trie_patch_apply` / commit                          | patched + cascade                       | amber write on patched → **violet wavefront** by `hop_by_qname` → green settle          | amber bar          | rows pulse in ring order; ApplyReport lands |
+| `write`/`edit`/`str_replace`                         | `path`                                  | amber on file's symbols → stale                                                         | amber bar          | —                                           |
+| `file.edited`                                        | `file`                                  | stale tint (skip `triefacts/`)                                                          | —                  | —                                           |
+| `permission.asked`                                   | tool callID                             | pulsing ring on the awaiting symbol                                                     | amber prompt row   | —                                           |
+| `session.status busy/idle`                           | —                                       | start/cease working loops; idle → settle, keep persistent touched rings                 | running spinner    | —                                           |
+| `session.error`                                      | —                                       | rose flash on last active                                                               | rose row           | —                                           |
 
 Persistent: touched nodes keep a static colored ring until the next user message
 (`clearTrail` on send).

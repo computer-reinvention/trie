@@ -41,6 +41,9 @@ class Cascade:
     default_depth: int = 1
     hub_symbol_threshold: int = 20
     max_judgments: int = 50  # hard cap on pre_filter_cascade calls per apply run
+    # Surface second-order cascade (a caller edit that itself changed a signature)
+    # as ApplyReport.unresolved rather than chasing it in-pipeline. Single sweep.
+    surface_unresolved: bool = True
 
 
 @dataclass
@@ -73,6 +76,17 @@ class Edits:
             LspBackend(command="pyright", check_args=["--outputjson"], output_format="pyright"),
         ]
     )
+    # Per-symbol edit generation backend: "llm" (default, in-process) or
+    # "opencode" (Phase 2, one targeted instance per symbol). See trie/edits/backends.
+    backend: str = "llm"
+    # How a multi-item apply commits on partial failure:
+    #   "all_or_nothing" (default) — any item failing aborts the whole commit
+    #   "per_item"   — commit items that passed; failed items go to unresolved
+    #   "per_group"  — commit coherent groups that fully pass
+    commit_mode: str = "all_or_nothing"
+    # Max regeneration attempts for a symbol whose generated source won't compile,
+    # before surfacing it in ApplyReport.unresolved with the failed source verbatim.
+    compile_retry_cap: int = 2
 
 
 @dataclass
