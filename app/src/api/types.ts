@@ -528,3 +528,140 @@ export interface TurnEvent {
   timestamp: number
   durationMs?: number
 }
+
+// ---------------------------------------------------------------------------
+// AGM (Attention Gravity Map) contracts — mirrors trie/attention.py.
+// Keep the numeric constants in sync with the Python source of truth.
+//
+// There are TWO masses, never conflated:
+//   - liveMass: in-memory session signal, continuous wall-clock decay
+//     (per-event-type half-lives), drives the visual. Never persisted.
+//   - historicalMass: long-term cognitive-importance signal stamped into the
+//     triefact (hist_mass=<v>@<ts>), 21-day half-life, updated only at sync.
+//     NOT "old live mass" — it answers "how often does cognition return here
+//     across investigations?".
+// Both are log-compressed for display (displayMass). Mass is never dampened.
+// ---------------------------------------------------------------------------
+
+export type AttentionEventType = "grep" | "read" | "trace" | "write"
+
+// Per-event live-mass weights (PRD §Event Interpretation).
+export const EVENT_WEIGHTS: Record<AttentionEventType, number> = {
+  grep: 10,
+  read: 40,
+  trace: 80,
+  write: 80,
+}
+
+// Per-event-type live half-lives (seconds).
+export const LIVE_HALFLIFE_SECONDS: Record<AttentionEventType, number> = {
+  grep: 30,
+  read: 180,
+  trace: 600,
+  write: 600,
+}
+
+// Historical mass half-life (seconds): 21 days.
+export const HISTORICAL_HALFLIFE_SECONDS = 21 * 24 * 60 * 60
+
+export function liveLambda(type: AttentionEventType): number {
+  return Math.LN2 / LIVE_HALFLIFE_SECONDS[type]
+}
+
+export const HISTORICAL_LAMBDA = Math.LN2 / HISTORICAL_HALFLIFE_SECONDS
+
+// Logarithmic compression for rendering; raw mass is unbounded.
+export function displayMass(rawMass: number): number {
+  return Math.log(Math.max(0, rawMass) + 1)
+}
+
+// Repository-graph edge kinds (depends_on deferred — see attention.py).
+export type RepoEdgeKind =
+  | "calls"
+  | "references"
+  | "imports"
+  | "contains"
+  | "inherits"
+  | "implements"
+
+export const ATTENTION_EDGE_KIND = "trace"
+export const DEFAULT_EDGE_KIND: RepoEdgeKind = "calls"
+
+// Propagation weights per edge kind (PRD §Edge Weights). One weak hop only.
+export const EDGE_WEIGHTS: Record<string, number> = {
+  trace: 1.0,
+  calls: 1.0,
+  inherits: 0.9,
+  implements: 0.8,
+  references: 0.7,
+  imports: 0.5,
+  contains: 0.2,
+}
+
+export const PROPAGATION_FACTOR = 0.15
+export const PROPAGATION_HOPS = 1
+
+export function edgeWeight(kind: string): number {
+  return EDGE_WEIGHTS[kind] ?? EDGE_WEIGHTS.calls
+}
+
+// Synthetic non-code cognition surfaces. Live in the AGM layer only.
+export type SyntheticNode = "Filesystem" | "Bash" | "Web" | "Database" | "Git"
+
+export const SYNTHETIC_NODES: readonly SyntheticNode[] = [
+  "Filesystem",
+  "Bash",
+  "Web",
+  "Database",
+  "Git",
+]
+
+export const SYNTHETIC_QNAME_PREFIX = "agm:synthetic/"
+
+export function syntheticQname(node: SyntheticNode): string {
+  return `${SYNTHETIC_QNAME_PREFIX}${node}`
+}
+
+export function isSyntheticQname(qname: string): boolean {
+  return qname.startsWith(SYNTHETIC_QNAME_PREFIX)
+}
+
+// One unit of agent attention on a target (symbol qname or synthetic qname).
+export interface AttentionEvent {
+  ts: number
+  eventType: AttentionEventType
+  target: string
+  weight: number
+  agentId?: string
+  sessionId?: string
+  investigationId?: string
+}
+
+// Typed call-graph edge (mirrors the extended all_edges shape).
+export interface TypedEdge {
+  from: string
+  to: string
+  kind: RepoEdgeKind
+}
+
+// Investigations — explicit, first-class spans of agent cognition.
+export type InvestigationStatus = "active" | "resolved" | "abandoned" | "superseded"
+
+export interface Investigation {
+  id: string
+  label: string
+  status: InvestigationStatus
+  createdAt: number
+  agentId?: string
+  sessionId?: string
+  // Derived live in the app: concentration of attention (0..1) + symbol scope.
+  confidence: number
+  scope: string[]
+  negativeEvidence: string[]
+}
+
+// Per-node live attention state held by the AGM engine (in-memory only).
+export interface AttentionState {
+  liveMass: number
+  historicalMass: number
+}

@@ -196,7 +196,17 @@ def _load_raw(store: Store) -> tuple[dict[str, dict], list[tuple[str, str]]]:
             "one_liner": r[9],
         }
     edges: list[tuple[str, str]] = []
-    for src_id, dst_id in conn.execute("SELECT src_symbol_id, dst_symbol_id FROM edges"):
+    # `contains` edges (class -> its own methods) are structural, not dependency
+    # relationships. Including them would distort betweenness, depth, and the
+    # door/hub/orphan classification this model is built on (e.g. every method
+    # would gain an inbound edge from its class). The system model uses the
+    # call/reference/import/inherit graph; `contains` stays out. It is still
+    # exposed via `all_edges` for AGM attention propagation.
+    for src_id, dst_id, kind in conn.execute(
+        "SELECT src_symbol_id, dst_symbol_id, kind FROM edges"
+    ):
+        if kind == "contains":
+            continue
         s = id_to_qname.get(src_id)
         d = id_to_qname.get(dst_id)
         if s is not None and d is not None and s != d and s in nodes and d in nodes:

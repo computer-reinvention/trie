@@ -216,6 +216,17 @@ def _activity_progress(
             yield ActivityProgress(writer, inner=adapter)
     finally:
         adapter.close()
+        # AGM: after a sync/refresh run has folded historical mass into every
+        # regenerated triefact, advance the attention-store watermark so the next
+        # run's recurrence window starts here. Per-run (not per-file) so every
+        # file in this run saw the same "since last fold" window. Best-effort.
+        if op in ("sync", "bootstrap", "refresh", "roles"):
+            try:
+                from trie.sync.attention_fold import advance_fold_watermark
+
+                advance_fold_watermark(project_root)
+            except Exception:
+                pass
 
 
 class _JsonlProgress:
