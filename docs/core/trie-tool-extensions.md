@@ -7,11 +7,16 @@ the `opencode/` submodule).
 **Implemented so far (in core trie + wired into the fork):** EXT-1 (`grep-str
 --all-files` / `grep_str_all`), EXT-2 (`trie find` / `find_files`), EXT-3 + EXT-4
 (`trie read --source` / `read_source`), EXT-8 (`trie write` / `write_file`),
-EXT-11 (`trie blast-radius` + `trie_blast_radius` tool). Remaining: EXT-7
-(sub-symbol/non-symbol line edits — deeper pipeline work), EXT-9 (multi-language
-indexing — the structural unlock), and the deliberately-out-of-scope EXT-5
-(binaries), EXT-6 (dir listing — partly covered by `find`), EXT-10 (external
-dirs).
+EXT-11 (`trie blast-radius` + `trie_blast_radius` tool).
+
+**EXT-7 was found to be mostly a non-issue** on re-investigation: module-level
+constants and non-symbol `__module__` regions are already indexed and patchable
+(the spec's assumptions were wrong; the failures were stale-graph artifacts).
+Only an optional no-LLM `--line-edit` optimisation remains, deferred.
+
+**Genuinely remaining:** EXT-9 (multi-language indexing — the structural
+unlock), and the deliberately-out-of-scope EXT-5 (binaries), EXT-6 (dir
+listing — partly covered by `find`), EXT-10 (external dirs).
 
 This file tracks the functionality a coding agent **loses** if it uses trie
 tools *only* (no stock opencode file tools). The fork ships the replacements
@@ -136,25 +141,41 @@ umbrella fix; the others are useful even before that lands.
 - **Proposed:** fold into EXT-2 (`trie find`) — a bare-dir listing mode, or
   accept backup ownership.
 
-## EXT-7 — Sub-symbol & non-symbol-region edits  ·  High
+## EXT-7 — Sub-symbol & non-symbol-region edits  ·  ✅ MOSTLY ADDRESSED (spec was wrong)
 
-- **Lost:** exact line/string edits inside a symbol (1-char fix), and edits to
-  regions that aren't symbols: module-level constants (not indexed —
-  `USING_TRIE.md` "edge cases"), top-of-file comments, `if __name__ == ...`,
-  import blocks the agent wants to hand-tune. Stock `edit` (oldString/
-  newString/replaceAll).
-- **Trie today:** patch regenerates the *whole symbol* body via LLM —
-  non-deterministic and overkill for a one-line change; can't target
-  non-symbol text at all.
-- **Backup it retires:** `fs_edit` (renamed stock edit) for synced-code edits.
-- **Proposed interface:** `trie patch <qname> --line-edit --old <s> --new <s>`
-  (deterministic string replace within the symbol's span, no LLM), and index
-  module-level constants as symbols so they become patchable. For
-  module-header/`__main__` regions, consider a `__module__`-scoped edit.
-- **Where:** `trie/edits/pipeline.py` (add a deterministic line-edit path that
-  skips generation); `trie/parse/*` for constant indexing.
-- **Acceptance:** change one line in a function with no LLM call; edit a
-  module-level constant via patch.
+**Re-investigation (2026-06): most of this gap does not exist.** The original
+spec assumed module-level constants weren't indexed and non-symbol regions
+weren't patchable. Both are false against a *fresh* graph:
+
+- **Module-level constants ARE indexed** as `kind=constant`
+  (`trie/parse/python.py:_build_constant_symbol`) and are fully patchable:
+  `trie patch create pkg/config:MAX_RETRIES --note "set to 10"` → apply changes
+  `MAX_RETRIES = 5` to `10` and cascades callers' prose. Verified live.
+- **Non-symbol module regions ARE patchable** via the synthetic `__module__`
+  symbol (`trie/parse/python.py:_build_module_body_symbol`). It covers
+  top-of-file comments, imports, and `if __name__ == "__main__":`. `trie read`,
+  `trie grep --kind module`, and `trie patch` all work on
+  `pkg/mod:__module__`, and apply edits the region correctly (verified: changed
+  a top-of-file comment; file still runs).
+
+The earlier "not found" results were a **stale-graph artifact**: `trie sync
+--file` regenerates triefacts but does not run a scan, so new symbols aren't in
+the store until `trie refresh` / a full scan. That's the existing "stale graph"
+caveat, not a missing capability.
+
+**What actually remains (optional, low priority):** a deterministic, no-LLM
+`trie patch <qname> --line-edit --old <s> --new <s>` for one-character fixes
+where whole-symbol LLM regeneration is wasteful. This is a
+performance/determinism optimisation, **not a capability gap** — every edit an
+agent needs is already expressible through the normal patch path. Deferred
+unless regen cost/latency becomes a problem in practice.
+
+- **Backup it retires:** none — `fs_edit` is **kept as backup permanently**.
+  EXT-7 only narrows *when* the agent needs it (genuinely non-indexed files per
+  EXT-9, and the rare edit the patch pipeline can't express), so it becomes a
+  true fallback rather than a routine tool. It is never removed.
+- **Acceptance (met):** edit a module-level constant via patch ✓; edit a
+  `__module__` region via patch ✓.
 
 ## EXT-8 — Create/write arbitrary files  ·  Critical · ✅ DONE
 
@@ -204,12 +225,17 @@ umbrella fix; the others are useful even before that lands.
 
 ## Fork ↔ extension cross-reference
 
-| Backup tool (fork) | Retired by | Status |
+The backup `fs_*` tools are **kept permanently** as fallbacks — the extensions
+below don't delete them, they *narrow when the agent needs them* (so the model
+reaches for trie first and drops to `fs_*` only for the cases trie genuinely
+can't cover). "Reduced by" = which extensions shrink that tool's necessary use.
+
+| Backup tool (fork) | Reduced by | Status |
 |---|---|---|
 | `fs_grep`  | EXT-1, EXT-9 | ✅ EXT-1 done (`trie_grep_str all_files`); non-Python *symbol* search still needs EXT-9 |
 | `fs_glob`  | EXT-2 | ✅ done (`trie_find`) — kept as backup for parity/edge cases |
 | `fs_read`  | EXT-3, EXT-4 (binaries EXT-5, dirs EXT-6 stay) | ✅ text reads done (`trie_read` path mode + `read_source`); binaries/dirs stay |
-| `fs_edit`  | EXT-7, EXT-9 | ⬜ pending (sub-symbol/non-symbol line edits) |
+| `fs_edit`  | (kept as backup — never retired) | ✅ EXT-7 mostly addressed (constants + `__module__` regions already patchable), so `fs_edit` is only a fallback for non-indexed code (EXT-9) and edits the pipeline can't express; optional no-LLM `--line-edit` remains |
 | `fs_write` | EXT-8, EXT-9 | ✅ `trie write`/`write_file` exists; fork keeps `fs_write` as the new-file tool (no graph benefit for new non-code files), so not wired as a competing fork tool |
 | `apply_patch` | (model-specific; keep) | — |
 | external-dir on all | EXT-10 (stays backup) | — |
@@ -247,10 +273,12 @@ synced project; all are fixed in the same change set.
   touch `create_patches`; `drop --all`/`--qname`/`--session` now also call
   `delete_create_patches`, so the agent can actually undo a staged creation.
 
-## Suggested implementation order
+## Implementation order (status)
 
-1. EXT-1, EXT-2 (search/glob over all files) — biggest day-one relief.
-2. EXT-3/EXT-4 (`read --source`) — removes most `fs_read` use.
-3. EXT-7 (`--line-edit` + constant indexing) — removes most `fs_edit` use.
-4. EXT-8 (`trie write`) — removes `fs_write` use.
-5. EXT-9 (multi-language) — the structural unlock; revisit all of the above.
+1. ✅ EXT-1, EXT-2 (search/glob over all files) — done.
+2. ✅ EXT-3/EXT-4 (`read --source`) — done.
+3. ✅ EXT-7 — found already addressed (constants + `__module__` patchable); only
+   an optional no-LLM `--line-edit` remains, deferred.
+4. ✅ EXT-8 (`trie write`) — done.
+5. ⬜ EXT-9 (multi-language) — the structural unlock; the main remaining work.
+   This is what still forces `fs_*` for non-Python code.
