@@ -625,6 +625,7 @@ class TrieTools:
 
         pred = GrepPredicate(kind="any")  # kind="any" is non-empty → bypasses the guard
         results = self.store.grep_symbols(pred, rank_by=rank_by, limit=limit)
+        hist_mass = self.store.historical_mass_all()
         hits = [
             {
                 "qname": r.qualified_name,
@@ -638,6 +639,7 @@ class TrieTools:
                 "outbound_count": r.outbound_count,
                 "one_liner": r.one_liner,
                 "role": r.role,
+                "historical_mass": hist_mass.get(r.qualified_name, 0.0),
                 "pending_patch_count": r.pending_patch_count,
                 "has_pending_patches": r.pending_patch_count > 0,
             }
@@ -654,7 +656,7 @@ class TrieTools:
         """
         rows = self.store._conn.execute(
             """
-            SELECT s_src.qualified_name, s_dst.qualified_name
+            SELECT s_src.qualified_name, s_dst.qualified_name, e.kind
             FROM edges e
             JOIN symbols s_src ON s_src.id = e.src_symbol_id
             JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
@@ -662,7 +664,7 @@ class TrieTools:
             """,
             (limit,),
         ).fetchall()
-        return {"edges": [{"from": r[0], "to": r[1]} for r in rows]}
+        return {"edges": [{"from": r[0], "to": r[1], "kind": r[2]} for r in rows]}
 
     def system_model(
         self, landmark_limit: int = 160, include_tests: bool = False
@@ -677,17 +679,24 @@ class TrieTools:
 
         Returns `{nodes, axes: {role, subsystem}, landmarks, stats}` where each
         axis carries L0 component groups + thresholded group-to-group flow.
-        Pure graph math over the store — no LLM calls. Result is cached on disk
-        keyed by graph fingerprint, so repeat calls are instant.
+        Pure graph math over the store — no LLM calls. The topology is cached on
+        disk keyed by graph fingerprint; AGM historical mass is injected per node
+        *after* the cache read (it decays continuously, so it must not be baked
+        into the fingerprint-keyed cache).
         """
         from trie.graph.system_model import build_system_model_cached
 
-        return build_system_model_cached(
+        model = build_system_model_cached(
             self.store,
             project_root=self.root,
             landmark_limit=landmark_limit,
             include_tests=include_tests,
         )
+        # Inject live-decayed AGM historical mass onto each node (post-cache).
+        hist_mass = self.store.historical_mass_all()
+        for node in model.get("nodes", []):
+            node["historical_mass"] = hist_mass.get(node.get("qname", ""), 0.0)
+        return model
 
     def summary(self) -> dict[str, Any]:
         """Return project-level aggregate counts for the trie desktop app.
@@ -716,6 +725,106 @@ class TrieTools:
             "total_edges": total_edges,
             "trie_version": getattr(trie_pkg, "__version__", "unknown"),
         }
+
+    def record_attention_event(
+        self, type: str, qname: str, investigation_id: str = ""
+    ) -> dict[str, Any]:
+        """Record one AGM attention event (the durable capture side).
+
+        `type` is one of grep|read|trace|write; `qname` is a symbol qname or a
+        synthetic node qname (see trie.attention.synthetic_qname). The desktop runs
+        the live simulation from the SSE stream — this persists a compressed event
+        log for replay/hydration and feeds the sync-time historical-mass fold.
+        Best-effort; returns {ok, weight} or an error envelope on a bad type.
+        """
+        from trie import attention_store
+        from trie.attention import EVENT_WEIGHTS
+
+        if type not in EVENT_WEIGHTS:
+            return _error(
+                "invalid_argument",
+                f"unknown attention event type {type!r}",
+                "use one of: grep, read, trace, write.",
+            )
+        attention_store.record_event(
+            self.root,
+            event_type=type,  # type: ignore[arg-type]
+            target=qname,
+            session_id=self._session_id,
+            investigation_id=investigation_id,
+        )
+        return {"ok": True, "weight": EVENT_WEIGHTS[type]}
+
+    def attention(self, since: float = 0.0) -> dict[str, Any]:
+        """Return recent AGM attention events + the constant tables, for the
+        desktop to hydrate / replay its live model.
+
+        Events are the compressed log since `since` (unix seconds). `weights`,
+        `live_halflife_seconds`, and `edge_weights` mirror trie.attention so the
+        client never hard-codes them. `synthetic_nodes` lists the non-code
+        cognition surfaces. Historical mass is delivered via system_model /
+        all_symbols (on the nodes), not here.
+        """
+        from trie import attention_store
+        from trie.attention import (
+            EDGE_WEIGHTS,
+            EVENT_WEIGHTS,
+            LIVE_HALFLIFE_SECONDS,
+            PROPAGATION_FACTOR,
+            PROPAGATION_HOPS,
+            SYNTHETIC_NODES,
+            synthetic_qname,
+        )
+
+        events = attention_store.read_events(self.root, since=since)
+        return {
+            "events": [
+                {
+                    "ts": e.ts,
+                    "event_type": e.event_type,
+                    "target": e.target,
+                    "weight": e.weight,
+                    "agent_id": e.agent_id,
+                    "session_id": e.session_id,
+                    "investigation_id": e.investigation_id,
+                }
+                for e in events
+            ],
+            "weights": EVENT_WEIGHTS,
+            "live_halflife_seconds": LIVE_HALFLIFE_SECONDS,
+            "edge_weights": EDGE_WEIGHTS,
+            "propagation_factor": PROPAGATION_FACTOR,
+            "propagation_hops": PROPAGATION_HOPS,
+            "synthetic_nodes": [{"node": n, "qname": synthetic_qname(n)} for n in SYNTHETIC_NODES],
+        }
+
+    def set_investigation(
+        self, label: str, status: str = "active", investigation_id: str = ""
+    ) -> dict[str, Any]:
+        """Declare or update the current AGM investigation (explicit task boundary).
+
+        Investigations are the meaningful unit of continuity (not turns). The agent
+        or host calls this to open a new investigation (from the user task) or mark
+        one resolved/abandoned/superseded. Returns {investigation_id, label, status}.
+        The id is generated when omitted. Persisted as runtime meta so the capture
+        path can key events to it.
+        """
+        import uuid
+
+        from trie import activity as activity_mod
+        from trie.attention import INVESTIGATION_STATUSES
+
+        if status not in INVESTIGATION_STATUSES:
+            return _error(
+                "invalid_argument",
+                f"unknown investigation status {status!r}",
+                f"use one of: {', '.join(INVESTIGATION_STATUSES)}.",
+            )
+        inv_id = investigation_id or uuid.uuid4().hex[:12]
+        activity_mod.set_meta(self.root, "agm_investigation_id", inv_id)
+        activity_mod.set_meta(self.root, "agm_investigation_label", label)
+        activity_mod.set_meta(self.root, "agm_investigation_status", status)
+        return {"investigation_id": inv_id, "label": label, "status": status}
 
     def activity(self) -> dict[str, Any]:
         """Return the live writer status + working-tree stale set for the editor.
@@ -2783,6 +2892,10 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     server.tool(name="all_symbols")(tools.all_symbols)
     server.tool(name="all_edges")(tools.all_edges)
     server.tool(name="system_model")(tools.system_model)
+    # AGM (Attention Gravity Map) — capture + read + investigation declaration.
+    server.tool(name="record_attention_event")(tools.record_attention_event)
+    server.tool(name="attention")(tools.attention)
+    server.tool(name="set_investigation")(tools.set_investigation)
     return server, tools
 
 
