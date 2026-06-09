@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.5
 source: trie/activity.py
-file_fingerprint: 9b718d89cd73097148c5a3d66ac6a8b6a2631d8070b2ebca242f289ec1419fd4
-last_synced_at: '2026-06-09T09:23:55Z'
+file_fingerprint: 87e4d317e8a952a28644bdbbd12fb8fa15773037a096677b90f9b39ead82db63
+last_synced_at: '2026-06-09T10:07:39Z'
 description: Ephemeral local activity state for trie, backed by SQLite.
 defines:
 - kind: module
   qualified_name: trie/activity:__module__
-  lines: 1-393
+  lines: 1-404
 - kind: constant
   qualified_name: trie/activity:DB_FILENAME
   lines: 38-38
@@ -88,19 +88,25 @@ defines:
   lines: 353-357
 - kind: class
   qualified_name: trie/activity:ActivityProgress
-  lines: 367-392
+  lines: 367-403
 - kind: method
   qualified_name: trie/activity:ActivityProgress.__init__
   lines: 374-376
 - kind: method
+  qualified_name: trie/activity:ActivityProgress.on_plan
+  lines: 378-382
+- kind: method
+  qualified_name: trie/activity:ActivityProgress.on_section
+  lines: 384-387
+- kind: method
   qualified_name: trie/activity:ActivityProgress.on_start
-  lines: 378-381
+  lines: 389-392
 - kind: method
   qualified_name: trie/activity:ActivityProgress.on_done
-  lines: 383-387
+  lines: 394-398
 - kind: method
   qualified_name: trie/activity:ActivityProgress.on_skip
-  lines: 389-392
+  lines: 400-403
 incoming_refs: 26
 outgoing_refs: 0
 ---
@@ -240,17 +246,23 @@ Context manager that creates and manages an ActivityWriter instance for the give
 - **project_root**: Project directory containing `.trie/activity.db`
 - **op**: Operation name for status tracking (sync, refresh, etc.)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/activity:ActivityProgress fingerprint=7ecd87d2cc33e3ded458bfac36e13bd30a95c91a22916b0462b44d215d8d463a body_fp=52d93d62f597f52d19e18a33f9312d6663875b441f9870196d6f0fd32f181ab1 source_ref=cc1786342572b4c96d926421417b6f3c5cf4ce46 role=orchestration -->
-Bridges per-file progress callbacks to ActivityWriter, optionally wrapping an inner progress reporter.
+<!-- trie:section symbol=trie/activity:ActivityProgress fingerprint=8b3a24b1cd776a41a35a09685dcbbe5d52a33e0220d9b37525ad74f6d7e87e97 body_fp=4409cfd3e6a9be631551bd8ab5d9c07f4921006431aabedc39eb0b58861bbeeb source_ref=b82d80d34dc370909873e7cec9d443b8c9307dea role=orchestration -->
+Bridges ProgressCallback protocol to update ActivityWriter status while forwarding events to an inner callback.
 
-- **writer**: ActivityWriter instance that receives mirrored progress updates
-- **inner**: Optional wrapped ProgressCallback that also receives the same updates
+- `writer`: ActivityWriter instance to update with progress events
+- `inner`: Optional inner ProgressCallback to chain events to (Rich/JSONL reporter)
 <!-- trie:end -->
 <!-- trie:section symbol=trie/activity:ActivityProgress.__init__ fingerprint=99b750a7f837e167129e086d2d82356e90fc853d388028d4f45f3f33daf71d87 body_fp=887e3bbdfed24b8f29daf6ff2ce816e963311afd31c1bd0a3055303beca2d64a source_ref=cc1786342572b4c96d926421417b6f3c5cf4ce46 role=model -->
 Initializes ActivityProgress with an ActivityWriter and optional inner ProgressCallback to chain.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/activity:ActivityProgress.on_start fingerprint=16b0ad6889665700c8ebc80073cd49f3146fb3a1dfd5c072c431001030c762c6 body_fp=ef6af84d9348f3899183c049668d6ac241baba298c6e5f0bd700790f670032dc source_ref=cc1786342572b4c96d926421417b6f3c5cf4ce46 role=orchestration -->
-Notifies ActivityProgress that processing has started on a file, forwarding to both the activity writer and inner callback.
+<!-- trie:section symbol=trie/activity:ActivityProgress.on_plan fingerprint=38b764691b898ba28fa36d48f4a6536476a0a00b7818c088a1514e0938fcbf6c body_fp=dccb0104ff83c7bc0c6d9455a1311d4a55a06c89d41916a8c88bb2f8877bf4dc source_ref=b82d80d34dc370909873e7cec9d443b8c9307dea role=orchestration -->
+Forwards planning information to ActivityProgress's inner callback if it implements on_plan.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/activity:ActivityProgress.on_section fingerprint=55cd8347bc3e40170b95d55935b01b170d86bb47cf0c28e453fd1f5323fa5c09 body_fp=c93eca84bbfcb174209ec8a0efc6bdc6c209277261223015dd9e312a5d0ed88f source_ref=b82d80d34dc370909873e7cec9d443b8c9307dea role=orchestration -->
+Forwards section progress events to the wrapped inner ProgressCallback if it supports the `on_section` method.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/activity:ActivityProgress.on_start fingerprint=b2a31e9bebe346cd02173dd1ebf15922fb2a8c1ec852a603ec8ba566c973706a body_fp=8c431910cada44996221172b4d6775aa2df96413df6690f2412bd037ba897b46 source_ref=aa956e0bb55c07a04fe6a5e62c50cd40ce073915 role=orchestration -->
+Notifies ActivityProgress that processing has started on a file, forwarding to both the activity writer and inner callback with optional cascade parameter.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/activity:ActivityProgress.on_done fingerprint=c9204faea4db213640eac8154308dfc0d80d8a0d96f8990def99cc510a7531a5 body_fp=a66b78bb8fc085e5604bba1daf75d1f91fc32fdf49ee5afbb36bcbb291d51a9f source_ref=cc1786342572b4c96d926421417b6f3c5cf4ce46 role=orchestration -->
 ActivityProgress method that updates writer with file completion and forwards to inner callback.

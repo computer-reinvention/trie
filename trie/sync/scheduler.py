@@ -35,7 +35,7 @@ from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from dataclasses import dataclass
 
 from trie import telemetry
-from trie.sync.progress import NULL_PROGRESS, ProgressCallback
+from trie.sync.progress import NULL_PROGRESS, ProgressCallback, emit_section
 from trie.sync.single_file import FileSyncResult
 
 
@@ -111,11 +111,27 @@ def run_waves(
     )
     bands = _group_into_bands(tasks)
 
+    # Counts for the two section headers. Band 0 (hop 0) is the directly-stale
+    # group; every later band (hop >= 1) is cascade-pulled. We announce each
+    # section the first time a band of that kind is about to run so the host can
+    # print a separator before its files.
+    direct_total = sum(1 for b in bands for t in b if t.hop == 0)
+    cascade_total = sum(1 for b in bands for t in b if t.hop > 0)
+    announced_direct = False
+    announced_cascade = False
+
     with telemetry.timed("sync_waves", files=total, bands=len(bands), file_workers=workers) as tele:
         for band_index, band in enumerate(bands):
             if state.stop:
                 state.skip_all(band)
                 continue
+            is_cascade_band = any(t.hop > 0 for t in band)
+            if is_cascade_band and not announced_cascade:
+                emit_section(cb, label="pulled in by the cascade", count=cascade_total)
+                announced_cascade = True
+            elif not is_cascade_band and not announced_direct:
+                emit_section(cb, label="directly stale", count=direct_total)
+                announced_direct = True
             with telemetry.timed("sync_wave", band=band_index, files=len(band)):
                 state.run_band(band)
 
@@ -184,7 +200,8 @@ class _RunState:
                 if task is None:
                     return
                 self.submitted += 1
-                self.cb.on_start(task.rel_path, self.submitted, self.total)
+                # hop 0 = directly stale; hop >= 1 = pulled in by the cascade.
+                self.cb.on_start(task.rel_path, self.submitted, self.total, cascade=task.hop > 0)
                 fut = pool.submit(self.process_file, task)
                 fut._trie_task = task  # type: ignore[attr-defined]
                 pending.add(fut)

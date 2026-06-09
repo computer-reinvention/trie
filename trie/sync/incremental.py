@@ -11,7 +11,7 @@ from trie.graph.store import Store
 from trie.models import TrieClient, configure_inflight_limit
 from trie.scan import scan_project
 from trie.sync.cascade import compute_cascade
-from trie.sync.progress import NULL_PROGRESS, ProgressCallback
+from trie.sync.progress import NULL_PROGRESS, ProgressCallback, emit_plan
 from trie.sync.reconcile import find_orphan_triefacts
 from trie.sync.scheduler import FileTask, run_waves
 from trie.sync.single_file import FileSyncResult, backfill_section_records, sync_single_file
@@ -218,6 +218,12 @@ def run_incremental(
                 regen_qnames=worklist.regen_qnames_by_file.get(rel),
             )
         )
+
+    # Announce the plan before any file starts so the host can print a header
+    # summarising how many files are directly stale vs pulled in by the cascade.
+    direct_count = sum(1 for t in tasks if t.hop == 0)
+    cascade_count = sum(1 for t in tasks if t.hop > 0)
+    emit_plan(cb, direct=direct_count, cascade=cascade_count)
 
     # Cap total concurrent LLM requests for this run; the scheduler over-subscribes
     # workers and this is the real throttle.

@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.5
 source: trie/sync/incremental.py
-file_fingerprint: f914dd3128be6edd574df711ed0327434590effec8e982f8514944e9b91610fb
-last_synced_at: '2026-06-09T09:38:59Z'
+file_fingerprint: 15a45b1e239e298ae6d2aaa809707ec6779cdcf4e4f7467501bb7807be8094fe
+last_synced_at: '2026-06-09T10:07:35Z'
 defines:
 - kind: module
   qualified_name: trie/sync/incremental:__module__
-  lines: 1-323
+  lines: 1-329
 - kind: class
   qualified_name: trie/sync/incremental:IncrementalWorklist
   lines: 21-53
@@ -18,9 +18,9 @@ defines:
   lines: 68-144
 - kind: function
   qualified_name: trie/sync/incremental:run_incremental
-  lines: 147-322
+  lines: 147-328
 incoming_refs: 20
-outgoing_refs: 15
+outgoing_refs: 16
 ---
 <!-- trie:section symbol=trie/sync/incremental:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=cb313a4fac70ff6dc3bad02de5c44f9c60afef2c3f9792c5becb424681fa0201 source_ref=549bb001d03e465de4697570041eabaf93893a7f role=documentation-sync -->
 Incremental synchronization engine that refreshes stale triefacts and cascades changes through dependent files.
@@ -55,10 +55,10 @@ Scans project, identifies stale triefacts, computes cascade dependencies, and re
 - `regen_qnames_by_file` maps files to specific symbols needing regeneration (excludes full-file regen cases)
 - Returns empty worklist if no directly stale files found
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/incremental:run_incremental fingerprint=af32bcc03bf89bb4a9221730842af39354b54dbc3e5a2a97470655620280de19 body_fp=2d9ea6df2086b8fed7ab140df2fcaeb4e76c00559d2d352491dc58b7fe822527 source_ref=319d5dde2dc074582af1ce4ea40dc1d43db5fc03 role=orchestration -->
+<!-- trie:section symbol=trie/sync/incremental:run_incremental fingerprint=c2ab80695b85e67fa511b01a10ebd06b0a28c7c9772cdfb38b992a7dbca3a4e6 body_fp=38665d3130d79af2277dfa3af62a347710febe04a1deca41247afb396e8f8016 source_ref=0007e08c6d700f4d99f851ebc327be2322a06af4 role=orchestration -->
 Regenerates stale triefacts and cascade-dependent files using LLM, respecting budget and concurrency limits.
 
 • Scans project, checks staleness, computes cascade, then syncs affected files in hop-ordered waves
-• Removes orphaned triefacts, backfills missing metadata, auto-fills role tags with error handling, clears pending status
+• Emits plan summary before processing files, removes orphaned triefacts, backfills missing metadata, auto-fills role tags with error handling, clears pending status
 • Returns statistics including files synced, skipped counts, actual cost, and detailed sync results
 <!-- trie:end -->

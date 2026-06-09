@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/freshness.py
 file_fingerprint: 6667a9d9073e66122b06cf34d53d4644f1e6880d1097dfc5cc726682e13e9bca
-last_synced_at: '2026-06-07T05:47:25Z'
+last_synced_at: '2026-06-09T10:07:56Z'
 description: 'Freshness gate: keep the graph + triefact tree current with respect
   to disk and HEAD.'
 defines:
@@ -141,7 +141,7 @@ Runs freshness sweep after agent turn to catch files edited during the just-fini
 
 - `sync_prose`: whether to regenerate prose inline instead of marking files stale
 <!-- trie:end -->
-<!-- trie:section symbol=trie/freshness:_ensure_fresh fingerprint=90bcf94f867b3a92154d10bf07e4212c396f7fd58fc4fca4bafbe1e54fd56450 body_fp=4cd1516dc444d4af3b78852ce3f19ad62ddb9d1d5f33459bc0ce75dec3f2279c source_ref=c6ce1d9dad031d3054b2bceb7224cbf06f70da61 role=domain -->
+<!-- trie:section symbol=trie/freshness:_ensure_fresh fingerprint=90bcf94f867b3a92154d10bf07e4212c396f7fd58fc4fca4bafbe1e54fd56450 body_fp=4cd1516dc444d4af3b78852ce3f19ad62ddb9d1d5f33459bc0ce75dec3f2279c source_ref=c6ce1d9dad031d3054b2bceb7224cbf06f70da61 role=orchestration -->
 Core freshness gate implementation that rebuilds the graph when git HEAD or file mtimes change since last refresh.
 
 - Checks git HEAD, stamp file, and current mtimes to determine refresh reason

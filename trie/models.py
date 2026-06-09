@@ -5,65 +5,99 @@ import random
 import threading
 import time
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from typing import Any
 
+import httpx
 from anthropic import (
     Anthropic,
     APIConnectionError,
     APIStatusError,
     APITimeoutError,
+    AsyncAnthropic,
     InternalServerError,
     RateLimitError,
 )
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, CachePoint
+from pydantic_ai.exceptions import ModelAPIError
 from pydantic_ai.models.anthropic import AnthropicModel, AnthropicModelSettings
+from pydantic_ai.providers.anthropic import AnthropicProvider
 from pydantic_ai.usage import Usage
 
 from trie import telemetry
 from trie.config import Sync
 
 
-# Per-thread event loop. ``Agent.run_sync`` creates a fresh event loop on every
-# call when invoked from a worker thread, and each loop allocates a socketpair
-# (two file descriptors). Under the parallel sync fan-out these accumulate
-# faster than they're reclaimed and the process hits ``OSError: [Errno 24] Too
-# many open files``. We instead keep one long-lived loop per thread and drive
-# the async ``Agent.run`` on it, so a thread allocates its loop once and reuses
-# it for every symbol it generates.
+# Per-thread event loop AND per-thread async HTTP client.
 #
-# Crucially the loop must be *closed* when its owning thread dies. Sync nests
-# short-lived ThreadPoolExecutors (one inner pool per file), so the set of
-# worker threads churns constantly — without teardown each dead thread's loop
-# leaks its socketpair and we hit Errno 24 anyway. We store the loop inside a
-# holder whose ``__del__`` closes it; CPython runs that finaliser when the
-# thread's thread-local storage is released at thread exit.
+# Two intertwined constraints force this design:
+#
+#   1. fd leak. ``Agent.run_sync`` (and a fresh client per call) creates a new
+#      event loop / socketpair every call; under the parallel sync fan-out these
+#      accumulate faster than GC reclaims them and we hit ``OSError: [Errno 24]
+#      Too many open files``. So loops and clients must be *reused*, not per-call.
+#
+#   2. event-loop affinity. An ``httpx.AsyncClient`` (and thus the AsyncAnthropic
+#      wrapping it) is bound to the event loop it is first used on — its pool
+#      holds loop-bound locks/transports. Sync drives requests from many worker
+#      threads, EACH with its own loop, so a single shared client used across
+#      threads raises an immediate "Connection error" the moment a second loop
+#      touches it. (This is the regression that replaced the old hang.)
+#
+# The reconciliation: one loop AND one model/client *per thread*, paired in a
+# holder. A thread allocates them once and reuses them for every symbol it
+# generates — bounded by thread count (no fd leak) and never shared across loops
+# (no cross-loop corruption). The holder's ``__del__`` closes both when the
+# owning thread dies; CPython runs that finaliser when the thread's thread-local
+# storage is released at thread exit, so the short-lived nested ThreadPools that
+# churn workers don't leak.
 class _LoopHolder:
-    __slots__ = ("loop",)
+    __slots__ = ("_aclient", "loop", "model")
 
-    def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
+    def __init__(
+        self,
+        loop: asyncio.AbstractEventLoop,
+        model: AnthropicModel,
+        aclient: AsyncAnthropic,
+    ) -> None:
         self.loop = loop
+        self.model = model
+        self._aclient = aclient
 
     def __del__(self) -> None:
+        # Close the async client on its own loop (closing its connection pool)
+        # before closing the loop itself. Best-effort throughout: thread teardown
+        # must never raise.
         loop = self.loop
-        try:
+        with suppress(Exception):
             if loop is not None and not loop.is_closed():
+                if self._aclient is not None:
+                    with suppress(Exception):
+                        loop.run_until_complete(self._aclient.close())
                 loop.close()
-        except Exception:
-            # Best-effort: never let teardown of a worker thread raise.
-            pass
 
 
 _thread_local = threading.local()
 
 
-def _thread_event_loop() -> asyncio.AbstractEventLoop:
+def _thread_holder(make_model: Callable[[], tuple[AnthropicModel, AsyncAnthropic]]) -> _LoopHolder:
+    """Return this thread's loop+model holder, creating it on first use.
+
+    ``make_model`` builds a fresh AnthropicModel + its AsyncAnthropic client bound
+    to this thread's loop; it is only called when this thread has no live holder
+    yet, so each thread gets exactly one client bound to its own loop. Reused for
+    every subsequent call on the thread (no fd leak), never shared across loops
+    (no cross-loop "Connection error").
+    """
     holder = getattr(_thread_local, "loop_holder", None)
     if holder is None or holder.loop.is_closed():
         loop = asyncio.new_event_loop()
-        _thread_local.loop_holder = _LoopHolder(loop)
-    return _thread_local.loop_holder.loop
+        asyncio.set_event_loop(loop)
+        model, aclient = make_model()
+        holder = _LoopHolder(loop, model, aclient)
+        _thread_local.loop_holder = holder
+    return holder
 
 
 # ---------------------------------------------------------------------------
@@ -324,13 +358,33 @@ def _retry_after_seconds(exc: APIStatusError) -> float | None:
         return None
 
 
+_RETRYABLE_ANTHROPIC = (RateLimitError, InternalServerError, APITimeoutError, APIConnectionError)
+
+
 def _is_retryable(exc: BaseException) -> bool:
-    # APIConnectionError covers transient network failures (DNS lookup failure,
-    # connection refused, reset) and is the parent of APITimeoutError. Listing
-    # both keeps the timeout reason label distinct in `_run_with_retry`.
-    return isinstance(
-        exc, (RateLimitError, InternalServerError, APITimeoutError, APIConnectionError)
-    )
+    # Direct anthropic exceptions: APIConnectionError covers transient network
+    # failures (DNS lookup failure, connection refused, reset) and is the parent
+    # of APITimeoutError; RateLimitError/InternalServerError cover 429/529.
+    #
+    # pydantic-ai wraps the underlying anthropic exception in its own
+    # ModelAPIError, so a transient connection drop arrives as a ModelAPIError
+    # ("Connection error.") that does NOT isinstance-match the anthropic types —
+    # which is why these were surfaced immediately as a per-file failure instead
+    # of being retried. We therefore (a) walk the __cause__/__context__ chain for
+    # a retryable anthropic exception, and (b) treat a bare ModelAPIError whose
+    # message names a connection/timeout as retryable.
+    seen: set[int] = set()
+    cur: BaseException | None = exc
+    while cur is not None and id(cur) not in seen:
+        seen.add(id(cur))
+        if isinstance(cur, _RETRYABLE_ANTHROPIC):
+            return True
+        if isinstance(cur, ModelAPIError):
+            msg = str(cur).lower()
+            if "connection error" in msg or "timed out" in msg or "timeout" in msg:
+                return True
+        cur = cur.__cause__ or cur.__context__
+    return False
 
 
 def _backoff_delay(*, attempt: int, base: float, cap: float, rng: random.Random) -> float:
@@ -443,16 +497,35 @@ class TrieClient:
         self._pai_model_id = _pydantic_ai_model_id(full_model_id)
         self._anthropic_model = _anthropic_model_name(full_model_id)
         self._sync_cfg = sync_cfg or Sync()
-        self._raw_client = Anthropic(max_retries=0)
-        # Build the pydantic-ai model ONCE and reuse it for every Agent. Passing
-        # a model *string* to Agent(...) makes pydantic-ai call infer_model() on
-        # each run, constructing a fresh AnthropicModel -> AsyncAnthropic ->
-        # httpx.AsyncClient every time. Under the parallel sync fan-out those
-        # per-call HTTP clients (each holding socket fds) pile up far faster than
-        # GC reclaims them and the process hits ``OSError: [Errno 24] Too many
-        # open files``. One shared model => one connection pool for the whole run.
-        anthropic_model_name = self._pai_model_id.split(":", 1)[-1]
-        self._pai_model = AnthropicModel(anthropic_model_name)
+        timeout = self._sync_cfg.request_timeout_seconds
+        # Bounded per-request timeout. Without it a stalled connection makes the
+        # request block forever; the worker thread driving it never returns, the
+        # file never finishes, and the whole sync hangs (observed: 3 of 18 cascade
+        # files spinning with zero telemetry for minutes). A read/connect/write/pool
+        # timeout turns that into an APITimeoutError that _run_with_retry retries
+        # and ultimately surfaces as a per-file error instead of an infinite spin.
+        self._http_timeout = httpx.Timeout(timeout, connect=min(30.0, timeout))
+        self._anthropic_model_name = self._pai_model_id.split(":", 1)[-1]
+        # The sync count_tokens client lives on the main thread and is only used
+        # synchronously, so a single instance is fine here.
+        self._raw_client = Anthropic(max_retries=0, timeout=self._http_timeout)
+
+    def _make_thread_model(self) -> tuple[AnthropicModel, AsyncAnthropic]:
+        """Build a fresh AnthropicModel + AsyncAnthropic for the CURRENT thread.
+
+        Each worker thread runs its own event loop, and an httpx.AsyncClient is
+        bound to the loop it's first used on — so the client (and the model
+        wrapping it) must be created per thread, not shared. _thread_holder calls
+        this once per thread and caches the result, giving us one client per
+        thread (no fd leak) that never crosses event loops (no "Connection
+        error"). The timeout is plumbed in so stalled requests still abort.
+        """
+        async_client = AsyncAnthropic(max_retries=0, timeout=self._http_timeout)
+        model = AnthropicModel(
+            self._anthropic_model_name,
+            provider=AnthropicProvider(anthropic_client=async_client),
+        )
+        return model, async_client
 
     def run(
         self,
@@ -482,25 +555,29 @@ class TrieClient:
         Returns the validated Pydantic model plus token usage counters.
         """
         with telemetry.timed("model_call", model=self.full_model_id, kind="generate") as tele:
-            agent = Agent(
-                self._pai_model,
-                output_type=output_type,
-                system_prompt=system_prompt,
-            )
             if cache_prefix:
                 user_input: str | list[Any] = [cache_prefix, CachePoint(), user_prompt]
             else:
                 user_input = user_prompt
 
-            # Drive the async API on a per-thread loop (see ``_thread_event_loop``)
-            # rather than ``run_sync``, which spins up — and leaks — a fresh loop
-            # per call under the parallel fan-out. Each attempt holds one global
-            # in-flight slot and is retried on 429/529 with backoff — essential
-            # under wave parallelism where many files generate at once.
+            # Drive the async API on a per-thread loop + per-thread model/client
+            # (see ``_thread_holder``) rather than ``run_sync`` or a shared client.
+            # run_sync leaks a fresh loop per call (fd exhaustion); a shared async
+            # client used across worker-thread loops raises an immediate
+            # "Connection error". The holder gives each thread its own loop and
+            # its own AsyncAnthropic bound to that loop, reused across calls. The
+            # Agent is rebuilt per attempt from the thread's model (cheap — it
+            # reuses the cached client). Each attempt holds one global in-flight
+            # slot and is retried on 429/529/timeout/connection with backoff.
             def _attempt() -> Any:
-                loop = _thread_event_loop()
+                holder = _thread_holder(self._make_thread_model)
+                agent = Agent(
+                    holder.model,
+                    output_type=output_type,
+                    system_prompt=system_prompt,
+                )
                 with _inflight_slot():
-                    return loop.run_until_complete(
+                    return holder.loop.run_until_complete(
                         agent.run(
                             user_input,
                             model_settings=AnthropicModelSettings(

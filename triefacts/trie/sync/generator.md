@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/sync/generator.py
 file_fingerprint: e4b08356ce52f5baceac62a8adbd1450fd449e782259df83185eddcb560f71fe
-last_synced_at: '2026-06-09T09:39:02Z'
+last_synced_at: '2026-06-09T09:58:55Z'
 defines:
 - kind: module
   qualified_name: trie/sync/generator:__module__
@@ -129,7 +129,7 @@ Renders a list of role names and descriptions into a formatted prompt string for
 - Returns a string starting with "Choose exactly one role from this vocabulary:"
 - Each role becomes a bulleted line, with description if provided
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/generator:infer_role fingerprint=667c778f7f1ac6e10347561c7372c3b091feb87da78916d6b85e1640a037ce08 body_fp=96b21b7143e329b35348de5685ec792063de6f525d61966a58deab841c177b0f source_ref=f21aebb2ba00fc12bbd954ea8c5fbeba249f65e7 role=orchestration -->
+<!-- trie:section symbol=trie/sync/generator:infer_role fingerprint=667c778f7f1ac6e10347561c7372c3b091feb87da78916d6b85e1640a037ce08 body_fp=96b21b7143e329b35348de5685ec792063de6f525d61966a58deab841c177b0f source_ref=f21aebb2ba00fc12bbd954ea8c5fbeba249f65e7 role=domain -->
 Classifies a Python symbol's architectural role using an LLM against a fixed vocabulary without regenerating prose.
 
 - `allowed_roles`: List of (name, description) tuples defining the role taxonomy

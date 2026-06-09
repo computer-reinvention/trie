@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/diff_cmd.py
 file_fingerprint: aede83b4992eaaf7ba79ed2b696080f3c91639d232164fe2f26f1fe01131e4dd
-last_synced_at: '2026-06-06T12:59:52Z'
+last_synced_at: '2026-06-09T10:07:47Z'
 defines:
 - kind: module
   qualified_name: trie/diff_cmd:__module__
@@ -40,7 +40,7 @@ Contains the result of running `diff_project` with generated diffs and metadata.
 - `files_skipped_no_budget`: count of files skipped due to budget or limit constraints
 - `actual_cost_usd`: total cost in USD for all API calls made during diff generation
 <!-- trie:end -->
-<!-- trie:section symbol=trie/diff_cmd:diff_project fingerprint=bf8c5025e2d84ba1b505f054c1303f130e6589b23bd4a0d3c4abfc00ee48f9f2 body_fp=db372c292795a93f836e3ea18a2f428e7441679c2d19aa998938e750d37857ee source_ref=1e1ead40b2ec4f67fd8bdb317097295a702459f9 role=cli-interface -->
+<!-- trie:section symbol=trie/diff_cmd:diff_project fingerprint=bf8c5025e2d84ba1b505f054c1303f130e6589b23bd4a0d3c4abfc00ee48f9f2 body_fp=db372c292795a93f836e3ea18a2f428e7441679c2d19aa998938e750d37857ee source_ref=1e1ead40b2ec4f67fd8bdb317097295a702459f9 role=orchestration -->
 Regenerates stale triefacts into `.trie/preview/` and produces unified diffs against current versions.
 
 - `budget_usd`: stops processing when cumulative cost exceeds this amount

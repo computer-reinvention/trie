@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: tests/test_scope.py
 file_fingerprint: a51ea69b9e98556ed79b176802dbd1c3e0393f6eb0f02f61cb7a279ce4cf309e
-last_synced_at: '2026-06-06T14:03:45Z'
+last_synced_at: '2026-06-09T09:58:48Z'
 defines:
 - kind: module
   qualified_name: tests/test_scope:__module__

@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.5
 source: trie/config.py
-file_fingerprint: cbfccc42779f3ee79d4c65a76f5326a11e3910d7366cdebc5d5a2f613cac68d2
-last_synced_at: '2026-06-09T09:24:18Z'
+file_fingerprint: 626f2e306f63c20d26fb5596d1771dc5d3848c3a5405b5e7cbb20106a4d48a20
+last_synced_at: '2026-06-09T09:58:14Z'
 defines:
 - kind: module
   qualified_name: trie/config:__module__
-  lines: 1-372
+  lines: 1-380
 - kind: class
   qualified_name: trie/config:TrieMeta
   lines: 9-10
@@ -30,31 +30,31 @@ defines:
   lines: 70-89
 - kind: class
   qualified_name: trie/config:Sync
-  lines: 93-123
+  lines: 93-131
 - kind: class
   qualified_name: trie/config:Debug
-  lines: 127-146
+  lines: 135-154
 - kind: class
   qualified_name: trie/config:Mcp
-  lines: 150-206
+  lines: 158-214
 - kind: class
   qualified_name: trie/config:Config
-  lines: 210-259
+  lines: 218-267
 - kind: method
   qualified_name: trie/config:Config.from_dict
-  lines: 222-237
+  lines: 230-245
 - kind: method
   qualified_name: trie/config:Config.load
-  lines: 240-243
+  lines: 248-251
 - kind: method
   qualified_name: trie/config:Config.find_and_load
-  lines: 246-259
+  lines: 254-267
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
-  lines: 262-263
+  lines: 270-271
 - kind: constant
   qualified_name: trie/config:DEFAULT_CONFIG_TOML
-  lines: 266-371
+  lines: 274-379
 incoming_refs: 207
 outgoing_refs: 0
 ---
@@ -119,7 +119,7 @@ Configures patch-apply pipeline and LSP backend settings for code editing operat
 - `commit_mode`: partial failure handling, one of "all_or_nothing", "per_item", or "per_group"
 - `compile_retry_cap`: maximum regeneration attempts for symbols with compilation errors
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Sync fingerprint=1d2cc3d22d744e4bc691bb719df31b592f4ec7e83562507eb0aa5afea030a84c body_fp=32e299dc9fef9f368e1794a54ae3a69995384c46d45f5f95ff937ce11862130f source_ref=6e0c09981b45ff5a650aded507505c52801d4c8d role=config -->
+<!-- trie:section symbol=trie/config:Sync fingerprint=145b67fe3f9927dfe07d022dff970948b52f75f39e0a75e7205bb41bc0342194 body_fp=d43260d5f28576ed9d9929528505a0188171cd8ba73717a25787ec56a55bc745 source_ref=e8748bf615390b49a070b57441667942f68436a5 role=config -->
 Configuration dataclass for controlling parallelism and retry behavior during sync operations.
 
 - `concurrency`: parallel per-symbol LLM calls within a single file (default 4)
@@ -128,6 +128,7 @@ Configuration dataclass for controlling parallelism and retry behavior during sy
 - `max_retries`: retry attempts before propagating rate-limit errors (default 8)
 - `retry_base_delay_seconds`: base exponential backoff delay (default 1.0)
 - `retry_cap_seconds`: maximum backoff delay (default 60.0)
+- `request_timeout_seconds`: per-request timeout preventing indefinite hangs (default 120.0)
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:Debug fingerprint=74eb562287f2d40b4d10de5eeca4500a9792b9df3b3037d4e875d64dc1bcd8cc body_fp=2667f14db51f0ee544a4a8580493f37ecbb1d507cde52c75f16c447bcff567c8 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
 Configures telemetry logging for trie operations, controlled by the TRIE_DEBUG environment variable.

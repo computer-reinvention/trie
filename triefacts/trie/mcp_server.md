@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/mcp_server.py
 file_fingerprint: c3dc78f573cb95fcec191adc71835e76848e99296d1b957309a360b1cf2c87ea
-last_synced_at: '2026-06-09T09:34:01Z'
+last_synced_at: '2026-06-09T09:59:03Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
 - kind: module
@@ -267,7 +267,7 @@ Find the qname of the symbol whose line range contains `lineno`, preferring nest
 
 Iterates through the ordered list, updating `enclosing` with each symbol that brackets `lineno`. Since symbols are start-ordered, the last matching symbol is the most deeply nested one.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=c1ea1ab6029a7d7dbb80adad7ff36e10f0d10d98702c71fefe4b0a8343d7aad3 body_fp=a1c66dfdd5550b3044790c319651ce89a0670c4512761077c0031efd8d8b567d source_ref=2eb1969800e5124c94db178fe9d69fe146ad89ac role=domain -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=c1ea1ab6029a7d7dbb80adad7ff36e10f0d10d98702c71fefe4b0a8343d7aad3 body_fp=a1c66dfdd5550b3044790c319651ce89a0670c4512761077c0031efd8d8b567d source_ref=2eb1969800e5124c94db178fe9d69fe146ad89ac role=api -->
 Core interface for MCP tools as plain methods, testable without transport.
 
 Owns the Store and project config for process lifetime. Implements patch tools (patch, create_symbol, delete_symbol, rename_symbol, blast_radius, patch_drop, patch_list, preview, commit), desktop app helpers (all_symbols, activity, file_triefact), three core operations (`grep`, `read`, `trace`), and extended wrappers (grep_str, grep_str_all, read_source, write_file, find_files, grep_entry_points, grep_symbol, grep_symbol_and_neighbours, explain_symbol, explain_symbol_references, trace_flow, explain_flow). All methods return structured dicts with error envelopes; telemetry is captured on each call with configurable event names to distinguish MCP vs CLI usage.
@@ -277,7 +277,7 @@ Owns the Store and project config for process lifetime. Implements patch tools (
 - `rg_path`: resolved ripgrep binary path for text search fallbacks
 - `_session_id`: unique session identifier for patch operations (injectable via TRIE_SESSION_ID env var, falls back to 12-char hex UUID)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.__init__ fingerprint=da31ea5a8dabd217b86c7e6ed605fc3a1d2dbb26bb93f24bc8988024d73a4223 body_fp=1af7361563281662e6bb24529f529f5b296a49d4483c09673b0d6924f865a0ee source_ref=2eb1969800e5124c94db178fe9d69fe146ad89ac role=orchestration -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.__init__ fingerprint=da31ea5a8dabd217b86c7e6ed605fc3a1d2dbb26bb93f24bc8988024d73a4223 body_fp=1af7361563281662e6bb24529f529f5b296a49d4483c09673b0d6924f865a0ee source_ref=2eb1969800e5124c94db178fe9d69fe146ad89ac role=model -->
 Initialize TrieTools with project configuration, telemetry, store, and session state.
 
 - Loads config from project root and validates ripgrep availability at startup
