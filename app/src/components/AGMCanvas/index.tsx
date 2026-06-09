@@ -1,63 +1,64 @@
-// AGMCanvas — the Attention Gravity Map renderer.
+// AGMCanvas — cognitive-state projection (NOT a graph view).
 //
-// A self-contained Canvas 2D view driven by the AGM engine (agmStore). The
-// gravity simulation IS the layout; this component owns the rAF loop, runs
-// gravity.step + model.recompute while the system is not at rest, and stops when
-// it settles (motion only on attention change). Manual pan/zoom; user-controlled
-// camera (the attention centroid never moves the view). Minimal aesthetic: heat
-// reads through opacity/glow/size over fixed role geography.
+// The canvas centre is a FIXED crosshair: the "current attention origin". The
+// world deforms around it; the camera never pans or follows. Each touched symbol
+// is placed in polar coordinates:
+//   radius = f(live mass)   — near centre = hot now, drifts outward as it cools
+//   angle  = f(historical mass + role) — stable geography (learnable bearings)
+//
+// Nothing disappears mid-investigation: a cooled symbol becomes peripheral, not
+// hidden. New discoveries enter from the perimeter and move inward. Repository
+// edges are faint springs (tension/structure); attention edges are bright,
+// temporary reasoning paths. Roles are influence (anchor labels), not boxes.
+//
+// All placement math lives in agm/layout.ts and is unit-tested; this file only
+// eases drawn positions toward those targets and paints.
 
 import { useEffect, useMemo, useRef } from "react"
 import { useAGMStore } from "@/store/agmStore"
-import { computeTargets, easeToTargets, type Body } from "@/agm/gravity"
+import { placeSymbol, ease, roleBaseAngle, R_MAX } from "@/agm/layout"
+import { displayMass } from "@/agm/weights"
 import {
   roleColor,
-  tierFor,
   nodeOpacity,
   nodeRadius,
   glowAlpha,
+  tierFor,
   ROLE_LABEL_COLOR,
-  ROLE_RING_COLOR,
   ATTENTION_EDGE_COLOR,
+  REPO_EDGE_COLOR,
 } from "@/agm/style"
-import { displayMass } from "@/agm/weights"
 
 interface AGMCanvasProps {
   className?: string
 }
 
-interface Camera {
+// A drawn node: eased screen position + the live target it's chasing.
+interface Drawn {
+  qname: string
+  role: string
   x: number
   y: number
-  k: number
+  mass: number // display mass this frame
 }
 
 export function AGMCanvas({ className }: AGMCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const cameraRef = useRef<Camera>({ x: 0, y: 0, k: 1 })
-  const bodiesRef = useRef<Map<string, Body>>(new Map())
+  // user zoom only (no pan / no follow — the centre is fixed at (0,0)).
+  const zoomRef = useRef(1)
+  const drawnRef = useRef<Map<string, Drawn>>(new Map())
   const rafRef = useRef<number | null>(null)
-  const restRef = useRef(false)
 
   const systemModel = useAGMStore((s) => s.systemModel)
-  const roleWells = useAGMStore((s) => s.roleWells)
-  const roleByQname = useAGMStore((s) => s.roleByQname)
-  // Drives the idle hint: true until any symbol has accrued attention.
   const hasAttention = useAGMStore((s) => s.massByQname.size > 0)
 
-  // Bodies are created LAZILY — only when a symbol first receives attention.
-  // We never instantiate all 810 nodes (that scattered the canvas). The role map
-  // tells us where each active symbol belongs. Topology load just wakes the loop.
   useEffect(() => {
     if (!systemModel) return
     kick()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [systemModel, roleWells])
+  }, [systemModel])
 
-  // Wake the simulation (called on topology load + on every attention ingest via
-  // the store subscription below).
   const kick = () => {
-    restRef.current = false
     if (rafRef.current == null) loop()
   }
 
@@ -80,52 +81,75 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     const now = Date.now() / 1000
     store.recompute(now)
 
-    const bodies = bodiesRef.current
     const mass = store.massByQname
     const prop = store.propagated
     const roleByQ = store.roleByQname
+    const histByQ = store.historicalByQname
+    const roles = store.roles
+    const drawn = drawnRef.current
 
-    // The set of qnames that currently carry attention (direct or propagated).
+    // The active set: any qname with direct or propagated attention. Once a
+    // symbol has been touched it stays in `drawn` until it fully cools AND
+    // reaches the perimeter — nothing vanishes mid-investigation.
     const active = new Set<string>(mass.keys())
     for (const [q, v] of prop) if (v > 0) active.add(q)
 
-    // Lazily create a body the first time a qname becomes active; place it at its
-    // role well so it emerges from the right geography.
     let maxDisplay = 0
     for (const q of active) {
       const m = mass.get(q)
       const propAdd = prop.get(q) ?? 0
       const d = m ? m.display : propAdd > 0 ? displayMass(propAdd) : 0
-      if (d <= 0) continue
-      let b = bodies.get(q)
-      if (!b) {
-        const role = roleByQ.get(q) || "untagged"
-        const well = roleWells.get(role) ?? { x: 0, y: 0 }
-        b = { qname: q, role, pos: { ...well }, target: { ...well }, mass: d }
-        bodies.set(q, b)
-      }
-      b.mass = d
       if (d > maxDisplay) maxDisplay = d
     }
-    // Decay-out: drop bodies that have gone cold so they don't linger.
-    for (const [q, b] of bodies) {
-      if (!active.has(q)) {
-        bodies.delete(q)
-        continue
+
+    // Update/insert targets for active symbols; ease drawn positions toward them.
+    let motion = 0
+    for (const q of active) {
+      const m = mass.get(q)
+      const propAdd = prop.get(q) ?? 0
+      const d = m ? m.display : propAdd > 0 ? displayMass(propAdd) : 0
+      const role = roleByQ.get(q) || "untagged"
+      const target = placeSymbol({
+        qname: q,
+        role,
+        roles,
+        displayMass: d,
+        maxDisplay,
+        historicalMass: histByQ.get(q) ?? 0,
+      })
+      let node = drawn.get(q)
+      if (!node) {
+        // enter from the perimeter at the symbol's stable bearing
+        node = { qname: q, role, x: Math.cos(target.angle) * R_MAX, y: Math.sin(target.angle) * R_MAX, mass: d }
+        drawn.set(q, node)
       }
-      b.mass = mass.get(q)?.display ?? (prop.get(q) ? displayMass(prop.get(q)!) : 0)
+      node.mass = d
+      const next = ease({ x: node.x, y: node.y }, target)
+      node.x = next.x
+      node.y = next.y
+      motion += next.dist
     }
 
-    // Deterministic attention layout: arrange active symbols around their role
-    // wells (hot = nearer centre), then ease toward targets (calm, no physics).
-    const bodyList = [...bodies.values()]
-    computeTargets(bodyList, roleWells, maxDisplay)
-    const motion = easeToTargets(bodyList, roleWells)
+    // Symbols no longer active: let them drift to the perimeter, then drop once
+    // they've arrived (so the canvas doesn't accumulate forever across
+    // investigations, but nothing vanishes abruptly mid-investigation).
+    for (const [q, node] of drawn) {
+      if (active.has(q)) continue
+      node.mass = 0
+      const target = {
+        x: (node.x / (Math.hypot(node.x, node.y) || 1)) * R_MAX,
+        y: (node.y / (Math.hypot(node.x, node.y) || 1)) * R_MAX,
+      }
+      const next = ease({ x: node.x, y: node.y }, target, 0.08)
+      node.x = next.x
+      node.y = next.y
+      motion += next.dist
+      if (next.dist < 0.5) drawn.delete(q)
+    }
+
     draw(maxDisplay)
 
-    // Stop when nothing is animating and nothing is hot.
-    if (motion < 0.5 && maxDisplay <= 0) {
-      restRef.current = true
+    if (motion < 0.5 && maxDisplay <= 0 && drawn.size === 0) {
       rafRef.current = null
       return
     }
@@ -147,73 +171,84 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, w, h)
 
-    const cam = cameraRef.current
+    // Fixed coordinate system: centre of the canvas is (0,0). Only zoom scales.
+    const k = zoomRef.current
     ctx.save()
-    ctx.translate(w / 2 + cam.x, h / 2 + cam.y)
-    ctx.scale(cam.k, cam.k)
+    ctx.translate(w / 2, h / 2)
+    ctx.scale(k, k)
 
-    const bodies = bodiesRef.current
     const store = useAGMStore.getState()
+    const drawn = drawnRef.current
+    const roles = store.roles
+    const edgesByQ = store.edgesByQname
 
-    // Progressive emergence: a role well (ring + label) is drawn ONLY when the
-    // role has at least one VISIBLE symbol this frame — i.e. the agent has
-    // actually attended to something in it and that symbol is above the
-    // visibility tier. Roles with only sub-threshold mass draw nothing, so there
-    // are never empty labeled circles. Derive visible roles from the symbols we
-    // are about to render, not from the raw role-mass sum.
-    const visibleRoleHeat = new Map<string, number>()
-    for (const b of bodies.values()) {
-      if (b.mass <= 0) continue
-      if (tierFor(b.mass, maxDisplay) === "hidden") continue
-      visibleRoleHeat.set(b.role, Math.max(visibleRoleHeat.get(b.role) ?? 0, b.mass))
-    }
-    for (const [role, heat] of visibleRoleHeat) {
-      const well = roleWells.get(role)
-      if (!well) continue
-      const intensity = maxDisplay > 0 ? Math.min(1, heat / maxDisplay) : 0
-      ctx.beginPath()
-      ctx.arc(well.x, well.y, 90, 0, Math.PI * 2)
-      ctx.strokeStyle = ROLE_RING_COLOR
-      ctx.globalAlpha = 0.25 + 0.4 * intensity
-      ctx.lineWidth = 1
-      ctx.stroke()
-      ctx.globalAlpha = 1
+    // --- the crosshair: current attention origin (always present) ---
+    drawCrosshair(ctx)
+
+    // --- role anchor labels: influence, not containment (no boxes) ---
+    // Only show a role's label once it has a visible symbol this frame.
+    const visibleRoles = new Set<string>()
+    for (const n of drawn.values()) if (n.mass > 0) visibleRoles.add(n.role)
+    for (const role of visibleRoles) {
+      const angle = roleBaseAngle(role, roles)
+      const lx = Math.cos(angle) * (R_MAX + 26)
+      const ly = Math.sin(angle) * (R_MAX + 26)
       ctx.fillStyle = ROLE_LABEL_COLOR
-      ctx.globalAlpha = 0.5 + 0.5 * intensity
+      ctx.globalAlpha = 0.55
       ctx.font = "12px ui-sans-serif, system-ui"
       ctx.textAlign = "center"
-      ctx.fillText(role, well.x, well.y - 98)
+      ctx.fillText(role, lx, ly)
       ctx.globalAlpha = 1
     }
 
-    // Attention-graph (reasoning) edges — violet, over the (omitted) repo edges.
+    // --- repository edges as faint springs between visible nodes ---
+    ctx.lineWidth = 1
+    for (const [from, node] of drawn) {
+      const outs = edgesByQ.get(from)
+      if (!outs) continue
+      for (const e of outs) {
+        const to = drawn.get(e.to)
+        if (!to) continue
+        ctx.beginPath()
+        ctx.moveTo(node.x, node.y)
+        ctx.lineTo(to.x, to.y)
+        ctx.strokeStyle = REPO_EDGE_COLOR
+        ctx.globalAlpha = 0.35
+        ctx.stroke()
+        ctx.globalAlpha = 1
+      }
+    }
+
+    // --- attention edges: bright, temporary reasoning paths ---
     const now = store.lastRecompute || Date.now() / 1000
-    for (const e of store.graph.liveEdges(now)) {
-      const a = bodies.get(e.from)
-      const b = bodies.get(e.to)
+    for (const ae of store.graph.liveEdges(now)) {
+      const a = drawn.get(ae.from)
+      const b = drawn.get(ae.to)
       if (!a || !b) continue
       ctx.beginPath()
-      ctx.moveTo(a.pos.x, a.pos.y)
-      ctx.lineTo(b.pos.x, b.pos.y)
+      ctx.moveTo(a.x, a.y)
+      ctx.lineTo(b.x, b.y)
       ctx.strokeStyle = ATTENTION_EDGE_COLOR
-      ctx.globalAlpha = Math.min(0.6, 0.2 + e.heat * 0.1)
-      ctx.lineWidth = 1.5
+      ctx.globalAlpha = Math.min(0.85, 0.4 + ae.heat * 0.15)
+      ctx.lineWidth = 1.75
       ctx.stroke()
       ctx.globalAlpha = 1
+      ctx.lineWidth = 1
     }
 
-    // Symbol nodes — only those above the relative visibility tier.
-    for (const b of bodies.values()) {
-      if (b.mass <= 0) continue
-      const tier = tierFor(b.mass, maxDisplay)
-      if (tier === "hidden") continue
-      const r = nodeRadius(b.mass, maxDisplay)
-      const color = roleColor(b.role)
+    // --- symbols: radius already encodes relevance; size/opacity reinforce it ---
+    for (const node of drawn.values()) {
+      const m = node.mass
+      const color = roleColor(node.role)
+      // peripheral (cooled) symbols stay visible but dim — never hidden.
+      const rel = maxDisplay > 0 ? m / maxDisplay : 0
+      const radius = m > 0 ? nodeRadius(m, maxDisplay) : 3
+      const opacity = m > 0 ? nodeOpacity(m, maxDisplay) : 0.18
 
-      const glow = glowAlpha(b.mass, maxDisplay)
+      const glow = m > 0 ? glowAlpha(m, maxDisplay) : 0
       if (glow > 0) {
         ctx.beginPath()
-        ctx.arc(b.pos.x, b.pos.y, r * 2.4, 0, Math.PI * 2)
+        ctx.arc(node.x, node.y, radius * 2.4, 0, Math.PI * 2)
         ctx.fillStyle = color
         ctx.globalAlpha = glow
         ctx.fill()
@@ -221,58 +256,42 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
       }
 
       ctx.beginPath()
-      ctx.arc(b.pos.x, b.pos.y, r, 0, Math.PI * 2)
+      ctx.arc(node.x, node.y, radius, 0, Math.PI * 2)
       ctx.fillStyle = color
-      ctx.globalAlpha = nodeOpacity(b.mass, maxDisplay)
+      ctx.globalAlpha = opacity
       ctx.fill()
       ctx.globalAlpha = 1
 
-      if (tier === "dominant") {
-        const label = b.qname.split(":").pop() ?? b.qname
+      // label the dominant (hottest) symbols only — keeps the map calm.
+      if (m > 0 && tierFor(m, maxDisplay) === "dominant") {
+        const label = node.qname.split(":").pop() ?? node.qname
         ctx.fillStyle = "#e2e8f0"
+        ctx.globalAlpha = 0.5 + 0.5 * rel
         ctx.font = "11px ui-sans-serif, system-ui"
         ctx.textAlign = "center"
-        ctx.fillText(label, b.pos.x, b.pos.y - r - 4)
+        ctx.fillText(label, node.x, node.y - radius - 4)
+        ctx.globalAlpha = 1
       }
     }
 
     ctx.restore()
   }
 
-  // --- manual pan/zoom (user-controlled camera) ---
-  const drag = useRef<{ x: number; y: number } | null>(null)
+  // --- zoom only (centre stays fixed; no pan, no camera follow) ---
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const onDown = (e: MouseEvent) => (drag.current = { x: e.clientX, y: e.clientY })
-    const onMove = (e: MouseEvent) => {
-      if (!drag.current) return
-      cameraRef.current.x += e.clientX - drag.current.x
-      cameraRef.current.y += e.clientY - drag.current.y
-      drag.current = { x: e.clientX, y: e.clientY }
-      kick()
-    }
-    const onUp = () => (drag.current = null)
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
       const factor = Math.exp(-e.deltaY * 0.001)
-      cameraRef.current.k = Math.min(4, Math.max(0.2, cameraRef.current.k * factor))
+      zoomRef.current = Math.min(4, Math.max(0.25, zoomRef.current * factor))
       kick()
     }
-    canvas.addEventListener("mousedown", onDown)
-    window.addEventListener("mousemove", onMove)
-    window.addEventListener("mouseup", onUp)
     canvas.addEventListener("wheel", onWheel, { passive: false })
-    return () => {
-      canvas.removeEventListener("mousedown", onDown)
-      window.removeEventListener("mousemove", onMove)
-      window.removeEventListener("mouseup", onUp)
-      canvas.removeEventListener("wheel", onWheel)
-    }
+    return () => canvas.removeEventListener("wheel", onWheel)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Kick once on mount so the first frame paints.
   useEffect(() => {
     kick()
     return () => {
@@ -281,17 +300,11 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // The canvas is blank by design until the agent moves. Show a quiet idle hint
-  // only when there's no attention yet (and clear it the moment any appears).
   const showIdleHint = useMemo(() => !hasAttention, [hasAttention])
-  void systemModel
 
   return (
     <div className={className} style={{ position: "relative" }}>
-      <canvas
-        ref={canvasRef}
-        style={{ width: "100%", height: "100%", display: "block", cursor: "grab" }}
-      />
+      <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block" }} />
       {showIdleHint && (
         <div
           style={{
@@ -308,8 +321,22 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
           No attention yet — the map fills in as the agent works.
         </div>
       )}
-      {/* roleByQname referenced to keep the subscription live for refreshes */}
-      <span style={{ display: "none" }}>{roleByQname.size}</span>
     </div>
   )
+}
+
+// The fixed centre crosshair — the current attention origin. Nothing else ever
+// occupies the exact centre; this is the coordinate system's (0,0).
+function drawCrosshair(ctx: CanvasRenderingContext2D) {
+  const s = 7
+  ctx.strokeStyle = "#475569"
+  ctx.globalAlpha = 0.8
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(-s, 0)
+  ctx.lineTo(s, 0)
+  ctx.moveTo(0, -s)
+  ctx.lineTo(0, s)
+  ctx.stroke()
+  ctx.globalAlpha = 1
 }

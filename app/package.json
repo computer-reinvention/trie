@@ -12,6 +12,8 @@
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build:resources && npm run build && electron-builder",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "postinstall": "node scripts/setup-opencode.mjs"
   },
   "dependencies": {
@@ -41,7 +43,8 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.6",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^4.1.8"
   },
   "build": {
     "appId": "ai.trie.app",

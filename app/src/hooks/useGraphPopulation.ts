@@ -50,12 +50,18 @@ export function useGraphPopulation(opencodePort: number | null): { repopulate: (
         graphStore.setAxis(settings.get<GroupingAxis>("graph.defaultAxis"))
         graphStore.setMemberGrouping(settings.get<MemberGrouping>("graph.memberGrouping"))
 
-        // AGM: load the same model + typed edges into the attention engine, then
-        // hydrate recent attention events (replay across app restarts / CLI
-        // sessions). Attention-preserving setModel keeps any live state.
+        // AGM: load the same model + typed edges into the attention engine.
+        // setModel seeds HISTORICAL mass from the model (stable angular
+        // geography). We do NOT replay the event log as live mass — a fresh
+        // session must start blank (live mass = current focus only). Live mass
+        // is rebuilt from this session's own SSE activity. Only events from a
+        // short recent window are restored, so reconnecting mid-investigation
+        // doesn't lose the live picture; older events are intentionally dropped.
         useAGMStore.getState().setModel(model, edges as TypedEdge[])
         try {
-          const att = await graphClient.attention({ since: 0 })
+          const now = Date.now() / 1000
+          const RECENT_WINDOW_S = 600 // 10 min — only genuinely-live attention
+          const att = await graphClient.attention({ since: now - RECENT_WINDOW_S })
           if (!isCancelled() && att?.events?.length) {
             const agm = useAGMStore.getState()
             for (const e of att.events) {
