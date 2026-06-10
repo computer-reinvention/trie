@@ -16,7 +16,15 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useAGMStore } from "@/store/agmStore"
+import { useAgentStore } from "@/store/agentStore"
 import type { NodeMass } from "@/agm/attentionModel"
+
+// Is the active agent session mid-turn? Drives whether the sim keeps ticking.
+function isAgentRunning(): boolean {
+  const a = useAgentStore.getState()
+  const id = a.activeId
+  return !!(id && a.sessions[id]?.running)
+}
 import {
   placeSymbol,
   applyClusterCohesion,
@@ -236,7 +244,13 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
       )
     }
     applyClusterCohesion(placements, activeRoleByQ, histByQ)
-    const budget = applyVisibleBudget(placements, massForBudget, activeRoleByQ, VISIBLE_BUDGET)
+    const budget = applyVisibleBudget(
+      placements,
+      massForBudget,
+      activeRoleByQ,
+      VISIBLE_BUDGET,
+      useAGMStore.getState().model.pinnedSet(),
+    )
 
     // Pill-vs-dot threshold (top PILL_PERCENTILE by mass): pills reserve their
     // full measured width when spreading; dots reserve a tight footprint so the
@@ -283,8 +297,10 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     }
     const nowMs = performance.now()
     // Slow decay tick: refresh targets occasionally so cooling symbols drift out
-    // smoothly even with no tool calls. Cheap; far below frame rate.
-    if (nowMs - lastModelTickRef.current > MODEL_TICK_MS) {
+    // smoothly. ONLY while the agent turn is running — when the turn ends the
+    // simulation FREEZES (targets stop moving, the loop settles to rest and
+    // stops). This gives a stable "frozen photograph" of the finished turn.
+    if (isAgentRunning() && nowMs - lastModelTickRef.current > MODEL_TICK_MS) {
       lastModelTickRef.current = nowMs
       recomputeTargets()
     }
@@ -558,21 +574,56 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     // --- the crosshair: current attention origin (always present) ---
     drawCrosshair(ctx)
 
-    // --- role clusters: centroid + member count of each role's visible nodes.
-    // A role is an emergent grouping; its pill tag is drawn (below, after nodes)
-    // only when 2+ of its members are active so it sits with the cluster.
-    const clusterAcc = new Map<string, { sx: number; sy: number; n: number; top: number }>()
+    // --- role clusters: centroid + bounds of each role's visible nodes. A role
+    // is an emergent REGION (not a single node), so we draw a faint enclosing
+    // halo behind its members and a distinct region heading — making it obvious
+    // the label names the whole area, not one symbol.
+    interface ClusterAcc {
+      sx: number
+      sy: number
+      n: number
+      minX: number
+      minY: number
+      maxX: number
+      maxY: number
+    }
+    const clusterAcc = new Map<string, ClusterAcc>()
     for (const n of drawn.values()) {
       if (n.mass <= 0) continue
       let a = clusterAcc.get(n.role)
       if (!a) {
-        a = { sx: 0, sy: 0, n: 0, top: 0 }
+        a = { sx: 0, sy: 0, n: 0, minX: n.x, minY: n.y, maxX: n.x, maxY: n.y }
         clusterAcc.set(n.role, a)
       }
       a.sx += n.x
       a.sy += n.y
       a.n += 1
-      a.top = Math.min(a.top || n.y, n.y) // topmost member y (for pill offset)
+      a.minX = Math.min(a.minX, n.x)
+      a.minY = Math.min(a.minY, n.y)
+      a.maxX = Math.max(a.maxX, n.x)
+      a.maxY = Math.max(a.maxY, n.y)
+    }
+
+    // Region halos — drawn FIRST (behind everything) so members sit on top.
+    for (const [, a] of clusterAcc) {
+      if (a.n < 2) continue
+      const cx = a.sx / a.n
+      const cy = a.sy / a.n
+      // radius covering the members + padding
+      const rr =
+        Math.max(Math.hypot(a.maxX - a.minX, a.maxY - a.minY) / 2, 40) + 34
+      ctx.beginPath()
+      ctx.arc(cx, cy, rr, 0, Math.PI * 2)
+      ctx.fillStyle = "#1e293b"
+      ctx.globalAlpha = 0.18
+      ctx.fill()
+      ctx.strokeStyle = "#334155"
+      ctx.globalAlpha = 0.35
+      ctx.setLineDash([4, 4])
+      ctx.lineWidth = 1
+      ctx.stroke()
+      ctx.setLineDash([])
+      ctx.globalAlpha = 1
     }
 
     // --- radial spokes from the centre to each node ---
@@ -643,30 +694,32 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     // so spread + render agree on who is a pill.
     const pillThreshold = pillThresholdRef.current
     const hovered = hoverRef.current
+    const pinned = store.model.pinnedSet()
     for (const node of sorted) {
       const m = node.mass
       const rel = maxDisplay > 0 ? Math.min(1, m / maxDisplay) : 0
       const a = smoothstep(node.appear)
       const scale = 0.6 + 0.4 * a
       const isHover = node.qname === hovered
-      // top-percentile (or hovered) → name pill; rest → dot.
-      if ((m > 0 && m >= pillThreshold) || isHover) {
+      const isPinned = pinned.has(node.qname)
+      // top-percentile, pinned (edited), or hovered → name pill; rest → dot.
+      if ((m > 0 && m >= pillThreshold) || isPinned || isHover) {
         const label = node.qname.split(":").pop() ?? node.qname
         const opacity = (0.28 + 0.72 * rel) * a
-        const hot = m > 0 && tierFor(m, maxDisplay) === "dominant"
+        const hot = isPinned || (m > 0 && tierFor(m, maxDisplay) === "dominant")
         drawSymbolPill(ctx, label, node.x, node.y, opacity, hot, scale)
       } else {
         drawDot(ctx, node.x, node.y, rel, a)
       }
     }
 
-    // --- role pill tags: drawn at each cluster centroid (2+ active members).
-    // The map is REPRESENTATIVE, not accurate — no "+N more" counts.
+    // --- role REGION headings: a distinct label for the whole area (not a pill
+    // like a symbol). Uppercase + letter-spaced + an underline, placed above the
+    // region halo, so it obviously names the region, not a node.
     for (const [role, a] of clusterAcc) {
       if (a.n < 2) continue
       const cx = a.sx / a.n
-      const py = a.top - 16
-      drawPill(ctx, role, cx, py)
+      drawRegionLabel(ctx, role, cx, a.minY - 22)
     }
 
     ctx.restore()
@@ -959,34 +1012,32 @@ function drawSymbolPill(
   ctx.textBaseline = "alphabetic"
 }
 
-// A role pill tag drawn near a cluster's centroid — the role description as a
-// small rounded label (influence, not a container box).
-function drawPill(ctx: CanvasRenderingContext2D, label: string, cx: number, cy: number) {
-  ctx.font = "11px ui-sans-serif, system-ui"
+// A role REGION heading — visually distinct from a symbol pill so it obviously
+// names the whole area: uppercase, letter-spaced, muted, with a short underline.
+// No rounded chip (that's the symbol-pill look).
+function drawRegionLabel(ctx: CanvasRenderingContext2D, role: string, cx: number, cy: number) {
+  const text = role.toUpperCase()
+  ctx.font = "600 10px ui-sans-serif, system-ui"
   ctx.textAlign = "center"
   ctx.textBaseline = "middle"
-  const padX = 8
-  const tw = ctx.measureText(label).width
-  const w = tw + padX * 2
-  const h = 18
-  const x = cx - w / 2
-  const y = cy - h / 2
-  const r = h / 2
-  ctx.beginPath()
-  ctx.moveTo(x + r, y)
-  ctx.arcTo(x + w, y, x + w, y + h, r)
-  ctx.arcTo(x + w, y + h, x, y + h, r)
-  ctx.arcTo(x, y + h, x, y, r)
-  ctx.arcTo(x, y, x + w, y, r)
-  ctx.closePath()
-  ctx.fillStyle = "#1e293b"
-  ctx.globalAlpha = 0.85
-  ctx.fill()
-  ctx.strokeStyle = "#334155"
-  ctx.globalAlpha = 1
+  ctx.fillStyle = "#94a3b8"
+  // letter-spacing (canvas has no native tracking pre-2023; draw char by char)
+  const spacing = 2
+  const widths = [...text].map((c) => ctx.measureText(c).width)
+  const total = widths.reduce((s, w) => s + w + spacing, 0) - spacing
+  let x = cx - total / 2
+  for (let i = 0; i < text.length; i++) {
+    ctx.fillText(text[i], x + widths[i] / 2, cy)
+    x += widths[i] + spacing
+  }
+  // underline spanning the label width
+  ctx.strokeStyle = "#475569"
+  ctx.globalAlpha = 0.7
   ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(cx - total / 2, cy + 9)
+  ctx.lineTo(cx + total / 2, cy + 9)
   ctx.stroke()
-  ctx.fillStyle = "#cbd5e1"
-  ctx.fillText(label, cx, cy)
+  ctx.globalAlpha = 1
   ctx.textBaseline = "alphabetic"
 }
