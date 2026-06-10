@@ -3,6 +3,13 @@ import { readdir, readFile } from "fs/promises"
 import { join } from "path"
 import * as http from "http"
 import type { ProcessManager } from "./process-manager"
+import { readOpencodeConfig, writeOpencodeConfig } from "./opencode-config"
+import {
+  listProviderKeys,
+  hasProviderKey,
+  setProviderKey,
+  deleteProviderKey,
+} from "./provider-keys"
 
 let keytarModule: typeof import("keytar") | null = null
 async function getKeytar() {
@@ -207,6 +214,41 @@ export function registerIpcHandlers(pm: ProcessManager): void {
     writePrefs({ ...prefs, settings: {} })
     return { ok: true }
   })
+
+  // ---------------------------------------------------------------------------
+  // opencode.json — read the project's config (effective values for the UI) and
+  // merge-write a delta of app-managed keys, preserving hand-authored keys and
+  // always re-asserting the trie MCP entry. Per-project scope.
+  // ---------------------------------------------------------------------------
+  ipcMain.handle("opencode-config-read", (_event, projectDir: string) => {
+    return readOpencodeConfig(projectDir)
+  })
+
+  ipcMain.handle(
+    "opencode-config-write",
+    (_event, projectDir: string, delta: Record<string, unknown>) => {
+      const trie = pm.getTrieMcpEntry() ?? { trieMcpBin: "trie-mcp", projectDir }
+      writeOpencodeConfig(projectDir, delta, { ...trie, projectDir })
+      return { ok: true }
+    },
+  )
+
+  ipcMain.handle("opencode-restart", async () => {
+    await pm.restart()
+    return { ok: true }
+  })
+
+  // ---------------------------------------------------------------------------
+  // Provider API keys — stored in the Keychain, injected as env vars at spawn.
+  // ---------------------------------------------------------------------------
+  ipcMain.handle("provider-keys-list", () => listProviderKeys())
+  ipcMain.handle("provider-key-has", (_e, provider: string) => hasProviderKey(provider))
+  ipcMain.handle(
+    "provider-key-set",
+    (_e, provider: string, key: string, envVar?: string) =>
+      setProviderKey(provider, key, envVar),
+  )
+  ipcMain.handle("provider-key-delete", (_e, provider: string) => deleteProviderKey(provider))
 
   // ---------------------------------------------------------------------------
   // AGM frozen-layout snapshots — per opencode session, persisted in the
