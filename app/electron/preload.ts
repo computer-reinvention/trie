@@ -40,6 +40,24 @@ contextBridge.exposeInMainWorld("trie", {
   settingsSet: (key: string, value: unknown) => ipcRenderer.invoke("settings-set", key, value),
   settingsReset: () => ipcRenderer.invoke("settings-reset"),
 
+  // opencode.json — per-project config the settings UI reads/merges.
+  opencodeConfig: {
+    read: (projectDir: string) => ipcRenderer.invoke("opencode-config-read", projectDir),
+    write: (projectDir: string, delta: Record<string, unknown>) =>
+      ipcRenderer.invoke("opencode-config-write", projectDir, delta),
+    restart: () => ipcRenderer.invoke("opencode-restart"),
+  },
+
+  // Provider API keys — stored in the Keychain, never in renderer memory.
+  secrets: {
+    listProviders: () => ipcRenderer.invoke("provider-keys-list"),
+    hasProviderKey: (provider: string) => ipcRenderer.invoke("provider-key-has", provider),
+    setProviderKey: (provider: string, key: string, envVar?: string) =>
+      ipcRenderer.invoke("provider-key-set", provider, key, envVar),
+    deleteProviderKey: (provider: string) =>
+      ipcRenderer.invoke("provider-key-delete", provider),
+  },
+
   // AGM frozen-layout snapshots, per opencode session (project .trie/).
   agmSnapshotGet: (projectDir: string, sessionId: string) =>
     ipcRenderer.invoke("agm-snapshot-get", projectDir, sessionId),
