@@ -40,6 +40,12 @@ contextBridge.exposeInMainWorld("trie", {
   settingsSet: (key: string, value: unknown) => ipcRenderer.invoke("settings-set", key, value),
   settingsReset: () => ipcRenderer.invoke("settings-reset"),
 
+  // AGM frozen-layout snapshots, per opencode session (project .trie/).
+  agmSnapshotGet: (projectDir: string, sessionId: string) =>
+    ipcRenderer.invoke("agm-snapshot-get", projectDir, sessionId),
+  agmSnapshotSet: (projectDir: string, sessionId: string, snapshot: unknown) =>
+    ipcRenderer.invoke("agm-snapshot-set", projectDir, sessionId, snapshot),
+
   // File system (for sidebar tree)
   readDir: (dir: string) => ipcRenderer.invoke("read-dir", dir),
   readFile: (path: string) => ipcRenderer.invoke("read-file", path),
