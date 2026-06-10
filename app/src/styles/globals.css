@@ -11,6 +11,28 @@
   --accent-hover: #818cf8;
   --bg-app: #020617;
   --bg-panel: #0f172a;
+
+  /* Layered surface + text scale — consumed by the chat panel and (later)
+     other chrome. Defined per data-theme below; these are the dark defaults.
+     Surfaces go from the panel background (1) up to elevated popovers (3). */
+  --surface-1: #0f172a; /* panel base */
+  --surface-2: #182234; /* cards / inputs */
+  --surface-3: #1f2b40; /* hover / elevated rows */
+  --surface-pop: #131c2e; /* popovers, menus */
+  --border-subtle: #1e293b;
+  --border-strong: #334155;
+  --text-1: #e2e8f0; /* primary */
+  --text-2: #94a3b8; /* secondary */
+  --text-3: #64748b; /* muted */
+  --text-faint: #475569; /* hints / metadata */
+  --radius: 8px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --elev-2: 0 8px 24px -6px rgba(0, 0, 0, 0.55), 0 2px 6px -2px rgba(0, 0, 0, 0.4);
+  --danger: #f43f5e;
+  --danger-soft: rgba(244, 63, 94, 0.16);
+  --warn: #f59e0b;
 }
 
 :root[data-accent="indigo"] {
@@ -37,14 +59,32 @@
 :root[data-theme="dark"] {
   --bg-app: #020617;
   --bg-panel: #0f172a;
+  --surface-1: #0f172a;
+  --surface-2: #182234;
+  --surface-3: #1f2b40;
+  --surface-pop: #131c2e;
+  --border-subtle: #1e293b;
+  --border-strong: #334155;
 }
 :root[data-theme="midnight"] {
   --bg-app: #000000;
   --bg-panel: #0a0a0f;
+  --surface-1: #0a0a0f;
+  --surface-2: #14141c;
+  --surface-3: #1c1c28;
+  --surface-pop: #101018;
+  --border-subtle: #1c1c28;
+  --border-strong: #2c2c3a;
 }
 :root[data-theme="slate"] {
   --bg-app: #0b1120;
   --bg-panel: #131c2e;
+  --surface-1: #131c2e;
+  --surface-2: #1c2740;
+  --surface-3: #243150;
+  --surface-pop: #18223a;
+  --border-subtle: #243150;
+  --border-strong: #3a4a6b;
 }
 
 html,
@@ -59,9 +99,57 @@ body {
   background: var(--bg-app);
 }
 
+/* Token-driven surface/text helpers — let the chat panel reskin with the theme
+   instead of hardcoding slate-*. */
+.surface-1 {
+  background-color: var(--surface-1);
+}
+.surface-2 {
+  background-color: var(--surface-2);
+}
+.surface-3 {
+  background-color: var(--surface-3);
+}
+.surface-pop {
+  background-color: var(--surface-pop);
+}
+.border-subtle {
+  border-color: var(--border-subtle);
+}
+.border-strong {
+  border-color: var(--border-strong);
+}
+.text-1 {
+  color: var(--text-1);
+}
+.text-2 {
+  color: var(--text-2);
+}
+.text-3 {
+  color: var(--text-3);
+}
+.text-faint {
+  color: var(--text-faint);
+}
+.elev-1 {
+  box-shadow: var(--elev-1);
+}
+.elev-2 {
+  box-shadow: var(--elev-2);
+}
+
 /* Accent helper utilities (used where Tailwind's static palette isn't enough) */
 .bg-accent {
   background-color: var(--accent);
+}
+.bg-accent-soft {
+  background-color: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.border-accent-soft {
+  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+}
+.ring-accent-soft {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 .bg-accent:hover {
   background-color: var(--accent-hover);
@@ -134,6 +222,73 @@ body {
   .trie-pulse {
     animation: none;
     opacity: 1;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Chat motion — message entrance, streaming dots, and reasoning shimmer.
+   All gated behind prefers-reduced-motion.
+--------------------------------------------------------------------------- */
+@keyframes msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.msg-in {
+  animation: msg-in 0.22s ease-out both;
+}
+
+@keyframes typing-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+.typing-dot {
+  animation: typing-dot 1.2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--text-3) 0%,
+    var(--text-1) 50%,
+    var(--text-3) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .msg-in,
+  .typing-dot,
+  .shimmer-text {
+    animation: none;
+  }
+  .shimmer-text {
+    -webkit-text-fill-color: var(--text-2);
   }
 }
 

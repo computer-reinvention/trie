@@ -1,8 +1,8 @@
 import { useState } from "react"
-import { opencodeClient } from "@/api/opencodeClient"
 import { useGraphStore } from "@/store/graphStore"
 import { useTabsStore, TOPOLOGY_TAB_ID } from "@/store/tabsStore"
 import { ACTIVITY, activityColor } from "@/graph/style"
+import { Check, Loader2, AlertCircle, ChevronRight, Copy, ShieldQuestion } from "./icons"
 import type { ToolPart, PermissionRequest, PermissionReply } from "@/api/types"
 
 // Lockstep color: the same intent hue the graph uses for this tool, so the chat
@@ -18,15 +18,8 @@ function intentColor(tool: string): string {
 }
 
 // A single tool invocation in the transcript: name, a short input summary, a
-// status glyph, and (collapsible) the raw input/output. When a permission
+// status icon, and (collapsible) the raw input/output. When a permission
 // request is correlated to this call, approve/deny controls render inline.
-
-const STATUS: Record<string, { glyph: string; cls: string }> = {
-  pending: { glyph: "○", cls: "text-slate-500" },
-  running: { glyph: "◐", cls: "text-indigo-400 animate-pulse" },
-  completed: { glyph: "✓", cls: "text-green-500" },
-  error: { glyph: "✗", cls: "text-red-400" },
-}
 
 // One-line summary of the most useful input field per tool.
 function inputSummary(tool: string, input: Record<string, unknown> | undefined): string {
@@ -49,6 +42,17 @@ function bareTool(tool: string): string {
   return tool.startsWith("trie_") ? tool.slice(5) : tool
 }
 
+function StatusIcon({ status, color }: { status: string; color: string }) {
+  if (status === "running")
+    return <Loader2 size={13} className="animate-spin" style={{ color }} />
+  if (status === "completed")
+    return <Check size={13} style={{ color: "var(--accent)" }} />
+  if (status === "error") return <AlertCircle size={13} style={{ color: "var(--danger)" }} />
+  return (
+    <span className="w-2 h-2 rounded-full" style={{ background: "var(--text-faint)" }} />
+  )
+}
+
 export function ToolRow({
   part,
   permission,
@@ -59,7 +63,6 @@ export function ToolRow({
   onResolvePermission: (requestID: string, reply: PermissionReply) => void
 }) {
   const [open, setOpen] = useState(false)
-  const st = STATUS[part.state.status] ?? STATUS.pending
   const summary = inputSummary(part.tool, part.state.input)
   const name = bareTool(part.tool)
 
@@ -91,21 +94,25 @@ export function ToolRow({
 
   return (
     <div
-      className={`rounded border border-slate-800 bg-slate-900/40 text-xs overflow-hidden ${live ? "trie-pulse" : ""}`}
+      className={`rounded-lg border border-subtle surface-2 text-xs overflow-hidden ${live ? "trie-pulse" : ""}`}
       style={{
         borderLeft: `${live ? 3 : 2}px solid ${barColor}`,
         boxShadow: live ? `inset 2px 0 8px -4px ${barColor}` : undefined,
       }}
     >
       <button
-        className="w-full flex items-center gap-2 px-2 py-1 text-left hover:bg-slate-800/40"
+        className="w-full flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-black/15 transition-colors"
         onClick={() => setOpen((v) => !v)}
       >
-        <span className={`shrink-0 ${st.cls}`}>{st.glyph}</span>
-        <span className="font-mono text-indigo-300 shrink-0">{name}</span>
+        <span className="shrink-0 flex items-center">
+          <StatusIcon status={part.state.status} color={barColor} />
+        </span>
+        <span className="font-mono font-medium shrink-0" style={{ color: barColor }}>
+          {name}
+        </span>
         {summary && (
           <span
-            className="font-mono text-slate-500 truncate flex-1 hover:text-slate-300"
+            className="font-mono text-3 truncate flex-1 hover:text-1 transition-colors"
             onClick={(e) => {
               e.stopPropagation()
               reveal()
@@ -116,20 +123,34 @@ export function ToolRow({
           </span>
         )}
         {part.state.time?.start && part.state.time.end && (
-          <span className="text-slate-600 shrink-0">
+          <span className="text-faint shrink-0 tabular-nums">
             {((part.state.time.end - part.state.time.start) / 1000).toFixed(1)}s
           </span>
         )}
+        <ChevronRight
+          size={12}
+          className="shrink-0 text-faint transition-transform"
+          style={{ transform: open ? "rotate(90deg)" : "none" }}
+        />
       </button>
 
       {/* inline permission prompt */}
       {permission && (
-        <div className="px-2 py-1.5 border-t border-amber-700/40 bg-amber-500/10">
-          <p className="text-amber-200 text-[11px] mb-1">
-            Allow <span className="font-mono">{permission.permission}</span>?
-            {permission.patterns.length > 0 && (
-              <span className="text-amber-300/70 font-mono"> {permission.patterns.join(", ")}</span>
-            )}
+        <div
+          className="px-2.5 py-2 border-t"
+          style={{
+            borderColor: "color-mix(in srgb, var(--warn) 35%, transparent)",
+            background: "color-mix(in srgb, var(--warn) 9%, transparent)",
+          }}
+        >
+          <p className="flex items-center gap-1.5 text-[11px] mb-1.5" style={{ color: "#fcd34d" }}>
+            <ShieldQuestion size={13} className="shrink-0" />
+            <span>
+              Allow <span className="font-mono">{permission.permission}</span>?
+              {permission.patterns.length > 0 && (
+                <span className="font-mono opacity-80"> {permission.patterns.join(", ")}</span>
+              )}
+            </span>
           </p>
           <div className="flex gap-1.5">
             <PermBtn label="Allow" onClick={() => onResolvePermission(permission.id, "once")} />
@@ -144,24 +165,54 @@ export function ToolRow({
       )}
 
       {open && (
-        <div className="px-2 py-1.5 border-t border-slate-800 space-y-1.5">
+        <div className="px-2.5 py-2 border-t border-subtle space-y-1.5">
           {part.state.input && Object.keys(part.state.input).length > 0 && (
-            <pre className="text-[10px] text-slate-400 font-mono whitespace-pre-wrap break-all bg-slate-950/60 rounded p-1.5">
-              {JSON.stringify(part.state.input, null, 2)}
-            </pre>
+            <Pre text={JSON.stringify(part.state.input, null, 2)} />
           )}
-          {part.state.output && (
-            <pre className="text-[10px] text-slate-400 font-mono whitespace-pre-wrap break-all bg-slate-950/60 rounded p-1.5 max-h-48 overflow-y-auto scroll-thin">
-              {part.state.output}
-            </pre>
-          )}
-          {part.state.error && (
-            <pre className="text-[10px] text-red-400 font-mono whitespace-pre-wrap break-all bg-red-950/30 rounded p-1.5">
-              {part.state.error}
-            </pre>
-          )}
+          {part.state.output && <Pre text={part.state.output} scrollable />}
+          {part.state.error && <Pre text={part.state.error} danger />}
         </div>
       )}
+    </div>
+  )
+}
+
+function Pre({
+  text,
+  scrollable,
+  danger,
+}: {
+  text: string
+  scrollable?: boolean
+  danger?: boolean
+}) {
+  const [copied, setCopied] = useState(false)
+  const copy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1200)
+    })
+  }
+  return (
+    <div className="relative group/pre">
+      <pre
+        className={`text-[10px] font-mono whitespace-pre-wrap break-all rounded-md p-1.5 ${
+          scrollable ? "max-h-48 overflow-y-auto scroll-thin" : ""
+        }`}
+        style={{
+          background: "rgba(0,0,0,0.35)",
+          color: danger ? "var(--danger)" : "var(--text-2)",
+        }}
+      >
+        {text}
+      </pre>
+      <button
+        className="absolute top-1 right-1 opacity-0 group-hover/pre:opacity-100 transition-opacity inline-flex items-center justify-center w-5 h-5 rounded surface-3 text-3 hover:text-1"
+        onClick={copy}
+        title={copied ? "Copied" : "Copy"}
+      >
+        {copied ? <Check size={11} style={{ color: "var(--accent)" }} /> : <Copy size={11} />}
+      </button>
     </div>
   )
 }
@@ -177,11 +228,12 @@ function PermBtn({
 }) {
   return (
     <button
-      className={`rounded px-2 py-0.5 text-[11px] font-medium ${
+      className="rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors"
+      style={
         danger
-          ? "bg-red-500/20 text-red-300 hover:bg-red-500/30"
-          : "bg-amber-500/20 text-amber-200 hover:bg-amber-500/30"
-      }`}
+          ? { background: "var(--danger-soft)", color: "#fda4af" }
+          : { background: "color-mix(in srgb, var(--warn) 18%, transparent)", color: "#fcd34d" }
+      }
       onClick={onClick}
     >
       {label}
