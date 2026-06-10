@@ -10,6 +10,13 @@ describe("AttentionModel", () => {
     expect(m.liveMass("a:b", 180)).toBeCloseTo(20, 5)
   })
 
+  it("scaled ingest attenuates weight (grep hits are a faint net)", () => {
+    const m = new AttentionModel()
+    m.ingest("full", "grep", 0) // weight 10
+    m.ingest("hit", "grep", 0, 0.25) // weight 2.5
+    expect(m.liveMass("hit", 0)).toBeCloseTo(m.liveMass("full", 0) * 0.25, 5)
+  })
+
   it("trace contributes more than grep (weights)", () => {
     const m = new AttentionModel()
     m.ingest("g", "grep", 0)
@@ -92,6 +99,21 @@ describe("AttentionModel", () => {
     m.ingest("auth:a", "trace", 0) // 80
     const c = m.centroid(0)
     expect(c.topRoles[0].role).toBe("auth")
+  })
+
+  it("clearLive drops live mass but keeps historical seed", () => {
+    const m = new AttentionModel()
+    m.seedHistorical("kept", 50)
+    m.ingest("kept", "trace", 0) // live + historical
+    m.ingest("transient", "trace", 0) // live only, no history
+    m.clearLive()
+    // live gone everywhere
+    expect(m.liveMass("kept", 0)).toBe(0)
+    expect(m.liveMass("transient", 0)).toBe(0)
+    // historical seed survives on the node that had one
+    expect(m.massFor("kept", 0).historical).toBe(50)
+    // node with no history is dropped entirely
+    expect(m.snapshot(0).has("transient")).toBe(false)
   })
 
   it("snapshot excludes cold nodes", () => {

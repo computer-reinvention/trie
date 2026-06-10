@@ -77,10 +77,22 @@ export function useSessions() {
     if (created) {
       store.getState().upsertSession(created)
       store.getState().setActive(created.id)
+      // A new session is fresh working memory: clear AGM live state (live mass,
+      // trail, investigation). Historical-mass geography persists.
+      useAGMStore.getState().resetSession()
+      useGraphStore.getState().clearTrail()
     }
   }, [store])
 
-  const switchSession = useCallback((id: string) => store.getState().setActive(id), [store])
+  const switchSession = useCallback(
+    (id: string) => {
+      store.getState().setActive(id)
+      // Switching sessions = switching working memory → reset live AGM state.
+      useAGMStore.getState().resetSession()
+      useGraphStore.getState().clearTrail()
+    },
+    [store],
+  )
 
   const deleteSession = useCallback(
     async (id: string) => {

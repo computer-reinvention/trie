@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { usePatchesStore } from "@/store/patchesStore"
 import { useGraphStore } from "@/store/graphStore"
-import { useTabsStore, GRAPH_TAB_ID } from "@/store/tabsStore"
+import { useTabsStore, TOPOLOGY_TAB_ID } from "@/store/tabsStore"
 import { usePatches } from "@/hooks/usePatches"
 import { playCascade } from "@/graph/conductor"
 import { activityColor } from "@/graph/style"
@@ -118,7 +118,7 @@ export function PatchesPanel() {
 
 function reveal(qname: string) {
   if (useGraphStore.getState().revealSymbol(qname)) {
-    useTabsStore.getState().activate(GRAPH_TAB_ID)
+    useTabsStore.getState().activate(TOPOLOGY_TAB_ID)
   }
 }
 

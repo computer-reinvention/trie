@@ -54,10 +54,11 @@ export interface LiveContribution {
   ts: number // unix seconds the event landed
   weight: number // EVENT_WEIGHTS[type]
   lambda: number // per-event-type decay rate (liveLambda(type))
+  type?: AttentionEventType // which tool intent produced it (drives render kind)
 }
 
 export function makeContribution(type: AttentionEventType, ts: number): LiveContribution {
-  return { ts, weight: EVENT_WEIGHTS[type], lambda: liveLambda(type) }
+  return { ts, weight: EVENT_WEIGHTS[type], lambda: liveLambda(type), type }
 }
 
 // Sum a set of decaying contributions to a single live-mass value at `now`.

@@ -3,7 +3,7 @@ import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d"
 import { forceCollide } from "d3-force"
 import { useGraphStore } from "@/store/graphStore"
 import { useAppStore } from "@/store/appStore"
-import { useTabsStore } from "@/store/tabsStore"
+import { buildSymbolMenu } from "@/agm/symbolMenu"
 import { useSettingsStore } from "@/store/settingsStore"
 import { usePatchesStore } from "@/store/patchesStore"
 import { openContextMenu } from "@/store/contextMenuStore"
@@ -393,22 +393,10 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
       }
       if (n.kind === "symbol") {
         const sym = n.node
-        const open = useTabsStore.getState().openFile
-        openContextMenu(event, [
-          {
-            label: "Open Source",
-            onSelect: () => open(sym.file_path, { view: "source", forceView: true }),
-          },
-          {
-            label: "Open Triefact",
-            onSelect: () =>
-              open(sym.file_path, {
-                view: "triefact",
-                forceView: true,
-                focusQname: sym.qname,
-              }),
-          },
-        ])
+        // Shared symbol menu (same actions as the AGM canvas). Blast radius +
+        // stats are AGM-specific surfaces, so they're omitted here; navigation,
+        // ruled-out, investigation, ask-agent, and clipboard all apply.
+        openContextMenu(event, buildSymbolMenu({ qname: sym.qname, filePath: sym.file_path }))
       }
     },
     [togglePin],

@@ -1,4 +1,10 @@
-import { useTabsStore, GRAPH_TAB_ID, PATCHES_TAB_ID, type Tab } from "@/store/tabsStore"
+import {
+  useTabsStore,
+  GRAPH_TAB_ID,
+  TOPOLOGY_TAB_ID,
+  PATCHES_TAB_ID,
+  type Tab,
+} from "@/store/tabsStore"
 import { useGraphStore } from "@/store/graphStore"
 import { usePatchesStore } from "@/store/patchesStore"
 import { openContextMenu } from "@/store/contextMenuStore"
@@ -7,6 +13,18 @@ import { openContextMenu } from "@/store/contextMenuStore"
 // (permanent, no close button); the rest are files. Each file tab shows a
 // tiny Source/Triefact pill so the active face is visible at a glance.
 
+// Attention (AGM): a focus reticle — concentric rings around a centre.
+function AttentionIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="opacity-70">
+      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1" />
+      <circle cx="8" cy="8" r="1.6" fill="currentColor" />
+      <path d="M8 0.5V3M8 13v2.5M0.5 8H3M13 8h2.5" stroke="currentColor" strokeWidth="1" />
+    </svg>
+  )
+}
+
+// Topology (structural graph): connected nodes.
 function GraphIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="opacity-70">
@@ -63,9 +81,26 @@ function TabButton({ tab, active }: { tab: Tab; active: boolean }) {
 
   if (tab.kind === "graph") {
     return (
-      <div className={`${base} ${tone}`} onClick={() => activate(GRAPH_TAB_ID)} title="System graph">
+      <div
+        className={`${base} ${tone}`}
+        onClick={() => activate(GRAPH_TAB_ID)}
+        title="Attention — live agent cognitive state (AGM)"
+      >
+        <AttentionIcon />
+        <span>attention</span>
+      </div>
+    )
+  }
+
+  if (tab.kind === "topology") {
+    return (
+      <div
+        className={`${base} ${tone}`}
+        onClick={() => activate(TOPOLOGY_TAB_ID)}
+        title="Topology — codebase structure (roles, subsystems, dependencies)"
+      >
         <GraphIcon />
-        <span>graph</span>
+        <span>topology</span>
       </div>
     )
   }
@@ -89,10 +124,10 @@ function TabButton({ tab, active }: { tab: Tab; active: boolean }) {
             onSelect: () => setView(tab.id, tab.view === "triefact" ? "source" : "triefact"),
           },
           {
-            label: "Reveal in Graph",
+            label: "Reveal in Topology",
             onSelect: () => {
               revealFile(tab.relPath)
-              activate(GRAPH_TAB_ID)
+              activate(TOPOLOGY_TAB_ID)
             },
           },
           { label: "-", onSelect: () => {} },

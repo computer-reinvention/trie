@@ -125,19 +125,6 @@ export const SETTINGS: SettingDef[] = [
     step: 25,
   },
   {
-    id: "viz.engine",
-    title: "Visualization Engine",
-    description:
-      "Legacy = the system topology map. AGM = the Attention Gravity Map showing the agent's live cognitive state (attention mass, investigations, reasoning trails).",
-    category: "Graph",
-    type: "enum",
-    default: "legacy",
-    enum: [
-      { value: "legacy", label: "Legacy (topology)" },
-      { value: "agm", label: "AGM (attention)" },
-    ],
-  },
-  {
     id: "motion.intensity",
     title: "Choreography Intensity",
     description:

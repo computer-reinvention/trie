@@ -19,12 +19,14 @@ import {
   displayMass,
   foldLiveMass,
   makeContribution,
+  liveLambda,
 } from "./weights"
 
 export interface NodeMass {
   live: number // raw live mass at the last recompute
   historical: number // seeded historical mass (decayed at load; static thereafter in-session)
   display: number // log(live + seed·historical + 1)
+  kind: AttentionEventType | "historical" // dominant intent → drives render style
 }
 
 export interface RoleMass {
@@ -63,9 +65,26 @@ export class AttentionModel {
     s.historical = Math.max(0, historicalMass)
   }
 
-  // Record one attention event: append a decaying contribution.
-  ingest(qname: string, type: AttentionEventType, ts: number): void {
-    this.ensure(qname).contributions.push(makeContribution(type, ts))
+  // Clear all LIVE state (event contributions) while KEEPING historical-mass
+  // seeds. Called when a new session starts: a new session is fresh working
+  // memory, but the cross-session geography (historical mass) persists.
+  clearLive(): void {
+    for (const [q, s] of this.nodes) {
+      if (s.historical > 0) {
+        s.contributions = []
+      } else {
+        this.nodes.delete(q) // no history → drop entirely
+      }
+    }
+  }
+
+  // Record one attention event: append a decaying contribution. `scale` lets a
+  // caller attenuate the weight — used for grep *result hits*, which are faint
+  // "maybe relevant" candidates (a wide low net), not committed attention like
+  // the grep query itself or a read/trace.
+  ingest(qname: string, type: AttentionEventType, ts: number, scale = 1): void {
+    const c = makeContribution(type, ts)
+    this.ensure(qname).contributions.push(scale === 1 ? c : { ...c, weight: c.weight * scale })
   }
 
   // Apply negative evidence: an explicit "ruled out" subtracts live mass by
@@ -90,11 +109,17 @@ export class AttentionModel {
   }
 
   // Create-inherits: a new symbol starts at 0.5× the creator's current live mass
-  // (so freshly written code isn't invisible). Seeds a single contribution.
+  // (so freshly written code isn't invisible). The inherited mass DECAYS like a
+  // write event — otherwise a created symbol would sit at the centre forever and
+  // never drift outward as attention moves on.
   inheritFrom(creator: string, created: string, now: number, factor = 0.5): void {
     const live = this.liveMass(creator, now)
     if (live <= 0) return
-    this.ensure(created).contributions.push({ ts: now, weight: live * factor, lambda: 0 })
+    this.ensure(created).contributions.push({
+      ts: now,
+      weight: live * factor,
+      lambda: liveLambda("write"),
+    })
   }
 
   // Current raw live mass for one symbol at `now`.
@@ -110,7 +135,12 @@ export class AttentionModel {
     const historical = s?.historical ?? 0
     const live = s ? Math.max(0, foldLiveMass(s.contributions, now)) : 0
     const raw = live + HISTORICAL_SEED_FACTOR * historical
-    return { live, historical, display: displayMass(raw) }
+    return {
+      live,
+      historical,
+      display: displayMass(raw),
+      kind: s ? this.dominantKind(s, now) : "historical",
+    }
   }
 
   // Snapshot of every symbol with non-trivial mass at `now`.
@@ -120,9 +150,35 @@ export class AttentionModel {
       const live = Math.max(0, foldLiveMass(s.contributions, now))
       const raw = live + HISTORICAL_SEED_FACTOR * s.historical
       if (raw <= COLD_FLOOR) continue
-      out.set(qname, { live, historical: s.historical, display: displayMass(raw) })
+      out.set(qname, {
+        live,
+        historical: s.historical,
+        display: displayMass(raw),
+        kind: this.dominantKind(s, now),
+      })
     }
     return out
+  }
+
+  // The event type contributing the most CURRENT (decayed) mass to a node —
+  // i.e. how it's predominantly being attended to right now. Drives the render
+  // style: grep → dot, read/patch(write) → pill, trace → constellation node.
+  private dominantKind(s: NodeState, now: number): AttentionEventType | "historical" {
+    const byType = new Map<AttentionEventType, number>()
+    for (const c of s.contributions) {
+      if (!c.type || c.weight <= 0) continue
+      const v = c.weight * Math.exp(-c.lambda * Math.max(0, now - c.ts))
+      byType.set(c.type, (byType.get(c.type) ?? 0) + v)
+    }
+    let best: AttentionEventType | "historical" = "historical"
+    let bestV = 0
+    for (const [t, v] of byType) {
+      if (v > bestV) {
+        bestV = v
+        best = t
+      }
+    }
+    return best
   }
 
   // Role rollups: sum live mass of member symbols per role. Derived, not stored.

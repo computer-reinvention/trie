@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { opencodeClient } from "@/api/opencodeClient"
 import { useGraphStore } from "@/store/graphStore"
-import { useTabsStore, GRAPH_TAB_ID } from "@/store/tabsStore"
+import { useTabsStore, TOPOLOGY_TAB_ID } from "@/store/tabsStore"
 import { ACTIVITY, activityColor } from "@/graph/style"
 import type { ToolPart, PermissionRequest, PermissionReply } from "@/api/types"
 
@@ -85,7 +85,7 @@ export function ToolRow({
       (part.state.input?.sym as string) ??
       (part.state.input?.from_qname as string)
     if (q && useGraphStore.getState().revealSymbol(q)) {
-      useTabsStore.getState().activate(GRAPH_TAB_ID)
+      useTabsStore.getState().activate(TOPOLOGY_TAB_ID)
     }
   }
 
