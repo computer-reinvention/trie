@@ -150,6 +150,7 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
   const drawnRef = useRef<Map<string, Drawn>>(new Map())
   const targetsRef = useRef<Map<string, Target>>(new Map())
   const hoverRef = useRef<string | null>(null) // qname under the cursor (for dot tooltip)
+  const edgeHoverRef = useRef<string | null>(null) // key of the hovered edge (spoke/attention)
   const pillThresholdRef = useRef(Infinity) // mass cutoff for name pills (top %)
   const [tooltip, setTooltipState] = useState<TooltipData | null>(null)
   const tooltipRef = useRef<TooltipData | null>(null)
@@ -431,6 +432,69 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
         best = node.qname
       }
     }
+    if (best) {
+      edgeHoverRef.current = null
+      return best
+    }
+    // No node hit → test edges. A hovered edge highlights AND behaves like its
+    // symbol: a radial spoke resolves to its node; an attention (trace) edge
+    // resolves to the endpoint nearest the cursor. Sets edgeHoverRef so draw()
+    // can light the specific edge.
+    const edge = hitEdge(wx, wy)
+    edgeHoverRef.current = edge?.key ?? null
+    return edge?.qname ?? null
+  }
+
+  // Distance from point (px,py) to segment (ax,ay)-(bx,by).
+  const distToSeg = (
+    px: number,
+    py: number,
+    ax: number,
+    ay: number,
+    bx: number,
+    by: number,
+  ): number => {
+    const dx = bx - ax
+    const dy = by - ay
+    const len2 = dx * dx + dy * dy || 1e-6
+    let t = ((px - ax) * dx + (py - ay) * dy) / len2
+    t = Math.max(0, Math.min(1, t))
+    return Math.hypot(px - (ax + dx * t), py - (ay + dy * t))
+  }
+
+  // Find the edge under the cursor: radial spokes (centre→node) and attention
+  // (trace) edges. Returns the edge key (for highlight) + the symbol it behaves
+  // as. Attention edges win ties (they're more meaningful than spokes).
+  const hitEdge = (wx: number, wy: number): { key: string; qname: string } | null => {
+    const drawn = drawnRef.current
+    const HIT_W = 6 // world px tolerance around a line
+    let best: { key: string; qname: string } | null = null
+    let bestD = HIT_W
+    // attention/trace edges first (priority)
+    const store = useAGMStore.getState()
+    const now = store.lastRecompute || Date.now() / 1000
+    for (const ae of store.graph.liveEdges(now)) {
+      const a = drawn.get(ae.from)
+      const b = drawn.get(ae.to)
+      if (!a || !b) continue
+      const d = distToSeg(wx, wy, a.x, a.y, b.x, b.y)
+      if (d < bestD) {
+        bestD = d
+        // behave as the endpoint nearest the cursor
+        const near = Math.hypot(wx - a.x, wy - a.y) <= Math.hypot(wx - b.x, wy - b.y) ? a : b
+        best = { key: `ae:${ae.from}|${ae.to}`, qname: near.qname }
+      }
+    }
+    if (best) return best
+    // radial spokes
+    for (const node of drawn.values()) {
+      if (node.appear <= 0.05) continue
+      const d = distToSeg(wx, wy, 0, 0, node.x, node.y)
+      if (d < bestD) {
+        bestD = d
+        best = { key: `sp:${node.qname}`, qname: node.qname }
+      }
+    }
     return best
   }
 
@@ -517,18 +581,20 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     // Opacity scales with the node's relevance (hot symbols → stronger spokes,
     // faint symbols → faint spokes); the hovered node's spoke is highlighted.
     const hoveredQ = hoverRef.current
+    const hoveredEdge = edgeHoverRef.current
     for (const node of drawn.values()) {
       const a = smoothstep(node.appear)
       if (a <= 0) continue
       const rel = maxDisplay > 0 ? Math.min(1, node.mass / maxDisplay) : 0
-      const isHover = node.qname === hoveredQ
+      // a spoke highlights when its node is hovered OR the spoke itself is hovered
+      const isHover = node.qname === hoveredQ || hoveredEdge === `sp:${node.qname}`
       ctx.beginPath()
       ctx.moveTo(0, 0)
       ctx.lineTo(node.x, node.y)
       if (isHover) {
         ctx.strokeStyle = "#cbd5e1"
-        ctx.globalAlpha = 0.6 * a
-        ctx.lineWidth = 1.5
+        ctx.globalAlpha = 0.7 * a
+        ctx.lineWidth = 1.75
       } else {
         ctx.strokeStyle = RADIAL_COLOR
         // base 0.08 (faint symbols) → up to ~0.4 (hot symbols)
@@ -541,17 +607,29 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     }
 
     // --- attention edges (trace constellations): bright reasoning paths ---
+    // An edge highlights when it is hovered, OR when either endpoint is hovered
+    // (the edge "acts like the symbol").
     const now = store.lastRecompute || Date.now() / 1000
     for (const ae of store.graph.liveEdges(now)) {
       const a = drawn.get(ae.from)
       const b = drawn.get(ae.to)
       if (!a || !b) continue
+      const isHover =
+        hoveredEdge === `ae:${ae.from}|${ae.to}` ||
+        hoveredQ === ae.from ||
+        hoveredQ === ae.to
       ctx.beginPath()
       ctx.moveTo(a.x, a.y)
       ctx.lineTo(b.x, b.y)
-      ctx.strokeStyle = ATTENTION_EDGE_COLOR
-      ctx.globalAlpha = Math.min(0.85, 0.4 + ae.heat * 0.15)
-      ctx.lineWidth = 1.75
+      if (isHover) {
+        ctx.strokeStyle = "#e9d5ff" // brighter violet-white
+        ctx.globalAlpha = 0.95
+        ctx.lineWidth = 2.5
+      } else {
+        ctx.strokeStyle = ATTENTION_EDGE_COLOR
+        ctx.globalAlpha = Math.min(0.85, 0.4 + ae.heat * 0.15)
+        ctx.lineWidth = 1.75
+      }
       ctx.stroke()
       ctx.globalAlpha = 1
       ctx.lineWidth = 1
@@ -633,10 +711,11 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
       const k = zoomRef.current
       const wx = (e.clientX - rect.left - rect.width / 2) / k
       const wy = (e.clientY - rect.top - rect.height / 2) / k
-      const hit = hitTest(wx, wy)
+      const prevEdge = edgeHoverRef.current
+      const hit = hitTest(wx, wy) // also updates edgeHoverRef
       const px = e.clientX - rect.left
       const py = e.clientY - rect.top
-      if (hit !== hoverRef.current) {
+      if (hit !== hoverRef.current || edgeHoverRef.current !== prevEdge) {
         hoverRef.current = hit
         setTooltip(hit ? buildTooltip(hit, px, py) : null)
         kick()
@@ -645,8 +724,9 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
       }
     }
     const onLeave = () => {
-      if (hoverRef.current) {
+      if (hoverRef.current || edgeHoverRef.current) {
         hoverRef.current = null
+        edgeHoverRef.current = null
         setTooltip(null)
         kick()
       }
