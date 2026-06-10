@@ -17,6 +17,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useAGMStore } from "@/store/agmStore"
 import { useAgentStore } from "@/store/agentStore"
+import { useAppStore } from "@/store/appStore"
 import type { NodeMass } from "@/agm/attentionModel"
 
 // Is the active agent session mid-turn? Drives whether the sim keeps ticking.
@@ -184,6 +185,80 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     if (rafRef.current == null) rafRef.current = requestAnimationFrame(loop)
   }
 
+  // --- frozen-layout snapshot (per opencode session) -------------------------
+  // Save the current drawn layout so a restarted editor / re-opened chat shows
+  // the attention map as it was, frozen (no decay replay).
+  const saveSnapshot = (sessionId: string) => {
+    const projectDir = useAppStore.getState().projectDir
+    if (!projectDir || !sessionId) return
+    const drawn = drawnRef.current
+    if (drawn.size === 0) return
+    const pinned = useAGMStore.getState().model.pinnedSet()
+    const nodes = [...drawn.values()].map((n) => ({
+      qname: n.qname,
+      role: n.role,
+      x: n.x,
+      y: n.y,
+      mass: n.mass,
+      kind: n.kind,
+      pinned: pinned.has(n.qname),
+    }))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(window as any).trie?.agmSnapshotSet?.(projectDir, sessionId, { nodes })
+  }
+
+  // Restore a session's frozen layout into drawnRef (appear=1, p=1 → static).
+  const restoreSnapshot = async (sessionId: string) => {
+    const projectDir = useAppStore.getState().projectDir
+    if (!projectDir || !sessionId) return
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const snap = await (window as any).trie?.agmSnapshotGet?.(projectDir, sessionId)
+    const nodes = snap?.nodes as
+      | Array<{ qname: string; role: string; x: number; y: number; mass: number; kind: NodeMass["kind"]; pinned?: boolean }>
+      | undefined
+    if (!nodes || nodes.length === 0) return
+    const drawn = drawnRef.current
+    const targets = targetsRef.current
+    drawn.clear()
+    targets.clear()
+    const model = useAGMStore.getState().model
+    let maxMass = 0
+    for (const n of nodes) {
+      drawn.set(n.qname, {
+        qname: n.qname,
+        role: n.role,
+        x: n.x,
+        y: n.y,
+        sx: n.x,
+        sy: n.y,
+        tx: n.x,
+        ty: n.y,
+        p: 1,
+        mass: n.mass,
+        kind: n.kind,
+        appear: 1,
+        leaving: false,
+      })
+      // Seed a matching frozen target so the loop keeps these nodes (otherwise
+      // the empty model would fade them out). Angle is derived from position.
+      targets.set(n.qname, {
+        qname: n.qname,
+        role: n.role,
+        x: n.x,
+        y: n.y,
+        mass: n.mass,
+        angle: Math.atan2(n.y, n.x),
+        kind: n.kind,
+      })
+      if (n.pinned) model.pin(n.qname)
+      if (n.mass > maxMass) maxMass = n.mass
+    }
+    // restore the normalization denominator so radii/pills render correctly
+    smoothedMaxRef.current = maxMass
+    maxDisplayRef.current = maxMass
+    kick()
+  }
+
   // A tool call (ingest) bumps lastRecompute → recompute targets immediately so
   // the new attention is reflected, then let the frame loop animate to it.
   useEffect(() => {
@@ -192,6 +267,33 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
         recomputeTargets()
         kick()
       }
+    })
+    return unsub
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Persist the frozen layout when a turn ends, and restore a session's snapshot
+  // when the active chat changes (so a restarted editor / switched chat shows its
+  // attention map). Tracks the active session's running flag across updates.
+  useEffect(() => {
+    let prevActive = useAgentStore.getState().activeId
+    let prevRunning = prevActive
+      ? (useAgentStore.getState().sessions[prevActive]?.running ?? false)
+      : false
+    // restore the initial active session on mount
+    if (prevActive) void restoreSnapshot(prevActive)
+    const unsub = useAgentStore.subscribe((s) => {
+      const active = s.activeId
+      const running = active ? (s.sessions[active]?.running ?? false) : false
+      // turn just ended on the active session → save its snapshot
+      if (active && prevRunning && !running) saveSnapshot(active)
+      // active session changed → save the old one, restore the new one
+      if (active !== prevActive) {
+        if (prevActive) saveSnapshot(prevActive)
+        if (active) void restoreSnapshot(active)
+      }
+      prevActive = active
+      prevRunning = running
     })
     return unsub
     // eslint-disable-next-line react-hooks/exhaustive-deps

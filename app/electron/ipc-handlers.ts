@@ -208,6 +208,47 @@ export function registerIpcHandlers(pm: ProcessManager): void {
     return { ok: true }
   })
 
+  // ---------------------------------------------------------------------------
+  // AGM frozen-layout snapshots — per opencode session, persisted in the
+  // project's .trie/agm-snapshots.json (gitignored, project-scoped, rebuildable).
+  // The renderer saves the final layout when a turn ends and restores it (no
+  // decay replay) when a session is opened/switched, so a restarted editor shows
+  // the chat AND its attention map.
+  // ---------------------------------------------------------------------------
+  const snapPath = (projectDir: string) => join(projectDir, ".trie", "agm-snapshots.json")
+  ipcMain.handle("agm-snapshot-get", (_e, projectDir: string, sessionId: string) => {
+    try {
+      const all = JSON.parse(readFileSync(snapPath(projectDir), "utf-8")) as Record<string, unknown>
+      return all[sessionId] ?? null
+    } catch {
+      return null
+    }
+  })
+  ipcMain.handle(
+    "agm-snapshot-set",
+    (_e, projectDir: string, sessionId: string, snapshot: unknown) => {
+      try {
+        mkdirSync(join(projectDir, ".trie"), { recursive: true })
+        let all: Record<string, unknown> = {}
+        try {
+          all = JSON.parse(readFileSync(snapPath(projectDir), "utf-8"))
+        } catch {
+          all = {}
+        }
+        all[sessionId] = snapshot
+        // cap: keep the 40 most-recent sessions to bound the file
+        const keys = Object.keys(all)
+        if (keys.length > 40) {
+          for (const k of keys.slice(0, keys.length - 40)) delete all[k]
+        }
+        writeFileSync(snapPath(projectDir), JSON.stringify(all))
+        return { ok: true }
+      } catch {
+        return { ok: false }
+      }
+    },
+  )
+
   // API key — stored in macOS Keychain
   ipcMain.handle("get-api-key", async (_event, provider: string) => {
     try {
