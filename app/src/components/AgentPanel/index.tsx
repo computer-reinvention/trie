@@ -6,6 +6,15 @@ import { useSessions } from "@/hooks/useSessions"
 import { displayTitle, relativeTime, updatedAt } from "@/lib/sessionTitle"
 import { Transcript } from "./Transcript"
 import { Composer } from "./Composer"
+import {
+  ChevronDown,
+  Plus,
+  Trash2,
+  Loader2,
+  Search,
+  MessageSquarePlus,
+  Eraser,
+} from "./icons"
 import type { PermissionReply } from "@/api/types"
 
 // The fixed right-hand agent panel — the whole agentic interface: a session
@@ -19,6 +28,7 @@ export function AgentPanel() {
   const active = useActiveSession()
   const serversReady = useAppStore((s) => s.serversReady)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [filter, setFilter] = useState("")
   const menuRef = useRef<HTMLDivElement | null>(null)
 
   // dismiss the session list on outside click / Escape
@@ -36,11 +46,24 @@ export function AgentPanel() {
     }
   }, [menuOpen])
 
+  // reset the filter whenever the popover closes
+  useEffect(() => {
+    if (!menuOpen) setFilter("")
+  }, [menuOpen])
+
   // sessions sorted most-recent-first for the dropdown
   const sortedSessions = useMemo(
     () => order.map((id) => sessions[id]).filter(Boolean),
     [order, sessions],
   )
+
+  const visibleSessions = useMemo(() => {
+    const q = filter.trim().toLowerCase()
+    if (!q) return sortedSessions
+    return sortedSessions.filter((s) => displayTitle(s.info).toLowerCase().includes(q))
+  }, [sortedSessions, filter])
+
+  const showFilter = sortedSessions.length > 6
 
   // Index pending permissions by the tool callID they belong to.
   const permissionsByCallID = useMemo(() => {
@@ -61,88 +84,120 @@ export function AgentPanel() {
   const activeTitle = active ? displayTitle(active.info) : "chat"
 
   return (
-    <aside className="w-96 shrink-0 bg-slate-900 border-l border-slate-800 flex flex-col overflow-hidden">
+    <aside className="w-96 shrink-0 surface-1 border-l border-subtle flex flex-col overflow-hidden">
       {/* session switcher */}
-      <div className="relative flex items-center gap-1 px-2 py-1.5 border-b border-slate-800 shrink-0">
+      <div className="relative flex items-center gap-1.5 px-2.5 py-2 border-b border-subtle shrink-0">
         <button
-          className="flex-1 min-w-0 flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-200 px-2 py-1 hover:bg-slate-750 outline-none"
+          className="flex-1 min-w-0 flex items-center gap-2 surface-2 border border-subtle rounded-lg text-sm text-1 px-2.5 py-1.5 hover:surface-3 transition-colors outline-none"
           onClick={() => setMenuOpen((v) => !v)}
           title={activeTitle}
         >
           {active?.running && (
-            <span className="w-2.5 h-2.5 border-2 border-slate-600 border-t-accent rounded-full animate-spin shrink-0" />
+            <Loader2 size={13} className="animate-spin shrink-0" style={{ color: "var(--accent)" }} />
           )}
           <span className="truncate flex-1 text-left">{activeTitle}</span>
-          <span className="text-slate-500 shrink-0">▾</span>
+          <ChevronDown size={14} className="text-3 shrink-0" />
         </button>
         <button
-          className="shrink-0 rounded px-2 py-1 text-xs text-slate-300 hover:bg-slate-800 border border-slate-700"
+          className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg text-2 hover:text-1 surface-2 hover:surface-3 border border-subtle transition-colors"
           onClick={newSession}
           title="New chat"
         >
-          +
+          <Plus size={16} />
         </button>
 
         {menuOpen && (
           <div
             ref={menuRef}
-            className="absolute left-2 right-2 top-full mt-1 z-50 rounded-md border border-slate-700 bg-slate-900 shadow-xl overflow-hidden"
+            className="absolute left-2.5 right-2.5 top-full mt-1.5 z-50 rounded-xl border border-strong surface-pop elev-2 overflow-hidden"
           >
+            {showFilter && (
+              <div className="flex items-center gap-2 px-3 py-2 border-b border-subtle">
+                <Search size={13} className="text-faint shrink-0" />
+                <input
+                  autoFocus
+                  className="flex-1 bg-transparent text-sm text-1 outline-none placeholder:text-faint"
+                  placeholder="Filter chats…"
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                />
+              </div>
+            )}
             <div className="max-h-72 overflow-y-auto scroll-thin py-1">
-              {sortedSessions.length === 0 && (
-                <div className="px-3 py-2 text-xs text-slate-600">No chats yet.</div>
+              {visibleSessions.length === 0 && (
+                <div className="px-3 py-3 text-xs text-faint text-center">
+                  {filter ? "No matching chats." : "No chats yet."}
+                </div>
               )}
-              {sortedSessions.map((s) => {
+              {visibleSessions.map((s) => {
                 const isActive = s.info.id === activeId
                 return (
                   <div
                     key={s.info.id}
-                    className={`group flex items-center gap-2 px-3 py-1.5 cursor-pointer ${
-                      isActive ? "bg-slate-800" : "hover:bg-slate-800/60"
+                    className={`group relative flex items-center gap-2 mx-1 px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors ${
+                      isActive ? "surface-3" : "hover:surface-2"
                     }`}
                     onClick={() => {
                       switchSession(s.info.id)
                       setMenuOpen(false)
                     }}
                   >
+                    {isActive && (
+                      <span
+                        className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full"
+                        style={{ background: "var(--accent)" }}
+                      />
+                    )}
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs text-slate-200 truncate">{displayTitle(s.info)}</div>
-                      <div className="text-[10px] text-slate-500">{relativeTime(updatedAt(s.info))}</div>
+                      <div className="text-xs text-1 truncate">{displayTitle(s.info)}</div>
+                      <div className="text-[10px] text-faint">
+                        {relativeTime(updatedAt(s.info))}
+                      </div>
                     </div>
+                    {s.running && (
+                      <Loader2
+                        size={12}
+                        className="animate-spin shrink-0"
+                        style={{ color: "var(--accent)" }}
+                      />
+                    )}
                     {sortedSessions.length > 1 && (
                       <button
-                        className="shrink-0 text-slate-600 opacity-0 group-hover:opacity-100 hover:text-red-400 text-xs"
+                        className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-md text-faint opacity-0 group-hover:opacity-100 hover:text-1 transition-all"
+                        style={{ ["--hover" as string]: "var(--danger)" }}
                         title="Delete chat"
                         onClick={(e) => {
                           e.stopPropagation()
                           deleteSession(s.info.id)
                         }}
                       >
-                        ×
+                        <Trash2 size={13} />
                       </button>
                     )}
                   </div>
                 )
               })}
             </div>
-            <div className="border-t border-slate-800 flex">
+            <div className="border-t border-subtle flex">
               <button
-                className="flex-1 px-3 py-1.5 text-[11px] text-slate-400 hover:bg-slate-800 hover:text-slate-200 text-left"
+                className="flex-1 inline-flex items-center gap-1.5 px-3 py-2 text-[11px] text-2 hover:surface-2 hover:text-1 transition-colors"
                 onClick={() => {
                   newSession()
                   setMenuOpen(false)
                 }}
               >
-                + New chat
+                <MessageSquarePlus size={13} />
+                New chat
               </button>
               <button
-                className="px-3 py-1.5 text-[11px] text-slate-500 hover:bg-slate-800 hover:text-slate-300 border-l border-slate-800"
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-[11px] text-3 hover:surface-2 hover:text-2 border-l border-subtle transition-colors"
                 title="Delete all empty chats"
                 onClick={() => {
                   clearEmpty()
                   setMenuOpen(false)
                 }}
               >
+                <Eraser size={13} />
                 Clear empty
               </button>
             </div>
@@ -151,7 +206,8 @@ export function AgentPanel() {
       </div>
 
       {!serversReady ? (
-        <div className="flex-1 flex items-center justify-center text-slate-600 text-xs">
+        <div className="flex-1 flex flex-col items-center justify-center gap-2 text-3 text-xs">
+          <Loader2 size={18} className="animate-spin" style={{ color: "var(--accent)" }} />
           Connecting to opencode…
         </div>
       ) : (

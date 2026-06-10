@@ -1,15 +1,23 @@
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from "react"
 import { graphClient } from "@/api/graphClient"
 import { useSetting } from "@/store/settingsStore"
+import { ArrowUp, Square, X, AtSign, Sparkles } from "./icons"
 
 interface Pill {
   qname: string
   label: string
 }
 
+const MODEL_LABELS: Record<string, string> = {
+  "claude-sonnet-4-6": "Sonnet 4.6",
+  "claude-opus-4-7": "Opus 4.7",
+  "claude-haiku-4-5": "Haiku 4.5",
+}
+
 // The message composer at the bottom of the agent panel. Carries symbol context
 // pills (added by selecting graph nodes), resolves them to prose on send, and
-// shows a Stop button while a turn is running.
+// shows a Stop button while a turn is running. The textarea auto-grows, and a
+// compact toolbar surfaces the active model + a circular send/stop control.
 export function Composer({
   running,
   disabled,
@@ -24,7 +32,16 @@ export function Composer({
   const [pills, setPills] = useState<Pill[]>([])
   const [text, setText] = useState("")
   const sendOnEnter = useSetting<boolean>("agent.sendOnEnter")
+  const model = useSetting<string>("agent.model")
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-grow the textarea between 1 and 8 rows, then scroll.
+  useLayoutEffect(() => {
+    const el = inputRef.current
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`
+  }, [text])
 
   // Graph node selection adds a context pill.
   useEffect(() => {
@@ -94,11 +111,15 @@ export function Composer({
     [handleSend, text, pills.length, sendOnEnter],
   )
 
+  const canSend = !disabled && (text.trim().length > 0 || pills.length > 0)
+
   return (
-    <div className="border-t border-slate-800 bg-slate-900 p-2 shrink-0">
+    <div className="surface-1 border-t border-subtle p-3 shrink-0">
       <div
-        className={`flex flex-col gap-1.5 bg-slate-800 border rounded-lg px-2.5 py-2 transition-colors ${
-          disabled ? "border-slate-700 opacity-60" : "border-slate-600 focus-within:border-slate-500"
+        className={`flex flex-col gap-2 surface-2 rounded-2xl px-3 py-2.5 border transition-all ${
+          disabled
+            ? "border-subtle opacity-60"
+            : "border-strong focus-within:border-accent-soft focus-within:ring-accent-soft"
         }`}
       >
         {pills.length > 0 && (
@@ -106,48 +127,62 @@ export function Composer({
             {pills.map((pill) => (
               <span
                 key={pill.qname}
-                className="inline-flex items-center gap-1 bg-slate-700 border border-slate-600 rounded px-2 py-0.5 text-xs font-mono"
+                className="msg-in inline-flex items-center gap-1 surface-3 border border-subtle rounded-lg pl-1.5 pr-1 py-0.5 text-xs font-mono"
                 title={pill.qname}
               >
-                <span className="text-slate-400">@</span>
-                <span className="text-slate-200">{pill.label}</span>
+                <AtSign size={11} className="text-accent" style={{ color: "var(--accent)" }} />
+                <span className="text-1">{pill.label}</span>
                 <button
-                  className="text-slate-500 hover:text-slate-200 leading-none ml-0.5"
+                  className="text-3 hover:text-1 leading-none rounded p-0.5 hover:bg-black/20"
                   onClick={() => removePill(pill.qname)}
+                  title="Remove"
                 >
-                  ×
+                  <X size={11} />
                 </button>
               </span>
             ))}
           </div>
         )}
+
         <textarea
           ref={inputRef}
-          rows={2}
-          className="bg-transparent text-slate-200 text-sm outline-none placeholder:text-slate-600 resize-none scroll-thin"
-          placeholder={pills.length === 0 ? "Ask or instruct… (⌘K to focus)" : "Add an instruction…"}
+          rows={1}
+          className="bg-transparent text-1 text-sm outline-none placeholder:text-faint resize-none scroll-thin leading-relaxed"
+          style={{ maxHeight: 200 }}
+          placeholder={pills.length === 0 ? "Ask or instruct…  (⌘K to focus)" : "Add an instruction…"}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKeyDown}
           disabled={disabled}
         />
-        <div className="flex items-center justify-end gap-2">
+
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-faint text-[11px] min-w-0">
+            <span className="inline-flex items-center gap-1 truncate" title="Active model">
+              <Sparkles size={12} />
+              <span className="truncate">{MODEL_LABELS[model] ?? model}</span>
+            </span>
+          </div>
+
           {running ? (
             <button
-              className="rounded-md px-3 py-1 text-xs font-medium bg-red-500/20 text-red-300 hover:bg-red-500/30"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-full text-white transition-transform active:scale-95"
+              style={{ background: "var(--danger)" }}
               onClick={onStop}
+              title="Stop"
             >
-              Stop
+              <Square size={14} fill="currentColor" />
             </button>
           ) : (
             <button
-              className={`rounded-md px-3 py-1 text-xs font-medium ${
-                disabled ? "bg-slate-800 text-slate-600 cursor-not-allowed" : "bg-accent text-white"
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-full transition-transform active:scale-95 ${
+                canSend ? "bg-accent text-white" : "surface-3 text-faint cursor-not-allowed"
               }`}
               onClick={handleSend}
-              disabled={disabled}
+              disabled={!canSend}
+              title="Send"
             >
-              Send
+              <ArrowUp size={16} strokeWidth={2.5} />
             </button>
           )}
         </div>
