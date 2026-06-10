@@ -183,7 +183,12 @@ export function useOpenCodeSSE(opencodePort: number): void {
       }
 
       for (const q of c.reads) record(q, "read")
-      for (const q of c.writes) record(q, "write")
+      for (const q of c.writes) {
+        record(q, "write")
+        // Edited/patched symbols are PINNED: they never leave view for the rest
+        // of the session (live mass effectively locked in; radius still drifts).
+        if (known.has(q)) agm.model.pin(q)
+      }
       // Grep is EXPLORATION: the query commits a little attention, but its many
       // result hits are a faint, capped "maybe relevant" net — not 20 equal
       // full-mass pills (that flooded the canvas). Hits get a small fractional

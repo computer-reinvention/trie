@@ -27,6 +27,7 @@ export interface NodeMass {
   historical: number // seeded historical mass (decayed at load; static thereafter in-session)
   display: number // log(live + seed·historical + 1)
   kind: AttentionEventType | "historical" // dominant intent → drives render style
+  pinned?: boolean // edited/patched this session → never leaves view, always named
 }
 
 export interface RoleMass {
@@ -69,6 +70,7 @@ export class AttentionModel {
   // seeds. Called when a new session starts: a new session is fresh working
   // memory, but the cross-session geography (historical mass) persists.
   clearLive(): void {
+    this.pinned.clear()
     for (const [q, s] of this.nodes) {
       if (s.historical > 0) {
         s.contributions = []
@@ -85,6 +87,25 @@ export class AttentionModel {
   ingest(qname: string, type: AttentionEventType, ts: number, scale = 1): void {
     const c = makeContribution(type, ts)
     this.ensure(qname).contributions.push(scale === 1 ? c : { ...c, weight: c.weight * scale })
+  }
+
+  // Symbols the agent EDITED / PATCHED this session. They never leave view: their
+  // live mass is locked at the current maximum (so they always render and rank
+  // top), while their RADIUS can still grow as nothing keeps them artificially
+  // hottest — they drift outward only relative to even-hotter live activity.
+  private pinned = new Set<string>()
+
+  pin(qname: string): void {
+    this.ensure(qname)
+    this.pinned.add(qname)
+  }
+
+  isPinned(qname: string): boolean {
+    return this.pinned.has(qname)
+  }
+
+  pinnedSet(): Set<string> {
+    return this.pinned
   }
 
   // Apply negative evidence: an explicit "ruled out" subtracts live mass by
@@ -135,26 +156,33 @@ export class AttentionModel {
     const historical = s?.historical ?? 0
     const live = s ? Math.max(0, foldLiveMass(s.contributions, now)) : 0
     const raw = live + HISTORICAL_SEED_FACTOR * historical
+    const pinned = this.pinned.has(qname)
     return {
       live,
       historical,
       display: displayMass(raw),
-      kind: s ? this.dominantKind(s, now) : "historical",
+      kind: pinned ? "write" : s ? this.dominantKind(s, now) : "historical",
+      pinned,
     }
   }
 
-  // Snapshot of every symbol with non-trivial mass at `now`.
+  // Snapshot of every symbol with non-trivial mass at `now`. PINNED symbols
+  // (edited/patched) are always included even if cold, flagged so the budget
+  // never folds them and the renderer always names them — their real (decaying)
+  // display still drives their radius, so they drift outward but never vanish.
   snapshot(now: number): Map<string, NodeMass> {
     const out = new Map<string, NodeMass>()
     for (const [qname, s] of this.nodes) {
       const live = Math.max(0, foldLiveMass(s.contributions, now))
       const raw = live + HISTORICAL_SEED_FACTOR * s.historical
-      if (raw <= COLD_FLOOR) continue
+      const pinned = this.pinned.has(qname)
+      if (raw <= COLD_FLOOR && !pinned) continue
       out.set(qname, {
         live,
         historical: s.historical,
         display: displayMass(raw),
-        kind: this.dominantKind(s, now),
+        kind: pinned ? "write" : this.dominantKind(s, now),
+        pinned,
       })
     }
     return out
@@ -222,7 +250,7 @@ export class AttentionModel {
         if (Math.abs(mag) > COLD_FLOOR) kept.push(c)
       }
       if (residual !== 0) kept.push({ ts: now, weight: residual, lambda: 0 })
-      if (kept.length === 0 && s.historical <= 0) {
+      if (kept.length === 0 && s.historical <= 0 && !this.pinned.has(qname)) {
         this.nodes.delete(qname)
       } else {
         s.contributions = kept

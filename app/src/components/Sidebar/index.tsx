@@ -14,6 +14,8 @@ export function Sidebar() {
   // Whether single-clicking a file opens its Source or its Triefact (Prose).
   const [treeMode, setTreeMode] = useState<TabView>("source")
   const [legendOpen, setLegendOpen] = useState(false)
+  // Collapsed: the sidebar shrinks to a sleek rail; click to expand.
+  const [collapsed, setCollapsed] = useState(false)
 
   const toRel = useCallback(
     (filePath: string) => (projectDir ? filePath.replace(projectDir + "/", "") : filePath),
@@ -56,10 +58,39 @@ export function Sidebar() {
 
   if (!projectDir) return null
 
+  // Collapsed: a sleek 9px-wide rail with an expand chevron + vertical "files"
+  // label. Click anywhere on the rail to expand.
+  if (collapsed) {
+    return (
+      <aside
+        className="w-9 shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-2 gap-3 cursor-pointer hover:bg-slate-800/60 group"
+        onClick={() => setCollapsed(false)}
+        title="Expand file tree"
+      >
+        <span className="text-slate-500 group-hover:text-slate-300 text-xs leading-none">›</span>
+        <span
+          className="text-slate-600 group-hover:text-slate-400 text-[10px] uppercase tracking-widest select-none"
+          style={{ writingMode: "vertical-rl" }}
+        >
+          files
+        </span>
+      </aside>
+    )
+  }
+
   return (
     <aside className="w-60 shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col overflow-hidden">
       <div className="px-3 py-2 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
-        <p className="text-slate-500 text-xs font-mono truncate">{projectDir.split("/").pop()}</p>
+        <button
+          className="text-slate-600 hover:text-slate-300 text-xs leading-none shrink-0"
+          onClick={() => setCollapsed(true)}
+          title="Collapse file tree"
+        >
+          ‹
+        </button>
+        <p className="text-slate-500 text-xs font-mono truncate flex-1">
+          {projectDir.split("/").pop()}
+        </p>
         <div className="flex rounded overflow-hidden border border-slate-700 text-[9px] font-mono shrink-0">
           <button
             className={`px-1.5 py-0.5 ${

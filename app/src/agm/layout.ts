@@ -189,17 +189,22 @@ export function applyVisibleBudget(
   massByQname: Map<string, number>,
   roleByQname: Map<string, string>,
   budget = 60,
+  pinned?: Set<string>,
 ): BudgetResult {
   if (placements.length <= budget) {
     return { kept: placements, foldedByRole: new Map(), foldedTotal: 0 }
   }
-  // rank by display mass desc (hottest kept); stable tiebreak by qname
-  const ranked = [...placements].sort((a, b) => {
+  // PINNED (edited/patched) symbols are never folded — they always stay in view.
+  const pinnedPlacements = pinned ? placements.filter((p) => pinned.has(p.qname)) : []
+  const rest = pinned ? placements.filter((p) => !pinned.has(p.qname)) : placements
+  // rank the rest by display mass desc (hottest kept); stable tiebreak by qname
+  const ranked = [...rest].sort((a, b) => {
     const dm = (massByQname.get(b.qname) ?? 0) - (massByQname.get(a.qname) ?? 0)
     return dm !== 0 ? dm : a.qname < b.qname ? -1 : 1
   })
-  const kept = ranked.slice(0, budget)
-  const folded = ranked.slice(budget)
+  const room = Math.max(0, budget - pinnedPlacements.length)
+  const kept = [...pinnedPlacements, ...ranked.slice(0, room)]
+  const folded = ranked.slice(room)
   const foldedByRole = new Map<string, number>()
   for (const p of folded) {
     const role = roleByQname.get(p.qname) ?? "untagged"
