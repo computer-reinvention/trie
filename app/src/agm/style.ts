@@ -46,7 +46,9 @@ export function nodeRadius(displayMassValue: number, maxDisplayMass: number): nu
 // Soft glow alpha for hot nodes — capped low so the map never looks like a
 // light show. Only the upper heat band glows at all.
 export function glowAlpha(displayMassValue: number, maxDisplayMass: number): number {
-  const rel = maxDisplayMass > 0 ? displayMassValue / maxDisplayMass : 0
+  // clamp rel to [0,1]: an eased/smoothed maxDisplay can briefly lag below the
+  // instantaneous hottest value, pushing rel >1; cap so glow never overshoots.
+  const rel = maxDisplayMass > 0 ? Math.min(1, displayMassValue / maxDisplayMass) : 0
   if (rel < 0.5) return 0
   return 0.12 + 0.18 * (rel - 0.5) * 2 // 0.12..0.30 over the top half
 }

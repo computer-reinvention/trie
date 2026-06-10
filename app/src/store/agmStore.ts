@@ -1,7 +1,7 @@
 // AGM store — ties the attention model, attention graph, investigations, and
 // gravity layout together and exposes snapshots to the canvas. Separate from
 // graphStore (which serves the legacy renderer) so the two engines coexist
-// behind the viz.engine toggle until cutover.
+// the Attention tab (AGM); the legacy graphStore drives the Topology tab.
 //
 // Lifecycle:
 //   setModel(model, edges)  — load topology, seed historical mass, build wells
@@ -11,7 +11,13 @@
 //   the canvas owns the rAF loop: calls recompute + gravity.step while not at rest.
 
 import { create } from "zustand"
-import type { AttentionEventType, SystemModel, TypedEdge, InvestigationStatus } from "@/api/types"
+import type {
+  AttentionEventType,
+  SystemModel,
+  SystemModelNode,
+  TypedEdge,
+  InvestigationStatus,
+} from "@/api/types"
 import { AttentionModel, type NodeMass } from "@/agm/attentionModel"
 import { AttentionGraph } from "@/agm/attentionGraph"
 import { InvestigationRegistry } from "@/agm/investigations"
@@ -28,6 +34,8 @@ interface AGMState {
 
   // --- loaded topology ---
   systemModel: SystemModel | null
+  // qname → full node metadata (file_path, signature, role, …) for menus/inspect
+  nodesByQname: Map<string, SystemModelNode>
   roleByQname: Map<string, string>
   // sorted unique role list (for stable angular geography in the layout)
   roles: string[]
@@ -44,7 +52,10 @@ interface AGMState {
 
   // --- actions ---
   setModel: (model: SystemModel, edges: TypedEdge[]) => void
-  ingest: (qname: string, type: AttentionEventType, ts?: number) => void
+  // Wipe LIVE state for a new session (live mass, attention graph/trail, active
+  // investigation). Keeps the loaded topology + historical-mass geography.
+  resetSession: () => void
+  ingest: (qname: string, type: AttentionEventType, ts?: number, scale?: number) => void
   ingestTrace: (chain: string[], ts?: number) => void
   setInvestigation: (id: string, label: string, status?: InvestigationStatus) => void
   addNegativeEvidence: (qname: string, magnitude?: number, ts?: number) => void
@@ -61,6 +72,7 @@ export const useAGMStore = create<AGMState>((set, get) => ({
   adjacency: null,
 
   systemModel: null,
+  nodesByQname: new Map(),
   roleByQname: new Map(),
   roles: [],
   historicalByQname: new Map(),
@@ -73,9 +85,13 @@ export const useAGMStore = create<AGMState>((set, get) => ({
 
   setModel: (systemModel, edges) => {
     const { model } = get()
-    // Build role map from the model + synthetic nodes.
+    // Build role map + node-metadata map from the model + synthetic nodes.
     const roleByQname = new Map<string, string>()
-    for (const n of systemModel.nodes) roleByQname.set(n.qname, n.role || "untagged")
+    const nodesByQname = new Map<string, SystemModelNode>()
+    for (const n of systemModel.nodes) {
+      roleByQname.set(n.qname, n.role || "untagged")
+      nodesByQname.set(n.qname, n)
+    }
     for (const [q, r] of syntheticRoleEntries()) roleByQname.set(q, r)
 
     // Attention-preserving: keep the existing AttentionModel instance (its live
@@ -108,6 +124,7 @@ export const useAGMStore = create<AGMState>((set, get) => ({
 
     set({
       systemModel,
+      nodesByQname,
       roleByQname,
       roles,
       historicalByQname,
@@ -117,8 +134,16 @@ export const useAGMStore = create<AGMState>((set, get) => ({
     get().recompute()
   },
 
-  ingest: (qname, type, ts) => {
-    get().model.ingest(qname, type, ts ?? Date.now() / 1000)
+  resetSession: () => {
+    const { model } = get()
+    model.clearLive() // drop live mass, keep historical geography
+    // Fresh attention graph (trail/edges) and investigations for the new session.
+    set({ graph: new AttentionGraph(), investigations: new InvestigationRegistry() })
+    get().recompute()
+  },
+
+  ingest: (qname, type, ts, scale) => {
+    get().model.ingest(qname, type, ts ?? Date.now() / 1000, scale ?? 1)
   },
 
   ingestTrace: (chain, ts) => {

@@ -8,12 +8,21 @@ import { create } from "zustand"
 
 export type TabView = "source" | "triefact"
 
-export const GRAPH_TAB_ID = "graph"
+// The graph tab id is kept as "graph" for back-compat (deep links, showGraph),
+// but it now represents the ATTENTION (AGM) view. Topology (legacy structural
+// graph) is a separate permanent tab.
+export const GRAPH_TAB_ID = "graph" // Attention (AGM)
+export const TOPOLOGY_TAB_ID = "topology" // Topology (legacy structural graph)
 export const PATCHES_TAB_ID = "patches"
 
 export interface GraphTab {
   id: typeof GRAPH_TAB_ID
   kind: "graph"
+}
+
+export interface TopologyTab {
+  id: typeof TOPOLOGY_TAB_ID
+  kind: "topology"
 }
 
 export interface PatchesTab {
@@ -35,7 +44,7 @@ export interface FileTab {
   pendingFocusLine?: number
 }
 
-export type Tab = GraphTab | PatchesTab | FileTab
+export type Tab = GraphTab | TopologyTab | PatchesTab | FileTab
 
 interface TabsStore {
   tabs: Tab[]
@@ -67,7 +76,8 @@ function basename(relPath: string): string {
 
 export const useTabsStore = create<TabsStore>((set, get) => ({
   tabs: [
-    { id: GRAPH_TAB_ID, kind: "graph" },
+    { id: GRAPH_TAB_ID, kind: "graph" }, // Attention (AGM)
+    { id: TOPOLOGY_TAB_ID, kind: "topology" }, // Topology (legacy)
     { id: PATCHES_TAB_ID, kind: "patches" },
   ],
   activeId: GRAPH_TAB_ID,
@@ -107,7 +117,7 @@ export const useTabsStore = create<TabsStore>((set, get) => ({
   activate: (id) => set({ activeId: id }),
 
   close: (id) => {
-    if (id === GRAPH_TAB_ID || id === PATCHES_TAB_ID) return // permanent tabs
+    if (id === GRAPH_TAB_ID || id === TOPOLOGY_TAB_ID || id === PATCHES_TAB_ID) return // permanent
     set((s) => {
       const idx = s.tabs.findIndex((t) => t.id === id)
       if (idx === -1) return {}

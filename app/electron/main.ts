@@ -37,6 +37,11 @@ function createWindow(): void {
   // Open DevTools in development (not when packaged)
   if (!app.isPackaged) {
     win.webContents.openDevTools()
+    // Forward renderer console to the main stdout so logs are capturable
+    // outside the in-window DevTools (dev diagnostics only).
+    win.webContents.on("console-message", (_e, level, message, line, sourceId) => {
+      console.log(`[renderer:${level}] ${message}  (${sourceId}:${line})`)
+    })
   }
 
   win.on("closed", () => {

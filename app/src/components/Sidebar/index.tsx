@@ -1,6 +1,6 @@
 import { useState, useCallback, type MouseEvent } from "react"
 import { useGraphStore } from "@/store/graphStore"
-import { useTabsStore, type TabView } from "@/store/tabsStore"
+import { useTabsStore, TOPOLOGY_TAB_ID, type TabView } from "@/store/tabsStore"
 import { useAppStore } from "@/store/appStore"
 import { openContextMenu } from "@/store/contextMenuStore"
 import { FileTree } from "./FileTree"
@@ -42,7 +42,13 @@ export function Sidebar() {
           onSelect: () => openFile(rel, { view: "triefact", forceView: true }),
         },
         { label: "-", onSelect: () => {} },
-        { label: "Reveal in Graph", onSelect: () => revealFile(rel) },
+        {
+          label: "Reveal in Topology",
+          onSelect: () => {
+            revealFile(rel)
+            useTabsStore.getState().activate(TOPOLOGY_TAB_ID)
+          },
+        },
       ])
     },
     [toRel, openFile, focusFile],

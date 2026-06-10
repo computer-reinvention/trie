@@ -4,6 +4,7 @@ import { useAgentStore } from "@/store/agentStore"
 import { useAGMStore } from "@/store/agmStore"
 import { choreographFor } from "@/graph/agentChoreography"
 import { classifyTool, syntheticTarget } from "@/agm/toolClassify"
+import { syntheticQname } from "@/api/types"
 import { graphClient } from "@/api/graphClient"
 import { motionPrefs, playCascade, ghostCascade, conductGlance, useConductor } from "@/graph/conductor"
 import { usePatchesStore } from "@/store/patchesStore"
@@ -165,21 +166,41 @@ export function useOpenCodeSSE(opencodePort: number): void {
       const c = choreographFor(part)
       const eventType = classifyTool(part.tool)
 
-      const record = (qname: string, type: "grep" | "read" | "trace" | "write") => {
-        agm.ingest(qname, type, now)
-        graphClient.recordAttention({ type, qname }).catch(() => {})
+      // Only ingest targets that are REAL symbols in the loaded graph. The agent
+      // often passes module paths (e.g. "trie/mcp_server.py") to read/trace —
+      // those aren't symbols, have no role/position, and would render as
+      // "untagged" floaters. Route any non-symbol target to the Filesystem
+      // synthetic node instead.
+      const known = agm.nodesByQname
+      const record = (
+        target: string,
+        type: "grep" | "read" | "trace" | "write",
+        scale = 1,
+      ) => {
+        const qname = known.has(target) ? target : syntheticQname("Filesystem")
+        agm.ingest(qname, type, now, scale)
+        if (scale === 1) graphClient.recordAttention({ type, qname }).catch(() => {})
       }
 
       for (const q of c.reads) record(q, "read")
-      for (const q of c.scans) record(q, "grep")
       for (const q of c.writes) record(q, "write")
+      // Grep is EXPLORATION: the query commits a little attention, but its many
+      // result hits are a faint, capped "maybe relevant" net — not 20 equal
+      // full-mass pills (that flooded the canvas). Hits get a small fractional
+      // weight and are capped so a broad grep can't dominate the field.
+      const GREP_HIT_SCALE = 0.25
+      const GREP_HIT_CAP = 8
+      c.scans.slice(0, GREP_HIT_CAP).forEach((q, i) => {
+        // first scan entry is the query target (full weight); rest are hits.
+        record(q, "grep", i === 0 ? 1 : GREP_HIT_SCALE)
+      })
       // trace/flow chains build the attention graph (the reasoning trail).
+      // Keep only real symbols — drop module-path / non-symbol hops.
       if (c.flows.length) {
-        // reconstruct ordered chains from consecutive flow pairs
         const chain: string[] = []
         for (const f of c.flows) {
-          if (chain[chain.length - 1] !== f.from) chain.push(f.from)
-          chain.push(f.to)
+          if (known.has(f.from) && chain[chain.length - 1] !== f.from) chain.push(f.from)
+          if (known.has(f.to)) chain.push(f.to)
         }
         if (chain.length > 1) agm.ingestTrace(chain, now)
       }

@@ -14,32 +14,133 @@
 // All placement math lives in agm/layout.ts and is unit-tested; this file only
 // eases drawn positions toward those targets and paints.
 
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useAGMStore } from "@/store/agmStore"
-import { placeSymbol, ease, roleBaseAngle, R_MAX } from "@/agm/layout"
-import { displayMass } from "@/agm/weights"
+import type { NodeMass } from "@/agm/attentionModel"
 import {
-  roleColor,
-  nodeOpacity,
-  nodeRadius,
-  glowAlpha,
-  tierFor,
-  ROLE_LABEL_COLOR,
-  ATTENTION_EDGE_COLOR,
-  REPO_EDGE_COLOR,
-} from "@/agm/style"
+  placeSymbol,
+  applyClusterCohesion,
+  applyVisibleBudget,
+  spreadTargets,
+  type PolarPlacement,
+  R_MAX,
+} from "@/agm/layout"
+import { displayMass } from "@/agm/weights"
+import { tierFor, ATTENTION_EDGE_COLOR } from "@/agm/style"
+
+// Radial spoke colour (centre → node). Slightly warmer/brighter than the old
+// repo-edge slate so the spokes read at low opacity.
+const RADIAL_COLOR = "#475569"
+import { openContextMenu } from "@/store/contextMenuStore"
+import { buildSymbolMenu } from "@/agm/symbolMenu"
+import { graphClient } from "@/api/graphClient"
 
 interface AGMCanvasProps {
   className?: string
 }
 
-// A drawn node: eased screen position + the live target it's chasing.
-interface Drawn {
+// A target produced by the MODEL (recomputed on tool calls / decay), holding
+// where a symbol wants to be. The render loop eases drawn nodes toward these.
+interface Target {
   qname: string
   role: string
   x: number
   y: number
-  mass: number // display mass this frame
+  mass: number // display mass
+  angle: number // bearing (for perimeter entry)
+  kind: NodeMass["kind"] // dominant intent → render style (dot / pill / trace)
+}
+
+// A drawn node. Position is animated along a JOURNEY from (sx,sy) to (tx,ty)
+// using an ease-in-out (smoothstep) curve on progress `p` — slow start, faster
+// middle, slow end (Bézier-like), so motion is never jarring. When the target
+// changes, the current position becomes the new start and `p` resets. `appear`
+// 0→1 drives the entry fade+scale; `leaving` triggers the exit. Nothing instant.
+interface Drawn {
+  qname: string
+  role: string
+  x: number // current rendered position
+  y: number
+  sx: number // journey start
+  sy: number
+  tx: number // journey target
+  ty: number
+  p: number // progress 0→1 along the journey
+  mass: number
+  kind: NodeMass["kind"] // render style
+  appear: number // 0 (just spawned) → 1 (fully present)
+  leaving: boolean // true once it left the target set; fades out then is dropped
+}
+
+// Max symbols rendered at once (PRD: 20–100 visible). The rest fold into a
+// per-role "+N" peripheral count so the centre never becomes an unreadable pile.
+const VISIBLE_BUDGET = 60
+
+// How fast the normalization denominator (maxDisplay) chases its instantaneous
+// value. Easing it prevents "whiplash": one new hottest symbol would otherwise
+// instantly rescale every node's radius. ~0.12/frame ≈ settles in ~0.4s.
+const MAX_DISPLAY_EASE = 0.12
+
+// Minimum gap (world px) enforced between pill footprints by the de-overlap pass.
+const MIN_GAP = 8
+
+// Two clocks. The MODEL clock is event-driven (tool calls ingest attention) plus
+// a slow decay tick; it recomputes TARGETS at most this often. The RENDER clock
+// is the rAF frame loop, which only eases drawn nodes toward those targets per
+// the physics laws (speed floor/ceiling, fade in/out). Targets stay fixed
+// between recomputes so the frame loop reliably settles — no per-frame thrash.
+const MODEL_TICK_MS = 250
+
+// Entry/exit fade rate (per frame). appear eases 0→1 on spawn; a leaving node
+// fades 1→0 then is removed. Keeps every entrance/exit pleasing, never instant.
+const APPEAR_EASE = 0.08
+const FADE_EASE = 0.06
+
+// Journey progress per frame. Position interpolates start→target via smoothstep
+// (slow-start, fast-middle, slow-end). 0.04/frame ≈ ~0.4s end-to-end at 60fps.
+const JOURNEY_RATE = 0.04
+
+// Fraction of nodes (by attention rank) that render as NAME PILLS. The rest are
+// small dots (hover to reveal the name). Keeps the field calm — only the symbols
+// that genuinely matter get a label.
+const PILL_PERCENTILE = 0.2 // top 20%
+
+// Footprint (world px) a dot reserves during target-spread — small so the
+// exploration net packs tightly rather than being spaced like labels.
+const DOT_FOOTPRINT = 16
+
+// Rich hover tooltip (codelens-style): what the symbol is + WHY it's on the map.
+interface TooltipData {
+  x: number
+  y: number
+  qname: string
+  name: string
+  role: string
+  oneLiner: string
+  reason: string // "grepped (exploration)" / "read" / "traced" / …
+  reasonColor: string
+  liveMass: number
+  historicalMass: number
+  inbound?: number
+  outbound?: number
+}
+
+// Human reason + colour for why a node is lit, from its dominant intent.
+function intentReason(kind: NodeMass["kind"]): { label: string; color: string } {
+  switch (kind) {
+    case "grep":
+      return { label: "found while exploring (grep)", color: "#2dd4bf" }
+    case "read":
+      return { label: "read by the agent", color: "#3b82f6" }
+    case "trace":
+      return { label: "traced — part of the reasoning path", color: "#a78bfa" }
+    case "write":
+      return { label: "edited by the agent", color: "#f59e0b" }
+    case "historical":
+      return { label: "historically attended (returns here)", color: "#94a3b8" }
+    default:
+      return { label: "attended", color: "#94a3b8" }
+  }
 }
 
 export function AGMCanvas({ className }: AGMCanvasProps) {
@@ -47,6 +148,18 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
   // user zoom only (no pan / no follow — the centre is fixed at (0,0)).
   const zoomRef = useRef(1)
   const drawnRef = useRef<Map<string, Drawn>>(new Map())
+  const targetsRef = useRef<Map<string, Target>>(new Map())
+  const hoverRef = useRef<string | null>(null) // qname under the cursor (for dot tooltip)
+  const pillThresholdRef = useRef(Infinity) // mass cutoff for name pills (top %)
+  const [tooltip, setTooltipState] = useState<TooltipData | null>(null)
+  const tooltipRef = useRef<TooltipData | null>(null)
+  const setTooltip = (t: TooltipData | null) => {
+    tooltipRef.current = t
+    setTooltipState(t)
+  }
+  const maxDisplayRef = useRef(0) // current normalization denominator (target)
+  const smoothedMaxRef = useRef(0) // eased denominator used for rendering
+  const lastModelTickRef = useRef(0)
   const rafRef = useRef<number | null>(null)
 
   const systemModel = useAGMStore((s) => s.systemModel)
@@ -59,24 +172,25 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
   }, [systemModel])
 
   const kick = () => {
-    if (rafRef.current == null) loop()
+    if (rafRef.current == null) rafRef.current = requestAnimationFrame(loop)
   }
 
-  // Re-kick whenever the attention snapshot changes (ingest happened).
+  // A tool call (ingest) bumps lastRecompute → recompute targets immediately so
+  // the new attention is reflected, then let the frame loop animate to it.
   useEffect(() => {
     const unsub = useAGMStore.subscribe((s, prev) => {
-      if (s.lastRecompute !== prev.lastRecompute) kick()
+      if (s.lastRecompute !== prev.lastRecompute) {
+        recomputeTargets()
+        kick()
+      }
     })
     return unsub
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const loop = () => {
-    const canvas = canvasRef.current
-    if (!canvas) {
-      rafRef.current = null
-      return
-    }
+  // ---- MODEL clock: recompute TARGETS (where every symbol wants to be). Runs
+  // on each tool call and on a slow decay tick — NOT every frame. -------------
+  const recomputeTargets = () => {
     const store = useAGMStore.getState()
     const now = Date.now() / 1000
     store.recompute(now)
@@ -86,74 +200,270 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     const roleByQ = store.roleByQname
     const histByQ = store.historicalByQname
     const roles = store.roles
-    const drawn = drawnRef.current
 
-    // The active set: any qname with direct or propagated attention. Once a
-    // symbol has been touched it stays in `drawn` until it fully cools AND
-    // reaches the perimeter — nothing vanishes mid-investigation.
     const active = new Set<string>(mass.keys())
     for (const [q, v] of prop) if (v > 0) active.add(q)
 
-    let maxDisplay = 0
+    let instantMax = 0
     for (const q of active) {
       const m = mass.get(q)
       const propAdd = prop.get(q) ?? 0
       const d = m ? m.display : propAdd > 0 ? displayMass(propAdd) : 0
-      if (d > maxDisplay) maxDisplay = d
+      if (d > instantMax) instantMax = d
     }
+    maxDisplayRef.current = instantMax
 
-    // Update/insert targets for active symbols; ease drawn positions toward them.
-    let motion = 0
+    const activeRoleByQ = new Map<string, string>()
+    const massForBudget = new Map<string, number>()
+    const placements = []
     for (const q of active) {
       const m = mass.get(q)
       const propAdd = prop.get(q) ?? 0
       const d = m ? m.display : propAdd > 0 ? displayMass(propAdd) : 0
       const role = roleByQ.get(q) || "untagged"
-      const target = placeSymbol({
-        qname: q,
-        role,
-        roles,
-        displayMass: d,
-        maxDisplay,
-        historicalMass: histByQ.get(q) ?? 0,
+      activeRoleByQ.set(q, role)
+      massForBudget.set(q, d)
+      placements.push(
+        placeSymbol({
+          qname: q,
+          role,
+          roles,
+          displayMass: d,
+          maxDisplay: instantMax,
+          historicalMass: histByQ.get(q) ?? 0,
+        }),
+      )
+    }
+    applyClusterCohesion(placements, activeRoleByQ, histByQ)
+    const budget = applyVisibleBudget(placements, massForBudget, activeRoleByQ, VISIBLE_BUDGET)
+
+    // Pill-vs-dot threshold (top PILL_PERCENTILE by mass): pills reserve their
+    // full measured width when spreading; dots reserve a tight footprint so the
+    // faint exploration net stays compact instead of being spaced like labels.
+    const keptMasses = budget.kept
+      .map((p) => massForBudget.get(p.qname) ?? 0)
+      .filter((v) => v > 0)
+      .sort((a, b) => a - b)
+    const pillThreshold =
+      keptMasses.length > 0
+        ? (keptMasses[Math.floor(keptMasses.length * (1 - PILL_PERCENTILE))] ?? Infinity)
+        : Infinity
+    pillThresholdRef.current = pillThreshold
+    const widthFor = (qname: string): number => {
+      const m = massForBudget.get(qname) ?? 0
+      return m >= pillThreshold ? pillWidth(qname) : DOT_FOOTPRINT
+    }
+    spreadTargets(budget.kept, widthFor)
+
+    const targets = new Map<string, Target>()
+    for (const p of budget.kept) {
+      // dominant intent → render kind; propagated-only nodes (no direct event)
+      // render as faint grep-style dots (inferred, not directly attended).
+      const kind = mass.get(p.qname)?.kind ?? "grep"
+      targets.set(p.qname, {
+        qname: p.qname,
+        role: activeRoleByQ.get(p.qname) || "untagged",
+        x: p.x,
+        y: p.y,
+        mass: massForBudget.get(p.qname) ?? 0,
+        angle: p.angle,
+        kind,
       })
-      let node = drawn.get(q)
-      if (!node) {
-        // enter from the perimeter at the symbol's stable bearing
-        node = { qname: q, role, x: Math.cos(target.angle) * R_MAX, y: Math.sin(target.angle) * R_MAX, mass: d }
-        drawn.set(q, node)
-      }
-      node.mass = d
-      const next = ease({ x: node.x, y: node.y }, target)
-      node.x = next.x
-      node.y = next.y
-      motion += next.dist
+    }
+    targetsRef.current = targets
+  }
+
+  // ---- RENDER clock: ease drawn nodes toward targets; animate entry/exit. ----
+  const loop = () => {
+    const canvas = canvasRef.current
+    if (!canvas) {
+      rafRef.current = null
+      return
+    }
+    const nowMs = performance.now()
+    // Slow decay tick: refresh targets occasionally so cooling symbols drift out
+    // smoothly even with no tool calls. Cheap; far below frame rate.
+    if (nowMs - lastModelTickRef.current > MODEL_TICK_MS) {
+      lastModelTickRef.current = nowMs
+      recomputeTargets()
     }
 
-    // Symbols no longer active: let them drift to the perimeter, then drop once
-    // they've arrived (so the canvas doesn't accumulate forever across
-    // investigations, but nothing vanishes abruptly mid-investigation).
-    for (const [q, node] of drawn) {
-      if (active.has(q)) continue
-      node.mass = 0
-      const target = {
-        x: (node.x / (Math.hypot(node.x, node.y) || 1)) * R_MAX,
-        y: (node.y / (Math.hypot(node.x, node.y) || 1)) * R_MAX,
+    const drawn = drawnRef.current
+    const targets = targetsRef.current
+
+    // Ease the rendering denominator toward the model's value (no snap-rescale).
+    const want = maxDisplayRef.current
+    const prevMax = smoothedMaxRef.current
+    smoothedMaxRef.current =
+      want > prevMax ? prevMax + (want - prevMax) * MAX_DISPLAY_EASE : want
+    const maxDisplay = smoothedMaxRef.current
+
+    let motion = 0
+
+    // Spawn drawn nodes for any new target — entering from the perimeter at the
+    // symbol's bearing, with appear=0 so it fades+scales in (never instant).
+    for (const [q, t] of targets) {
+      let node = drawn.get(q)
+      if (!node) {
+        const ex = Math.cos(t.angle) * R_MAX
+        const ey = Math.sin(t.angle) * R_MAX
+        node = {
+          qname: q,
+          role: t.role,
+          x: ex,
+          y: ey,
+          sx: ex,
+          sy: ey,
+          tx: t.x,
+          ty: t.y,
+          p: 0,
+          mass: t.mass,
+          kind: t.kind,
+          appear: 0,
+          leaving: false,
+        }
+        drawn.set(q, node)
       }
-      const next = ease({ x: node.x, y: node.y }, target, 0.08)
-      node.x = next.x
-      node.y = next.y
-      motion += next.dist
-      if (next.dist < 0.5) drawn.delete(q)
+      node.kind = t.kind
+      node.leaving = false
+      node.role = t.role
+      node.mass = t.mass
+      // Re-anchor the journey if the target moved meaningfully (new tool call /
+      // decay shift): start from where we are now, restart the ease-in-out.
+      if (Math.hypot(t.x - node.tx, t.y - node.ty) > 1) {
+        node.sx = node.x
+        node.sy = node.y
+        node.tx = t.x
+        node.ty = t.y
+        node.p = 0
+      }
+      motion += advanceJourney(node)
+      // entry fade/scale eases in
+      if (node.appear < 1) {
+        node.appear = Math.min(1, node.appear + APPEAR_EASE)
+        motion += 1
+      }
+    }
+
+    // Nodes no longer targeted: mark leaving, retarget to the perimeter (so the
+    // exit travels on the same smooth curve), fade out, then drop. Never a pop.
+    for (const [q, node] of drawn) {
+      if (targets.has(q)) continue
+      const r = Math.hypot(node.x, node.y) || 1e-6
+      const ox = (node.x / r) * R_MAX
+      const oy = (node.y / r) * R_MAX
+      if (!node.leaving) {
+        node.leaving = true
+        node.sx = node.x
+        node.sy = node.y
+        node.tx = ox
+        node.ty = oy
+        node.p = 0
+      }
+      motion += advanceJourney(node)
+      node.appear = Math.max(0, node.appear - FADE_EASE)
+      motion += 1
+      if (node.appear <= 0) drawn.delete(q)
     }
 
     draw(maxDisplay)
 
-    if (motion < 0.5 && maxDisplay <= 0 && drawn.size === 0) {
+    if (motion < 0.5 && drawn.size === 0 && targets.size === 0) {
       rafRef.current = null
       return
     }
     rafRef.current = requestAnimationFrame(loop)
+  }
+
+  // Build the rich codelens tooltip for a hovered symbol: what it is + why it's
+  // on the map (its dominant intent) + its live/historical mass + graph degree.
+  const buildTooltip = (qname: string, x: number, y: number): TooltipData => {
+    const s = useAGMStore.getState()
+    const node = s.nodesByQname.get(qname)
+    const m = s.massByQname.get(qname)
+    const drawn = drawnRef.current.get(qname)
+    const kind = m?.kind ?? drawn?.kind ?? "historical"
+    const reason = intentReason(kind)
+    return {
+      x,
+      y,
+      qname,
+      name: node?.name ?? qname.split(":").pop() ?? qname,
+      role: node?.role || "untagged",
+      oneLiner: node?.one_liner ?? "",
+      reason: reason.label,
+      reasonColor: reason.color,
+      liveMass: m?.live ?? 0,
+      historicalMass: s.historicalByQname.get(qname) ?? 0,
+      inbound: node?.inbound_count,
+      outbound: node?.outbound_count,
+    }
+  }
+
+  // Pill width (world px) for a qname — measured once with the pill font, cached
+  // for the frame. Feeds spreadTargets so target spacing matches what's drawn.
+  const pillWidthCache = new Map<string, number>()
+  const pillWidth = (qname: string): number => {
+    const cached = pillWidthCache.get(qname)
+    if (cached != null) return cached
+    const ctx = canvasRef.current?.getContext("2d")
+    if (!ctx) return 80
+    ctx.font = "11px ui-sans-serif, system-ui"
+    const label = qname.split(":").pop() ?? qname
+    const w = ctx.measureText(label).width + 14 + MIN_GAP // padX*2 + min gap
+    pillWidthCache.set(qname, w)
+    return w
+  }
+
+  // Find the qname of the node under a world-space point. Uses a generous
+  // circular radius so even small dots are easy to hover / right-click; the
+  // nearest qualifying node wins.
+  const hitTest = (wx: number, wy: number): string | null => {
+    const drawn = drawnRef.current
+    const HIT_R = 14
+    let best: string | null = null
+    let bestD = Infinity
+    for (const node of drawn.values()) {
+      if (node.appear <= 0.05) continue
+      const d = Math.hypot(wx - node.x, wy - node.y)
+      if (d <= HIT_R && d < bestD) {
+        bestD = d
+        best = node.qname
+      }
+    }
+    return best
+  }
+
+  // Blast radius: light up the cascade set as attention so the user sees what
+  // would regenerate if this symbol changed.
+  const revealBlastRadius = (qname: string) => {
+    graphClient
+      .blastRadius(qname)
+      .then((res) => {
+        const agm = useAGMStore.getState()
+        const now = Date.now() / 1000
+        for (const c of res.cascade ?? []) agm.ingest(c.qname, "grep", now)
+        agm.ingest(qname, "read", now)
+        agm.recompute(now)
+      })
+      .catch(() => {})
+  }
+
+  // Attention stats: a quick inspector (alert for now — host can replace with a
+  // panel). Pulls live + historical mass and node metadata.
+  const showStats = (qname: string) => {
+    const s = useAGMStore.getState()
+    const node = s.nodesByQname.get(qname)
+    const m = s.massByQname.get(qname)
+    const hist = s.historicalByQname.get(qname) ?? 0
+    const lines = [
+      qname,
+      `role: ${node?.role ?? "—"}`,
+      `live mass (display): ${(m?.display ?? 0).toFixed(2)}`,
+      `historical mass: ${hist.toFixed(1)}`,
+      `inbound: ${node?.inbound_count ?? "—"}  outbound: ${node?.outbound_count ?? "—"}`,
+    ]
+    window.alert(lines.join("\n"))
   }
 
   const draw = (maxDisplay: number) => {
@@ -180,46 +490,57 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     const store = useAGMStore.getState()
     const drawn = drawnRef.current
     const roles = store.roles
-    const edgesByQ = store.edgesByQname
 
     // --- the crosshair: current attention origin (always present) ---
     drawCrosshair(ctx)
 
-    // --- role anchor labels: influence, not containment (no boxes) ---
-    // Only show a role's label once it has a visible symbol this frame.
-    const visibleRoles = new Set<string>()
-    for (const n of drawn.values()) if (n.mass > 0) visibleRoles.add(n.role)
-    for (const role of visibleRoles) {
-      const angle = roleBaseAngle(role, roles)
-      const lx = Math.cos(angle) * (R_MAX + 26)
-      const ly = Math.sin(angle) * (R_MAX + 26)
-      ctx.fillStyle = ROLE_LABEL_COLOR
-      ctx.globalAlpha = 0.55
-      ctx.font = "12px ui-sans-serif, system-ui"
-      ctx.textAlign = "center"
-      ctx.fillText(role, lx, ly)
-      ctx.globalAlpha = 1
-    }
-
-    // --- repository edges as faint springs between visible nodes ---
-    ctx.lineWidth = 1
-    for (const [from, node] of drawn) {
-      const outs = edgesByQ.get(from)
-      if (!outs) continue
-      for (const e of outs) {
-        const to = drawn.get(e.to)
-        if (!to) continue
-        ctx.beginPath()
-        ctx.moveTo(node.x, node.y)
-        ctx.lineTo(to.x, to.y)
-        ctx.strokeStyle = REPO_EDGE_COLOR
-        ctx.globalAlpha = 0.35
-        ctx.stroke()
-        ctx.globalAlpha = 1
+    // --- role clusters: centroid + member count of each role's visible nodes.
+    // A role is an emergent grouping; its pill tag is drawn (below, after nodes)
+    // only when 2+ of its members are active so it sits with the cluster.
+    const clusterAcc = new Map<string, { sx: number; sy: number; n: number; top: number }>()
+    for (const n of drawn.values()) {
+      if (n.mass <= 0) continue
+      let a = clusterAcc.get(n.role)
+      if (!a) {
+        a = { sx: 0, sy: 0, n: 0, top: 0 }
+        clusterAcc.set(n.role, a)
       }
+      a.sx += n.x
+      a.sy += n.y
+      a.n += 1
+      a.top = Math.min(a.top || n.y, n.y) // topmost member y (for pill offset)
     }
 
-    // --- attention edges: bright, temporary reasoning paths ---
+    // --- radial spokes from the centre to each node ---
+    // Inter-symbol repo edges are disabled; instead every node draws a spoke to
+    // the attention origin, reinforcing "distance from centre = relevance".
+    // Opacity scales with the node's relevance (hot symbols → stronger spokes,
+    // faint symbols → faint spokes); the hovered node's spoke is highlighted.
+    const hoveredQ = hoverRef.current
+    for (const node of drawn.values()) {
+      const a = smoothstep(node.appear)
+      if (a <= 0) continue
+      const rel = maxDisplay > 0 ? Math.min(1, node.mass / maxDisplay) : 0
+      const isHover = node.qname === hoveredQ
+      ctx.beginPath()
+      ctx.moveTo(0, 0)
+      ctx.lineTo(node.x, node.y)
+      if (isHover) {
+        ctx.strokeStyle = "#cbd5e1"
+        ctx.globalAlpha = 0.6 * a
+        ctx.lineWidth = 1.5
+      } else {
+        ctx.strokeStyle = RADIAL_COLOR
+        // base 0.08 (faint symbols) → up to ~0.4 (hot symbols)
+        ctx.globalAlpha = (0.08 + 0.32 * rel) * a
+        ctx.lineWidth = 1
+      }
+      ctx.stroke()
+      ctx.globalAlpha = 1
+      ctx.lineWidth = 1
+    }
+
+    // --- attention edges (trace constellations): bright reasoning paths ---
     const now = store.lastRecompute || Date.now() / 1000
     for (const ae of store.graph.liveEdges(now)) {
       const a = drawn.get(ae.from)
@@ -236,42 +557,38 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
       ctx.lineWidth = 1
     }
 
-    // --- symbols: radius already encodes relevance; size/opacity reinforce it ---
-    for (const node of drawn.values()) {
+    // --- symbols: only the TOP percentile by attention render as NAME PILLS;
+    // everyone else is a small DOT (name revealed on hover). Distance from centre
+    // encodes relevance; opacity reinforces it. Monochrome, no role colours.
+    const sorted = [...drawn.values()].sort((a, b) => a.mass - b.mass)
+    // Pill-vs-dot threshold computed in recomputeTargets (top PILL_PERCENTILE),
+    // so spread + render agree on who is a pill.
+    const pillThreshold = pillThresholdRef.current
+    const hovered = hoverRef.current
+    for (const node of sorted) {
       const m = node.mass
-      const color = roleColor(node.role)
-      // peripheral (cooled) symbols stay visible but dim — never hidden.
-      const rel = maxDisplay > 0 ? m / maxDisplay : 0
-      const radius = m > 0 ? nodeRadius(m, maxDisplay) : 3
-      const opacity = m > 0 ? nodeOpacity(m, maxDisplay) : 0.18
-
-      const glow = m > 0 ? glowAlpha(m, maxDisplay) : 0
-      if (glow > 0) {
-        ctx.beginPath()
-        ctx.arc(node.x, node.y, radius * 2.4, 0, Math.PI * 2)
-        ctx.fillStyle = color
-        ctx.globalAlpha = glow
-        ctx.fill()
-        ctx.globalAlpha = 1
-      }
-
-      ctx.beginPath()
-      ctx.arc(node.x, node.y, radius, 0, Math.PI * 2)
-      ctx.fillStyle = color
-      ctx.globalAlpha = opacity
-      ctx.fill()
-      ctx.globalAlpha = 1
-
-      // label the dominant (hottest) symbols only — keeps the map calm.
-      if (m > 0 && tierFor(m, maxDisplay) === "dominant") {
+      const rel = maxDisplay > 0 ? Math.min(1, m / maxDisplay) : 0
+      const a = smoothstep(node.appear)
+      const scale = 0.6 + 0.4 * a
+      const isHover = node.qname === hovered
+      // top-percentile (or hovered) → name pill; rest → dot.
+      if ((m > 0 && m >= pillThreshold) || isHover) {
         const label = node.qname.split(":").pop() ?? node.qname
-        ctx.fillStyle = "#e2e8f0"
-        ctx.globalAlpha = 0.5 + 0.5 * rel
-        ctx.font = "11px ui-sans-serif, system-ui"
-        ctx.textAlign = "center"
-        ctx.fillText(label, node.x, node.y - radius - 4)
-        ctx.globalAlpha = 1
+        const opacity = (0.28 + 0.72 * rel) * a
+        const hot = m > 0 && tierFor(m, maxDisplay) === "dominant"
+        drawSymbolPill(ctx, label, node.x, node.y, opacity, hot, scale)
+      } else {
+        drawDot(ctx, node.x, node.y, rel, a)
       }
+    }
+
+    // --- role pill tags: drawn at each cluster centroid (2+ active members).
+    // The map is REPRESENTATIVE, not accurate — no "+N more" counts.
+    for (const [role, a] of clusterAcc) {
+      if (a.n < 2) continue
+      const cx = a.sx / a.n
+      const py = a.top - 16
+      drawPill(ctx, role, cx, py)
     }
 
     ctx.restore()
@@ -287,8 +604,63 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
       zoomRef.current = Math.min(4, Math.max(0.25, zoomRef.current * factor))
       kick()
     }
+    // Right-click a symbol → context menu. Hit-test by inverting the draw
+    // transform (centre-origin, no pan, zoom only) and finding the nearest pill.
+    const onContext = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      const k = zoomRef.current
+      const wx = (e.clientX - rect.left - rect.width / 2) / k
+      const wy = (e.clientY - rect.top - rect.height / 2) / k
+      const hit = hitTest(wx, wy)
+      if (!hit) return // let the background menu (or nothing) handle it
+      e.preventDefault()
+      const node = useAGMStore.getState().nodesByQname?.get(hit)
+      openContextMenu(
+        e,
+        buildSymbolMenu({
+          qname: hit,
+          filePath: node?.file_path,
+          signature: node?.one_liner ?? null, // system model carries one_liner, not signature
+          onShowBlastRadius: revealBlastRadius,
+          onShowStats: showStats,
+        }),
+      )
+    }
+    // Hover → reveal the symbol under the cursor (a dot shows its name as a
+    // tooltip + temporarily renders as a pill). Throttled to actual changes.
+    const onMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      const k = zoomRef.current
+      const wx = (e.clientX - rect.left - rect.width / 2) / k
+      const wy = (e.clientY - rect.top - rect.height / 2) / k
+      const hit = hitTest(wx, wy)
+      const px = e.clientX - rect.left
+      const py = e.clientY - rect.top
+      if (hit !== hoverRef.current) {
+        hoverRef.current = hit
+        setTooltip(hit ? buildTooltip(hit, px, py) : null)
+        kick()
+      } else if (hit && tooltipRef.current) {
+        setTooltip(buildTooltip(hit, px, py))
+      }
+    }
+    const onLeave = () => {
+      if (hoverRef.current) {
+        hoverRef.current = null
+        setTooltip(null)
+        kick()
+      }
+    }
     canvas.addEventListener("wheel", onWheel, { passive: false })
-    return () => canvas.removeEventListener("wheel", onWheel)
+    canvas.addEventListener("contextmenu", onContext)
+    canvas.addEventListener("mousemove", onMove)
+    canvas.addEventListener("mouseleave", onLeave)
+    return () => {
+      canvas.removeEventListener("wheel", onWheel)
+      canvas.removeEventListener("contextmenu", onContext)
+      canvas.removeEventListener("mousemove", onMove)
+      canvas.removeEventListener("mouseleave", onLeave)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -311,8 +683,9 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
             position: "absolute",
             inset: 0,
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-end",
             justifyContent: "center",
+            paddingBottom: "18%", // keep clear of the centre crosshair
             color: "#3f4a5a",
             fontSize: 13,
             pointerEvents: "none",
@@ -321,8 +694,119 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
           No attention yet — the map fills in as the agent works.
         </div>
       )}
+      {tooltip && (
+        <div
+          style={{
+            position: "absolute",
+            left: Math.min(tooltip.x + 14, 100000),
+            top: tooltip.y + 14,
+            maxWidth: 340,
+            padding: "8px 10px",
+            borderRadius: 7,
+            background: "#0b1220f2",
+            border: "1px solid #334155",
+            boxShadow: "0 6px 20px #0008",
+            color: "#e2e8f0",
+            fontSize: 12,
+            fontFamily: "ui-sans-serif, system-ui",
+            pointerEvents: "none",
+            zIndex: 10,
+          }}
+        >
+          {/* reason pill — why this symbol is on the map */}
+          <div
+            style={{
+              display: "inline-block",
+              fontSize: 10,
+              fontWeight: 600,
+              color: tooltip.reasonColor,
+              border: `1px solid ${tooltip.reasonColor}55`,
+              background: `${tooltip.reasonColor}1a`,
+              borderRadius: 4,
+              padding: "1px 6px",
+              marginBottom: 6,
+            }}
+          >
+            {tooltip.reason}
+          </div>
+          {/* symbol name (mono) */}
+          <div
+            style={{
+              fontFamily: "ui-monospace, monospace",
+              fontSize: 12,
+              color: "#f1f5f9",
+              wordBreak: "break-all",
+            }}
+          >
+            {tooltip.name}
+            <span style={{ color: "#64748b" }}> · {tooltip.role}</span>
+          </div>
+          {/* one-liner (codelens) */}
+          {tooltip.oneLiner && (
+            <div style={{ color: "#94a3b8", marginTop: 4, lineHeight: 1.35 }}>
+              {tooltip.oneLiner}
+            </div>
+          )}
+          {/* mass + degree */}
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              marginTop: 6,
+              fontSize: 10.5,
+              color: "#64748b",
+              fontFamily: "ui-monospace, monospace",
+            }}
+          >
+            <span>live {tooltip.liveMass.toFixed(1)}</span>
+            <span>hist {tooltip.historicalMass.toFixed(1)}</span>
+            {tooltip.inbound != null && (
+              <span>
+                ↓{tooltip.inbound} ↑{tooltip.outbound}
+              </span>
+            )}
+          </div>
+          {/* full qname, dim */}
+          <div
+            style={{
+              marginTop: 5,
+              fontSize: 9.5,
+              color: "#475569",
+              fontFamily: "ui-monospace, monospace",
+              wordBreak: "break-all",
+            }}
+          >
+            {tooltip.qname}
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+// Ease-in-out curve (slow start, fast middle, slow end) — Hermite smoothstep.
+// Used for entry/exit fade+scale so nothing pops; the appearance "breathes" in.
+function smoothstep(t: number): number {
+  const x = Math.max(0, Math.min(1, t))
+  return x * x * (3 - 2 * x)
+}
+
+// Advance a node's journey by one frame: bump progress and set its position to
+// the smoothstep-interpolated point start→target (slow-start, slow-end). Returns
+// the per-frame displacement so the loop can detect rest. At p=1 it's a no-op.
+function advanceJourney(node: Drawn): number {
+  if (node.p >= 1) {
+    node.x = node.tx
+    node.y = node.ty
+    return 0
+  }
+  const px = node.x
+  const py = node.y
+  node.p = Math.min(1, node.p + JOURNEY_RATE)
+  const e = smoothstep(node.p)
+  node.x = node.sx + (node.tx - node.sx) * e
+  node.y = node.sy + (node.ty - node.sy) * e
+  return Math.abs(node.x - px) + Math.abs(node.y - py)
 }
 
 // The fixed centre crosshair — the current attention origin. Nothing else ever
@@ -339,4 +823,90 @@ function drawCrosshair(ctx: CanvasRenderingContext2D) {
   ctx.lineTo(0, s)
   ctx.stroke()
   ctx.globalAlpha = 1
+}
+
+// A small monochrome dot for a low-attention symbol (name revealed on hover).
+// Radius scales subtly with relevance; opacity carries heat + the entry fade.
+function drawDot(ctx: CanvasRenderingContext2D, cx: number, cy: number, rel: number, appear: number) {
+  const r = (2.2 + rel * 2.6) * (0.6 + 0.4 * appear)
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.fillStyle = "#94a3b8"
+  ctx.globalAlpha = (0.3 + 0.5 * rel) * appear
+  ctx.fill()
+  ctx.globalAlpha = 1
+}
+
+// A monochrome symbol pill: the symbol's short name in a subtle rounded chip.
+// Heat reads through opacity (passed in) + a brighter text for the hottest.
+// No role colour — the whole map is grayscale, distance encodes relevance.
+function drawSymbolPill(
+  ctx: CanvasRenderingContext2D,
+  label: string,
+  cx: number,
+  cy: number,
+  opacity: number,
+  hot: boolean,
+  scale = 1,
+) {
+  ctx.font = `${hot ? "600 " : ""}11px ui-sans-serif, system-ui`
+  ctx.textAlign = "center"
+  ctx.textBaseline = "middle"
+  const padX = 7
+  const tw = ctx.measureText(label).width
+  const w = (tw + padX * 2) * scale
+  const h = 17 * scale
+  const x = cx - w / 2
+  const y = cy - h / 2
+  const r = h / 2
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
+  ctx.closePath()
+  // chip background: brighter (less transparent) for hotter symbols
+  ctx.fillStyle = hot ? "#33415560" : "#1e293b"
+  ctx.globalAlpha = opacity
+  ctx.fill()
+  ctx.globalAlpha = 1
+  // text: white-ish, dimmed by opacity
+  ctx.fillStyle = hot ? "#f1f5f9" : "#cbd5e1"
+  ctx.globalAlpha = opacity
+  ctx.fillText(label, cx, cy)
+  ctx.globalAlpha = 1
+  ctx.textBaseline = "alphabetic"
+}
+
+// A role pill tag drawn near a cluster's centroid — the role description as a
+// small rounded label (influence, not a container box).
+function drawPill(ctx: CanvasRenderingContext2D, label: string, cx: number, cy: number) {
+  ctx.font = "11px ui-sans-serif, system-ui"
+  ctx.textAlign = "center"
+  ctx.textBaseline = "middle"
+  const padX = 8
+  const tw = ctx.measureText(label).width
+  const w = tw + padX * 2
+  const h = 18
+  const x = cx - w / 2
+  const y = cy - h / 2
+  const r = h / 2
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
+  ctx.closePath()
+  ctx.fillStyle = "#1e293b"
+  ctx.globalAlpha = 0.85
+  ctx.fill()
+  ctx.strokeStyle = "#334155"
+  ctx.globalAlpha = 1
+  ctx.lineWidth = 1
+  ctx.stroke()
+  ctx.fillStyle = "#cbd5e1"
+  ctx.fillText(label, cx, cy)
+  ctx.textBaseline = "alphabetic"
 }

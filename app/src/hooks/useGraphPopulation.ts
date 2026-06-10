@@ -4,7 +4,7 @@ import { useGraphStore } from "@/store/graphStore"
 import { useAGMStore } from "@/store/agmStore"
 import { useAppStore } from "@/store/appStore"
 import { useSettingsStore } from "@/store/settingsStore"
-import type { GroupingAxis, AttentionEventType, TypedEdge } from "@/api/types"
+import type { GroupingAxis, TypedEdge } from "@/api/types"
 import type { MemberGrouping } from "@/store/graphStore"
 
 // Load the system model (the high-level "model of the system") + edges into the
@@ -50,29 +50,14 @@ export function useGraphPopulation(opencodePort: number | null): { repopulate: (
         graphStore.setAxis(settings.get<GroupingAxis>("graph.defaultAxis"))
         graphStore.setMemberGrouping(settings.get<MemberGrouping>("graph.memberGrouping"))
 
-        // AGM: load the same model + typed edges into the attention engine.
-        // setModel seeds HISTORICAL mass from the model (stable angular
-        // geography). We do NOT replay the event log as live mass — a fresh
-        // session must start blank (live mass = current focus only). Live mass
-        // is rebuilt from this session's own SSE activity. Only events from a
-        // short recent window are restored, so reconnecting mid-investigation
-        // doesn't lose the live picture; older events are intentionally dropped.
+        // AGM: load the model + typed edges. setModel seeds HISTORICAL mass
+        // (stable angular geography) only — it does NOT create live mass, so the
+        // canvas starts BLANK. Live mass (current focus) is built exclusively
+        // from THIS session's live SSE activity; we deliberately do not replay
+        // the persisted event log on launch (that caused fresh sessions to show
+        // stale attention from prior/other sessions). Historical replay, when we
+        // want it, is an explicit ReplayControl action — never automatic.
         useAGMStore.getState().setModel(model, edges as TypedEdge[])
-        try {
-          const now = Date.now() / 1000
-          const RECENT_WINDOW_S = 600 // 10 min — only genuinely-live attention
-          const att = await graphClient.attention({ since: now - RECENT_WINDOW_S })
-          if (!isCancelled() && att?.events?.length) {
-            const agm = useAGMStore.getState()
-            for (const e of att.events) {
-              if (e.investigation_id) agm.graph.setInvestigation(e.investigation_id)
-              agm.ingest(e.target, e.event_type as AttentionEventType, e.ts)
-            }
-            agm.recompute()
-          }
-        } catch (err) {
-          console.warn("[agm] attention hydrate skipped:", err)
-        }
 
         appStore.setGraphLoading(false)
       } catch (err) {

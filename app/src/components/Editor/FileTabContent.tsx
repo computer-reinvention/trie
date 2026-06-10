@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { SourceView } from "./SourceView"
 import { TriefactView } from "./TriefactView"
-import { useTabsStore, GRAPH_TAB_ID, type FileTab } from "@/store/tabsStore"
+import { useTabsStore, TOPOLOGY_TAB_ID, type FileTab } from "@/store/tabsStore"
 import { useGraphStore } from "@/store/graphStore"
 
 // Renders a single file tab's body and the per-tab Source⇄Triefact toggle.
@@ -72,7 +72,7 @@ export function FileTabContent({ tab }: { tab: FileTab }) {
             }}
             onRevealInGraph={(qname) => {
               revealSymbol(qname)
-              activate(GRAPH_TAB_ID)
+              activate(TOPOLOGY_TAB_ID)
             }}
           />
         )}
