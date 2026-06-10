@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: tests/test_mcp.py
 file_fingerprint: 57cbd904fe83b73f073eb426fdcf36426be9241ec20841e124e2b08ab7d67a8b
-last_synced_at: '2026-06-09T09:24:26Z'
+last_synced_at: '2026-06-10T13:16:59Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: module
@@ -246,10 +246,10 @@ Creates a test project fixture with scanned symbols and generated triefacts for 
 - Syncs `lib.py` and `app.py` using FakeTrieClient to generate documentation
 - Returns the project path with `.trie/graph.db` containing queryable data
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:tools fingerprint=b89f3ca1611ed5226f820d82ffc6f4d3db27942f64390976744c1fbf0d5e67de body_fp=03851a485a0bfaf6da9ce7379e6be9bbf9d979aecffc4d8f0ba33a8ec4d47b67 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test -->
+<!-- trie:section symbol=tests/test_mcp:tools fingerprint=b89f3ca1611ed5226f820d82ffc6f4d3db27942f64390976744c1fbf0d5e67de body_fp=03851a485a0bfaf6da9ce7379e6be9bbf9d979aecffc4d8f0ba33a8ec4d47b67 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
 Creates a TrieTools fixture for the populated test project and ensures cleanup after use.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing fingerprint=2ea97d1b02ea695fbca32b81cfd8377a7e1da3159c9b30a1815fe2099d25638b body_fp=4df7c8bf2d3fc78317a7bf684cf1bca16d55c1971b6168ee2217d647e9423267 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing fingerprint=2ea97d1b02ea695fbca32b81cfd8377a7e1da3159c9b30a1815fe2099d25638b body_fp=4df7c8bf2d3fc78317a7bf684cf1bca16d55c1971b6168ee2217d647e9423267 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
 Tests that TrieTools initialization fails with clear error message when ripgrep binary is missing.
 
 - Simulates missing `rg` by stubbing `shutil.which` to return `None`
@@ -428,7 +428,7 @@ Creates test project with two auth symbols ranked by inbound count for fuzzy mat
 - Both symbols contain "auth" for equal text relevance but different centrality scores
 - Tests sorting behavior where niche symbols rank before hubs at equal relevance
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_niche_ranks_before_hub fingerprint=a5bf02d8993e8282336d29b02cec7ebb34624737bcbad9c62cbda7acad54290e body_fp=5cf31bb5473fa0a0eca8dcd6199277e19d4abd1e61a76ed4f2d5d93228875539 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_niche_ranks_before_hub fingerprint=a5bf02d8993e8282336d29b02cec7ebb34624737bcbad9c62cbda7acad54290e body_fp=5cf31bb5473fa0a0eca8dcd6199277e19d4abd1e61a76ed4f2d5d93228875539 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
 Verifies `grep_entry_points` ranks niche symbols before hubs when relevance scores are equal.
 
 - Uses `dual_rank_project` fixture with `auth_check` (2 inbound) and `hub_authenticate` (3 inbound)
@@ -436,7 +436,7 @@ Verifies `grep_entry_points` ranks niche symbols before hubs when relevance scor
 - Asserts `auth_check` appears before `hub_authenticate` in results
 - Tests the sort key: score DESC, inbound_count ASC
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_hits_carry_score fingerprint=bf76df08b996d67ba20379770a38f838d8fe1c762948d49445555df41368cc37 body_fp=249bc8f0cd416cd5944a6883261bdef30bb3eeacddb4863ef73ff7af41c2adb8 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_hits_carry_score fingerprint=bf76df08b996d67ba20379770a38f838d8fe1c762948d49445555df41368cc37 body_fp=249bc8f0cd416cd5944a6883261bdef30bb3eeacddb4863ef73ff7af41c2adb8 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
 Verifies that grep_entry_points results include a numeric score field for ranking.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp:test_grep_symbol_typo_tolerance fingerprint=998a77d9bbc63dc7fa9771cbe44d66c7262382670d46446093a4c0102cb98e51 body_fp=ba9922e48ca93082d1577f0aabfc32b42abc69ada104d608576ddc406a05d3e4 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=mcp-server -->

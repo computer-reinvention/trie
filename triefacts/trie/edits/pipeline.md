@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/edits/pipeline.py
 file_fingerprint: f72cb42a2facab02d3ad0f250a6817952de73780e719d6fd37b6516918a35011
-last_synced_at: '2026-06-09T09:33:48Z'
+last_synced_at: '2026-06-10T13:17:00Z'
 description: The stage/commit edit pipeline.
 defines:
 - kind: module

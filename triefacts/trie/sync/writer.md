@@ -1,88 +1,97 @@
 ---
 trie_version: 0.1.5
 source: trie/sync/writer.py
-file_fingerprint: 39f9c3cbc014514a4516727959f1fdf5afafe18f49555064c60c72f26cc2e2a0
-last_synced_at: '2026-06-06T14:18:54Z'
+file_fingerprint: effac6fb890e9d219008a7be3f8b00ce2f15472fc77330e233801892ee25def0
+last_synced_at: '2026-06-10T13:16:33Z'
 defines:
 - kind: module
   qualified_name: trie/sync/writer:__module__
-  lines: 1-441
+  lines: 1-506
 - kind: constant
   qualified_name: trie/sync/writer:SECTION_OPEN_RE
-  lines: 43-49
+  lines: 43-50
 - kind: constant
   qualified_name: trie/sync/writer:SECTION_CLOSE_RE
-  lines: 50-50
-- kind: constant
-  qualified_name: trie/sync/writer:SECTION_CLOSE
   lines: 51-51
 - kind: constant
-  qualified_name: trie/sync/writer:FRONT_MATTER_RE
+  qualified_name: trie/sync/writer:SECTION_CLOSE
   lines: 52-52
+- kind: constant
+  qualified_name: trie/sync/writer:FRONT_MATTER_RE
+  lines: 53-53
+- kind: function
+  qualified_name: trie/sync/writer:parse_hist_mass
+  lines: 56-68
+- kind: function
+  qualified_name: trie/sync/writer:format_hist_mass
+  lines: 71-78
 - kind: function
   qualified_name: trie/sync/writer:hash_body
-  lines: 55-62
+  lines: 81-88
 - kind: constant
   qualified_name: trie/sync/writer:_HEADING_RE
-  lines: 65-65
+  lines: 91-91
 - kind: constant
   qualified_name: trie/sync/writer:_SENTENCE_END_RE
-  lines: 66-66
+  lines: 92-92
 - kind: function
   qualified_name: trie/sync/writer:extract_one_liner
-  lines: 69-100
+  lines: 95-126
 - kind: constant
   qualified_name: trie/sync/writer:AGENT_FRONT_MATTER_KEYS
-  lines: 108-113
+  lines: 134-139
 - kind: class
   qualified_name: trie/sync/writer:Section
-  lines: 117-126
+  lines: 143-159
 - kind: class
   qualified_name: trie/sync/writer:Prose
-  lines: 130-131
+  lines: 163-164
 - kind: constant
   qualified_name: trie/sync/writer:Chunk
-  lines: 134-134
+  lines: 167-167
 - kind: function
   qualified_name: trie/sync/writer:_dedupe_sections
-  lines: 137-165
+  lines: 170-198
 - kind: class
   qualified_name: trie/sync/writer:TriefactFile
-  lines: 169-375
+  lines: 202-440
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.parse
-  lines: 174-223
+  lines: 207-259
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.empty
-  lines: 226-227
+  lines: 262-263
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.get_section
-  lines: 231-235
+  lines: 267-271
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.section_qnames
-  lines: 237-238
+  lines: 273-274
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.upsert_section
-  lines: 242-274
+  lines: 278-316
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.set_section_role
-  lines: 276-290
+  lines: 318-332
+- kind: method
+  qualified_name: trie/sync/writer:TriefactFile.set_section_historical_mass
+  lines: 334-348
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.sort_sections
-  lines: 292-314
+  lines: 350-372
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.remove_section
-  lines: 316-321
+  lines: 374-379
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile._append_section
-  lines: 323-334
+  lines: 381-392
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.render
-  lines: 338-375
+  lines: 396-440
 - kind: function
   qualified_name: trie/sync/writer:render_for_agent
-  lines: 378-440
-incoming_refs: 75
+  lines: 443-505
+incoming_refs: 82
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/sync/writer:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=c90405d227a60d4babaab62f1bb7b669d2c3b15b35b0cccb025fb762135105f4 source_ref=b8bc54fd6dfe1be68bb60012cf18b620e9aac632 role=documentation-sync -->
@@ -94,12 +103,12 @@ Parses and renders triefact files with embedded trie sections delimited by HTML 
 - **Rendering**: Reconstructs complete triefact files with proper sentinel formatting and blank line separation
 - **Agent rendering**: Strips internal bookkeeping (fingerprints, sentinels) for clean agent-facing Markdown
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/writer:SECTION_OPEN_RE fingerprint=3f50547b6d4555044719d9bac0a620219f804497cc9855320036951ed893bfe6 body_fp=954df18dbb34b07e4a6925a7bf3659b20dce831002eb229fb8688b66c5eb1e06 source_ref=78bd950091facbb1608b4c2f45372223b3f4020f role=parsing -->
-Regex pattern matching triefact section opening HTML comments with symbol name, fingerprint, and optional body_fp, source_ref, and role fields.
+<!-- trie:section symbol=trie/sync/writer:SECTION_OPEN_RE fingerprint=0c4217b350044f22fe6f773e84a0f761b89e79027711e99d750d6f0ea3ab9c2e body_fp=3ae10a1bc7c77da9fc9e3d87fcc2ec5dc7b90e056f8726d3bd032eaf790aa3a5 source_ref=831f75c6754c4c40698fbf554c1887d6450d69e0 role=parsing -->
+Compiled regex pattern for matching trie section opening HTML comments with embedded metadata.
 
-- Matches line-anchored comments like `<!-- trie:section symbol=foo.bar fingerprint=abc123 -->`
-- Uses named groups for extracting `symbol`, `fp`, `body_fp`, `source_ref`, and `role` metadata
-- Backward compatible: `body_fp`, `source_ref`, and `role` are optional for legacy sections
+- Captures `symbol`, `fp` (fingerprint), and optional `body_fp`, `source_ref`, `role`, `hist_mass` fields
+- Anchored to line boundaries with multiline mode for standalone sentinel detection
+- Trailing whitespace allowed but trailing text forbidden on sentinel lines
 <!-- trie:end -->
 <!-- trie:section symbol=trie/sync/writer:SECTION_CLOSE_RE fingerprint=49aa71874073d7e43da82cffb2e8446d3946ff6b664d86a74e4b8105f2ce602a body_fp=f7dc8b2dde7bd1b5c0eb62222998112d7b305d3cf65daa43bc1a4a882d08b964 source_ref=b8bc54fd6dfe1be68bb60012cf18b620e9aac632 role=documentation-sync -->
 Regex pattern that matches HTML comment closing sentinels for trie documentation sections.
@@ -112,6 +121,19 @@ Canonical HTML comment string used to close trie documentation sections in Markd
 <!-- trie:end -->
 <!-- trie:section symbol=trie/sync/writer:FRONT_MATTER_RE fingerprint=f100241e2f09e0c34d4dd9fbfafad078e9b2edeb64ad505b28512c83a51cdb48 body_fp=9254c9d02fb4b25f0638e2411d74cafb747378f61b30a224b651652875eecbbb source_ref=b8bc54fd6dfe1be68bb60012cf18b620e9aac632 role=documentation-sync -->
 Matches YAML frontmatter at the start of a file, capturing the YAML content between `---` delimiters.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/sync/writer:parse_hist_mass fingerprint=ef11101bcafd0025aca68daf894c85762908823e7d2d201b6bcf45d61c32214b body_fp=d2a6664dbbff363ff59249b317a509c8143d8ef79bc822ccdd07aa4d6674c2e1 source_ref=831f75c6754c4c40698fbf554c1887d6450d69e0 role=parsing -->
+Parse `hist_mass` sentinel token `<value>@<ts>` into (mass, ts) tuple.
+
+- Returns (0.0, 0.0) for None/malformed tokens (legacy sentinels, corrupt values)
+- Token format: decimal mass value, "@" separator, optional timestamp
+- Missing timestamp defaults to 0.0
+<!-- trie:end -->
+<!-- trie:section symbol=trie/sync/writer:format_hist_mass fingerprint=84e149eebdff44553dad018b3e5d66b207f04c220acd9da266b062bd7f90063b body_fp=d8c8e1fb363aca6602d435bce63c6b5db535c23582451a7617b4abe593ffe555 source_ref=831f75c6754c4c40698fbf554c1887d6450d69e0 role=util -->
+Serializes historical mass and timestamp into a sentinel token format.
+
+- `mass`: quantized to one decimal place to avoid diff churn
+- `ts`: converted to integer seconds for 21-day decay horizon
 <!-- trie:end -->
 <!-- trie:section symbol=trie/sync/writer:hash_body fingerprint=ab22edfb13d8ba9c75b86d2384923163f1c839f46c4a2ed06ca566491fc6f96d body_fp=f25338f018538e622517fca4e08a07b5ffe6b8ebe068f7ae63b1691e726cd353 source_ref=b8bc54fd6dfe1be68bb60012cf18b620e9aac632 role=documentation-sync -->
 ## `hash_body(body: str) -> str`
@@ -134,12 +156,14 @@ Extracts the first sentence from a triefact section body, skipping headings and 
 <!-- trie:section symbol=trie/sync/writer:AGENT_FRONT_MATTER_KEYS fingerprint=4ffdf447d675342eb7e62f591eb81f0dbe4b8236a7ecbc21145d49565aaf7fa7 body_fp=8294eda21e5594b41824b5d4aa60944267192f07531bea2c9d8f94d349761f2e source_ref=b8bc54fd6dfe1be68bb60012cf18b620e9aac632 role=mcp-server -->
 Defines the frontmatter keys that are preserved when rendering triefacts for agents, filtering out trie's internal bookkeeping fields.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/writer:Section fingerprint=734c957605002e25718f8ced8d064dac205226486fbad13ec4c1646c788be4d8 body_fp=719c347187a89bec0438311e26ebf66706c86a312b399b6202d9f15710005ea2 source_ref=78bd950091facbb1608b4c2f45372223b3f4020f role=model -->
-Immutable data container representing a parsed trie documentation section.
+<!-- trie:section symbol=trie/sync/writer:Section fingerprint=5f7b6ba0153d90edd1037820e51184f9b82fa1d5dba45d711ba55d8060aa7757 body_fp=d1583c6431ab8e875beae13cfbf580a8425fd0e2ffa11011005630e498bba5c0 source_ref=831f75c6754c4c40698fbf554c1887d6450d69e0 role=model -->
+Represents a parsed triefact section with metadata for fingerprinting and attention tracking.
 
-- `body_fingerprint`: SHA-256 over the body text; None for sections written by trie ≤0.1
-- `source_ref`: git blob hash of the file when section was generated
-- `role`: LLM-inferred architectural role tag; empty string when unknown or legacy
+- `body_fingerprint`: SHA-256 over section body; None for legacy sections without body fingerprints
+- `source_ref`: git blob hash of the source file when this section was generated
+- `role`: architectural role tag inferred by LLM, persisted to survive graph DB rebuilds
+- `historical_mass`: cross-session cognitive importance signal from attention tracking
+- `historical_mass_ts`: unix timestamp when historical mass was last updated
 <!-- trie:end -->
 <!-- trie:section symbol=trie/sync/writer:Prose fingerprint=cf49910dc87437bc09897192fbd13b0a347f9433a85c94f1e599b18c7eceaf2b body_fp=311cfa243f31011d450423a58e02e9136ed13f215e8e825758d63429733d58d7 source_ref=b8bc54fd6dfe1be68bb60012cf18b620e9aac632 role=documentation-sync -->
 Represents verbatim text content between trie sections in a triefact file.
@@ -158,22 +182,24 @@ Removes duplicate sections with the same qualified_name, keeping the last occurr
 - Passes through non-section prose chunks unchanged
 - Enables self-healing of accumulated duplicates on next read/render cycle
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/writer:TriefactFile fingerprint=b9f8446562ff505ffb93542ff4d811eb16d6363ac25a030dbbe834ffefbe41b4 body_fp=dabbc978e912786294894f9a5dc809dcbcd094e94be70183b933987873770d33 source_ref=da9a7d97a5e4b6f64e1ffa28bc72b3d35a4327e5 role=model -->
+<!-- trie:section symbol=trie/sync/writer:TriefactFile fingerprint=d7ebe9e5f349408211b267ee9bee5bd42b0ca1ee59d72c3ba55ff23d9a6d7eda body_fp=1e3711dfb5d3338a3c9b232a841d54dd5e5d8c03f8f362cc85986e47f3eb0eda source_ref=831f75c6754c4c40698fbf554c1887d6450d69e0 role=model -->
 Parses, manipulates, and renders triefact files containing YAML frontmatter and trie-managed documentation sections.
 
 - `front_matter`: YAML metadata dictionary at file start
 - `chunks`: sequence of Section and Prose objects representing file structure
-- `parse()`: extracts frontmatter and HTML-delimited sections from raw text
-- `upsert_section()`: replaces existing section or appends new one with computed body fingerprint
+- `parse()`: extracts frontmatter, HTML-delimited sections, and historical mass from raw text
+- `upsert_section()`: replaces existing section or appends new one preserving historical mass
 - `set_section_role()`: updates only the role field of existing section
+- `set_section_historical_mass()`: stamps AGM historical mass on existing section
 - `sort_sections()`: reorders sections by source line number while preserving prose
 - `render()`: serializes back to text with HTML sentinels and YAML frontmatter
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/writer:TriefactFile.parse fingerprint=bcbf1948f3e759d430ff14a0bd5fe43fa6c27a4aab47687d732df5a5c5da3d1a body_fp=fa67cbb5443abab1235aa537752f2031694d56c3721555e2823c8b0f711e8c46 source_ref=da9a7d97a5e4b6f64e1ffa28bc72b3d35a4327e5 role=parsing -->
+<!-- trie:section symbol=trie/sync/writer:TriefactFile.parse fingerprint=ab5f100e4b1afc1d56b61c3b3d86c6942dc39063c14ed54cc4a40760fbe24dee body_fp=bfb530c1e9ba84a0611d056852d81833cbb300d9cd8237907ac2410c2d5b4858 source_ref=831f75c6754c4c40698fbf554c1887d6450d69e0 role=parsing -->
 Creates TriefactFile from Markdown text by parsing YAML frontmatter and trie section sentinels.
 
 - Extracts YAML frontmatter from opening `---` blocks, ignoring malformed YAML
 - Parses trie sections between `<!-- trie:section -->` and `<!-- trie:end -->` sentinels
+- Extracts historical mass and timestamp from `hist_mass=` sentinel field via parse_hist_mass
 - Preserves prose chunks between sections as-is
 - Strips leading/trailing newlines from section bodies
 - Deduplicates sections with same qualified_name, keeping the last occurrence
@@ -188,17 +214,27 @@ Returns the first Section in TriefactFile.chunks matching the given qualified_na
 <!-- trie:section symbol=trie/sync/writer:TriefactFile.section_qnames fingerprint=b3198e06079669f9cdabe77cd2292e047d5fc68e79e8ecb7e0a9f7bff28f0f60 body_fp=86e2903008214db684f493e3eef6b2c24911be73d69480eaf399c7ba5388e046 source_ref=b8bc54fd6dfe1be68bb60012cf18b620e9aac632 role=documentation-sync -->
 Returns a list of qualified names for all Section chunks in the TriefactFile.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/writer:TriefactFile.upsert_section fingerprint=f5c3375f4ca32ffb59e2513e49b00f2122e6cc7c95d3e57f4f28ecad0710d40d body_fp=89f8c715a4171931ea21018e756f2c99725b0d2db65420b6de3edf1e2164d613 source_ref=78bd950091facbb1608b4c2f45372223b3f4020f role=model -->
-Replaces an existing section in TriefactFile by qualified name or appends a new section at the end.
+<!-- trie:section symbol=trie/sync/writer:TriefactFile.upsert_section fingerprint=fc0918a154c0b0a73fbf8fcede43990ba1602726068aae34ba72219910f66da7 body_fp=8fefa7663c4a69fd8a76e75547a70bac004fbf88e4e05d0b879906fe2f46717f source_ref=831f75c6754c4c40698fbf554c1887d6450d69e0 role=domain -->
+## `TriefactFile.upsert_section(*, qualified_name: str, fingerprint: str, body: str, source_ref: str | None = None, role: str = "") -> None`
 
-- `body_fingerprint`: Computed automatically from `body` parameter
-- `source_ref`: When None, field is omitted from rendered sentinel
-- `role`: Empty string omits field from sentinel
+TriefactFile method that replaces an existing section by qualified_name or appends new one at end.
+
+- `body`: section content; body fingerprint computed automatically
+- `source_ref`: git blob hash stamped in sentinel when non-None
+- `role`: architectural role tag; empty string omits from sentinel
+- Preserves existing AGM historical mass when updating sections
 <!-- trie:end -->
 <!-- trie:section symbol=trie/sync/writer:TriefactFile.set_section_role fingerprint=b32057736b75dff6ad04d492a7449b92d83d6a102a4787fecfd922b9fd27403a body_fp=0a8f16b36110263bf571953e6b05febc48eddda4e4ef5c61b2507bb61c801833 source_ref=78bd950091facbb1608b4c2f45372223b3f4020f role=model -->
 ## set_section_role
 
 Updates only the role tag of an existing section in TriefactFile, preserving all other fields and returning whether the section was found.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/sync/writer:TriefactFile.set_section_historical_mass fingerprint=d3e0e057671a6cc5c2fe8998b9c2e9b01dd0ab50441b44feac1097263e183f66 body_fp=f8f5f21d9f818c9cb591d34e12218fcb418b394611952039c34ed21574a05799 source_ref=831f75c6754c4c40698fbf554c1887d6450d69e0 role=model -->
+Updates the historical attention mass for a section in TriefactFile without changing its body or other metadata.
+
+- **mass**: Cross-session cognitive importance value to stamp into the section
+- **ts**: Unix timestamp when the mass was last updated
+- **return**: True if the section was found and updated, False otherwise
 <!-- trie:end -->
 <!-- trie:section symbol=trie/sync/writer:TriefactFile.sort_sections fingerprint=3a5abfe00c1190b093875944af69f77a27689bb7a756b7a12c709e067e398038 body_fp=cfef4021f5a47b20f87f08420e8dd76e258fd075ea8f75961c34804d8d01ab14 source_ref=b8bc54fd6dfe1be68bb60012cf18b620e9aac632 role=documentation-sync -->
 ## `TriefactFile.sort_sections(self, start_line_by_qname: dict[str, int]) -> None`
@@ -220,14 +256,13 @@ Appends a section to TriefactFile.chunks, ensuring proper blank-line separation 
 - Inserts a new Prose chunk with double newline after the last Section
 - No prefix needed when appending to empty chunks or after front matter
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/writer:TriefactFile.render fingerprint=65f4e4c0a8c735c21363d77fb9c5e6f88fd65de9d7c6e79f2e76a1e187ad7f3a body_fp=e6827f18cbb63a71a4ca8e9d6504c6cca8d02c33d7a0a2fa0790e297f45eedfc source_ref=78bd950091facbb1608b4c2f45372223b3f4020f role=persistence -->
-Serializes TriefactFile to Markdown with YAML frontmatter and trie section sentinels.
+<!-- trie:section symbol=trie/sync/writer:TriefactFile.render fingerprint=4f7523e76271d7fdcd5e28210c4a2753df5b4b217aa8be49a2f772ef9f6f4712 body_fp=c9c85377d7c8a99c7e4048f5f8cd5cffc90ee3f52507180648b4b3765aa8f176 source_ref=831f75c6754c4c40698fbf554c1887d6450d69e0 role=persistence -->
+Converts TriefactFile to complete triefact text with YAML frontmatter and sentinel-wrapped sections.
 
-- Emits frontmatter block if present, wrapped in `---` delimiters
-- Preserves Prose chunks verbatim between sections
-- Generates section sentinels with fingerprints, metadata, and role fields when present
-- Ensures blank line separation between consecutive sections
-- Auto-computes body fingerprints for legacy sections missing them
+- Emits body_fp field automatically, computing from body if missing for legacy sections
+- Separates consecutive sections with blank lines to meet parser requirements  
+- Includes optional fields (source_ref, role, hist_mass) only when non-empty/non-zero
+- Maintains field order: symbol, fingerprint, body_fp, source_ref, role, hist_mass
 <!-- trie:end -->
 <!-- trie:section symbol=trie/sync/writer:render_for_agent fingerprint=092ba74e28cdec14b0df2de55c6ab0105f9f6c074da00f6bcccb774d76160d8c body_fp=9d61dda9056130e0aebb96b39bbd6cf24b52590324d5425be84b7f1f8216aaf3 source_ref=b8bc54fd6dfe1be68bb60012cf18b620e9aac632 role=agent-integration -->
 Strips trie machinery noise from triefact text to produce clean agent-readable Markdown.

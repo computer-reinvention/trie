@@ -1,46 +1,46 @@
 ---
 trie_version: 0.1.5
 source: trie/sync/single_file.py
-file_fingerprint: ed9e48a87fc0e144987e28e1422774d82a37cf4dfa5d023a6d4940d0ef3a9c3a
-last_synced_at: '2026-06-06T14:19:05Z'
+file_fingerprint: 92abb3bc080bff9f51204b24cc1a5091634e01a0f392738a3ff5e3c18f7785b6
+last_synced_at: '2026-06-10T13:16:18Z'
 defines:
 - kind: module
   qualified_name: trie/sync/single_file:__module__
-  lines: 1-596
+  lines: 1-611
 - kind: function
   qualified_name: trie/sync/single_file:backfill_section_records
-  lines: 25-56
+  lines: 25-60
 - kind: class
   qualified_name: trie/sync/single_file:FileSyncResult
-  lines: 60-71
+  lines: 64-75
 - kind: class
   qualified_name: trie/sync/single_file:MetadataRefreshResult
-  lines: 75-83
+  lines: 79-87
 - kind: class
   qualified_name: trie/sync/single_file:_SymbolJob
-  lines: 87-97
+  lines: 91-101
 - kind: function
   qualified_name: trie/sync/single_file:_file_fingerprint
-  lines: 100-101
+  lines: 104-105
 - kind: function
   qualified_name: trie/sync/single_file:_triefact_path_for
-  lines: 104-108
+  lines: 108-112
 - kind: function
   qualified_name: trie/sync/single_file:_file_description
-  lines: 111-126
+  lines: 115-130
 - kind: function
   qualified_name: trie/sync/single_file:_build_defines
-  lines: 129-142
+  lines: 133-146
 - kind: function
   qualified_name: trie/sync/single_file:_resolve_previous_symbols
-  lines: 145-190
+  lines: 149-194
 - kind: function
   qualified_name: trie/sync/single_file:refresh_triefact_metadata
-  lines: 193-287
+  lines: 197-291
 - kind: function
   qualified_name: trie/sync/single_file:sync_single_file
-  lines: 290-595
-incoming_refs: 67
+  lines: 294-610
+incoming_refs: 72
 outgoing_refs: 22
 ---
 <!-- trie:section symbol=trie/sync/single_file:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=962cb42fd231e6a72fa197d03a93bef26647d2e4f96f38d6e53a0c5332b417c1 source_ref=da91ee7ba7df534c772bf0cfb02b2cfcdb8bce67 role=documentation-sync -->
@@ -52,12 +52,12 @@ Synchronizes individual Python source files to their corresponding triefact docu
 - `FileSyncResult` — captures statistics from a single file sync operation
 - `MetadataRefreshResult` — reports whether metadata refresh changed file contents
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:backfill_section_records fingerprint=f37f2bbcb0a612c2ce41399f65ee2109b3a96b604c41953b908eec400774ec7e body_fp=1556dba751a1c72e19768f26cb4e12edf67adeef44dfaa278028c7a8999e690b source_ref=d9f17ad8d2158f7df5b7b2aea935a84599db7085 role=orchestration -->
+<!-- trie:section symbol=trie/sync/single_file:backfill_section_records fingerprint=3e85d88cf6931eabfa672b17a87da6462a61a5e96fd12514e87f93e12190fb68 body_fp=5656b912df1951a7a46754f532e6b101359092cf9d2333e7775e123c706d8dba source_ref=444a9fef0b8e5f82578d20f10068ff693245e924 role=persistence -->
 Populate `triefact_sections` records from existing triefact files for every section discovered on disk.
 
 - Reads all triefact files in the project and ensures database records exist
 - Idempotent operation safe for repeated execution
-- Preserves role tags from persisted sentinels to avoid re-running LLM
+- Preserves role tags and historical mass from persisted sentinels to avoid re-running LLM
 <!-- trie:end -->
 <!-- trie:section symbol=trie/sync/single_file:FileSyncResult fingerprint=f658b6cb6f956faf262f29751e15b6efaad12e661c2976d58946940db38a0ed7 body_fp=fc9dee2a0b539e96f0df663b0399d746688457fc2350fd97ba5e605e8c7e2594 source_ref=da91ee7ba7df534c772bf0cfb02b2cfcdb8bce67 role=documentation-sync -->
 Records the outcome of syncing a single source file to its triefact.
@@ -108,7 +108,7 @@ Refreshes a triefact file's front matter from the current store without calling 
 - Preserves existing `last_synced_at` timestamp and all section bodies unchanged
 - No-op returning `changed=False` when the triefact file doesn't exist
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:sync_single_file fingerprint=51aa8ffa40685a513ddb436d18cf5dca2f28727ae4339eb472dcb381b2b09acb body_fp=0e00a43958426df79bb7afb425c0bec6e922416d7001572677a36aeec547d6e2 source_ref=d9f17ad8d2158f7df5b7b2aea935a84599db7085 role=orchestration -->
+<!-- trie:section symbol=trie/sync/single_file:sync_single_file fingerprint=d4eebd9457e61f1aefd976533eac10f315befd949ac3b8365cd3c4bcfe296b27 body_fp=b097931c2565727156d01ac8b8e18b51f4973c031e2bc36e91bca4a72d091d5f source_ref=444a9fef0b8e5f82578d20f10068ff693245e924 role=orchestration -->
 Generate or refresh the triefact file for a single Python source file using LLM calls.
 
 - `symbols_to_regen`: when None, regenerates all symbols; when a set, only regenerates listed symbols
@@ -118,4 +118,5 @@ Generate or refresh the triefact file for a single Python source file using LLM 
 - Preserves existing hand-written prose between section sentinels
 - Removes sections for symbols no longer present in source
 - Implements three-phase execution: plan (partition symbols), generate (parallel LLM calls), apply (serial mutations)
+- Folds cross-session attention historical mass into section sentinels before rendering
 <!-- trie:end -->

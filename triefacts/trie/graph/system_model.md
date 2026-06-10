@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.5
 source: trie/graph/system_model.py
-file_fingerprint: d0e7f82dbdc16aa66cf4d458ba2c2407f3af301110d874e1c463d94ae0dacc23
-last_synced_at: '2026-06-04T00:38:07Z'
+file_fingerprint: 85c547af616f9aa638dabdd5148e0adf8de9d0b7f724a025b1113eb615d48116
+last_synced_at: '2026-06-10T13:15:54Z'
 description: Assemble a high-level *system model* from the symbol graph.
 defines:
 - kind: module
   qualified_name: trie/graph/system_model:__module__
-  lines: 1-760
+  lines: 1-770
 - kind: constant
   qualified_name: trie/graph/system_model:_ENTRY_DECORATOR_RE
   lines: 50-55
@@ -55,46 +55,46 @@ defines:
   lines: 147-157
 - kind: function
   qualified_name: trie/graph/system_model:_load_raw
-  lines: 165-204
+  lines: 165-214
 - kind: function
   qualified_name: trie/graph/system_model:_pyproject_entry_targets
-  lines: 207-229
+  lines: 217-239
 - kind: function
   qualified_name: trie/graph/system_model:_betweenness
-  lines: 237-283
+  lines: 247-293
 - kind: function
   qualified_name: trie/graph/system_model:_communities
-  lines: 286-308
+  lines: 296-318
 - kind: function
   qualified_name: trie/graph/system_model:_depth_from_entries
-  lines: 311-327
+  lines: 321-337
 - kind: function
   qualified_name: trie/graph/system_model:_layered_layout
-  lines: 335-364
+  lines: 345-374
 - kind: function
   qualified_name: trie/graph/system_model:_has_entry_decorator
-  lines: 372-373
+  lines: 382-383
 - kind: function
   qualified_name: trie/graph/system_model:_classify
-  lines: 376-416
+  lines: 386-426
 - kind: function
   qualified_name: trie/graph/system_model:_salience
-  lines: 419-442
+  lines: 429-452
 - kind: function
   qualified_name: trie/graph/system_model:_build_axis
-  lines: 450-498
+  lines: 460-508
 - kind: function
   qualified_name: trie/graph/system_model:build_system_model
-  lines: 506-645
+  lines: 516-655
 - kind: function
   qualified_name: trie/graph/system_model:system_model_to_dict
-  lines: 648-697
+  lines: 658-707
 - kind: function
   qualified_name: trie/graph/system_model:_graph_fingerprint
-  lines: 705-717
+  lines: 715-727
 - kind: function
   qualified_name: trie/graph/system_model:build_system_model_cached
-  lines: 720-759
+  lines: 730-769
 incoming_refs: 16
 outgoing_refs: 0
 ---
@@ -189,11 +189,11 @@ Extracts the owning class qualified name from a method's qualified name.
 - Returns `None` if the qualified name has no module separator or local part has no class
 - Strips the method name from the local part to get the class name
 <!-- trie:end -->
-<!-- trie:section symbol=trie/graph/system_model:_load_raw fingerprint=202a814f55d86fc3addc92ff01cfccfb49077f3ce68498802b62299c431b613d body_fp=2b16fbedbf05118b2ed99f49afed25d622d6cbc9de11bc814452342e647e93ba source_ref=53916a96e0fd72b42dc0aa3b935f9f016be780e4 role=graph-database -->
+<!-- trie:section symbol=trie/graph/system_model:_load_raw fingerprint=e5e2a7210ef848cbd6edbe559808e95a05eaf35afc9fce8e6a34e04348be163d body_fp=c852f2cf12fbec4b928d91ccd6590accc329d09143322f4eaf07ecca5669a4a1 source_ref=15744ec3e1ffb02efab65625d0a09ad811e06cea role=domain -->
 Extracts symbols and call edges from the Store, returning node dictionaries and edge tuples by qualified name.
 
 - Returns tuple of (nodes dict keyed by qname, edge list of qname pairs)
-- Filters out module container nodes, self-edges and edges to missing symbols
+- Filters out module container nodes, self-edges, contains edges and edges to missing symbols
 - Joins symbols with triefact_sections for role/boundary/one_liner metadata
 <!-- trie:end -->
 <!-- trie:section symbol=trie/graph/system_model:_pyproject_entry_targets fingerprint=4d29875a2185d55700cc7554a105ef2386331d16ed93758e6f867173cf700b96 body_fp=2f645a8ad9ff26003201fda71c9f491caf86f80f6690c23bccb7985127a3941c source_ref=53916a96e0fd72b42dc0aa3b935f9f016be780e4 role=config-management -->

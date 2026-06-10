@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/check.py
 file_fingerprint: 7f06c7053f40e5352b290eaab4c216f06e376680c60d9886afcf46daa647c6aa
-last_synced_at: '2026-06-06T14:18:59Z'
+last_synced_at: '2026-06-10T13:16:57Z'
 defines:
 - kind: module
   qualified_name: trie/check:__module__
@@ -73,7 +73,7 @@ Compute stale items by comparing each in-scope source file's symbols to its trie
 - Detects missing triefact files, missing sections, stale sections, orphan sections, tampered bodies, and legacy sections
 - Uses fingerprints from triefact sentinels for integrity verification without database access
 <!-- trie:end -->
-<!-- trie:section symbol=trie/check:_check_project_inner fingerprint=43b2ccab358f3cca3c315d2d842d841287809a0a13c40e980ba1e1b5498e925e body_fp=c3c2f2c170543ef017cb1bf035939e0aeb6262e25dd28dc74777749cd6641005 source_ref=b13418772d94c7dea0e494653a1d4aadcca3a1c6 role=domain -->
+<!-- trie:section symbol=trie/check:_check_project_inner fingerprint=43b2ccab358f3cca3c315d2d842d841287809a0a13c40e980ba1e1b5498e925e body_fp=c3c2f2c170543ef017cb1bf035939e0aeb6262e25dd28dc74777749cd6641005 source_ref=b13418772d94c7dea0e494653a1d4aadcca3a1c6 role=orchestration -->
 Performs bidirectional staleness detection between source symbols and triefact sections, populating telemetry.
 
 - Discovers in-scope files, extracts symbols, and compares with existing triefact sections
