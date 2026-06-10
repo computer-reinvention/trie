@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/sync/progress.py
 file_fingerprint: af06a9fa87b258c20e0c29188a165c54a315ce135458a0ddb79aa94637335d99
-last_synced_at: '2026-06-09T10:07:39Z'
+last_synced_at: '2026-06-10T13:17:09Z'
 defines:
 - kind: module
   qualified_name: trie/sync/progress:__module__
@@ -86,8 +86,11 @@ Calls `on_section` on the callback if it exists to announce a new group of files
 - `label`: Description of the file group (e.g. "directly stale")
 - `count`: Number of files in this group
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/progress:_NullProgress fingerprint=2b8f552f563eb38a278c024c0bd729ed93d6c349b8f63bcd16eb664b256f55bb body_fp=1d6c4b7964671a4dc4368ffd473d7b4dec866f1adac831df6e6684e0ccb70310 source_ref=65d43ac4becf07b8aa002aee81288579e8b060c1 role=util -->
-No-op implementation of ProgressCallback that ignores all sync progress events.
+<!-- trie:section symbol=trie/sync/progress:_NullProgress fingerprint=2b8f552f563eb38a278c024c0bd729ed93d6c349b8f63bcd16eb664b256f55bb body_fp=046b5bd1ac91585406ea17fe6e4d2cdd7d8b78d481430814e80a2a5b61ff11eb source_ref=824af364261107be2123a388ec334677a577a1c8 role=util -->
+No-op implementation of ProgressCallback that silently ignores all progress events.
+
+- Used as default callback when no progress reporting is needed
+- All methods return None without side effects
 <!-- trie:end -->
 <!-- trie:section symbol=trie/sync/progress:_NullProgress.on_start fingerprint=9f730a1a70a6144b0dc8da4942d9093cd268d625eafac5188775d0d6b8b25f08 body_fp=e092acc35db9f85278613cbe45375310aaf5c35a0c1c68f55f37c6c519b17502 source_ref=3711cd8c6acb475bbd3b2400719e537dec17211d role=documentation-sync -->
 _NullProgress.on_start does nothing when a file sync starts, providing a no-op implementation of the ProgressCallback protocol.

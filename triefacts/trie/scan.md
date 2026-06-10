@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/scan.py
 file_fingerprint: 1ac64e845687c0b329b8bfd3e1c0d0cb7f588d619cc78b615953aab32750b7d7
-last_synced_at: '2026-06-03T21:15:13Z'
+last_synced_at: '2026-06-10T13:17:02Z'
 defines:
 - kind: module
   qualified_name: trie/scan:__module__
@@ -16,7 +16,7 @@ defines:
 - kind: function
   qualified_name: trie/scan:scan_project
   lines: 30-109
-incoming_refs: 18
+incoming_refs: 28
 outgoing_refs: 4
 ---
 <!-- trie:section symbol=trie/scan:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=707e1d430cd869746b7ed5377a65ba2e430bacec467f40f67f40b4d789502e8c source_ref=ba0d38d68c99a578b6395e4b44522d5825f9668d role=source-parsing -->
@@ -37,7 +37,7 @@ Contains metrics from scanning a project's source files for symbols and referenc
 <!-- trie:section symbol=trie/scan:file_fingerprint fingerprint=46c7c51a18ded3953f42cbf0478b0794532566079fd73b079dc9950d2c108e07 body_fp=8ad89667e91e786f56931ae31d6e18fd2fdd8bb2814d50034c3454f7ea014f85 source_ref=ba0d38d68c99a578b6395e4b44522d5825f9668d role=change-detection -->
 Computes SHA-256 hash of UTF-8 encoded text as hexadecimal string.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/scan:scan_project fingerprint=3ffa1b08322db4d58b517de9235ec606961e0e5bbd135353511354276eb3680c body_fp=4d16bb249a251e8fd945dbeca3a20b3fe8fe8cbb0c73c6122dd1256ea5b958d5 source_ref=ba0d38d68c99a578b6395e4b44522d5825f9668d role=change-detection -->
+<!-- trie:section symbol=trie/scan:scan_project fingerprint=3ffa1b08322db4d58b517de9235ec606961e0e5bbd135353511354276eb3680c body_fp=4d16bb249a251e8fd945dbeca3a20b3fe8fe8cbb0c73c6122dd1256ea5b958d5 source_ref=ba0d38d68c99a578b6395e4b44522d5825f9668d role=orchestration -->
 Walks the project, parses changed files, and persists symbols to the store with fingerprint-based change detection.
 
 - Files whose fingerprint matches stored value are skipped without re-parsing

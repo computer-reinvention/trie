@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/sync/bootstrap.py
 file_fingerprint: 105fe37ce7e9a65807dd40aa6193665e29f553863feaa622b9b628ac32125617
-last_synced_at: '2026-06-09T10:07:47Z'
+last_synced_at: '2026-06-10T13:17:09Z'
 defines:
 - kind: module
   qualified_name: trie/sync/bootstrap:__module__
@@ -48,7 +48,7 @@ Represents a ranked worklist of files to sync with cost estimates.
 - `pricing_known`: false when model pricing unavailable, making cost estimates zero
 - `total_estimated_cost`: sum of all item cost estimates in USD
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/bootstrap:BootstrapResult fingerprint=3f3fd17f4bf3bb39691a228e43cfd2570d8f5faf3fec4a81808e46a8a00268f5 body_fp=f0132e66ba35b1cd486a3e5458feb1da04024660f80e9705e58cab8c3378129a source_ref=a9697e77ed2f518a87a84d4b0dd7da51d2d4623a role=model -->
+<!-- trie:section symbol=trie/sync/bootstrap:BootstrapResult fingerprint=3f3fd17f4bf3bb39691a228e43cfd2570d8f5faf3fec4a81808e46a8a00268f5 body_fp=f0132e66ba35b1cd486a3e5458feb1da04024660f80e9705e58cab8c3378129a source_ref=b80e775bf813db8e4b4937c29c968d95eb993902 role=model -->
 Holds the outcome of a bootstrap run, tracking files processed and associated costs.
 
 - `files_skipped_no_budget`: files skipped due to budget or limit constraints

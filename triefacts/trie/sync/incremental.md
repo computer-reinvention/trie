@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/sync/incremental.py
 file_fingerprint: 15a45b1e239e298ae6d2aaa809707ec6779cdcf4e4f7467501bb7807be8094fe
-last_synced_at: '2026-06-09T10:07:35Z'
+last_synced_at: '2026-06-10T13:17:12Z'
 defines:
 - kind: module
   qualified_name: trie/sync/incremental:__module__
@@ -36,7 +36,7 @@ Read-only preview of files and symbols that `run_incremental` would regenerate.
 - `hop_by_file`: cascade hop distance from seed files, used to order sync priority
 - `regen_qnames_by_file`: qualified names needing regeneration per file; absence means full-file regen
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/incremental:IncrementalResult fingerprint=44d8d13db810a81ea27f75709b870895913876f1c8dbdc95aa93ed09cc9916cf body_fp=edb4713c88462a2e374290fbcc09b8507eda2eedc9d8e85e33ebf923954dbb17 source_ref=549bb001d03e465de4697570041eabaf93893a7f role=documentation-sync -->
+<!-- trie:section symbol=trie/sync/incremental:IncrementalResult fingerprint=44d8d13db810a81ea27f75709b870895913876f1c8dbdc95aa93ed09cc9916cf body_fp=edb4713c88462a2e374290fbcc09b8507eda2eedc9d8e85e33ebf923954dbb17 source_ref=0007e08c6d700f4d99f851ebc327be2322a06af4 role=model -->
 Results and statistics from running incremental sync on a project.
 
 - `files_synced`: number of files successfully processed by the LLM

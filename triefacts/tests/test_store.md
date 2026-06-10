@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: tests/test_store.py
 file_fingerprint: e545ba31c90987f93a7e73415a9fdee3e2ea4b13839b609bf2bf4e14ddbb0f19
-last_synced_at: '2026-06-09T09:32:47Z'
+last_synced_at: '2026-06-10T13:16:52Z'
 defines:
 - kind: module
   qualified_name: tests/test_store:__module__
@@ -121,10 +121,10 @@ Test suite for the `trie.graph.store` module, verifying Store database operation
 <!-- trie:section symbol=tests/test_store:store fingerprint=c5420fff5b078bc5c2e95aff6471bdee364032edad5dee901f70ebfc07cd85eb body_fp=5265166b02760249029ce3e15608512615a7d745b13ea2a100d1f95a8a2a2191 source_ref=a95486d535aed1c6b87b5026c7d31274c719666f role=test-infrastructure -->
 Pytest fixture that creates a temporary Store instance and ensures cleanup after test completion.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_store:test_schema_version_recorded fingerprint=2581df1e7e37dd6979078449702b4844298aace7f2e4a4facfc5eb87a6766f78 body_fp=2cd16a2738563fa5d743d07394affde0d0234f2f77be8a0d5773d9e30c94a664 source_ref=a95486d535aed1c6b87b5026c7d31274c719666f role=test -->
+<!-- trie:section symbol=tests/test_store:test_schema_version_recorded fingerprint=2581df1e7e37dd6979078449702b4844298aace7f2e4a4facfc5eb87a6766f78 body_fp=2cd16a2738563fa5d743d07394affde0d0234f2f77be8a0d5773d9e30c94a664 source_ref=3df998e45be4b2a697de43a24a7dc9bdd57b152b role=test -->
 Verifies that Store records the correct schema version in the database on initialization.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_store:test_upsert_and_get_file fingerprint=f3b58b4e3b9159727ab6287bf2302a550f35296a8d1eb39f62d33d4cdea3b959 body_fp=1edef73a1d6a1c5f5f6ddd7905f4705e7372824bf07b55cfad0716bcaf6909f0 source_ref=a95486d535aed1c6b87b5026c7d31274c719666f role=test -->
+<!-- trie:section symbol=tests/test_store:test_upsert_and_get_file fingerprint=f3b58b4e3b9159727ab6287bf2302a550f35296a8d1eb39f62d33d4cdea3b959 body_fp=1edef73a1d6a1c5f5f6ddd7905f4705e7372824bf07b55cfad0716bcaf6909f0 source_ref=3df998e45be4b2a697de43a24a7dc9bdd57b152b role=test -->
 Tests that Store can insert a new file record and retrieve it with correct values.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_store:test_upsert_overwrites_existing fingerprint=9db6492c71548100dcb1641379202911793ae4f436b4e9aaa3c7c555be8aa398 body_fp=86d75d61abbc3cfb15d195e797762874e8a894cbae180a651afab3aaf2b3e632 source_ref=a95486d535aed1c6b87b5026c7d31274c719666f role=test-infrastructure -->

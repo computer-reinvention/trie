@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: tests/test_metadata_refresh.py
 file_fingerprint: 2bea858f50a5d11432e54ce0156a70e43c81025119d87ce6a8965da7a4561aa6
-last_synced_at: '2026-06-06T13:22:13Z'
+last_synced_at: '2026-06-10T13:17:02Z'
 description: Metadata-only triefact refresh.
 defines:
 - kind: module
@@ -83,34 +83,34 @@ Extracts section bodies from a triefact file as a qualified name to content mapp
 
 - Returns: dict mapping symbol qualified names to their section body text between HTML comment sentinels
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_does_not_call_the_llm fingerprint=10efbe7f965fac4bfe13d5fb4ca4d3823e9bbe88e28e269add9756d9241929f6 body_fp=d8b778b27825fc6fa7d5447f12d455679da5c9d04dcdb4900ae3ccca7f5f0b8d source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=documentation-sync -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_does_not_call_the_llm fingerprint=10efbe7f965fac4bfe13d5fb4ca4d3823e9bbe88e28e269add9756d9241929f6 body_fp=d8b778b27825fc6fa7d5447f12d455679da5c9d04dcdb4900ae3ccca7f5f0b8d source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test -->
 Verifies that `refresh_triefact_metadata` runs without requiring an LLM client, confirming metadata refresh is free and returns a `MetadataRefreshResult`.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_preserves_section_bodies_byte_for_byte fingerprint=31af1871d315749a9c025d6b02b4438439f67bf623d93180d8dd9362c6159957 body_fp=687f939c940c3eeeecf5f5bfe252cb560569c6c7229293255da60f897e874dd4 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_preserves_section_bodies_byte_for_byte fingerprint=31af1871d315749a9c025d6b02b4438439f67bf623d93180d8dd9362c6159957 body_fp=687f939c940c3eeeecf5f5bfe252cb560569c6c7229293255da60f897e874dd4 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test -->
 Verifies that refresh_triefact_metadata preserves section body content and sentinel comments unchanged.
 
 - Captures section bodies and sentinels before metadata refresh operation
 - Asserts bodies and sentinels remain byte-identical after refresh completes
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_preserves_last_synced_at fingerprint=347a26e83a5aa2b48ca7bf04dafc020f7cd666df80981ad495d005d3baaf8f53 body_fp=671916952fdd8eeea783acb39ff35992e23eabf313aa5c8b63b2d7fb14c4d8c7 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_preserves_last_synced_at fingerprint=347a26e83a5aa2b48ca7bf04dafc020f7cd666df80981ad495d005d3baaf8f53 body_fp=671916952fdd8eeea783acb39ff35992e23eabf313aa5c8b63b2d7fb14c4d8c7 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test -->
 Verifies that metadata refresh preserves the `last_synced_at` timestamp from triefact front matter.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_picks_up_new_edges_in_front_matter fingerprint=6263b0a5f31e8703e1010346c981e743ea8bfd5e1648e1ff930951164076bc6c body_fp=50ceffdbad93cc7407eea2e5784ca78cffaf24225ac240f4f58ba916a3ed672b source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_picks_up_new_edges_in_front_matter fingerprint=6263b0a5f31e8703e1010346c981e743ea8bfd5e1648e1ff930951164076bc6c body_fp=50ceffdbad93cc7407eea2e5784ca78cffaf24225ac240f4f58ba916a3ed672b source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test -->
 Tests that metadata refresh detects new cross-module references and updates ref counts in triefact front matter.
 
 - Adds a new module referencing an existing function after initial sync
 - Verifies `incoming_refs` count increases by 1 after refresh
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_is_idempotent fingerprint=0c9ddae21b38445f7612817c1a778908943e8e78e7f37def01bdefe1c08774de body_fp=1d9a45506f319c37ad5b07382d390aa556fc57a8f95f67973978f5a783c77b90 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_is_idempotent fingerprint=0c9ddae21b38445f7612817c1a778908943e8e78e7f37def01bdefe1c08774de body_fp=1d9a45506f319c37ad5b07382d390aa556fc57a8f95f67973978f5a783c77b90 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test -->
 Tests that `refresh_triefact_metadata` is idempotent by verifying consecutive refresh calls return `changed=False` on the second call.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_skips_missing_triefact fingerprint=f78515fc126a5e94dc695fb2c41fc0a47424413eb197cf2c80054305065d3589 body_fp=f79a59e614738825e291135950689d4425cfcc232433be809d9b42a81de0dd20 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=documentation-sync -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_refresh_skips_missing_triefact fingerprint=f78515fc126a5e94dc695fb2c41fc0a47424413eb197cf2c80054305065d3589 body_fp=f79a59e614738825e291135950689d4425cfcc232433be809d9b42a81de0dd20 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test -->
 Tests that `refresh_triefact_metadata` returns unchanged result when triefact file doesn't exist yet.
 
 - Creates new source file without syncing it first
 - Verifies refresh returns `changed=False` for missing triefact
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_metadata_refresh:test_verify_passes_after_refresh fingerprint=4eaa18dfe98b605a6c3f831c8389b56cb62a3a1a6c9516dcd97cb212e9e1049d body_fp=6015a4be8533412ef8fc589ab8720867ea463be3131ec00e3d47b8418ee45140 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_metadata_refresh:test_verify_passes_after_refresh fingerprint=4eaa18dfe98b605a6c3f831c8389b56cb62a3a1a6c9516dcd97cb212e9e1049d body_fp=6015a4be8533412ef8fc589ab8720867ea463be3131ec00e3d47b8418ee45140 source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test -->
 Tests that `trie verify` passes after metadata refresh, ensuring no drift in section fingerprints.
 
 - Verifies project is clean before and after refreshing metadata for both test modules
@@ -125,17 +125,3 @@ Tests end-to-end CLI execution of `trie sync --metadata-only` after cold sync, v
 - Patches `make_client` to fail if the LLM client is constructed during metadata-only refresh
 - Asserts CLI exits cleanly and reports refresh count in output
 <!-- trie:end -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-

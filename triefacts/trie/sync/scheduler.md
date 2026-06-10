@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/sync/scheduler.py
 file_fingerprint: 057955bf550d298b274c7a8c5babf3afd0a573bf9a3ebdef0f903ca782de13e1
-last_synced_at: '2026-06-09T10:07:37Z'
+last_synced_at: '2026-06-10T13:17:14Z'
 description: Wave-based file scheduler for parallel triefact sync.
 defines:
 - kind: module
@@ -58,7 +58,7 @@ Represents one file to sync with its relative path, hop distance for wave bandin
 - `hop`: cascade distance from directly-changed files (0 = directly changed)
 - `regen_qnames`: specific symbols to regenerate (None = full file regeneration)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/scheduler:SchedulerResult fingerprint=7678564001789868c1fe5c436184675a84edb4fb64fca6dbac395d24a1ce04c8 body_fp=df20eb314be55ba33525b635fde8d9c59474163f453035bca32f810661c969b8 source_ref=95bf65ae092aa07f5efb15802ab19c1bddc0a8e9 role=model -->
+<!-- trie:section symbol=trie/sync/scheduler:SchedulerResult fingerprint=7678564001789868c1fe5c436184675a84edb4fb64fca6dbac395d24a1ce04c8 body_fp=df20eb314be55ba33525b635fde8d9c59474163f453035bca32f810661c969b8 source_ref=2bf723ae8e006fdd21a9f434926ea4420d9cc1e2 role=model -->
 Holds the outcome of a wave-based file sync run with results and skip counts.
 
 - `skipped_budget`: Files skipped due to budget/limit caps
@@ -73,16 +73,18 @@ Executes file sync tasks in hop-distance bands with parallel processing and budg
 - `limit`: maximum number of files to process successfully
 - `cost_of`: function to extract USD cost from a completed file result
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/scheduler:_RunState fingerprint=6f1f2be822f4775274f6fe542479bec76b8444a21b0f93eae50985a0a9b69765 body_fp=a5f4ebc0ef55ee7752b4c32af12980b0ca0165777d0b0d945a7342b3302619c0 source_ref=0fc3ddd6f1f7339e910cd55f5cf4a4f3e622d659 role=orchestration -->
-Tracks mutable state across file sync waves including results, costs, skip counts, and stop conditions.
+<!-- trie:section symbol=trie/sync/scheduler:_RunState fingerprint=6f1f2be822f4775274f6fe542479bec76b8444a21b0f93eae50985a0a9b69765 body_fp=81c4e60e8a9882e3b5c95cc78a7c438232f5eb9455443d26dcea7770b3a1e417 source_ref=2bf723ae8e006fdd21a9f434926ea4420d9cc1e2 role=orchestration -->
+Mutable state accumulator for wave-based parallel file processing with budget and limit enforcement.
 
-- `stop`: halts further task submission when budget or limit reached
+- `stop`: boolean flag set when budget or limit cap is reached
+- `actual_cost`: running USD cost total from completed files
 - `skipped_budget`: count of files skipped due to budget/limit caps
 - `skipped_other`: count of files skipped due to errors or no symbols
-- `actual_cost`: accumulated USD cost of completed files
-- `submitted`: total files submitted for processing across all bands
+- `run_band`: executes one hop-distance band using ThreadPoolExecutor with worker pool
+- `skip_all`: marks remaining tasks as skipped when caps are hit
+- `_collect`: processes completed futures, updates totals, and checks stop conditions
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/scheduler:_RunState.__init__ fingerprint=075ca8698682dc1b1bc5d8c0433231e495a47add91c846d61e63c73459b73eb0 body_fp=23961dc48431b5f07d088490a981c783fd201e13b78f71a9f2072bf0d41d8bb7 source_ref=95bf65ae092aa07f5efb15802ab19c1bddc0a8e9 role=model -->
+<!-- trie:section symbol=trie/sync/scheduler:_RunState.__init__ fingerprint=075ca8698682dc1b1bc5d8c0433231e495a47add91c846d61e63c73459b73eb0 body_fp=23961dc48431b5f07d088490a981c783fd201e13b78f71a9f2072bf0d41d8bb7 source_ref=2bf723ae8e006fdd21a9f434926ea4420d9cc1e2 role=model -->
 Initializes _RunState with scheduler configuration and zeroed accumulator state for tracking sync results and costs.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/sync/scheduler:_RunState._cap_reason fingerprint=745db94439eb199837294a37912fe7401e59543bcc3a5d10be2a2d8dff59f02c body_fp=bf8642d1217240d4f2144cac8e75a6122272a86da463a24453aa13d06b594109 source_ref=95bf65ae092aa07f5efb15802ab19c1bddc0a8e9 role=util -->

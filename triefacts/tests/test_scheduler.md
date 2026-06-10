@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: tests/test_scheduler.py
 file_fingerprint: ea31ca96dcead1aeded8f5022d514a7a1a73ec23b51abbe8451f834c263ba0f9
-last_synced_at: '2026-06-09T10:07:57Z'
+last_synced_at: '2026-06-10T13:16:57Z'
 description: Tests for the wave-based file scheduler (trie/sync/scheduler.py).
 defines:
 - kind: module
@@ -51,10 +51,10 @@ Tests for the wave-based file scheduler functionality in `trie.sync.scheduler`.
 - `test_depth_banded_ordering_band0_before_band1()`: Verifies hop-0 files complete before hop-1 files start
 - `test_global_inflight_semaphore_caps_concurrency()`: Tests global concurrency limiting via semaphore
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_scheduler:_result fingerprint=89f80e8e00dcf9a76d0fa92151f1f4ff417c496ac55f25033392f78559088950 body_fp=099db3d388016955af7988368e55adce9d1e87d10b20ba903202f1cf77471f8c source_ref=49d06a80c655d6743830a8fe1d3623699c10a995 role=test -->
-Creates a mock `FileSyncResult` with fixed token counts and paths derived from the given relative path.
+<!-- trie:section symbol=tests/test_scheduler:_result fingerprint=89f80e8e00dcf9a76d0fa92151f1f4ff417c496ac55f25033392f78559088950 body_fp=5a4bd7501344519a497f25fc85fb96349b5019b4eab142a6ce237cf0edfdfc3c source_ref=2d0a6dfc259f5e05467859318304860c4dd2bbc5 role=test -->
+Creates a FileSyncResult with fixed test values for the given relative path.
 
-- `rel`: relative file path used to construct source and triefact paths
+- `rel`: relative file path to use for source_path basename
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_scheduler:test_unbounded_run_processes_all_files fingerprint=b871992e406fb67bac54cbd5c141c46937cc30c7a958dcca13c0a37dd3c1c03f body_fp=6377686c5b2ded1d9860fda4957561223a2bf3686b87bb94872b3c50b74ed26d source_ref=2d0a6dfc259f5e05467859318304860c4dd2bbc5 role=test -->
 Verifies that `run_waves` processes all tasks when no limits are imposed.
