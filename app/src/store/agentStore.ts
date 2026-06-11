@@ -98,7 +98,11 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
           : emptySession(info)
       }
       // Most-recent-first so the freshest chats sit at the top of the switcher.
-      const order = [...list].sort(byRecency).map((i) => i.id)
+      // Child (sub-agent) sessions are excluded from the switcher order.
+      const order = [...list]
+        .filter((i) => !i.parentID)
+        .sort(byRecency)
+        .map((i) => i.id)
       const activeId = s.activeId && sessions[s.activeId] ? s.activeId : (order[0] ?? null)
       return { sessions, order, activeId }
     }),
@@ -110,8 +114,13 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         ...s.sessions,
         [info.id]: s.sessions[info.id] ? { ...s.sessions[info.id], info } : emptySession(info),
       }
-      const order = exists ? s.order : [info.id, ...s.order]
-      return { sessions, order, activeId: s.activeId ?? info.id }
+      // Child (sub-agent) sessions live in the store so their transcript renders
+      // nested under the parent's task row, but they must NOT appear in the
+      // session switcher and must never auto-become the active chat.
+      const isChild = !!info.parentID
+      const order = exists || isChild ? s.order : [info.id, ...s.order]
+      const activeId = isChild ? s.activeId : (s.activeId ?? info.id)
+      return { sessions, order, activeId }
     }),
 
   removeSession: (id) =>
@@ -134,8 +143,10 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   applyPartUpdated: (sessionID, messageID, part) =>
     set((s) => {
-      const cur = s.sessions[sessionID]
-      if (!cur) return {}
+      // Auto-create a stub for an unknown session so SUB-AGENT (child-session)
+      // parts aren't dropped. Child sessions are never added to `order`, so this
+      // populates their transcript without polluting the switcher.
+      const cur = s.sessions[sessionID] ?? emptySession({ id: sessionID })
       // Ensure the message exists (assistant message may arrive via info first,
       // but if a part lands before info, create a stub assistant message).
       let messages = cur.messages
@@ -154,8 +165,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   applyTextDelta: (sessionID, messageID, partID, delta) =>
     set((s) => {
-      const cur = s.sessions[sessionID]
-      if (!cur) return {}
+      const cur = s.sessions[sessionID] ?? emptySession({ id: sessionID })
       const messages = patchMessageParts(cur.messages, messageID, (parts) => {
         const idx = parts.findIndex((p) => p.id === partID)
         if (idx === -1) {
@@ -172,8 +182,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   applyReasoningDelta: (sessionID, messageID, partID, delta) =>
     set((s) => {
-      const cur = s.sessions[sessionID]
-      if (!cur) return {}
+      const cur = s.sessions[sessionID] ?? emptySession({ id: sessionID })
       const messages = patchMessageParts(cur.messages, messageID, (parts) => {
         const idx = parts.findIndex((p) => p.id === partID)
         if (idx === -1) {
@@ -190,8 +199,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   applyMessageInfo: (sessionID, info) =>
     set((s) => {
-      const cur = s.sessions[sessionID]
-      if (!cur) return {}
+      const cur = s.sessions[sessionID] ?? emptySession({ id: sessionID })
       // When the server echoes a real user message, drop our optimistic local
       // stub(s) so the message isn't shown twice.
       let base = cur.messages
@@ -211,8 +219,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   setRunning: (id, running) =>
     set((s) => {
-      const cur = s.sessions[id]
-      if (!cur) return {}
+      const cur = s.sessions[id] ?? emptySession({ id })
       return {
         sessions: { ...s.sessions, [id]: { ...cur, running, error: running ? null : cur.error } },
       }
@@ -220,8 +227,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   setError: (id, error) =>
     set((s) => {
-      const cur = s.sessions[id]
-      if (!cur) return {}
+      const cur = s.sessions[id] ?? emptySession({ id })
       return { sessions: { ...s.sessions, [id]: { ...cur, error, running: false } } }
     }),
 

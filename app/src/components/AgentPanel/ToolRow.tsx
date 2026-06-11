@@ -1,9 +1,12 @@
 import { useState } from "react"
+import ReactMarkdown from "react-markdown"
 import { useGraphStore } from "@/store/graphStore"
+import { useAgentStore } from "@/store/agentStore"
 import { useTabsStore, TOPOLOGY_TAB_ID } from "@/store/tabsStore"
 import { ACTIVITY, activityColor } from "@/graph/style"
-import { Check, Loader2, AlertCircle, ChevronRight, Copy, ShieldQuestion } from "./icons"
-import type { ToolPart, PermissionRequest, PermissionReply } from "@/api/types"
+import { Check, Loader2, AlertCircle, ChevronRight, Copy, ShieldQuestion, Brain } from "./icons"
+import type { ToolPart, PermissionRequest, PermissionReply, TextPart } from "@/api/types"
+import { isRenderablePart } from "./partFilters"
 
 // Lockstep color: the same intent hue the graph uses for this tool, so the chat
 // row and the graph node read as one event (docs/choreography-prd.md §3).
@@ -65,6 +68,14 @@ export function ToolRow({
   const [open, setOpen] = useState(false)
   const summary = inputSummary(part.tool, part.state.input)
   const name = bareTool(part.tool)
+
+  // A `task` tool spawns a SUB-AGENT in a child session. Its id is carried in
+  // the tool's metadata; we render that child session's transcript collapsibly.
+  const isTask = name === "task"
+  const childSessionId =
+    isTask && typeof part.state.metadata?.sessionId === "string"
+      ? (part.state.metadata.sessionId as string)
+      : undefined
 
   // Lockstep: pulse the row's accent while its target symbol is live on the graph.
   const target =
@@ -173,8 +184,109 @@ export function ToolRow({
           {part.state.error && <Pre text={part.state.error} danger />}
         </div>
       )}
+
+      {/* Sub-agent: the child session's live transcript, collapsible. */}
+      {childSessionId && <SubAgentSection sessionId={childSessionId} accent={barColor} />}
     </div>
   )
+}
+
+// Renders a sub-agent (child session) transcript inline under its task row:
+// the agent's reasoning/tool steps, collapsible, with a live "working" pulse.
+// Reuses ToolRow for the child's own tool calls so the visual language matches.
+function SubAgentSection({ sessionId, accent }: { sessionId: string; accent: string }) {
+  // Collapsed by default — a sub-agent can run dozens of steps; the parent task
+  // row stays scannable and the user expands the sub-agent only when curious.
+  const [open, setOpen] = useState(false)
+  const session = useAgentStore((s) => s.sessions[sessionId])
+  const running = session?.running ?? false
+  const messages = session?.messages ?? []
+
+  // Flatten the child transcript into renderable steps: assistant text + tools.
+  // Uses the SAME plumbing filter as the main transcript so synthetic /
+  // system-reminder / prompt-cache artifacts never leak into the sub-agent view.
+  const steps = messages.flatMap((m) =>
+    m.parts.filter(isRenderablePart).map((p) => ({ messageId: m.info.id, part: p })),
+  )
+  const toolCount = steps.filter((s) => s.part.type === "tool").length
+
+  return (
+    <div className="border-t border-subtle">
+      <button
+        className="w-full flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-black/15 transition-colors"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <Brain size={12} className="shrink-0" style={{ color: accent }} />
+        <span className="text-[11px] text-2">sub-agent</span>
+        <span className="text-[10px] text-faint tabular-nums">
+          {toolCount} {toolCount === 1 ? "step" : "steps"}
+        </span>
+        {running && <Loader2 size={11} className="animate-spin shrink-0" style={{ color: accent }} />}
+        <span className="flex-1" />
+        <ChevronRight
+          size={12}
+          className="shrink-0 text-faint transition-transform"
+          style={{ transform: open ? "rotate(90deg)" : "none" }}
+        />
+      </button>
+      {open && (
+        <div
+          className="pl-2.5 pr-2 py-1.5 border-t border-subtle/60"
+          style={{ borderLeft: `2px solid color-mix(in srgb, ${accent} 40%, transparent)` }}
+        >
+          {steps.length === 0 && (
+            <p className="text-[11px] text-faint italic px-0.5 py-0.5">
+              {running ? "working…" : "no activity recorded"}
+            </p>
+          )}
+          {steps.map(({ messageId, part }) =>
+            part.type === "tool" ? (
+              <SubAgentStep key={part.id} part={part as ToolPart} accent={accent} />
+            ) : (
+              <div key={`${messageId}-${part.id}`} className="md text-[11px] text-2 py-1 px-0.5">
+                <ReactMarkdown>{(part as TextPart).text}</ReactMarkdown>
+              </div>
+            ),
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// One compact line in a sub-agent's step list: status dot + tool verb + target.
+// Far lighter than a full ToolRow chip so a 20-step exploration stays scannable.
+function SubAgentStep({ part, accent }: { part: ToolPart; accent: string }) {
+  const name = bareTool(part.tool)
+  const summary = inputSummary(part.tool, part.state.input)
+  const color = intentColor(part.tool)
+  return (
+    <div className="flex items-center gap-2 py-[3px] px-0.5 text-[11px] leading-tight">
+      <span className="shrink-0 flex items-center">
+        <StatusIcon status={part.state.status} color={accent} />
+      </span>
+      <span className="font-mono shrink-0" style={{ color }}>
+        {name}
+      </span>
+      {summary && (
+        <span className="font-mono text-3 truncate" title={summary}>
+          {prettyTarget(summary)}
+        </span>
+      )}
+    </div>
+  )
+}
+
+// Tidy a tool target for the compact step list: drop a trie module's
+// `:__module__` suffix (it reads as "the module itself") and collapse a long
+// absolute path to its tail so the row stays scannable.
+function prettyTarget(target: string): string {
+  let t = target.replace(/:__module__$/, "")
+  if (t.length > 48 && t.includes("/")) {
+    const parts = t.split("/")
+    t = "…/" + parts.slice(-2).join("/")
+  }
+  return t
 }
 
 function Pre({

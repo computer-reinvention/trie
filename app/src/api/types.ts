@@ -624,6 +624,38 @@ export function isSyntheticQname(qname: string): boolean {
   return qname.startsWith(SYNTHETIC_QNAME_PREFIX)
 }
 
+// Per-FILE synthetic nodes. A read/trace/write whose target isn't a known
+// symbol but IS a file path (e.g. a non-indexed config/doc, or a module path)
+// gets its OWN synthetic node keyed by the path, rather than being lumped into
+// one giant "Filesystem" pill. They all share the Filesystem role so they still
+// cluster into a single FILESYSTEM region — but each file is individually named
+// and ranked, so the map reads "agent read config.toml, README.md" instead of
+// the misleading "agent is focused on the filesystem".
+export const SYNTHETIC_FILE_PREFIX = `${SYNTHETIC_QNAME_PREFIX}file/`
+
+export function syntheticFileQname(path: string): string {
+  return `${SYNTHETIC_FILE_PREFIX}${path}`
+}
+
+export function isSyntheticFileQname(qname: string): boolean {
+  return qname.startsWith(SYNTHETIC_FILE_PREFIX)
+}
+
+// The file path carried by a per-file synthetic qname (or null if not one).
+export function syntheticFilePath(qname: string): string | null {
+  return isSyntheticFileQname(qname) ? qname.slice(SYNTHETIC_FILE_PREFIX.length) : null
+}
+
+// Heuristic: does a non-symbol attention target look like a file path (so it
+// deserves its own per-file node) rather than free text? Accepts a path segment
+// with a slash or a dotted filename extension; rejects obvious symbol qnames
+// (which carry a ':') and empty strings.
+export function looksLikeFilePath(target: string): boolean {
+  if (!target || target.includes(":")) return false
+  if (target.includes("/")) return true
+  return /\.[A-Za-z0-9]{1,8}$/.test(target) // bare filename like "config.toml"
+}
+
 // One unit of agent attention on a target (symbol qname or synthetic qname).
 export interface AttentionEvent {
   ts: number

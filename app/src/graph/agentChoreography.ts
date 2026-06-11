@@ -112,7 +112,10 @@ export function choreographFor(part: ToolPart): ChoreographyResult {
 
   // --- read intent ----------------------------------------------------
   if (tool === "read" || tool === "explain_symbol" || tool === "explain_symbol_references") {
-    const q = asString(input.sym) ?? asString(input.qname)
+    // trie_read targets a symbol (sym/qname); the NATIVE read tool targets a
+    // file path (filePath/path). Capture either — a file path is resolved to a
+    // per-file attention node downstream, so filesystem reads still light up.
+    const q = asString(input.sym) ?? asString(input.qname) ?? asString(input.filePath) ?? asString(input.path)
     return { ...EMPTY, reads: q ? [q] : [], follow: q }
   }
   if (tool === "trace" || tool === "explain_flow_single") {
@@ -128,16 +131,23 @@ export function choreographFor(part: ToolPart): ChoreographyResult {
     return { ...EMPTY, reads, follow: a ?? b, flows }
   }
 
-  // --- scan intent (grep family) -- colour hits, never move the camera --
+  // --- scan intent (grep / glob / list family) -- colour hits, no camera ----
   if (
     tool === "grep" ||
     tool === "grep_symbol" ||
     tool === "grep_str" ||
     tool === "grep_entry_points" ||
-    tool === "grep_symbol_and_neighbours"
+    tool === "grep_symbol_and_neighbours" ||
+    tool === "glob" ||
+    tool === "list"
   ) {
-    // an explicit name target also breathes while searching
-    const target = asString(input.sym) ?? asString(input.name_contains)
+    // trie greps carry a symbol target (sym/name_contains); native grep/glob/
+    // list carry a path/pattern. Either way the explored location breathes.
+    const target =
+      asString(input.sym) ??
+      asString(input.name_contains) ??
+      asString(input.path) ??
+      asString(input.pattern)
     const { hits } = done ? qnamesFromOutput(part.state.output) : { hits: [] }
     const scans = [...(target ? [target] : []), ...hits]
     return { ...EMPTY, scans }
@@ -150,7 +160,9 @@ export function choreographFor(part: ToolPart): ChoreographyResult {
   }
   if (tool === "write" || tool === "edit" || tool === "write_file" || tool === "str_replace_editor") {
     const path = asString(input.path) ?? asString(input.filePath)
-    return { ...EMPTY, files: path ? [path] : [], follow: null }
+    // `files` drives the graph canvas (whole-file glow); `writes` feeds AGM so a
+    // filesystem edit lights up its per-file attention node as a write.
+    return { ...EMPTY, files: path ? [path] : [], writes: path ? [path] : [], follow: null }
   }
 
   return EMPTY

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import { ToolRow } from "./ToolRow"
+import { isHiddenText } from "./partFilters"
 import {
   ChevronRight,
   Copy,
@@ -153,16 +154,8 @@ function MessageView({
   onResolvePermission: (requestID: string, reply: PermissionReply) => void
 }) {
   const isUser = message.info.role === "user"
-  // Drop server-injected text parts: `ignored` (excluded from model input) and
-  // `synthetic` (system plumbing like the plan→build mode notice, file-mention
-  // expansions, etc.). These are not real conversation content.
-  const isHiddenText = (p: OpencodePart) => {
-    if (p.type !== "text") return false
-    const tp = p as TextPart
-    if (tp.ignored || tp.synthetic) return true
-    // Defensive: hide raw system-reminder plumbing even if flags are absent.
-    return tp.text.trimStart().startsWith("<system-reminder>")
-  }
+  // Drop server-injected plumbing text (synthetic / ignored / system-reminder).
+  // Shared with the sub-agent section so neither leaks prompt-cache artifacts.
   const parts = message.parts.filter((p) => !isHiddenText(p))
 
   if (isUser) {

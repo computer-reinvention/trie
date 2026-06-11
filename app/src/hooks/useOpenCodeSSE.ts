@@ -4,7 +4,13 @@ import { useAgentStore } from "@/store/agentStore"
 import { useAGMStore } from "@/store/agmStore"
 import { choreographFor } from "@/graph/agentChoreography"
 import { classifyTool, syntheticTarget } from "@/agm/toolClassify"
-import { syntheticQname } from "@/api/types"
+import {
+  syntheticQname,
+  syntheticFileQname,
+  looksLikeFilePath,
+  isSyntheticQname,
+  isSyntheticFileQname,
+} from "@/api/types"
 import { graphClient } from "@/api/graphClient"
 import { motionPrefs, playCascade, ghostCascade, conductGlance, useConductor } from "@/graph/conductor"
 import { usePatchesStore } from "@/store/patchesStore"
@@ -167,17 +173,23 @@ export function useOpenCodeSSE(opencodePort: number): void {
       const eventType = classifyTool(part.tool)
 
       // Only ingest targets that are REAL symbols in the loaded graph. The agent
-      // often passes module paths (e.g. "trie/mcp_server.py") to read/trace —
-      // those aren't symbols, have no role/position, and would render as
-      // "untagged" floaters. Route any non-symbol target to the Filesystem
-      // synthetic node instead.
+      // often passes file/module paths (e.g. "trie/mcp_server.py") to read/trace
+      // — those aren't symbols, have no role/position. A path-shaped target gets
+      // its OWN per-file synthetic node (named by the file, clustered in the
+      // FILESYSTEM region) instead of being lumped into one giant "Filesystem"
+      // pill; anything else falls back to the single Filesystem surface.
       const known = agm.nodesByQname
+      const resolveTarget = (target: string): string => {
+        if (known.has(target)) return target
+        if (looksLikeFilePath(target)) return syntheticFileQname(target)
+        return syntheticQname("Filesystem")
+      }
       const record = (
         target: string,
         type: "grep" | "read" | "trace" | "write",
         scale = 1,
       ) => {
-        const qname = known.has(target) ? target : syntheticQname("Filesystem")
+        const qname = resolveTarget(target)
         agm.ingest(qname, type, now, scale)
         if (scale === 1) graphClient.recordAttention({ type, qname }).catch(() => {})
       }
@@ -200,12 +212,24 @@ export function useOpenCodeSSE(opencodePort: number): void {
         record(q, "grep", i === 0 ? 1 : GREP_HIT_SCALE)
       })
       // trace/flow chains build the attention graph (the reasoning trail).
-      // Keep only real symbols — drop module-path / non-symbol hops.
+      // Resolve each hop the same way reads do: a real symbol stays itself; a
+      // file/module-path hop becomes its per-file synthetic node (rather than
+      // being dropped, which used to shatter the chain and produce NO trace
+      // edges). This is what makes trace constellations actually render.
       if (c.flows.length) {
         const chain: string[] = []
+        const pushHop = (raw: string) => {
+          const q = resolveTarget(raw)
+          // Skip the catch-all Filesystem/Bash/Web surface as a trace hop — it
+          // would draw a hairball of edges into one plumbing node. Real symbols
+          // and per-file nodes are kept; dropping a surface hop simply links the
+          // surrounding real nodes, which is still a faithful reasoning step.
+          if (isSyntheticQname(q) && !isSyntheticFileQname(q)) return
+          if (chain[chain.length - 1] !== q) chain.push(q)
+        }
         for (const f of c.flows) {
-          if (known.has(f.from) && chain[chain.length - 1] !== f.from) chain.push(f.from)
-          if (known.has(f.to)) chain.push(f.to)
+          pushHop(f.from)
+          pushHop(f.to)
         }
         if (chain.length > 1) agm.ingestTrace(chain, now)
       }
