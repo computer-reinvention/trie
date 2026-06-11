@@ -153,30 +153,30 @@ export function AgentPanel() {
       </div>
 
       {/* session switcher */}
-      <div className="relative flex items-center gap-1.5 px-2.5 py-2 border-b border-subtle shrink-0">
+      <div className="relative flex items-center gap-1.5 h-8 px-2 border-b border-subtle shrink-0">
         <button
-          className="flex-1 min-w-0 flex items-center gap-2 surface-2 border border-subtle rounded-lg text-sm text-1 px-2.5 py-1.5 hover:surface-3 transition-colors outline-none"
+          className="flex-1 min-w-0 flex items-center gap-2 surface-2 border border-subtle rounded-md text-xs text-1 px-2 h-6 hover:surface-3 transition-colors outline-none"
           onClick={() => setMenuOpen((v) => !v)}
           title={activeTitle}
         >
           {active?.running && (
-            <Loader2 size={13} className="animate-spin shrink-0" style={{ color: "var(--accent)" }} />
+            <Loader2 size={12} className="animate-spin shrink-0" style={{ color: "var(--accent)" }} />
           )}
           <span className="truncate flex-1 text-left">{activeTitle}</span>
-          <ChevronDown size={14} className="text-3 shrink-0" />
+          <ChevronDown size={13} className="text-3 shrink-0" />
         </button>
         <button
-          className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg text-2 hover:text-1 surface-2 hover:surface-3 border border-subtle transition-colors"
+          className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-md text-2 hover:text-1 surface-2 hover:surface-3 border border-subtle transition-colors"
           onClick={newSession}
           title="New chat"
         >
-          <Plus size={16} />
+          <Plus size={15} />
         </button>
 
         {menuOpen && (
           <div
             ref={menuRef}
-            className="absolute left-2.5 right-2.5 top-full mt-1.5 z-50 rounded-xl border border-strong surface-pop elev-2 overflow-hidden"
+            className="absolute left-2 right-2 top-full mt-1.5 z-50 rounded-xl border border-strong surface-pop elev-2 overflow-hidden"
           >
             {showFilter && (
               <div className="flex items-center gap-2 px-3 py-2 border-b border-subtle">

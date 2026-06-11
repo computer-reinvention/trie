@@ -80,7 +80,7 @@ export function Sidebar() {
 
   return (
     <aside className="w-60 shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col overflow-hidden">
-      <div className="px-3 py-2 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
+      <div className="h-8 px-3 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
         <button
           className="text-slate-600 hover:text-slate-300 text-xs leading-none shrink-0"
           onClick={() => setCollapsed(true)}
