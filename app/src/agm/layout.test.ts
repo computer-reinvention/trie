@@ -11,9 +11,15 @@ import {
   SPEED_CEIL,
   computeRoleClusters,
   applyClusterCohesion,
+  applyAnchorCohesion,
+  roleAnchor,
+  ROLE_RING_RADIUS,
   applyVisibleBudget,
+  tightenRolesToFit,
+  resolveLayout,
   deOverlap,
   hasNoOverlaps,
+  type PolarPlacement,
 } from "./layout"
 
 const ROLES = ["auth", "infra", "observability", "payments"]
@@ -373,5 +379,246 @@ describe("deOverlap (collision resolution)", () => {
     const one = [{ qname: "a", x: 1, y: 2, hw: 3, hh: 3 }]
     deOverlap(one)
     expect(one[0].x).toBe(1)
+  })
+
+  it("resolves the worst case: many large pills + dots all coincident at centre", () => {
+    // mimics the failure screenshot: a pile of pills/dots stacked on one point.
+    const nodes = Array.from({ length: 40 }, (_, i) => ({
+      qname: `n${i}`,
+      x: 0,
+      y: 0,
+      hw: i % 2 ? 40 : 8, // mix of wide pills + small dots
+      hh: i % 2 ? 9 : 8,
+    }))
+    deOverlap(nodes)
+    expect(hasNoOverlaps(nodes)).toBe(true)
+  })
+
+  it("FIXED nodes never move and movable nodes are pushed out of them", () => {
+    const fixed = { qname: "__label__:x", x: 0, y: 0, hw: 30, hh: 8, fixed: true }
+    const movable = { qname: "a", x: 0, y: 0, hw: 20, hh: 9 } // starts on the label
+    const nodes = [fixed, movable]
+    deOverlap(nodes)
+    // the fixed label did not move
+    expect(fixed.x).toBe(0)
+    expect(fixed.y).toBe(0)
+    // and nothing overlaps it now
+    expect(hasNoOverlaps(nodes)).toBe(true)
+  })
+
+  it("two fixed nodes are left alone even if overlapping (no displacement)", () => {
+    const a = { qname: "__label__:a", x: 0, y: 0, hw: 20, hh: 8, fixed: true }
+    const b = { qname: "__label__:b", x: 5, y: 0, hw: 20, hh: 8, fixed: true }
+    deOverlap([a, b])
+    expect(a.x).toBe(0)
+    expect(b.x).toBe(5)
+  })
+})
+
+describe("anchor cohesion: region halos sit at a consistent radial band", () => {
+  it("roleAnchor places every role on the same ring at its even base angle", () => {
+    for (const role of ROLES) {
+      const a = roleAnchor(role, ROLES)
+      expect(Math.hypot(a.x, a.y)).toBeCloseTo(ROLE_RING_RADIUS, 6)
+      const ang = Math.atan2(a.y, a.x)
+      expect(ang).toBeCloseTo(roleBaseAngle(role, ROLES), 6)
+    }
+  })
+
+  it("pulls multi-member regions toward their anchor → centroids land near the ring", () => {
+    const roleByQ = new Map<string, string>()
+    const placements = []
+    // two roles, each with 3 members at wildly different radii (hot..cold)
+    for (const role of ["auth", "payments"]) {
+      for (let i = 0; i < 3; i++) {
+        const q = `${role}:m${i}`
+        roleByQ.set(q, role)
+        placements.push(
+          placeSymbol({
+            qname: q,
+            role,
+            roles: ["auth", "payments"],
+            displayMass: (i + 1) * 3, // varied mass → varied radius
+            maxDisplay: 9,
+            historicalMass: 0,
+          }),
+        )
+      }
+    }
+    applyAnchorCohesion(placements, roleByQ, ["auth", "payments"])
+    // each role's member centroid should be close to the anchor ring radius
+    for (const role of ["auth", "payments"]) {
+      const members = placements.filter((p) => roleByQ.get(p.qname) === role)
+      const cx = members.reduce((s, p) => s + p.x, 0) / members.length
+      const cy = members.reduce((s, p) => s + p.y, 0) / members.length
+      const anchor = roleAnchor(role, ["auth", "payments"])
+      // centroid sits within a modest band of the anchor (cohesion < 1)
+      expect(Math.hypot(cx - anchor.x, cy - anchor.y)).toBeLessThan(ROLE_RING_RADIUS * 0.5)
+    }
+  })
+
+  it("leaves a lone-member region on its own relevance radius (no clustering)", () => {
+    const roleByQ = new Map([["solo:a", "auth"]])
+    const p = placeSymbol({
+      qname: "solo:a",
+      role: "auth",
+      roles: ["auth"],
+      displayMass: 5,
+      maxDisplay: 10,
+      historicalMass: 0,
+    })
+    const before = { x: p.x, y: p.y }
+    applyAnchorCohesion([p], roleByQ, ["auth"])
+    expect(p.x).toBeCloseTo(before.x, 6)
+    expect(p.y).toBeCloseTo(before.y, 6)
+  })
+})
+
+describe("tightenRolesToFit: halos cover members AND don't overlap", () => {
+  // helper: covering radius of a role's members about their centroid
+  const coverOf = (pts: { x: number; y: number }[]) => {
+    const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length
+    const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length
+    return { cx, cy, cover: pts.reduce((m, p) => Math.max(m, Math.hypot(p.x - cx, p.y - cy)), 0) }
+  }
+
+  it("shrinks two interleaved roles so their covering circles no longer overlap", () => {
+    const roleByQ = new Map<string, string>()
+    const place = (qname: string, role: string, x: number, y: number) => {
+      roleByQ.set(qname, role)
+      return { qname, x, y, radius: Math.hypot(x, y), angle: Math.atan2(y, x) }
+    }
+    // two roles whose members are wide and close together → halos would overlap
+    const ps = [
+      place("a:1", "a", -40, 0),
+      place("a:2", "a", 40, 0),
+      place("a:3", "a", 0, 40),
+      place("b:1", "b", 120, 0),
+      place("b:2", "b", 200, 0),
+      place("b:3", "b", 160, 40),
+    ]
+    tightenRolesToFit(ps, roleByQ, { minCount: 3, gap: 8, minRadius: 10, nodeMargin: 6 })
+
+    const a = coverOf(ps.filter((p) => p.qname.startsWith("a:")))
+    const b = coverOf(ps.filter((p) => p.qname.startsWith("b:")))
+    const centreDist = Math.hypot(a.cx - b.cx, a.cy - b.cy)
+    // covering circles (radius = cover + margin) must not overlap
+    expect(a.cover + b.cover + 6 + 6).toBeLessThanOrEqual(centreDist + 1e-6)
+  })
+
+  it("leaves a role untouched when it already fits its budget", () => {
+    const roleByQ = new Map<string, string>()
+    const place = (qname: string, role: string, x: number, y: number) => {
+      roleByQ.set(qname, role)
+      return { qname, x, y, radius: Math.hypot(x, y), angle: Math.atan2(y, x) }
+    }
+    const ps = [
+      place("a:1", "a", -10, 0),
+      place("a:2", "a", 10, 0),
+      place("b:1", "b", 500, 0),
+      place("b:2", "b", 520, 0),
+    ]
+    const before = ps.map((p) => ({ x: p.x, y: p.y }))
+    tightenRolesToFit(ps, roleByQ, { minCount: 2, gap: 8, minRadius: 10, nodeMargin: 6 })
+    ps.forEach((p, i) => {
+      expect(p.x).toBeCloseTo(before[i].x, 6)
+      expect(p.y).toBeCloseTo(before[i].y, 6)
+    })
+  })
+
+  it("ignores roles below the min member count", () => {
+    const roleByQ = new Map<string, string>([
+      ["a:1", "a"],
+      ["a:2", "a"],
+    ])
+    const ps = [
+      { qname: "a:1", x: -100, y: 0, radius: 100, angle: Math.PI },
+      { qname: "a:2", x: 100, y: 0, radius: 100, angle: 0 },
+    ]
+    const before = ps.map((p) => ({ x: p.x, y: p.y }))
+    tightenRolesToFit(ps, roleByQ, { minCount: 3, gap: 8, minRadius: 10, nodeMargin: 6 })
+    ps.forEach((p, i) => {
+      expect(p.x).toBeCloseTo(before[i].x, 6)
+      expect(p.y).toBeCloseTo(before[i].y, 6)
+    })
+  })
+})
+
+describe("resolveLayout: equal-mass clusters fan in 2-D, never a column", () => {
+  it("20 equal-mass members in one role spread 2-D with zero overlaps", () => {
+    const FILES = Array.from({ length: 20 }, (_, i) => `f${i}.py`)
+    const roleByQ = new Map<string, string>(FILES.map((f) => [f, "file reads"]))
+    const roleList = ["file reads"]
+    // identical mass → identical radius → all seeded at the same point
+    const placements: PolarPlacement[] = FILES.map((q) =>
+      placeSymbol({ qname: q, role: "file reads", roles: roleList, displayMass: 5, maxDisplay: 5, historicalMass: 0 }),
+    )
+    applyAnchorCohesion(placements, roleByQ, roleList)
+    const out = resolveLayout({
+      placements,
+      roleByQname: roleByQ,
+      isPill: () => true,
+      pillHalfWidth: (q) => (q.length * 7 + 14) / 2,
+      regionLabelHalfWidth: (r) => (r.length * 9) / 2,
+      haloMinCount: 2,
+      pad: 8,
+      dotHalf: 8,
+      pillHalfHeight: 9,
+      haloMaxR: 150,
+      haloNodeMargin: 26,
+      haloLabelGap: 12,
+      labelHalfHeight: 8,
+    })
+    // build all footprint boxes and assert no overlaps
+    const boxes = out.placements.map((p) => ({ qname: p.qname, x: p.x, y: p.y, hw: (p.qname.length * 7 + 14) / 2, hh: 9 }))
+    expect(hasNoOverlaps(boxes, 8)).toBe(true)
+    // NOT a vertical column: width and height must be comparable (aspect > 0.5)
+    const xs = out.placements.map((p) => p.x)
+    const ys = out.placements.map((p) => p.y)
+    const w = Math.max(...xs) - Math.min(...xs)
+    const h = Math.max(...ys) - Math.min(...ys)
+    expect(w / h).toBeGreaterThan(0.5)
+  })
+})
+
+describe("resolveLayout: clusters occupy separate regions (rigid separation)", () => {
+  it("multiple role-clusters have non-overlapping bounding discs", () => {
+    const ROLES: Record<string, string[]> = {
+      orchestration: ["a1", "a2", "a3", "a4", "a5", "a6"],
+      config: ["b1", "b2", "b3", "b4", "b5"],
+      parsing: ["c1", "c2", "c3", "c4"],
+    }
+    const roleByQ = new Map<string, string>()
+    const roleList = Object.keys(ROLES)
+    const placements: PolarPlacement[] = []
+    for (const [role, qs] of Object.entries(ROLES)) {
+      qs.forEach((q, i) => {
+        roleByQ.set(q, role)
+        placements.push(placeSymbol({ qname: q, role, roles: roleList, displayMass: 2 + ((i * 3) % 7), maxDisplay: 9, historicalMass: 0 }))
+      })
+    }
+    applyAnchorCohesion(placements, roleByQ, roleList)
+    resolveLayout({
+      placements, roleByQname: roleByQ, isPill: () => true,
+      pillHalfWidth: (q) => (q.length * 7 + 14) / 2,
+      regionLabelHalfWidth: (r) => (r.length * 9) / 2,
+      haloMinCount: 2, pad: 8, dotHalf: 8, pillHalfHeight: 9,
+      haloMaxR: 150, haloNodeMargin: 26, haloLabelGap: 12, labelHalfHeight: 8,
+    })
+    // bounding disc per role
+    const discs = roleList.map((role) => {
+      const ms = placements.filter((p) => roleByQ.get(p.qname) === role)
+      const cx = ms.reduce((s, p) => s + p.x, 0) / ms.length
+      const cy = ms.reduce((s, p) => s + p.y, 0) / ms.length
+      let r = 0
+      for (const p of ms) r = Math.max(r, Math.hypot(p.x - cx, p.y - cy) + (p.qname.length * 7 + 14) / 2)
+      return { cx, cy, r }
+    })
+    for (let i = 0; i < discs.length; i++)
+      for (let j = i + 1; j < discs.length; j++) {
+        const a = discs[i], b = discs[j]
+        const d = Math.hypot(a.cx - b.cx, a.cy - b.cy)
+        expect(d).toBeGreaterThanOrEqual(a.r + b.r - 1) // discs don't overlap
+      }
   })
 })

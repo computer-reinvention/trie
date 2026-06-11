@@ -14,7 +14,7 @@
 // All placement math lives in agm/layout.ts and is unit-tested; this file only
 // eases drawn positions toward those targets and paints.
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useAGMStore } from "@/store/agmStore"
 import { useAgentStore } from "@/store/agentStore"
 import { useAppStore } from "@/store/appStore"
@@ -28,14 +28,16 @@ function isAgentRunning(): boolean {
 }
 import {
   placeSymbol,
-  applyClusterCohesion,
+  applyAnchorCohesion,
   applyVisibleBudget,
-  spreadTargets,
+  resolveLayout,
   type PolarPlacement,
   R_MAX,
 } from "@/agm/layout"
 import { displayMass } from "@/agm/weights"
-import { tierFor, ATTENTION_EDGE_COLOR } from "@/agm/style"
+import { isSyntheticQname, isSyntheticFileQname, syntheticFilePath } from "@/api/types"
+import { syntheticRole, syntheticLabel } from "@/agm/synthetic"
+import { tierFor, ATTENTION_EDGE_COLOR, isDeliberateKind } from "@/agm/style"
 
 // Radial spoke colour (centre → node). Slightly warmer/brighter than the old
 // repo-edge slate so the spokes read at low opacity.
@@ -112,11 +114,50 @@ const JOURNEY_RATE = 0.04
 // Fraction of nodes (by attention rank) that render as NAME PILLS. The rest are
 // small dots (hover to reveal the name). Keeps the field calm — only the symbols
 // that genuinely matter get a label.
-const PILL_PERCENTILE = 0.2 // top 20%
+const PILL_PERCENTILE = 0.1 // top 10%
 
 // Footprint (world px) a dot reserves during target-spread — small so the
 // exploration net packs tightly rather than being spaced like labels.
 const DOT_FOOTPRINT = 16
+
+// Auto-fit: the fraction of the smaller canvas half-dimension the drawn field's
+// outer radius should occupy, so the map fills the canvas rather than huddling
+// near the centre. < 1 leaves a margin for pill labels + region headings.
+const FIT_TARGET_FILL = 0.82
+// Clamp the auto-fit scale so a single hot node near R_MIN doesn't zoom to
+// absurd levels and a huge field doesn't shrink to nothing.
+const FIT_SCALE_MIN = 0.5
+const FIT_SCALE_MAX = 2.2
+// Easing rate for the fit scale (per frame) — slow so zoom-to-fit is a gentle
+// settle, never a lurch when a new node enters/leaves.
+const FIT_EASE = 0.06
+
+// Relative-heat floor below which a node draws NO spoke (unless hovered). Cold
+// peripheral nodes contributed most of the old starburst; suppressing their
+// spokes keeps the field calm and the warm spokes legible.
+const SPOKE_REL_FLOOR = 0.12
+
+// Region-halo sizing (world px). Capped + member-count driven so regions stay
+// tight discs instead of ballooning into overlapping blobs when members spread.
+const HALO_MIN_R = 46 // smallest halo (a 2-member region)
+const HALO_PER_MEMBER = 16 // sqrt(count) * this grows the halo gently
+const HALO_MAX_R = 150 // hard cap — no halo ever bigger than this
+const HALO_NODE_MARGIN = 26 // breathing room past the outermost member's centre
+// so its pill/dot sits comfortably INSIDE the halo, not on the edge
+const HALO_GAP = 24 // min visual gap kept between two adjacent region halos
+const HALO_LABEL_GAP = 12 // gap between a halo's top edge and its region heading
+// A role only reads as a REGION (halo + heading) once it holds a meaningful
+// SHARE of the symbols currently on screen — relative, not an absolute count, so
+// the map adapts to how busy it is. A role with this fraction (or more) of all
+// visible members gets a halo; sparser roles just show their symbols as pills/
+// dots. Floored at 2 so a halo never wraps a single symbol.
+const HALO_MIN_MEMBER_FRACTION = 0.08 // ≥8% of on-screen members
+
+// The LUMPED surface synthetics (the catch-all Filesystem/Bash/Web pills) are
+// PLUMBING, not the subject of an investigation. Cap their display mass to this
+// fraction of the hottest real node so they can never hold the centre / be the
+// brightest node. Per-FILE synthetic nodes are exempt — they're named subjects.
+const SYNTHETIC_MASS_CAP = 0.5
 
 // Rich hover tooltip (codelens-style): what the symbol is + WHY it's on the map.
 interface TooltipData {
@@ -156,11 +197,18 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   // user zoom only (no pan / no follow — the centre is fixed at (0,0)).
   const zoomRef = useRef(1)
+  // Auto-fit scale (eased): folds with user zoom so the drawn field fills the
+  // canvas instead of huddling near the centre. 1 = no auto-scaling yet.
+  const fitScaleRef = useRef(1)
   const drawnRef = useRef<Map<string, Drawn>>(new Map())
   const targetsRef = useRef<Map<string, Target>>(new Map())
   const hoverRef = useRef<string | null>(null) // qname under the cursor (for dot tooltip)
   const edgeHoverRef = useRef<string | null>(null) // key of the hovered edge (spoke/attention)
   const pillThresholdRef = useRef(Infinity) // mass cutoff for name pills (top %)
+  // Region heading boxes reserved during de-overlap. draw() paints headings at
+  // these EXACT positions so the painted label matches the reserved (fixed) box
+  // — guaranteeing a heading never lands on a node it pushed away.
+  const regionLabelsRef = useRef<Array<{ role: string; x: number; y: number }>>([])
   const [tooltip, setTooltipState] = useState<TooltipData | null>(null)
   const tooltipRef = useRef<TooltipData | null>(null)
   const setTooltip = (t: TooltipData | null) => {
@@ -173,7 +221,12 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
   const rafRef = useRef<number | null>(null)
 
   const systemModel = useAGMStore((s) => s.systemModel)
-  const hasAttention = useAGMStore((s) => s.massByQname.size > 0)
+  const hasLiveAttention = useAGMStore((s) => s.massByQname.size > 0)
+  // A restored snapshot puts nodes on screen WITHOUT populating live mass, so
+  // `hasLiveAttention` stays false. Track restore explicitly so the idle hint
+  // hides whenever there's a frozen map on screen.
+  const [restored, setRestored] = useState(false)
+  const hasAttention = hasLiveAttention || restored
 
   useEffect(() => {
     if (!systemModel) return
@@ -216,9 +269,24 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     const nodes = snap?.nodes as
       | Array<{ qname: string; role: string; x: number; y: number; mass: number; kind: NodeMass["kind"]; pinned?: boolean }>
       | undefined
-    if (!nodes || nodes.length === 0) return
     const drawn = drawnRef.current
     const targets = targetsRef.current
+    // No snapshot for this session → it's a fresh map. Clear any stale layout
+    // left over from the previously-active session (otherwise switching from a
+    // session-with-snapshot to one-without leaves ghost nodes on screen) and
+    // reset the render state so the idle hint shows.
+    if (!nodes || nodes.length === 0) {
+      if (useAGMStore.getState().massByQname.size === 0) {
+        drawn.clear()
+        targets.clear()
+        pillThresholdRef.current = Infinity
+        smoothedMaxRef.current = 0
+        maxDisplayRef.current = 0
+        setRestored(false)
+        kick()
+      }
+      return
+    }
     drawn.clear()
     targets.clear()
     const model = useAGMStore.getState().model
@@ -256,6 +324,21 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     // restore the normalization denominator so radii/pills render correctly
     smoothedMaxRef.current = maxMass
     maxDisplayRef.current = maxMass
+    // Restore the pill-vs-dot cutoff the same way recomputeTargets derives it
+    // (top PILL_PERCENTILE by mass). Without this it stays Infinity and every
+    // restored node renders as an anonymous dot. Deliberate-kind nodes still
+    // get pills regardless via isDeliberateKind at draw time, but this surfaces
+    // the hot grep/historical labels too, matching a live map.
+    const restoredMasses = nodes
+      .map((n) => n.mass)
+      .filter((v) => v > 0)
+      .sort((a, b) => a - b)
+    pillThresholdRef.current =
+      restoredMasses.length > 0
+        ? (restoredMasses[Math.floor(restoredMasses.length * (1 - PILL_PERCENTILE))] ?? Infinity)
+        : Infinity
+    // Frozen map is on screen even though live mass is empty → hide idle hint.
+    setRestored(true)
     kick()
   }
 
@@ -285,8 +368,13 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     const unsub = useAgentStore.subscribe((s) => {
       const active = s.activeId
       const running = active ? (s.sessions[active]?.running ?? false) : false
-      // turn just ended on the active session → save its snapshot
-      if (active && prevRunning && !running) saveSnapshot(active)
+      // turn just ended on the active session → save its snapshot AND kick the
+      // render loop so the region halos + headings (hidden during the turn) get
+      // painted now that the sim has frozen.
+      if (active && prevRunning && !running) {
+        saveSnapshot(active)
+        kick()
+      }
       // active session changed → save the old one, restore the new one
       if (active !== prevActive) {
         if (prevActive) saveSnapshot(prevActive)
@@ -315,37 +403,79 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     const active = new Set<string>(mass.keys())
     for (const [q, v] of prop) if (v > 0) active.add(q)
 
-    let instantMax = 0
-    for (const q of active) {
+    // Raw (uncapped) display mass for a qname from live or propagated mass.
+    const rawDisplay = (q: string): number => {
       const m = mass.get(q)
       const propAdd = prop.get(q) ?? 0
-      const d = m ? m.display : propAdd > 0 ? displayMass(propAdd) : 0
+      return m ? m.display : propAdd > 0 ? displayMass(propAdd) : 0
+    }
+
+    // A "lumped surface" synthetic is the catch-all Filesystem/Bash/Web/… pill —
+    // pure plumbing that must never hold the centre. Per-FILE synthetic nodes
+    // are now individually named real subjects, so they compete fairly like
+    // symbols (a file read 10 times genuinely IS relevant).
+    const isLumpedSurface = (q: string): boolean => isSyntheticQname(q) && !isSyntheticFileQname(q)
+
+    // The normalization denominator is the hottest non-lumped node — the lumped
+    // surfaces are excluded so a constant stream of misc file reads can't rescale
+    // the whole map around the Filesystem pill.
+    let instantMax = 0
+    for (const q of active) {
+      if (isLumpedSurface(q)) continue
+      const d = rawDisplay(q)
       if (d > instantMax) instantMax = d
     }
+    // Fallback: if ONLY lumped surfaces are active, normalise against them so the
+    // map isn't blank (their cap below still applies relative to this value).
+    if (instantMax <= 0) {
+      for (const q of active) {
+        const d = rawDisplay(q)
+        if (d > instantMax) instantMax = d
+      }
+    }
     maxDisplayRef.current = instantMax
+
+    // Cap a lumped-surface synthetic's display mass so it never out-shines the
+    // hottest real symbol; real symbols + per-file nodes pass through unchanged.
+    const cappedDisplay = (q: string): number => {
+      const d = rawDisplay(q)
+      if (!isLumpedSurface(q)) return d
+      return Math.min(d, instantMax * SYNTHETIC_MASS_CAP)
+    }
+
+    // Even angular distribution: spread base bearings across only the roles
+    // ACTUALLY on screen, not every role in the project. Passing the full role
+    // list left active regions bunched wherever those few happened to fall (big
+    // dead arcs between them). Using the active set fans regions evenly around
+    // the circle so the canvas is used and regions don't pile up.
+    // Role resolver: per-file synthetic nodes are created at ingest time and
+    // aren't in the static role map, so resolve their role dynamically.
+    const roleFor = (q: string): string => syntheticRole(q) ?? roleByQ.get(q) ?? "untagged"
+
+    const activeRoles = new Set<string>()
+    for (const q of active) activeRoles.add(roleFor(q))
+    const roleList = activeRoles.size > 0 ? [...activeRoles] : roles
 
     const activeRoleByQ = new Map<string, string>()
     const massForBudget = new Map<string, number>()
     const placements = []
     for (const q of active) {
-      const m = mass.get(q)
-      const propAdd = prop.get(q) ?? 0
-      const d = m ? m.display : propAdd > 0 ? displayMass(propAdd) : 0
-      const role = roleByQ.get(q) || "untagged"
+      const d = cappedDisplay(q)
+      const role = roleFor(q)
       activeRoleByQ.set(q, role)
       massForBudget.set(q, d)
       placements.push(
         placeSymbol({
           qname: q,
           role,
-          roles,
+          roles: roleList,
           displayMass: d,
           maxDisplay: instantMax,
           historicalMass: histByQ.get(q) ?? 0,
         }),
       )
     }
-    applyClusterCohesion(placements, activeRoleByQ, histByQ)
+    applyAnchorCohesion(placements, activeRoleByQ, roleList)
     const budget = applyVisibleBudget(
       placements,
       massForBudget,
@@ -366,11 +496,39 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
         ? (keptMasses[Math.floor(keptMasses.length * (1 - PILL_PERCENTILE))] ?? Infinity)
         : Infinity
     pillThresholdRef.current = pillThreshold
-    const widthFor = (qname: string): number => {
+    // A node is a NAME PILL when it was deliberately attended (read/trace/write)
+    // — those keep their pill for the life of the contribution — OR when it's
+    // hot enough to clear the mass cutoff (lets a hot grep/historical dot earn a
+    // label). Deliberate pills reserve their measured width so spread spacing
+    // matches the render and they never collide as anonymous dots.
+    const isPillNode = (qname: string): boolean => {
+      const kind = mass.get(qname)?.kind ?? "grep"
+      if (isDeliberateKind(kind)) return true
       const m = massForBudget.get(qname) ?? 0
-      return m >= pillThreshold ? pillWidth(qname) : DOT_FOOTPRINT
+      return m > 0 && m >= pillThreshold
     }
-    spreadTargets(budget.kept, widthFor)
+    // GLOBAL, TYPE-AWARE non-overlap — delegated to the shared, pure resolveLayout
+    // so the live canvas and the headless verifier run the IDENTICAL collision
+    // math (no drift). It guarantees: no two node footprints overlap, and nothing
+    // overlaps a region heading (headings are fixed; nodes are pushed out of
+    // them). The stacking failure case is impossible — overlap resolution is law.
+    const haloMinCount = Math.max(2, Math.ceil(budget.kept.length * HALO_MIN_MEMBER_FRACTION))
+    const layout = resolveLayout({
+      placements: budget.kept,
+      roleByQname: activeRoleByQ,
+      isPill: isPillNode,
+      pillHalfWidth: (q) => pillWidth(q) / 2,
+      regionLabelHalfWidth: regionLabelWidth,
+      haloMinCount,
+      pad: MIN_GAP,
+      dotHalf: DOT_FOOTPRINT / 2,
+      pillHalfHeight: 9,
+      haloMaxR: HALO_MAX_R,
+      haloNodeMargin: HALO_NODE_MARGIN,
+      haloLabelGap: HALO_LABEL_GAP,
+      labelHalfHeight: 8,
+    })
+    regionLabelsRef.current = layout.labels
 
     const targets = new Map<string, Target>()
     for (const p of budget.kept) {
@@ -503,13 +661,16 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     const drawn = drawnRef.current.get(qname)
     const kind = m?.kind ?? drawn?.kind ?? "historical"
     const reason = intentReason(kind)
+    const synthPath = syntheticFilePath(qname)
     return {
       x,
       y,
       qname,
-      name: node?.name ?? qname.split(":").pop() ?? qname,
-      role: node?.role || "untagged",
-      oneLiner: node?.one_liner ?? "",
+      name: node?.name ?? labelFor(qname),
+      role: syntheticRole(qname) ?? node?.role ?? "untagged",
+      // For a per-file synthetic node, surface the full path as the one-liner so
+      // the tooltip says WHICH file (the pill only shows the basename).
+      oneLiner: node?.one_liner ?? synthPath ?? "",
       reason: reason.label,
       reasonColor: reason.color,
       liveMass: m?.live ?? 0,
@@ -528,11 +689,29 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     const ctx = canvasRef.current?.getContext("2d")
     if (!ctx) return 80
     ctx.font = "11px ui-sans-serif, system-ui"
-    const label = qname.split(":").pop() ?? qname
+    const label = labelFor(qname)
     const w = ctx.measureText(label).width + 14 + MIN_GAP // padX*2 + min gap
     pillWidthCache.set(qname, w)
     return w
   }
+
+  // Region-heading width (world px) for a role, measured with the heading font
+  // (uppercase + letter-spacing), cached. Mirrors drawRegionLabel's metrics.
+  const regionLabelWidthCache = new Map<string, number>()
+  const regionLabelWidth = (role: string): number => {
+    const cached = regionLabelWidthCache.get(role)
+    if (cached != null) return cached
+    const ctx = canvasRef.current?.getContext("2d")
+    if (!ctx) return 80
+    ctx.font = "600 10px ui-sans-serif, system-ui"
+    const text = role.toUpperCase()
+    const spacing = 2
+    const widths = [...text].map((c) => ctx.measureText(c).width)
+    const w = widths.reduce((s, cw) => s + cw + spacing, 0) - spacing
+    regionLabelWidthCache.set(role, w)
+    return w
+  }
+
 
   // Find the qname of the node under a world-space point. Uses a generous
   // circular radius so even small dots are easy to hover / right-click; the
@@ -582,7 +761,7 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
 
   // Find the edge under the cursor: radial spokes (centre→node) and attention
   // (trace) edges. Returns the edge key (for highlight) + the symbol it behaves
-  // as. Attention edges win ties (they're more meaningful than spokes).
+  // as. Attention edges win ties (they're more meaningful).
   const hitEdge = (wx: number, wy: number): { key: string; qname: string } | null => {
     const drawn = drawnRef.current
     const HIT_W = 6 // world px tolerance around a line
@@ -604,7 +783,7 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
       }
     }
     if (best) return best
-    // radial spokes
+    // radial spokes (anchored at the centre (0,0), matching draw())
     for (const node of drawn.values()) {
       if (node.appear <= 0.05) continue
       const d = distToSeg(wx, wy, 0, 0, node.x, node.y)
@@ -663,15 +842,39 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, w, h)
 
-    // Fixed coordinate system: centre of the canvas is (0,0). Only zoom scales.
-    const k = zoomRef.current
-    ctx.save()
-    ctx.translate(w / 2, h / 2)
-    ctx.scale(k, k)
-
     const store = useAGMStore.getState()
     const drawn = drawnRef.current
     const roles = store.roles
+
+    // Region halos + headings appear only when the turn has ENDED (the sim is
+    // frozen). While the agent is working the clusters are still settling, so
+    // their halos would be churning noise — clustering runs regardless, only the
+    // painting waits for the heaviest regions to stop moving.
+    const showRegions = !isAgentRunning()
+
+    // --- auto-fit: scale the field so it fills the canvas instead of huddling
+    // near the centre. Measure the outer radius of the drawn nodes and ease the
+    // fit scale toward "outer radius should occupy FIT_TARGET_FILL of the half-
+    // dimension". Folds with user zoom; eased so it never lurches.
+    let outerR = 0
+    for (const n of drawn.values()) {
+      if (n.appear <= 0.05) continue
+      const r = Math.hypot(n.x, n.y)
+      if (r > outerR) outerR = r
+    }
+    const half = Math.min(w, h) / 2
+    const wantFit =
+      outerR > 1
+        ? Math.max(FIT_SCALE_MIN, Math.min(FIT_SCALE_MAX, (half * FIT_TARGET_FILL) / outerR))
+        : fitScaleRef.current
+    fitScaleRef.current += (wantFit - fitScaleRef.current) * FIT_EASE
+
+    // Fixed coordinate system: centre of the canvas is (0,0). Only zoom + the
+    // eased auto-fit scale transform the world; the centre never pans.
+    const k = zoomRef.current * fitScaleRef.current
+    ctx.save()
+    ctx.translate(w / 2, h / 2)
+    ctx.scale(k, k)
 
     // --- the crosshair: current attention origin (always present) ---
     drawCrosshair(ctx)
@@ -707,20 +910,64 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     }
 
     // Region halos — drawn FIRST (behind everything) so members sit on top.
-    for (const [, a] of clusterAcc) {
-      if (a.n < 2) continue
-      const cx = a.sx / a.n
-      const cy = a.sy / a.n
-      // radius covering the members + padding
-      const rr =
-        Math.max(Math.hypot(a.maxX - a.minX, a.maxY - a.minY) / 2, 40) + 34
+    // Each halo's radius is capped three ways so regions NEVER overlap into an
+    // unreadable blob:
+    //   1. by member count (sqrt growth, not raw extent)
+    //   2. by the actual member spread (never dwarf the symbols it encloses)
+    //   3. by HALF the distance to the nearest other region centroid — so two
+    //      adjacent regions' halos shrink to just touch, never bleed together.
+    // Relative halo threshold: a role needs at least this SHARE of all on-screen
+    // members to read as a region (floored at 2 so a halo never wraps one node).
+    let totalMembers = 0
+    for (const [, a] of clusterAcc) totalMembers += a.n
+    const haloMinMembers = Math.max(2, Math.ceil(totalMembers * HALO_MIN_MEMBER_FRACTION))
+    const regionCentres = [...clusterAcc.entries()]
+      .filter(([, a]) => a.n >= haloMinMembers)
+      .map(([role, a]) => ({ role, cx: a.sx / a.n, cy: a.sy / a.n, acc: a, radius: 0, cover: 0 }))
+
+    // True covering radius per region: the max distance from the region centroid
+    // to ANY of its members (plus a node margin). A drawn halo must cover all its
+    // members, so this is a HARD FLOOR — the cosmetic caps below can only grow a
+    // halo, never shrink it below what's needed to enclose every point.
+    const regionByRole = new Map(regionCentres.map((r) => [r.role, r]))
+    for (const n of drawn.values()) {
+      if (n.mass <= 0) continue
+      const r = regionByRole.get(n.role)
+      if (!r) continue
+      const d = Math.hypot(n.x - r.cx, n.y - r.cy)
+      if (d > r.cover) r.cover = d
+    }
+
+    for (const r of regionCentres) {
+      const a = r.acc
+      const countR = HALO_MIN_R + Math.sqrt(a.n) * HALO_PER_MEMBER
+      // nearest neighbouring region centroid → cap at half that gap (minus a
+      // small margin) so neighbouring halos can't overlap.
+      let nearest = Infinity
+      for (const o of regionCentres) {
+        if (o === r) continue
+        const d = Math.hypot(o.cx - r.cx, o.cy - r.cy)
+        if (d < nearest) nearest = d
+      }
+      const neighbourCap = nearest === Infinity ? HALO_MAX_R : nearest / 2 - HALO_GAP / 2
+      // The covering radius (+ node margin) is the FLOOR: a shown halo always
+      // encloses every member. The caps only apply ABOVE that floor.
+      const coverFloor = r.cover + HALO_NODE_MARGIN
+      const rr = Math.max(coverFloor, Math.min(HALO_MAX_R, countR, neighbourCap))
+      r.radius = rr // remember so the heading label can hug the halo edge
+      // Halos (and headings) are HIDDEN while the turn runs — the clusters keep
+      // moving as attention lands, so a halo mid-turn is noise. They appear only
+      // once the turn ENDS (the simulation freezes), revealing the settled
+      // heaviest regions. Clustering/separation still runs every frame; only the
+      // painting waits. `showRegions` gates both the arc and the heading below.
+      if (!showRegions) continue
       ctx.beginPath()
-      ctx.arc(cx, cy, rr, 0, Math.PI * 2)
+      ctx.arc(r.cx, r.cy, rr, 0, Math.PI * 2)
       ctx.fillStyle = "#1e293b"
-      ctx.globalAlpha = 0.18
+      ctx.globalAlpha = 0.16
       ctx.fill()
       ctx.strokeStyle = "#334155"
-      ctx.globalAlpha = 0.35
+      ctx.globalAlpha = 0.3
       ctx.setLineDash([4, 4])
       ctx.lineWidth = 1
       ctx.stroke()
@@ -728,19 +975,30 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
       ctx.globalAlpha = 1
     }
 
-    // --- radial spokes from the centre to each node ---
-    // Inter-symbol repo edges are disabled; instead every node draws a spoke to
-    // the attention origin, reinforcing "distance from centre = relevance".
-    // Opacity scales with the node's relevance (hot symbols → stronger spokes,
-    // faint symbols → faint spokes); the hovered node's spoke is highlighted.
+    // --- radial spokes from the ATTENTION ORIGIN (0,0) to each node ---
+    // A spoke ALWAYS anchors at the centre crosshair: its whole meaning is
+    // "distance from the attention origin = relevance". (Anchoring to a region
+    // centroid would sever that — a floating segment says nothing about
+    // relevance.) Spoke VISIBILITY mirrors the pill rule: any node that draws as
+    // a name pill (deliberate read/trace/write, pinned, hovered, or hot) keeps
+    // its spoke even as mass decays — so a cooled read symbol never ends up a
+    // pill with no spoke. Anonymous cold dots (the grep/historical net) draw no
+    // spoke, which is what calms the starburst without moving the anchor.
     const hoveredQ = hoverRef.current
     const hoveredEdge = edgeHoverRef.current
+    const pillThresholdForSpokes = pillThresholdRef.current
+    const pinnedForSpokes = store.model.pinnedSet()
     for (const node of drawn.values()) {
       const a = smoothstep(node.appear)
       if (a <= 0) continue
       const rel = maxDisplay > 0 ? Math.min(1, node.mass / maxDisplay) : 0
-      // a spoke highlights when its node is hovered OR the spoke itself is hovered
       const isHover = node.qname === hoveredQ || hoveredEdge === `sp:${node.qname}`
+      const isPill =
+        isDeliberateKind(node.kind) ||
+        pinnedForSpokes.has(node.qname) ||
+        (node.mass > 0 && node.mass >= pillThresholdForSpokes)
+      // Anonymous cold dots draw no spoke unless hovered — calms the starburst.
+      if (!isPill && !isHover && rel < SPOKE_REL_FLOOR) continue
       ctx.beginPath()
       ctx.moveTo(0, 0)
       ctx.lineTo(node.x, node.y)
@@ -750,9 +1008,11 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
         ctx.lineWidth = 1.75
       } else {
         ctx.strokeStyle = RADIAL_COLOR
-        // base 0.08 (faint symbols) → up to ~0.4 (hot symbols)
-        ctx.globalAlpha = (0.08 + 0.32 * rel) * a
-        ctx.lineWidth = 1
+        // Named pills keep a clear spoke floor (so a cooled read symbol still
+        // reads); ramps further with relevance. Dots stay faint.
+        const base = isPill ? 0.32 : 0.1
+        ctx.globalAlpha = Math.min(0.6, base + 0.34 * rel) * a
+        ctx.lineWidth = isPill ? 1.25 : 1
       }
       ctx.stroke()
       ctx.globalAlpha = 1
@@ -797,6 +1057,7 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     const pillThreshold = pillThresholdRef.current
     const hovered = hoverRef.current
     const pinned = store.model.pinnedSet()
+
     for (const node of sorted) {
       const m = node.mass
       const rel = maxDisplay > 0 ? Math.min(1, m / maxDisplay) : 0
@@ -804,9 +1065,15 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
       const scale = 0.6 + 0.4 * a
       const isHover = node.qname === hovered
       const isPinned = pinned.has(node.qname)
-      // top-percentile, pinned (edited), or hovered → name pill; rest → dot.
-      if ((m > 0 && m >= pillThreshold) || isPinned || isHover) {
-        const label = node.qname.split(":").pop() ?? node.qname
+      // A symbol shows a NAME PILL when it was deliberately attended
+      // (read/trace/write — those keep their pill as mass decays, never
+      // degenerating to a dot), or it's pinned/hovered, or it's hot enough to
+      // clear the mass cutoff. The grep exploration net + historical seed stay
+      // dots until they earn a label. (Pills are monochrome — distance, not
+      // colour, encodes relevance.)
+      const deliberate = isDeliberateKind(node.kind)
+      if (deliberate || (m > 0 && m >= pillThreshold) || isPinned || isHover) {
+        const label = labelFor(node.qname)
         const opacity = (0.28 + 0.72 * rel) * a
         const hot = isPinned || (m > 0 && tierFor(m, maxDisplay) === "dominant")
         drawSymbolPill(ctx, label, node.x, node.y, opacity, hot, scale)
@@ -815,13 +1082,17 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
       }
     }
 
-    // --- role REGION headings: a distinct label for the whole area (not a pill
-    // like a symbol). Uppercase + letter-spaced + an underline, placed above the
-    // region halo, so it obviously names the region, not a node.
-    for (const [role, a] of clusterAcc) {
-      if (a.n < 2) continue
-      const cx = a.sx / a.n
-      drawRegionLabel(ctx, role, cx, a.minY - 22)
+    // --- role REGION headings: painted at the EXACT positions reserved as fixed
+    // boxes during de-overlap (regionLabelsRef), so a heading is guaranteed not
+    // to land on any node — every node was pushed out of that box. Only headings
+    // whose role still has a halo on screen are drawn — and, like the halos,
+    // only once the turn has ended (showRegions).
+    if (showRegions) {
+      const haloRoles = new Set(regionCentres.map((r) => r.role))
+      for (const lbl of regionLabelsRef.current) {
+        if (!haloRoles.has(lbl.role)) continue
+        drawRegionLabel(ctx, lbl.role, lbl.x, lbl.y, lbl.y > 0)
+      }
     }
 
     ctx.restore()
@@ -838,10 +1109,11 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
       kick()
     }
     // Right-click a symbol → context menu. Hit-test by inverting the draw
-    // transform (centre-origin, no pan, zoom only) and finding the nearest pill.
+    // transform (centre-origin, no pan, user-zoom × auto-fit) and finding the
+    // nearest pill. Must include fitScaleRef so hits match what's painted.
     const onContext = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect()
-      const k = zoomRef.current
+      const k = zoomRef.current * fitScaleRef.current
       const wx = (e.clientX - rect.left - rect.width / 2) / k
       const wy = (e.clientY - rect.top - rect.height / 2) / k
       const hit = hitTest(wx, wy)
@@ -863,7 +1135,7 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     // tooltip + temporarily renders as a pill). Throttled to actual changes.
     const onMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect()
-      const k = zoomRef.current
+      const k = zoomRef.current * fitScaleRef.current
       const wx = (e.clientX - rect.left - rect.width / 2) / k
       const wy = (e.clientY - rect.top - rect.height / 2) / k
       const prevEdge = edgeHoverRef.current
@@ -907,7 +1179,7 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const showIdleHint = useMemo(() => !hasAttention, [hasAttention])
+  const showIdleHint = !hasAttention
 
   return (
     <div className={className} style={{ position: "relative" }}>
@@ -1019,6 +1291,13 @@ export function AGMCanvas({ className }: AGMCanvasProps) {
   )
 }
 
+// Short display label for a symbol or synthetic node. Per-file synthetic qnames
+// (agm:synthetic/file/…) show their basename; real symbols show the segment
+// after the last ':'; fixed surfaces show their name.
+function labelFor(qname: string): string {
+  return syntheticLabel(qname) ?? qname.split(":").pop() ?? qname
+}
+
 // Ease-in-out curve (slow start, fast middle, slow end) — Hermite smoothstep.
 // Used for entry/exit fade+scale so nothing pops; the appearance "breathes" in.
 function smoothstep(t: number): number {
@@ -1117,7 +1396,13 @@ function drawSymbolPill(
 // A role REGION heading — visually distinct from a symbol pill so it obviously
 // names the whole area: uppercase, letter-spaced, muted, with a short underline.
 // No rounded chip (that's the symbol-pill look).
-function drawRegionLabel(ctx: CanvasRenderingContext2D, role: string, cx: number, cy: number) {
+function drawRegionLabel(
+  ctx: CanvasRenderingContext2D,
+  role: string,
+  cx: number,
+  cy: number,
+  below = false,
+) {
   const text = role.toUpperCase()
   ctx.font = "600 10px ui-sans-serif, system-ui"
   ctx.textAlign = "center"
@@ -1132,13 +1417,16 @@ function drawRegionLabel(ctx: CanvasRenderingContext2D, role: string, cx: number
     ctx.fillText(text[i], x + widths[i] / 2, cy)
     x += widths[i] + spacing
   }
-  // underline spanning the label width
+  // underline on the halo-facing side: BELOW the text for an above-halo label,
+  // ABOVE the text for a below-halo label — so it always sits between the
+  // heading and its halo.
+  const uy = below ? cy - 9 : cy + 9
   ctx.strokeStyle = "#475569"
   ctx.globalAlpha = 0.7
   ctx.lineWidth = 1
   ctx.beginPath()
-  ctx.moveTo(cx - total / 2, cy + 9)
-  ctx.lineTo(cx + total / 2, cy + 9)
+  ctx.moveTo(cx - total / 2, uy)
+  ctx.lineTo(cx + total / 2, uy)
   ctx.stroke()
   ctx.globalAlpha = 1
   ctx.textBaseline = "alphabetic"

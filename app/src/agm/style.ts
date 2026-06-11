@@ -5,6 +5,31 @@
 
 import { roleColor as baseRoleColor } from "@/graph/style"
 import { SYNTHETIC_ROLE } from "./synthetic"
+import type { NodeMass } from "./attentionModel"
+
+// --- action-kind: pill-vs-dot persistence ----------------------------------
+// A deliberate action (read / trace / write) is a committed act of attention:
+// the symbol earns a NAME PILL and keeps it even as its live mass decays — it
+// must not degenerate back into an anonymous dot. The faint exploration net
+// (grep) and the background recurrence seed (historical) render as dots,
+// surfacing a label only when hot enough to clear the mass cutoff. Pills are
+// monochrome — distance, not colour, encodes relevance.
+
+export type ActionKind = NodeMass["kind"]
+
+// Deliberate, committed attention — these symbols are ALWAYS named pills.
+const DELIBERATE_KINDS: ReadonlySet<ActionKind> = new Set<ActionKind>([
+  "read",
+  "trace",
+  "write",
+])
+
+// True when a symbol was directly, deliberately attended (not just swept up by
+// the grep net or seeded historically). Such symbols keep their name pill for
+// the life of the contribution regardless of where they rank by mass.
+export function isDeliberateKind(kind: ActionKind): boolean {
+  return DELIBERATE_KINDS.has(kind)
+}
 
 // Synthetic / external surfaces get a single muted neutral so they read as
 // "outside the code" without competing with real roles.
