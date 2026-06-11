@@ -11,7 +11,13 @@
 //   - perm reply:  POST /permission/:requestID/reply   body { reply, message? }
 //   - perm list:   GET  /permission          -> Permission.Request[]
 
-import type { OpencodeMessage, OpencodeSession, PermissionRequest, PermissionReply } from "./types"
+import type {
+  OpencodeMessage,
+  OpencodeSession,
+  OpencodeProvidersResult,
+  PermissionRequest,
+  PermissionReply,
+} from "./types"
 
 let baseUrl = ""
 
@@ -113,5 +119,15 @@ export const opencodeClient = {
   async listPermissions(): Promise<PermissionRequest[]> {
     const { data } = await req<PermissionRequest[]>("GET", "/permission")
     return Array.isArray(data) ? data : []
+  },
+
+  // --- providers / models ------------------------------------------------
+
+  // Available providers + their models, and the default model per provider.
+  async listProviders(): Promise<OpencodeProvidersResult> {
+    const { data } = await req<OpencodeProvidersResult>("GET", "/config/providers")
+    return data && Array.isArray(data.providers)
+      ? { providers: data.providers, default: data.default ?? {} }
+      : { providers: [], default: {} }
   },
 }
