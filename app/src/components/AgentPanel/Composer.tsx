@@ -1,17 +1,12 @@
-import { useState, useEffect, useRef, useCallback, useLayoutEffect } from "react"
+import { useState, useEffect, useRef, useCallback, useLayoutEffect, useMemo } from "react"
 import { graphClient } from "@/api/graphClient"
 import { useSetting } from "@/store/settingsStore"
-import { ArrowUp, Square, X, AtSign, Sparkles } from "./icons"
+import { useModelStore } from "@/store/modelStore"
+import { ArrowUp, Square, X, AtSign, Sparkles, ChevronDown, Check, Search } from "./icons"
 
 interface Pill {
   qname: string
   label: string
-}
-
-const MODEL_LABELS: Record<string, string> = {
-  "claude-sonnet-4-6": "Sonnet 4.6",
-  "claude-opus-4-7": "Opus 4.7",
-  "claude-haiku-4-5": "Haiku 4.5",
 }
 
 // The message composer at the bottom of the agent panel. Carries symbol context
@@ -32,7 +27,6 @@ export function Composer({
   const [pills, setPills] = useState<Pill[]>([])
   const [text, setText] = useState("")
   const sendOnEnter = useSetting<boolean>("agent.sendOnEnter")
-  const model = useSetting<string>("agent.model")
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-grow the textarea between 1 and 8 rows, then scroll.
@@ -157,12 +151,7 @@ export function Composer({
         />
 
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-faint text-[11px] min-w-0">
-            <span className="inline-flex items-center gap-1 truncate" title="Active model">
-              <Sparkles size={12} />
-              <span className="truncate">{MODEL_LABELS[model] ?? model}</span>
-            </span>
-          </div>
+          <ModelSwitcher disabled={disabled} />
 
           {running ? (
             <button
@@ -187,6 +176,111 @@ export function Composer({
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+// A compact model picker that lives in the composer toolbar. Opens a searchable
+// popover of every available provider/model; the selection is persisted and
+// used for the next turn.
+function ModelSwitcher({ disabled }: { disabled: boolean }) {
+  const selected = useModelStore((s) => s.selected)
+  const flat = useModelStore((s) => s.flat)
+  const select = useModelStore((s) => s.select)
+  const labelFor = useModelStore((s) => s.labelFor)
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState("")
+  const ref = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false)
+    window.addEventListener("mousedown", onDown)
+    window.addEventListener("keydown", onKey)
+    return () => {
+      window.removeEventListener("mousedown", onDown)
+      window.removeEventListener("keydown", onKey)
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) setQuery("")
+  }, [open])
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return flat
+    return flat.filter(
+      (m) =>
+        m.label.toLowerCase().includes(q) ||
+        m.providerLabel.toLowerCase().includes(q) ||
+        m.modelID.toLowerCase().includes(q),
+    )
+  }, [flat, query])
+
+  const showSearch = flat.length > 8
+
+  return (
+    <div className="relative min-w-0" ref={ref}>
+      <button
+        className="inline-flex items-center gap-1 text-faint hover:text-2 text-[11px] max-w-[14rem] transition-colors disabled:opacity-50"
+        onClick={() => setOpen((v) => !v)}
+        disabled={disabled || flat.length === 0}
+        title="Switch model"
+      >
+        <Sparkles size={12} className="shrink-0" />
+        <span className="truncate">{labelFor(selected)}</span>
+        <ChevronDown size={12} className="shrink-0" />
+      </button>
+
+      {open && flat.length > 0 && (
+        <div className="absolute bottom-full mb-1.5 left-0 z-50 w-64 rounded-xl border border-strong surface-pop elev-2 overflow-hidden">
+          {showSearch && (
+            <div className="flex items-center gap-2 px-2.5 py-2 border-b border-subtle">
+              <Search size={13} className="text-faint shrink-0" />
+              <input
+                autoFocus
+                className="flex-1 bg-transparent text-xs text-1 outline-none placeholder:text-faint"
+                placeholder="Search models…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+          )}
+          <div className="max-h-72 overflow-y-auto scroll-thin py-1">
+            {filtered.length === 0 && (
+              <div className="px-3 py-2 text-xs text-faint">No models found.</div>
+            )}
+            {filtered.map((m) => {
+              const active =
+                selected?.providerID === m.providerID && selected?.modelID === m.modelID
+              return (
+                <button
+                  key={`${m.providerID}/${m.modelID}`}
+                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors ${
+                    active ? "surface-3" : "hover:surface-2"
+                  }`}
+                  onClick={() => {
+                    select({ providerID: m.providerID, modelID: m.modelID })
+                    setOpen(false)
+                  }}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs text-1 truncate">{m.label}</div>
+                    <div className="text-[10px] text-faint truncate">{m.providerLabel}</div>
+                  </div>
+                  {active && (
+                    <Check size={13} className="shrink-0" style={{ color: "var(--accent)" }} />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

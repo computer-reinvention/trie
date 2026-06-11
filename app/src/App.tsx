@@ -180,10 +180,7 @@ export function App() {
 
   // load persisted settings + apply theme as early as possible
   useEffect(() => {
-    loadSettings().then(() => {
-      const model = useSettingsStore.getState().get<string>("agent.model")
-      useAppStore.getState().setModel("anthropic", model)
-    })
+    loadSettings()
   }, [loadSettings])
 
   useEffect(() => {

@@ -168,19 +168,8 @@ export const SETTINGS: SettingDef[] = [
   },
 
   // ── Agent ───────────────────────────────────────────────────────────────
-  {
-    id: "agent.model",
-    title: "Model",
-    description: "Model used for agent turns.",
-    category: "Agent",
-    type: "enum",
-    default: "claude-sonnet-4-6",
-    enum: [
-      { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
-      { value: "claude-opus-4-7", label: "Claude Opus 4.7" },
-      { value: "claude-haiku-4-5", label: "Claude Haiku 4.5" },
-    ],
-  },
+  // Model selection lives in the composer's model switcher (modelStore), which
+  // lists the actual providers/models from opencode rather than a static enum.
   {
     id: "agent.sendOnEnter",
     title: "Send on Enter",

@@ -215,6 +215,30 @@ export interface OpencodeSession {
   [k: string]: unknown
 }
 
+// GET /config/providers — available providers + their models, plus the default
+// model per provider. We only type the fields the model switcher needs.
+export interface OpencodeModelInfo {
+  id: string
+  name?: string
+}
+
+export interface OpencodeProviderInfo {
+  id: string
+  name?: string
+  models: Record<string, OpencodeModelInfo>
+}
+
+export interface OpencodeProvidersResult {
+  providers: OpencodeProviderInfo[]
+  default: Record<string, string> // providerID -> modelID
+}
+
+// A concrete model selection used when sending a message.
+export interface ModelRef {
+  providerID: string
+  modelID: string
+}
+
 // A message's `info` — discriminated on role.
 export interface OpencodeUserInfo {
   id: string

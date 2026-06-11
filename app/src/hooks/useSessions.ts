@@ -4,6 +4,7 @@ import { useAgentStore } from "@/store/agentStore"
 import { useAppStore } from "@/store/appStore"
 import { useGraphStore } from "@/store/graphStore"
 import { useAGMStore } from "@/store/agmStore"
+import { useModelStore } from "@/store/modelStore"
 import { graphClient } from "@/api/graphClient"
 import { useConductor } from "@/graph/conductor"
 import { isDefaultTitle } from "@/lib/sessionTitle"
@@ -55,6 +56,8 @@ export function useSessions() {
     let cancelled = false
     ;(async () => {
       if (!cancelled) await loadAndPrune()
+      // Populate the model switcher with the available providers/models.
+      if (!cancelled) await useModelStore.getState().load()
     })()
     return () => {
       cancelled = true
@@ -139,7 +142,8 @@ export function useSessions() {
       useAGMStore.getState().setInvestigation(invId, label, "active")
       graphClient.setInvestigation({ label, status: "active", investigation_id: invId }).catch(() => {})
       store.getState().appendLocalUser(id, text)
-      await opencodeClient.sendMessage(id, text)
+      const model = useModelStore.getState().selected ?? undefined
+      await opencodeClient.sendMessage(id, text, model ? { model } : undefined)
     },
     [store],
   )
