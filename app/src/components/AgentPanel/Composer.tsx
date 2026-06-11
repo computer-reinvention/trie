@@ -110,7 +110,7 @@ export function Composer({
   return (
     <div className="surface-1 border-t border-subtle p-3 shrink-0">
       <div
-        className={`flex flex-col gap-2 surface-2 rounded-2xl px-3 py-2.5 border transition-all ${
+        className={`flex flex-col gap-2 surface-2 rounded-lg px-3 py-2.5 border transition-all ${
           disabled
             ? "border-subtle opacity-60"
             : "border-strong focus-within:border-accent-soft focus-within:ring-accent-soft"
@@ -237,7 +237,7 @@ function ModelSwitcher({ disabled }: { disabled: boolean }) {
       </button>
 
       {open && flat.length > 0 && (
-        <div className="absolute bottom-full mb-1.5 left-0 z-50 w-64 rounded-xl border border-strong surface-pop elev-2 overflow-hidden">
+        <div className="absolute bottom-full mb-1.5 left-0 z-50 w-64 rounded-lg border border-strong surface-pop elev-2 overflow-hidden">
           {showSearch && (
             <div className="flex items-center gap-2 px-2.5 py-2 border-b border-subtle">
               <Search size={13} className="text-faint shrink-0" />

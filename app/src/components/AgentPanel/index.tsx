@@ -176,7 +176,7 @@ export function AgentPanel() {
         {menuOpen && (
           <div
             ref={menuRef}
-            className="absolute left-2 right-2 top-full mt-1.5 z-50 rounded-xl border border-strong surface-pop elev-2 overflow-hidden"
+            className="absolute left-2 right-2 top-full mt-1.5 z-50 rounded-lg border border-strong surface-pop elev-2 overflow-hidden"
           >
             {showFilter && (
               <div className="flex items-center gap-2 px-3 py-2 border-b border-subtle">

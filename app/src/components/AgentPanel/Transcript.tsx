@@ -63,7 +63,7 @@ export function Transcript({
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-center px-8 gap-3">
         <div
-          className="w-11 h-11 rounded-2xl flex items-center justify-center"
+          className="w-11 h-11 rounded-lg flex items-center justify-center"
           style={{ background: "color-mix(in srgb, var(--accent) 14%, transparent)" }}
         >
           <Brain size={22} style={{ color: "var(--accent)" }} />
@@ -93,7 +93,7 @@ export function Transcript({
         {running && <StreamingIndicator />}
         {error && (
           <div
-            className="flex items-start gap-2 rounded-xl border px-3 py-2 text-xs"
+            className="flex items-start gap-2 rounded-lg border px-3 py-2 text-xs"
             style={{
               borderColor: "color-mix(in srgb, var(--danger) 40%, transparent)",
               background: "var(--danger-soft)",
@@ -176,7 +176,7 @@ function MessageView({
       <div className="msg-in flex justify-end group">
         <div className="relative max-w-[88%]">
           <div
-            className="rounded-2xl rounded-br-md bg-accent-soft border border-accent-soft px-3.5 py-2 text-sm text-1 whitespace-pre-wrap"
+            className="rounded-lg rounded-br-sm bg-accent-soft border border-accent-soft px-3.5 py-2 text-sm text-1 whitespace-pre-wrap"
           >
             {text}
           </div>
