@@ -1,41 +1,14 @@
 import { create } from "zustand"
 import { MANAGED_TOP_KEYS } from "@/settings/opencodeSchema"
+import { getPointer, setPointer, buildManagedDelta, type Json } from "@/settings/configPointer"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const trie = () => (window as any).trie
-
-type Json = unknown
 
 // Read/modify/write of the project's opencode.json, restricted to the keys the
 // app manages. The store keeps the full parsed config as a working copy so the
 // UI can read effective values; on save it sends only the managed top-level
 // keys back to main, which deep-merges them (preserving everything else).
-
-function getPointer(obj: Record<string, Json>, pointer: string): Json {
-  const parts = pointer.split(".")
-  let cur: Json = obj
-  for (const p of parts) {
-    if (cur && typeof cur === "object" && !Array.isArray(cur) && p in (cur as object)) {
-      cur = (cur as Record<string, Json>)[p]
-    } else {
-      return undefined
-    }
-  }
-  return cur
-}
-
-function setPointer(obj: Record<string, Json>, pointer: string, value: Json): void {
-  const parts = pointer.split(".")
-  let cur = obj as Record<string, Json>
-  for (let i = 0; i < parts.length - 1; i++) {
-    const p = parts[i]
-    if (!cur[p] || typeof cur[p] !== "object" || Array.isArray(cur[p])) cur[p] = {}
-    cur = cur[p] as Record<string, Json>
-  }
-  const last = parts[parts.length - 1]
-  if (value === undefined) delete cur[last]
-  else cur[last] = value
-}
 
 interface OpencodeConfigStore {
   projectDir: string | null
@@ -86,10 +59,7 @@ export const useOpencodeConfigStore = create<OpencodeConfigStore>((set, get) => 
     // Send only the managed top-level keys as the delta. Keys absent from the
     // working copy are sent as null so the merge-writer deletes them (e.g. the
     // user cleared a managed value).
-    const delta: Record<string, Json> = {}
-    for (const k of MANAGED_TOP_KEYS) {
-      delta[k] = k in config ? config[k] : null
-    }
+    const delta = buildManagedDelta(config, MANAGED_TOP_KEYS)
     set({ saving: true })
     try {
       await trie().opencodeConfig.write(projectDir, delta)

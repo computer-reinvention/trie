@@ -21,7 +21,7 @@ function configPathFor(projectDir: string): string {
 
 /** Tolerant JSON parse: strips // and /* *​/ comments and trailing commas so
  *  hand-authored JSONC files still load. Returns {} on any failure. */
-function parseTolerant(text: string): Record<string, unknown> {
+export function parseTolerant(text: string): Record<string, unknown> {
   try {
     return JSON.parse(text) as Record<string, unknown>
   } catch {
@@ -48,14 +48,14 @@ export function readOpencodeConfig(projectDir: string): Record<string, unknown> 
   }
 }
 
-function isPlainObject(v: unknown): v is Record<string, unknown> {
+export function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v)
 }
 
 /** Deep-merge `delta` into `base`. Arrays and scalars in `delta` replace the
  *  base value wholesale; objects merge recursively. A `null` value in `delta`
  *  deletes that key from the result (lets the UI clear a managed key). */
-function deepMerge(
+export function deepMerge(
   base: Record<string, unknown>,
   delta: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -74,7 +74,7 @@ function deepMerge(
   return out
 }
 
-function withTrieMcp(
+export function withTrieMcp(
   config: Record<string, unknown>,
   trie: TrieMcpEntry,
 ): Record<string, unknown> {
