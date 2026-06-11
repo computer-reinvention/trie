@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from "react"
+import { useMemo, useState, useEffect, useRef, useCallback } from "react"
 import { useAgentStore, useActiveSession } from "@/store/agentStore"
 import { useAppStore } from "@/store/appStore"
 import { opencodeClient } from "@/api/opencodeClient"
@@ -17,6 +17,57 @@ import {
 } from "./icons"
 import type { PermissionReply } from "@/api/types"
 
+const PANEL_WIDTH_KEY = "trie.agentPanel.width"
+const MIN_WIDTH = 320
+const MAX_WIDTH = 720
+const DEFAULT_WIDTH = 384
+
+// Drag-to-resize the panel from its left edge. Width is clamped and persisted to
+// localStorage so it survives reloads. Dragging sets a body cursor + disables
+// text selection for the duration.
+function usePanelResize() {
+  const [width, setWidth] = useState<number>(() => {
+    const stored = Number(localStorage.getItem(PANEL_WIDTH_KEY))
+    return stored >= MIN_WIDTH && stored <= MAX_WIDTH ? stored : DEFAULT_WIDTH
+  })
+  const [resizing, setResizing] = useState(false)
+
+  const onResizeStart = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      setResizing(true)
+      const startX = e.clientX
+      const startWidth = width
+      const prevCursor = document.body.style.cursor
+      const prevSelect = document.body.style.userSelect
+      document.body.style.cursor = "col-resize"
+      document.body.style.userSelect = "none"
+
+      const onMove = (ev: MouseEvent) => {
+        // dragging left (smaller clientX) widens the right-hand panel
+        const next = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + (startX - ev.clientX)))
+        setWidth(next)
+      }
+      const onUp = () => {
+        setResizing(false)
+        document.body.style.cursor = prevCursor
+        document.body.style.userSelect = prevSelect
+        window.removeEventListener("mousemove", onMove)
+        window.removeEventListener("mouseup", onUp)
+        setWidth((w) => {
+          localStorage.setItem(PANEL_WIDTH_KEY, String(w))
+          return w
+        })
+      }
+      window.addEventListener("mousemove", onMove)
+      window.addEventListener("mouseup", onUp)
+    },
+    [width],
+  )
+
+  return { width, onResizeStart, resizing }
+}
+
 // The fixed right-hand agent panel — the whole agentic interface: a session
 // switcher, the scrolling transcript, and the composer. This replaces the old
 // bottom input bar and the standalone inspector.
@@ -30,6 +81,7 @@ export function AgentPanel() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [filter, setFilter] = useState("")
   const menuRef = useRef<HTMLDivElement | null>(null)
+  const { width, onResizeStart, resizing } = usePanelResize()
 
   // dismiss the session list on outside click / Escape
   useEffect(() => {
@@ -84,7 +136,22 @@ export function AgentPanel() {
   const activeTitle = active ? displayTitle(active.info) : "chat"
 
   return (
-    <aside className="w-96 shrink-0 surface-1 border-l border-subtle flex flex-col overflow-hidden">
+    <aside
+      className="relative shrink-0 surface-1 border-l border-subtle flex flex-col overflow-hidden"
+      style={{ width }}
+    >
+      {/* drag-to-resize handle on the panel's left edge */}
+      <div
+        onMouseDown={onResizeStart}
+        className="absolute left-0 top-0 bottom-0 w-1 -ml-0.5 z-30 cursor-col-resize group"
+        title="Drag to resize"
+      >
+        <div
+          className="absolute inset-y-0 left-0 w-0.5 transition-colors group-hover:bg-accent"
+          style={{ background: resizing ? "var(--accent)" : "transparent" }}
+        />
+      </div>
+
       {/* session switcher */}
       <div className="relative flex items-center gap-1.5 px-2.5 py-2 border-b border-subtle shrink-0">
         <button
