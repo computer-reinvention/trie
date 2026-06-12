@@ -191,13 +191,16 @@ unless regen cost/latency becomes a problem in practice.
 
 ## EXT-9 — Multi-language indexing  ·  High (umbrella)
 
+- **Spec:** full design in [multi-language-backend-prd.md](multi-language-backend-prd.md).
 - **Lost:** all of EXT-1/3/4/7/8 *for non-Python code*.
 - **Trie today:** Python-only scope + parser.
 - **Backup it retires:** narrows reliance on every `fs_*` tool for code in
   supported languages.
-- **Proposed:** widen `trie.toml` `include` (e.g. `**/*.ts`) and add
-  tree-sitter parser coverage per language. Track per-language parser support
-  as a sub-checklist.
+- **Proposed:** a `LanguageBackend` registry keyed by file extension; widen
+  `trie.toml` `include` (e.g. `**/*.ts`); add tree-sitter parser coverage per
+  language; extend the symbol-kind vocabulary (`interface`/`type`/`enum`/
+  `enum_member`/`property`). TypeScript/TSX is the first backend. Track
+  per-language parser support as a sub-checklist.
 - **Acceptance:** a `.ts` file is grep/read/trace/patch-able.
 
 ## EXT-11 — Expose `blast_radius` as a CLI command  ·  Low · ✅ DONE
