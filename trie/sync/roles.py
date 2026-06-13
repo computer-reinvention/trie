@@ -28,7 +28,7 @@ from trie import telemetry
 from trie.config import Config
 from trie.graph.store import Store
 from trie.models import TrieClient
-from trie.parse.python import extract_symbols
+from trie.parse import registry
 from trie.scope import discover_files
 from trie.sync.generator import FileGenerationContext, InferredRole, infer_role
 from trie.sync.progress import NULL_PROGRESS, ProgressCallback
@@ -136,7 +136,7 @@ def run_roles_only(
             triefact = TriefactFile.parse(triefact_path.read_text())
             triefact_rel_path = str(triefact_path.relative_to(project_root))
 
-            symbols = extract_symbols(source_path, source_root=src_root)
+            symbols = registry.extract_symbols(source_path, source_root=src_root)
             file_ctx = FileGenerationContext(
                 file_path=rel_path, source_text=source_path.read_text()
             )

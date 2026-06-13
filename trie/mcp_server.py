@@ -376,6 +376,9 @@ class TrieTools:
                 "use patch(qname=..., note=...) to change its body instead.",
                 fix={"tool": "patch", "args": {"qname": qname, "note": note}},
             )
+        # qname carries no language signal, so default new-symbol creation to
+        # Python's suffix; pass `file_path` explicitly to create in another
+        # language (e.g. a .ts module).
         target_file = file_path or (qname.split(":", 1)[0] + ".py")
         cid = self.store.add_create_patch(
             target_file=target_file,

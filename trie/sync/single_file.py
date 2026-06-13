@@ -11,12 +11,12 @@ from trie.config import Config
 from trie.git_helpers import compute_blob_hash, retrieve_blob
 from trie.graph.store import Store
 from trie.models import TrieClient
+from trie.parse import registry
 from trie.parse.python import (
-    Symbol,
     extract_module_docstring,
-    extract_symbols,
     strip_string_literal,
 )
+from trie.parse.types import Symbol
 from trie.scope import discover_files
 from trie.sync.generator import FileGenerationContext, GeneratedSection, generate_section
 from trie.sync.writer import Section, TriefactFile, extract_one_liner
@@ -36,6 +36,8 @@ def backfill_section_records(
     src_root = (project_root / config.triefacts.source_root).resolve()
     for source_path in discover_files(project_root, config.scope):
         if not source_path.is_relative_to(src_root):
+            continue
+        if not registry.is_indexable(source_path):
             continue
         triefact_path = _triefact_path_for(source_path, project_root, config)
         if not triefact_path.exists():
@@ -119,6 +121,11 @@ def _file_description(source_path: Path) -> str | None:
     file has no module docstring. This is the cheapest possible "what does this file
     do" surface — no LLM call, no hand-curation.
     """
+    # Module-docstring extraction is Python-grammar specific. Other languages
+    # surface a file description differently (or not at all in this pass).
+    backend = registry.get_backend_for_file(source_path)
+    if backend is None or backend.name != "python":
+        return None
     raw = extract_module_docstring(source_path)
     if raw is None:
         return None
@@ -178,7 +185,7 @@ def _resolve_previous_symbols(
         if previous_text is None:
             continue
         try:
-            previous_symbols = extract_symbols(
+            previous_symbols = registry.extract_symbols(
                 source_path, source_root=src_root, source_text=previous_text
             )
         except Exception:
@@ -238,7 +245,7 @@ def refresh_triefact_metadata(
     rel_path = str(source_path.relative_to(src_root))
     source_text = source_path.read_text()
     file_fp = _file_fingerprint(source_text)
-    target_symbols = extract_symbols(source_path, source_root=src_root)
+    target_symbols = registry.extract_symbols(source_path, source_root=src_root)
 
     triefact = TriefactFile.parse(triefact_path.read_text())
     previous_bytes = triefact.render().encode("utf-8")
@@ -361,7 +368,7 @@ def sync_single_file(
         # underscore by convention) is kept as descriptive metadata on Symbol but is
         # NOT used as a filter — stale prose is stale regardless of author intent,
         # and the cascade walks edges to/from every symbol uniformly.
-        target_symbols = extract_symbols(source_path, source_root=src_root)
+        target_symbols = registry.extract_symbols(source_path, source_root=src_root)
 
         canonical_triefact_path = _triefact_path_for(source_path, project_root, config)
         write_path = (

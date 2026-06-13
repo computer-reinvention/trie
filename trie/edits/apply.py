@@ -570,9 +570,9 @@ def _write_prose_section(
         source_path = src_root / file_path
         if source_path.exists():
             try:
-                from trie.parse.python import extract_symbols
+                from trie.parse import registry
 
-                for sym in extract_symbols(source_path, source_root=src_root):
+                for sym in registry.extract_symbols(source_path, source_root=src_root):
                     if sym.qualified_name == qname:
                         fingerprint = sym.body_normalized_hash
                         break
