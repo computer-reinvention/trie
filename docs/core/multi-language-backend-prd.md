@@ -1,6 +1,6 @@
 # Multi-language backend — PRD
 
-Status: **planned**. Realizes [EXT-9](trie-tool-extensions.md) — the
+Status: **planned**. Realizes [EXT-9](./trie-tool-extensions.md) — the
 "multi-language indexing" umbrella item, the last structural unlock on the
 tool-extensions list.
 
@@ -36,12 +36,14 @@ TypeScript opencode fork under `opencode/`, and a TypeScript Electron app under
 
 - Languages beyond TypeScript/TSX. The registry makes Go/Rust/etc. additive;
   they are out of scope here.
-- Type-aware (SCIP/LSP-precise) reference resolution. The TS resolver is a
-  tree-sitter heuristic, at parity with the honesty bar Python's resolver
-  already sets.
-- `tsconfig.json` path-alias resolution beyond relative-path + `index.ts`
-  barrel resolution. Aliases (`@/foo`) are a documented miss for v1.
-- Indexing `.d.ts` declaration files — they are type stubs, not behavior.
+- **Type-inference-based** reference resolution. The TS resolver is
+  config-and-syntax driven (it reads `tsconfig.json` / `package.json` and the
+  AST) but does **not** run type inference. Edges that require knowing a value's
+  inferred type — instance-method dispatch on a typed value, conditional
+  `exports` map branching, computed/dynamic `import()` specifiers — remain
+  documented misses, the same honesty bar Python's resolver holds. This is the
+  *only* remaining resolution non-goal; aliases, workspace packages, and
+  first-party `.d.ts` are all in scope (§6).
 
 ---
 
@@ -53,25 +55,26 @@ as-is; the Python-specific layers get per-language siblings.
 
 ### Already language-neutral (reused unchanged)
 
-| Layer | File | Why it's neutral |
-|---|---|---|
-| File discovery | `trie/scope.py` (`discover_files`) | pure glob, extension-agnostic |
-| Graph store | `trie/graph/store.py` (`Store`, schema, edges) | stores generic `Symbol`/`Reference` keyed by string `kind`/`qualified_name`; no syntax knowledge |
-| Edge existence filter | `trie/graph/store.py:replace_all_edges` | resolves candidate qnames against the symbol table; drops unknowns. Stdlib/`node_modules` need no special-casing |
-| Cascade | `trie/sync/cascade.py` (`compute_cascade`) | pure graph traversal |
-| Triefact format | `trie/sync/writer.py` (`TriefactFile`, sentinels) | Markdown serialization only |
-| Source splicing | `trie/edits/apply.py:_read_source_span` | line-range based |
+| Layer                 | File                                              | Why it's neutral                                                                                                 |
+| --------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| File discovery        | `trie/scope.py` (`discover_files`)                | pure glob, extension-agnostic                                                                                    |
+| Graph store           | `trie/graph/store.py` (`Store`, schema, edges)    | stores generic `Symbol`/`Reference` keyed by string `kind`/`qualified_name`; no syntax knowledge                 |
+| Edge existence filter | `trie/graph/store.py:replace_all_edges`           | resolves candidate qnames against the symbol table; drops unknowns. Stdlib/`node_modules` need no special-casing |
+| Cascade               | `trie/sync/cascade.py` (`compute_cascade`)        | pure graph traversal                                                                                             |
+| Triefact format       | `trie/sync/writer.py` (`TriefactFile`, sentinels) | Markdown serialization only                                                                                      |
+| Source splicing       | `trie/edits/apply.py:_read_source_span`           | line-range based                                                                                                 |
 
 ### Python-specific (gets a per-language sibling or a dispatch point)
 
-| Concern | File / anchor | Plan |
-|---|---|---|
-| Symbol extraction | `trie/parse/python.py` (`extract_symbols`, `Symbol`) | sibling `trie/parse/typescript.py`; `Symbol` moves to neutral `types.py` |
-| Reference extraction | `trie/parse/references.py` (`extract_file_data`, `Reference`) | sibling `trie/parse/typescript_refs.py`; `Reference`/`FileData` move to `types.py` |
-| Generator prompt | `trie/sync/generator.py:12` (`SYSTEM_PROMPT`, Python-worded) | becomes `backend.system_prompt()` |
-| Edit diagnostics | `trie/edits/apply.py:27,46,67` (pyright/ruff parsers, `_PARSERS`) | add `_parse_tsc_output`; register in `_PARSERS` |
-| Scratch overlay | `trie/edits/pipeline.py:907` (`_overlay_package`, `rglob("*.py")`) | union of backend overlay globs + tsconfig/package.json |
-| Hardcoded `.py` | `mcp_server.py:378`, `cli.py:3118` (qname→file), `sync/reconcile.py:39` (triefact→source), `init.py` (project detect) | route through `backend.source_suffix()` / registry probing |
+| Concern              | File / anchor                                                                                                         | Plan                                                                               |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Symbol extraction    | `trie/parse/python.py` (`extract_symbols`, `Symbol`)                                                                  | sibling `trie/parse/typescript.py`; `Symbol` moves to neutral `types.py`           |
+| Reference extraction | `trie/parse/references.py` (`extract_file_data`, `Reference`)                                                         | sibling `trie/parse/typescript_refs.py`; `Reference`/`FileData` move to `types.py` |
+| Module resolution    | (none — Python uses dotted imports, resolved inline in `references.py`)                                               | new `trie/parse/ts_resolve.py` (tsconfig `paths`/`baseUrl`/`extends` + workspace `package.json` map + index/ext probing) |
+| Generator prompt     | `trie/sync/generator.py:12` (`SYSTEM_PROMPT`, Python-worded)                                                          | becomes `backend.system_prompt()`                                                  |
+| Edit diagnostics     | `trie/edits/apply.py:27,46,67` (pyright/ruff parsers, `_PARSERS`)                                                     | add `_parse_tsc_output`; register in `_PARSERS`                                    |
+| Scratch overlay      | `trie/edits/pipeline.py:907` (`_overlay_package`, `rglob("*.py")`)                                                    | union of backend overlay globs + tsconfig/package.json                             |
+| Hardcoded `.py`      | `mcp_server.py:378`, `cli.py:3118` (qname→file), `sync/reconcile.py:39` (triefact→source), `init.py` (project detect) | route through `backend.source_suffix()` / registry probing                         |
 
 There is **no language abstraction today** — parse functions are imported by
 name in `scan.py`, `check.py`, `sync/single_file.py`, `sync/roles.py`,
@@ -160,13 +163,13 @@ container exactly as methods are.
 
 ### 4.2 The five new kinds
 
-| Kind | TS construct | Parent | `is_public` |
-|---|---|---|---|
-| `interface` | `interface_declaration` | none (top-level) | `export` keyword |
-| `type` | `type_alias_declaration` | none | `export` keyword |
-| `enum` | `enum_declaration` | none | `export` keyword |
-| `enum_member` | member inside an enum body | the enum (via `parent_class`) | inherits enum's public flag |
-| `property` | class field / property signature | the class (via `parent_class`) | not `_`/`#`-prefixed and parent public |
+| Kind          | TS construct                     | Parent                         | `is_public`                            |
+| ------------- | -------------------------------- | ------------------------------ | -------------------------------------- |
+| `interface`   | `interface_declaration`          | none (top-level)               | `export` keyword                       |
+| `type`        | `type_alias_declaration`         | none                           | `export` keyword                       |
+| `enum`        | `enum_declaration`               | none                           | `export` keyword                       |
+| `enum_member` | member inside an enum body       | the enum (via `parent_class`)  | inherits enum's public flag            |
+| `property`    | class field / property signature | the class (via `parent_class`) | not `_`/`#`-prefixed and parent public |
 
 `parent_class` (already on `Symbol`) carries the container name for
 `enum_member` and `property`, mirroring how `method` uses it. No new `Symbol`
@@ -205,19 +208,19 @@ mirrors `parse/python.py`.
 
 ### 5.1 Node-type → kind mapping
 
-| tree-sitter node | kind |
-|---|---|
-| `function_declaration` | `function` |
-| `const x = (…) => …` / `const x = function …` (top-level) | `function` |
-| `class_declaration` | `class` |
-| `method_definition` (in class body) | `method` |
-| class field / `public_field_definition` | `property` |
-| `interface_declaration` | `interface` |
-| `type_alias_declaration` | `type` |
-| `enum_declaration` | `enum` |
-| enum member (in enum body) | `enum_member` |
-| top-level `const`/`let`/`var` non-function | `constant` |
-| residual top-level statements (imports, side effects) | `module` (`__module__`) |
+| tree-sitter node                                          | kind                    |
+| --------------------------------------------------------- | ----------------------- |
+| `function_declaration`                                    | `function`              |
+| `const x = (…) => …` / `const x = function …` (top-level) | `function`              |
+| `class_declaration`                                       | `class`                 |
+| `method_definition` (in class body)                       | `method`                |
+| class field / `public_field_definition`                   | `property`              |
+| `interface_declaration`                                   | `interface`             |
+| `type_alias_declaration`                                  | `type`                  |
+| `enum_declaration`                                        | `enum`                  |
+| enum member (in enum body)                                | `enum_member`           |
+| top-level `const`/`let`/`var` non-function                | `constant`              |
+| residual top-level statements (imports, side effects)     | `module` (`__module__`) |
 
 ### 5.2 Extraction details
 
@@ -232,6 +235,44 @@ mirrors `parse/python.py`.
 - **qname form**: `module_key` is the source-root-relative path minus
   extension (slash form), identical to Python — `app/src/store/graphStore:foo`.
 
+### 5.3 Declaration files (`.d.ts`) — first-class behavior
+
+In a strongly-typed language a declaration **is** behavior: it is the contract
+other symbols bind to. This repo proves the point — `import … from "lang-map"`
+resolves to `interface MapReturn` declared in
+`opencode/packages/web/src/types/lang-map.d.ts`; `global.d.ts` /
+`custom-elements.d.ts` augment modules and namespaces that `.tsx` code depends
+on. Skipping these orphans every edge that targets them. First-party `.d.ts`
+are therefore indexed by the TypeScript backend.
+
+| tree-sitter node                                   | kind                                |
+| -------------------------------------------------- | ----------------------------------- |
+| `interface_declaration`                            | `interface` (+ `property` members)  |
+| `type_alias_declaration`                           | `type`                              |
+| `enum_declaration`                                 | `enum` (+ `enum_member`)            |
+| `declare function`                                 | `function`                          |
+| `declare const` / `declare let` / `declare var`    | `constant`                          |
+| `declare module "x" { … }` (ambient module)        | `module`, keyed by the declared module name `"x"` so `import … from "x"` resolves to it |
+| `declare global` / `namespace` augmentation blocks | `module` / `type`; members that are independent reference targets become child symbols per the §4.1 rule |
+
+Specifics:
+
+- **No executable body**: a declaration's content *is* its signature, so
+  `body_normalized_hash` is computed over the declaration text. A changed
+  declaration correctly invalidates dependents through the same cascade/verify
+  path as a changed function body.
+- **`is_public`**: `export` / `declare` visibility.
+- **Ambient module symbols** are keyed by the literal module name (`"lang-map"`,
+  `"solid-js"`), not a file-relative qname, so the resolver (§6) can map a bare
+  import specifier straight onto them.
+- **Scope**: first-party `**/*.d.ts` are indexed; `node_modules/**` `.d.ts`
+  stay excluded (third-party stubs are external and drop out via
+  `replace_all_edges`, exactly like any other external reference).
+- **Triefact mapping**: `.d.ts` is a distinct source suffix. The registry's
+  `source_suffixes()` and `reconcile.py` triefact↔source round-trip must treat
+  `foo.d.ts` as a unit (e.g. `foo.d.ts` ↔ `foo.d.md`) rather than splitting on
+  the first dot. See §6.4 and the Phase-2 routing.
+
 ---
 
 ## 6. TypeScript reference heuristics — `trie/parse/typescript_refs.py`
@@ -241,33 +282,78 @@ candidate edge for every plausible target qname; `store.replace_all_edges`
 drops the ones the project doesn't define (so `node_modules` imports vanish
 without special-casing).
 
-### 6.1 Coverage
+### 6.1 Specifier resolution — `trie/parse/ts_resolve.py`
 
-- `import { x } from "./foo"` → resolve `./foo` relative to the importing
-  file's dir to a slash-form module key → bind `x` → `foo:x`.
-- `import { x as y } from "./foo"` → bind local `y` → `foo:x`.
-- `import * as ns from "./foo"` + `ns.x()` → `foo:x`.
-- `import Foo from "./foo"` (default) → bind `Foo` → `foo:default` (and the
+The repo forces this to be real, not a `./`-only heuristic: `app/tsconfig.json`
+declares `"@/*": ["./src/*"]`, so `app/src` imports its own modules via `@/…`;
+opencode is a Bun **workspace monorepo** (`packages/*`) where cross-package
+imports use the package name. Treating either as a miss would erase the bulk of
+the testbed's call graph.
+
+`TsResolver` is built once per scan from the project root and maps a module
+specifier + importing-file path to a slash-form **module key** (or `None`),
+trying layers in order:
+
+1. **Relative** — `./`, `../` resolved against the importing file's directory.
+2. **tsconfig `paths` / `baseUrl`** — load the nearest `tsconfig.json` (walking
+   up, following `extends` chains), build the alias map (`@/*` → `src/*`), and
+   rewrite the specifier to a project-relative path. `baseUrl` handles
+   non-relative bare specifiers that resolve inside the project.
+3. **Workspace packages** — parse workspace `package.json` `name` +
+   `exports`/`module`/`main` to map a bare package specifier (`@scope/pkg`,
+   `lang-map`) to that package's entry module key, including ambient module
+   names declared in first-party `.d.ts` (§5.3).
+4. **Drop** — anything still unresolved stays a candidate and is removed by
+   `replace_all_edges` (so genuine `node_modules` libraries vanish, while
+   first-party packages resolve).
+
+Each layer ends in **module-file probing**: try `.ts`, `.tsx`, `.d.ts`, then
+`<dir>/index.{ts,tsx,d.ts}` for directory/barrel imports. The resolver is
+config-and-syntax driven, deterministic, cached, and LLM-free. tsconfig and
+workspace maps are read once and memoized per scan.
+
+### 6.2 Coverage
+
+- `import { x } from "<spec>"` → resolve `<spec>` via §6.1 → bind `x` →
+  `key:x`. Works for relative, `@/`-aliased, and workspace-package specifiers.
+- `import { x as y } from "<spec>"` → bind local `y` → `key:x`.
+- `import * as ns from "<spec>"` + `ns.x()` → `key:x`.
+- `import Foo from "<spec>"` (default) → bind `Foo` → `key:default` (and the
   module's default-exported symbol when resolvable).
-- `export { x } from "./foo"` re-exports → edge through the barrel.
-- Directory import `from "./store"` resolving to `./store/index.ts` →
-  `store/index` module key.
+- `export { x } from "<spec>"` re-exports → edge through the barrel.
+- Directory / barrel import → `<dir>/index` module key (probing rule above).
+- Bare workspace import (`@scope/pkg`) → the package's entry module key.
+- Ambient module import (`from "lang-map"`) → the `module` symbol declared in
+  the first-party `.d.ts` (§5.3).
 - Intra-file: a symbol body referencing another top-level symbol's name → edge.
 - Call-position (`x()`, `a.b.x()`) → `calls`; bare reference → `references`;
   `extends` → `inherits`; `implements` → `implements`. Same `_KIND_RANK`
   upgrade and class→method `contains` edges as Python.
 
-### 6.2 Documented misses (v1, parity-with-Python honesty)
+### 6.3 Documented misses (v1)
 
-- `tsconfig.json` path aliases (`@/foo`, `~/bar`).
-- Instance-method dispatch on values whose type isn't locally evident.
-- Dynamic `import()` and `require()`.
-- Re-export wildcard chains more than one hop deep.
-- Ambient/`declare` and `.d.ts` (excluded by scope anyway).
+Only edges that require **type inference** — knowing a value's inferred type —
+remain out of reach. The resolver reads config and syntax, not types:
 
-These mirror the class of misses Python's resolver documents at
+- Instance-method dispatch on a value whose type isn't locally evident
+  (`obj.method()` where `obj`'s type comes from inference).
+- Conditional `exports` map branching (`import`/`require`/`browser`
+  conditions); the resolver takes the primary `import`/`module` entry.
+- Computed / dynamic `import(expr)` and `require(expr)` with non-literal
+  specifiers.
+- Re-export wildcard chains (`export * from`) more than one hop deep.
+
+These mirror the honesty bar Python's resolver documents at
 `parse/references.py:25-31`; they close when a type-aware resolver replaces the
-heuristic, with the `Reference`/`replace_all_edges` contract unchanged.
+heuristic, with the `Reference` / `replace_all_edges` contract unchanged.
+
+### 6.4 Triefact round-trip for `.d.ts`
+
+`.d.ts` is a single source suffix, not `.ts` with a `.d` infix. The registry
+`source_suffixes()` must list `.d.ts` ahead of `.ts` so the longest match wins,
+and the triefact↔source mapping pairs `foo.d.ts` ↔ `foo.d.md` (suffix replaced
+as a unit). `reconcile.py` probes `source_suffixes()` in longest-first order to
+recover the source path for a given triefact.
 
 ---
 
@@ -297,8 +383,14 @@ heuristic, with the `Reference`/`replace_all_edges` contract unchanged.
   (else backend defaults apply).
 - `pyproject.toml`: add `tree-sitter-typescript`.
 - This repo's `trie.toml`: un-exclude `opencode/` and `app/`; add
-  `**/*.ts`, `**/*.tsx` to `include`; exclude `**/node_modules/**`,
-  `**/dist/**`, `**/build/**`, generated bundles, and `**/*.d.ts`.
+  `**/*.ts`, `**/*.tsx`, **and first-party `**/*.d.ts`** to `include` (§5.3 —
+  declarations are behavior); exclude `**/node_modules/**`, `**/dist/**`,
+  `**/build/**`, and generated bundles. Note: `node_modules` `.d.ts` are
+  excluded by the `node_modules` rule, so the `.d.ts` include is first-party
+  only.
+- **Resolver inputs**: the TS resolver (§6.1) discovers `tsconfig.json` (with
+  `extends`) and workspace `package.json` files within scope; these are read
+  for resolution but are not themselves indexed as symbols.
 - First-sync cost is bounded by the existing `trie sync --limit` and the
   bootstrap budget ranking (`sync/bootstrap.py`) — **not** by narrowing graph
   scope, which would leave cross-file edges dangling at a slice boundary and
@@ -324,11 +416,18 @@ mirrors `KINDS`.
 - Fixtures under `tests/fixtures/tiny_ts_repo/` mirroring the existing
   `tests/fixtures/tiny_repo/` layout, exercising every new kind and each
   reference shape (relative import, barrel, re-export, `import * as`, default,
-  intra-file, extends/implements).
+  intra-file, extends/implements). The fixture includes a `tsconfig.json` with
+  a `paths` alias, a two-package workspace (`package.json` `workspaces`) with a
+  cross-package import, and a first-party `.d.ts` declaring an `interface` and
+  an ambient `declare module` that other fixture files import.
 - New test modules: `tests/test_parse_typescript.py`,
-  `tests/test_references_typescript.py`, `tests/test_registry.py`.
+  `tests/test_references_typescript.py`, `tests/test_ts_resolve.py`,
+  `tests/test_registry.py`.
 - New-kind assertions: interface/type/enum/enum_member/property emitted with
   correct parenting and `is_public`.
+- Resolution assertions: `@/`-alias, workspace-package, and ambient-`.d.ts`
+  imports each produce a resolved edge; an unresolvable bare specifier is
+  dropped. `.d.ts` ↔ `.d.md` triefact round-trip.
 - **Python regression guard**: the entire existing suite passes untouched.
 - CI quad (AGENTS.md): `uv run pytest`, `uv run ruff check .`,
   `uv run ruff format --check .`.
@@ -346,8 +445,10 @@ and a full test pass, de-risking the rest.
    `PythonBackend` wrapper.
 3. **Phase 2** — route all parse call sites + `.py`-hardcoded spots through the
    registry.
-4. **Phase 3** — `typescript.py` (symbols, 5 new kinds) +
-   `typescript_refs.py` (heuristics).
+4. **Phase 3** — `typescript.py` (symbols, 5 new kinds, `.d.ts` declarations);
+   `ts_resolve.py` (tsconfig `paths`/`baseUrl`/`extends` + workspace package
+   map + index/ext probing); `typescript_refs.py` (heuristics consuming the
+   resolver).
 5. **Phase 4** — TS edit/patch (`_parse_tsc_output`, `_PARSERS`,
    `lsp_backends()`, `_overlay_package` generalization).
 6. **Phase 5** — `pyproject.toml` dep, `trie.toml` scope, `[languages]` config.
@@ -360,13 +461,14 @@ and a full test pass, de-risking the rest.
 
 ## 12. Risks & mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Refactor breaks the Python path | Phases 0–2 are zero-behavior-change; Python suite is the gate before any TS code lands |
-| `SCHEMA_VERSION` bump wipes `.trie/` | Cache is regenerable by design; documented |
-| Heuristic TS resolution misses edges | Same honesty bar as Python; misses documented; store filter drops unresolved candidates |
-| Desktop union drifts from `KINDS` | `KINDS` is the single source of truth; desktop mirrors it; legend audited in Phase 9 |
-| First TS sync cost | `sync --limit` / bootstrap budget ranking bounds spend without narrowing scope |
+| Risk                                 | Mitigation                                                                              |
+| ------------------------------------ | --------------------------------------------------------------------------------------- |
+| Refactor breaks the Python path      | Phases 0–2 are zero-behavior-change; Python suite is the gate before any TS code lands  |
+| `SCHEMA_VERSION` bump wipes `.trie/` | Cache is regenerable by design; documented                                              |
+| Heuristic TS resolution misses edges | Only type-inference cases miss; aliases/workspaces/`.d.ts` resolved via config + syntax; store filter drops the rest |
+| tsconfig `extends` / monorepo complexity | Resolver walks `extends` chains and workspace `package.json`; memoized per scan; covered by fixtures incl. an aliased + multi-package case |
+| Desktop union drifts from `KINDS`    | `KINDS` is the single source of truth; desktop mirrors it; legend audited in Phase 9    |
+| First TS sync cost                   | `sync --limit` / bootstrap budget ranking bounds spend without narrowing scope          |
 
 ---
 
@@ -378,6 +480,13 @@ and a full test pass, de-risking the rest.
   the graph with correct parenting, `is_public`, and prose.
 - Cross-file TS edges resolve for relative imports, barrels, and re-exports;
   `node_modules` references are absent (dropped by the store filter).
+- A `@/`-aliased import (per `app/tsconfig.json` `paths`) resolves to a
+  first-party edge, not a dropped candidate.
+- A cross-package workspace import (an `opencode/packages/*` package name)
+  resolves to that package's entry symbol.
+- A symbol that references an `interface` / `type` / ambient `declare module`
+  declared in a first-party `.d.ts` produces a resolved edge; that `.d.ts` is
+  itself grep/read-able and round-trips through its `.d.md` triefact.
 - A TS patch passes `tsc --noEmit` through the edit pipeline and cascades to
   callers like a Python patch.
 - Adding a hypothetical third language requires only a new backend module +
