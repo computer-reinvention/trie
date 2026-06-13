@@ -12,7 +12,10 @@ from pathlib import Path
 from trie.parse.python import Symbol
 from trie.parse.references import Reference
 
-SCHEMA_VERSION = 7
+# v8: extended symbol-kind vocabulary (interface/type/enum/enum_member/property)
+# for multi-language indexing. The `kind` column is free-text so no schema change
+# is needed — the bump forces a clean cache rebuild so TS files index cleanly.
+SCHEMA_VERSION = 8
 
 # All schema is created if not present. The DB is a regenerable cache under .trie/;
 # bumping SCHEMA_VERSION blows it away and triggers a re-scan on next connect.
@@ -165,7 +168,10 @@ class GrepPredicate:
 
     name_contains: str | None = None
     kind: str | None = (
-        None  # "function" | "class" | "method" | "constant" | "module" | "any" | None
+        # One of trie.parse.types.KINDS, or "any", or None. See KINDS for the
+        # full vocabulary (function/class/method/constant/module + the typed-
+        # language kinds interface/type/enum/enum_member/property).
+        None
     )
     scope_prefix: str | None = None
     scope_exclude: tuple[str, ...] = ()

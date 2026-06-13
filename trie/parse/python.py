@@ -1,31 +1,18 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
 
 import tree_sitter_python
 from tree_sitter import Language, Node, Parser
 
+# Symbol now lives in the language-neutral types module. Re-exported here so the
+# many existing `from trie.parse.python import Symbol` call sites keep working.
+from trie.parse.types import KINDS, Symbol
+
+__all__ = ["KINDS", "Symbol"]
+
 PY_LANGUAGE = Language(tree_sitter_python.language())
-
-
-@dataclass(frozen=True)
-class Symbol:
-    qualified_name: str
-    kind: str  # "function" | "class" | "method" | "constant" | "module"
-    name: str
-    file_path: str  # source-root-relative, e.g. "src/foo.py"
-    signature: str
-    docstring: str | None
-    body_text: str
-    body_normalized_hash: str
-    signature_hash: str
-    start_line: int  # 1-indexed
-    end_line: int  # 1-indexed inclusive
-    is_public: bool
-    parent_class: str | None = None  # set for methods; the unqualified class name
-    decorators: tuple[str, ...] = ()  # decorator lines, e.g. ("@classmethod",)
 
 
 def _make_parser() -> Parser:

@@ -69,6 +69,7 @@ from rapidfuzz import process as _process
 from trie import telemetry
 from trie.config import Config, Mcp
 from trie.graph.store import GrepPredicate, Store, SymbolDetail
+from trie.parse.types import KINDS
 from trie.scope import discover_files
 
 
@@ -999,7 +1000,7 @@ class TrieTools:
         Predicate fields (all optional, but at least one is required —
         an empty predicate returns an `invalid_argument` error):
         - `name_contains`: substring match against the symbol's local name (case-insensitive).
-        - `kind`: one of `"function"`, `"class"`, `"method"`, `"constant"`, `"module"`, `"any"`.
+        - `kind`: one of `"function"`, `"class"`, `"method"`, `"constant"`, `"module"`, `"interface"`, `"type"`, `"enum"`, `"enum_member"`, `"property"`, `"any"`.
         - `scope_prefix`: file-path prefix, e.g. `"trie/"` to exclude tests/vendored code.
         - `scope_exclude`: list of file-path prefixes to skip, e.g. `["tests/"]`.
         - `public_only`: bool. Restrict to symbols whose name doesn't start with `_`.
@@ -1542,17 +1543,11 @@ class TrieTools:
             return GrepPredicate(), err
 
         kind = predicate.get("kind")
-        if kind is not None and kind not in (
-            "function",
-            "class",
-            "method",
-            "constant",
-            "module",
-            "any",
-        ):
+        if kind is not None and kind not in (*KINDS, "any"):
+            allowed = "/".join((*KINDS, "any"))
             return GrepPredicate(), _error(
                 "invalid_argument",
-                (f"`kind` must be one of function/class/method/constant/module/any, got {kind!r}."),
+                (f"`kind` must be one of {allowed}, got {kind!r}."),
             )
 
         scope_exclude_raw = predicate.get("scope_exclude") or ()
