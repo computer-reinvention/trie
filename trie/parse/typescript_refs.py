@@ -78,7 +78,14 @@ def _absorb_import(
         return
     key = resolver.resolve(spec, from_file)
     if key is None:
-        return
+        # A bare (non-relative) specifier that didn't resolve to a project file
+        # may still name an ambient module declared in a first-party `.d.ts`
+        # (`declare module "lang-map"`), whose symbols are keyed by that literal
+        # name. Bind against it; the store drops the edge if no such symbol
+        # exists (e.g. a real node_modules import).
+        if spec.startswith("."):
+            return
+        key = spec
     clause = next((c for c in stmt.named_children if c.type == "import_clause"), None)
     if clause is None:
         return
