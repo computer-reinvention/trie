@@ -7,7 +7,8 @@ from pathlib import Path
 from trie import telemetry
 from trie.config import Config
 from trie.graph.store import Store
-from trie.parse.references import Reference, extract_file_data
+from trie.parse import registry
+from trie.parse.types import Reference
 from trie.scope import discover_files
 
 
@@ -41,7 +42,7 @@ def scan_project(*, project_root: Path, config: Config, store: Store) -> ScanRes
 
         discovered_rel: dict[str, Path] = {}
         for p in discovered:
-            if p.is_relative_to(src_root):
+            if p.is_relative_to(src_root) and registry.is_indexable(p):
                 rel = str(p.relative_to(src_root))
                 discovered_rel[rel] = p
 
@@ -62,7 +63,7 @@ def scan_project(*, project_root: Path, config: Config, store: Store) -> ScanRes
             # Always parse — tree-sitter is fast and we need the references regardless of
             # whether the symbols changed (cross-file targets may have moved).
             with telemetry.timed("parse_file", path=rel) as parse_tele:
-                file_data = extract_file_data(abs_path, source_root=src_root)
+                file_data = registry.extract_file_data(abs_path, source_root=src_root)
                 parse_tele["symbols"] = len(file_data.symbols)
                 parse_tele["references"] = len(file_data.references)
             pending_refs[rel] = file_data.references
