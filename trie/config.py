@@ -90,6 +90,18 @@ class Edits:
 
 
 @dataclass
+class LanguageConfig:
+    """Per-language overrides, keyed by backend name (e.g. "typescript").
+
+    `lsp_backends`, when non-empty, replaces the language backend's built-in
+    default checkers for the edit pipeline. Other per-language knobs can be
+    added here without touching the global config shape.
+    """
+
+    lsp_backends: list[LspBackend] = field(default_factory=list)
+
+
+@dataclass
 class Sync:
     """Per-file sync execution knobs.
 
@@ -225,13 +237,21 @@ class Config:
     mcp: Mcp = field(default_factory=Mcp)
     debug: Debug = field(default_factory=Debug)
     edits: Edits = field(default_factory=Edits)
+    languages: dict[str, LanguageConfig] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: dict) -> Config:
-        raw_edits = data.get("edits", {})
+        raw_edits = dict(data.get("edits", {}))
         backends_raw = raw_edits.pop("lsp_backends", None)
         if backends_raw is not None:
             raw_edits["lsp_backends"] = [LspBackend(**b) for b in backends_raw]
+        languages: dict[str, LanguageConfig] = {}
+        for name, raw in (data.get("languages", {}) or {}).items():
+            raw = dict(raw)
+            lb = raw.pop("lsp_backends", None)
+            languages[name] = LanguageConfig(
+                lsp_backends=[LspBackend(**b) for b in lb] if lb else [],
+            )
         return cls(
             trie=TrieMeta(**data.get("trie", {})),
             scope=Scope(**data.get("scope", {})),
@@ -242,6 +262,7 @@ class Config:
             mcp=Mcp(**data.get("mcp", {})),
             debug=Debug(**data.get("debug", {})),
             edits=Edits(**raw_edits),
+            languages=languages,
         )
 
     @classmethod
