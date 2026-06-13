@@ -38,39 +38,18 @@ from pathlib import Path
 from tree_sitter import Node
 
 from trie.parse.python import (
-    Symbol,
     _make_parser,
     _node_text,
     _undecorate,
     extract_symbols,
 )
 
+# Reference and FileData now live in the language-neutral types module.
+# Re-exported here so existing `from trie.parse.references import ...` call
+# sites (and Symbol, used in this module's annotations) keep working.
+from trie.parse.types import FileData, Reference, Symbol
 
-@dataclass(frozen=True)
-class Reference:
-    """An outbound reference from a symbol within a file.
-
-    `target_qname` is the resolved target's qualified name (e.g. `src/foo:bar`). It's a string
-    so it can be persisted before the target's symbol_id is looked up in the DB.
-
-    `kind` is the relationship type (AGM typed edges): one of `calls`, `references`,
-    `imports`, `contains`, `inherits`, `implements`. The resolver assigns the most
-    specific kind it can derive from the AST; ambiguous bare-identifier uses default
-    to `references` and call-position uses to `calls`. `depends_on` from the AGM PRD
-    is intentionally not produced — there is no AST construct for it.
-    """
-
-    src_qname: str
-    target_qname: str
-    kind: str = "calls"
-
-
-@dataclass(frozen=True)
-class FileData:
-    """Symbols + outbound references extracted from one file in a single tree-sitter parse."""
-
-    symbols: list[Symbol]
-    references: list[Reference]
+__all__ = ["FileData", "Reference", "Symbol", "extract_file_data"]
 
 
 @dataclass(frozen=True)

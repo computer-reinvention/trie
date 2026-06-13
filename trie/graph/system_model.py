@@ -418,9 +418,12 @@ def _classify(
     if outbound == 0 and inbound >= inbound_hi:
         return "bedrock"
     if inbound == 0 and outbound == 0:
-        # Blind-spot rule: a zero-edge method whose owning class IS connected is
-        # reached by dynamic dispatch — not dead. Treat as internal, not orphan.
-        if node["kind"] == "method" and _owning_class(qname) in connected_classes:
+        # Blind-spot rule: a zero-edge member (method, or a typed-language
+        # enum_member / property) whose owning container IS connected is reached
+        # by dynamic dispatch or member access — not dead. Treat as internal.
+        if node["kind"] in ("method", "enum_member", "property") and (
+            _owning_class(qname) in connected_classes
+        ):
             return "internal"
         return "orphan"
     return "normal"
