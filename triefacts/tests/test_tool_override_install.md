@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: tests/test_tool_override_install.py
 file_fingerprint: 70443976502e772d6583cdcb2efc6b6b18b2bdec426c108020010d44ad3f3536
-last_synced_at: '2026-05-28T14:28:04Z'
+last_synced_at: '2026-06-03T21:08:39Z'
 description: 'Tests for `trie.tool_override_install`: replacing agent built-in tools
   with trie wrappers.'
 defines:
@@ -93,179 +93,186 @@ defines:
 incoming_refs: 0
 outgoing_refs: 30
 ---
-<!-- trie:section symbol=tests/test_tool_override_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=33e2cc955db5a24024a56aee2aa95bb65c5644ebe23624a33ef974bb94a0142f source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `tests/test_tool_override_install`
+<!-- trie:section symbol=tests/test_tool_override_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=3cb993b151f9ea2ea7ddf3774547435bafb8e0eb9c5f593eded0bd55ef057cb4 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Tests for `trie.tool_override_install` functionality that replaces agent built-in tools with trie wrappers.
 
-Integration tests for `trie.tool_override_install`, covering file generation, idempotency, dry-run safety, and error handling across all registered agent harnesses.
-
-- `opencode`: verifies three override files plus eight extended tools are written under `.opencode/tools/`
-- `claude-code`: verifies one advisory `PreToolUse` hook file is written under `.claude/hooks/`
-- Other harnesses: verifies `needs_manual_setup` is returned with no files written
-- Idempotency: second run returns `skipped`; drifted content returns `updated`
-- `print_only` / `dry_run`: assert no disk writes occur
+- Verifies opencode gets three override files (grep.ts, read.ts, trace.ts) plus eight extended tools under `.opencode/tools/`
+- Confirms Claude Code receives advisory hook file at `.claude/hooks/trie-tools.json` for mcp__trie__grep nudging
+- Validates other harnesses emit `needs_manual_setup` with target-specific instructions
+- Tests idempotency: identical content returns `skipped`, drifted content returns `updated`
+- Ensures `--print-only` and `--dry-run` never write files to disk
+- Guards against TypeScript syntax errors from unbalanced backticks in rendered comment lines
+- Verifies read.ts override dispatches between qname routing, triefact lookup, and show_source fallback
+- Confirms obsolete file cleanup (trie_read.ts, trie_trace.ts) during migration
+- Tests compact mode rendering with frontmatter stripping and sentinel removal
+- Validates telemetry emission from TypeScript wrappers for audit visibility
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_install_creates_override_files fingerprint=a76f5ca0678b5f670b5e59832755d9e6d80531e6d259acbd2b2596c1bc5c98e6 body_fp=09a4777afd8a0f5726027db35516856cb9ad20774875a0daafc6f0d15b80b4a6 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_install_creates_override_files(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_install_creates_override_files fingerprint=a76f5ca0678b5f670b5e59832755d9e6d80531e6d259acbd2b2596c1bc5c98e6 body_fp=72eb7c743d87ae416f2d1fd714ffd49501470822e9b40d57ab40e5e09e22acf5 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=agent-integration -->
+Verifies that opencode tool override install writes 11 TypeScript files to `.opencode/tools/`.
 
-Assert that a single `install` pass for `opencode` creates all 11 expected `.ts` files under `.opencode/tools/` on disk.
-
-- Verifies 3 original tools: `grep.ts`, `read.ts`, `trace.ts`.
-- Verifies 8 extended tools: `grep_str`, `grep_entry_points`, `grep_symbol`, `grep_symbol_neighbours`, `explain_symbol`, `explain_symbol_refs`, `trace_flow`, `explain_flow`.
-- Checks `result.action == "created"` and each path physically exists.
+- Asserts presence of 3 original tools: `grep.ts`, `read.ts`, `trace.ts`
+- Asserts presence of 8 extended tools: various grep/explain/trace variants
+- Confirms all written files exist on disk after installation
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_grep_override_routes_to_trie_grep fingerprint=bbea07bffaf1433c02906416587d0a3e71ec2c83fa56a0b8271f44f15358bcad body_fp=87715fd91ee4a037a78f9a47986434a2d814a1a5092ab98941460af288cf8b63 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_grep_override_routes_to_trie_grep(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_grep_override_routes_to_trie_grep fingerprint=bbea07bffaf1433c02906416587d0a3e71ec2c83fa56a0b8271f44f15358bcad body_fp=ae8e058afcf08fde3d7bb72270917fde2039b7ee50aec6ee4d3638d868ec2f45 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Verifies that opencode's generated `grep.ts` override file contains the correct shell command to route agent grep calls to the trie CLI.
 
-Assert that the rendered `grep.ts` spawns `trie grep` via `Bun.spawn` and omits `--json`.
+- Checks for `Bun.spawn(["trie"` and `"grep"` in the generated TypeScript file
+- Ensures plain-text output mode (no `--json` flag present)
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_files_carry_generated_notice fingerprint=931d1963484293165d869cff6a475b7e1d05914d8997dda1eaf105ae35b037c2 body_fp=1b5c93f6b0a29bc1370013030c55d96f8c86a54bda3b0a2152e3f726bb118a5e source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_files_carry_generated_notice(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_files_carry_generated_notice fingerprint=931d1963484293165d869cff6a475b7e1d05914d8997dda1eaf105ae35b037c2 body_fp=afea41a107efb867b3015a4641ceeb3925cbc43ea629efc53b2296dfe1e35255 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Verifies that opencode tool override files contain warning headers identifying them as auto-generated artifacts.
 
-Assert that every opencode override file contains the "Auto-generated by `trie setup`" and "Do not hand-edit" header strings.
+- Checks for "Auto-generated by `trie setup" and "Do not hand-edit" markers in each file
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_rendered_files_have_balanced_backticks_per_line fingerprint=c22887ae666f1fc4d321d98ed8f41a4dfc374393f6e4860b7221b77820fca28c body_fp=ac18cc1880d9732f3796c8cefa417027b92c2bdb2d05b637b387ed50175df4e5 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_rendered_files_have_balanced_backticks_per_line(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_rendered_files_have_balanced_backticks_per_line fingerprint=c22887ae666f1fc4d321d98ed8f41a4dfc374393f6e4860b7221b77820fca28c body_fp=ee0f5380afece166746869ce4fcfd0d27d6ed66ea6edc4c1c81c49145d29c998 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=agent-integration -->
+Validates rendered TypeScript files have even backtick counts in comment lines to prevent template literal parsing errors.
 
-Assert that every `//` comment line in each rendered `.ts` file has an even backtick count, preventing stray JS template literals from breaking bun's parser.
-
-- Guards against Python-side `\n` expansion splitting a single-line comment across two lines.
+- Prevents a regression where Python `\n` escapes in TS comments split lines and break bun's parser
+- Checks all comment lines (starting with `//`) have zero or even backtick counts
+- Guards against stray template literals that would silently kill opencode tool registration
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_dispatches_on_qname_path_or_show_source fingerprint=5384e61804c60a7be83e0410d6ad2d4ddc1952c652578811a894ea1bb18859e4 body_fp=bc118228affa7411e056a538e4767ddd0428b5191afc615ad7d95f74c520b47d source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_read_override_dispatches_on_qname_path_or_show_source(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_dispatches_on_qname_path_or_show_source fingerprint=5384e61804c60a7be83e0410d6ad2d4ddc1952c652578811a894ea1bb18859e4 body_fp=ef3be1d51a55d292d92125cd792f6cdf91b144647cff4d1ea55144ad6e865c88 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Verifies opencode read.ts override contains dispatch logic for three modes: qname routing to trie CLI, triefact lookup by path, and raw source via show_source.
 
-Assert that the rendered `read.ts` contains dispatch markers for all three modes: qname→`trie read`, path→triefact lookup, and `show_source`→raw source.
+- Installs opencode target and reads generated read.ts file content
+- Asserts qname dispatch markers: looksLikeQname function and "read" command without --json
+- Asserts triefact mode markers: readTriefact function and triefacts reference
+- Asserts show_source mode markers: show_source parameter and readSourceFile function
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_advertises_show_source_arg fingerprint=d377a5b4a375cac89dd0bf1a263a6901952e353291915687374f1447324c8283 body_fp=569e40f909bea4923415a1153a4e39c66c8175a8a09b7d27bdf9ed3e73693101 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_read_override_advertises_show_source_arg(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_advertises_show_source_arg fingerprint=d377a5b4a375cac89dd0bf1a263a6901952e353291915687374f1447324c8283 body_fp=c3ebb8744b3a54cc17aa1111146620db6fc3f69bd078936bbcb627bcdf1747f9 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Verifies that opencode's read.ts override exposes show_source, offset, and limit arguments in its schema for raw source fallback.
 
-Assert that `read.ts`'s args schema exposes `show_source`, `offset`, and `limit` escape-hatch parameters.
+- `show_source`: escape hatch to bypass triefact lookup and return raw file content
+- `offset`, `limit`: line range parameters for the raw source mode
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_qname_detection_excludes_urls_and_drives fingerprint=a31e56fc088c1052530734293a7a78524443e45fac5d3e70153bda3a342a1916 body_fp=f7c47cbeadf11e9d0156ff9ae739f342ee0be6c3244e00912ff14317a91b45a0 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_read_override_qname_detection_excludes_urls_and_drives(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_qname_detection_excludes_urls_and_drives fingerprint=a31e56fc088c1052530734293a7a78524443e45fac5d3e70153bda3a342a1916 body_fp=4167794636b5cf799ae98061480668e85e30a24c037f5fe09e3e4b5086242b51 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Verifies that opencode's `read.ts` override correctly excludes URLs and Windows drive paths from qname detection.
 
-Assert that `read.ts`'s `looksLikeQname` helper explicitly excludes URL schemes (`://`) and Windows drive prefixes (`[A-Za-z]:`).
+- Checks that `looksLikeQname` function distinguishes qualified names from URLs (`://`) and Windows drives (`[A-Za-z]:`)
+- Prevents false positives where colon-containing paths get misrouted to `trie read` instead of file system access
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_emits_telemetry_from_typescript fingerprint=7f8c4fed8e631923f71efea317df78da8411d4c17e61bd0e528cb429666e563b body_fp=667222a8df3d84e0e48c3a56e8a99824faf6a4e61737b4e5a9fe6802eda1d078 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_read_override_emits_telemetry_from_typescript(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_emits_telemetry_from_typescript fingerprint=7f8c4fed8e631923f71efea317df78da8411d4c17e61bd0e528cb429666e563b body_fp=3a49ce4391705fcf7bad1494c2bdcf8246ee0345ab74490e708b3a9e87c5e8cb source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Validates that opencode's `read.ts` override embeds TypeScript-side telemetry for in-process dispatch modes.
 
-Assert that the rendered `read.ts` embeds TypeScript-side telemetry helpers for the three in-process dispatch paths invisible to Python.
-
-- Checks for `emitTelemetry`, `resolveTelemetryConfig`, `extractTomlSection` function names.
-- Verifies `"cli_call"` event name, `"read"` tool name, `mode` field, and `TRIE_DEBUG` env var handling.
+- Checks rendered template contains telemetry helpers: `emitTelemetry`, `resolveTelemetryConfig`, `extractTomlSection`
+- Verifies baked-in event structure includes `cli_call` event name, `read` tool name, and `mode` field
+- Ensures TRIE_DEBUG environment variable support matches Python implementation
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_appends_telemetry_atomically fingerprint=4392ac7d6c58ee986401da04b6a844b5e514681cd33a94fed47d3360195fa4f2 body_fp=81e7ca3e16f1b842faf5858fc166c74381da1e5d105944935fda55a1aecbc600 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_read_override_appends_telemetry_atomically(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_appends_telemetry_atomically fingerprint=4392ac7d6c58ee986401da04b6a844b5e514681cd33a94fed47d3360195fa4f2 body_fp=32532a8be6f1f06818b95407daa72313669b6df5867fdb87e386c2e4a826e9db source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=agent-integration -->
+Tests that opencode's read.ts override uses atomic append-mode I/O for telemetry logging.
 
-Assert that `read.ts` uses `appendFile` for telemetry writes, not read-modify-write, preventing log-file races under concurrent opencode sessions.
+- Verifies `appendFile` is imported and used from `node:fs/promises`
+- Ensures no read-then-write pattern that could create race conditions
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_handles_absolute_paths fingerprint=331fc83490b3d1f8cf59065f4c0128e7d3321e595ed45c4912a282848cf2c585 body_fp=87b30f8ab5dd84e4ba825018870a429f91cff8ecd9bf14859368f27d1f5f20e3 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_read_override_handles_absolute_paths(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_handles_absolute_paths fingerprint=331fc83490b3d1f8cf59065f4c0128e7d3321e595ed45c4912a282848cf2c585 body_fp=0f61ea7bb3220a8578f0fd4d091b59e19436edd2e12de9020142827c840786fe source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=agent-integration -->
+Tests that the opencode read.ts override correctly handles absolute paths without breaking Node.js path resolution.
 
-Assert that the rendered `read.ts` wrapper uses `isAbsolute(path)` to skip joining absolute paths onto `cwd`, preventing ENOENT on agent-supplied absolute paths.
-
-- Checks `resolveAbsolutePath` helper exists and branches correctly.
-- Checks `projectRelativePath` strips `cwd` prefix for triefact lookup on absolute paths.
+- Verifies `resolveAbsolutePath` helper exists and uses `isAbsolute(path)` branching logic
+- Checks that absolute paths bypass cwd joining to prevent path mangling
+- Confirms `projectRelativePath` helper handles absolute paths within project tree
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_advertises_full_arg fingerprint=005cdc6c3d94967f1d1afa9f90580144130596b3eae9e920da25a090a43812dd body_fp=3cc8f138bdabdeac755fd2574cf995f6cf8f1fec24fa9b3cb1b732cbe18a0a77 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_read_override_advertises_full_arg(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_advertises_full_arg fingerprint=005cdc6c3d94967f1d1afa9f90580144130596b3eae9e920da25a090a43812dd body_fp=75d07d20614191c68241ef5462ba054afbdb5bc66b696af8f649b5a4ae8a1489 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Verifies opencode's read.ts override includes a `full` parameter to escape compact mode defaults.
 
-Assert that the rendered `read.ts` schema exposes a `full` argument and mentions compact mode in its description.
+- Checks for `full: tool.schema` in the generated TypeScript
+- Ensures the description mentions "compact" so agents understand the default behavior
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_emits_compact_renderer fingerprint=5695f91271e789440ef43b5a770758ef6502837591c372a78ebe8aa3c93de99a body_fp=ed25177e4b651776c74952efb394ee958cb3acf116aefc906c9ea8924a83fcc6 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_read_override_emits_compact_renderer(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_emits_compact_renderer fingerprint=5695f91271e789440ef43b5a770758ef6502837591c372a78ebe8aa3c93de99a body_fp=72f633c2541900c125a80290f375c0120b741bd46e114642f68c3494b732cd49 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Verifies opencode's read.ts override includes compact rendering helpers and telemetry mode tags.
 
-Assert that the rendered `read.ts` contains `renderCompact`, `parseFrontMatter`, `extractSections`, and both telemetry mode tags `triefact_compact` and `triefact_full`.
+- Checks for presence of `renderCompact`, `parseFrontMatter`, and `extractSections` functions
+- Validates telemetry mode tags `triefact_compact` and `triefact_full` are emitted
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_full_mode_trims_for_agent fingerprint=d16eec00436dccc69af73d191648d1d6ccfaa708532d5301f331e513bd01bf08 body_fp=1a04619af02628484d2b2adbf39605cc09d5ed2be95789726c3f933da201db5e source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_read_override_full_mode_trims_for_agent(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_read_override_full_mode_trims_for_agent fingerprint=d16eec00436dccc69af73d191648d1d6ccfaa708532d5301f331e513bd01bf08 body_fp=0b514d273f785e660f3d1093722262d338660c3ad3786f2c4afc75b3b1d74c28 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Verifies that opencode's `read.ts` override strips internal metadata from triefacts in full mode.
 
-Assert that `read.ts` full-mode routes through `renderForAgent` instead of returning raw triefact bytes.
-
-- Checks `renderForAgent`, `stripSentinels`, and `renderFrontMatterForAgent` helpers are present in rendered TS.
-- Verifies full mode invokes `renderForAgent(triefact)` and does not leak the raw `triefact` string directly.
+- Checks for `renderForAgent`, `stripSentinels`, and `renderFrontMatterForAgent` helper functions
+- Ensures full mode calls `renderForAgent(triefact)` instead of returning raw triefact
+- Prevents regression where full mode leaked raw `.md` with frontmatter and sentinels
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_trie_read_obsolete_file_removed_on_apply fingerprint=9b1d5f8b5a30c80327e621908e7e53850a244638429671af0c96104d234129fb body_fp=95f837db7cdbecbb68771d3443e5eef7050100ea040c98c078daab43f03b97ed source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_trie_read_obsolete_file_removed_on_apply(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_trie_read_obsolete_file_removed_on_apply fingerprint=9b1d5f8b5a30c80327e621908e7e53850a244638429671af0c96104d234129fb body_fp=52c69d074c2901e52af247aeaf1d4ce6a42af11dd217a38635829df6bf057f6b source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=agent-integration -->
+Tests that trie setup automatically removes obsolete `trie_read.ts` files when applying opencode tool overrides.
 
-Assert that `install` deletes the legacy `.opencode/tools/trie_read.ts` file and records the cleanup in the plan.
-
-- `cleanup_results[0].action`: must be `"updated"` to signal a migration, not a fresh write.
-- `cleanup_results[0].description`: must contain `"removed obsolete"` so the user sees what changed.
+- Creates a stale `trie_read.ts` file then verifies setup removes it during installation
+- Asserts cleanup action appears in plan results with "removed obsolete" description  
+- Validates new `read.ts` override subsumes the old separate tool's functionality
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_trie_trace_obsolete_file_removed_on_apply fingerprint=1e6177df323fce1c409ce9b59f17140642922fad4f84cf0e0083388b293e4581 body_fp=ab9cf73ce41d8dc689cba2d199cd5b94403f888fde03f9031aaba19243767e08 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_trie_trace_obsolete_file_removed_on_apply(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_trie_trace_obsolete_file_removed_on_apply fingerprint=1e6177df323fce1c409ce9b59f17140642922fad4f84cf0e0083388b293e4581 body_fp=ea19cb8019b51e6a15e817233c7f52ae5735324bcc3226d142dd2ed31c5f9085 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=agent-integration -->
+Tests that obsolete `trie_trace.ts` is removed when re-running opencode tool override installation.
 
-Assert that `install` deletes the stale `.opencode/tools/trie_trace.ts` file and records an `updated`/`"removed obsolete"` result.
-
-- Pre-creates `trie_trace.ts` to simulate a prior install with the old prefixed filename.
-- Verifies the file is gone on disk and the plan contains exactly one cleanup entry.
+- Creates stale `.opencode/tools/trie_trace.ts` file to simulate prior installation
+- Verifies file is deleted and cleanup result shows "updated" action with "removed obsolete" description
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_obsolete_cleanup_is_noop_on_fresh_install fingerprint=04ec87c8983682f3c5d287e359bb0d00e26fb2b3059928626ca6aa13c0d16dd4 body_fp=3b4b104a317494169a5430df08d6fd2d8a371dada4647ec1aa4f67ac5d754eaa source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_obsolete_cleanup_is_noop_on_fresh_install(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_obsolete_cleanup_is_noop_on_fresh_install fingerprint=04ec87c8983682f3c5d287e359bb0d00e26fb2b3059928626ca6aa13c0d16dd4 body_fp=6d51e41ec6557503d78617b7533223d60b96561f3333760d888e899ea153e7d0 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=agent-integration -->
+Verifies that first-time opencode installs skip cleanup of non-existent obsolete files without errors.
 
-Assert that obsolete-file cleanup on a clean project reports `skipped` with "nothing to clean up" detail rather than erroring on absent files.
+- Asserts cleanup results report "skipped" action with "nothing to clean up" detail
+- Guards against errors when attempting to remove files that were never created
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_install_is_idempotent_on_identical_content fingerprint=87fc921b24fd75af74ee18291121a61336a1480d8b0b133629f017c95411a5fd body_fp=32025af6d3b96481288ba71313e7beea18f088c3ebce0e846afa5225b3464ee1 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_install_is_idempotent_on_identical_content(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_install_is_idempotent_on_identical_content fingerprint=87fc921b24fd75af74ee18291121a61336a1480d8b0b133629f017c95411a5fd body_fp=d520cbfd09f5a82cc5c3a17ec3137f207cd4b00490563781141c92e767cc3db9 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Tests that `install()` skips file writes when content hasn't changed.
 
-Assert that a second `install` call for `opencode` with unchanged files reports `skipped` for every file result.
+- Runs install twice on same project, verifies second run reports `skipped` for all files
+- Non-obsolete files must report "same contents" in detail field
+- Validates idempotency behavior that makes `trie setup` safe to run repeatedly
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_install_updates_on_drift fingerprint=1598b027eb6c27bf0e21de5bea19063974caf4a976a86c98938412a210e0b5a3 body_fp=0dd776f96929eed6ad5a128150d26ce21b37927faffca77dbf536608524731b0 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_opencode_install_updates_on_drift(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_opencode_install_updates_on_drift fingerprint=1598b027eb6c27bf0e21de5bea19063974caf4a976a86c98938412a210e0b5a3 body_fp=8221fd54fdcc67e11764771cae52766cf1845a359d3a2064fbbe87997078aa86 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Verifies that opencode install detects and overwrites manually-edited generated files to prevent stale routing.
 
-Verify that a second `install` overwrites a hand-edited or stale `grep.ts` and restores trie-generated content.
+- Runs initial install, manually edits `grep.ts`, then runs second install
+- Asserts second install reports `updated` action and restores auto-generated content
+- Guards against stale wrapper files silently routing agents to wrong destinations
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_claude_code_install_creates_advisory_hook fingerprint=001f1ffd25598478bcd3b656b515e9b5491e5d2c8d41899e6ddbad20f3a76c36 body_fp=ba67e5bae763f7c2ef5eb54f9b54897883aeb9c7b24a293c2877d059e3c52ce3 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_claude_code_install_creates_advisory_hook(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_claude_code_install_creates_advisory_hook fingerprint=001f1ffd25598478bcd3b656b515e9b5491e5d2c8d41899e6ddbad20f3a76c36 body_fp=55b7dd4917b8bd77dbb5d56eaecab746135ac2acd74f9b17c3e7f66c64f945a2 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Tests that Claude Code install creates the advisory hook file at `.claude/hooks/trie-tools.json` with correct PreToolUse structure.
 
-Assert that `install` for `claude-code` writes a valid `PreToolUse` hook JSON file at `.claude/hooks/trie-tools.json` that matches `Grep` and emits a `systemMessage` referencing `mcp__trie__grep`.
-
-- Verifies `result.action == "created"` and file exists on disk.
-- Checks hook schema: `hooks.PreToolUse[0].matcher == "Grep"`.
-- Checks handler command contains both `systemMessage` and `mcp__trie__grep`.
+- Verifies hook file exists and contains proper JSON schema for Claude Code
+- Asserts hook targets built-in "Grep" tool with exact string match
+- Confirms hook command contains "systemMessage" and references "mcp__trie__grep"
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_claude_code_hook_does_not_deny_grep fingerprint=b0917350ef7add9adf24564bb8f967df64c94de5affe02776d3be2f57ce39bcf body_fp=fb9543d469e761cdf9024fc17c4fb22185b2add3bbfbd72150576ed192f8fd8e source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_claude_code_hook_does_not_deny_grep(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_claude_code_hook_does_not_deny_grep fingerprint=b0917350ef7add9adf24564bb8f967df64c94de5affe02776d3be2f57ce39bcf body_fp=01095e1ed30a5bb8d4873946159f0566e6d08c9e8d52906f7bef134ba198169a source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=agent-integration -->
+Verifies that Claude Code's trie tools hook remains advisory-only and does not block built-in Grep usage.
 
-Assert that the Claude Code hook file contains no `permissionDecision: deny` rule, keeping the hook advisory-only.
+- Ensures rendered hook JSON contains no `permissionDecision` or `"deny"` strings
+- Guards against accidental conversion from advisory to blocking behavior
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_unsupported_harnesses_emit_needs_manual_setup fingerprint=252d564de8cef912137183a246a83c8734777cfbd60c0a79917aab425762c512 body_fp=de62af315a0925fa32ce3ab6fb413b8ace199935e6b179c14061df56cc333409 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_unsupported_harnesses_emit_needs_manual_setup(tmp_path: Path, slug: str)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_unsupported_harnesses_emit_needs_manual_setup fingerprint=252d564de8cef912137183a246a83c8734777cfbd60c0a79917aab425762c512 body_fp=54fa0462bfe8a49cc91903dd2412ac1fa30e66c416d8ce686d7a24db59583ecf source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Verifies unsupported harnesses return `needs_manual_setup` with instructions instead of silently skipping.
 
-Assert that each unsupported harness returns `needs_manual_setup` with instructions and writes no files.
-
-- `slug`: parametrized over `claude-desktop`, `cursor`, `windsurf`, `vscode`, `codex`.
+- Tests each harness slug: claude-desktop, cursor, windsurf, vscode, codex
+- Confirms no files written to disk when automation isn't possible
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_install_for_opencode_and_claude_code_in_one_pass fingerprint=e5a91b31de3c5d2716c71642ee28352e70962a865fe3310f85e696ab6d40c562 body_fp=6fee43a1300bbf4aeb6e23fd45a4e98e262a2be07a17555ec1fd9404704be9c4 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_install_for_opencode_and_claude_code_in_one_pass(tmp_path: Path)`
-
-Assert that a single `install` call with both targets writes all files for opencode and Claude Code independently in one pass.
+<!-- trie:section symbol=tests/test_tool_override_install:test_install_for_opencode_and_claude_code_in_one_pass fingerprint=e5a91b31de3c5d2716c71642ee28352e70962a865fe3310f85e696ab6d40c562 body_fp=d464e32315b30bc07e630f8ef2e424e53b8ee7977f2e3fa18a70c609c436d3d4 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Tests that `install()` can process multiple targets in a single call, verifying both opencode and claude-code files are written independently.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_print_only_does_not_write_anything fingerprint=195068d913203efa2f7a33563f5b2d88d92ce6ddea2f47b5768362fab4701a4b body_fp=b8614fec4f43b9ffa6c49ae4443bac2088508221c76057a3c6fed2981497cfab source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_print_only_does_not_write_anything(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_print_only_does_not_write_anything fingerprint=195068d913203efa2f7a33563f5b2d88d92ce6ddea2f47b5768362fab4701a4b body_fp=e9aa49047873590142dc66022fbdd155db51f09b18f3d5b6eeefc4f16d2aa627 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Verifies that `--print-only` mode prevents disk writes and returns preview results with rendered file contents.
 
-Assert that `install` with `print_only=True` writes nothing to disk and returns `preview` results with rendered contents in `detail`.
-
-- Non-obsolete file results: `action == "preview"` with `detail` populated.
-- Obsolete-cleanup results for absent files: `action == "skipped"`.
+- Confirms `.opencode` directory is never created during preview
+- Validates write operations report `preview` action with content in `detail`
+- Distinguishes between preview-eligible file writes and skipped obsolete cleanups
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_dry_run_does_not_write_when_file_already_correct fingerprint=97dd083d6cfe5d0fce2cf74184a64b3a1581bdb594a76cf69b3fe2c183f8370c body_fp=e2b9c3694231a3a2cf0c0b1b9e0c0358036bcb181c0f036ccfa705fe444dd3a1 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_dry_run_does_not_write_when_file_already_correct(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_dry_run_does_not_write_when_file_already_correct fingerprint=97dd083d6cfe5d0fce2cf74184a64b3a1581bdb594a76cf69b3fe2c183f8370c body_fp=0fec4ac8832fb4c714bad2a7e39722d4fbc81a38e7bc6790a846fc138a32f570 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Verifies that `--dry-run` returns `skipped` when files already match expected content.
 
-Verify that `--dry-run` reports `skipped` when on-disk content already matches the would-be output, writing nothing.
+- Creates files with first install, then runs second install with `dry_run=True`
+- Asserts second install reports `skipped` action since no changes needed
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_install_with_empty_target_names_raises fingerprint=de0258da2c32f2c009bcd96277b319ba9b02d3ed14cff07f8674efeaf77483ba body_fp=3e7d3a5071bfbcfed39fc1094e26b2993fcda8be9f43751c0a5ef91fec811e93 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_install_with_empty_target_names_raises(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_install_with_empty_target_names_raises fingerprint=de0258da2c32f2c009bcd96277b319ba9b02d3ed14cff07f8674efeaf77483ba body_fp=804951ad161ebcc915d375adfbb8d7aabffc0fd1e0c701fd77153f758c6823a6 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Tests that `install` raises `ToolOverrideInstallError` when called with empty or null target names.
 
-Assert that `install` raises `ToolOverrideInstallError` for both empty list and `None` as `target_names`.
+- Verifies both `[]` and `None` as invalid inputs trigger the exception
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_install_with_unknown_target_raises fingerprint=572c2b692bcbb73e70155902d114481a3ce552681a94400872b8619403e3456e body_fp=c1d3826c0152ddc355cef0f632b2f04424c694551deae8b09692fe881723c72c source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_install_with_unknown_target_raises(tmp_path: Path)`
+<!-- trie:section symbol=tests/test_tool_override_install:test_install_with_unknown_target_raises fingerprint=572c2b692bcbb73e70155902d114481a3ce552681a94400872b8619403e3456e body_fp=787cd2ca6b03d2b1016d534da86a9ae319c57544ba0db1f31c8e903e3799db63 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Verifies `install()` raises `ToolOverrideInstallError` for unknown target names.
 
-Assert that `install` raises `ToolOverrideInstallError` for an unrecognised target name, with the bad name and at least one valid harness in the message.
+- Checks error message includes the invalid target name
+- Verifies error message lists valid options for fixing typos
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_apply_one_uses_needs_manual_setup_for_targets_with_no_files fingerprint=f33b7ea65004cd19d365772957c29eacf6c1e64c4485bb643ac88dc9fb8692c1 body_fp=eed1f74a60ccb9c7c0c4b57437be422175293845d8c6da08618ac629f56398ca source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 -->
-## `test_apply_one_uses_needs_manual_setup_for_targets_with_no_files()`
+<!-- trie:section symbol=tests/test_tool_override_install:test_apply_one_uses_needs_manual_setup_for_targets_with_no_files fingerprint=f33b7ea65004cd19d365772957c29eacf6c1e64c4485bb643ac88dc9fb8692c1 body_fp=7aad40739435e62250b4adbbbed514620510ddc00a5437067260c9c1bfea6439 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+Tests that `apply_one` returns `needs_manual_setup` for targets with empty file tuples.
 
-Assert `apply_one` returns `needs_manual_setup` for a target with no files and writes nothing to disk.
+- Verifies harnesses with only manual instructions return appropriate action without disk writes
+- Ensures consistent behavior with `hook_install.apply_one` for similar target shapes
 <!-- trie:end -->

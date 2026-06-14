@@ -37,13 +37,18 @@ from pathlib import Path
 from typing import Any
 
 from trie import telemetry
+from trie.activity import write_pending
 from trie.config import Config
 from trie.git_helpers import current_head, is_git_repo
 from trie.graph.store import Store
 from trie.models import TrieClient
 from trie.scan import scan_project
 from trie.scope import discover_files
-from trie.sync.incremental import IncrementalResult, run_incremental
+from trie.sync.incremental import (
+    IncrementalResult,
+    compute_incremental_worklist,
+    run_incremental,
+)
 from trie.sync.progress import ProgressCallback
 from trie.sync.single_file import backfill_section_records
 
@@ -190,16 +195,22 @@ def _mtimes_differ(a: dict[str, float], b: dict[str, float]) -> bool:
 class FreshnessResult:
     """Outcome of an ensure_fresh call.
 
-    `refreshed` is True iff `run_incremental` was actually invoked. `head` is
-    the SHA of HEAD at the time of the check (used for telemetry / debugging).
-    `incremental` carries the underlying result when a refresh ran; None
-    otherwise.
+    `refreshed` is True iff the graph was rebuilt. `head` is the SHA of HEAD at
+    the time of the check. `incremental` carries the underlying result only when
+    an inline LLM sync ran (the opt-in `--sync` path); the default refresh is
+    graph-only and leaves it None.
+
+    `stale_files` lists triefacts whose prose now lags their source after a
+    `mtimes_moved` refresh — the work a subsequent `trie sync` would do. The
+    default refresh marks these stale (writing `.trie/pending.json`) rather than
+    regenerating them inline, so the turn-boundary hook stays fast.
     """
 
     refreshed: bool
     reason: str
     head: str
     incremental: IncrementalResult | None = None
+    stale_files: tuple[str, ...] = ()
 
 
 def ensure_fresh_before_turn(
@@ -209,6 +220,7 @@ def ensure_fresh_before_turn(
     store: Store,
     client: TrieClient,
     progress: ProgressCallback | None = None,
+    sync_prose: bool = False,
 ) -> FreshnessResult:
     """Cheap freshness probe to run at the start of an agent turn.
 
@@ -216,13 +228,13 @@ def ensure_fresh_before_turn(
       1. `no_stamp` → graph scan only (no LLM). First run in this checkout.
       2. `head_moved` → graph scan only (no LLM). Someone pulled; trust the
          committed triefact prose.
-      3. `mtimes_moved` → graph scan + triefact sync (LLM as needed). Local
-         edits drift prose from source.
+      3. `mtimes_moved` → graph scan only (no LLM by default); drifted triefacts
+         are marked stale in `.trie/pending.json` for a later `trie sync`. Pass
+         `sync_prose=True` to regenerate prose inline (the old behaviour).
       4. `unchanged` → no-op fast path.
 
-    The mtime path catches the corner case where you edit a file outside of an
-    agent turn (e.g. fixing a typo in a terminal between turns). Without it the
-    first query of the next turn would see a stale graph.
+    Refresh is the *fast* gate: keeping the LLM out of the turn boundary is the
+    whole point. Prose regen is decoupled into `trie sync`.
     """
     return _ensure_fresh(
         project_root=project_root,
@@ -231,6 +243,7 @@ def ensure_fresh_before_turn(
         client=client,
         progress=progress,
         trigger="before_turn",
+        sync_prose=sync_prose,
     )
 
 
@@ -241,6 +254,7 @@ def ensure_fresh_after_turn(
     store: Store,
     client: TrieClient,
     progress: ProgressCallback | None = None,
+    sync_prose: bool = False,
 ) -> FreshnessResult:
     """Always-on freshness sweep to run at the end of an agent turn.
 
@@ -251,8 +265,7 @@ def ensure_fresh_after_turn(
     HEAD also moved (unusual but possible — the agent ran `git pull` itself),
     that's caught too.
 
-    Identical implementation to the before-turn variant; kept as a distinct
-    function name so hooks remain self-documenting at their wiring point.
+    Graph-only by default (fast); `sync_prose=True` regenerates inline.
     """
     return _ensure_fresh(
         project_root=project_root,
@@ -261,6 +274,7 @@ def ensure_fresh_after_turn(
         client=client,
         progress=progress,
         trigger="after_turn",
+        sync_prose=sync_prose,
     )
 
 
@@ -272,36 +286,46 @@ def _ensure_fresh(
     client: TrieClient,
     progress: ProgressCallback | None,
     trigger: str,
+    sync_prose: bool = False,
 ) -> FreshnessResult:
     """Shared freshness implementation. `trigger` is a telemetry label only.
 
-    Branches by reason. The LLM-touching path (`run_incremental`) only fires
-    for `mtimes_moved` — i.e. local edits we want reflected in triefact prose.
-    The other refresh paths (`no_stamp`, `head_moved`) rebuild the graph from
-    source via `scan_project` but trust the committed triefact prose as-is.
+    Branches by reason. Every path rebuilds the graph from source via
+    `scan_project` (fast, no LLM). Prose regeneration is decoupled: by default
+    even `mtimes_moved` only *marks* drifted triefacts stale (in
+    `.trie/pending.json`) instead of regenerating them inline, so refresh stays
+    fast at the turn boundary. `sync_prose=True` restores inline regen.
 
     Rationale:
-      - `no_stamp`: this is the first run in a fresh checkout. The user
-        probably installed `trie` minutes ago. Auto-spending LLM dollars on
-        first contact would be hostile; the user explicitly opts into prose
-        regen by running `trie sync`. Scan rebuilds the graph cheaply so MCP
-        queries work immediately.
-      - `head_moved`: a `git pull` brought in committed triefacts that
-        someone else regenerated. Re-LLMing them would discard a teammate's
-        work and burn money. Scan rebuilds the graph against the new code;
-        the triefact prose stays exactly as committed.
-      - `mtimes_moved`: local source edits drift triefact prose from source.
-        This is the only state where `run_incremental` (with its LLM path)
-        is the right answer. The diff-aware rubric will keep prose stable
-        for cosmetic-only edits and only regenerate where behaviour moved.
+      - `no_stamp`: first run in a fresh checkout. Auto-spending LLM dollars on
+        first contact would be hostile; scan rebuilds the graph cheaply so MCP
+        queries work immediately. Prose regen is opt-in via `trie sync`.
+      - `head_moved`: a `git pull` brought in committed triefacts; re-LLMing
+        them would discard a teammate's work. Scan rebuilds the graph against
+        the new code; committed prose stays as-is.
+      - `mtimes_moved`: local source edits drift prose from source. Graph-only
+        by default — the drift is recorded as stale and a later `trie sync`
+        regenerates it. With `sync_prose=True`, `run_incremental` fires inline.
     """
     with telemetry.timed("freshness_gate", trigger=trigger) as tele:
         head = _require_git(project_root)
         stamp = read_stamp(project_root)
         current_mtimes = scan_mtimes(project_root, config)
 
+        # An empty store overrides every stamp-based verdict. The stamp records
+        # *when* we last refreshed, not *whether the graph still exists*: a
+        # wiped/regenerated/corrupted `.trie/graph.db` leaves a valid stamp
+        # pointing at no data. Treating that as "unchanged" returns a no-op
+        # refresh against an empty graph — the failure mode that surfaces in
+        # the desktop app as "No system model loaded". Detect it up front and
+        # force a graph rebuild (scan only, no LLM — the committed triefacts
+        # are trusted as-is, same as the head_moved path).
+        store_empty = store.count_symbols() == 0
+
         reason: str
-        if stamp is None:
+        if store_empty:
+            reason = "empty_store"
+        elif stamp is None:
             reason = "no_stamp"
         elif stamp.head != head:
             reason = "head_moved"
@@ -321,27 +345,47 @@ def _ensure_fresh(
             return FreshnessResult(refreshed=False, reason=reason, head=head, incremental=None)
 
         if reason == "mtimes_moved":
-            # Source moved locally; the agent's edits (or the user's between
-            # turns) need to be reflected in both the graph and triefact prose.
-            # `run_incremental` handles scan + cascade + sync, with diff-aware
-            # regen keeping cost down when changes are cosmetic.
-            result = run_incremental(
-                project_root=project_root,
-                config=config,
-                store=store,
-                client=client,
-                progress=progress,
-            )
-            write_stamp(project_root, Stamp(head=head, mtimes=current_mtimes))
-            tele["files_synced"] = result.files_synced
-            tele["actual_cost_usd"] = result.actual_cost_usd
-            return FreshnessResult(refreshed=True, reason=reason, head=head, incremental=result)
+            if sync_prose:
+                # Opt-in inline regen: `run_incremental` handles scan + cascade +
+                # LLM sync with diff-aware regen. Slow; only when explicitly asked.
+                result = run_incremental(
+                    project_root=project_root,
+                    config=config,
+                    store=store,
+                    client=client,
+                    progress=progress,
+                )
+                write_stamp(project_root, Stamp(head=head, mtimes=current_mtimes))
+                # Inline sync regenerated everything that drifted, so the working
+                # tree is clean: drop the whole pending set.
+                write_pending(project_root, stale=[], head=head)
+                tele["files_synced"] = result.files_synced
+                tele["actual_cost_usd"] = result.actual_cost_usd
+                return FreshnessResult(refreshed=True, reason=reason, head=head, incremental=result)
 
-        # `no_stamp` and `head_moved`: rebuild the graph without firing the LLM.
-        # The triefacts on disk reflect whatever the user / team committed; we
-        # trust them. The graph becomes consistent with the new code; any prose
-        # drift introduced by the new code is the user's call to address with
-        # `trie sync` when they're ready to spend.
+            # Default: graph-only. Rebuild the symbol graph from source (fast,
+            # no LLM) so MCP queries reflect current code, then record which
+            # triefacts now lag their source in `.trie/pending.json`. A later
+            # `trie sync` regenerates the prose. The turn boundary stays fast.
+            worklist = compute_incremental_worklist(
+                project_root=project_root, config=config, store=store
+            )
+            if store.count_section_records() < store.count_symbols():
+                backfill_section_records(project_root, config, store)
+            write_stamp(project_root, Stamp(head=head, mtimes=current_mtimes))
+            stale = tuple(worklist.affected_files)
+            write_pending(project_root, stale=list(stale), head=head)
+            tele["stale_files"] = len(stale)
+            return FreshnessResult(
+                refreshed=True, reason=reason, head=head, incremental=None, stale_files=stale
+            )
+
+        # `no_stamp`, `head_moved`, and `empty_store`: rebuild the graph without
+        # firing the LLM. The triefacts on disk reflect whatever the user / team
+        # committed; we trust them. The graph becomes consistent with the code;
+        # any prose drift introduced by new code is the user's call to address
+        # with `trie sync` when they're ready to spend. For `empty_store` this is
+        # a pure recovery rebuild from the existing triefacts.
         scan_result = scan_project(project_root=project_root, config=config, store=store)
         if store.count_section_records() < store.count_symbols():
             backfill_section_records(project_root, config, store)

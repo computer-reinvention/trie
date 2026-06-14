@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/hook_install.py
 file_fingerprint: 4c45a4c792c5b6bae87ec84e58b88d2ad578752f9f4a79108b7a66ac3c0e32a5
-last_synced_at: '2026-05-23T23:48:26Z'
+last_synced_at: '2026-06-03T21:12:28Z'
 description: Turn-boundary hook installation for coding agents.
 defines:
 - kind: module
@@ -50,113 +50,96 @@ defines:
 incoming_refs: 17
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=trie/hook_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=1cb4ec0fd402069df93fdb807bdc808f80b8ea8cdafcb4148ff5f04b8bd8e166 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 -->
-## `trie/hook_install`
+<!-- trie:section symbol=trie/hook_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=21ee9d447b947371dbc665d0c8e007fa0ce70a727b8ff219daf9a1aba308f600 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+Installs turn-boundary hooks that automatically run `trie refresh` when coding agents finish sessions.
 
-Install turn-boundary hooks for coding agents, keeping the trie graph current without manual intervention.
-
-- `TARGETS`: registry of all known agents; only `opencode` supports automated install
-- `Action`: one of `created`, `updated`, `skipped`, `preview`, `error`, `needs_manual_setup`
-- Agents without hook automation return `needs_manual_setup` with human-readable instructions
+- Supports automated installation for opencode via TypeScript plugins
+- Returns manual setup instructions for agents without hook APIs (Claude, Cursor, etc.)
+- Mirrors `mcp_install` structure for unified reporting in `trie setup`
+- Handles idempotency and dry-run/preview modes like MCP installation
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:Action fingerprint=6d5466b453e0912edae50fab1848c782530de9137450b5c33b3682dc80488f21 body_fp=7de4d868bc0e0da1f5f12ef18124e47ef1a909900d61025b71af2038a2662d14 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 -->
-## `Action = Literal["created", "updated", "skipped", "preview", "error", "needs_manual_setup"]`
+<!-- trie:section symbol=trie/hook_install:Action fingerprint=6d5466b453e0912edae50fab1848c782530de9137450b5c33b3682dc80488f21 body_fp=83a58f4f37da94b3698c78d6cc6ecca58f7387a2754aa81174bf1383dcbcf0dd source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+Type alias for hook install operation outcomes.
 
-Type alias for the discrete outcomes of a hook install operation.
+• **created**: Hook file was written for the first time
+• **updated**: Hook file existed and was overwritten with new contents
+• **skipped**: Hook file already exists with identical contents
+• **preview**: Contents shown without writing (dry-run or print-only mode)
+• **error**: Operation failed due to filesystem or other error
+• **needs_manual_setup**: Target known but lacks automated installation
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:HookInstallError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=def629b887bc0bde640d8ffea0f4fc87b06111cd34fafe77169d7d3058073542 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 -->
-## `HookInstallError`
-
-Raised by `install` when an unknown hook target name is requested or no agents are detected.
+<!-- trie:section symbol=trie/hook_install:HookInstallError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=c1fbc4900a97c73d0a9fd64636a130f16e882d7ff13c941538a344de2fb4e451 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+Raised when hook installation fails due to invalid target names or configuration errors.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:HookApplyResult fingerprint=d59e0db810a8f40ec1fa7957cfd958de8ecc47599cb7e029e28289ff8599c846 body_fp=64bb6880007cca02097a49639d9b9e8ced924877c6c3eecc2a0f8ae9172fca92 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 -->
-## `HookApplyResult`
+<!-- trie:section symbol=trie/hook_install:HookApplyResult fingerprint=d59e0db810a8f40ec1fa7957cfd958de8ecc47599cb7e029e28289ff8599c846 body_fp=6b5ead41e2614596abfe1b009752f13b088fb3fe1e557f25637c48d049f3aeec source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+Represents the outcome of installing a turn-boundary hook for a single agent target.
 
-Immutable outcome record for a single hook install operation against one agent target.
-
-- `action`: one of `created`, `updated`, `skipped`, `preview`, `error`, `needs_manual_setup`
-- `detail`: human-readable notes; carries manual setup instructions when `action == "needs_manual_setup"`
-- `path`: `None` when no automatable path exists for the target
+- `action`: One of "created", "updated", "skipped", "preview", "error", or "needs_manual_setup"
+- `path`: File path where the hook was installed, or None for manual setup cases
+- `detail`: Human-readable notes about the operation or manual setup instructions
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:HookSupportFile fingerprint=f2b9c5f661daad56cefaee809effd0b86de91e09d125e5ec53b64645ec4b297c body_fp=935f6e396ad8de9077ef7c61825fc3ebde55a013f29134c32e3f2e20596c53b8 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 -->
-## `HookSupportFile`
+<!-- trie:section symbol=trie/hook_install:HookSupportFile fingerprint=f2b9c5f661daad56cefaee809effd0b86de91e09d125e5ec53b64645ec4b297c body_fp=6f7f4f0b7b9f06357b581ed1c3654f61f3ed98d7aa5a319799fff3e939b6d031 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+Represents a secondary file written alongside the primary hook plugin file.
 
-Describes a secondary file written silently alongside the primary hook plugin file.
-
-- `relative_path`: path segments joined under the project root
-- `render_contents`: called with project root; returns file contents as text
+- `relative_path`: Path components relative to project root where the support file should be written
+- `render_contents`: Function that generates the file contents given the project root path
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:HookTarget fingerprint=6f8d90568ee48ee5845d4626975f5a865d71f5e8b79f084815089f8681ef3e12 body_fp=04d7d7f6f4090bae865ec3c8af420c2f25effb89a15b1147b25d9919f9562db2 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 -->
-## `HookTarget`
+<!-- trie:section symbol=trie/hook_install:HookTarget fingerprint=6f8d90568ee48ee5845d4626975f5a865d71f5e8b79f084815089f8681ef3e12 body_fp=5da567e15b3792a24db4d15c44f309eeedda89123ee88caa2e3b709743f7f5e7 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+Static configuration describing an agent's turn-boundary hook installation requirements.
 
-Describe one agent's automatable (or manual-only) turn-boundary hook surface.
-
-- `relative_path`: project-root-relative path segments where the plugin file lands; `None` means no automated install.
-- `render_contents`: called with `project_root` to produce the plugin file text; `None` triggers `needs_manual_setup`.
-- `manual_instructions`: human-readable steps surfaced when automation is unavailable.
-- `support_files`: ancillary files written transparently by `apply_one` under the same idempotency rules.
+- `relative_path`: when None, the target requires manual setup instead of automation
+- `render_contents`: when None, indicates no automated hook installer is available  
+- `support_files`: ancillary files written alongside the primary hook file
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:_OPENCODE_PLUGIN_FILENAME fingerprint=7442e6e578a889b0767a95dd3881ed665d3e6834945f3fa54cb3a7c6aceb8925 body_fp=b4daa185138a507caf13675666b75dcc80e6f9d7219881c678c2b4f54029474c source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 -->
-## `_OPENCODE_PLUGIN_FILENAME = "trie-refresh.ts"`
-
-Filename of the opencode plugin file written under `.opencode/plugins/`.
+<!-- trie:section symbol=trie/hook_install:_OPENCODE_PLUGIN_FILENAME fingerprint=7442e6e578a889b0767a95dd3881ed665d3e6834945f3fa54cb3a7c6aceb8925 body_fp=eb365a6e1177a9dea9e870261354332bde8897c6def370567736635558763811 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+Filename constant for the opencode plugin that triggers trie refresh on agent turn boundaries.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:_render_opencode_plugin fingerprint=2124c7400ce40dcbe5268bec6afb9f79f933b518b9a420739102174413aadae9 body_fp=35f7bd04584a9d0ab3f004dfb3865e024753c7c4402402d2ed12c0a212573526 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 -->
-## `_render_opencode_plugin(_project_root: Path) -> str`
+<!-- trie:section symbol=trie/hook_install:_render_opencode_plugin fingerprint=2124c7400ce40dcbe5268bec6afb9f79f933b518b9a420739102174413aadae9 body_fp=215bb7eee4dc621905c05396141df04702ca8494140c701f58bb4f17226cfe27 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+Generates TypeScript plugin source code for opencode to automatically run `trie refresh --after-turn` on idle sessions.
 
-Return the TypeScript source for the opencode plugin that runs `trie refresh --after-turn` on every `session.status` idle event.
-
-- Listens only for `session.status`; ignores deprecated `session.idle` to prevent double-firing.
-- Uses `.quiet()` to suppress Bun shell output in the opencode TUI.
-- Exports a v1 `PluginModule` object (`{ id, server }`) required for path-plugin resolution.
+- Returns complete plugin file content as string
+- Plugin listens for `session.status` with idle type to trigger refresh
+- Uses `quiet()` to suppress stdout/stderr from flooding opencode TUI
+- Swallows errors to prevent plugin failures from disrupting opencode sessions
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:_render_opencode_package_json fingerprint=f27176a9598f9a874b8858a56a2f9b2bf6bcbbc273719242e1c3adcaa000bf2a body_fp=4142bd26f800b353265b41c68addaa3c94bf8596414f7521295cf21d197458a8 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 -->
-## `_render_opencode_package_json(_project_root: Path) -> str`
+<!-- trie:section symbol=trie/hook_install:_render_opencode_package_json fingerprint=f27176a9598f9a874b8858a56a2f9b2bf6bcbbc273719242e1c3adcaa000bf2a body_fp=297c53978f575c6ddf646b23def63095f2a43cd13d013fe5bfb442bb9a87860a source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+Renders `.opencode/package.json` pinning `@opencode-ai/plugin` to prevent opencode module resolution failures.
 
-Render a `.opencode/package.json` that pins `@opencode-ai/plugin` to `"latest"`, preventing bun from writing a broken `"local"` version sentinel that silently kills opencode sessions.
+- Returns JSON string with `@opencode-ai/plugin: "latest"` dependency
+- Prevents `ERR_MODULE_NOT_FOUND` errors when opencode auto-pins to `"local"`
+- Works around opencode bugs #28286 and #27676 that break plugin imports
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:TARGETS fingerprint=7eb650c1091fe74c8c5781751a1c3aba97b671ce9d6ea1b316bfb82060ccaea3 body_fp=e27a763ba34919d4d582b30f48712d06df3361f295ecf36bd4fd0b8dfc9de816 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 -->
-## `TARGETS: dict[str, HookTarget]`
+<!-- trie:section symbol=trie/hook_install:TARGETS fingerprint=7eb650c1091fe74c8c5781751a1c3aba97b671ce9d6ea1b316bfb82060ccaea3 body_fp=247db4a205edb681a13bb95c5255badfde198a176abc2fd4e7b912c49b866671 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+Maps agent names to their turn-boundary hook installation specifications.
 
-Registry mapping agent slug to its `HookTarget`; only `"opencode"` has automated install; all others carry `manual_instructions` and return `needs_manual_setup`.
-
-- Slugs must match keys in `trie.mcp_install.TARGETS` for `trie setup` pairing.
-- `"opencode"` includes a `package.json` support file to pre-empt `@opencode-ai/plugin@local` failures.
+- Only "opencode" supports automated hook installation with TypeScript plugin
+- Other agents return manual setup instructions requiring user intervention
+- All names must also exist in `mcp_install.TARGETS` for unified setup reporting
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:HookInstallPlan fingerprint=baa3478a6300ba11090a4751af386c60014082cfdacfed5157e780649ad9373d body_fp=40d3ab2fe7a93e9eb4c024dc7d5c0e8c4a6f007fe3aafbb878db99d62e57102a source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 -->
-## `HookInstallPlan`
+<!-- trie:section symbol=trie/hook_install:HookInstallPlan fingerprint=baa3478a6300ba11090a4751af386c60014082cfdacfed5157e780649ad9373d body_fp=d824b2f8d23b1e38e27e81a4cab6d35eaa6b24f144702c8a899038df74c98f0d source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+Holds the outcome of a multi-target hook installation operation.
 
-Aggregate result of an `install` call across one or more hook targets.
-
-- `results`: populated with one `HookApplyResult` per resolved target.
+- `target_names`: agent names the operation was applied to
+- `results`: one `HookApplyResult` per target with creation/update status
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:install fingerprint=5fe181bd36c946a52447bddaed8d61ca578458f4d5caa90b8d33b766f90fffec body_fp=020280b26d4c09b327909eaff97514a581568e9a248fa84e5c164684eec5a532 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 -->
-## `install(*, target_names: list[str] | None, install_all: bool, print_only: bool, dry_run: bool, project_root: Path) -> HookInstallPlan`
+<!-- trie:section symbol=trie/hook_install:install fingerprint=5fe181bd36c946a52447bddaed8d61ca578458f4d5caa90b8d33b766f90fffec body_fp=6c3c0147ea1bd064927582b17721795a505982f2f84f60218d54e292b9467ca9 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+Apply turn-boundary hooks for specified agent targets, auto-detecting agents when no targets given.
 
-Apply turn-boundary hooks for one or more targets, returning a `HookInstallPlan` with per-target results.
-
-- `target_names`: explicit slugs; raises `HookInstallError` if any are unknown.
-- `install_all`: overrides `target_names`; selects every registered target.
-- `target_names=None, install_all=False`: auto-detects installed agents via `mcp_install.detect()`.
-- Agents without automation produce `needs_manual_setup` results, not errors.
+- Raises `HookInstallError` for unknown target names
+- Auto-detection reuses MCP install detection logic to find installed agents
+- Agents without automated support return `needs_manual_setup` results with instructions
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:apply_one fingerprint=05838fb0e3219a8d8d7aa3e2f615755e3e98b784efa6949ae5fd585a87f6adaf body_fp=c1ead57cde21471a0fd1b9cfb69603ee18c5f2fda988642c0322174666dfc756 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 -->
-## `apply_one(target: HookTarget, project_root: Path, print_only: bool, dry_run: bool, *, scope: Scope = "project") -> HookApplyResult`
+<!-- trie:section symbol=trie/hook_install:apply_one fingerprint=05838fb0e3219a8d8d7aa3e2f615755e3e98b784efa6949ae5fd585a87f6adaf body_fp=5130a15d874431f0b261bf90779cc1029e3a159f0f059214dc211405fe0d7993 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+Install or preview a turn-boundary hook for a single target agent.
 
-Install or preview the turn-boundary hook file for a single `HookTarget`, with idempotency and support-file handling.
-
-- `print_only`: returns `preview` action without touching the filesystem.
-- `dry_run`: previews after the idempotency check; still writes support files if contents match.
-- `scope`: accepted for API symmetry with `mcp_install.apply_one`; currently ignored.
-- Returns `needs_manual_setup` when `target.render_contents` or `target.relative_path` is `None`.
-- Returns `skipped` when existing file matches generated contents; still writes support files.
-- Support-file write notes are appended to `HookApplyResult.detail`.
+- Returns `needs_manual_setup` when target lacks automated hook support
+- Writes support files (like package.json) even when main hook is unchanged
+- Creates parent directories as needed before writing hook file
+- Returns `skipped` when existing file matches generated contents exactly
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:_apply_support_files fingerprint=db30752fe89cf626824026104a5750b0cb0ffeeacd5ddb86cdd79d485feee1f0 body_fp=f21f1e30999fac494ce9b24b15432c598773a645043d28fa085b29910222b1a2 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 -->
-## `_apply_support_files(files: tuple[HookSupportFile, ...], project_root: Path) -> list[str]`
+<!-- trie:section symbol=trie/hook_install:_apply_support_files fingerprint=db30752fe89cf626824026104a5750b0cb0ffeeacd5ddb86cdd79d485feee1f0 body_fp=9e29ab36eb03653be6b648b55b5bd0c42cf1e4b5f879b9a881f59324a657e753 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+Writes hook support files with create/update/skip semantics, returning status notes per file.
 
-Write each `HookSupportFile` under `project_root`, returning human-readable status notes per file.
-
-- Write failures are caught and noted, never raised; the primary hook result is unaffected.
-- Returns one string per file: `"<rel>: created"`, `"updated"`, `"up to date"`, or `"write failed (<exc>)"`.
+- Swallows OSError exceptions to avoid masking successful primary hook installs
+- Returns human-readable status messages for each file processed
 <!-- trie:end -->

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, type MouseEvent } from "react"
 
 interface DirEntry {
   name: string
@@ -9,7 +9,7 @@ interface DirEntry {
 interface FileTreeProps {
   dir: string
   onFileClick: (path: string) => void
-  onFileRightClick: (path: string) => void
+  onFileRightClick: (path: string, e: MouseEvent) => void
   depth?: number
 }
 
@@ -49,7 +49,7 @@ export function FileTree({ dir, onFileClick, onFileRightClick, depth = 0 }: File
           {entry.isDirectory ? (
             <>
               <button
-                className="flex items-center w-full px-2 py-0.5 hover:bg-slate-800 text-slate-400 font-mono"
+                className="flex items-center w-full px-2 py-0.5 hover:surface-3 text-2 font-mono transition-colors"
                 style={{ paddingLeft: `${8 + indent}px` }}
                 onClick={() =>
                   setExpanded((s) => {
@@ -73,12 +73,12 @@ export function FileTree({ dir, onFileClick, onFileRightClick, depth = 0 }: File
             </>
           ) : (
             <button
-              className="flex items-center w-full px-2 py-0.5 hover:bg-slate-800 text-slate-300 font-mono"
+              className="flex items-center w-full px-2 py-0.5 hover:surface-3 text-2 font-mono transition-colors"
               style={{ paddingLeft: `${8 + indent + 12}px` }}
               onClick={() => onFileClick(entry.path)}
               onContextMenu={(e) => {
                 e.preventDefault()
-                onFileRightClick(entry.path)
+                onFileRightClick(entry.path, e)
               }}
             >
               {entry.name}

@@ -2,7 +2,7 @@
 trie_version: 0.1.5
 source: trie/sync/cascade.py
 file_fingerprint: a2176696d2fee6d099b05d37586bee9de5c5a369112381c68408097ca450fdfc
-last_synced_at: '2026-05-23T23:54:23Z'
+last_synced_at: '2026-06-03T21:15:34Z'
 defines:
 - kind: module
   qualified_name: trie/sync/cascade:__module__
@@ -16,29 +16,26 @@ defines:
 incoming_refs: 9
 outgoing_refs: 1
 ---
-<!-- trie:section symbol=trie/sync/cascade:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=09e763ffab27c5abde9b6b3a407970fe2ed7899a21ebee7021787a39aca7c117 source_ref=c1c2b9ed991a072e6f2783f4adee6e8e49fa2f32 -->
-## `cascade`
+<!-- trie:section symbol=trie/sync/cascade:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=b22e4f1aa2b8727fbd5154256a99c06199b2a9f2e2de2e01aeafdf0eff15acaf source_ref=c1c2b9ed991a072e6f2783f4adee6e8e49fa2f32 role=change-detection -->
+Computes dependency cascade analysis to determine which files and symbols need regeneration after source changes.
 
-Compute cascading file and symbol invalidation sets from a seed set of changed files.
+- **CascadeResult**: dataclass containing affected files, cascaded symbols, and hop distances from change origins
+- **compute_cascade()**: walks inbound reference graph up to specified depth, with hub detection to prevent excessive propagation
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/cascade:CascadeResult fingerprint=4427fc9e9b33bd6592de10605387006d37145125ccdcf08ffbaaff4711fb0c21 body_fp=fea5670998293f2b7036267b3392049bbd1df6bd139d0021709b364dba20abd4 source_ref=c1c2b9ed991a072e6f2783f4adee6e8e49fa2f32 -->
-## `CascadeResult`
+<!-- trie:section symbol=trie/sync/cascade:CascadeResult fingerprint=4427fc9e9b33bd6592de10605387006d37145125ccdcf08ffbaaff4711fb0c21 body_fp=f9895aabf5c9d99dbcd61fe629685a5dc0f44be9fa3a23f6373f90ad00a30772 source_ref=c1c2b9ed991a072e6f2783f4adee6e8e49fa2f32 role=change-detection -->
+Contains files and symbols needing regeneration after a dependency cascade from changed source files.
 
-Frozen dataclass holding files and symbols requiring regeneration after a set of source changes.
-
-- `affected_files`: sorted list of all files; seed files plus cascade-pulled files.
-- `cascaded_from_change`: files reached via inbound-edge walk, excluding direct seed files.
-- `hop_by_file`: minimum BFS hop distance from any seed file; seed files have hop 0.
-- `cascaded_qnames`: qualified names reached by cascade walk; seed-file symbols excluded.
-- `hop_by_qname`: minimum BFS hop distance per symbol; seed qnames have hop 0.
-- `file_by_cascaded_qname`: maps each cascaded qname to its own defining file path.
+- `affected_files`: all files requiring regeneration, sorted alphabetically
+- `changed_files`: original seed files that triggered the cascade
+- `cascaded_from_change`: files pulled in by following inbound edges (subset of affected_files)
+- `hop_by_file`: minimum hop distance from any seed file for each affected file
+- `cascaded_qnames`: symbols reached by walking inbound edges (excludes seed-file symbols)
+- `hop_by_qname`: minimum BFS distance from seed symbols for each cascaded symbol
+- `file_by_cascaded_qname`: maps each cascaded symbol to its defining file path
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/cascade:compute_cascade fingerprint=8519ed9bd06d4dfad5495cde3895289ce7ff3011a537bb7ff9faa35cbc3fea8d body_fp=d2a294d5975eec43135254c85a38e5dd967bb393af025e03f53c053699d854ce source_ref=c1c2b9ed991a072e6f2783f4adee6e8e49fa2f32 -->
-## `compute_cascade(*, changed_files: Iterable[str], store: Store, depth: int = 1, hub_threshold: int = 20) -> CascadeResult`
+<!-- trie:section symbol=trie/sync/cascade:compute_cascade fingerprint=8519ed9bd06d4dfad5495cde3895289ce7ff3011a537bb7ff9faa35cbc3fea8d body_fp=beea8cafbaf5f6e1a0cbf54befe998f56f2c4142d48ff416ed5492f0340098f6 source_ref=c1c2b9ed991a072e6f2783f4adee6e8e49fa2f32 role=change-detection -->
+Walks inbound reference graph from changed files to find all files and symbols needing regeneration.
 
-Compute the cascade closure for a set of changed files by BFS-walking inbound symbol edges.
-
-- `depth`: maximum number of hops to follow from seed-file symbols.
-- `hub_threshold`: symbols with more inbound references than this are not expanded.
-- `store`: queried for per-symbol inbound counts, qnames per file, and referencing symbols with their files.
+- `hub_threshold`: symbols with more inbound references are not expanded to prevent whole-codebase invalidation
+- Returns BFS traversal with hop distances for prioritizing regeneration by proximity to changes
 <!-- trie:end -->

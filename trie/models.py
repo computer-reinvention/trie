@@ -1,23 +1,149 @@
 from __future__ import annotations
 
+import asyncio
 import random
+import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager, suppress
 from typing import Any
 
+import httpx
 from anthropic import (
     Anthropic,
+    APIConnectionError,
     APIStatusError,
     APITimeoutError,
+    AsyncAnthropic,
     InternalServerError,
     RateLimitError,
 )
-from pydantic import BaseModel
-from pydantic_ai import Agent
+from pydantic import BaseModel, Field
+from pydantic_ai import Agent, CachePoint
+from pydantic_ai.exceptions import ModelAPIError
+from pydantic_ai.models.anthropic import AnthropicModel, AnthropicModelSettings
+from pydantic_ai.providers.anthropic import AnthropicProvider
 from pydantic_ai.usage import Usage
 
 from trie import telemetry
 from trie.config import Sync
+
+
+# Per-thread event loop AND per-thread async HTTP client.
+#
+# Two intertwined constraints force this design:
+#
+#   1. fd leak. ``Agent.run_sync`` (and a fresh client per call) creates a new
+#      event loop / socketpair every call; under the parallel sync fan-out these
+#      accumulate faster than GC reclaims them and we hit ``OSError: [Errno 24]
+#      Too many open files``. So loops and clients must be *reused*, not per-call.
+#
+#   2. event-loop affinity. An ``httpx.AsyncClient`` (and thus the AsyncAnthropic
+#      wrapping it) is bound to the event loop it is first used on — its pool
+#      holds loop-bound locks/transports. Sync drives requests from many worker
+#      threads, EACH with its own loop, so a single shared client used across
+#      threads raises an immediate "Connection error" the moment a second loop
+#      touches it. (This is the regression that replaced the old hang.)
+#
+# The reconciliation: one loop AND one model/client *per thread*, paired in a
+# holder. A thread allocates them once and reuses them for every symbol it
+# generates — bounded by thread count (no fd leak) and never shared across loops
+# (no cross-loop corruption). The holder's ``__del__`` closes both when the
+# owning thread dies; CPython runs that finaliser when the thread's thread-local
+# storage is released at thread exit, so the short-lived nested ThreadPools that
+# churn workers don't leak.
+class _LoopHolder:
+    __slots__ = ("_aclient", "loop", "model")
+
+    def __init__(
+        self,
+        loop: asyncio.AbstractEventLoop,
+        model: AnthropicModel,
+        aclient: AsyncAnthropic,
+    ) -> None:
+        self.loop = loop
+        self.model = model
+        self._aclient = aclient
+
+    def __del__(self) -> None:
+        # Close the async client on its own loop (closing its connection pool)
+        # before closing the loop itself. Best-effort throughout: thread teardown
+        # must never raise.
+        loop = self.loop
+        with suppress(Exception):
+            if loop is not None and not loop.is_closed():
+                if self._aclient is not None:
+                    with suppress(Exception):
+                        loop.run_until_complete(self._aclient.close())
+                loop.close()
+
+
+_thread_local = threading.local()
+
+
+def _thread_holder(make_model: Callable[[], tuple[AnthropicModel, AsyncAnthropic]]) -> _LoopHolder:
+    """Return this thread's loop+model holder, creating it on first use.
+
+    ``make_model`` builds a fresh AnthropicModel + its AsyncAnthropic client bound
+    to this thread's loop; it is only called when this thread has no live holder
+    yet, so each thread gets exactly one client bound to its own loop. Reused for
+    every subsequent call on the thread (no fd leak), never shared across loops
+    (no cross-loop "Connection error").
+    """
+    holder = getattr(_thread_local, "loop_holder", None)
+    if holder is None or holder.loop.is_closed():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        model, aclient = make_model()
+        holder = _LoopHolder(loop, model, aclient)
+        _thread_local.loop_holder = holder
+    return holder
+
+
+# ---------------------------------------------------------------------------
+# Global in-flight request governor.
+#
+# Wave-based sync over-subscribes worker threads (file_workers x per-file
+# concurrency) deliberately, so the actual throttle is this process-wide
+# semaphore that caps the number of LLM calls hitting the provider at once.
+# It is acquired per network attempt (not across retry sleeps), so a backed-off
+# request frees its slot for someone else while it waits out a 429.
+#
+# Lazily (re)sized: `configure_inflight_limit(n)` is idempotent and only rebuilds
+# the semaphore when the bound changes. A bound of 0 means "no cap".
+# ---------------------------------------------------------------------------
+_inflight_lock = threading.Lock()
+_inflight_sem: threading.BoundedSemaphore | None = None
+_inflight_bound: int = 0
+
+
+def configure_inflight_limit(bound: int) -> None:
+    """Set the global cap on concurrent LLM requests. 0 disables the cap.
+
+    Idempotent: re-calling with the same bound is a no-op. Safe to call from the
+    sync entrypoint before fanning out workers.
+    """
+    global _inflight_sem, _inflight_bound
+    with _inflight_lock:
+        if bound == _inflight_bound:
+            return
+        _inflight_bound = bound
+        _inflight_sem = threading.BoundedSemaphore(bound) if bound > 0 else None
+
+
+@contextmanager
+def _inflight_slot() -> Iterator[None]:
+    """Hold one global request slot for the duration of a single network attempt."""
+    sem = _inflight_sem
+    if sem is None:
+        yield
+        return
+    sem.acquire()
+    try:
+        yield
+    finally:
+        sem.release()
+
 
 # ---------------------------------------------------------------------------
 # Structured output models — every LLM call returns one of these.
@@ -26,9 +152,103 @@ from trie.config import Sync
 
 
 class SectionBody(BaseModel):
-    """Triefact documentation body for a single symbol."""
+    """Triefact documentation body for a single symbol, plus its architectural role."""
 
     body: str
+    role: str = Field(
+        default="",
+        description=(
+            "A single lowercase role tag classifying this symbol's architectural "
+            "function in the codebase. Prefer one of the standard roles: "
+            "'entrypoint' (CLI/main/server bootstrap), 'api' (request handlers, "
+            "public interface surface), 'domain' (core business logic and rules), "
+            "'persistence' (database/storage/serialization), 'io' (filesystem, "
+            "network, subprocess, external services), 'parsing' (lexing/AST/"
+            "deserialization of inputs), 'model' (data structures, schemas, "
+            "dataclasses, types), 'config' (settings, environment, configuration), "
+            "'orchestration' (pipelines, schedulers, coordinators that wire other "
+            "components together), 'util' (small reusable helpers), 'test' (test "
+            "code and fixtures). If none of these fit, coin a concise "
+            "project-specific role (one or two lowercase words, hyphenated). "
+            "Choose the single most specific role for what this symbol primarily does."
+        ),
+    )
+    boundary: str = Field(
+        default="internal",
+        description=(
+            "Where this symbol sits relative to the system's boundary with the "
+            "outside world. One of exactly: 'entry' — execution enters the system "
+            "here from outside (CLI commands, HTTP/route handlers, framework "
+            "callbacks, public tool/RPC methods invoked by an agent or client, "
+            "main/run entry functions); 'exit' — the symbol's primary job is to "
+            "reach OUT of the system (spawn a subprocess, open a socket or network "
+            "request, read/write the filesystem, call an external API or LLM "
+            "client); 'internal' — neither; it is called by and calls other "
+            "in-project code. Judge by the symbol's actual purpose in the source, "
+            "not just its name. When a symbol both is invoked from outside and "
+            "reaches outside, prefer 'entry'. Most symbols are 'internal'."
+        ),
+    )
+
+
+class ProposedRole(BaseModel):
+    """One role in a derived, project-specific role taxonomy."""
+
+    name: str = Field(
+        description=(
+            "A short lowercase role name (one or two words, hyphenated if two), e.g. "
+            "'request-handler', 'persistence', 'parser'. Names must be distinct and "
+            "non-overlapping within the taxonomy."
+        )
+    )
+    description: str = Field(
+        description=(
+            "One sentence defining what kind of symbol belongs to this role, concrete "
+            "enough that a classifier can decide membership unambiguously."
+        )
+    )
+
+
+class RoleTaxonomy(BaseModel):
+    """A coherent, project-specific set of architectural roles derived by trie.
+
+    Pass 1 of role tagging: rather than letting each symbol pick an arbitrary role
+    in isolation (which yields an incoherent long tail of near-synonyms), trie
+    surveys the whole codebase once and has the model propose a small fixed
+    vocabulary fitted to THIS project. Pass 2 then classifies every symbol against
+    exactly these names.
+    """
+
+    roles: list[ProposedRole] = Field(
+        description=(
+            "The complete role vocabulary for this codebase. Prefer 6-14 roles: enough "
+            "to capture the real architectural divisions, few enough to stay legible. "
+            "Cover every major kind of work the codebase does; avoid redundant or "
+            "overlapping roles."
+        )
+    )
+
+
+class RoleTag(BaseModel):
+    """Classification of a single symbol against a fixed role vocabulary.
+
+    Pass 2 of role tagging, and the unit of `trie sync --roles-only`. The allowed
+    role names are injected into the prompt at call time (from the derived
+    `RoleTaxonomy`), so this model intentionally carries no hardcoded vocabulary —
+    `role` must be one of the names the prompt lists. `boundary` reuses the static
+    entry/exit/internal classification shared with `SectionBody`.
+    """
+
+    role: str = Field(
+        default="",
+        description=(
+            "The single best-fitting role for this symbol. Must be exactly one of the "
+            "role names listed in the prompt's taxonomy — do not invent new names."
+        ),
+    )
+    boundary: str = Field(
+        default="internal", description=SectionBody.model_fields["boundary"].description
+    )
 
 
 class MergeNotesOutput(BaseModel):
@@ -138,8 +358,33 @@ def _retry_after_seconds(exc: APIStatusError) -> float | None:
         return None
 
 
+_RETRYABLE_ANTHROPIC = (RateLimitError, InternalServerError, APITimeoutError, APIConnectionError)
+
+
 def _is_retryable(exc: BaseException) -> bool:
-    return isinstance(exc, (RateLimitError, InternalServerError, APITimeoutError))
+    # Direct anthropic exceptions: APIConnectionError covers transient network
+    # failures (DNS lookup failure, connection refused, reset) and is the parent
+    # of APITimeoutError; RateLimitError/InternalServerError cover 429/529.
+    #
+    # pydantic-ai wraps the underlying anthropic exception in its own
+    # ModelAPIError, so a transient connection drop arrives as a ModelAPIError
+    # ("Connection error.") that does NOT isinstance-match the anthropic types —
+    # which is why these were surfaced immediately as a per-file failure instead
+    # of being retried. We therefore (a) walk the __cause__/__context__ chain for
+    # a retryable anthropic exception, and (b) treat a bare ModelAPIError whose
+    # message names a connection/timeout as retryable.
+    seen: set[int] = set()
+    cur: BaseException | None = exc
+    while cur is not None and id(cur) not in seen:
+        seen.add(id(cur))
+        if isinstance(cur, _RETRYABLE_ANTHROPIC):
+            return True
+        if isinstance(cur, ModelAPIError):
+            msg = str(cur).lower()
+            if "connection error" in msg or "timed out" in msg or "timeout" in msg:
+                return True
+        cur = cur.__cause__ or cur.__context__
+    return False
 
 
 def _backoff_delay(*, attempt: int, base: float, cap: float, rng: random.Random) -> float:
@@ -184,7 +429,12 @@ def _run_with_retry(
                     cap=cfg.retry_cap_seconds,
                     rng=rng,
                 )
-                reason = "overloaded" if isinstance(exc, InternalServerError) else "timeout"
+                if isinstance(exc, InternalServerError):
+                    reason = "overloaded"
+                elif isinstance(exc, APITimeoutError):
+                    reason = "timeout"
+                else:
+                    reason = "connection"
             delay = min(delay, cfg.retry_cap_seconds)
             telemetry.emit(
                 "model_call_retry",
@@ -244,10 +494,38 @@ class TrieClient:
         sync_cfg: Sync | None = None,
     ) -> None:
         self.full_model_id = full_model_id
-        self._pai_model = _pydantic_ai_model_id(full_model_id)
+        self._pai_model_id = _pydantic_ai_model_id(full_model_id)
         self._anthropic_model = _anthropic_model_name(full_model_id)
         self._sync_cfg = sync_cfg or Sync()
-        self._raw_client = Anthropic(max_retries=0)
+        timeout = self._sync_cfg.request_timeout_seconds
+        # Bounded per-request timeout. Without it a stalled connection makes the
+        # request block forever; the worker thread driving it never returns, the
+        # file never finishes, and the whole sync hangs (observed: 3 of 18 cascade
+        # files spinning with zero telemetry for minutes). A read/connect/write/pool
+        # timeout turns that into an APITimeoutError that _run_with_retry retries
+        # and ultimately surfaces as a per-file error instead of an infinite spin.
+        self._http_timeout = httpx.Timeout(timeout, connect=min(30.0, timeout))
+        self._anthropic_model_name = self._pai_model_id.split(":", 1)[-1]
+        # The sync count_tokens client lives on the main thread and is only used
+        # synchronously, so a single instance is fine here.
+        self._raw_client = Anthropic(max_retries=0, timeout=self._http_timeout)
+
+    def _make_thread_model(self) -> tuple[AnthropicModel, AsyncAnthropic]:
+        """Build a fresh AnthropicModel + AsyncAnthropic for the CURRENT thread.
+
+        Each worker thread runs its own event loop, and an httpx.AsyncClient is
+        bound to the loop it's first used on — so the client (and the model
+        wrapping it) must be created per thread, not shared. _thread_holder calls
+        this once per thread and caches the result, giving us one client per
+        thread (no fd leak) that never crosses event loops (no "Connection
+        error"). The timeout is plumbed in so stalled requests still abort.
+        """
+        async_client = AsyncAnthropic(max_retries=0, timeout=self._http_timeout)
+        model = AnthropicModel(
+            self._anthropic_model_name,
+            provider=AnthropicProvider(anthropic_client=async_client),
+        )
+        return model, async_client
 
     def run(
         self,
@@ -256,21 +534,66 @@ class TrieClient:
         user_prompt: str,
         *,
         max_tokens: int = 1024,
+        cache_prefix: str | None = None,
     ) -> ModelResult:
         """Run an agent with structured output.
 
-        The ``system_prompt`` is set on the agent (eligible for Anthropic
-        prompt caching). The ``user_prompt`` is sent as the user message.
+        Prompt caching (critical for cost control on multi-symbol files):
+
+        - ``system_prompt`` is cached via ``anthropic_cache_instructions`` —
+          identical across every symbol, so it's written once and read
+          thereafter.
+        - ``cache_prefix``, when given, is sent as a leading user content block
+          followed by a ``CachePoint()`` marker, then ``user_prompt``. Everything
+          up to (and including) the prefix is cached; the per-call ``user_prompt``
+          stays dynamic. The sync path passes the full file source here so all
+          symbols in a file share one cached prefix.
+
+        Without explicit breakpoints pydantic-ai does NOT cache, which bills the
+        full prefix on every call — the regression this guards against.
+
         Returns the validated Pydantic model plus token usage counters.
         """
         with telemetry.timed("model_call", model=self.full_model_id, kind="generate") as tele:
-            agent = Agent(
-                self._pai_model,
-                output_type=output_type,
-                system_prompt=system_prompt,
+            if cache_prefix:
+                user_input: str | list[Any] = [cache_prefix, CachePoint(), user_prompt]
+            else:
+                user_input = user_prompt
+
+            # Drive the async API on a per-thread loop + per-thread model/client
+            # (see ``_thread_holder``) rather than ``run_sync`` or a shared client.
+            # run_sync leaks a fresh loop per call (fd exhaustion); a shared async
+            # client used across worker-thread loops raises an immediate
+            # "Connection error". The holder gives each thread its own loop and
+            # its own AsyncAnthropic bound to that loop, reused across calls. The
+            # Agent is rebuilt per attempt from the thread's model (cheap — it
+            # reuses the cached client). Each attempt holds one global in-flight
+            # slot and is retried on 429/529/timeout/connection with backoff.
+            def _attempt() -> Any:
+                holder = _thread_holder(self._make_thread_model)
+                agent = Agent(
+                    holder.model,
+                    output_type=output_type,
+                    system_prompt=system_prompt,
+                )
+                with _inflight_slot():
+                    return holder.loop.run_until_complete(
+                        agent.run(
+                            user_input,
+                            model_settings=AnthropicModelSettings(
+                                max_tokens=max_tokens,
+                                anthropic_cache_instructions=True,
+                            ),
+                        )
+                    )
+
+            result = _run_with_retry(
+                _attempt,
+                cfg=self._sync_cfg,
+                kind="generate",
+                model_id=self.full_model_id,
             )
-            result = agent.run_sync(user_prompt, model_settings={"max_tokens": max_tokens})
-            usage = result.usage()
+            usage = result.usage
             tele["input_tokens"] = usage.input_tokens
             tele["output_tokens"] = usage.output_tokens
             tele["cache_creation_input_tokens"] = (usage.details or {}).get(
@@ -283,9 +606,16 @@ class TrieClient:
 
     def count_tokens(self, system_prompt: str, user_prompt: str) -> int:
         """Return the number of input tokens via the Anthropic count_tokens API."""
+        # The Anthropic API rejects empty or whitespace-only user message
+        # content ("user messages must have non-empty content" / "text content
+        # blocks must contain non-whitespace text"), but the plan-time cost
+        # preview intentionally passes an empty user_prompt to measure only the
+        # cached prefix (system + cached context). Substitute a minimal
+        # non-whitespace placeholder so the request is accepted; the one-token
+        # delta is negligible for cost estimation.
         payload: dict[str, Any] = {
             "model": self._anthropic_model,
-            "messages": [{"role": "user", "content": user_prompt}],
+            "messages": [{"role": "user", "content": user_prompt if user_prompt.strip() else "."}],
         }
         if system_prompt:
             payload["system"] = [{"type": "text", "text": system_prompt}]

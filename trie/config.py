@@ -41,6 +41,9 @@ class Cascade:
     default_depth: int = 1
     hub_symbol_threshold: int = 20
     max_judgments: int = 50  # hard cap on pre_filter_cascade calls per apply run
+    # Surface second-order cascade (a caller edit that itself changed a signature)
+    # as ApplyReport.unresolved rather than chasing it in-pipeline. Single sweep.
+    surface_unresolved: bool = True
 
 
 @dataclass
@@ -73,6 +76,29 @@ class Edits:
             LspBackend(command="pyright", check_args=["--outputjson"], output_format="pyright"),
         ]
     )
+    # Per-symbol edit generation backend: "llm" (default, in-process) or
+    # "opencode" (Phase 2, one targeted instance per symbol). See trie/edits/backends.
+    backend: str = "llm"
+    # How a multi-item apply commits on partial failure:
+    #   "all_or_nothing" (default) — any item failing aborts the whole commit
+    #   "per_item"   — commit items that passed; failed items go to unresolved
+    #   "per_group"  — commit coherent groups that fully pass
+    commit_mode: str = "all_or_nothing"
+    # Max regeneration attempts for a symbol whose generated source won't compile,
+    # before surfacing it in ApplyReport.unresolved with the failed source verbatim.
+    compile_retry_cap: int = 2
+
+
+@dataclass
+class LanguageConfig:
+    """Per-language overrides, keyed by backend name (e.g. "typescript").
+
+    `lsp_backends`, when non-empty, replaces the language backend's built-in
+    default checkers for the edit pipeline. Other per-language knobs can be
+    added here without touching the global config shape.
+    """
+
+    lsp_backends: list[LspBackend] = field(default_factory=list)
 
 
 @dataclass
@@ -94,9 +120,27 @@ class Sync:
     """
 
     concurrency: int = 4
-    max_retries: int = 5
+    max_retries: int = 8
     retry_base_delay_seconds: float = 1.0
     retry_cap_seconds: float = 60.0
+
+    # Per-request timeout (seconds) for a single LLM call. Without an explicit
+    # timeout a stalled connection (no response, half-open socket) makes the
+    # async request — and the worker thread driving it — block forever, so the
+    # file never finishes and the sync appears to hang. With a bound the request
+    # raises APITimeoutError, which the retry loop catches and retries, then
+    # ultimately surfaces as a per-file error instead of an indefinite spin.
+    request_timeout_seconds: float = 120.0
+
+    # Wave-based cross-file parallelism. `file_workers` is how many files the
+    # scheduler generates concurrently; within each file, `concurrency` symbols
+    # run in parallel. The product can exceed the provider's rate ceiling, so
+    # `max_inflight_requests` is a process-wide semaphore capping the TOTAL
+    # number of concurrent LLM calls regardless of how files/symbols fan out.
+    # It is the real throttle: set it to your tier's safe concurrency and let
+    # the 429 backoff absorb the rest. 0 disables the global cap.
+    file_workers: int = 8
+    max_inflight_requests: int = 8
 
 
 @dataclass
@@ -173,9 +217,10 @@ class Mcp:
 
     # trace
     trace_max_depth: int = 5
-    trace_hub_threshold: int = (
-        10_000_000  # effectively unlimited; raise to disable hub skipping in trace_flow / trace
-    )
+    trace_hub_threshold: int = 50  # skip expanding symbols with >50 inbound refs during
+    # trace/trace_flow so navigation never fans out through utility hubs. Higher than the
+    # cascade guard (20) because read-side traversal tolerates more breadth than write-side
+    # regen; set very high to effectively disable hub skipping.
     trace_max_nodes: int = 200
     trace_prose_at_depth: int = 0  # 0 = no prose on trace
     trace_prose_budget: int = 10
@@ -192,13 +237,21 @@ class Config:
     mcp: Mcp = field(default_factory=Mcp)
     debug: Debug = field(default_factory=Debug)
     edits: Edits = field(default_factory=Edits)
+    languages: dict[str, LanguageConfig] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: dict) -> Config:
-        raw_edits = data.get("edits", {})
+        raw_edits = dict(data.get("edits", {}))
         backends_raw = raw_edits.pop("lsp_backends", None)
         if backends_raw is not None:
             raw_edits["lsp_backends"] = [LspBackend(**b) for b in backends_raw]
+        languages: dict[str, LanguageConfig] = {}
+        for name, raw in (data.get("languages", {}) or {}).items():
+            raw = dict(raw)
+            lb = raw.pop("lsp_backends", None)
+            languages[name] = LanguageConfig(
+                lsp_backends=[LspBackend(**b) for b in lb] if lb else [],
+            )
         return cls(
             trie=TrieMeta(**data.get("trie", {})),
             scope=Scope(**data.get("scope", {})),
@@ -209,6 +262,7 @@ class Config:
             mcp=Mcp(**data.get("mcp", {})),
             debug=Debug(**data.get("debug", {})),
             edits=Edits(**raw_edits),
+            languages=languages,
         )
 
     @classmethod
@@ -283,12 +337,17 @@ hub_symbol_threshold = 20
 # network I/O so threads are sufficient. 4 is conservative under Anthropic tier-1
 # RPM/ITPM ceilings; raise for larger tiers, set to 1 to force serial execution.
 concurrency = 4
+# Wave-based cross-file parallelism. `file_workers` files generate concurrently;
+# `max_inflight_requests` is a process-wide cap on TOTAL concurrent LLM calls
+# (the real throttle — set to your tier's safe concurrency; 0 disables the cap).
+file_workers = 8
+max_inflight_requests = 8
 # Retry-on-rate-limit settings for the underlying model client. `retry-after`
 # headers from 429s are honoured exactly. For 429s without a header and for
 # 529 (overloaded) responses, the client uses exponential backoff with jitter
 # (base * 2**attempt + jitter, capped at retry_cap_seconds) for up to
 # max_retries attempts before propagating the error.
-max_retries = 5
+max_retries = 8
 retry_base_delay_seconds = 1.0
 retry_cap_seconds = 60.0
 
@@ -309,7 +368,7 @@ read_prose_max_chars = 0                       # 0 = unlimited
 
 # trace
 trace_max_depth = 5
-trace_hub_threshold = 20                       # mirrors cascade.hub_symbol_threshold
+trace_hub_threshold = 50                       # skip hubs >50 inbound in trace/trace_flow
 trace_max_nodes = 200
 trace_prose_at_depth = 0                       # 0 = no prose on trace
 trace_prose_budget = 10

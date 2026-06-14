@@ -69,6 +69,7 @@ from rapidfuzz import process as _process
 from trie import telemetry
 from trie.config import Config, Mcp
 from trie.graph.store import GrepPredicate, Store, SymbolDetail
+from trie.parse.types import KINDS
 from trie.scope import discover_files
 
 
@@ -109,15 +110,21 @@ def _error(
     code: str,
     message: str,
     suggestion: str | None = None,
+    *,
+    fix: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Build the canonical error envelope: `{error: {code, message, suggestion?}}`.
+    """Build the canonical error envelope: `{error: {code, message, suggestion?, fix?}}`.
 
     Agents read these as authoritative — a `suggestion` is included whenever there
-    is a concrete next step to recommend.
+    is a concrete next step to recommend. `fix` is an executable, ready-to-replay
+    tool call (`{tool, args}`) with the corrected argument pre-filled, so recovery
+    is "resend `fix`" — one step, zero re-querying.
     """
     body: dict[str, Any] = {"code": code, "message": message}
     if suggestion is not None:
         body["suggestion"] = suggestion
+    if fix is not None:
+        body["fix"] = fix
     return {"error": body}
 
 
@@ -275,11 +282,13 @@ class TrieTools:
         self.triefacts_root = self.root / self.config.triefacts.root
         self.src_root = (self.root / self.config.triefacts.source_root).resolve()
         self.store = Store(self.root / ".trie" / "graph.db")
-        # Session id for patch operations — lives for the MCP server lifetime,
-        # which maps 1:1 to an agent session.
+        # Session id for patch operations. Injectable via TRIE_SESSION_ID so a
+        # host (e.g. an opencode fork) can align trie's patch session with its own
+        # session boundaries; falls back to a per-server-lifetime UUID standalone.
+        import os
         import uuid
 
-        self._session_id = uuid.uuid4().hex[:12]
+        self._session_id = os.environ.get("TRIE_SESSION_ID") or uuid.uuid4().hex[:12]
 
     def close(self) -> None:
         self.store.close()
@@ -289,29 +298,191 @@ class TrieTools:
     def patch(
         self,
         qname: str,
-        note: str,
+        note: str = "",
+        source: str = "",
         reason: str = "",
     ) -> dict[str, Any]:
-        """Post an implementation note against a symbol.
+        """Stage a change to an existing symbol's body.
 
-        Fire-and-forget. Returns {patch_id, qname, pending_patch_count}.
-        Use patch_list() to view all pending; patch_drop() to undo.
+        Provide exactly one of `note` (let the model generate the change) or
+        `source` (supply the exact new body — deterministic, no inference). Returns
+        {patch_id, qname, pending_patch_count, blast_radius}. Fire-and-forget; the
+        change is generated + applied later by commit().
+        """
+        if bool(note.strip()) == bool(source.strip()):
+            return _error(
+                "invalid_argument",
+                "provide exactly one of `note` or `source`.",
+                "use `note` to describe the change, or `source` for the exact body.",
+            )
+        # `source=` is carried as the note payload with a sentinel reason so the
+        # backend path can pass it through verbatim (a future deterministic lane).
+        payload_note = note if note.strip() else source
+        payload_reason = reason if note.strip() else (reason or "verbatim-source")
+        try:
+            patch_id = self.store.add_patch(qname, payload_note, payload_reason, self._session_id)
+        except KeyError:
+            return _error(
+                "not_found",
+                f"Symbol {qname!r} not found in the graph.",
+                "Use grep({'name_contains': '...'}) to find the exact qname.",
+                fix={"tool": "patch", "args": {"qname": qname, "note": note or ""}},
+            )
+        detail = self.store.get_symbol_detail(qname)
+        return {
+            "patch_id": int(patch_id),
+            "qname": qname,
+            "mode": "note" if note.strip() else "source",
+            "pending_patch_count": detail.pending_patch_count if detail else 1,
+            "blast_radius": self._blast_radius_brief(qname),
+        }
+
+    def _blast_radius_brief(self, qname: str) -> dict[str, Any]:
+        """Compact blast-radius for patch returns (no LLM). Best-effort."""
+        try:
+            br = self.blast_radius(qname)
+            if "error" in br:
+                return {"direct": 0, "cascade": [], "cascade_count": 0, "hubs_stopped_at": []}
+            return {
+                "direct": br["direct"],
+                "cascade": [c["qname"] for c in br["cascade"]],
+                "cascade_count": br["cascade_count"],
+                "hubs_stopped_at": br["hubs_stopped_at"],
+            }
+        except Exception:
+            return {"direct": 0, "cascade": [], "cascade_count": 0, "hubs_stopped_at": []}
+
+    def create_symbol(
+        self,
+        qname: str,
+        note: str,
+        file_path: str = "",
+        anchor_qname: str = "",
+        reason: str = "",
+    ) -> dict[str, Any]:
+        """Stage creation of a NEW symbol (does not yet exist in the graph).
+
+        `qname` is the intended qualified name (e.g. 'src/foo:helper'); `note`
+        describes what it should do; `file_path` is the target source file
+        (derived from qname's module part when omitted); `anchor_qname` optionally
+        places it after an existing symbol. Returns {create_patch_id, qname}.
         """
         if not note.strip():
-            return _error("invalid_argument", "note must be non-empty.")
+            return _error("invalid_argument", "note must describe the new symbol.")
+        if self.store.get_symbol_detail(qname) is not None:
+            return _error(
+                "already_exists",
+                f"{qname!r} already exists.",
+                "use patch(qname=..., note=...) to change its body instead.",
+                fix={"tool": "patch", "args": {"qname": qname, "note": note}},
+            )
+        # qname carries no language signal, so default new-symbol creation to
+        # Python's suffix; pass `file_path` explicitly to create in another
+        # language (e.g. a .ts module).
+        target_file = file_path or (qname.split(":", 1)[0] + ".py")
+        cid = self.store.add_create_patch(
+            target_file=target_file,
+            target_qname=qname,
+            note=note,
+            reason=reason,
+            session_id=self._session_id,
+            anchor_qname=anchor_qname or None,
+        )
+        return {"create_patch_id": int(cid), "qname": qname, "target_file": target_file}
+
+    def delete_symbol(self, qname: str, reason: str = "") -> dict[str, Any]:
+        """Stage deletion of an existing symbol. Returns {patch_id, qname, dependents}.
+
+        `dependents` lists symbols that reference this one — they will reference a
+        deleted symbol unless you also patch them. commit proceeds regardless; the
+        agent owns deciding whether the dependents need updating.
+        """
         try:
-            patch_id = self.store.add_patch(qname, note, reason, self._session_id)
+            pid = self.store.add_delete_patch(qname, reason, self._session_id)
         except KeyError:
             return _error(
                 "not_found",
                 f"Symbol {qname!r} not found in the graph.",
                 "Use grep({'name_contains': '...'}) to find the exact qname.",
             )
+        dependents = []
+        for src in self.store.references_in(qname):
+            d = self.store.get_symbol_detail(src)
+            if d is not None:
+                dependents.append({"qname": src, "source_pointer": f"{d.file_path}:{d.start_line}"})
+        return {"patch_id": int(pid), "qname": qname, "dependents": dependents}
+
+    def rename_symbol(self, qname: str, new_name: str, reason: str = "") -> dict[str, Any]:
+        """Stage a rename of an existing symbol to `new_name` (the local name).
+
+        Returns {patch_id, qname, new_name, references}. References are the callers
+        whose call sites trie can see; rename refuses at commit if it cannot rewrite
+        the definition unambiguously.
+        """
+        if not new_name.isidentifier():
+            return _error(
+                "invalid_argument",
+                f"{new_name!r} is not a valid identifier.",
+                "choose a valid Python identifier for new_name.",
+            )
+        try:
+            pid = self.store.add_rename_patch(qname, new_name, reason, self._session_id)
+        except KeyError:
+            return _error(
+                "not_found",
+                f"Symbol {qname!r} not found in the graph.",
+                "Use grep({'name_contains': '...'}) to find the exact qname.",
+            )
+        refs = list(self.store.references_in(qname))
+        return {"patch_id": int(pid), "qname": qname, "new_name": new_name, "references": refs}
+
+    def blast_radius(self, qname: str) -> dict[str, Any]:
+        """Compute the cascade blast radius of editing `qname` — free graph math.
+
+        Resolves the symbol's file and reuses the mature `compute_cascade` walk to
+        find every symbol whose triefact would be regenerated if `qname` changed,
+        with each one's BFS hop distance from the seed (so the desktop can animate
+        the cascade as a staggered wavefront).
+
+        Returns {qname, file, direct, cascade:[{qname, hop, file}], cascade_count,
+        hubs_stopped_at}. LLM-free.
+        """
+        from trie.sync.cascade import compute_cascade
+
         detail = self.store.get_symbol_detail(qname)
+        if detail is None:
+            return _error(
+                "not_found",
+                f"Symbol {qname!r} not found in the graph.",
+                "Use grep({'name_contains': '...'}) to find the exact qname.",
+            )
+        file_path = detail.file_path
+        result = compute_cascade(
+            changed_files=[file_path],
+            store=self.store,
+            depth=2,
+            hub_threshold=self.config.cascade.hub_symbol_threshold,
+        )
+        cascade = [
+            {
+                "qname": qn,
+                "hop": result.hop_by_qname.get(qn, 1),
+                "file": result.file_by_cascaded_qname.get(qn, ""),
+            }
+            for qn in sorted(
+                result.cascaded_qnames,
+                key=lambda q: (result.hop_by_qname.get(q, 99), q),
+            )
+        ]
+        # "direct" = symbols reached at hop 1 (immediate callers across the file).
+        direct = sum(1 for c in cascade if c["hop"] <= 1)
         return {
-            "patch_id": int(patch_id),
             "qname": qname,
-            "pending_patch_count": detail.pending_patch_count if detail else 1,
+            "file": file_path,
+            "direct": direct,
+            "cascade": cascade,
+            "cascade_count": len(cascade),
+            "hubs_stopped_at": [],
         }
 
     def patch_drop(
@@ -330,36 +501,84 @@ class TrieTools:
         return {"removed": removed}
 
     def patch_list(self) -> dict[str, Any]:
-        """List all pending patches grouped by symbol.
+        """List all pending patches grouped by symbol, plus pending creates.
 
-        Returns {patches: [{qname, count, origin, notes: [...]}, ...]}.
+        Returns {patches: [{qname, count, origin, kind, notes}], creates: [...],
+        apply_in_progress: bool}.
         """
+        from trie import activity as activity_mod
+
         qnames = self.store.get_patched_qnames()
         patches: list[dict[str, Any]] = []
         for qn in qnames:
             notes = self.store.get_patches_for_qname(qn)
-            # Determine origin from session_id of patches
             origins = set(p.get("session_id", "") for p in notes)
             origin = (
                 "cascade" if origins == {"cascade"} else "mixed" if len(origins) > 1 else "agent"
             )
+            # Structural kind, if any patch on this symbol set one.
+            kind = "modify"
+            for p in notes:
+                if p.get("kind") in ("delete", "rename"):
+                    kind = p["kind"]
             patches.append(
                 {
                     "qname": qn,
                     "count": len(notes),
                     "origin": origin,
+                    "kind": kind,
                     "notes": notes,
                 }
             )
-        return {"patches": patches}
+        creates = [
+            {"target_qname": c["target_qname"], "target_file": c["target_file"], "note": c["note"]}
+            for v in self.store.get_create_patches_grouped().values()
+            for c in v
+        ]
+        status = activity_mod.read_status(self.root)
+        return {
+            "patches": patches,
+            "creates": creates,
+            "apply_in_progress": status.op == "apply" and status.is_active,
+        }
 
-    def patch_apply(self) -> dict[str, Any]:
-        """Apply all pending patches: merge, generate, cascade, commit.
+    def preview(self) -> dict[str, Any]:
+        """Show what commit would do, without writing or paying for generation.
 
-        Uses an exclusive lock to prevent concurrent apply runs.
-        Returns {ok, applied, failed, error?}.
+        Free, idempotent. Returns {pending, creates, cascade, totals,
+        ready_to_commit}. Call before commit to see the blast radius and any
+        blockers (e.g. a missing session note for a multi-symbol apply).
         """
-        from trie.edits.apply import apply_patches
+        from trie.edits.apply import preview_patches
+
+        pv = preview_patches(self.store, self.config)
+        creates = self.store.get_create_patches_grouped()
+        create_list = [c["target_qname"] for v in creates.values() for c in v]
+        total = pv["patched_symbols"] + len(create_list)
+        return {
+            "pending": pv["patched_list"],
+            "creates": create_list,
+            "cascade": pv["cascade_list"],
+            "totals": {
+                "patches": pv["total_patches"],
+                "symbols": total,
+                "cascade_symbols": pv["cascade_symbols"],
+            },
+            "ready_to_commit": total > 0,
+            "needs_session_note": total > 1,
+        }
+
+    def commit(self, session_note: str = "", backend: str = "") -> dict[str, Any]:
+        """Stage + apply all pending patches and creates; return the ApplyReport.
+
+        `session_note` is required for multi-symbol applies (the unifying intent).
+        `backend` overrides the configured edit backend ('llm' default). Uses an
+        exclusive lock to prevent concurrent applies.
+        """
+        import concurrent.futures
+
+        from trie.edits.backends import make_backend
+        from trie.edits.pipeline import stage_and_commit
         from trie.models import make_client
         from trie.refresh_lock import try_acquire
 
@@ -370,14 +589,118 @@ class TrieTools:
                     "another patch apply is already in progress",
                     "retry when the current apply finishes.",
                 )
-            client = make_client(self.config.models.edits)
             try:
-                result = apply_patches(self.store, self.config, client, self.root)
+                client = make_client(self.config.models.edits, sync_cfg=self.config.sync)
+                edit_backend = make_backend(self.config, backend=backend or None, client=client)
+
+                def _run() -> dict[str, Any]:
+                    report = stage_and_commit(
+                        self.store,
+                        self.config,
+                        edit_backend,
+                        self.root,
+                        client=client,
+                        session_note=session_note,
+                    )
+                    return report.to_dict()
+
+                # Run off the event-loop thread (sync-over-async generation path).
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    return pool.submit(_run).result()
             except Exception as exc:
-                return _error("internal", f"patch apply failed: {exc}")
-            return result
+                return _error("internal", f"commit failed: {exc}")
+
+    # Back-compat alias for the older tool name.
+    def patch_apply(self) -> dict[str, Any]:
+        """Deprecated alias for commit() with no session note (single-symbol use)."""
+        return self.commit(session_note="")
 
     # --- desktop app helpers -----------------------------------------------
+
+    def all_symbols(self, rank_by: str = "inbound_count", limit: int = 5000) -> dict[str, Any]:
+        """Return all symbols in the project, sorted by `rank_by`.
+
+        Dedicated endpoint for the desktop app's initial graph population —
+        avoids the empty-predicate guard in `grep` which rejects requests
+        with no filters. Returns {hits: [SymbolDetail, ...]} in the same
+        shape as grep() so the frontend can use the same code path.
+        """
+        from trie.graph.store import GrepPredicate
+
+        pred = GrepPredicate(kind="any")  # kind="any" is non-empty → bypasses the guard
+        results = self.store.grep_symbols(pred, rank_by=rank_by, limit=limit)
+        hist_mass = self.store.historical_mass_all()
+        hits = [
+            {
+                "qname": r.qualified_name,
+                "name": r.name,
+                "kind": r.kind,
+                "file_path": r.file_path,
+                "start_line": r.start_line,
+                "signature": r.signature,
+                "is_public": r.is_public,
+                "inbound_count": r.inbound_count,
+                "outbound_count": r.outbound_count,
+                "one_liner": r.one_liner,
+                "role": r.role,
+                "historical_mass": hist_mass.get(r.qualified_name, 0.0),
+                "pending_patch_count": r.pending_patch_count,
+                "has_pending_patches": r.pending_patch_count > 0,
+            }
+            for r in results
+        ]
+        return {"hits": hits}
+
+    def all_edges(self, limit: int = 50000) -> dict[str, Any]:
+        """Return all call-graph edges for the desktop app's initial graph population.
+
+        Returns {edges: [{from, to}, ...]} — a flat list of directed edges
+        read straight from the SQLite edge table. Much faster than 200 individual
+        trace calls and doesn't require the MCP connection to be fully warmed up.
+        """
+        rows = self.store._conn.execute(
+            """
+            SELECT s_src.qualified_name, s_dst.qualified_name, e.kind
+            FROM edges e
+            JOIN symbols s_src ON s_src.id = e.src_symbol_id
+            JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+        return {"edges": [{"from": r[0], "to": r[1], "kind": r[2]} for r in rows]}
+
+    def system_model(
+        self, landmark_limit: int = 160, include_tests: bool = False
+    ) -> dict[str, Any]:
+        """Return the high-level *system model* for the desktop graph view.
+
+        A model of the system rather than one node per symbol. Every production
+        node is classified (door/hub/bedrock/exit/internal/orphan), scored for
+        salience, and annotated with betweenness, depth-from-door, community,
+        subsystem, and a precomputed layered layout position. Tests are excluded
+        by default (set `include_tests` to include them, flagged `is_test`).
+
+        Returns `{nodes, axes: {role, subsystem}, landmarks, stats}` where each
+        axis carries L0 component groups + thresholded group-to-group flow.
+        Pure graph math over the store — no LLM calls. The topology is cached on
+        disk keyed by graph fingerprint; AGM historical mass is injected per node
+        *after* the cache read (it decays continuously, so it must not be baked
+        into the fingerprint-keyed cache).
+        """
+        from trie.graph.system_model import build_system_model_cached
+
+        model = build_system_model_cached(
+            self.store,
+            project_root=self.root,
+            landmark_limit=landmark_limit,
+            include_tests=include_tests,
+        )
+        # Inject live-decayed AGM historical mass onto each node (post-cache).
+        hist_mass = self.store.historical_mass_all()
+        for node in model.get("nodes", []):
+            node["historical_mass"] = hist_mass.get(node.get("qname", ""), 0.0)
+        return model
 
     def summary(self) -> dict[str, Any]:
         """Return project-level aggregate counts for the trie desktop app.
@@ -387,15 +710,15 @@ class TrieTools:
         """
         import trie as trie_pkg
 
-        with self.store as s:
-            total_symbols: int = s._conn.execute("SELECT COUNT(*) FROM symbols").fetchone()[0]
-            public_symbols: int = s._conn.execute(
-                "SELECT COUNT(*) FROM symbols WHERE is_public = 1"
-            ).fetchone()[0]
-            total_files: int = s._conn.execute(
-                "SELECT COUNT(DISTINCT file_path) FROM symbols"
-            ).fetchone()[0]
-            total_edges: int = s._conn.execute("SELECT COUNT(*) FROM edges").fetchone()[0]
+        conn = self.store._conn
+        total_symbols: int = conn.execute("SELECT COUNT(*) FROM symbols").fetchone()[0]
+        public_symbols: int = conn.execute(
+            "SELECT COUNT(*) FROM symbols WHERE is_public = 1"
+        ).fetchone()[0]
+        total_files: int = conn.execute("SELECT COUNT(DISTINCT file_path) FROM symbols").fetchone()[
+            0
+        ]
+        total_edges: int = conn.execute("SELECT COUNT(*) FROM edges").fetchone()[0]
 
         return {
             "project_name": self.root.name,
@@ -407,28 +730,184 @@ class TrieTools:
             "trie_version": getattr(trie_pkg, "__version__", "unknown"),
         }
 
+    def record_attention_event(
+        self, type: str, qname: str, investigation_id: str = ""
+    ) -> dict[str, Any]:
+        """Record one AGM attention event (the durable capture side).
+
+        `type` is one of grep|read|trace|write; `qname` is a symbol qname or a
+        synthetic node qname (see trie.attention.synthetic_qname). The desktop runs
+        the live simulation from the SSE stream — this persists a compressed event
+        log for replay/hydration and feeds the sync-time historical-mass fold.
+        Best-effort; returns {ok, weight} or an error envelope on a bad type.
+        """
+        from trie import attention_store
+        from trie.attention import EVENT_WEIGHTS
+
+        if type not in EVENT_WEIGHTS:
+            return _error(
+                "invalid_argument",
+                f"unknown attention event type {type!r}",
+                "use one of: grep, read, trace, write.",
+            )
+        attention_store.record_event(
+            self.root,
+            event_type=type,  # type: ignore[arg-type]
+            target=qname,
+            session_id=self._session_id,
+            investigation_id=investigation_id,
+        )
+        return {"ok": True, "weight": EVENT_WEIGHTS[type]}
+
+    def attention(self, since: float = 0.0) -> dict[str, Any]:
+        """Return recent AGM attention events + the constant tables, for the
+        desktop to hydrate / replay its live model.
+
+        Events are the compressed log since `since` (unix seconds). `weights`,
+        `live_halflife_seconds`, and `edge_weights` mirror trie.attention so the
+        client never hard-codes them. `synthetic_nodes` lists the non-code
+        cognition surfaces. Historical mass is delivered via system_model /
+        all_symbols (on the nodes), not here.
+        """
+        from trie import attention_store
+        from trie.attention import (
+            EDGE_WEIGHTS,
+            EVENT_WEIGHTS,
+            LIVE_HALFLIFE_SECONDS,
+            PROPAGATION_FACTOR,
+            PROPAGATION_HOPS,
+            SYNTHETIC_NODES,
+            synthetic_qname,
+        )
+
+        events = attention_store.read_events(self.root, since=since)
+        return {
+            "events": [
+                {
+                    "ts": e.ts,
+                    "event_type": e.event_type,
+                    "target": e.target,
+                    "weight": e.weight,
+                    "agent_id": e.agent_id,
+                    "session_id": e.session_id,
+                    "investigation_id": e.investigation_id,
+                }
+                for e in events
+            ],
+            "weights": EVENT_WEIGHTS,
+            "live_halflife_seconds": LIVE_HALFLIFE_SECONDS,
+            "edge_weights": EDGE_WEIGHTS,
+            "propagation_factor": PROPAGATION_FACTOR,
+            "propagation_hops": PROPAGATION_HOPS,
+            "synthetic_nodes": [{"node": n, "qname": synthetic_qname(n)} for n in SYNTHETIC_NODES],
+        }
+
+    def set_investigation(
+        self, label: str, status: str = "active", investigation_id: str = ""
+    ) -> dict[str, Any]:
+        """Declare or update the current AGM investigation (explicit task boundary).
+
+        Investigations are the meaningful unit of continuity (not turns). The agent
+        or host calls this to open a new investigation (from the user task) or mark
+        one resolved/abandoned/superseded. Returns {investigation_id, label, status}.
+        The id is generated when omitted. Persisted as runtime meta so the capture
+        path can key events to it.
+        """
+        import uuid
+
+        from trie import activity as activity_mod
+        from trie.attention import INVESTIGATION_STATUSES
+
+        if status not in INVESTIGATION_STATUSES:
+            return _error(
+                "invalid_argument",
+                f"unknown investigation status {status!r}",
+                f"use one of: {', '.join(INVESTIGATION_STATUSES)}.",
+            )
+        inv_id = investigation_id or uuid.uuid4().hex[:12]
+        activity_mod.set_meta(self.root, "agm_investigation_id", inv_id)
+        activity_mod.set_meta(self.root, "agm_investigation_label", label)
+        activity_mod.set_meta(self.root, "agm_investigation_status", status)
+        return {"investigation_id": inv_id, "label": label, "status": status}
+
+    def activity(self) -> dict[str, Any]:
+        """Return the live writer status + working-tree stale set for the editor.
+
+        Reads the ephemeral `.trie/activity.db` (see `trie.activity`). Any process
+        — a terminal `trie sync`, the end-of-turn refresh hook, the desktop's own
+        refresh — updates that DB, so the editor can poll this to glow the
+        currently-syncing file and show a "N stale" badge regardless of which
+        process is doing the work. A crashed writer reads back as idle.
+
+        Returns {status: {...}, pending: {count, stale, head} | null,
+        patches: {total_patches, symbol_count, create_count, by_origin}, apply: {...}|null}.
+        """
+        from trie import activity as activity_mod
+
+        status = activity_mod.read_status(self.root)
+        pending = activity_mod.read_pending(self.root)
+        summary = self.store.patch_summary()
+        apply_block = None
+        if status.op == "apply" and status.is_active:
+            apply_block = {
+                "phase": status.current_file,
+                "done": status.done,
+                "total": status.total,
+                "session_note": activity_mod.get_meta(self.root, "apply_session_note") or "",
+            }
+        return {
+            "status": {
+                "state": status.state,
+                "op": status.op,
+                "pid": status.pid,
+                "is_active": status.is_active,
+                "current_file": status.current_file,
+                "done": status.done,
+                "total": status.total,
+                "error": status.error,
+                "updated_at": status.updated_at,
+            },
+            "pending": (
+                None
+                if pending is None
+                else {
+                    "count": pending.count,
+                    "stale": list(pending.stale),
+                    "head": pending.head,
+                    "computed_at": pending.computed_at,
+                }
+            ),
+            "patches": {
+                "total_patches": summary["total_patches"],
+                "symbol_count": summary["symbol_count"],
+                "create_count": summary["create_count"],
+                "by_origin": summary["by_origin"],
+            },
+            "apply": apply_block,
+        }
+
     def symbols_by_file(self, file_path: str) -> dict[str, Any]:
         """Return all symbols in a given source file.
 
         Returns {file_path, symbols: [SymbolDetail, ...]}.
         Used by the desktop app sidebar file-click to highlight graph nodes.
         """
-        with self.store as s:
-            rows = s._conn.execute(
-                """
-                SELECT
-                    sym.qualified_name, sym.name, sym.kind, sym.file_path,
-                    sym.start_line, sym.end_line, sym.signature, sym.is_public,
-                    (SELECT COUNT(*) FROM edges e WHERE e.dst_symbol_id = sym.id) as inbound_count,
-                    (SELECT COUNT(*) FROM edges e WHERE e.src_symbol_id = sym.id) as outbound_count,
-                    COALESCE(ts.one_liner, '') as one_liner
-                FROM symbols sym
-                LEFT JOIN triefact_sections ts ON ts.symbol_id = sym.id
-                WHERE sym.file_path = ?
-                ORDER BY sym.start_line
-                """,
-                (file_path,),
-            ).fetchall()
+        rows = self.store._conn.execute(
+            """
+            SELECT
+                sym.qualified_name, sym.name, sym.kind, sym.file_path,
+                sym.start_line, sym.end_line, sym.signature, sym.is_public,
+                (SELECT COUNT(*) FROM edges e WHERE e.dst_symbol_id = sym.id) as inbound_count,
+                (SELECT COUNT(*) FROM edges e WHERE e.src_symbol_id = sym.id) as outbound_count,
+                COALESCE(ts.one_liner, '') as one_liner,
+                COALESCE(ts.role, '') as role
+            FROM symbols sym
+            LEFT JOIN triefact_sections ts ON ts.symbol_id = sym.id
+            WHERE sym.file_path = ?
+            ORDER BY sym.start_line
+            """,
+            (file_path,),
+        ).fetchall()
 
         symbols = [
             {
@@ -438,15 +917,78 @@ class TrieTools:
                 "file_path": r[3],
                 "start_line": r[4],
                 "end_line": r[5],
-                "signature": r[6],
                 "is_public": bool(r[7]),
                 "inbound_count": r[8],
                 "outbound_count": r[9],
                 "one_liner": r[10],
+                "role": r[11],
             }
             for r in rows
         ]
         return {"file_path": file_path, "symbols": symbols}
+
+    def file_triefact(self, file_path: str) -> dict[str, Any]:
+        """Return the whole triefact for a source file: front matter + ordered
+        per-symbol sections (prose body, role, fingerprints, source line range).
+
+        The desktop app's triefact view renders this. `file_path` is source-root
+        relative (e.g. `trie/sync/writer.py`). Returns
+        `{file_path, triefact_path, exists, front_matter, sections: [...]}`;
+        `exists` is False (with empty sections) when the file has no triefact yet.
+        """
+        from trie.sync.writer import TriefactFile, extract_one_liner
+
+        rel_md = Path(file_path).with_suffix(".md")
+        triefact_path = self.triefacts_root / rel_md
+        triefact_rel = str(triefact_path.relative_to(self.root))
+        if not triefact_path.exists():
+            return {
+                "file_path": file_path,
+                "triefact_path": triefact_rel,
+                "exists": False,
+                "front_matter": {},
+                "sections": [],
+            }
+
+        triefact = TriefactFile.parse(triefact_path.read_text())
+
+        # Line ranges + kind come from the store (the sentinel doesn't carry them).
+        lines_by_qname: dict[str, tuple[int, int]] = {}
+        kind_by_qname: dict[str, str] = {}
+        for row in self.store._conn.execute(
+            "SELECT qualified_name, start_line, end_line, kind FROM symbols WHERE file_path = ?",
+            (file_path,),
+        ).fetchall():
+            lines_by_qname[row[0]] = (row[1], row[2])
+            kind_by_qname[row[0]] = row[3]
+
+        sections = []
+        for qn in triefact.section_qnames():
+            sec = triefact.get_section(qn)
+            if sec is None:
+                continue
+            start, end = lines_by_qname.get(qn, (0, 0))
+            sections.append(
+                {
+                    "qname": qn,
+                    "kind": kind_by_qname.get(qn, ""),
+                    "role": sec.role,
+                    "body": sec.body,
+                    "one_liner": extract_one_liner(sec.body),
+                    "fingerprint": sec.fingerprint,
+                    "body_fingerprint": sec.body_fingerprint or "",
+                    "start_line": start,
+                    "end_line": end,
+                }
+            )
+
+        return {
+            "file_path": file_path,
+            "triefact_path": triefact_rel,
+            "exists": True,
+            "front_matter": triefact.front_matter,
+            "sections": sections,
+        }
 
     # --- grep --------------------------------------------------------------
 
@@ -461,7 +1003,7 @@ class TrieTools:
         Predicate fields (all optional, but at least one is required —
         an empty predicate returns an `invalid_argument` error):
         - `name_contains`: substring match against the symbol's local name (case-insensitive).
-        - `kind`: one of `"function"`, `"class"`, `"method"`, `"constant"`, `"module"`, `"any"`.
+        - `kind`: one of `"function"`, `"class"`, `"method"`, `"constant"`, `"module"`, `"interface"`, `"type"`, `"enum"`, `"enum_member"`, `"property"`, `"any"`.
         - `scope_prefix`: file-path prefix, e.g. `"trie/"` to exclude tests/vendored code.
         - `scope_exclude`: list of file-path prefixes to skip, e.g. `["tests/"]`.
         - `public_only`: bool. Restrict to symbols whose name doesn't start with `_`.
@@ -1004,17 +1546,11 @@ class TrieTools:
             return GrepPredicate(), err
 
         kind = predicate.get("kind")
-        if kind is not None and kind not in (
-            "function",
-            "class",
-            "method",
-            "constant",
-            "module",
-            "any",
-        ):
+        if kind is not None and kind not in (*KINDS, "any"):
+            allowed = "/".join((*KINDS, "any"))
             return GrepPredicate(), _error(
                 "invalid_argument",
-                (f"`kind` must be one of function/class/method/constant/module/any, got {kind!r}."),
+                (f"`kind` must be one of {allowed}, got {kind!r}."),
             )
 
         scope_exclude_raw = predicate.get("scope_exclude") or ()
@@ -1503,6 +2039,316 @@ class TrieTools:
             tele_ctx["result_count"] = len(hits)
             tele_ctx["response_bytes"] = len(_json.dumps(result, default=str))
             return result
+
+    def grep_str_all(self, regexp: str) -> dict[str, Any]:
+        """Regex search across the WHOLE repo, not just indexed source bodies.
+
+        EXT-1: `grep_str` only sees in-scope (indexed) files; this variant runs
+        gitignore-aware ripgrep over the entire project root so non-indexed
+        files (TS/JS, configs, docs, lockfiles) are searchable too. In-scope
+        hits are still attributed to their enclosing symbol; out-of-scope hits
+        come back as plain `file:line:text` rows under `text_hits`.
+
+        Returns `{hits: [...symbol hits...], text_hits: [{file, line, text}],
+        text_match_count}`.
+        """
+        import json as _json
+        import subprocess as _subprocess
+
+        tele_args = {"regexp": regexp} if telemetry.capture_args() else {}
+        with telemetry.timed(self.event_name, tool="grep_str_all", args=tele_args) as tele_ctx:
+            if not regexp or not regexp.strip():
+                tele_ctx["result_kind"] = "error"
+                return _error("invalid_argument", "`regexp` must be a non-empty string.")
+
+            proc = _subprocess.run(
+                [
+                    self.rg_path,
+                    "--json",
+                    "--line-number",
+                    "--ignore-case",
+                    "--no-messages",
+                    "--",
+                    regexp,
+                    str(self.root),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if proc.returncode not in (0, 1):
+                tele_ctx["result_kind"] = "error"
+                return _error(
+                    "internal", f"rg failed (exit {proc.returncode}): {proc.stderr.strip()}"
+                )
+
+            # Build the set of in-scope relative paths (relative to src_root) so
+            # we can split hits into "attributable to a symbol" vs "plain text".
+            scope_set: set[str] = set()
+            for abs_path in __import__("trie.scope", fromlist=["discover_files"]).discover_files(
+                self.root, self.config.scope
+            ):
+                if abs_path.is_relative_to(self.src_root):
+                    scope_set.add(str(abs_path.relative_to(self.src_root)))
+
+            src_root_str = str(self.src_root)
+            root_str = str(self.root)
+            rg_hits: dict[str, list[int]] = {}
+            text_hits: list[dict[str, Any]] = []
+            text_cap = 100
+            for raw_line in proc.stdout.splitlines():
+                if not raw_line:
+                    continue
+                try:
+                    event = _json.loads(raw_line)
+                except _json.JSONDecodeError:
+                    continue
+                if event.get("type") != "match":
+                    continue
+                data = event.get("data") or {}
+                abs_path_str = (data.get("path") or {}).get("text")
+                lineno = data.get("line_number")
+                if not isinstance(abs_path_str, str) or not isinstance(lineno, int):
+                    continue
+                # In-scope, indexed → attribute to a symbol.
+                if abs_path_str.startswith(src_root_str):
+                    rel = abs_path_str[len(src_root_str) :].lstrip("/")
+                    if rel in scope_set:
+                        rg_hits.setdefault(rel, []).append(lineno)
+                        continue
+                # Otherwise it's an out-of-scope text hit.
+                if len(text_hits) < text_cap:
+                    rel_repo = (
+                        abs_path_str[len(root_str) :].lstrip("/")
+                        if abs_path_str.startswith(root_str)
+                        else abs_path_str
+                    )
+                    line_text = ((data.get("lines") or {}).get("text") or "").rstrip("\n")
+                    text_hits.append({"file": rel_repo, "line": lineno, "text": line_text[:300]})
+
+            per_symbol = self._attribute_text_matches_to_symbols(rg_hits)
+            candidates = sorted(
+                ((self.store.get_symbol_detail(q), c) for q, c in per_symbol.items()),
+                key=lambda x: (
+                    -(x[0].inbound_count if x[0] else 0),
+                    x[0].qualified_name if x[0] else "",
+                ),
+            )
+            one_liner_cap = self.mcp_cfg.grep_one_liner_max_chars
+            hits = [
+                {
+                    "qname": d.qualified_name,
+                    "signature": d.signature or "",
+                    "file_pointer": f"{d.file_path}:{d.start_line}",
+                    "one_liner": _truncate(d.one_liner, one_liner_cap),
+                    "match_count": count,
+                }
+                for d, count in candidates
+                if d is not None
+            ]
+            result = {
+                "hits": hits,
+                "text_hits": text_hits,
+                "text_match_count": len(text_hits),
+            }
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["result_count"] = len(hits) + len(text_hits)
+            return result
+
+    def read_source(
+        self, path: str, offset: int | None = None, limit: int | None = None
+    ) -> dict[str, Any]:
+        """Read raw source of an ARBITRARY file (EXT-3/EXT-4), indexed or not.
+
+        `read` is qname/triefact-centric and only covers indexed files; this
+        returns the raw bytes of any path under the project root with optional
+        1-indexed `offset` + `limit` windowing, line-number prefixed
+        (`<n>: <text>`), matching stock editor read semantics. Long lines are
+        clipped at 2000 chars.
+
+        Returns `{path, lines: "<numbered text>", line_count, offset, more}`.
+        """
+        tele_args = {"path": path} if telemetry.capture_args() else {}
+        with telemetry.timed(self.event_name, tool="read_source", args=tele_args) as tele_ctx:
+            target = Path(path)
+            target = target.resolve() if target.is_absolute() else (self.root / path).resolve()
+            # Keep reads inside the project root.
+            if not (target == self.root or target.is_relative_to(self.root)):
+                tele_ctx["result_kind"] = "error"
+                return _error(
+                    "out_of_scope",
+                    f"{path!r} is outside the project root.",
+                    "read_source only serves files under the trie project root.",
+                )
+            if not target.exists():
+                tele_ctx["result_kind"] = "error"
+                return _error("not_found", f"No file at {path!r}.")
+            if target.is_dir():
+                tele_ctx["result_kind"] = "error"
+                return _error(
+                    "invalid_argument",
+                    f"{path!r} is a directory; use `find` to list its contents.",
+                )
+            try:
+                text = target.read_text(encoding="utf-8", errors="replace")
+            except OSError as exc:
+                tele_ctx["result_kind"] = "error"
+                return _error("internal", f"could not read {path!r}: {exc}")
+
+            all_lines = text.split("\n")
+            start = max(0, (offset - 1)) if offset else 0
+            end = (start + limit) if limit else len(all_lines)
+            sliced = all_lines[start:end]
+            numbered = "\n".join(
+                f"{start + i + 1}: {(line[:2000] if len(line) > 2000 else line)}"
+                for i, line in enumerate(sliced)
+            )
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["result_count"] = len(sliced)
+            return {
+                "path": target.relative_to(self.root).as_posix()
+                if target.is_relative_to(self.root)
+                else str(target),
+                "lines": numbered,
+                "line_count": len(sliced),
+                "offset": start + 1,
+                "more": end < len(all_lines),
+            }
+
+    def write_file(self, path: str, content: str, overwrite: bool = False) -> dict[str, Any]:
+        """Create or overwrite a file under the project root (EXT-8).
+
+        Fills the gap where `create_symbol` only adds a Python symbol to an
+        existing indexed file — this writes an ARBITRARY new file (configs,
+        docs, scripts, a fresh module). Parent directories are created. Refuses
+        to clobber an existing file unless `overwrite=True`.
+
+        If the written path is in trie's scope (an indexed file type), the
+        response flags `needs_sync=True` — the caller should run a sync/refresh
+        so the new file enters the graph (incremental in-process indexing is
+        intentionally left to the sync pipeline to keep the graph consistent).
+
+        Returns `{path, bytes_written, created, needs_sync}`.
+        """
+        tele_args = {"path": path} if telemetry.capture_args() else {}
+        with telemetry.timed(self.event_name, tool="write_file", args=tele_args) as tele_ctx:
+            target = Path(path)
+            target = target.resolve() if target.is_absolute() else (self.root / path).resolve()
+            if not (target == self.root or target.is_relative_to(self.root)):
+                tele_ctx["result_kind"] = "error"
+                return _error(
+                    "out_of_scope",
+                    f"{path!r} is outside the project root.",
+                    "write_file only writes under the trie project root.",
+                )
+            if target.is_dir():
+                tele_ctx["result_kind"] = "error"
+                return _error("invalid_argument", f"{path!r} is a directory.")
+            existed = target.exists()
+            if existed and not overwrite:
+                tele_ctx["result_kind"] = "error"
+                return _error(
+                    "invalid_argument",
+                    f"{path!r} already exists. Pass overwrite=true to replace it, "
+                    "or use the patch pipeline to change indexed code.",
+                )
+            try:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content, encoding="utf-8")
+            except OSError as exc:
+                tele_ctx["result_kind"] = "error"
+                return _error("internal", f"could not write {path!r}: {exc}")
+
+            from trie.scope import _matches
+
+            rel = (
+                target.relative_to(self.root).as_posix()
+                if target.is_relative_to(self.root)
+                else str(target)
+            )
+            in_scope = any(_matches(rel, pat) for pat in self.config.scope.include) and not any(
+                _matches(rel, pat) for pat in self.config.scope.exclude
+            )
+            tele_ctx["result_kind"] = "ok"
+            return {
+                "path": rel,
+                "bytes_written": len(content.encode("utf-8")),
+                "created": not existed,
+                "needs_sync": in_scope,
+            }
+
+    def find_files(self, pattern: str, all_files: bool = True, limit: int = 100) -> dict[str, Any]:
+        """Find files by name/path glob (EXT-2). Fills the gap where trie has no
+        filename search — only symbol search.
+
+        With `all_files=True` (default) the match runs over the whole project
+        tree (respecting scope excludes so vendored/`.venv`/`node_modules`
+        subtrees are skipped); with `all_files=False` it restricts to indexed
+        files. Results are mtime-sorted (newest first) and capped at `limit`.
+
+        `pattern` uses glob semantics, e.g. `**/*.ts`, `Dockerfile`,
+        `src/**/*.tsx`. A bare name like `config.json` matches that basename
+        anywhere in the tree.
+
+        Returns `{matches: [path, ...], match_count, truncated}`.
+        """
+        import os as _os
+
+        tele_args = {"pattern": pattern} if telemetry.capture_args() else {}
+        with telemetry.timed(self.event_name, tool="find_files", args=tele_args) as tele_ctx:
+            if not pattern or not pattern.strip():
+                tele_ctx["result_kind"] = "error"
+                return _error("invalid_argument", "`pattern` must be a non-empty string.")
+
+            from trie.scope import _matches, discover_files
+
+            root = self.root
+            if all_files:
+                # Walk the tree, pruning excluded dirs, matching the glob against
+                # each relative path (and its basename for bare-name patterns).
+                bare = "/" not in pattern and "*" not in pattern
+                candidates: list[Path] = []
+                excludes = self.config.scope.exclude
+                for dirpath, dirnames, filenames in _os.walk(root, topdown=True):
+                    abs_dir = Path(dirpath)
+                    rel_dir = abs_dir.relative_to(root).as_posix()
+                    kept: list[str] = []
+                    for d in dirnames:
+                        child_rel = d if rel_dir == "." else f"{rel_dir}/{d}"
+                        if any(_matches(child_rel + "/x", pat) for pat in excludes) or d in {
+                            ".git",
+                            ".trie",
+                        }:
+                            continue
+                        kept.append(d)
+                    dirnames[:] = kept
+                    for fname in filenames:
+                        rel = fname if rel_dir == "." else f"{rel_dir}/{fname}"
+                        if bare:
+                            if fname == pattern:
+                                candidates.append(root / rel)
+                        elif _matches(rel, pattern):
+                            candidates.append(root / rel)
+            else:
+                candidates = [
+                    p
+                    for p in discover_files(root, self.config.scope)
+                    if _matches(p.relative_to(root).as_posix(), pattern)
+                ]
+
+            # Sort by mtime descending (mirror stock glob), cap at limit.
+            def _mtime(p: Path) -> float:
+                try:
+                    return p.stat().st_mtime
+                except OSError:
+                    return 0.0
+
+            candidates.sort(key=_mtime, reverse=True)
+            truncated = len(candidates) > limit
+            matches = [p.relative_to(root).as_posix() for p in candidates[:limit]]
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["result_count"] = len(matches)
+            return {"matches": matches, "match_count": len(matches), "truncated": truncated}
 
     def grep_entry_points(self, query: str) -> dict[str, Any]:
         """Find architectural entry points (high inbound-count public symbols) whose
@@ -2014,6 +2860,10 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     server.tool(name="read")(tools.read)
     server.tool(name="trace")(tools.trace)
     server.tool(name="grep_str")(tools.grep_str)
+    server.tool(name="grep_str_all")(tools.grep_str_all)
+    server.tool(name="find_files")(tools.find_files)
+    server.tool(name="read_source")(tools.read_source)
+    server.tool(name="write_file")(tools.write_file)
     server.tool(name="grep_entry_points")(tools.grep_entry_points)
     server.tool(name="grep_symbol")(tools.grep_symbol)
     server.tool(name="grep_symbol_and_neighbours")(tools.grep_symbol_and_neighbours)
@@ -2021,14 +2871,29 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     server.tool(name="explain_symbol_references")(tools.explain_symbol_references)
     server.tool(name="trace_flow")(tools.trace_flow)
     server.tool(name="explain_flow")(tools.explain_flow)
-    # Patch tools — implementation notes + apply
+    # Edit tools — declare intent (modify/create/delete/rename) then preview/commit
     server.tool(name="patch")(tools.patch)
+    server.tool(name="create_symbol")(tools.create_symbol)
+    server.tool(name="delete_symbol")(tools.delete_symbol)
+    server.tool(name="rename_symbol")(tools.rename_symbol)
+    server.tool(name="preview")(tools.preview)
+    server.tool(name="commit")(tools.commit)
     server.tool(name="patch_drop")(tools.patch_drop)
     server.tool(name="patch_list")(tools.patch_list)
     server.tool(name="patch_apply")(tools.patch_apply)
-    # Desktop app helpers — project summary + symbols by file
+    # Desktop app helpers — project summary + symbols by file + all symbols
     server.tool(name="summary")(tools.summary)
     server.tool(name="symbols_by_file")(tools.symbols_by_file)
+    server.tool(name="file_triefact")(tools.file_triefact)
+    server.tool(name="activity")(tools.activity)
+    server.tool(name="blast_radius")(tools.blast_radius)
+    server.tool(name="all_symbols")(tools.all_symbols)
+    server.tool(name="all_edges")(tools.all_edges)
+    server.tool(name="system_model")(tools.system_model)
+    # AGM (Attention Gravity Map) — capture + read + investigation declaration.
+    server.tool(name="record_attention_event")(tools.record_attention_event)
+    server.tool(name="attention")(tools.attention)
+    server.tool(name="set_investigation")(tools.set_investigation)
     return server, tools
 
 

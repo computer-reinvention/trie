@@ -53,6 +53,9 @@ def test_generate_section_passes_correct_prompt(tmp_path: Path):
     assert client.last_system_prompt == SYSTEM_PROMPT
     assert "def foo" in client.last_user_prompt
     assert sym.qualified_name in client.last_user_prompt
+    # The full file source is forwarded as the cache prefix (shared across all
+    # symbols in the file) — not concatenated into the per-symbol user prompt.
+    assert client.last_cache_prefix == build_cached_context(ctx)
     assert sec.qualified_name == sym.qualified_name
     assert sec.body.startswith("## ")
     assert sec.body == "## `foo()`\n\nA function."

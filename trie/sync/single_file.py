@@ -11,12 +11,12 @@ from trie.config import Config
 from trie.git_helpers import compute_blob_hash, retrieve_blob
 from trie.graph.store import Store
 from trie.models import TrieClient
+from trie.parse import registry
 from trie.parse.python import (
-    Symbol,
     extract_module_docstring,
-    extract_symbols,
     strip_string_literal,
 )
+from trie.parse.types import Symbol
 from trie.scope import discover_files
 from trie.sync.generator import FileGenerationContext, GeneratedSection, generate_section
 from trie.sync.writer import Section, TriefactFile, extract_one_liner
@@ -37,6 +37,8 @@ def backfill_section_records(
     for source_path in discover_files(project_root, config.scope):
         if not source_path.is_relative_to(src_root):
             continue
+        if not registry.is_indexable(source_path):
+            continue
         triefact_path = _triefact_path_for(source_path, project_root, config)
         if not triefact_path.exists():
             continue
@@ -50,6 +52,13 @@ def backfill_section_records(
                     symbol_qname=qn,
                     section_fingerprint=section.fingerprint or "",
                     one_liner=extract_one_liner(section.body),
+                    # Restore the role tag from the persisted sentinel so a graph.db
+                    # rebuild recovers roles from disk without re-running the LLM.
+                    role=section.role,
+                    # Likewise restore AGM historical mass from the sentinel — the
+                    # triefact is the source of truth, this column is rebuildable cache.
+                    hist_mass=section.historical_mass,
+                    hist_mass_ts=section.historical_mass_ts,
                 )
 
 
@@ -112,6 +121,11 @@ def _file_description(source_path: Path) -> str | None:
     file has no module docstring. This is the cheapest possible "what does this file
     do" surface — no LLM call, no hand-curation.
     """
+    # Module-docstring extraction is Python-grammar specific. Other languages
+    # surface a file description differently (or not at all in this pass).
+    backend = registry.get_backend_for_file(source_path)
+    if backend is None or backend.name != "python":
+        return None
     raw = extract_module_docstring(source_path)
     if raw is None:
         return None
@@ -171,7 +185,7 @@ def _resolve_previous_symbols(
         if previous_text is None:
             continue
         try:
-            previous_symbols = extract_symbols(
+            previous_symbols = registry.extract_symbols(
                 source_path, source_root=src_root, source_text=previous_text
             )
         except Exception:
@@ -231,7 +245,7 @@ def refresh_triefact_metadata(
     rel_path = str(source_path.relative_to(src_root))
     source_text = source_path.read_text()
     file_fp = _file_fingerprint(source_text)
-    target_symbols = extract_symbols(source_path, source_root=src_root)
+    target_symbols = registry.extract_symbols(source_path, source_root=src_root)
 
     triefact = TriefactFile.parse(triefact_path.read_text())
     previous_bytes = triefact.render().encode("utf-8")
@@ -348,13 +362,13 @@ def sync_single_file(
     rel_path = str(source_path.relative_to(src_root))
 
     with telemetry.timed(
-        "sync_file", path=rel_path, model=getattr(client, "full_model_id", client.model_id)
+        "sync_file", path=rel_path, model=getattr(client, "full_model_id", "")
     ) as tele:
         # Every parser-surfaced symbol gets a section. The `is_public` flag (leading
         # underscore by convention) is kept as descriptive metadata on Symbol but is
         # NOT used as a filter — stale prose is stale regardless of author intent,
         # and the cascade walks edges to/from every symbol uniformly.
-        target_symbols = extract_symbols(source_path, source_root=src_root)
+        target_symbols = registry.extract_symbols(source_path, source_root=src_root)
 
         canonical_triefact_path = _triefact_path_for(source_path, project_root, config)
         write_path = (
@@ -443,11 +457,16 @@ def sync_single_file(
             )
 
         # Phase 2 — generate. The per-symbol LLM call is pure network I/O; threads
-        # are sufficient. Each call shares the same `file_ctx` so Anthropic's prompt
-        # cache (keyed on the cached_context block) hits on every symbol after the
-        # first. Order of completion is irrelevant — `TriefactFile.upsert_section`
-        # is keyed by qname, not position, so phase 3 produces identical output
-        # regardless of which future resolved first.
+        # are sufficient. Every call shares the same `file_ctx`, which is sent as a
+        # cached prefix (system prompt + file source). Anthropic's prompt cache is
+        # keyed on that prefix, so after it's written once, every subsequent symbol
+        # in the file reads it instead of re-billing the full prefix.
+        #
+        # CRITICAL: the cache write must land before the parallel fan-out, or every
+        # concurrent request races to write its own copy of the cache (each billed
+        # at the 1.25x cache-creation rate) and only the stragglers get a read. We
+        # therefore generate the FIRST symbol serially to warm the cache, then
+        # parallelise the rest — guaranteeing one write and N-1 reads per file.
         #
         # `concurrency=1` collapses to serial execution (a 1-thread pool is still a
         # pool but adds no parallelism), useful for deterministic eval runs and for
@@ -455,23 +474,29 @@ def sync_single_file(
         concurrency = max(1, config.sync.concurrency)
         generated: list[tuple[Symbol, GeneratedSection]] = []
         if jobs:
-            with ThreadPoolExecutor(max_workers=concurrency) as pool:
-                # Submit in source order; collect in submission order so the
-                # iteration below preserves the source-line ordering used by
-                # upsert_section's chunk placement.
-                futures = [
-                    pool.submit(
-                        generate_section,
-                        symbol=job.symbol,
-                        file_ctx=file_ctx,
-                        client=client,
-                        previous_source=job.previous_source,
-                        previous_prose=job.previous_prose,
-                    )
-                    for job in jobs
-                ]
-                for job, fut in zip(jobs, futures, strict=True):
-                    generated.append((job.symbol, fut.result()))
+
+            def _gen(job: _SymbolJob) -> GeneratedSection:
+                return generate_section(
+                    symbol=job.symbol,
+                    file_ctx=file_ctx,
+                    client=client,
+                    previous_source=job.previous_source,
+                    previous_prose=job.previous_prose,
+                )
+
+            if concurrency > 1 and len(jobs) > 1:
+                # Warm the prompt cache with the first symbol, serially.
+                generated.append((jobs[0].symbol, _gen(jobs[0])))
+                rest = jobs[1:]
+                with ThreadPoolExecutor(max_workers=concurrency) as pool:
+                    futures = [pool.submit(_gen, job) for job in rest]
+                    for job, fut in zip(rest, futures, strict=True):
+                        generated.append((job.symbol, fut.result()))
+            else:
+                # Serial path (concurrency=1 or a single symbol): no fan-out, so
+                # the cache warms naturally on the first call.
+                for job in jobs:
+                    generated.append((job.symbol, _gen(job)))
 
         # Phase 3 — apply. All mutation of `triefact` and `store` happens on this
         # thread; neither is safe to touch concurrently. We process generated
@@ -485,6 +510,7 @@ def sync_single_file(
                 fingerprint=sym.body_normalized_hash,
                 body=gen.body,
                 source_ref=current_blob,
+                role=gen.role,
             )
             symbols_generated += 1
             totals["in"] += gen.input_tokens
@@ -499,6 +525,8 @@ def sync_single_file(
                         symbol_qname=qn,
                         section_fingerprint=sym.body_normalized_hash,
                         one_liner=extract_one_liner(section.body),
+                        role=gen.role,
+                        boundary=gen.boundary,
                     )
 
         current_qnames = {s.qualified_name for s in target_symbols}
@@ -533,6 +561,17 @@ def sync_single_file(
 
         triefact.front_matter = front_matter
 
+        # AGM: fold cross-session historical mass into each section's sentinel
+        # before render, so the cognitive-importance signal lands in the same
+        # write that regenerated the prose (no extra diff churn). Best-effort —
+        # a missing/empty attention store simply decays existing mass forward.
+        try:
+            from trie.sync.attention_fold import fold_historical_mass
+
+            fold_historical_mass(triefact, project_root=project_root)
+        except Exception:
+            pass
+
         write_path.parent.mkdir(parents=True, exist_ok=True)
         write_path.write_text(triefact.render())
 
@@ -549,6 +588,9 @@ def sync_single_file(
                         symbol_qname=qn,
                         section_fingerprint=section.fingerprint or "",
                         one_liner=extract_one_liner(section.body),
+                        # Preserve the role tag from the persisted sentinel so the
+                        # catch-all doesn't blank a role set by the generate path.
+                        role=section.role,
                     )
 
         tele["symbols_generated"] = symbols_generated

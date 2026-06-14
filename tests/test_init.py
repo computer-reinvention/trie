@@ -101,9 +101,9 @@ def test_init_happy_path(python_project: Path):
     assert "pyproject.toml" in result.detected_markers
 
 
-def test_init_errors_on_non_python_without_force(empty_dir: Path):
+def test_init_errors_on_unsupported_without_force(empty_dir: Path):
     (empty_dir / "README.md").write_text("# hi")
-    with pytest.raises(InitError, match="does not look like a Python project"):
+    with pytest.raises(InitError, match="does not look like a supported project"):
         init_project(empty_dir)
 
 

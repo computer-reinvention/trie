@@ -1,5 +1,174 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Theme tokens — driven by data-attributes set from the settings store.
+   Components mostly use Tailwind slate/indigo, but accent + font-size are
+   wired through CSS variables so settings take effect live.
+--------------------------------------------------------------------------- */
+:root {
+  --ui-font-size: 13px;
+  --accent: #6366f1; /* indigo-500 */
+  --accent-hover: #818cf8;
+  --bg-app: #020617;
+  --bg-panel: #0f172a;
+
+  /* Layered surface + text scale — consumed by the chat panel and (later)
+     other chrome. Defined per data-theme below; these are the dark defaults.
+     Surfaces go from the panel background (1) up to elevated popovers (3). */
+  --surface-1: #0f172a; /* panel base */
+  --surface-2: #182234; /* cards / inputs */
+  --surface-3: #1f2b40; /* hover / elevated rows */
+  --surface-pop: #131c2e; /* popovers, menus */
+  --border-subtle: #1e293b;
+  --border-strong: #334155;
+  --text-1: #e2e8f0; /* primary */
+  --text-2: #94a3b8; /* secondary */
+  --text-3: #64748b; /* muted */
+  --text-faint: #475569; /* hints / metadata */
+  --radius: 8px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --elev-2: 0 8px 24px -6px rgba(0, 0, 0, 0.55), 0 2px 6px -2px rgba(0, 0, 0, 0.4);
+  --danger: #f43f5e;
+  --danger-soft: rgba(244, 63, 94, 0.16);
+  --warn: #f59e0b;
+}
+
+:root[data-accent="indigo"] {
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+}
+:root[data-accent="violet"] {
+  --accent: #8b5cf6;
+  --accent-hover: #a78bfa;
+}
+:root[data-accent="emerald"] {
+  --accent: #10b981;
+  --accent-hover: #34d399;
+}
+:root[data-accent="amber"] {
+  --accent: #f59e0b;
+  --accent-hover: #fbbf24;
+}
+:root[data-accent="rose"] {
+  --accent: #f43f5e;
+  --accent-hover: #fb7185;
+}
+
+:root[data-theme="dark"] {
+  --bg-app: #020617;
+  --bg-panel: #0f172a;
+  --surface-1: #0f172a;
+  --surface-2: #182234;
+  --surface-3: #1f2b40;
+  --surface-pop: #131c2e;
+  --border-subtle: #1e293b;
+  --border-strong: #334155;
+}
+:root[data-theme="midnight"] {
+  --bg-app: #000000;
+  --bg-panel: #0a0a0f;
+  --surface-1: #0a0a0f;
+  --surface-2: #14141c;
+  --surface-3: #1c1c28;
+  --surface-pop: #101018;
+  --border-subtle: #1c1c28;
+  --border-strong: #2c2c3a;
+}
+:root[data-theme="slate"] {
+  --bg-app: #0b1120;
+  --bg-panel: #131c2e;
+  --surface-1: #131c2e;
+  --surface-2: #1c2740;
+  --surface-3: #243150;
+  --surface-pop: #18223a;
+  --border-subtle: #243150;
+  --border-strong: #3a4a6b;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-size: var(--ui-font-size);
+  background: var(--bg-app);
+}
+
+/* Token-driven surface/text helpers — let the chat panel reskin with the theme
+   instead of hardcoding slate-*. */
+.surface-1 {
+  background-color: var(--surface-1);
+}
+.surface-2 {
+  background-color: var(--surface-2);
+}
+.surface-3 {
+  background-color: var(--surface-3);
+}
+.surface-pop {
+  background-color: var(--surface-pop);
+}
+.border-subtle {
+  border-color: var(--border-subtle);
+}
+.border-strong {
+  border-color: var(--border-strong);
+}
+.text-1 {
+  color: var(--text-1);
+}
+.text-2 {
+  color: var(--text-2);
+}
+.text-3 {
+  color: var(--text-3);
+}
+.text-faint {
+  color: var(--text-faint);
+}
+.elev-1 {
+  box-shadow: var(--elev-1);
+}
+.elev-2 {
+  box-shadow: var(--elev-2);
+}
+
+/* Accent helper utilities (used where Tailwind's static palette isn't enough) */
+.bg-accent {
+  background-color: var(--accent);
+}
+.bg-accent-soft {
+  background-color: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.border-accent-soft {
+  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+}
+.ring-accent-soft {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.bg-accent:hover {
+  background-color: var(--accent-hover);
+}
+.text-accent {
+  color: var(--accent);
+}
+.border-accent {
+  border-color: var(--accent);
+}
+.ring-accent {
+  --tw-ring-color: var(--accent);
+}
+
+/* Compact density: tighten common spacing utilities a touch. */
+:root[data-density="compact"] {
+  --space-scale: 0.85;
+}
+
 @layer utilities {
   .animate-pulse-slow {
     animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -7,13 +176,280 @@
   .animate-pulse-fast {
     animation: pulse 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
+  /* draggable region for the custom macOS title bar */
+  .app-drag {
+    -webkit-app-region: drag;
+  }
+  .app-no-drag {
+    -webkit-app-region: no-drag;
+  }
+  /* thin, unobtrusive scrollbars (VS Code-like) */
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 transparent;
+  }
+  .scroll-thin::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  .scroll-thin::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  .scroll-thin::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+    background-clip: content-box;
+  }
 }
 
-/* React Flow overrides */
-.react-flow__node {
+/* Lockstep pulse — chat tool-rows / patch rows breathe while their symbol is
+   live on the graph (docs/choreography-prd.md §3). Reduced-motion disables it. */
+@keyframes trie-pulse-bar {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.trie-pulse {
+  animation: trie-pulse-bar 0.9s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------------------------
+   Chat motion — message entrance, streaming dots, and reasoning shimmer.
+   All gated behind prefers-reduced-motion.
+--------------------------------------------------------------------------- */
+@keyframes msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.msg-in {
+  animation: msg-in 0.22s ease-out both;
+}
+
+@keyframes typing-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+.typing-dot {
+  animation: typing-dot 1.2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--text-3) 0%,
+    var(--text-1) 50%,
+    var(--text-3) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 2s linear infinite;
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion. Two entry points share one rule set:
+     • the OS preference (@media prefers-reduced-motion), UNLESS the user has
+       explicitly forced motion ON (data-reduced-motion="off");
+     • an explicit in-app force-on (data-reduced-motion="on"), regardless of OS.
+   Decorative motion (entrances, pulses, shimmer) is removed entirely; spinners
+   keep a slow spin so "loading" still reads, just without the fast whirl.
+--------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-reduced-motion="off"]) .msg-in,
+  :root:not([data-reduced-motion="off"]) .typing-dot,
+  :root:not([data-reduced-motion="off"]) .trie-pulse {
+    animation: none;
+    opacity: 1;
+  }
+  :root:not([data-reduced-motion="off"]) .shimmer-text {
+    animation: none;
+    -webkit-text-fill-color: var(--text-2);
+  }
+  :root:not([data-reduced-motion="off"]) .animate-spin {
+    animation-duration: 1.8s;
+  }
+  :root:not([data-reduced-motion="off"]) .animate-pulse,
+  :root:not([data-reduced-motion="off"]) .animate-pulse-slow,
+  :root:not([data-reduced-motion="off"]) .animate-pulse-fast {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+[data-reduced-motion="on"] .msg-in,
+[data-reduced-motion="on"] .typing-dot,
+[data-reduced-motion="on"] .trie-pulse {
+  animation: none;
+  opacity: 1;
+}
+[data-reduced-motion="on"] .shimmer-text {
+  animation: none;
+  -webkit-text-fill-color: var(--text-2);
+}
+[data-reduced-motion="on"] .animate-spin {
+  animation-duration: 1.8s;
+}
+[data-reduced-motion="on"] .animate-pulse,
+[data-reduced-motion="on"] .animate-pulse-slow,
+[data-reduced-motion="on"] .animate-pulse-fast {
+  animation: none;
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+   Rendered markdown (chat responses, triefact prose, inspector). The Tailwind
+   typography plugin is not installed; this gives comfortable, dark-theme
+   markdown with real vertical rhythm.
+--------------------------------------------------------------------------- */
+.md {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #cbd5e1; /* slate-300 */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.md > :first-child {
+  margin-top: 0;
+}
+.md > :last-child {
+  margin-bottom: 0;
+}
+.md p {
+  margin: 0.6em 0;
+}
+.md h1,
+.md h2,
+.md h3,
+.md h4 {
+  color: #e2e8f0; /* slate-200 */
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 1.1em 0 0.5em;
+}
+.md h1 {
+  font-size: 1.3em;
+}
+.md h2 {
+  font-size: 1.18em;
+}
+.md h3 {
+  font-size: 1.06em;
+}
+.md h4 {
+  font-size: 1em;
+}
+.md ul,
+.md ol {
+  margin: 0.6em 0;
+  padding-left: 1.4em;
+}
+.md ul {
+  list-style: disc;
+}
+.md ol {
+  list-style: decimal;
+}
+.md li {
+  margin: 0.3em 0;
+}
+.md li > ul,
+.md li > ol {
+  margin: 0.3em 0;
+}
+.md a {
+  color: var(--accent-hover, #818cf8);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.md strong {
+  color: #f1f5f9;
+  font-weight: 600;
+}
+.md em {
+  font-style: italic;
+}
+.md code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  font-size: 0.88em;
+  background: #1e293b; /* slate-800 */
+  color: #e2e8f0;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
 }
-
-.react-flow__edge-path {
-  transition: opacity 0.2s;
+.md pre {
+  background: #0b1220;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 0.75em 0.85em;
+  margin: 0.7em 0;
+  overflow-x: auto;
+}
+.md pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 0.85em;
+  line-height: 1.5;
+  color: #cbd5e1;
+}
+.md blockquote {
+  margin: 0.7em 0;
+  padding-left: 0.9em;
+  border-left: 3px solid #334155;
+  color: #94a3b8;
+}
+.md hr {
+  border: 0;
+  border-top: 1px solid #1e293b;
+  margin: 1em 0;
+}
+.md table {
+  border-collapse: collapse;
+  margin: 0.7em 0;
+  font-size: 0.92em;
+  display: block;
+  overflow-x: auto;
+}
+.md th,
+.md td {
+  border: 1px solid #1e293b;
+  padding: 0.35em 0.6em;
+  text-align: left;
+}
+.md th {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+/* Tighter variant for small surfaces (triefact cards, inspector). */
+.md-sm {
+  font-size: 12px;
+  line-height: 1.55;
 }

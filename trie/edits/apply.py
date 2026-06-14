@@ -64,10 +64,63 @@ def _parse_ruff_output(stdout: str) -> list[dict]:
     return result
 
 
+def _parse_tsc_output(stdout: str) -> list[dict]:
+    """Parse `tsc --noEmit --pretty false` diagnostics.
+
+    Each error line looks like:
+        path/to/file.ts(12,5): error TS2322: Type 'x' is not assignable...
+    We extract line/column/code/message; the file path is ignored (the checker
+    is run per-candidate-file in the scratch tree).
+    """
+    result: list[dict] = []
+    for raw in stdout.splitlines():
+        line = raw.strip()
+        if "): error TS" not in line and "): warning TS" not in line:
+            continue
+        try:
+            loc_part, rest = line.split("):", 1)
+            coords = loc_part.rsplit("(", 1)[1]  # "12,5"
+            row_str, col_str = coords.split(",", 1)
+            severity_code, message = rest.strip().split(":", 1)
+            code = severity_code.split()[-1]  # "TS2322"
+            result.append(
+                {
+                    "line": int(row_str),
+                    "column": int(col_str),
+                    "code": code,
+                    "message": message.strip(),
+                }
+            )
+        except (ValueError, IndexError):
+            continue
+    return result
+
+
 _PARSERS = {
     "pyright": _parse_pyright_output,
     "ruff": _parse_ruff_output,
+    "tsc": _parse_tsc_output,
 }
+
+
+def lsp_backends_for_file(file_path: Path, config: Config) -> list[LspBackend]:
+    """Diagnostic checkers for a file: its language backend's defaults if any,
+    else the configured `Edits.lsp_backends` fallback.
+
+    A `[languages]` config override (config.languages[name].lsp_backends) takes
+    precedence over the backend's built-in defaults when present.
+    """
+    from trie.parse import registry
+
+    backend = registry.get_backend_for_file(file_path)
+    if backend is not None:
+        override = config.languages.get(backend.name)
+        if override is not None and override.lsp_backends:
+            return override.lsp_backends
+        defaults = backend.lsp_backends()
+        if defaults:
+            return defaults
+    return config.edits.lsp_backends
 
 
 def _lsp_diagnostics(file_path: Path, backends: list[LspBackend]) -> list[dict]:
@@ -409,8 +462,9 @@ def apply_patches(
         full_path.write_text(new_content)
 
         lsp_iterations = 0
+        file_lsp_backends = lsp_backends_for_file(full_path, config)
         for i in range(config.edits.lsp_max_retries):
-            diags = _lsp_diagnostics(full_path, config.edits.lsp_backends)
+            diags = _lsp_diagnostics(full_path, file_lsp_backends)
             if not diags:
                 break
             if progress:
@@ -505,6 +559,15 @@ def apply_patches(
                 "error": f"refresh failed for {fp}: {exc}",
             }
 
+    # Clear the pending patches for everything that was written + refreshed
+    # cleanly, BEFORE the whole-tree verify gate. The patch represents "apply
+    # this edit to this symbol"; once the file is written and its triefact
+    # refreshed, that intent is fulfilled. The global verify can be dirty for
+    # unrelated reasons (other stale files in the tree), and letting it block
+    # patch cleanup left applied patches stuck "pending" forever.
+    for qn in all_qnames:
+        store.delete_patches(qname=qn)
+
     if progress:
         progress.stage("verify — checking project consistency")
     result = check_project(project_root=project_root, config=config)
@@ -519,9 +582,6 @@ def apply_patches(
             "files": file_results,
             "error": f"verify failed: {', '.join(stale[:5])}",
         }
-
-    for qn in all_qnames:
-        store.delete_patches(qname=qn)
 
     if progress:
         progress.stage(
@@ -564,9 +624,9 @@ def _write_prose_section(
         source_path = src_root / file_path
         if source_path.exists():
             try:
-                from trie.parse.python import extract_symbols
+                from trie.parse import registry
 
-                for sym in extract_symbols(source_path, source_root=src_root):
+                for sym in registry.extract_symbols(source_path, source_root=src_root):
                     if sym.qualified_name == qname:
                         fingerprint = sym.body_normalized_hash
                         break

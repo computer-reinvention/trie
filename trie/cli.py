@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import sys
+import threading
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -23,7 +25,7 @@ from trie.docs_install import (
 from trie.docs_install import (
     install as docs_run_install,
 )
-from trie.edits.apply import apply_patches, preview_patches
+from trie.edits.apply import preview_patches
 from trie.freshness import (
     FreshnessResult,
     NotAGitRepoError,
@@ -57,11 +59,13 @@ from trie.sync.incremental import (
     run_incremental,
 )
 from trie.sync.progress import ProgressCallback
+from trie.sync.roles import run_roles_only
 from trie.sync.single_file import (
     FileSyncResult,
     refresh_triefact_metadata,
     sync_single_file,
 )
+from trie.sync.taxonomy import taxonomy_path
 from trie.tool_override_install import (
     ToolOverrideInstallError,
     ToolOverrideInstallPlan,
@@ -86,6 +90,29 @@ def _get_reporter(ctx: typer.Context) -> Reporter:
     return Reporter()
 
 
+def _cli_session_id(project_root: Path) -> str:
+    """Stable patch session id for CLI invocations.
+
+    Reads TRIE_SESSION_ID if set; else a value persisted in activity.db so repeated
+    `trie patch ...` calls in one project share a session and `--session` drop works
+    (fixes the prior per-invocation-UUID bug). Minted once, then reused.
+    """
+    import os
+    import uuid
+
+    from trie import activity
+
+    env = os.environ.get("TRIE_SESSION_ID")
+    if env:
+        return env
+    existing = activity.get_meta(project_root, "cli_session_id")
+    if existing:
+        return existing
+    sid = uuid.uuid4().hex[:12]
+    activity.set_meta(project_root, "cli_session_id", sid)
+    return sid
+
+
 class _ProgressAdapter:
     """Bridge from sync's ProgressCallback Protocol to a Reporter ProgressHandle.
 
@@ -99,20 +126,47 @@ class _ProgressAdapter:
         self.label = label
         self.handle: ProgressHandle | None = None
         self._prev_running_cost = 0.0
+        self._lock = threading.Lock()
 
     def _ensure(self, total: int) -> ProgressHandle:
-        if self.handle is None:
-            self.handle = self.reporter.start_progress(total=total, label=self.label)
-            self.handle.__enter__()
-        return self.handle
+        with self._lock:
+            if self.handle is None:
+                self.handle = self.reporter.start_progress(total=total, label=self.label)
+                self.handle.__enter__()
+            return self.handle
 
     def close(self) -> None:
         if self.handle is not None:
             self.handle.__exit__(None, None, None)
             self.handle = None
 
-    def on_start(self, rel_path: str, idx: int, total: int) -> None:
-        self._ensure(total).start_file(rel_path)
+    def on_plan(self, *, direct: int, cascade: int) -> None:
+        # Printed once before any file starts. Summarises the worklist split so
+        # the operator understands why N files sync when only a few drifted.
+        if self.reporter.verbosity < Verbosity.MEDIUM:
+            return
+        total = direct + cascade
+        if total == 0:
+            return
+        self.reporter.console.print(
+            f"[bold]syncing {total} file(s)[/bold]: "
+            f"[cyan]{direct} directly stale[/cyan] · "
+            f"[magenta]{cascade} pulled in by the cascade[/magenta]"
+        )
+
+    def on_section(self, *, label: str, count: int) -> None:
+        # A separator + heading printed above the live region before each group
+        # of files (directly stale, then cascade) begins.
+        if self.reporter.verbosity < Verbosity.MEDIUM or count == 0:
+            return
+        line = f"\n[dim]── {label} ({count}) ──[/dim]"
+        if self.handle is not None:
+            self.handle._print(line)
+        else:
+            self.reporter.console.print(line)
+
+    def on_start(self, rel_path: str, idx: int, total: int, *, cascade: bool = False) -> None:
+        self._ensure(total).start_file(rel_path, cascade=cascade)
 
     def on_done(self, rel_path: str, result: FileSyncResult, running_cost_usd: float) -> None:
         per_file_cost = running_cost_usd - self._prev_running_cost
@@ -141,6 +195,100 @@ def _progress_callback(reporter: Reporter, label: str) -> Iterator[ProgressCallb
         yield adapter
     finally:
         adapter.close()
+
+
+@contextmanager
+def _activity_progress(
+    reporter: Reporter, label: str, *, op: str, project_root: Path
+) -> Iterator[ProgressCallback]:
+    """Like `_progress_callback`, but also mirrors progress into the shared
+    `.trie/` activity state (`status.json` + `activity.jsonl`) so any process —
+    a terminal sync, the hook, the desktop app — has a live, readable view of
+    what this run is doing. The Rich/JSONL reporter and the activity feed both
+    fire.
+    """
+    from trie.activity import ActivityProgress, ActivityWriter
+
+    adapter = _ProgressAdapter(reporter, label)
+    writer = ActivityWriter(project_root, op)
+    try:
+        with writer:
+            yield ActivityProgress(writer, inner=adapter)
+    finally:
+        adapter.close()
+        # AGM: after a sync/refresh run has folded historical mass into every
+        # regenerated triefact, advance the attention-store watermark so the next
+        # run's recurrence window starts here. Per-run (not per-file) so every
+        # file in this run saw the same "since last fold" window. Best-effort.
+        if op in ("sync", "bootstrap", "refresh", "roles"):
+            try:
+                from trie.sync.attention_fold import advance_fold_watermark
+
+                advance_fold_watermark(project_root)
+            except Exception:
+                pass
+
+
+class _JsonlProgress:
+    """ProgressCallback that emits one JSON object per line to a stream.
+
+    This is the machine-readable counterpart to `_ProgressAdapter`. Hosts that
+    drive trie as a subprocess (the desktop app's startup refresh, CI) parse
+    these lines to render their own progress UI instead of scraping Rich output.
+
+    Event schema (every line is a complete JSON object with a `kind` field):
+
+      {"kind": "start",   "rel_path": str, "idx": int, "total": int}
+      {"kind": "done",    "rel_path": str, "symbols": int, "cost_usd": float,
+                          "running_cost_usd": float}
+      {"kind": "skip",    "rel_path": str, "reason": str}
+
+    The `phase`/`summary` envelope events are emitted by the command itself
+    (see `refresh_cmd`), not here, so the host sees a single ordered stream.
+
+    Lines are flushed immediately so a host reading the pipe sees progress in
+    real time rather than at process exit.
+    """
+
+    def __init__(self, stream: Any = None):
+        self._stream = stream if stream is not None else sys.stdout
+
+    def _emit(self, payload: dict[str, Any]) -> None:
+        import json as _json
+
+        self._stream.write(_json.dumps(payload) + "\n")
+        self._stream.flush()
+
+    def on_start(self, rel_path: str, idx: int, total: int, *, cascade: bool = False) -> None:
+        self._emit(
+            {"kind": "start", "rel_path": rel_path, "idx": idx, "total": total, "cascade": cascade}
+        )
+
+    def on_done(self, rel_path: str, result: FileSyncResult, running_cost_usd: float) -> None:
+        self._emit(
+            {
+                "kind": "done",
+                "rel_path": rel_path,
+                "symbols": result.symbols_generated,
+                "running_cost_usd": running_cost_usd,
+            }
+        )
+
+    def on_skip(self, rel_path: str, reason: str) -> None:
+        self._emit({"kind": "skip", "rel_path": rel_path, "reason": reason})
+
+
+def emit_jsonl_event(payload: dict[str, Any], stream: Any = None) -> None:
+    """Emit a single envelope JSONL event (phase markers, summaries, errors).
+
+    Used by commands running in `--json` mode to bracket the per-file events
+    from `_JsonlProgress` with lifecycle markers the host can key on.
+    """
+    import json as _json
+
+    out = stream if stream is not None else sys.stdout
+    out.write(_json.dumps(payload) + "\n")
+    out.flush()
 
 
 @contextmanager
@@ -497,6 +645,129 @@ def verify_cmd(ctx: typer.Context) -> None:
     _verify_drift(reporter, exit_on_drift=True)
 
 
+@app.command("status")
+def status_cmd(
+    ctx: typer.Context,
+    as_json: bool = typer.Option(
+        False, "--json", help="Emit the status as a single JSON object instead of prose."
+    ),
+) -> None:
+    """Show trie's working state — like `git status` for the triefact tree.
+
+    Reports:
+      • the active writer (idle, or a running sync/refresh with live progress),
+      • the stale triefacts a `trie sync` would regenerate — computed from the
+        same offline content-drift check `trie verify` uses (source body
+        fingerprints vs. triefact sentinels), so it's authoritative, not a cached
+        guess. The refresh-computed `pending.json` set is unioned in.
+
+    Read-only and fast: a content-drift scan (no LLM, no DB writes). Safe to run
+    while a sync is in flight — it reflects that sync's live progress.
+    """
+    import json as _json
+
+    from trie.activity import read_pending, read_status
+    from trie.check import check_project
+
+    reporter = _get_reporter(ctx)
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    status = read_status(project_root)
+
+    # Authoritative drift via the same `check_project` call `trie verify` uses —
+    # status reports exactly what verify would, never an independent computation.
+    check = check_project(project_root=project_root, config=config)
+    drift_by_file: dict[str, int] = {}
+    for it in check.items:
+        drift_by_file[it.source_path] = drift_by_file.get(it.source_path, 0) + 1
+
+    # Union with the refresh-computed pending set (a graph-only refresh may have
+    # flagged cascade files whose own bodies didn't change but whose neighbours did).
+    pending = read_pending(project_root)
+    stale_set = set(drift_by_file) | set(pending.stale if pending else ())
+    stale = sorted(stale_set)
+
+    # Pending edit patches (durable, from graph.db) — the shared patch_summary reader.
+    patch_summary: dict[str, object] = {
+        "total_patches": 0,
+        "symbol_count": 0,
+        "create_count": 0,
+        "by_origin": {},
+    }
+    try:
+        _pstore = Store(project_root / ".trie" / "graph.db")
+        try:
+            patch_summary = _pstore.patch_summary()
+        finally:
+            _pstore.close()
+    except Exception:
+        pass
+
+    if as_json:
+        typer.echo(
+            _json.dumps(
+                {
+                    "state": status.state,
+                    "op": status.op,
+                    "pid": status.pid,
+                    "current_file": status.current_file,
+                    "done": status.done,
+                    "total": status.total,
+                    "stale_count": len(stale),
+                    "stale": stale,
+                    "drift_items": len(check.items),
+                    "patches": patch_summary,
+                },
+                default=str,
+            )
+        )
+        return
+
+    # Writer line.
+    if status.is_active:
+        prog = f" {status.done}/{status.total}" if status.total else ""
+        cur = f" · {status.current_file}" if status.current_file else ""
+        reporter.console.print(f"[cyan]●[/cyan] {status.op or status.state}{prog}{cur}")
+    elif status.state == "error":
+        reporter.console.print(f"[red]✗[/red] last run errored: {status.error or 'unknown'}")
+    else:
+        reporter.console.print("[green]●[/green] idle")
+
+    # Stale set.
+    if stale:
+        reporter.console.print(
+            f"\n[yellow]{len(stale)} triefact(s) stale[/yellow] "
+            f"({len(check.items)} drifted section(s)) — run `trie sync` to regenerate:"
+        )
+        for f in stale[:20]:
+            n = drift_by_file.get(f)
+            suffix = f" [dim]({n} section{'s' if n != 1 else ''})[/dim]" if n else ""
+            reporter.console.print(f"  [yellow]~[/yellow] {f}{suffix}")
+        if len(stale) > 20:
+            reporter.console.print(f"  … and {len(stale) - 20} more")
+
+    # Pending edit patches.
+    def _as_int(v: object) -> int:
+        return int(v) if isinstance(v, int) else 0
+
+    total_patches = _as_int(patch_summary.get("total_patches", 0))
+    create_count = _as_int(patch_summary.get("create_count", 0))
+    sym_count = _as_int(patch_summary.get("symbol_count", 0))
+    if total_patches or create_count:
+        bits = []
+        if total_patches:
+            bits.append(f"{total_patches} patch(es) across {sym_count} symbol(s)")
+        if create_count:
+            bits.append(f"{create_count} pending create(s)")
+        reporter.console.print(
+            f"\n[magenta]◐ {' · '.join(bits)}[/magenta] — run `trie patch apply` to commit"
+        )
+
+
 @app.command("lock-check")
 def lock_check_cmd(ctx: typer.Context) -> None:
     """Probe whether another trie process holds the project's write lock.
@@ -576,6 +847,26 @@ def refresh_cmd(
         "--model",
         help="Override the configured model (only used when refresh fires a sync).",
     ),
+    sync_prose: bool = typer.Option(
+        False,
+        "--sync",
+        help=(
+            "Regenerate drifted triefact prose inline (the old behaviour). By "
+            "default refresh is graph-only and fast: it rebuilds the symbol graph "
+            "and marks drifted triefacts stale for a later `trie sync`, keeping "
+            "the turn boundary cheap."
+        ),
+    ),
+    as_json: bool = typer.Option(
+        False,
+        "--json",
+        help=(
+            "Emit machine-readable JSON-Lines progress to stdout instead of a "
+            'Rich progress bar. Each line is one event ({"kind": ...}); hosts '
+            "driving trie as a subprocess (the desktop app) parse this to render "
+            "their own status UI. Implies quiet Rich output."
+        ),
+    ),
 ) -> None:
     """Bring the graph + triefacts up to date with the working tree.
 
@@ -598,10 +889,19 @@ def refresh_cmd(
         reporter.error("--before-turn and --after-turn are mutually exclusive")
         raise typer.Exit(code=1)
 
+    # In --json mode the Rich progress bar and success lines would interleave
+    # with the JSONL stream and corrupt it. Mute the reporter so stdout carries
+    # only well-formed JSON events; errors still emit as {"kind": "error"}.
+    if as_json:
+        reporter.verbosity = Verbosity.MUTE
+
     try:
         config, project_root = Config.find_and_load(Path.cwd())
     except ConfigNotFoundError as exc:
-        reporter.error(str(exc))
+        if as_json:
+            emit_jsonl_event({"kind": "error", "message": str(exc)})
+        else:
+            reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
     model_id = model or config.models.cascade
@@ -610,6 +910,9 @@ def refresh_cmd(
 
     runner = ensure_fresh_before_turn if before_turn else ensure_fresh_after_turn
     mode_label = "before-turn" if before_turn else "after-turn"
+
+    if as_json:
+        emit_jsonl_event({"kind": "phase", "phase": "refresh", "mode": mode_label})
 
     # `trie refresh` runs as a per-turn hook, so two agent turns in quick
     # succession can fire two refresh processes that race the SQLite store
@@ -625,12 +928,17 @@ def refresh_cmd(
                 mode=mode_label,
                 action="queued",
             )
-            reporter.success(f"{mode_label}: another refresh is running; queued for tail pass.")
+            if as_json:
+                emit_jsonl_event(
+                    {"kind": "summary", "refreshed": False, "reason": "queued", "mode": mode_label}
+                )
+            else:
+                reporter.success(f"{mode_label}: another refresh is running; queued for tail pass.")
             return
 
         with (
             Store(db_path) as store,
-            _progress_callback(reporter, label="refreshing") as cb,
+            _refresh_progress(reporter, as_json, project_root=project_root) as cb,
         ):
             try:
                 result = runner(
@@ -639,11 +947,18 @@ def refresh_cmd(
                     store=store,
                     client=client,
                     progress=cb,
+                    sync_prose=sync_prose,
                 )
             except NotAGitRepoError as exc:
-                reporter.error(str(exc))
+                if as_json:
+                    emit_jsonl_event({"kind": "error", "message": str(exc)})
+                else:
+                    reporter.error(str(exc))
                 raise typer.Exit(code=1) from exc
-            _report_freshness(reporter, result, mode=mode_label)
+            if as_json:
+                _emit_freshness_json(result, mode=mode_label)
+            else:
+                _report_freshness(reporter, result, mode=mode_label)
 
             # Tail pass: at most one extra run, coalescing every refresh
             # request that arrived while we held the lock. We deliberately
@@ -661,8 +976,57 @@ def refresh_cmd(
                     store=store,
                     client=client,
                     progress=cb,
+                    sync_prose=sync_prose,
                 )
-                _report_freshness(reporter, tail, mode=f"{mode_label} (tail)")
+                if as_json:
+                    _emit_freshness_json(tail, mode=f"{mode_label} (tail)")
+                else:
+                    _report_freshness(reporter, tail, mode=f"{mode_label} (tail)")
+
+
+@contextmanager
+def _refresh_progress(
+    reporter: Reporter, as_json: bool, *, project_root: Path
+) -> Iterator[ProgressCallback]:
+    """Pick the progress sink for a refresh run, mirroring into the shared
+    `.trie/` activity state either way.
+
+    `--json` routes per-file events through `_JsonlProgress` (one JSON object
+    per line on stdout); otherwise the Rich-backed `_ProgressAdapter` renders a
+    live bar. Both are wrapped so `status.json` + `activity.jsonl` reflect the
+    run for `trie status` and the editor.
+    """
+    from trie.activity import ActivityProgress, ActivityWriter
+
+    writer = ActivityWriter(project_root, "refresh")
+    inner: ProgressCallback
+    with writer:
+        if as_json:
+            yield ActivityProgress(writer, inner=_JsonlProgress())
+        else:
+            with _progress_callback(reporter, label="refreshing") as cb:
+                inner = cb
+                yield ActivityProgress(writer, inner=inner)
+
+
+def _emit_freshness_json(result: FreshnessResult, *, mode: str) -> None:
+    """Emit the terminal `summary` JSONL event for a refresh outcome.
+
+    Mirrors `_report_freshness` but as a structured event the desktop app keys
+    on to close out its status display.
+    """
+    inc = result.incremental
+    emit_jsonl_event(
+        {
+            "kind": "summary",
+            "mode": mode,
+            "refreshed": result.refreshed,
+            "reason": result.reason,
+            "files_synced": inc.files_synced if inc is not None else 0,
+            "cost_usd": inc.actual_cost_usd if inc is not None else 0.0,
+            "stale_files": list(result.stale_files),
+        }
+    )
 
 
 def _report_freshness(reporter: Reporter, result: FreshnessResult, *, mode: str) -> None:
@@ -672,9 +1036,16 @@ def _report_freshness(reporter: Reporter, result: FreshnessResult, *, mode: str)
         return
     inc = result.incremental
     if inc is None:
-        # Defensive: ensure_fresh_* never returns refreshed=True with incremental=None,
-        # but typed code shouldn't assume invariants the caller's eye can't see.
-        reporter.success(f"{mode}: refreshed ({result.reason})")
+        # Graph-only refresh (the fast default). When mtimes_moved marked files
+        # stale, nudge toward `trie sync`; otherwise it was a pure graph rebuild.
+        if result.stale_files:
+            n = len(result.stale_files)
+            reporter.success(
+                f"{mode}: refreshed graph ({result.reason}); "
+                f"{n} triefact(s) now stale — run `trie sync` to regenerate"
+            )
+        else:
+            reporter.success(f"{mode}: refreshed graph ({result.reason})")
         return
     reporter.success(
         f"{mode}: refreshed ({result.reason}); "
@@ -968,6 +1339,23 @@ def sync_cmd(
             "where edge counts moved but source did not."
         ),
     ),
+    roles_only: bool = typer.Option(
+        False,
+        "--roles-only",
+        help=(
+            "(Re)infer only the architectural role tag for every symbol against a "
+            "project-specific role vocabulary, without regenerating prose. Derives "
+            "the vocabulary first if none exists. Cheap relative to a full sync."
+        ),
+    ),
+    rederive_taxonomy: bool = typer.Option(
+        False,
+        "--rederive-taxonomy",
+        help=(
+            "With --roles-only, re-derive the role vocabulary from scratch even if one "
+            "is already saved. Use after large architectural change."
+        ),
+    ),
     model: str | None = typer.Option(
         None,
         "--model",
@@ -1010,6 +1398,14 @@ def sync_cmd(
             "--metadata-only cannot be combined with --file / --all / --dry-run / --budget / --limit"
         )
         raise typer.Exit(code=1)
+    if roles_only and (file is not None or all_ or dry_run or metadata_only):
+        reporter.error(
+            "--roles-only cannot be combined with --file / --all / --dry-run / --metadata-only"
+        )
+        raise typer.Exit(code=1)
+    if rederive_taxonomy and not roles_only:
+        reporter.error("--rederive-taxonomy requires --roles-only")
+        raise typer.Exit(code=1)
 
     # Resolve project root up front so we can guard every sync sub-mode with
     # the same write lock. Config errors stay exit-1; the lock guard is the
@@ -1023,6 +1419,10 @@ def sync_cmd(
     with _acquire_write_lock_or_exit(project_root, reporter, "sync"):
         if metadata_only:
             _run_metadata_only_refresh(reporter)
+            return
+
+        if roles_only:
+            _run_roles_only_sync(reporter, model=model, rederive_taxonomy=rederive_taxonomy)
             return
 
         if file is not None:
@@ -1112,7 +1512,9 @@ def _run_full_pass(
                 )
                 raise typer.Exit(code=1)
 
-        with _progress_callback(reporter, label="syncing") as cb:
+        with _activity_progress(
+            reporter, label="syncing", op="bootstrap", project_root=project_root
+        ) as cb:
             result = run_bootstrap(
                 plan=plan,
                 project_root=project_root,
@@ -1278,6 +1680,48 @@ def _run_metadata_only_refresh(reporter: Reporter) -> None:
     )
 
 
+def _run_roles_only_sync(reporter: Reporter, *, model: str | None, rederive_taxonomy: bool) -> None:
+    """(Re)infer the architectural role tag for every symbol against a derived vocab.
+
+    Scans first so the store reflects current source (the survey + classification
+    both read it), then runs the two-pass roles flow: derive/load the taxonomy, then
+    classify every symbol against it, persisting roles into both the triefact
+    sentinels and the store. No prose is regenerated.
+    """
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    model_id = model or config.models.cascade
+    client = make_client(model_id, sync_cfg=config.sync)
+    db_path = project_root / ".trie" / "graph.db"
+
+    with Store(db_path) as store:
+        with reporter.status("scanning project…"):
+            scan_project(project_root=project_root, config=config, store=store)
+        with _progress_callback(reporter, label="classifying roles") as cb:
+            result = run_roles_only(
+                project_root=project_root,
+                config=config,
+                store=store,
+                client=client,
+                progress=cb,
+                rederive_taxonomy=rederive_taxonomy,
+            )
+
+    if result.taxonomy_derived:
+        reporter.success(
+            f"derived role taxonomy ({result.taxonomy_size} roles) → "
+            f"{taxonomy_path(project_root, config).relative_to(project_root)}"
+        )
+    reporter.success(
+        f"classified {result.symbols_classified} symbol(s) across "
+        f"{result.files_processed} file(s); {result.roles_changed} role(s) changed"
+    )
+
+
 def _run_incremental_sync(
     *, reporter: Reporter, model: str | None, budget: float | None, limit: int | None
 ) -> None:
@@ -1292,7 +1736,10 @@ def _run_incremental_sync(
     client = make_client(model_id, sync_cfg=config.sync)
 
     db_path = project_root / ".trie" / "graph.db"
-    with Store(db_path) as store, _progress_callback(reporter, label="syncing") as cb:
+    with (
+        Store(db_path) as store,
+        _activity_progress(reporter, label="syncing", op="sync", project_root=project_root) as cb,
+    ):
         result = run_incremental(
             project_root=project_root,
             config=config,
@@ -2069,7 +2516,22 @@ def read_cmd(
     ctx: typer.Context,
     qname: str = typer.Argument(
         ...,
-        help="Fully-qualified symbol name (e.g. 'trie/sync/cascade:compute_cascade').",
+        help="Symbol qname (e.g. 'trie/sync/cascade:compute_cascade'), or a file path with --source.",
+    ),
+    source: bool = typer.Option(
+        False,
+        "--source",
+        help="Treat the argument as a FILE PATH and return raw line-numbered source (any file, indexed or not).",
+    ),
+    offset: int | None = typer.Option(
+        None,
+        "--offset",
+        help="With --source: 1-indexed first line to include.",
+    ),
+    limit: int | None = typer.Option(
+        None,
+        "--limit",
+        help="With --source: maximum number of lines to return from offset.",
     ),
     as_json: bool = typer.Option(
         False,
@@ -2077,26 +2539,47 @@ def read_cmd(
         help="Emit the raw MCP envelope as JSON instead of a human-readable summary.",
     ),
 ) -> None:
-    """Read a symbol's prose plus its immediate callers and callees.
+    """Read a symbol's prose + neighbours, or raw file source with --source.
 
-    Mirror of the MCP `read` tool. Use after `trie grep` once you know
-    the qname you want to understand. Returns the symbol's signature,
-    triefact prose, source pointer, and one-liner descriptions of every
-    caller and callee — one round trip for the entire one-hop
-    neighbourhood.
+    Default (qname): mirror of the MCP `read` tool — the symbol's signature,
+    triefact prose, source pointer, and one-liner descriptions of every caller
+    and callee in one round trip.
+
+    With `--source` (EXT-3/EXT-4): treat the argument as a file path and return
+    raw, line-numbered source for ANY file under the project root — indexed or
+    not — with optional `--offset`/`--limit` windowing.
 
     Examples:
 
       trie read trie/sync/cascade:compute_cascade
-      trie read --json trie/graph/store:Store.replace_all_edges
+      trie read --source package.json
+      trie read --source src/app.ts --offset 1 --limit 40
     """
     reporter = _get_reporter(ctx)
     tools = _open_tools(reporter)
     try:
-        envelope = tools.read(qname)
+        if source:
+            envelope = tools.read_source(qname, offset=offset, limit=limit)
+        else:
+            envelope = tools.read(qname)
     finally:
         tools.close()
-    _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_read)
+    if source:
+        _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_read_source)
+    else:
+        _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_read)
+
+
+def _render_read_source(envelope: dict[str, object], reporter: Reporter) -> None:
+    """Human-readable render of a read_source envelope."""
+    err = envelope.get("error")
+    if isinstance(err, dict):
+        _render_error_envelope(err, reporter)
+        return
+    lines = envelope.get("lines", "")
+    reporter.console.print(str(lines))
+    if envelope.get("more"):
+        reporter.info("(more lines available; pass --offset/--limit to page)")
 
 
 @app.command("trace")
@@ -2145,6 +2628,73 @@ def trace_cmd(
     _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_trace)
 
 
+@app.command("blast-radius")
+def blast_radius_cmd(
+    ctx: typer.Context,
+    qname: str = typer.Argument(
+        ...,
+        help="Fully-qualified symbol name to compute the edit blast radius for.",
+    ),
+    as_json: bool = typer.Option(
+        False,
+        "--json",
+        help="Emit the raw MCP envelope as JSON instead of a human-readable summary.",
+    ),
+) -> None:
+    """Compute the cascade blast radius of editing a symbol — free graph math.
+
+    Mirror of the MCP `blast_radius` tool. Reports every symbol whose
+    triefact/source would be regenerated if `qname` changed, with each
+    one's BFS hop distance from the seed. No LLM calls. Use before a risky
+    delete/rename/modify to gauge impact.
+
+    Examples:
+
+      trie blast-radius trie/graph/store:Store.replace_all_edges
+      trie blast-radius --json some_qname
+    """
+    reporter = _get_reporter(ctx)
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.blast_radius(qname)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_blast_radius)
+
+
+def _render_blast_radius(envelope: dict[str, object], reporter: Reporter) -> None:
+    """Human-readable render of a blast_radius envelope."""
+    err = envelope.get("error")
+    if isinstance(err, dict):
+        _render_error_envelope(err, reporter)
+        return
+    qname = envelope.get("qname", "")
+    file = envelope.get("file", "")
+    cascade = envelope.get("cascade", [])
+    count = envelope.get("cascade_count", 0)
+    direct = envelope.get("direct", 0)
+    reporter.console.print(f"[bold]{qname}[/bold]  [dim]({file})[/dim]")
+    reporter.console.print(
+        f"  blast radius: {count} symbol(s) regenerated · {direct} direct caller(s)"
+    )
+    if isinstance(cascade, list) and cascade:
+        from rich.table import Table
+
+        table = Table(title="Cascade")
+        table.add_column("hop", style="magenta", justify="right")
+        table.add_column("symbol", style="cyan")
+        table.add_column("file", style="dim")
+        for item in cascade:
+            if not isinstance(item, dict):
+                continue
+            table.add_row(
+                str(item.get("hop", "")), str(item.get("qname", "")), str(item.get("file", ""))
+            )
+        reporter.console.print(table)
+    else:
+        reporter.info("nothing else depends on this symbol")
+
+
 # ---------------------------------------------------------------------------
 # Extended agent tools: grep_str, grep_entry_points, grep_symbol,
 # grep_symbol_and_neighbours, explain_symbol, explain_symbol_references,
@@ -2173,19 +2723,137 @@ def _print_plain(envelope: dict[str, object], reporter: Reporter) -> None:
 def grep_str_cmd(
     ctx: typer.Context,
     regexp: str = typer.Argument(..., help="Regex pattern to search source bodies with."),
+    all_files: bool = typer.Option(
+        False,
+        "--all-files",
+        help="Search the WHOLE repo (incl. non-indexed files), not just indexed source bodies.",
+    ),
 ) -> None:
     """Search source bodies with a regex; attribute hits to enclosing symbols.
 
-    Example:
+    By default only indexed (in-scope) source bodies are searched. Pass
+    `--all-files` to run ripgrep over the entire project (EXT-1): in-scope
+    hits are still attributed to their enclosing symbol, and out-of-scope
+    hits (TS/JS, configs, docs, lockfiles) come back as `file:line:text`.
+
+    Examples:
       trie grep-str 'raise.*Error'
+      trie grep-str 'TODO' --all-files
     """
     reporter = _get_reporter(ctx)
     tools = _open_tools(reporter)
     try:
-        envelope = tools.grep_str(regexp)
+        envelope = tools.grep_str_all(regexp) if all_files else tools.grep_str(regexp)
     finally:
         tools.close()
     _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+
+
+@app.command("find")
+def find_cmd(
+    ctx: typer.Context,
+    pattern: str = typer.Argument(
+        ..., help="Glob pattern, e.g. '**/*.ts', 'Dockerfile', 'src/**/*.tsx'."
+    ),
+    indexed_only: bool = typer.Option(
+        False,
+        "--indexed-only",
+        help="Restrict to indexed files only (default searches the whole tree).",
+    ),
+    limit: int = typer.Option(100, "--limit", "-l", help="Maximum number of paths to return."),
+) -> None:
+    """Find files by name/path glob (EXT-2) — the filename-search trie lacked.
+
+    Walks the whole project tree by default (pruning excluded/vendored dirs),
+    mtime-sorted, newest first. Pass `--indexed-only` to restrict to files in
+    trie's scope.
+
+    Examples:
+      trie find '**/*.ts'
+      trie find 'trie.toml'
+      trie find 'src/**/*.tsx' --limit 50
+    """
+    reporter = _get_reporter(ctx)
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.find_files(pattern, all_files=not indexed_only, limit=limit)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_render_find)
+
+
+@app.command("write")
+def write_cmd(
+    ctx: typer.Context,
+    path: str = typer.Argument(
+        ..., help="File path to create/overwrite, relative to the project root."
+    ),
+    content: str | None = typer.Option(
+        None,
+        "--content",
+        "-c",
+        help="File content. If omitted, content is read from stdin.",
+    ),
+    overwrite: bool = typer.Option(
+        False,
+        "--overwrite",
+        help="Allow replacing an existing file.",
+    ),
+) -> None:
+    """Create or overwrite an arbitrary file under the project root (EXT-8).
+
+    Fills the gap where `create-symbol` only adds a Python symbol to an
+    existing indexed file. Use for new config/doc/script files. If the path is
+    an indexed file type, the output notes that a `trie sync`/refresh is needed
+    to bring it into the graph.
+
+    Examples:
+      trie write README.md --content "# Project\n"
+      cat body.txt | trie write notes.md
+    """
+    reporter = _get_reporter(ctx)
+    if content is None:
+        import sys as _sys
+
+        body = _sys.stdin.read()
+    else:
+        body = content
+    tools = _open_tools(reporter)
+    try:
+        envelope = tools.write_file(path, body, overwrite=overwrite)
+    finally:
+        tools.close()
+    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_render_write)
+
+
+def _render_write(envelope: dict[str, object], reporter: Reporter) -> None:
+    """Human-readable render of a write_file envelope."""
+    err = envelope.get("error")
+    if isinstance(err, dict):
+        _render_error_envelope(err, reporter)
+        return
+    verb = "created" if envelope.get("created") else "overwrote"
+    reporter.success(f"{verb} {envelope.get('path')} ({envelope.get('bytes_written')} bytes)")
+    if envelope.get("needs_sync"):
+        reporter.info("this file is in trie's scope — run `trie sync` / `trie refresh` to index it")
+
+
+def _render_find(envelope: dict[str, object], reporter: Reporter) -> None:
+    """Human-readable render of a find_files envelope."""
+    err = envelope.get("error")
+    if isinstance(err, dict):
+        _render_error_envelope(err, reporter)
+        return
+    matches = envelope.get("matches", [])
+    count = envelope.get("match_count", 0)
+    truncated = envelope.get("truncated", False)
+    if not isinstance(matches, list) or not matches:
+        reporter.info("no files match")
+        return
+    for m in matches:
+        reporter.console.print(str(m))
+    suffix = " (truncated; raise --limit for more)" if truncated else ""
+    reporter.info(f"{count} file(s){suffix}")
 
 
 @app.command("grep-entry-points")
@@ -2408,11 +3076,9 @@ def patch_create_cmd(
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
-    import uuid
-
     store = Store(project_root / ".trie" / "graph.db")
     try:
-        session_id = uuid.uuid4().hex[:12]
+        session_id = _cli_session_id(project_root)
         patch_id = store.add_patch(qname, note, reason, session_id)
     except KeyError:
         reporter.error(f"symbol {qname!r} not found in the graph")
@@ -2423,22 +3089,138 @@ def patch_create_cmd(
     reporter.success(f"patch #{patch_id} posted for {qname}")
 
 
+@patch_app.command("create-symbol")
+def patch_create_symbol_cmd(
+    ctx: typer.Context,
+    qname: str = typer.Argument(..., help="Intended qualified name, e.g. 'pkg/mod:new_fn'."),
+    note: str = typer.Option(..., "--note", "-n", help="What the new symbol should do."),
+    file: str = typer.Option(
+        "", "--file", "-f", help="Target source file (derived from qname when omitted)."
+    ),
+    anchor: str = typer.Option(
+        "", "--anchor", "-a", help="Place the new symbol after this existing qname."
+    ),
+    reason: str = typer.Option("", "--reason", "-r", help="Why this symbol is needed."),
+) -> None:
+    """Stage creation of a NEW symbol (applied by `trie patch apply`)."""
+    reporter = _get_reporter(ctx)
+    try:
+        _config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        if store.get_symbol_detail(qname) is not None:
+            reporter.error(f"{qname!r} already exists — use `trie patch create` to change it")
+            raise typer.Exit(code=1)
+        # qname carries no language signal; default to Python's suffix. Pass
+        # `--file` to create a symbol in another language (e.g. a .ts module).
+        target_file = file or (qname.split(":", 1)[0] + ".py")
+        cid = store.add_create_patch(
+            target_file=target_file,
+            target_qname=qname,
+            note=note,
+            reason=reason,
+            session_id=_cli_session_id(project_root),
+            anchor_qname=anchor or None,
+        )
+    finally:
+        store.close()
+    reporter.success(f"create patch #{cid} staged for {qname} in {target_file}")
+
+
+@patch_app.command("delete-symbol")
+def patch_delete_symbol_cmd(
+    ctx: typer.Context,
+    qname: str = typer.Argument(..., help="Qualified name of the symbol to delete."),
+    reason: str = typer.Option("", "--reason", "-r", help="Why it's being removed."),
+) -> None:
+    """Stage deletion of an existing symbol (applied by `trie patch apply`)."""
+    reporter = _get_reporter(ctx)
+    try:
+        _config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        pid = store.add_delete_patch(qname, reason, _cli_session_id(project_root))
+        dependents = store.references_in(qname)
+    except KeyError:
+        reporter.error(f"symbol {qname!r} not found in the graph")
+        raise typer.Exit(code=1) from None
+    finally:
+        store.close()
+    reporter.success(f"delete patch #{pid} staged for {qname}")
+    if dependents:
+        reporter.console.print(
+            f"  [yellow]{len(dependents)} dependent(s)[/yellow] will reference a deleted "
+            f"symbol unless patched: {', '.join(dependents[:5])}"
+        )
+
+
+@patch_app.command("rename-symbol")
+def patch_rename_symbol_cmd(
+    ctx: typer.Context,
+    qname: str = typer.Argument(..., help="Qualified name of the symbol to rename."),
+    new_name: str = typer.Argument(..., help="New local name (not a qualified name)."),
+    reason: str = typer.Option("", "--reason", "-r", help="Why it's being renamed."),
+) -> None:
+    """Stage a rename of an existing symbol (applied by `trie patch apply`)."""
+    reporter = _get_reporter(ctx)
+    try:
+        _config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    if not new_name.isidentifier():
+        reporter.error(f"{new_name!r} is not a valid identifier")
+        raise typer.Exit(code=1)
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        pid = store.add_rename_patch(qname, new_name, reason, _cli_session_id(project_root))
+        refs = store.references_in(qname)
+    except KeyError:
+        reporter.error(f"symbol {qname!r} not found in the graph")
+        raise typer.Exit(code=1) from None
+    finally:
+        store.close()
+    reporter.success(f"rename patch #{pid} staged: {qname} → {new_name}")
+    if refs:
+        reporter.console.print(f"  [dim]{len(refs)} caller(s) reference it[/dim]")
+
+
 @patch_app.command("apply")
 def patch_apply_cmd(
     ctx: typer.Context,
+    note: str = typer.Option(
+        "",
+        "--note",
+        "-N",
+        help="Session note: the unifying intent (required for multi-symbol applies).",
+    ),
     model: str | None = typer.Option(
         None,
         "--model",
         help="Override the configured edit model for this apply run.",
     ),
-    verbose: bool = typer.Option(
-        False,
-        "--verbose",
-        "-v",
-        help="Show per-symbol detail during apply.",
+    backend: str | None = typer.Option(
+        None,
+        "--backend",
+        help="Override the edit backend ('llm' default; 'opencode' is Phase 2).",
+    ),
+    commit_mode: str | None = typer.Option(
+        None,
+        "--commit-mode",
+        help="all_or_nothing (default) | per_item | per_group.",
     ),
 ) -> None:
-    """Merge all patches, generate source+prose, cascade, and commit."""
+    """Stage + commit all pending patches via the cascade-editing pipeline."""
     reporter = _get_reporter(ctx)
     try:
         config, project_root = Config.find_and_load(Path.cwd())
@@ -2446,30 +3228,60 @@ def patch_apply_cmd(
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
-    model_id = model or config.models.edits
-    client = make_client(model_id)
+    from trie.edits.backends import make_backend
+    from trie.edits.pipeline import stage_and_commit
 
-    progress = _RichApplyProgress(reporter.console, verbose=verbose)
+    client = make_client(model or config.models.edits, sync_cfg=config.sync)
+    try:
+        edit_backend = make_backend(config, backend=backend, client=client)
+    except (ValueError, NotImplementedError) as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
 
     store = Store(project_root / ".trie" / "graph.db")
     try:
-        result = apply_patches(store, config, client, project_root, progress=progress)
+        report = stage_and_commit(
+            store,
+            config,
+            edit_backend,
+            project_root,
+            client=client,
+            session_note=note,
+            commit_mode=commit_mode,
+        )
     finally:
         store.close()
 
-    if result["ok"]:
-        n = result["total_files"]
-        s = result["total_symbols"]
-        reporter.success(f"applied {s} symbol(s) across {n} file(s)")
-    else:
+    d = report.to_dict()
+    if report.committed and report.ok:
+        reporter.success(
+            f"applied {d['totals']['applied']} symbol(s) across {d['applied']['files']} file(s)"
+        )
+    elif report.error == "session_note_required":
         reporter.error(
-            f"apply failed: {result.get('error', 'unknown')} "
-            f"(files: {result.get('total_files', 0)}, "
-            f"symbols: {result.get('total_symbols', 0)})"
+            "multi-symbol apply requires --note (the unifying intent). "
+            "Suggested: "
+            + (report.unresolved[0].repatch or {}).get("args", {}).get("session_note", "")
         )
         raise typer.Exit(code=1)
+    else:
+        reporter.error(f"apply incomplete: {report.error or 'see unresolved items'}")
+
+    # Render unresolved residue (blocking first, then advisory).
+    blocking = [u for u in report.unresolved if u.blocking]
+    advisory = [u for u in report.unresolved if not u.blocking]
+    if blocking:
+        reporter.console.print(f"\n[red]{len(blocking)} need attention:[/red]")
+        for u in blocking:
+            reporter.console.print(f"  [red]✗[/red] {u.qname} [dim]({u.code})[/dim] — {u.message}")
+    if advisory:
+        reporter.console.print(f"\n[yellow]{len(advisory)} advisory (cascade):[/yellow]")
+        for u in advisory[:10]:
+            reporter.console.print(f"  [yellow]~[/yellow] {u.qname} [dim]({u.code})[/dim]")
 
     reporter.info(reporter.elapsed())
+    if blocking:
+        raise typer.Exit(code=1)
 
 
 @patch_app.command("preview")
@@ -2485,10 +3297,15 @@ def patch_preview_cmd(ctx: typer.Context) -> None:
     store = Store(project_root / ".trie" / "graph.db")
     try:
         result = preview_patches(store, config)
+        # preview_patches covers modify/structural patches; staged creates live
+        # in a separate table, so pull them in so the preview reflects them too.
+        creates = store.get_create_patches_grouped()
     finally:
         store.close()
 
-    if result["total_patches"] == 0:
+    create_qnames = [str(row.get("target_qname", "")) for rows in creates.values() for row in rows]
+
+    if result["total_patches"] == 0 and not create_qnames:
         reporter.info("no pending patches")
         return
 
@@ -2496,17 +3313,21 @@ def patch_preview_cmd(ctx: typer.Context) -> None:
 
     table = Table(title="Patch Preview")
     table.add_column("Symbol", style="cyan")
-    table.add_column("Patches", style="magenta")
-    table.add_column("Cascade", style="yellow")
+    table.add_column("Origin", style="magenta")
 
     for qname in result["patched_list"]:
-        cascade_str = "yes" if qname in result.get("cascade_list", []) else "no"
-        table.add_row(qname, "1", cascade_str)
+        table.add_row(qname, "patched")
+    for qname in create_qnames:
+        table.add_row(qname, "create")
+    # Cascade neighbours are DISTINCT symbols (callers) reached from the patched
+    # set — shown as their own rows, not a flag on the patched symbols.
+    for qname in result.get("cascade_list", []):
+        table.add_row(qname, "cascade")
 
     reporter.console.print(table)
     reporter.info(
-        f"{result['total_patches']} patches across {result['patched_symbols']} symbols, "
-        f"{result['cascade_symbols']} cascaded neighbours"
+        f"{result['total_patches']} patch(es) across {result['patched_symbols']} symbol(s); "
+        f"{len(create_qnames)} create(s); {result['cascade_symbols']} cascade neighbour(s)"
     )
 
 
@@ -2523,21 +3344,35 @@ def patch_list_cmd(ctx: typer.Context) -> None:
     store = Store(project_root / ".trie" / "graph.db")
     try:
         qnames = store.get_patched_qnames()
-        if not qnames:
+        # Create-symbol patches live in a separate table; include them so the
+        # listing reflects the full pending queue (otherwise staged creates are
+        # invisible here even though `patch apply` processes them).
+        creates = store.get_create_patches_grouped()
+        if not qnames and not creates:
             reporter.info("no pending patches")
             return
 
         from rich.table import Table
 
-        table = Table(title="Pending Patches")
-        table.add_column("QName", style="cyan")
-        table.add_column("Patches", style="magenta")
+        if qnames:
+            table = Table(title="Pending Patches")
+            table.add_column("QName", style="cyan")
+            table.add_column("Patches", style="magenta")
+            for qname in qnames:
+                patches = store.get_patches_for_qname(qname)
+                table.add_row(qname, str(len(patches)))
+            reporter.console.print(table)
 
-        for qname in qnames:
-            patches = store.get_patches_for_qname(qname)
-            table.add_row(qname, str(len(patches)))
-
-        reporter.console.print(table)
+        if creates:
+            ctable = Table(title="Pending Creates")
+            ctable.add_column("New QName", style="green")
+            ctable.add_column("File", style="cyan")
+            for _file, rows in creates.items():
+                for row in rows:
+                    ctable.add_row(
+                        str(row.get("target_qname", "")), str(row.get("target_file", ""))
+                    )
+            reporter.console.print(ctable)
     finally:
         store.close()
 
@@ -2563,12 +3398,18 @@ def patch_drop_cmd(
 
     store = Store(project_root / ".trie" / "graph.db")
     try:
+        # Drop from BOTH the modify/structural patch table and the separate
+        # create_patches table so a single drop clears the whole pending queue
+        # (otherwise staged creates linger after `drop --all`).
         if qname:
             count = store.delete_patches(qname=qname)
+            count += store.delete_create_patches(target_qname=qname)
         elif session_id:
             count = store.delete_patches(session_id=session_id)
+            count += store.delete_create_patches(session_id=session_id)
         elif all:
             count = store.delete_patches(all=True)
+            count += store.delete_create_patches(all=True)
         else:
             reporter.error("specify --qname, --session, or --all")
             raise typer.Exit(code=1)
