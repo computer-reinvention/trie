@@ -2,6 +2,7 @@
 PyInstaller entrypoint for the trie MCP stdio server.
 Usage: trie-mcp <project-dir>
 """
+
 from __future__ import annotations
 
 import sys
@@ -19,6 +20,7 @@ def main() -> None:
         sys.exit(1)
 
     from trie.mcp_server import run_stdio
+
     run_stdio(project_root)
 
 
