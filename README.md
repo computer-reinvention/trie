@@ -107,9 +107,11 @@ trie trace src/graph/store:Store.replace_all_edges --direction callers --depth 2
   `trie refresh --after-turn` for you between turns.)
 - **In CI / pre-commit:** `trie verify` only — it's deterministic, offline, and
   exits non-zero on drift. Never let CI call the LLM path.
-- **For agents:** `trie setup` once. The MCP server is read-only; agents query the
-  graph via MCP (or via `trie grep` / `trie read` / `trie trace` from a shell); only
-  `trie sync` modifies the triefact tree.
+- **For agents:** `trie setup` once. Agents read the graph (via MCP or the
+  `trie grep` / `trie read` / `trie trace` shell subcommands) and stage edits
+  against it (`patch` / `create` / `delete` / `rename`), which only become real
+  source changes on an explicit apply. Every write surfaces for review first, and
+  prose stays in sync with code automatically.
 
 
 ## The idea
@@ -192,7 +194,42 @@ And it compounds. Every agent pass extends the description. The next pass starts
 
 Where meaning is written, the agent reads it. Where meaning isn't written, the _absence is visible_ — a node with no prose is a thing the system doesn't yet understand about itself, which is honest. That's completely different from today, where agents confidently fabricate because syntax doesn't tell them what they don't know.
 
+## How agents write it
+
+trie isn't read-only. The same graph an agent reads against is the surface it edits against — and edits are expressed as **changes to symbols**, not as freeform text patches against line ranges.
+
+Instead of rewriting a file and hoping, the agent **stages intent**: "change this function," "add this symbol," "delete this one," "rename that." Nothing touches your source while it's staging. The staged edits accumulate, the agent (and you) can preview them, and then a single **apply** turns the whole set into real source changes at once — or refuses cleanly and tells you what blocked it.
+
+```
+agent decides to change slugify() to handle Unicode
+
+  ├── stage: modify  slugify          ← the change it intends
+  │
+  ├── blast radius (free, graph math): who else does this touch?
+  │     posts:make_url   (hop 1, calls slugify)
+  │     feeds:item_url    (hop 1, calls slugify)
+  │
+  ├── apply (one shot)
+  │     • regenerates slugify's body AND its prose together
+  │     • pulls in the callers that actually need updating
+  │     • checks every changed file still parses before writing a byte
+  │
+  └── result: applied, or a clean report of what needs you
+        "couldn't keep make_url coherent — here's the symbol and why"
+```
+
+The write side has its own **cascade**, and it's the mirror of the read-side one. When the agent changes a symbol, trie already knows who depends on it, so it pulls those callers into the edit set — judging which ones genuinely need touching rather than rewriting the world. A delete or rename is even more certain: every reference is, by definition, affected, so trie fixes them deterministically. Hub symbols that everything depends on are capped, same as the doc cascade, so one edit can't fan out into a thousand.
+
+Two properties make this safe to hand an agent:
+
+- **Prose and code move together.** Applying a code change regenerates the affected triefacts in the same step. The system's self-description can't fall behind an edit the way comments and docs always do.
+- **Humans gate the writes.** Staged edits land in a review surface (the patch panel in the desktop app, or a `preview` call) before anything is applied. A multi-symbol change has to come with a one-line statement of intent. And because the artifact you review is the *prose* that changed, you're reading what the edit *means*, not reconstructing it from a diff.
+
+So the loop closes: the agent reads the system as narrative, proposes changes as narrative, and you ratify narrative — while the executable code is kept conformant underneath.
+
 ## The cascade — what keeps it honest
+
+The write cascade above keeps an agent's edits coherent in the moment. This same machinery is what keeps the prose honest over time — for *any* change, whether an agent made it through trie or you made it by hand.
 
 A self-describing codebase only works if the description stays true. The naive "triefact per file" approach rots the moment you refactor — one edit invalidates triefacts in places you didn't touch, nobody notices, drift compounds, triefacts become lies, everyone stops trusting them.
 
@@ -360,7 +397,9 @@ repos:
 
 ## Agent integration (MCP + CLI + turn hooks + tool overrides)
 
-trie ships an MCP server so coding agents read your codebase's prose self-description as a separate, durable context layer — not chat memory, not retrieved chunks, but a structured tree they can navigate. Three verbs, exposed over stdio, that match how agents reason about a codebase: _find it_, _understand it_, _trace it_.
+trie ships an MCP server so coding agents read your codebase's prose self-description as a separate, durable context layer — not chat memory, not retrieved chunks, but a structured tree they can navigate _and edit_. The read verbs match how agents reason about a codebase — _find it_, _understand it_, _trace it_ — and the write verbs let them act on it without ever doing a blind line-range patch.
+
+**Read** (navigation):
 
 | Tool                                    | What it returns                                                                                                                             |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -368,7 +407,15 @@ trie ships an MCP server so coding agents read your codebase's prose self-descri
 | `read(qname)`                           | A symbol's prose plus one-liners for every immediate caller and callee                                                                      |
 | `trace(from_qname, direction, depth=2)` | Topology beyond one hop — signatures + one-liners across a depth-bounded graph slice                                                        |
 
-Every response carries `one_liner` fields pulled from the section body at sync time, so an agent walking the graph never has to open a triefact just to decide whether to open it. Errors return `{error: {code, message, suggestion?}}` — fuzzy-matched suggestions on `not_found` mean recovery is one round-trip, not three. An empty predicate on `grep` is rejected with `invalid_argument` (no "list everything" mode — the agent must commit to at least one filter). The full contract lives in [`docs/agent_interface.md`](docs/agent_interface.md).
+**Write** (symbol-level edits — staged first, applied as a set):
+
+| Tool                                                  | What it does                                                                                       |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `patch` / `create_symbol` / `delete_symbol` / `rename_symbol` | Stage a change to a symbol — modify a body, add one, remove one, or rename it. Nothing is written yet. |
+| `blast_radius(qname)` / `preview()`                   | Free, no-LLM look-ahead: who an edit touches, and what's currently staged, before committing       |
+| `commit(session_note?)`                               | Apply all staged edits in one shot — regenerating prose alongside code, with callers pulled in     |
+
+Every read response carries `one_liner` fields pulled from the section body at sync time, so an agent walking the graph never has to open a triefact just to decide whether to open it. Errors return `{error: {code, message, suggestion?}}` — fuzzy-matched suggestions on `not_found` mean recovery is one round-trip, not three. An empty predicate on `grep` is rejected with `invalid_argument` (no "list everything" mode — the agent must commit to at least one filter). The full contract lives in [`docs/agent_interface.md`](docs/agent_interface.md).
 
 The same three operations are also available as `trie` CLI subcommands, byte-equivalent JSON envelopes under `--json`, for agents that prefer shelling out:
 
@@ -446,7 +493,7 @@ The freshness gate has four states. Costs are bounded and predictable:
 
 The LLM path only fires for `mtimes_moved`. Trie does **not** auto-spend on fresh clones or after `git pull`. Run `trie sync` explicitly when you want prose regen beyond what edits warrant.
 
-The server itself is read-only. Agents can query the graph and join paragraphs; only `trie sync` (run by you, or by the post-turn hook for the files you edited) modifies the triefact tree. Humans gate writes; agents read freely.
+Agents read the graph freely. Writes are explicit and gated: an agent stages symbol-level edits and they only become real source changes on an apply — which regenerates the affected prose in the same step and surfaces for review first. `trie sync` (run by you, or by the post-turn hook for files the agent edited) keeps the triefact tree current with any changes made outside that path.
 
 ## Reducing PR noise from generated triefacts
 
@@ -473,6 +520,7 @@ Hand-written prose between sentinels is still indexed by GitHub's search; only t
 - **M10** ✓ — symbol-set expansion: `constant` (module-level `NAME = value`) and `module` (synthetic per-file behaviour) symbol kinds, so triefacts cover what files *do* at import time, not just their helper functions
 - **M11** ✓ — telemetry split: per-call `cli_call` and `mcp_call` events with surface-aware audit aggregation, including a `mode` breakdown for the `read` override (qname / triefact / source / show_source)
 - **M12** ✓ — agent-surface trim: the `read` override's full mode strips trie's internal frontmatter (`trie_version`, `file_fingerprint`, `last_synced_at`, `source`) and every section sentinel (with their fingerprints) before handing the triefact to the agent. Mirrored in `trie.sync.writer.render_for_agent` for the Python side. Agents see prose; machinery stays out of context
+- **M13** ✓ — the write pipeline: symbol-level staged edits (`patch` / `create` / `delete` / `rename`), a write-side cascade that pulls in affected callers, a parse/compile gate before any byte is written, prose regenerated alongside code on apply, and a human review surface — agents now edit the graph, not just read it
 - **Desktop (experimental)** — native macOS editor built on a live, turn-by-turn **attention map** (decaying attention mass per symbol as the agent reads/edits), with a separate structural topology view, an embedded coding agent, source/triefact tabs, multi-session chat, and a patch-review surface for the agent's staged edits. Merged to `main`; still experimental.
 - **v0.2** — SCIP precision (replace tree-sitter heuristic with `scip-python` for type-aware references), TypeScript support, vector-over-triefacts retrieval, `trie watch` daemon, rename detection in reconcile
 
