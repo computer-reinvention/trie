@@ -6,7 +6,7 @@ from pathlib import Path
 
 from trie import telemetry
 from trie.config import Config
-from trie.parse.python import extract_symbols
+from trie.parse import registry
 from trie.scope import discover_files
 from trie.sync.writer import Section, TriefactFile, hash_body
 
@@ -74,6 +74,8 @@ def _check_project_inner(*, project_root: Path, config: Config, _tele: dict) -> 
     for abs_source in discovered:
         if not abs_source.is_relative_to(src_root):
             continue
+        if not registry.is_indexable(abs_source):
+            continue
         files_checked += 1
         rel_source = str(abs_source.relative_to(src_root))
 
@@ -81,7 +83,7 @@ def _check_project_inner(*, project_root: Path, config: Config, _tele: dict) -> 
         # flag is descriptive metadata on Symbol but is NOT a filter — stale prose
         # is stale regardless of whether the author named the symbol with a leading
         # underscore, and sync documents the same set.
-        symbols = extract_symbols(abs_source, source_root=src_root)
+        symbols = registry.extract_symbols(abs_source, source_root=src_root)
         rel_triefact = _triefact_path_for(rel_source, config)
         abs_triefact = project_root / rel_triefact
         triefact_exists = abs_triefact.exists()

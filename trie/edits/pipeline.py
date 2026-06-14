@@ -29,6 +29,7 @@ from trie.edits.apply import (
     _read_prose,
     _refresh_file,
     _write_prose_section,
+    lsp_backends_for_file,
 )
 from trie.edits.backends import EditRequest, EditResult, SymbolEditBackend
 from trie.edits.cascade_plan import neighbour_context
@@ -857,13 +858,17 @@ def _multifile_scratch_lsp(
     fixup won't revert it. LSP is a well-formedness gate, never a correctness gate;
     any error degrades to "leave candidates as-is".
     """
-    if client is None or not config.edits.lsp_backends:
+    if client is None:
         return
     # Latest candidate per file (all StagedChanges for a file share after_file_bytes).
     file_candidates: dict[str, str] = {}
     for ch in staged:
         file_candidates[ch.file_path] = ch.after_file_bytes
     if not file_candidates:
+        return
+    # Proceed only if at least one candidate file has a checker (a language
+    # backend default or the configured fallback).
+    if not any(lsp_backends_for_file(src_root / fp, config) for fp in file_candidates):
         return
 
     scratch_root = Path(tempfile.mkdtemp(prefix="trie-scratch-"))
@@ -878,10 +883,11 @@ def _multifile_scratch_lsp(
         fixed_by_file: dict[str, str] = dict(file_candidates)
         for fp in file_candidates:
             content = fixed_by_file[fp]
+            file_lsp_backends = lsp_backends_for_file(src_root / fp, config)
             for _ in range(config.edits.lsp_max_retries):
                 sf = scratch_root / fp
                 sf.write_text(content)
-                diags = _lsp_diagnostics(sf, config.edits.lsp_backends)
+                diags = _lsp_diagnostics(sf, file_lsp_backends)
                 if not diags:
                     break
                 fixed = _file_fixup(client, fp, content, diags)
@@ -904,22 +910,47 @@ def _multifile_scratch_lsp(
         shutil.rmtree(scratch_root, ignore_errors=True)
 
 
-def _overlay_package(src_root: Path, scratch_root: Path) -> None:
-    """Hardlink every .py file under src_root into scratch_root (same rel paths).
+_OVERLAY_SKIP_PARTS = {".trie", "__pycache__", "node_modules", ".git", "dist", "build"}
 
-    Cheap (hardlinks, no copy) and gives the checker the full import graph. Candidate
-    files are overwritten by the caller after this runs.
+
+def _overlay_package(src_root: Path, scratch_root: Path) -> None:
+    """Hardlink every indexable source file (+ each language's required config
+    files, e.g. tsconfig.json / package.json) under src_root into scratch_root.
+
+    Cheap (hardlinks, no copy) and gives the checker the full import graph.
+    Globs come from the registered language backends, so a TS edit gets the
+    `.ts`/`.tsx` graph plus tsconfig for module resolution. Candidate files are
+    overwritten by the caller after this runs.
     """
-    for py in src_root.rglob("*.py"):
-        if ".trie" in py.parts or "__pycache__" in py.parts:
-            continue
-        rel = py.relative_to(src_root)
+    from trie.parse import registry
+
+    globs: set[str] = set()
+    extra_names: set[str] = set()
+    for backend in registry.all_backends():
+        globs.update(backend.overlay_globs())
+        extra_names.update(backend.overlay_extra_files())
+
+    def _link(path: Path) -> None:
+        if any(part in _OVERLAY_SKIP_PARTS for part in path.parts):
+            return
+        rel = path.relative_to(src_root)
         dest = scratch_root / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
+        if dest.exists():
+            return
         try:
-            os.link(py, dest)
+            os.link(path, dest)
         except OSError:
-            dest.write_bytes(py.read_bytes())
+            dest.write_bytes(path.read_bytes())
+
+    for pattern in globs:
+        for path in src_root.rglob(pattern):
+            if path.is_file():
+                _link(path)
+    for name in extra_names:
+        for path in src_root.rglob(name):
+            if path.is_file():
+                _link(path)
 
 
 def commit(
