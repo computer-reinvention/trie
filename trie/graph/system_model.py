@@ -634,9 +634,7 @@ def build_system_model(
         "subsystem": _build_axis("subsystem", subsys_of, cls_by_q, edges, prod_set),
     }
 
-    landmarks = [
-        n.qname for n in sorted(nodes, key=lambda n: -n.salience)[:landmark_limit]
-    ]
+    landmarks = [n.qname for n in sorted(nodes, key=lambda n: -n.salience)[:landmark_limit]]
 
     from collections import Counter
 
@@ -693,12 +691,16 @@ def system_model_to_dict(model: SystemModel, *, include_tests: bool = False) -> 
         return {
             "axis": ax.axis,
             "groups": [
-                {"key": g.key, "count": g.count, "door_count": g.door_count, "hub_count": g.hub_count}
+                {
+                    "key": g.key,
+                    "count": g.count,
+                    "door_count": g.door_count,
+                    "hub_count": g.hub_count,
+                }
                 for g in ax.groups
             ],
             "flows": [
-                {"source": f.source, "target": f.target, "weight": f.weight}
-                for f in ax.flows
+                {"source": f.source, "target": f.target, "weight": f.weight} for f in ax.flows
             ],
         }
 
