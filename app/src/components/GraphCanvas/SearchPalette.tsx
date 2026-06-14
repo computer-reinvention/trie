@@ -56,16 +56,17 @@ export function SearchPalette() {
 
   return (
     <div
-      className="absolute inset-0 z-20 flex items-start justify-center pt-24 bg-slate-950/50"
+      className="absolute inset-0 z-20 flex items-start justify-center pt-24"
+      style={{ background: "color-mix(in srgb, var(--bg-app) 50%, transparent)" }}
       onClick={() => setOpen(false)}
     >
       <div
-        className="w-[36rem] max-w-[90%] bg-slate-900 border border-slate-700 rounded-lg shadow-2xl overflow-hidden"
+        className="w-[36rem] max-w-[90%] surface-pop border border-strong rounded-lg elev-2 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <input
           ref={inputRef}
-          className="w-full bg-slate-900 text-slate-100 text-sm px-4 py-3 outline-none border-b border-slate-800 placeholder:text-slate-600"
+          className="w-full bg-transparent text-1 text-sm px-4 py-3 outline-none border-b border-subtle placeholder:text-faint"
           placeholder="Search symbols…  (↑↓ to navigate, Enter to jump, Esc to close)"
           value={q}
           onChange={(e) => {
@@ -82,8 +83,8 @@ export function SearchPalette() {
           {results.map((n, i) => (
             <button
               key={n.qname}
-              className={`w-full text-left px-4 py-2 flex items-center gap-2 ${
-                i === active ? "bg-slate-800" : "hover:bg-slate-800/50"
+              className={`w-full text-left px-4 py-2 flex items-center gap-2 transition-colors ${
+                i === active ? "surface-3" : "hover:surface-2"
               }`}
               onClick={() => jump(n)}
               onMouseEnter={() => setActive(i)}
@@ -92,12 +93,12 @@ export function SearchPalette() {
                 className="w-2 h-2 rounded-full shrink-0"
                 style={{ background: roleColor(n.role || "untagged") }}
               />
-              <span className="text-slate-200 font-mono text-sm truncate">{n.name}</span>
-              <span className="text-slate-600 text-xs truncate ml-auto">{n.qname}</span>
+              <span className="text-1 font-mono text-sm truncate">{n.name}</span>
+              <span className="text-faint text-xs truncate ml-auto">{n.qname}</span>
             </button>
           ))}
           {q.trim() && results.length === 0 && (
-            <p className="px-4 py-3 text-slate-600 text-sm">No matches.</p>
+            <p className="px-4 py-3 text-faint text-sm">No matches.</p>
           )}
         </div>
       </div>

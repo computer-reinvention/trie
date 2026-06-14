@@ -218,12 +218,6 @@ body {
 .trie-pulse {
   animation: trie-pulse-bar 0.9s ease-in-out infinite;
 }
-@media (prefers-reduced-motion: reduce) {
-  .trie-pulse {
-    animation: none;
-    opacity: 1;
-  }
-}
 
 /* ---------------------------------------------------------------------------
    Chat motion — message entrance, streaming dots, and reasoning shimmer.
@@ -281,15 +275,54 @@ body {
   animation: shimmer 2s linear infinite;
 }
 
+/* ---------------------------------------------------------------------------
+   Reduced motion. Two entry points share one rule set:
+     • the OS preference (@media prefers-reduced-motion), UNLESS the user has
+       explicitly forced motion ON (data-reduced-motion="off");
+     • an explicit in-app force-on (data-reduced-motion="on"), regardless of OS.
+   Decorative motion (entrances, pulses, shimmer) is removed entirely; spinners
+   keep a slow spin so "loading" still reads, just without the fast whirl.
+--------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  .msg-in,
-  .typing-dot,
-  .shimmer-text {
+  :root:not([data-reduced-motion="off"]) .msg-in,
+  :root:not([data-reduced-motion="off"]) .typing-dot,
+  :root:not([data-reduced-motion="off"]) .trie-pulse {
     animation: none;
+    opacity: 1;
   }
-  .shimmer-text {
+  :root:not([data-reduced-motion="off"]) .shimmer-text {
+    animation: none;
     -webkit-text-fill-color: var(--text-2);
   }
+  :root:not([data-reduced-motion="off"]) .animate-spin {
+    animation-duration: 1.8s;
+  }
+  :root:not([data-reduced-motion="off"]) .animate-pulse,
+  :root:not([data-reduced-motion="off"]) .animate-pulse-slow,
+  :root:not([data-reduced-motion="off"]) .animate-pulse-fast {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+[data-reduced-motion="on"] .msg-in,
+[data-reduced-motion="on"] .typing-dot,
+[data-reduced-motion="on"] .trie-pulse {
+  animation: none;
+  opacity: 1;
+}
+[data-reduced-motion="on"] .shimmer-text {
+  animation: none;
+  -webkit-text-fill-color: var(--text-2);
+}
+[data-reduced-motion="on"] .animate-spin {
+  animation-duration: 1.8s;
+}
+[data-reduced-motion="on"] .animate-pulse,
+[data-reduced-motion="on"] .animate-pulse-slow,
+[data-reduced-motion="on"] .animate-pulse-fast {
+  animation: none;
+  opacity: 1;
 }
 
 /* ---------------------------------------------------------------------------

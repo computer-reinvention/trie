@@ -28,7 +28,9 @@ contextBridge.exposeInMainWorld("trie", {
     return () => ipcRenderer.removeListener("sse-event", listener)
   },
   onSseError: (cb: (msg: string) => void) => {
-    ipcRenderer.on("sse-error", (_event, v) => cb(v))
+    const listener = (_event: Electron.IpcRendererEvent, v: string) => cb(v)
+    ipcRenderer.on("sse-error", listener)
+    return () => ipcRenderer.removeListener("sse-error", listener)
   },
 
   // API key management — never touches renderer memory
@@ -46,6 +48,42 @@ contextBridge.exposeInMainWorld("trie", {
     write: (projectDir: string, delta: Record<string, unknown>) =>
       ipcRenderer.invoke("opencode-config-write", projectDir, delta),
     restart: () => ipcRenderer.invoke("opencode-restart"),
+  },
+
+  // trie.toml — per-project trie config the settings UI reads/merges.
+  trieConfig: {
+    read: (projectDir: string) =>
+      ipcRenderer.invoke("trie-config-read", projectDir) as Promise<{
+        exists: boolean
+        config: Record<string, unknown>
+      }>,
+    write: (projectDir: string, delta: Record<string, unknown>) =>
+      ipcRenderer.invoke("trie-config-write", projectDir, delta) as Promise<{
+        ok: boolean
+        error?: string
+      }>,
+  },
+
+  // trie CLI commands — run a subcommand and stream lifecycle events. The run
+  // call returns { ok, runId }; subscribe with onTrieCommand to receive events
+  // keyed by that runId. onTrieCommand returns an unsubscribe fn and swaps any
+  // prior listener so dev hot-reload doesn't stack handlers.
+  trieCommand: {
+    run: (spec: { command: string; args?: string[]; json?: boolean }) =>
+      ipcRenderer.invoke("trie-command-run", spec) as Promise<{
+        ok: boolean
+        runId?: number
+        error?: string
+      }>,
+    cancel: () => ipcRenderer.invoke("trie-command-cancel"),
+    isRunning: () =>
+      ipcRenderer.invoke("trie-command-running") as Promise<{ running: boolean }>,
+    onEvent: (cb: (event: Record<string, unknown>) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, v: Record<string, unknown>) => cb(v)
+      ipcRenderer.removeAllListeners("ipc:trie-command")
+      ipcRenderer.on("ipc:trie-command", listener)
+      return () => ipcRenderer.removeListener("ipc:trie-command", listener)
+    },
   },
 
   // Provider API keys — stored in the Keychain, never in renderer memory.
@@ -68,12 +106,23 @@ contextBridge.exposeInMainWorld("trie", {
   readDir: (dir: string) => ipcRenderer.invoke("read-dir", dir),
   readFile: (path: string) => ipcRenderer.invoke("read-file", path),
 
-  // opencode process output relay (for debugging)
+  // opencode process output relay (for debugging + crash surfacing). Both
+  // return an unsubscribe fn and swap any prior listener so dev hot-reload
+  // doesn't stack handlers.
   onOpencodeStderr: (cb: (line: string) => void) => {
-    ipcRenderer.on("ipc:opencode-stderr", (_event, v) => cb(v))
+    const listener = (_event: Electron.IpcRendererEvent, v: string) => cb(v)
+    ipcRenderer.removeAllListeners("ipc:opencode-stderr")
+    ipcRenderer.on("ipc:opencode-stderr", listener)
+    return () => ipcRenderer.removeListener("ipc:opencode-stderr", listener)
   },
-  onOpencodeExited: (cb: (info: { code: number | null }) => void) => {
-    ipcRenderer.on("ipc:opencode-exited", (_event, v) => cb(v))
+  onOpencodeExited: (cb: (info: { code: number | null; expected?: boolean }) => void) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      v: { code: number | null; expected?: boolean },
+    ) => cb(v)
+    ipcRenderer.removeAllListeners("ipc:opencode-exited")
+    ipcRenderer.on("ipc:opencode-exited", listener)
+    return () => ipcRenderer.removeListener("ipc:opencode-exited", listener)
   },
 
   // trie refresh progress relay — JSONL events from `trie refresh --json`,

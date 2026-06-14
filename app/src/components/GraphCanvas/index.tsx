@@ -15,6 +15,9 @@ import { ExpandedPanel } from "./ExpandedPanel"
 import { AgentActivityCards } from "./AgentActivityCards"
 import { ChoreographyOverlay } from "./ChoreographyOverlay"
 import { useConductor, replayTurn } from "@/graph/conductor"
+import { useTrieCommandStore } from "@/store/trieCommandStore"
+import { useTrieConfigStore } from "@/store/trieConfigStore"
+import { useTabsStore, TRIE_TAB_ID } from "@/store/tabsStore"
 import type { SystemModelNode } from "@/api/types"
 
 interface GraphCanvasProps {
@@ -677,15 +680,65 @@ export function GraphCanvas({ className }: GraphCanvasProps) {
       )}
 
       {graphLoading && (
-        <div className="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center gap-3 z-10">
-          <div className="w-8 h-8 border-2 border-slate-600 border-t-indigo-400 rounded-full animate-spin" />
-          <p className="text-slate-400 text-sm">{graphLoadingMessage || "Loading…"}</p>
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10"
+          style={{ background: "color-mix(in srgb, var(--bg-app) 80%, transparent)" }}
+        >
+          <div
+            className="w-8 h-8 border-2 rounded-full animate-spin"
+            style={{ borderColor: "var(--border-strong)", borderTopColor: "var(--accent)" }}
+          />
+          <p className="text-2 text-sm">{graphLoadingMessage || "Loading…"}</p>
         </div>
       )}
-      {!graphLoading && data.nodes.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <p className="text-slate-600 text-sm">No system model loaded.</p>
-        </div>
+      {!graphLoading && data.nodes.length === 0 && <EmptyGraphState />}
+    </div>
+  )
+}
+
+// Shown when the system model has no nodes and nothing is loading: a fresh
+// checkout / uninitialised project. Offers the one action that fixes it (run
+// init / refresh) rather than leaving the user at a dead end.
+function EmptyGraphState() {
+  const running = useTrieCommandStore((s) => s.running)
+  const run = useTrieCommandStore((s) => s.run)
+  const trieExists = useTrieConfigStore((s) => s.exists)
+  const trieLoaded = useTrieConfigStore((s) => s.loaded)
+  // init when there's no trie.toml yet; otherwise a refresh rebuilds the graph.
+  const command = trieExists ? "refresh" : "init"
+  const onRun = () => {
+    if (running) return
+    run(command, {})
+    useTabsStore.getState().activate(TRIE_TAB_ID)
+  }
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-8 text-center">
+      <p className="text-2 text-sm">No system model yet.</p>
+      <p className="text-3 text-xs max-w-xs leading-relaxed">
+        {trieExists
+          ? "The graph is empty — run a refresh to build it from your source."
+          : "This project isn’t initialised for trie yet."}
+      </p>
+      {trieLoaded && (
+        <button
+          className="inline-flex items-center gap-1.5 rounded-md bg-accent text-white px-3.5 py-1.5 text-xs font-medium disabled:opacity-60"
+          onClick={onRun}
+          disabled={running}
+        >
+          {running ? (
+            <>
+              <span
+                className="w-3 h-3 border-2 rounded-full animate-spin"
+                style={{ borderColor: "rgba(255,255,255,0.4)", borderTopColor: "#fff" }}
+              />
+              Working…
+            </>
+          ) : trieExists ? (
+            "Build graph (refresh)"
+          ) : (
+            "Initialize trie"
+          )}
+        </button>
       )}
     </div>
   )
@@ -703,10 +756,13 @@ function ToolHud() {
   }, [hud])
   if (!hud || Date.now() - hud.ts > 3500) return null
   return (
-    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/90 px-3 py-1 text-xs">
-      <span className="w-3 h-3 border-2 border-slate-600 border-t-slate-300 rounded-full animate-spin" />
-      <span className="font-mono text-slate-300">{hud.tool}</span>
-      {hud.text && <span className="text-slate-500 font-mono truncate max-w-[280px]">{hud.text}</span>}
+    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full border border-strong surface-pop elev-2 px-3 py-1 text-xs">
+      <span
+        className="w-3 h-3 border-2 rounded-full animate-spin"
+        style={{ borderColor: "var(--border-strong)", borderTopColor: "var(--accent)" }}
+      />
+      <span className="font-mono text-2">{hud.tool}</span>
+      {hud.text && <span className="text-3 font-mono truncate max-w-[280px]">{hud.text}</span>}
     </div>
   )
 }
@@ -718,7 +774,7 @@ function ReplayControl() {
   if (count === 0) return null
   return (
     <button
-      className="absolute top-3 right-3 z-30 rounded-md border border-slate-700 bg-slate-900/90 px-2.5 py-1 text-xs text-slate-300 hover:bg-slate-800 hover:text-slate-100 disabled:opacity-50"
+      className="absolute top-3 right-3 z-30 rounded-md border border-strong surface-pop elev-1 px-2.5 py-1 text-xs text-2 hover:surface-3 hover:text-1 transition-colors disabled:opacity-50"
       onClick={() => replayTurn()}
       disabled={replaying}
       title="Replay the agent's last turn"

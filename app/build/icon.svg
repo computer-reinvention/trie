@@ -1,0 +1,49 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Rounded-square tile background: deep navy app background. -->
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1426"/>
+      <stop offset="1" stop-color="#020617"/>
+    </linearGradient>
+    <!-- Indigo accent gradient in user space so it applies to thin strokes too. -->
+    <linearGradient id="accent" x1="300" y1="240" x2="720" y2="784"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#a5b4fc"/>
+      <stop offset="0.55" stop-color="#818cf8"/>
+      <stop offset="1" stop-color="#6366f1"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.4" r="0.62">
+      <stop offset="0" stop-color="#6366f1" stop-opacity="0.40"/>
+      <stop offset="1" stop-color="#6366f1" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- macOS-style rounded tile. -->
+  <rect x="64" y="64" width="896" height="896" rx="208" fill="url(#bg)"/>
+  <rect x="64" y="64" width="896" height="896" rx="208" fill="url(#glow)"/>
+  <rect x="65.5" y="65.5" width="893" height="893" rx="206.5" fill="none"
+        stroke="#243150" stroke-width="3"/>
+
+  <!-- Trie identity: a stylized "t" drawn as a call-graph.
+       A vertical spine of nodes with a crossbar and a fanning lower branch —
+       the "trie" tree metaphor. Edges use the user-space accent gradient so
+       even axis-aligned strokes get the indigo wash. -->
+  <g stroke="url(#accent)" stroke-width="40" stroke-linecap="round" fill="none">
+    <line x1="412" y1="300" x2="412" y2="726"/>     <!-- spine -->
+    <line x1="412" y1="430" x2="660" y2="430"/>     <!-- crossbar -->
+    <line x1="412" y1="610" x2="612" y2="712"/>     <!-- lower branch -->
+  </g>
+
+  <!-- nodes -->
+  <g fill="url(#accent)" stroke="#0d1426" stroke-width="10">
+    <circle cx="412" cy="300" r="62"/>
+    <circle cx="412" cy="726" r="50"/>
+    <circle cx="660" cy="430" r="56"/>
+    <circle cx="612" cy="712" r="46"/>
+  </g>
+  <!-- node inner highlights -->
+  <g fill="#e0e7ff" opacity="0.9">
+    <circle cx="412" cy="300" r="22"/>
+    <circle cx="660" cy="430" r="19"/>
+  </g>
+</svg>

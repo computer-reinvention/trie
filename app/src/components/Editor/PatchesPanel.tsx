@@ -20,9 +20,9 @@ const KIND_STYLE: Record<PatchKind, { label: string; cls: string }> = {
 }
 
 const ORIGIN_STYLE: Record<string, string> = {
-  agent: "bg-indigo-500/20 text-indigo-300",
+  agent: "bg-accent-soft text-accent",
   cascade: "bg-violet-500/20 text-violet-300",
-  mixed: "bg-slate-600/40 text-slate-300",
+  mixed: "surface-3 text-2",
 }
 
 export function PatchesPanel() {
@@ -47,12 +47,12 @@ export function PatchesPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-slate-950">
+    <div className="flex flex-col h-full min-h-0" style={{ background: "var(--bg-app)" }}>
       {/* header */}
-      <div className="shrink-0 px-4 py-2.5 border-b border-slate-800 flex items-center gap-3">
+      <div className="shrink-0 px-4 py-2.5 border-b border-subtle flex items-center gap-3">
         <div className="flex-1 min-w-0">
-          <h2 className="text-sm text-slate-200 font-medium">Pending patches</h2>
-          <p className="text-[11px] text-slate-500">
+          <h2 className="text-sm text-1 font-medium">Pending patches</h2>
+          <p className="text-[11px] text-3">
             {symbolCount === 0
               ? "No staged edits"
               : `${total} patch${total !== 1 ? "es" : ""} across ${symbolCount} symbol${symbolCount !== 1 ? "s" : ""}`}
@@ -62,7 +62,7 @@ export function PatchesPanel() {
         {symbolCount > 0 && (
           <>
             <button
-              className="rounded px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 border border-slate-700"
+              className="rounded px-2 py-1 text-xs text-2 hover:surface-3 border border-strong transition-colors"
               onClick={() => drop()}
               disabled={applyInProgress}
               title="Drop all pending patches"
@@ -70,7 +70,8 @@ export function PatchesPanel() {
               Discard all
             </button>
             <button
-              className="rounded px-3 py-1 text-xs font-medium bg-amber-500/90 text-slate-950 hover:bg-amber-400 disabled:opacity-50"
+              className="rounded px-3 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              style={{ background: "var(--warn)" }}
               onClick={onApply}
               disabled={applyInProgress}
             >
@@ -90,7 +91,14 @@ export function PatchesPanel() {
       )}
 
       {lastError && (
-        <div className="shrink-0 px-4 py-1.5 bg-red-950/40 border-b border-red-800 text-[11px] text-red-300">
+        <div
+          className="shrink-0 px-4 py-1.5 border-b text-[11px]"
+          style={{
+            background: "var(--danger-soft)",
+            borderColor: "color-mix(in srgb, var(--danger) 40%, transparent)",
+            color: "#fda4af",
+          }}
+        >
           {lastError}
         </div>
       )}
@@ -100,12 +108,12 @@ export function PatchesPanel() {
         {report ? (
           <ApplyReportView report={report} onClose={() => setReport(null)} />
         ) : symbolCount === 0 ? (
-          <div className="h-full flex items-center justify-center text-slate-600 text-xs px-6 text-center">
+          <div className="h-full flex items-center justify-center text-faint text-xs px-6 text-center">
             When the agent stages edits (patch / create / delete / rename), the affected symbols and
             their blast radius will appear here for review before you apply them.
           </div>
         ) : (
-          <ul className="divide-y divide-slate-800/60">
+          <ul className="divide-y divide-[var(--border-subtle)]">
             {patches.map((p) => (
               <PatchRow key={p.qname} patch={p} onDrop={() => drop(p.qname)} />
             ))}
@@ -144,7 +152,7 @@ function PatchRow({ patch, onDrop }: { patch: PatchEntry; onDrop: () => void }) 
           {patch.kind === "rename" && patch.rename_to ? `rename→${patch.rename_to}` : kind.label}
         </span>
         <button
-          className="font-mono text-xs text-slate-200 truncate hover:text-indigo-300 flex-1 text-left"
+          className="font-mono text-xs text-1 truncate hover:text-accent flex-1 text-left transition-colors"
           onClick={() => reveal(patch.qname)}
           title={`${patch.qname} — reveal in graph`}
         >
@@ -154,10 +162,10 @@ function PatchRow({ patch, onDrop }: { patch: PatchEntry; onDrop: () => void }) 
           {patch.origin}
         </span>
         {patch.count > 1 && (
-          <span className="text-[10px] text-slate-500">{patch.count} notes</span>
+          <span className="text-[10px] text-3">{patch.count} notes</span>
         )}
         <button
-          className="text-slate-600 hover:text-red-400 text-xs px-1"
+          className="text-faint text-xs px-1 transition-colors hover:text-[var(--danger)]"
           onClick={onDrop}
           title="Drop this symbol's patches"
         >
@@ -167,9 +175,9 @@ function PatchRow({ patch, onDrop }: { patch: PatchEntry; onDrop: () => void }) 
 
       {/* qname (full) + blast radius */}
       <div className="mt-0.5 flex items-center gap-3 pl-0.5">
-        <span className="text-[10px] font-mono text-slate-600 truncate">{patch.qname}</span>
+        <span className="text-[10px] font-mono text-faint truncate">{patch.qname}</span>
         {br && (
-          <span className="text-[10px] text-slate-500 shrink-0" title="direct callers · cascade symbols">
+          <span className="text-[10px] text-3 shrink-0" title="direct callers · cascade symbols">
             ↯ {br.direct} direct · {br.cascade_count} cascade
             {br.hubs_stopped_at?.length ? ` · stops at ${br.hubs_stopped_at.length} hub(s)` : ""}
           </span>
@@ -180,17 +188,17 @@ function PatchRow({ patch, onDrop }: { patch: PatchEntry; onDrop: () => void }) 
       {patch.notes.length > 0 && (
         <div className="mt-1">
           <button
-            className="text-[10px] text-slate-500 hover:text-slate-300"
+            className="text-[10px] text-3 hover:text-2 transition-colors"
             onClick={() => setOpen((v) => !v)}
           >
             {open ? "▾" : "▸"} {patch.notes.length} note{patch.notes.length !== 1 ? "s" : ""}
           </button>
           {open && (
-            <div className="mt-1 space-y-1 pl-3 border-l border-slate-800">
+            <div className="mt-1 space-y-1 pl-3 border-l border-subtle">
               {patch.notes.map((n, i) => (
-                <div key={i} className="text-[11px] text-slate-400">
+                <div key={i} className="text-[11px] text-2">
                   <p className="whitespace-pre-wrap leading-snug">{n.note ?? ""}</p>
-                  {n.reason && <p className="text-slate-600 italic mt-0.5">{n.reason}</p>}
+                  {n.reason && <p className="text-faint italic mt-0.5">{n.reason}</p>}
                 </div>
               ))}
             </div>
@@ -212,28 +220,28 @@ function ApplyReportView({ report, onClose }: { report: ApplyReport; onClose: ()
           {report.ok ? "✓ Applied" : "Partial apply"}
         </span>
         {report.totals && (
-          <span className="text-slate-500">
+          <span className="text-3">
             {report.totals.applied}/{report.totals.requested} applied
             {report.totals.unresolved > 0 ? ` · ${report.totals.unresolved} unresolved` : ""}
           </span>
         )}
-        <button className="ml-auto text-slate-500 hover:text-slate-200" onClick={onClose}>
+        <button className="ml-auto text-3 hover:text-1 transition-colors" onClick={onClose}>
           ← back to patches
         </button>
       </div>
 
       {applied && (
         <div>
-          <p className="text-slate-400 mb-1">
+          <p className="text-2 mb-1">
             Applied {applied.symbols} symbol(s) across {applied.files} file(s)
           </p>
           {applied.files_detail && (
             <ul className="space-y-0.5">
               {applied.files_detail.map((f) => (
-                <li key={f.path} className="font-mono text-[11px] text-slate-500 flex items-center gap-2">
+                <li key={f.path} className="font-mono text-[11px] text-3 flex items-center gap-2">
                   <span className={f.ok ? "text-green-500" : "text-red-400"}>{f.ok ? "✓" : "✗"}</span>
                   <span className="truncate">{f.path}</span>
-                  <span className="text-slate-600">{f.symbols} sym</span>
+                  <span className="text-faint">{f.symbols} sym</span>
                 </li>
               ))}
             </ul>
@@ -248,7 +256,7 @@ function ApplyReportView({ report, onClose }: { report: ApplyReport; onClose: ()
             {cascade.map((c) => (
               <li key={c.qname}>
                 <button
-                  className="font-mono text-[11px] text-slate-400 hover:text-indigo-300"
+                  className="font-mono text-[11px] text-2 hover:text-accent transition-colors"
                   onClick={() => reveal(c.qname)}
                 >
                   {c.qname.split(":").pop()}
@@ -266,15 +274,15 @@ function ApplyReportView({ report, onClose }: { report: ApplyReport; onClose: ()
             {unresolved.map((u, i) => (
               <li key={i} className="rounded border border-amber-800/40 bg-amber-500/5 p-2">
                 <button
-                  className="font-mono text-[11px] text-slate-200 hover:text-indigo-300"
+                  className="font-mono text-[11px] text-1 hover:text-accent transition-colors"
                   onClick={() => reveal(u.qname)}
                 >
                   {u.qname}
                 </button>
                 {u.code && <span className="ml-2 text-[10px] text-amber-400 uppercase">{u.code}</span>}
-                {u.message && <p className="text-[11px] text-slate-400 mt-0.5">{u.message}</p>}
+                {u.message && <p className="text-[11px] text-2 mt-0.5">{u.message}</p>}
                 {u.source_pointer && (
-                  <p className="text-[10px] font-mono text-slate-600 mt-0.5">{u.source_pointer}</p>
+                  <p className="text-[10px] font-mono text-faint mt-0.5">{u.source_pointer}</p>
                 )}
               </li>
             ))}
@@ -282,7 +290,7 @@ function ApplyReportView({ report, onClose }: { report: ApplyReport; onClose: ()
         </div>
       )}
 
-      {report.error?.message && <p className="text-red-400">{report.error.message}</p>}
+      {report.error?.message && <p style={{ color: "var(--danger)" }}>{report.error.message}</p>}
     </div>
   )
 }

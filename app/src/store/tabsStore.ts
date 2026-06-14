@@ -14,6 +14,7 @@ export type TabView = "source" | "triefact"
 export const GRAPH_TAB_ID = "graph" // Attention (AGM)
 export const TOPOLOGY_TAB_ID = "topology" // Topology (legacy structural graph)
 export const PATCHES_TAB_ID = "patches"
+export const TRIE_TAB_ID = "trie" // trie CLI lifecycle commands + output
 
 export interface GraphTab {
   id: typeof GRAPH_TAB_ID
@@ -30,6 +31,11 @@ export interface PatchesTab {
   kind: "patches"
 }
 
+export interface TrieTab {
+  id: typeof TRIE_TAB_ID
+  kind: "trie"
+}
+
 export interface FileTab {
   id: string // === relPath
   kind: "file"
@@ -44,7 +50,7 @@ export interface FileTab {
   pendingFocusLine?: number
 }
 
-export type Tab = GraphTab | TopologyTab | PatchesTab | FileTab
+export type Tab = GraphTab | TopologyTab | PatchesTab | TrieTab | FileTab
 
 interface TabsStore {
   tabs: Tab[]
@@ -79,6 +85,7 @@ export const useTabsStore = create<TabsStore>((set, get) => ({
     { id: GRAPH_TAB_ID, kind: "graph" }, // Attention (AGM)
     { id: TOPOLOGY_TAB_ID, kind: "topology" }, // Topology (legacy)
     { id: PATCHES_TAB_ID, kind: "patches" },
+    { id: TRIE_TAB_ID, kind: "trie" }, // trie CLI commands
   ],
   activeId: GRAPH_TAB_ID,
 
@@ -117,7 +124,13 @@ export const useTabsStore = create<TabsStore>((set, get) => ({
   activate: (id) => set({ activeId: id }),
 
   close: (id) => {
-    if (id === GRAPH_TAB_ID || id === TOPOLOGY_TAB_ID || id === PATCHES_TAB_ID) return // permanent
+    if (
+      id === GRAPH_TAB_ID ||
+      id === TOPOLOGY_TAB_ID ||
+      id === PATCHES_TAB_ID ||
+      id === TRIE_TAB_ID
+    )
+      return // permanent
     set((s) => {
       const idx = s.tabs.findIndex((t) => t.id === id)
       if (idx === -1) return {}

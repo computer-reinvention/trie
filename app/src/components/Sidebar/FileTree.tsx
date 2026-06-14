@@ -49,7 +49,7 @@ export function FileTree({ dir, onFileClick, onFileRightClick, depth = 0 }: File
           {entry.isDirectory ? (
             <>
               <button
-                className="flex items-center w-full px-2 py-0.5 hover:bg-slate-800 text-slate-400 font-mono"
+                className="flex items-center w-full px-2 py-0.5 hover:surface-3 text-2 font-mono transition-colors"
                 style={{ paddingLeft: `${8 + indent}px` }}
                 onClick={() =>
                   setExpanded((s) => {
@@ -73,7 +73,7 @@ export function FileTree({ dir, onFileClick, onFileRightClick, depth = 0 }: File
             </>
           ) : (
             <button
-              className="flex items-center w-full px-2 py-0.5 hover:bg-slate-800 text-slate-300 font-mono"
+              className="flex items-center w-full px-2 py-0.5 hover:surface-3 text-2 font-mono transition-colors"
               style={{ paddingLeft: `${8 + indent + 12}px` }}
               onClick={() => onFileClick(entry.path)}
               onContextMenu={(e) => {

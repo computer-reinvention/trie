@@ -28,24 +28,20 @@ export function FileTabContent({ tab }: { tab: FileTab }) {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-slate-800 bg-slate-900/40 shrink-0">
-        <span className="font-mono text-[11px] text-slate-400 truncate flex-1">{tab.relPath}</span>
-        <div className="flex rounded overflow-hidden border border-slate-700 text-[10px] font-mono">
+      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-subtle surface-1 shrink-0">
+        <span className="font-mono text-[11px] text-2 truncate flex-1">{tab.relPath}</span>
+        <div className="flex rounded overflow-hidden border border-strong text-[10px] font-mono">
           <button
-            className={`px-2 py-0.5 ${
-              tab.view === "source"
-                ? "bg-slate-700 text-slate-100"
-                : "text-slate-500 hover:text-slate-300"
+            className={`px-2 py-0.5 transition-colors ${
+              tab.view === "source" ? "surface-3 text-1" : "text-3 hover:text-2"
             }`}
             onClick={() => setView(tab.id, "source")}
           >
             source
           </button>
           <button
-            className={`px-2 py-0.5 ${
-              tab.view === "triefact"
-                ? "bg-indigo-500/30 text-indigo-200"
-                : "text-slate-500 hover:text-slate-300"
+            className={`px-2 py-0.5 transition-colors ${
+              tab.view === "triefact" ? "bg-accent-soft text-accent" : "text-3 hover:text-2"
             }`}
             onClick={() => setView(tab.id, "triefact")}
           >

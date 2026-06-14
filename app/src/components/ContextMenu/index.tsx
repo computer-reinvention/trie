@@ -45,23 +45,24 @@ export function ContextMenu() {
   return createPortal(
     <div
       ref={ref}
-      className="fixed z-[1000] min-w-[160px] rounded-md border border-slate-700 bg-slate-900 shadow-xl py-1 text-xs font-mono"
+      className="fixed z-[1000] min-w-[160px] rounded-md border border-strong surface-pop elev-2 py-1 text-xs font-mono"
       style={{ left: pos.x, top: pos.y }}
     >
       {items.map((item, i) =>
         item.label === "-" ? (
-          <div key={i} className="my-1 border-t border-slate-800" />
+          <div key={i} className="my-1 border-t border-subtle" />
         ) : (
           <button
             key={i}
             disabled={item.disabled}
-            className={`block w-full text-left px-3 py-1.5 ${
+            className={`block w-full text-left px-3 py-1.5 transition-colors ${
               item.disabled
-                ? "text-slate-600 cursor-default"
+                ? "text-faint cursor-default"
                 : item.danger
-                  ? "text-red-400 hover:bg-red-500/10"
-                  : "text-slate-300 hover:bg-slate-800 hover:text-slate-100"
+                  ? "hover:bg-[color-mix(in_srgb,var(--danger)_12%,transparent)]"
+                  : "text-2 hover:surface-3 hover:text-1"
             }`}
+            style={item.danger && !item.disabled ? { color: "var(--danger)" } : undefined}
             onClick={() => {
               if (item.disabled) return
               hide()

@@ -23,7 +23,7 @@ interface TitleBarProps {
 export function TitleBar({ title, subtitle, actions, children }: TitleBarProps) {
   return (
     <div
-      className="app-drag shrink-0 flex items-center bg-slate-900 border-b border-slate-800 select-none"
+      className="app-drag shrink-0 flex items-center surface-1 border-b border-subtle select-none"
       style={{ height: TITLEBAR_H }}
     >
       {/* traffic-light clearance */}
@@ -32,12 +32,12 @@ export function TitleBar({ title, subtitle, actions, children }: TitleBarProps) 
       {children ?? (
         <div className="flex items-center gap-2 min-w-0 leading-none">
           {title && (
-            <span className="text-slate-200 text-xs font-semibold truncate leading-none">
+            <span className="text-1 text-xs font-semibold truncate leading-none">
               {title}
             </span>
           )}
           {subtitle && (
-            <span className="text-slate-600 text-[11px] tabular-nums leading-none truncate">
+            <span className="text-3 text-[11px] tabular-nums leading-none truncate">
               {subtitle}
             </span>
           )}
@@ -64,7 +64,7 @@ export function TitleBarIconButton({
 }) {
   return (
     <button
-      className="w-7 h-7 rounded flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
+      className="w-7 h-7 rounded flex items-center justify-center text-2 hover:text-1 hover:surface-3 transition-colors"
       onClick={onClick}
       title={title}
       aria-label={label ?? title}

@@ -3,10 +3,12 @@ import {
   GRAPH_TAB_ID,
   TOPOLOGY_TAB_ID,
   PATCHES_TAB_ID,
+  TRIE_TAB_ID,
   type Tab,
 } from "@/store/tabsStore"
 import { useGraphStore } from "@/store/graphStore"
 import { usePatchesStore } from "@/store/patchesStore"
+import { useTrieCommandStore } from "@/store/trieCommandStore"
 import { openContextMenu } from "@/store/contextMenuStore"
 
 // The tab strip across the top of the editor area. Tab #1 is the graph
@@ -36,6 +38,40 @@ function GraphIcon() {
   )
 }
 
+// trie commands: a terminal prompt glyph.
+function TrieIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="opacity-70">
+      <path d="M3 4l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.5 11H13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function TrieTabButton({
+  base,
+  tone,
+  onClick,
+}: {
+  base: string
+  tone: string
+  onClick: () => void
+}) {
+  const running = useTrieCommandStore((s) => s.running)
+  return (
+    <div className={`${base} ${tone}`} onClick={onClick} title="trie lifecycle commands">
+      <TrieIcon />
+      <span>trie</span>
+      {running && (
+        <span
+          className="w-2 h-2 rounded-full trie-pulse"
+          style={{ background: "var(--accent)" }}
+        />
+      )}
+    </div>
+  )
+}
+
 function CloseIcon() {
   return (
     <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -59,9 +95,18 @@ function PatchesTabButton({
     <div className={`${base} ${tone}`} onClick={onClick} title="Pending patches">
       <span>patches</span>
       {applying ? (
-        <span className="w-2.5 h-2.5 border-2 border-slate-600 border-t-amber-400 rounded-full animate-spin" />
+        <span
+          className="w-2.5 h-2.5 border-2 rounded-full animate-spin"
+          style={{ borderColor: "var(--border-strong)", borderTopColor: "var(--warn)" }}
+        />
       ) : count > 0 ? (
-        <span className="rounded-full bg-amber-500/25 text-amber-300 text-[10px] px-1.5 leading-4 min-w-4 text-center">
+        <span
+          className="rounded-full text-[10px] px-1.5 leading-4 min-w-4 text-center"
+          style={{
+            background: "color-mix(in srgb, var(--warn) 25%, transparent)",
+            color: "#fcd34d",
+          }}
+        >
           {count}
         </span>
       ) : null}
@@ -74,10 +119,10 @@ function TabButton({ tab, active }: { tab: Tab; active: boolean }) {
   const revealFile = useGraphStore((s) => s.revealFile)
 
   const base =
-    "group flex items-center gap-1.5 h-8 px-3 text-xs font-mono border-r border-slate-800 select-none cursor-pointer whitespace-nowrap"
+    "group flex items-center gap-1.5 h-8 px-3 text-xs font-mono border-r border-subtle select-none cursor-pointer whitespace-nowrap transition-colors"
   const tone = active
-    ? "bg-slate-900 text-slate-100"
-    : "bg-slate-950 text-slate-500 hover:text-slate-300 hover:bg-slate-900/60"
+    ? "surface-1 text-1"
+    : "text-3 hover:text-2 hover:surface-1"
 
   if (tab.kind === "graph") {
     return (
@@ -107,6 +152,10 @@ function TabButton({ tab, active }: { tab: Tab; active: boolean }) {
 
   if (tab.kind === "patches") {
     return <PatchesTabButton base={base} tone={tone} onClick={() => activate(PATCHES_TAB_ID)} />
+  }
+
+  if (tab.kind === "trie") {
+    return <TrieTabButton base={base} tone={tone} onClick={() => activate(TRIE_TAB_ID)} />
   }
 
   return (
@@ -145,10 +194,8 @@ function TabButton({ tab, active }: { tab: Tab; active: boolean }) {
     >
       <span className="truncate max-w-[160px]">{tab.name}</span>
       <button
-        className={`ml-0.5 rounded px-1 py-0.5 text-[9px] uppercase tracking-wide ${
-          tab.view === "triefact"
-            ? "bg-indigo-500/20 text-indigo-300"
-            : "bg-slate-700/40 text-slate-400"
+        className={`ml-0.5 rounded px-1 py-0.5 text-[9px] uppercase tracking-wide transition-colors ${
+          tab.view === "triefact" ? "bg-accent-soft text-accent" : "surface-3 text-2"
         }`}
         onClick={(e) => {
           e.stopPropagation()
@@ -159,7 +206,7 @@ function TabButton({ tab, active }: { tab: Tab; active: boolean }) {
         {tab.view === "triefact" ? "tf" : "src"}
       </button>
       <button
-        className="ml-0.5 rounded p-0.5 text-slate-600 opacity-0 group-hover:opacity-100 hover:bg-slate-700 hover:text-slate-200"
+        className="ml-0.5 rounded p-0.5 text-faint opacity-0 group-hover:opacity-100 hover:surface-3 hover:text-1 transition-all"
         onClick={(e) => {
           e.stopPropagation()
           close(tab.id)
@@ -177,7 +224,10 @@ export function TabStrip() {
   const activeId = useTabsStore((s) => s.activeId)
 
   return (
-    <div className="flex items-stretch h-8 bg-slate-950 border-b border-slate-800 overflow-x-auto scroll-thin shrink-0">
+    <div
+      className="flex items-stretch h-8 border-b border-subtle overflow-x-auto scroll-thin shrink-0"
+      style={{ background: "var(--bg-app)" }}
+    >
       {tabs.map((tab) => (
         <TabButton key={tab.id} tab={tab} active={tab.id === activeId} />
       ))}

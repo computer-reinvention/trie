@@ -25,6 +25,14 @@ export function setOpenCodeClientBase(opencodePort: number): void {
   baseUrl = `http://127.0.0.1:${opencodePort}`
 }
 
+// Human-readable fallback for the synthetic statuses the IPC proxy returns
+// (503 = server unreachable, 504 = timed out) and generic non-2xx.
+function messageForStatus(status: number): string {
+  if (status === 503) return "opencode is not reachable. Is the server running?"
+  if (status === 504) return "Request to opencode timed out."
+  return `opencode request failed (HTTP ${status}).`
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const trie = () => (window as any).trie
 
@@ -73,17 +81,26 @@ export const opencodeClient = {
   // --- messages ----------------------------------------------------------
 
   // Send a user message. Returns immediately-ish; the streamed assistant
-  // response arrives over the desktop SSE stream (parts/deltas).
+  // response arrives over the desktop SSE stream (parts/deltas). Throws on a
+  // non-2xx so the caller can surface "couldn't send" instead of leaving the
+  // turn spinning forever (e.g. server down → synthetic 503).
   async sendMessage(
     sessionId: string,
     text: string,
     opts?: { model?: { providerID: string; modelID: string }; agent?: string },
   ): Promise<void> {
-    await req("POST", `/session/${sessionId}/message`, {
-      parts: [{ type: "text", text }],
-      ...(opts?.model ? { model: opts.model } : {}),
-      ...(opts?.agent ? { agent: opts.agent } : {}),
-    })
+    const { status, data } = await req<{ error?: string }>(
+      "POST",
+      `/session/${sessionId}/message`,
+      {
+        parts: [{ type: "text", text }],
+        ...(opts?.model ? { model: opts.model } : {}),
+        ...(opts?.agent ? { agent: opts.agent } : {}),
+      },
+    )
+    if (status < 200 || status >= 300) {
+      throw new Error(data?.error || messageForStatus(status))
+    }
   },
 
   // Full transcript for a session (bare array of WithParts).

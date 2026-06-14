@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from "react"
 import { SETTINGS, type SettingDef } from "@/settings/schema"
 import { OC_FIELDS, OC_CATEGORIES, type OcFieldDef } from "@/settings/opencodeSchema"
+import { TRIE_FIELDS, TRIE_CATEGORIES, type TrieFieldDef } from "@/settings/trieSchema"
 import { useSettingsStore } from "@/store/settingsStore"
 import { useOpencodeConfigStore } from "@/store/opencodeConfigStore"
+import { useTrieConfigStore } from "@/store/trieConfigStore"
+import { useTrieCommandStore } from "@/store/trieCommandStore"
+import { useTabsStore, TRIE_TAB_ID } from "@/store/tabsStore"
 import { useAppStore } from "@/store/appStore"
-import { X, RotateCcw, Search } from "@/components/AgentPanel/icons"
+import { X, RotateCcw, Search, Loader2 } from "@/components/AgentPanel/icons"
 import {
   StringListEditor,
   EnumMapEditor,
@@ -35,11 +39,19 @@ export function Settings({ onClose }: SettingsProps) {
   const dirtyRestart = useOpencodeConfigStore((s) => s.dirtyRestart)
   const restart = useOpencodeConfigStore((s) => s.restart)
 
-  // Load opencode config once when the panel opens (re-read to honour any
+  const loadTrie = useTrieConfigStore((s) => s.load)
+  const trieLoaded = useTrieConfigStore((s) => s.loaded)
+  const trieExists = useTrieConfigStore((s) => s.exists)
+  const trieError = useTrieConfigStore((s) => s.lastError)
+
+  // Load opencode + trie config once when the panel opens (re-read to honour any
   // external edits made since last time).
   useEffect(() => {
-    if (projectDir) loadOc(projectDir)
-  }, [projectDir, loadOc])
+    if (projectDir) {
+      loadOc(projectDir)
+      loadTrie(projectDir)
+    }
+  }, [projectDir, loadOc, loadTrie])
 
   const q = query.trim().toLowerCase()
 
@@ -62,6 +74,20 @@ export function Settings({ onClose }: SettingsProps) {
       OC_FIELDS.filter((f) => {
         if (category && f.category !== `oc:${f.category}` && category !== `oc:${f.category}`)
           return false
+        if (!q) return true
+        return (
+          f.title.toLowerCase().includes(q) ||
+          f.description.toLowerCase().includes(q) ||
+          f.pointer.toLowerCase().includes(q)
+        )
+      }),
+    [q, category],
+  )
+
+  const trieFiltered = useMemo(
+    () =>
+      TRIE_FIELDS.filter((f) => {
+        if (category && category !== `trie:${f.category}`) return false
         if (!q) return true
         return (
           f.title.toLowerCase().includes(q) ||
@@ -130,6 +156,15 @@ export function Settings({ onClose }: SettingsProps) {
           {APP_CATEGORIES.map((c) => (
             <CategoryButton key={c} label={c} active={category === c} onClick={() => setCategory(c)} />
           ))}
+          <SectionLabel>trie</SectionLabel>
+          {TRIE_CATEGORIES.map((c) => (
+            <CategoryButton
+              key={c}
+              label={c}
+              active={category === `trie:${c}`}
+              onClick={() => setCategory(`trie:${c}`)}
+            />
+          ))}
           <SectionLabel>opencode</SectionLabel>
           {OC_CATEGORIES.map((c) => (
             <CategoryButton
@@ -145,8 +180,40 @@ export function Settings({ onClose }: SettingsProps) {
         <div className="flex-1 overflow-y-auto scroll-thin px-6 py-4">
           <div className="max-w-2xl space-y-1">
             {/* App settings */}
-            {(category === null || !category.startsWith("oc:")) &&
+            {(category === null ||
+              (!category.startsWith("oc:") && !category.startsWith("trie:"))) &&
               appFiltered.map((s) => <AppSettingRow key={s.id} def={s} />)}
+
+            {/* trie.toml settings */}
+            {(category === null || category.startsWith("trie:")) && (
+              <>
+                {!projectDir ? (
+                  <p className="text-3 text-sm py-4">Open a project to edit trie settings.</p>
+                ) : !trieLoaded ? (
+                  <p className="text-3 text-sm py-4">Loading trie.toml…</p>
+                ) : !trieExists ? (
+                  <TrieMissingNotice onClose={onClose} />
+                ) : (
+                  <>
+                    {trieError && (
+                      <p
+                        className="text-xs rounded px-3 py-2 my-2"
+                        style={{
+                          color: "#fda4af",
+                          background: "var(--danger-soft)",
+                          border: "1px solid color-mix(in srgb, var(--danger) 40%, transparent)",
+                        }}
+                      >
+                        {trieError}
+                      </p>
+                    )}
+                    {trieFiltered.map((f) => (
+                      <TrieSettingRow key={f.pointer} def={f} />
+                    ))}
+                  </>
+                )}
+              </>
+            )}
 
             {/* opencode settings */}
             {(category === null || category.startsWith("oc:")) && (
@@ -163,9 +230,11 @@ export function Settings({ onClose }: SettingsProps) {
               </>
             )}
 
-            {appFiltered.length === 0 && ocFiltered.length === 0 && (
-              <p className="text-3 text-sm">No settings match “{query}”.</p>
-            )}
+            {appFiltered.length === 0 &&
+              ocFiltered.length === 0 &&
+              trieFiltered.length === 0 && (
+                <p className="text-3 text-sm">No settings match “{query}”.</p>
+              )}
           </div>
         </div>
       </div>
@@ -278,6 +347,140 @@ function AppControl({
   )
 }
 
+// ── trie.toml missing notice ──────────────────────────────────────────────────
+function TrieMissingNotice({ onClose }: { onClose: () => void }) {
+  const running = useTrieCommandStore((s) => s.running)
+  const activeCommand = useTrieCommandStore((s) => s.command)
+  const runCommand = useTrieCommandStore((s) => s.run)
+  const initing = running && activeCommand === "init"
+
+  const init = () => {
+    // Run init through the shared command store so its output streams into the
+    // trie command panel exactly like every other command. The graph repopulate
+    // + config reload happen via the store's onComplete listeners (wired in App
+    // / Settings); here we just kick it off, switch to the panel so the user
+    // sees the progress, and close the Settings overlay.
+    runCommand("init", {})
+    useTabsStore.getState().activate(TRIE_TAB_ID)
+    onClose()
+  }
+
+  return (
+    <div className="py-6 text-center">
+      <p className="text-2 text-sm">
+        No <span className="font-mono text-1">trie.toml</span> in this project yet.
+      </p>
+      <p className="text-3 text-xs mt-1 max-w-md mx-auto">
+        Initialize trie to create the config and build the symbol graph. Progress streams in the
+        trie panel; you can tune every setting here afterwards.
+      </p>
+      <button
+        className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-accent text-white px-3.5 py-1.5 text-xs font-medium disabled:opacity-60"
+        onClick={init}
+        disabled={initing}
+      >
+        {initing ? (
+          <>
+            <Spinner />
+            Initializing…
+          </>
+        ) : (
+          "Run trie init"
+        )}
+      </button>
+    </div>
+  )
+}
+
+// ── trie settings row (trie.toml) ─────────────────────────────────────────────
+function TrieSettingRow({ def }: { def: TrieFieldDef }) {
+  const value = useTrieConfigStore((s) => s.getValue(def.pointer))
+  const setVal = useTrieConfigStore((s) => s.setValue)
+  // At-default detection: a value equal to trie's default is cleared from the
+  // managed delta (so trie.toml stays minimal) rather than pinned.
+  const effective = value === undefined ? def.default : value
+  const isDefault =
+    JSON.stringify(effective) === JSON.stringify(def.default)
+  const onChange = (v: unknown) => {
+    // Clearing back to the default removes the key entirely.
+    if (JSON.stringify(v) === JSON.stringify(def.default)) setVal(def.pointer, undefined)
+    else setVal(def.pointer, v)
+  }
+
+  const wide = def.type === "stringList" || def.type === "json"
+
+  return (
+    <div className="py-3 border-b border-subtle/60 group">
+      <div className={`flex gap-4 ${wide ? "flex-col" : "items-start justify-between"}`}>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-1 text-sm font-medium">{def.title}</span>
+            {!isDefault && (
+              <button
+                className="text-[10px] text-3 hover:text-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => setVal(def.pointer, undefined)}
+                title="Reset to trie default"
+              >
+                reset
+              </button>
+            )}
+          </div>
+          <p className="text-3 text-xs mt-0.5 leading-snug">{def.description}</p>
+          <p className="text-faint text-[10px] mt-0.5 font-mono">{def.pointer}</p>
+        </div>
+        <div className={wide ? "" : "shrink-0 pt-0.5"}>
+          <TrieControl def={def} value={effective} onChange={onChange} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TrieControl({
+  def,
+  value,
+  onChange,
+}: {
+  def: TrieFieldDef
+  value: unknown
+  onChange: (v: unknown) => void
+}) {
+  switch (def.type) {
+    case "boolean":
+      return <Toggle value={Boolean(value)} onChange={onChange} />
+    case "enum":
+      return <Select value={String(value)} options={def.enum ?? []} onChange={onChange} />
+    case "number":
+      return (
+        <input
+          type="number"
+          className="w-28 surface-2 border border-strong focus:border-accent-soft rounded px-2 py-1 text-sm text-1 outline-none"
+          value={value === undefined ? "" : Number(value)}
+          min={def.min}
+          max={def.max}
+          step={def.step}
+          onChange={(e) => onChange(e.target.value === "" ? def.default : Number(e.target.value))}
+        />
+      )
+    case "string":
+      return (
+        <input
+          type="text"
+          className="w-56 surface-2 border border-strong focus:border-accent-soft rounded px-2 py-1 text-sm text-1 outline-none"
+          placeholder={def.placeholder}
+          value={value === undefined ? "" : String(value)}
+          onChange={(e) => onChange(e.target.value === "" ? def.default : e.target.value)}
+        />
+      )
+    case "stringList":
+      return <StringListEditor value={value} placeholder={def.placeholder} onChange={onChange} />
+    case "json":
+      return <JsonEditor value={value} onChange={onChange} />
+    default:
+      return null
+  }
+}
+
 // ── opencode settings row (opencode.json) ─────────────────────────────────────
 function OcSettingRow({ def }: { def: OcFieldDef }) {
   const value = useOpencodeConfigStore((s) => s.getValue(def.pointer))
@@ -386,6 +589,10 @@ function coerceEnum(v: string): unknown {
 }
 
 // ── shared controls ───────────────────────────────────────────────────────────
+function Spinner() {
+  return <Loader2 size={13} className="animate-spin" />
+}
+
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <button

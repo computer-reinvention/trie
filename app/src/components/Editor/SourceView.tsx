@@ -106,14 +106,16 @@ export function SourceView({ relPath, focusLine, onFocusConsumed }: SourceViewPr
 
   if (error) {
     return (
-      <div className="p-4 text-xs text-red-400 font-mono">Failed to load {relPath}: {error}</div>
+      <div className="p-4 text-xs font-mono" style={{ color: "var(--danger)" }}>
+        Failed to load {relPath}: {error}
+      </div>
     )
   }
 
   return (
     <div className="relative h-full min-h-0">
       {loading && (
-        <div className="absolute top-2 right-3 z-10 text-[10px] text-slate-500 font-mono">loading…</div>
+        <div className="absolute top-2 right-3 z-10 text-[10px] text-3 font-mono">loading…</div>
       )}
       <div ref={hostRef} className="h-full min-h-0" />
     </div>
