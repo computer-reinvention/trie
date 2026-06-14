@@ -22,13 +22,17 @@ INFER_SYSTEM_PROMPT = """\
 You update Python source code based on implementation notes and return the updated source and an updated prose summary of the symbol's purpose. The prose should describe what the symbol does at a high level — do not include implementation notes or bullet points."""
 
 BATCH_PRE_FILTER_PROMPT = """\
-For each changed callee below, determine which of its callers need source updates.
-Base your decision on each caller's role/purpose and whether it depends on the
-property, behavior, or implementation detail that changed.
+For each changed callee below, decide which of its callers must be updated to stay
+correct AFTER the callee's change. Read each caller's SOURCE and judge concretely:
+if the caller uses the callee's return value, arguments, raised exceptions, or
+side-effects in a way that the change would break or make incorrect, it needs an
+UPDATE. When in doubt because the caller clearly consumes what changed, prefer
+UPDATE over SKIP.
 
 {callee_sections}
 
-For each caller, either SKIP (no source changes needed) or provide an UPDATE note and reason."""
+For each caller, either SKIP (genuinely unaffected) or UPDATE with a concrete note
+describing the edit the caller needs and a one-line reason."""
 
 FILE_GEN_PROMPT = """\
 You are updating symbols in the file {file_path}.
@@ -151,7 +155,9 @@ def infer_file_source(
     return file_edit.content, proses
 
 
-def _build_caller_summaries(caller_qnames: list[str], store, triefacts_root) -> list[dict]:
+def _build_caller_summaries(
+    caller_qnames: list[str], store, triefacts_root, src_root=None
+) -> list[dict]:
     from trie.sync.writer import SECTION_CLOSE, SECTION_OPEN_RE
 
     results: list[dict] = []
@@ -177,12 +183,23 @@ def _build_caller_summaries(caller_qnames: list[str], store, triefacts_root) -> 
                     body = body[:-1]
                 prose = body[:200]
                 break
+        # Include the caller's actual source so the pre-filter can SEE how it uses
+        # the callee's result (the decisive signal — signature/prose alone is not
+        # enough to tell whether a contract change breaks the caller).
+        source = ""
+        if src_root is not None:
+            try:
+                lines = (Path(src_root) / detail.file_path).read_text().splitlines(keepends=True)
+                source = "".join(lines[detail.start_line - 1 : detail.end_line])[:800]
+            except OSError:
+                source = ""
         results.append(
             {
                 "qname": qn,
                 "signature": detail.signature or "",
                 "one_liner": detail.one_liner,
                 "prose": prose,
+                "source": source,
             }
         )
     return results
@@ -237,8 +254,12 @@ def pre_filter_batch(
             caller_lines = []
             for ci, c in enumerate(callers, 1):
                 sig = c["signature"]
-                role = (c["prose"] or c["one_liner"])[:200]
-                caller_lines.append(f"      #{ci}. {sig}  —  {role}")
+                role = (c["prose"] or c["one_liner"])[:160]
+                caller_lines.append(f"      #{ci}. {c['qname']}  {sig}  —  {role}")
+                src = c.get("source", "")
+                if src:
+                    indented = "\n".join("        " + ln for ln in src.splitlines())
+                    caller_lines.append(f"        source:\n{indented}")
             caller_table = "\n".join(caller_lines) if caller_lines else "      (none)"
             sections.append(
                 f"[{tag}] {callee_qn}\n"

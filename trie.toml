@@ -7,15 +7,30 @@ version = "0.1.2"
 # Glob patterns relative to the project root (the directory containing this file).
 # Tests are included by default — they encode behavioral spec worth documenting.
 # Add `"**/tests/**"` to `exclude` if you'd rather skip them to keep cost down.
-include = ["**/*.py"]
+#
+# Multi-language: Python core + the TypeScript desktop app (app/) and the
+# vendored opencode fork (opencode/, a git submodule — only indexed when it is
+# checked out). First-party .d.ts files are indexed (declarations are behaviour
+# in a typed language); third-party .d.ts under node_modules is excluded below.
+include = [
+    "**/*.py",
+    "**/*.ts",
+    "**/*.tsx",
+]
 exclude = [
     "**/__pycache__/**",
     "**/.venv/**",
     "**/build/**",
     "**/dist/**",
-		"**/opencode/**",
-		"**/app/**",
-		"app/node_modules/**",
+    # Non-source TS subtrees: dependencies, build output, and generated bundles.
+    "**/node_modules/**",
+    "**/dist-electron/**",
+    "**/.vite/**",
+    "**/out/**",
+    "**/.output/**",
+    "**/.sst/**",
+    # opencode build/generated dirs (submodule); its src stays in scope.
+    "opencode/**/.opencode/**",
     "tmp/**",        # session scratch (backfill scripts, notes); never trie-managed
 ]
 

@@ -1,0 +1,5 @@
+{
+  "name": "tiny-ts-repo",
+  "private": true,
+  "workspaces": ["packages/*"]
+}

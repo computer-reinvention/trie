@@ -28,22 +28,109 @@ contextBridge.exposeInMainWorld("trie", {
     return () => ipcRenderer.removeListener("sse-event", listener)
   },
   onSseError: (cb: (msg: string) => void) => {
-    ipcRenderer.on("sse-error", (_event, v) => cb(v))
+    const listener = (_event: Electron.IpcRendererEvent, v: string) => cb(v)
+    ipcRenderer.on("sse-error", listener)
+    return () => ipcRenderer.removeListener("sse-error", listener)
   },
 
   // API key management — never touches renderer memory
   getApiKey: (provider: string) => ipcRenderer.invoke("get-api-key", provider),
   setApiKey: (provider: string, key: string) => ipcRenderer.invoke("set-api-key", provider, key),
 
+  // Settings (VS Code-style config persisted in prefs.json)
+  settingsGetAll: () => ipcRenderer.invoke("settings-get-all"),
+  settingsSet: (key: string, value: unknown) => ipcRenderer.invoke("settings-set", key, value),
+  settingsReset: () => ipcRenderer.invoke("settings-reset"),
+
+  // opencode.json — per-project config the settings UI reads/merges.
+  opencodeConfig: {
+    read: (projectDir: string) => ipcRenderer.invoke("opencode-config-read", projectDir),
+    write: (projectDir: string, delta: Record<string, unknown>) =>
+      ipcRenderer.invoke("opencode-config-write", projectDir, delta),
+    restart: () => ipcRenderer.invoke("opencode-restart"),
+  },
+
+  // trie.toml — per-project trie config the settings UI reads/merges.
+  trieConfig: {
+    read: (projectDir: string) =>
+      ipcRenderer.invoke("trie-config-read", projectDir) as Promise<{
+        exists: boolean
+        config: Record<string, unknown>
+      }>,
+    write: (projectDir: string, delta: Record<string, unknown>) =>
+      ipcRenderer.invoke("trie-config-write", projectDir, delta) as Promise<{
+        ok: boolean
+        error?: string
+      }>,
+  },
+
+  // trie CLI commands — run a subcommand and stream lifecycle events. The run
+  // call returns { ok, runId }; subscribe with onTrieCommand to receive events
+  // keyed by that runId. onTrieCommand returns an unsubscribe fn and swaps any
+  // prior listener so dev hot-reload doesn't stack handlers.
+  trieCommand: {
+    run: (spec: { command: string; args?: string[]; json?: boolean }) =>
+      ipcRenderer.invoke("trie-command-run", spec) as Promise<{
+        ok: boolean
+        runId?: number
+        error?: string
+      }>,
+    cancel: () => ipcRenderer.invoke("trie-command-cancel"),
+    isRunning: () =>
+      ipcRenderer.invoke("trie-command-running") as Promise<{ running: boolean }>,
+    onEvent: (cb: (event: Record<string, unknown>) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, v: Record<string, unknown>) => cb(v)
+      ipcRenderer.removeAllListeners("ipc:trie-command")
+      ipcRenderer.on("ipc:trie-command", listener)
+      return () => ipcRenderer.removeListener("ipc:trie-command", listener)
+    },
+  },
+
+  // Provider API keys — stored in the Keychain, never in renderer memory.
+  secrets: {
+    listProviders: () => ipcRenderer.invoke("provider-keys-list"),
+    hasProviderKey: (provider: string) => ipcRenderer.invoke("provider-key-has", provider),
+    setProviderKey: (provider: string, key: string, envVar?: string) =>
+      ipcRenderer.invoke("provider-key-set", provider, key, envVar),
+    deleteProviderKey: (provider: string) =>
+      ipcRenderer.invoke("provider-key-delete", provider),
+  },
+
+  // AGM frozen-layout snapshots, per opencode session (project .trie/).
+  agmSnapshotGet: (projectDir: string, sessionId: string) =>
+    ipcRenderer.invoke("agm-snapshot-get", projectDir, sessionId),
+  agmSnapshotSet: (projectDir: string, sessionId: string, snapshot: unknown) =>
+    ipcRenderer.invoke("agm-snapshot-set", projectDir, sessionId, snapshot),
+
   // File system (for sidebar tree)
   readDir: (dir: string) => ipcRenderer.invoke("read-dir", dir),
   readFile: (path: string) => ipcRenderer.invoke("read-file", path),
 
-  // opencode process output relay (for debugging)
+  // opencode process output relay (for debugging + crash surfacing). Both
+  // return an unsubscribe fn and swap any prior listener so dev hot-reload
+  // doesn't stack handlers.
   onOpencodeStderr: (cb: (line: string) => void) => {
-    ipcRenderer.on("ipc:opencode-stderr", (_event, v) => cb(v))
+    const listener = (_event: Electron.IpcRendererEvent, v: string) => cb(v)
+    ipcRenderer.removeAllListeners("ipc:opencode-stderr")
+    ipcRenderer.on("ipc:opencode-stderr", listener)
+    return () => ipcRenderer.removeListener("ipc:opencode-stderr", listener)
   },
-  onOpencodeExited: (cb: (info: { code: number | null }) => void) => {
-    ipcRenderer.on("ipc:opencode-exited", (_event, v) => cb(v))
+  onOpencodeExited: (cb: (info: { code: number | null; expected?: boolean }) => void) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      v: { code: number | null; expected?: boolean },
+    ) => cb(v)
+    ipcRenderer.removeAllListeners("ipc:opencode-exited")
+    ipcRenderer.on("ipc:opencode-exited", listener)
+    return () => ipcRenderer.removeListener("ipc:opencode-exited", listener)
+  },
+
+  // trie refresh progress relay — JSONL events from `trie refresh --json`,
+  // drives the triefact-generation status display. Returns an unsubscribe fn.
+  onTrieRefresh: (cb: (event: Record<string, unknown>) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, v: Record<string, unknown>) => cb(v)
+    ipcRenderer.removeAllListeners("ipc:trie-refresh")
+    ipcRenderer.on("ipc:trie-refresh", listener)
+    return () => ipcRenderer.removeListener("ipc:trie-refresh", listener)
   },
 })

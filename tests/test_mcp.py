@@ -688,3 +688,141 @@ def test_grep_str_fuzzy_fallback_finds_close_name(tools: TrieTools):
     assert fb["kind"] == "fuzzy_one_liner"
     qnames = [m["qname"] for m in fb["matches"]]
     assert any("slugify" in q for q in qnames), f"Expected slugify in fuzzy fallback: {qnames}"
+
+
+# --- EXT-1/2/3/4/11 capability extensions ---------------------------------
+
+
+def test_grep_str_all_finds_non_indexed_file(tools: TrieTools, populated_project: Path):
+    """EXT-1: grep_str_all searches the whole repo, incl. non-indexed files."""
+    (populated_project / "package.json").write_text('{"name":"x","todo":"WIDGET_MARKER"}\n')
+    result = tools.grep_str_all("WIDGET_MARKER")
+    files = [h["file"] for h in result.get("text_hits", [])]
+    assert "package.json" in files, f"Expected package.json text hit, got {result}"
+    assert result["text_match_count"] >= 1
+
+
+def test_grep_str_all_attributes_indexed_hits_to_symbols(tools: TrieTools):
+    """EXT-1: in-scope hits are still attributed to enclosing symbols."""
+    result = tools.grep_str_all("def slugify")
+    qnames = [h["qname"] for h in result.get("hits", [])]
+    assert any("slugify" in q for q in qnames), f"Expected slugify symbol hit, got {result}"
+
+
+def test_grep_str_default_does_not_see_non_indexed(tools: TrieTools, populated_project: Path):
+    """EXT-1 contrast: plain grep_str must NOT find non-indexed files."""
+    (populated_project / "notes.txt").write_text("ZEBRA_MARKER here\n")
+    result = tools.grep_str("ZEBRA_MARKER")
+    # No symbol hit and no plain-text channel exists on the scoped variant.
+    assert not result.get("hits")
+
+
+def test_find_files_by_extension(tools: TrieTools, populated_project: Path):
+    """EXT-2: find_files locates files by glob across the whole tree."""
+    (populated_project / "data.json").write_text("{}\n")
+    result = tools.find_files("**/*.json")
+    assert "data.json" in result["matches"], result
+
+
+def test_find_files_by_bare_name(tools: TrieTools):
+    """EXT-2: a bare filename matches that basename anywhere."""
+    result = tools.find_files("trie.toml")
+    assert "trie.toml" in result["matches"], result
+
+
+def test_find_files_indexed_only(tools: TrieTools, populated_project: Path):
+    """EXT-2: --indexed-only restricts to in-scope files."""
+    (populated_project / "data.json").write_text("{}\n")
+    result = tools.find_files("**/*.json", all_files=False)
+    assert "data.json" not in result["matches"], result
+
+
+def test_find_files_prunes_trie_dir(tools: TrieTools):
+    """EXT-2: the .trie/ cache dir is never returned."""
+    result = tools.find_files("**/*")
+    assert not any(m.startswith(".trie/") for m in result["matches"]), result
+
+
+def test_read_source_non_indexed_file(tools: TrieTools, populated_project: Path):
+    """EXT-4: read_source returns raw line-numbered content of any file."""
+    (populated_project / "config.yaml").write_text("key: value\nother: thing\n")
+    result = tools.read_source("config.yaml")
+    assert result["lines"].startswith("1: key: value")
+    assert "2: other: thing" in result["lines"]
+
+
+def test_read_source_offset_limit(tools: TrieTools):
+    """EXT-3: offset/limit window with 1-indexed line-number prefixes."""
+    result = tools.read_source("lib.py", offset=1, limit=1)
+    assert result["line_count"] == 1
+    assert result["lines"].startswith("1: ")
+    assert result["more"] is True
+
+
+def test_read_source_missing_file_errors(tools: TrieTools):
+    """EXT-4: a missing path returns a structured not_found error."""
+    result = tools.read_source("does_not_exist.txt")
+    assert "error" in result
+    assert result["error"]["code"] == "not_found"
+
+
+def test_read_source_directory_errors(tools: TrieTools):
+    """EXT-4: a directory path is rejected with guidance toward find."""
+    result = tools.read_source(".")
+    assert "error" in result
+    assert result["error"]["code"] == "invalid_argument"
+
+
+def test_blast_radius_reports_cascade(tools: TrieTools):
+    """EXT-11: blast_radius returns the cascade set for an edited symbol."""
+    result = tools.blast_radius("lib:slugify")
+    assert "error" not in result, result
+    assert result["qname"] == "lib:slugify"
+    cascaded = [c["qname"] for c in result["cascade"]]
+    assert any("make_url" in q for q in cascaded), result
+
+
+def test_blast_radius_unknown_symbol_errors(tools: TrieTools):
+    """EXT-11: unknown qname returns a clear not_found."""
+    result = tools.blast_radius("lib:nope")
+    assert "error" in result
+    assert result["error"]["code"] == "not_found"
+
+
+def test_write_file_creates_new_file(tools: TrieTools, populated_project: Path):
+    """EXT-8: write_file creates an arbitrary new file under the root."""
+    result = tools.write_file("docs/GUIDE.md", "# Guide\n\nhello\n")
+    assert result.get("created") is True, result
+    assert (populated_project / "docs" / "GUIDE.md").read_text() == "# Guide\n\nhello\n"
+    # non-indexed file → no sync needed
+    assert result["needs_sync"] is False
+
+
+def test_write_file_refuses_clobber_without_overwrite(tools: TrieTools, populated_project: Path):
+    """EXT-8: existing files are protected unless overwrite=True."""
+    (populated_project / "keep.txt").write_text("original\n")
+    result = tools.write_file("keep.txt", "new\n")
+    assert "error" in result
+    assert (populated_project / "keep.txt").read_text() == "original\n"
+
+
+def test_write_file_overwrite_flag(tools: TrieTools, populated_project: Path):
+    """EXT-8: overwrite=True replaces an existing file."""
+    (populated_project / "keep.txt").write_text("original\n")
+    result = tools.write_file("keep.txt", "new\n", overwrite=True)
+    assert result.get("created") is False
+    assert (populated_project / "keep.txt").read_text() == "new\n"
+
+
+def test_write_file_indexed_path_flags_needs_sync(tools: TrieTools):
+    """EXT-8: writing an in-scope (.py) file flags needs_sync."""
+    result = tools.write_file("brand_new_module.py", "def f():\n    return 1\n")
+    assert result.get("created") is True
+    assert result["needs_sync"] is True
+
+
+def test_write_file_outside_root_errors(tools: TrieTools):
+    """EXT-8: writes outside the project root are refused."""
+    result = tools.write_file("../escape.txt", "x\n")
+    assert "error" in result
+    assert result["error"]["code"] == "out_of_scope"

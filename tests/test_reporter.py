@@ -79,6 +79,52 @@ def test_progress_verbose_includes_token_detail():
     assert "tok 100/50" in out
 
 
+def test_progress_marks_cascade_files():
+    reporter, buf = _make_reporter(Verbosity.MEDIUM)
+    with reporter.start_progress(total=2, label="syncing") as ph:
+        ph.start_file("direct.py", cascade=False)
+        ph.finish_file("direct.py", cost_usd=0.01)
+        ph.start_file("pulled.py", cascade=True)
+        ph.finish_file("pulled.py", cost_usd=0.01)
+    out = buf.getvalue()
+    # The cascade-pulled file is labelled; the directly-stale one is not.
+    assert "pulled.py (cascade)" in out
+    direct_line = next(line for line in out.splitlines() if "direct.py" in line)
+    assert "(cascade)" not in direct_line
+
+
+def test_progress_adapter_prints_plan_header_and_section_separators():
+    from trie.cli import _ProgressAdapter
+
+    reporter, buf = _make_reporter(Verbosity.MEDIUM)
+    adapter = _ProgressAdapter(reporter, "syncing")
+    # Plan header is emitted before any file starts.
+    adapter.on_plan(direct=2, cascade=3)
+    # Section separators before each group.
+    adapter.on_section(label="directly stale", count=2)
+    adapter.on_start("direct.py", 1, 5)
+    adapter.on_section(label="pulled in by the cascade", count=3)
+    adapter.on_start("pulled.py", 2, 5, cascade=True)
+    adapter.close()
+
+    out = buf.getvalue()
+    assert "syncing 5 file(s)" in out
+    assert "2 directly stale" in out
+    assert "3 pulled in by the cascade" in out
+    assert "── directly stale (2) ──" in out
+    assert "── pulled in by the cascade (3) ──" in out
+
+
+def test_progress_adapter_plan_is_silent_when_nothing_to_sync():
+    from trie.cli import _ProgressAdapter
+
+    reporter, buf = _make_reporter(Verbosity.MEDIUM)
+    adapter = _ProgressAdapter(reporter, "syncing")
+    adapter.on_plan(direct=0, cascade=0)
+    adapter.on_section(label="directly stale", count=0)
+    assert buf.getvalue() == ""
+
+
 # --- root callback verbosity flag plumbing ---
 
 

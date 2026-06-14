@@ -392,7 +392,8 @@ Supported targets: `opencode`, `claude-code`, `claude-desktop`, `cursor`, `winds
 
 **Automation coverage today**:
 
-- **opencode**: full coverage — MCP registration, plugin-based turn hook (`session.idle` event), `TRIE.md` + `AGENTS.md` pointer, and the full tool override (`.opencode/tools/{grep,read,trace}.ts`).
+- **opencode (trie-native fork)**: the strongest integration. The [`computer-reinvention/opencode`](https://github.com/computer-reinvention/opencode) fork (vendored here as the `opencode/` submodule) ships the trie tools as the agent's **default** toolset — `trie_grep` / `trie_read` / `trie_trace` and the full patch pipeline (`trie_patch`, `trie_create_symbol` / `trie_delete_symbol` / `trie_rename_symbol`, `trie_patch_preview`, `trie_patch_apply`) are native, the stock file tools are demoted to backup (`fs_*`), an edit guard routes indexed-code edits through the pipeline, and a trie usage guide is injected into the system prompt. No per-project tool-override files are needed on this build. See the fork's [README](opencode/README.md) and the capability-gap tracker in [`docs/core/trie-tool-extensions.md`](docs/core/trie-tool-extensions.md).
+- **opencode (upstream)**: full coverage via injection — MCP registration, plugin-based turn hook (`session.idle` event), `TRIE.md` + `AGENTS.md` pointer, and the full tool override (`.opencode/tools/{grep,read,trace}.ts`).
 - **claude-code**: MCP registration, `TRIE.md` + `CLAUDE.md` pointer, and a non-blocking `PreToolUse` advisory hook on built-in `Grep` (Claude Code has no full tool-override surface; the hook injects a system reminder pointing at `mcp__trie__grep`). Hook automation isn't documented for per-turn events on this harness, so `trie refresh` is a manual step today.
 - **Other targets** (`claude-desktop`, `cursor`, `windsurf`, `vscode`, `codex`): MCP registration works; turn hook and tool override emit a `manual setup required` notice with the instruction to follow.
 

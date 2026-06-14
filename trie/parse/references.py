@@ -38,32 +38,18 @@ from pathlib import Path
 from tree_sitter import Node
 
 from trie.parse.python import (
-    Symbol,
     _make_parser,
     _node_text,
     _undecorate,
     extract_symbols,
 )
 
+# Reference and FileData now live in the language-neutral types module.
+# Re-exported here so existing `from trie.parse.references import ...` call
+# sites (and Symbol, used in this module's annotations) keep working.
+from trie.parse.types import FileData, Reference, Symbol
 
-@dataclass(frozen=True)
-class Reference:
-    """An outbound reference from a symbol within a file.
-
-    `target_qname` is the resolved target's qualified name (e.g. `src/foo:bar`). It's a string
-    so it can be persisted before the target's symbol_id is looked up in the DB.
-    """
-
-    src_qname: str
-    target_qname: str
-
-
-@dataclass(frozen=True)
-class FileData:
-    """Symbols + outbound references extracted from one file in a single tree-sitter parse."""
-
-    symbols: list[Symbol]
-    references: list[Reference]
+__all__ = ["FileData", "Reference", "Symbol", "extract_file_data"]
 
 
 @dataclass(frozen=True)
@@ -274,6 +260,63 @@ def _dotted_text(node: Node, source: bytes) -> str:
     return ""
 
 
+def _collect_call_target_names(node: Node, source: bytes) -> set[str]:
+    """Return the set of names that appear in *call position* within the subtree.
+
+    A name is in call position when it (or the rightmost attribute of an attribute
+    access) is the `function` of a `call` node: `foo(...)` adds `foo`; `a.b.foo(...)`
+    adds `foo`. Used to distinguish `calls` edges from plain `references` edges —
+    the same imported name can be both called and merely referenced, and the
+    stronger relationship (calls) wins per resolved target.
+    """
+    names: set[str] = set()
+
+    def walk(n: Node) -> None:
+        if n.type == "comment" or n.type == "string":
+            return
+        if n.type == "call":
+            fn = n.child_by_field_name("function")
+            if fn is not None:
+                if fn.type == "identifier":
+                    names.add(_node_text(fn, source))
+                elif fn.type == "attribute":
+                    attr_node = fn.child_by_field_name("attribute")
+                    if attr_node is not None and attr_node.type == "identifier":
+                        names.add(_node_text(attr_node, source))
+        for c in n.children:
+            walk(c)
+
+    walk(node)
+    return names
+
+
+def _collect_class_bases(class_node: Node, source: bytes) -> list[str]:
+    """Return the base-class names in a `class_definition`'s superclass list.
+
+    Each entry is the rightmost identifier of the base expression so `abc.ABC`
+    yields `"ABC"` and `Protocol` yields `"Protocol"`. Returns names only; the
+    caller resolves them against import/local bindings and decides inherits vs
+    implements (ABC/Protocol bases → implements).
+    """
+    bases: list[str] = []
+    superclasses = class_node.child_by_field_name("superclasses")
+    if superclasses is None:
+        return bases
+    for arg in superclasses.named_children:
+        if arg.type == "identifier":
+            bases.append(_node_text(arg, source))
+        elif arg.type == "attribute":
+            attr_node = arg.child_by_field_name("attribute")
+            if attr_node is not None and attr_node.type == "identifier":
+                bases.append(_node_text(attr_node, source))
+    return bases
+
+
+# Base-class names that signal an interface contract rather than implementation
+# inheritance, so an edge to them is classified `implements` instead of `inherits`.
+_INTERFACE_BASES: frozenset[str] = frozenset({"ABC", "ABCMeta", "Protocol"})
+
+
 def _find_node_for_symbol(root: Node, symbol: Symbol) -> Node | None:
     """Locate the def/class node corresponding to `symbol` so we can scan its body.
 
@@ -318,40 +361,84 @@ def extract_file_data(file_path: Path, source_root: Path | None = None) -> FileD
             own_top_level[s.name] = s.qualified_name
 
     references: list[Reference] = []
-    seen: set[tuple[str, str]] = set()  # (src_qname, target_qname) dedup
+    # (src, target) -> index into references, so a later stronger kind can upgrade
+    # an existing edge (references -> calls) without duplicating it. Edge-kind
+    # precedence (strongest wins): inherits/implements > calls > references > imports.
+    edge_index: dict[tuple[str, str], int] = {}
+    _KIND_RANK = {
+        "imports": 0,
+        "references": 1,
+        "calls": 2,
+        "inherits": 3,
+        "implements": 3,
+        "contains": 3,
+    }
 
-    def _maybe_add_edge(src: str, target: str) -> None:
-        """Add an outbound edge, deduping and dropping self-edges.
+    def _maybe_add_edge(src: str, target: str, kind: str = "calls") -> None:
+        """Add (or upgrade) an outbound edge, deduping and dropping self-edges.
 
         The store has the authoritative "does this target exist in the project"
-        filter, so we don't gate on resolution accuracy here — we just dedupe.
+        filter, so we don't gate on resolution accuracy here — we just dedupe and
+        keep the strongest relationship kind seen for each (src, target) pair.
         """
         if target == src:
             return
         key = (src, target)
-        if key in seen:
+        existing = edge_index.get(key)
+        if existing is None:
+            edge_index[key] = len(references)
+            references.append(Reference(src_qname=src, target_qname=target, kind=kind))
             return
-        seen.add(key)
-        references.append(Reference(src_qname=src, target_qname=target))
+        # Upgrade the kind if the new one is stronger.
+        cur = references[existing]
+        if _KIND_RANK.get(kind, 0) > _KIND_RANK.get(cur.kind, 0):
+            references[existing] = Reference(src_qname=src, target_qname=target, kind=kind)
 
     for sym in symbols:
         node = _find_node_for_symbol(root, sym)
         if node is None:
             continue
+
+        # Class-base edges: inherits (ordinary base) / implements (ABC/Protocol).
+        if node.type == "class_definition":
+            for base in _collect_class_bases(node, source):
+                if base == sym.name:
+                    continue
+                kind = "implements" if base in _INTERFACE_BASES else "inherits"
+                if base in bindings.symbols:
+                    _maybe_add_edge(sym.qualified_name, bindings.symbols[base], kind)
+                elif base in own_top_level:
+                    _maybe_add_edge(sym.qualified_name, own_top_level[base], kind)
+
+            # Containment edges: class -> each method it defines. Methods are
+            # symbols whose local name is `<ClassName>.<method>`.
+            class_local = sym.qualified_name.split(":", 1)[1]
+            for other in symbols:
+                other_local = other.qualified_name.split(":", 1)[1]
+                if (
+                    other_local.startswith(f"{class_local}.")
+                    and "." not in other_local[len(class_local) + 1 :]
+                ):
+                    _maybe_add_edge(sym.qualified_name, other.qualified_name, "contains")
+
         body = node.child_by_field_name("body")
         if body is None:
             continue
 
-        # Bare-identifier edges (existing path): `from X import Y; Y(...)` or a local
-        # top-level name. Self-references (recursion) are dropped.
+        # Names used in call position win `calls`; other resolved names are `references`.
+        called = _collect_call_target_names(body, source)
+
+        # Bare-identifier edges: `from X import Y; Y(...)` or a local top-level name.
+        # Self-references (recursion) are dropped.
         names = _collect_identifier_names(body, source)
         for name in names:
             if name == sym.name:
                 continue
+            kind = "calls" if name in called else "references"
             if name in bindings.symbols:
-                _maybe_add_edge(sym.qualified_name, bindings.symbols[name])
+                _maybe_add_edge(sym.qualified_name, bindings.symbols[name], kind)
             elif name in own_top_level:
-                _maybe_add_edge(sym.qualified_name, own_top_level[name])
+                _maybe_add_edge(sym.qualified_name, own_top_level[name], kind)
 
         # Module-attribute edges: `import X; X.Y(...)` resolves to `X:Y`, where the
         # base of the attribute access matches a module binding. Each attribute
@@ -362,7 +449,8 @@ def extract_file_data(file_path: Path, source_root: Path | None = None) -> FileD
         for base, attr in attr_pairs:
             if base in bindings.modules:
                 module_path = bindings.modules[base]
-                _maybe_add_edge(sym.qualified_name, f"{module_path}:{attr}")
+                kind = "calls" if attr in called else "references"
+                _maybe_add_edge(sym.qualified_name, f"{module_path}:{attr}", kind)
 
     return FileData(symbols=symbols, references=references)
 

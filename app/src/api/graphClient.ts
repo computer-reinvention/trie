@@ -2,7 +2,20 @@
 // Routes all calls through the Electron main process (IPC proxy) because
 // the renderer cannot reach 127.0.0.1 directly on some macOS configurations.
 
-import type { ProjectSummary, ReadResult, SymbolsByFileResult, TraceResult, SymbolHit } from "./types"
+import type {
+  ProjectSummary,
+  ReadResult,
+  SymbolsByFileResult,
+  TraceResult,
+  SymbolHit,
+  SystemModel,
+  FileTriefactResult,
+  FileSourceResult,
+  ActivityResult,
+  PatchList,
+  ApplyReport,
+  BlastRadiusResult,
+} from "./types"
 
 let baseUrl = ""
 
@@ -39,6 +52,74 @@ export const graphClient = {
     return get("/desktop/graph/summary")
   },
 
+  // Dedicated initial-load endpoint — no predicate required, returns all symbols.
+  allSymbols(opts?: { rank_by?: string; limit?: number }): Promise<{ hits: SymbolHit[] }> {
+    const params: Record<string, string> = {}
+    if (opts?.rank_by) params.rank_by = opts.rank_by
+    if (opts?.limit != null) params.limit = String(opts.limit)
+    return get("/desktop/graph/all-symbols", Object.keys(params).length ? params : undefined)
+  },
+
+  // Dedicated initial-load endpoint — returns all call-graph edges directly from
+  // DB. Edges are typed (kind: calls/references/imports/contains/inherits/
+  // implements) for AGM propagation; legacy consumers ignore the kind.
+  allEdges(opts?: {
+    limit?: number
+  }): Promise<{ edges: Array<{ from: string; to: string; kind: string }> }> {
+    const params: Record<string, string> = {}
+    if (opts?.limit != null) params.limit = String(opts.limit)
+    return get("/desktop/graph/all-edges", Object.keys(params).length ? params : undefined)
+  },
+
+  // AGM — recent attention events + constant tables (for hydrate/replay).
+  attention(opts?: { since?: number }): Promise<{
+    events: Array<{
+      ts: number
+      event_type: string
+      target: string
+      weight: number
+      agent_id: string
+      session_id: string
+      investigation_id: string
+    }>
+    weights: Record<string, number>
+    live_halflife_seconds: Record<string, number>
+    edge_weights: Record<string, number>
+    synthetic_nodes: Array<{ node: string; qname: string }>
+  }> {
+    const params: Record<string, string> = {}
+    if (opts?.since != null) params.since = String(opts.since)
+    return get("/desktop/graph/attention", Object.keys(params).length ? params : undefined)
+  },
+
+  // AGM — persist one attention event (durable side).
+  recordAttention(body: {
+    type: string
+    qname: string
+    investigation_id?: string
+  }): Promise<{ ok?: boolean; weight?: number }> {
+    return post("/desktop/graph/record-attention", body)
+  },
+
+  // AGM — declare/update the current investigation (explicit task boundary).
+  setInvestigation(body: {
+    label: string
+    status?: string
+    investigation_id?: string
+  }): Promise<{ investigation_id: string; label: string; status: string }> {
+    return post("/desktop/graph/set-investigation", body)
+  },
+
+  // The high-level system model — classified+scored nodes, L0 component axes
+  // (role/subsystem), landmarks, precomputed layout positions. The primary
+  // data source for the graph view. Cached server-side; instant after first call.
+  systemModel(opts?: { landmarkLimit?: number; includeTests?: boolean }): Promise<SystemModel> {
+    const params: Record<string, string> = {}
+    if (opts?.landmarkLimit != null) params.landmark_limit = String(opts.landmarkLimit)
+    if (opts?.includeTests) params.include_tests = "true"
+    return get("/desktop/graph/system-model", Object.keys(params).length ? params : undefined)
+  },
+
   grep(opts: { predicate?: Record<string, unknown>; rank_by?: string; limit?: number }): Promise<{ hits: SymbolHit[] }> {
     return post("/desktop/graph/grep", opts)
   },
@@ -55,7 +136,38 @@ export const graphClient = {
     return get("/desktop/graph/symbols-by-file", { path })
   },
 
-  createSession(title?: string): Promise<{ id: string }> {
-    return post("/desktop/session", title ? { title } : {})
+  // Full triefact (front matter + per-symbol sections) for a source file.
+  fileTriefact(path: string): Promise<FileTriefactResult> {
+    return get("/desktop/graph/file-triefact", { path })
+  },
+
+  // Raw source text for a file — feeds the editor's source view.
+  fileSource(path: string): Promise<FileSourceResult> {
+    return get("/desktop/graph/file-source", { path })
+  },
+
+  // Live writer status + working-tree stale set (polled by the activity store).
+  activity(): Promise<ActivityResult> {
+    return get("/desktop/graph/activity")
+  },
+
+  // Pending patches grouped by symbol.
+  patches(): Promise<PatchList> {
+    return get("/desktop/graph/patches")
+  },
+
+  // Drop pending patches for a symbol (omit qname to drop all this session).
+  patchDrop(qname?: string): Promise<{ removed: number }> {
+    return post("/desktop/graph/patch-drop", qname ? { qname } : {})
+  },
+
+  // Apply all pending patches → ApplyReport.
+  patchApply(): Promise<ApplyReport> {
+    return post("/desktop/graph/patch-apply", {})
+  },
+
+  // Cascade impact (with hop distances) of editing a symbol.
+  blastRadius(qname: string): Promise<BlastRadiusResult> {
+    return get("/desktop/graph/blast-radius", { qname })
   },
 }

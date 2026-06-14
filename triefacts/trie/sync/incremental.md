@@ -1,80 +1,64 @@
 ---
 trie_version: 0.1.5
 source: trie/sync/incremental.py
-file_fingerprint: 18680eeb2367dfd90b76da693ed45e23a5f2458fb15fa47a2da4cca100b9af06
-last_synced_at: '2026-05-28T01:39:21Z'
+file_fingerprint: 15a45b1e239e298ae6d2aaa809707ec6779cdcf4e4f7467501bb7807be8094fe
+last_synced_at: '2026-06-10T13:17:12Z'
 defines:
 - kind: module
   qualified_name: trie/sync/incremental:__module__
-  lines: 1-285
+  lines: 1-329
 - kind: class
   qualified_name: trie/sync/incremental:IncrementalWorklist
-  lines: 19-51
+  lines: 21-53
 - kind: class
   qualified_name: trie/sync/incremental:IncrementalResult
-  lines: 55-63
+  lines: 57-65
 - kind: function
   qualified_name: trie/sync/incremental:compute_incremental_worklist
-  lines: 66-142
+  lines: 68-144
 - kind: function
   qualified_name: trie/sync/incremental:run_incremental
-  lines: 145-284
-incoming_refs: 19
-outgoing_refs: 11
+  lines: 147-328
+incoming_refs: 20
+outgoing_refs: 16
 ---
-<!-- trie:section symbol=trie/sync/incremental:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8b7d1eb492e35680875ff812049bdbfad96048d597c588c3e5ad7e97c657a6fa source_ref=75fad555723fb0d9fdc38c5f729779434c0a4951 -->
-## `trie/sync/incremental`
+<!-- trie:section symbol=trie/sync/incremental:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=cb313a4fac70ff6dc3bad02de5c44f9c60afef2c3f9792c5becb424681fa0201 source_ref=549bb001d03e465de4697570041eabaf93893a7f role=documentation-sync -->
+Incremental synchronization engine that refreshes stale triefacts and cascades changes through dependent files.
 
-Orchestrate incremental triefact sync: scan, staleness check, cascade, and per-symbol LLM regeneration.
-
-- `IncrementalWorklist`: read-only preview of files and symbols a sync run would touch.
-- `IncrementalResult`: summary counts and costs from a completed sync run.
-- `compute_incremental_worklist`: build the worklist without mutating state or calling the LLM.
-- `run_incremental`: execute the full incremental sync, deleting orphans and regenerating stale triefacts.
+- Orchestrates scan → check → cascade → sync pipeline for affected files
+- Supports symbol-level regeneration to minimize LLM costs on partial changes
+- Handles budget constraints and provides progress callbacks for long operations
+- Removes orphaned triefacts and maintains section record consistency
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/incremental:IncrementalWorklist fingerprint=cdb0112edfc993b6d288ef8defa85093653d6f39080b9837798d5a3fddcb71a5 body_fp=a5e650806ef6ca88a19ac14204ce8b471e20b7c149f080e2b84cb4faac14980b source_ref=75fad555723fb0d9fdc38c5f729779434c0a4951 -->
-## `IncrementalWorklist`
+<!-- trie:section symbol=trie/sync/incremental:IncrementalWorklist fingerprint=cdb0112edfc993b6d288ef8defa85093653d6f39080b9837798d5a3fddcb71a5 body_fp=8f57aeef79b3037acf3178526bbeef2f13d79f8c4b19fa325b0fbdc9a606bfd9 source_ref=549bb001d03e465de4697570041eabaf93893a7f role=change-detection -->
+Read-only preview of files and symbols that `run_incremental` would regenerate.
 
-Frozen dataclass holding a read-only preview of files `run_incremental` would touch.
-
-- `affected_files`: sorted union of directly-stale and cascade-pulled files.
-- `directly_stale`: files whose triefacts are out of date relative to source.
-- `cascaded_files`: files pulled in transitively via the cascade walk.
-- `hop_by_file`: minimum cascade hops from any seed; stale files map to 0.
-- `regen_qnames_by_file`: per-file set of qnames to regenerate; absent key means full-file regen.
-- `orphan_triefacts`: triefact paths whose source file no longer exists.
+- `hop_by_file`: cascade hop distance from seed files, used to order sync priority
+- `regen_qnames_by_file`: qualified names needing regeneration per file; absence means full-file regen
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/incremental:IncrementalResult fingerprint=44d8d13db810a81ea27f75709b870895913876f1c8dbdc95aa93ed09cc9916cf body_fp=6faeec0e9f86141b6311a2d5a4c3eb03079e35cfcac606e9b06f9aa90d5d0970 source_ref=75fad555723fb0d9fdc38c5f729779434c0a4951 -->
-## `IncrementalResult`
+<!-- trie:section symbol=trie/sync/incremental:IncrementalResult fingerprint=44d8d13db810a81ea27f75709b870895913876f1c8dbdc95aa93ed09cc9916cf body_fp=edb4713c88462a2e374290fbcc09b8507eda2eedc9d8e85e33ebf923954dbb17 source_ref=0007e08c6d700f4d99f851ebc327be2322a06af4 role=model -->
+Results and statistics from running incremental sync on a project.
 
-Frozen dataclass summarising the outcome of a `run_incremental` call.
-
-- `files_skipped_no_budget`: count of files skipped due to cost or limit cap.
-- `files_skipped_no_symbols`: count of files with no documentable symbols.
-- `actual_cost_usd`: total LLM cost incurred; zero when no pricing model supplied.
-- `orphan_triefacts_removed`: triefact files deleted because their source was gone.
-- `sync_results`: per-file `FileSyncResult` for every file actually processed.
+- `files_synced`: number of files successfully processed by the LLM
+- `files_skipped_no_budget`: files skipped due to budget or limit constraints
+- `files_skipped_no_symbols`: files skipped because they contain no documentable symbols
+- `directly_stale_count`: number of files that were directly stale (not cascade-pulled)
+- `cascaded_count`: number of files pulled in through the cascade mechanism
+- `actual_cost_usd`: total cost in USD for all LLM calls made during sync
+- `orphan_triefacts_removed`: list of orphaned triefact files that were deleted
+- `sync_results`: detailed results for each file that was successfully synced
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/incremental:compute_incremental_worklist fingerprint=3c8386c7f8572fc00dc5dc15bce15bda702346e82a53d1bfc3344998aa6c6c47 body_fp=9001f6a49ff52b1bbfa25b2c668bca3733ea5e81a249ec76925120ca5553aff2 source_ref=75fad555723fb0d9fdc38c5f729779434c0a4951 -->
-## `compute_incremental_worklist(*, project_root: Path, config: Config, store: Store) -> IncrementalWorklist`
+<!-- trie:section symbol=trie/sync/incremental:compute_incremental_worklist fingerprint=3c8386c7f8572fc00dc5dc15bce15bda702346e82a53d1bfc3344998aa6c6c47 body_fp=5cb5abe44f02f42ee162b426ac76cca776498797b85b6de3d864d7e4d10966c3 source_ref=549bb001d03e465de4697570041eabaf93893a7f role=change-detection -->
+Scans project, identifies stale triefacts, computes cascade dependencies, and returns worklist without executing sync.
 
-Run scan + check + cascade and return the read-only worklist of files and symbols `run_incremental` would touch, without deleting orphans or calling the LLM.
-
-- `store`: mutated by `scan_project` (hash-driven, idempotent); otherwise read-only.
-- Returns `IncrementalWorklist` with empty lists if no stale files are found.
-- Files missing from disk are excluded from stale lists and appear only in `orphan_triefacts`.
-- `MISSING_TRIEFACT` items are omitted from `regen_qnames_by_file`, signalling full-file regen to the runner.
+- Filters out staleness items for deleted source files (treats as orphan triefacts)
+- `regen_qnames_by_file` maps files to specific symbols needing regeneration (excludes full-file regen cases)
+- Returns empty worklist if no directly stale files found
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/incremental:run_incremental fingerprint=3421866a34523c470eae61043bd2cb317f9aec553a4c2e5c7b2d5db263d82e30 body_fp=639dfef32ef6f8daee8468d095c22db7c1c506281052a58e6123b60206ad52ec source_ref=14a19fe2a26fd88601a93755f0b2e907e34879a2 -->
-## `run_incremental(*, project_root: Path, config: Config, store: Store, client: ModelClient, pricing: ModelPricing | None = None, budget_usd: float | None = None, limit: int | None = None, progress: ProgressCallback | None = None) -> IncrementalResult`
+<!-- trie:section symbol=trie/sync/incremental:run_incremental fingerprint=c2ab80695b85e67fa511b01a10ebd06b0a28c7c9772cdfb38b992a7dbca3a4e6 body_fp=38665d3130d79af2277dfa3af62a347710febe04a1deca41247afb396e8f8016 source_ref=0007e08c6d700f4d99f851ebc327be2322a06af4 role=orchestration -->
+Regenerates stale triefacts and cascade-dependent files using LLM, respecting budget and concurrency limits.
 
-Scan, check, cascade, and regenerate all stale triefacts plus their referencing files, deleting orphans.
-
-- `budget_usd`: stops accepting new files once cumulative LLM cost meets or exceeds this value.
-- `limit`: stops accepting new files once this many have been successfully synced.
-- `pricing`: if `None`, cost tracking is skipped and `actual_cost_usd` is 0.
-- `progress`: receives `on_start` / `on_done` / `on_skip` callbacks; defaults to a no-op.
-- Directly-stale files are processed first; cascade-pulled files follow ordered by hop distance.
-- Orphan triefact files are unlinked before syncing begins.
-- Calls `backfill_section_records` after syncing (and also on the no-op early-return path) if section records are fewer than symbols.
+• Scans project, checks staleness, computes cascade, then syncs affected files in hop-ordered waves
+• Emits plan summary before processing files, removes orphaned triefacts, backfills missing metadata, auto-fills role tags with error handling, clears pending status
+• Returns statistics including files synced, skipped counts, actual cost, and detailed sync results
 <!-- trie:end -->

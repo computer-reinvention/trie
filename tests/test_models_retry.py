@@ -22,6 +22,7 @@ from unittest.mock import MagicMock
 import httpx
 import pytest
 from anthropic import (
+    APIConnectionError,
     APITimeoutError,
     AuthenticationError,
     InternalServerError,
@@ -94,9 +95,69 @@ def test_is_retryable_picks_up_rate_limit_and_5xx_and_timeout():
     assert _is_retryable(APITimeoutError(httpx.Request("POST", "https://x")))
 
 
+def test_is_retryable_picks_up_connection_errors():
+    # Transient network failures (DNS lookup failure, connection refused) surface
+    # as APIConnectionError and must be retried, not crash the whole sync.
+    exc = APIConnectionError(request=httpx.Request("POST", "https://x"))
+    assert _is_retryable(exc)
+
+
 def test_is_retryable_rejects_auth_and_other_4xx():
     assert not _is_retryable(_auth_error())
     assert not _is_retryable(ValueError("not an API error"))
+
+
+def test_is_retryable_unwraps_pydantic_ai_model_api_error():
+    """pydantic-ai wraps the underlying anthropic exception in ModelAPIError.
+
+    A transient connection drop therefore arrives as ModelAPIError, which does
+    NOT isinstance-match the anthropic types. Both the message-based match and the
+    __cause__-chain walk must recognise it as retryable, otherwise the whole sync
+    surfaces 'Connection error.' immediately instead of retrying (the regression
+    that caused every large file to fail under parallel sync)."""
+    from pydantic_ai.exceptions import ModelAPIError
+
+    # (a) bare wrapper with a connection-error message
+    assert _is_retryable(ModelAPIError("claude", "Connection error."))
+    # (b) wrapper whose __cause__ is a retryable anthropic exception
+    cause = APIConnectionError(request=httpx.Request("POST", "https://x"))
+    wrapped = ModelAPIError("claude", "upstream failed")
+    wrapped.__cause__ = cause
+    assert _is_retryable(wrapped)
+    # (c) a wrapper for a genuinely non-transient error stays non-retryable
+    assert not _is_retryable(ModelAPIError("claude", "invalid request: bad schema"))
+
+
+def test_per_thread_models_are_distinct_and_reused():
+    """Each worker thread must get its own AnthropicModel/AsyncAnthropic (bound to
+    its own event loop) so a shared client is never used across loops — but the
+    same thread reuses its client across calls so fds don't leak."""
+    import threading
+
+    client = TrieClient("anthropic/claude-sonnet-4-6")
+    models: dict[int, list[int]] = {}
+
+    def worker() -> None:
+        tid = threading.get_ident()
+        # Two builds on the same thread go through the holder cache.
+        from trie.models import _thread_holder
+
+        h1 = _thread_holder(client._make_thread_model)
+        h2 = _thread_holder(client._make_thread_model)
+        models[tid] = [id(h1.model), id(h2.model)]
+
+    threads = [threading.Thread(target=worker) for _ in range(3)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    # Same thread => same cached model (reused).
+    for ids in models.values():
+        assert ids[0] == ids[1]
+    # Different threads => different models (not shared across loops).
+    first_per_thread = [ids[0] for ids in models.values()]
+    assert len(set(first_per_thread)) == len(first_per_thread)
 
 
 def test_retry_after_reads_header_when_present():

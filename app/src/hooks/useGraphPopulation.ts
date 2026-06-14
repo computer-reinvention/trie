@@ -1,225 +1,89 @@
-import { useEffect } from "react"
-import type { Node, Edge } from "@xyflow/react"
+import { useCallback, useEffect } from "react"
 import { graphClient } from "@/api/graphClient"
 import { useGraphStore } from "@/store/graphStore"
+import { useAGMStore } from "@/store/agmStore"
 import { useAppStore } from "@/store/appStore"
-import type { SymbolNodeData, EdgeData, SymbolHit } from "@/api/types"
+import { useSettingsStore } from "@/store/settingsStore"
+import type { GroupingAxis, TypedEdge } from "@/api/types"
+import type { MemberGrouping } from "@/store/graphStore"
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyNode = Node<any>
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyEdge = Edge<any>
-
-// Stable file-path → hue mapping
-function fileHue(filePath: string): number {
-  let hash = 0
-  for (let i = 0; i < filePath.length; i++) {
-    hash = (hash * 31 + filePath.charCodeAt(i)) >>> 0
-  }
-  return hash % 360
-}
-
-export function symbolHitToNode(hit: SymbolHit, parentId?: string): Node<SymbolNodeData> {
-  return {
-    id: hit.qname,
-    type: "symbol",
-    parentId,
-    extent: parentId ? ("parent" as const) : undefined,
-    position: { x: 0, y: 0 },
-    data: {
-      qname: hit.qname,
-      name: hit.name,
-      kind: hit.kind,
-      filePath: hit.file_path,
-      startLine: hit.start_line,
-      endLine: 0,
-      signature: hit.signature,
-      oneLiner: hit.one_liner,
-      isPublic: hit.is_public,
-      inboundCount: hit.inbound_count,
-      outboundCount: hit.outbound_count,
-      prose: null,
-      isProseLoading: false,
-      isExpanded: false,
-      agentState: "idle",
-      isSelected: false,
-      isHighlighted: false,
-    },
-  }
-}
-
-export function useGraphPopulation(opencodePort: number | null): void {
+// Load the system model (the high-level "model of the system") + edges into the
+// graph store on project open. The model is cached server-side, so this is fast
+// after the first call. The store derives the L0 component view from it.
+//
+// Returns a `repopulate` callback so callers can force a re-fetch — used by the
+// startup-refresh flow: when `trie refresh` rebuilds an empty graph, the canvas
+// must re-query rather than stay stuck on the empty-graph result it got first.
+export function useGraphPopulation(opencodePort: number | null): { repopulate: () => void } {
   const appStore = useAppStore()
   const graphStore = useGraphStore()
 
-  useEffect(() => {
-    if (!opencodePort) return
-
-    let cancelled = false
-
-    async function populate(): Promise<void> {
-      appStore.setGraphLoading(true, "Fetching symbols…")
-
+  const populate = useCallback(
+    async function populate(cancelledRef?: { cancelled: boolean }): Promise<void> {
+      const isCancelled = () => cancelledRef?.cancelled ?? false
+      appStore.setGraphLoading(true, "Building the system model…")
       try {
-        // 1. Fetch all symbols
-        const { hits } = await graphClient.grep({
-          predicate: {},
-          rank_by: "inbound_count",
-          limit: 5000,
-        })
-        if (cancelled) return
-
-        appStore.setGraphLoading(
-          true,
-          `Building graph for ${hits.length} symbols…`,
+        const settings = useSettingsStore.getState()
+        const includeTests = settings.get<boolean>("graph.showTests")
+        const [model, edgesRes] = await Promise.all([
+          graphClient.systemModel({ includeTests }),
+          graphClient.allEdges({ limit: 50000 }),
+        ])
+        if (isCancelled()) return
+        if (!model?.nodes?.length) {
+          // An empty model here is expected on a fresh checkout while the
+          // startup refresh is still rebuilding the graph. Don't treat it as
+          // a hard error — the refresh hook calls repopulate() once the
+          // rebuild lands. Leave the loading state up so the canvas shows the
+          // triefact-generation status rather than a bare "no model" message.
+          console.warn("[graph] systemModel returned no nodes yet (refresh may be in flight)")
+          return
+        }
+        const edges = edgesRes?.edges ?? []
+        console.log(
+          `[graph] system model: ${model.stats.production_nodes} prod nodes, ` +
+            `${model.stats.role_count} roles, ${model.stats.subsystem_count} subsystems, ` +
+            `${edges.length} edges`,
         )
+        graphStore.setModel(model, edges)
+        // apply user setting overrides for grouping
+        graphStore.setAxis(settings.get<GroupingAxis>("graph.defaultAxis"))
+        graphStore.setMemberGrouping(settings.get<MemberGrouping>("graph.memberGrouping"))
 
-        // 2. Group by file → build FileGroupNodes + SymbolNodes
-        const byFile = new Map<string, SymbolHit[]>()
-        for (const hit of hits) {
-          const arr = byFile.get(hit.file_path) ?? []
-          arr.push(hit)
-          byFile.set(hit.file_path, arr)
-        }
+        // AGM: load the model + typed edges. setModel seeds HISTORICAL mass
+        // (stable angular geography) only — it does NOT create live mass, so the
+        // canvas starts BLANK. Live mass (current focus) is built exclusively
+        // from THIS session's live SSE activity; we deliberately do not replay
+        // the persisted event log on launch (that caused fresh sessions to show
+        // stale attention from prior/other sessions). Historical replay, when we
+        // want it, is an explicit ReplayControl action — never automatic.
+        useAGMStore.getState().setModel(model, edges as TypedEdge[])
 
-        const groupNodes: Node[] = []
-        const symbolNodes: Node<SymbolNodeData>[] = []
-
-        for (const [filePath, symbols] of byFile) {
-          const groupId = `__file__${filePath}`
-          const hue = fileHue(filePath)
-          groupNodes.push({
-            id: groupId,
-            type: "fileGroup",
-            position: { x: 0, y: 0 },
-            style: {
-              background: `hsla(${hue}, 40%, 20%, 0.3)`,
-              border: `1px solid hsla(${hue}, 40%, 40%, 0.5)`,
-            },
-            data: { filePath, label: filePath.split("/").pop() ?? filePath },
-          })
-          for (const hit of symbols) {
-            symbolNodes.push(symbolHitToNode(hit, groupId))
-          }
-        }
-
-        // 3. Fetch edges for top-200 by inbound_count, batched 10 at a time
-        // to avoid saturating the IPC channel.
-        const top200 = hits.slice(0, 200)
-        const traceResults: PromiseSettledResult<Awaited<ReturnType<typeof graphClient.trace>>>[] = []
-        const BATCH = 10
-        for (let i = 0; i < top200.length; i += BATCH) {
-          if (cancelled) return
-          const batch = top200.slice(i, i + BATCH)
-          const batchResults = await Promise.allSettled(
-            batch.map((h) => graphClient.trace({ from_qname: h.qname, direction: "both", depth: 1 }))
-          )
-          traceResults.push(...batchResults)
-        }
-        if (cancelled) return
-
-        const edgeSet = new Map<string, Edge<EdgeData>>()
-        for (const result of traceResults) {
-          if (result.status !== "fulfilled") continue
-          for (const e of result.value.edges) {
-            const id = `${e.from}->${e.to}`
-            if (!edgeSet.has(id)) {
-              edgeSet.set(id, {
-                id,
-                source: e.from,
-                target: e.to,
-                type: "semantic",
-                data: { kind: "calls" },
-              })
-            }
-          }
-        }
-
-        // 4. ELK layout
-        appStore.setGraphLoading(
-          true,
-          `Laying out ${symbolNodes.length} symbols across ${groupNodes.length} files…`,
-        )
-
-        const allNodes: AnyNode[] = [...groupNodes, ...symbolNodes]
-        const allEdges: AnyEdge[] = [...edgeSet.values()]
-
-        const positioned = await runElkLayout(allNodes, allEdges)
-        if (cancelled) return
-
-        graphStore.setGraph(positioned.nodes as unknown as Node<SymbolNodeData>[], positioned.edges as unknown as Edge<EdgeData>[])
+        appStore.setGraphLoading(false)
       } catch (err) {
         console.error("Graph population failed:", err)
-      } finally {
-        if (!cancelled) appStore.setGraphLoading(false)
+        if (!isCancelled()) appStore.setGraphLoading(false)
       }
-    }
-
-    populate()
-    return () => { cancelled = true }
-  }, [opencodePort])
-}
-
-// ELK layout using a Web Worker for the heavy lifting
-async function runElkLayout(
-  nodes: AnyNode[],
-  edges: AnyEdge[],
-): Promise<{ nodes: AnyNode[]; edges: AnyEdge[] }> {
-  // Dynamic import so ELK only loads when needed
-  const ELK = (await import("elkjs/lib/elk.bundled.js")).default
-  const elk = new ELK()
-
-  const elkNodes = nodes.map((n) => {
-    const isGroup = n.type === "fileGroup"
-    return {
-      id: n.id,
-      width: isGroup ? 300 : 240,
-      height: isGroup ? 200 : 80,
-      children: isGroup
-        ? nodes
-            .filter((c) => c.parentId === n.id)
-            .map((c) => ({ id: c.id, width: 220, height: 70, children: undefined, layoutOptions: undefined }))
-        : undefined,
-      layoutOptions: isGroup
-        ? { "elk.direction": "DOWN", "elk.spacing.nodeNode": "20" }
-        : undefined,
-    }
-  })
-
-  const elkEdges = edges.map((e) => ({
-    id: e.id,
-    sources: [e.source],
-    targets: [e.target],
-  }))
-
-  const graph = await elk.layout({
-    id: "root",
-    layoutOptions: {
-      "elk.algorithm": "layered",
-      "elk.direction": "DOWN",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "100",
-      "elk.spacing.nodeNode": "50",
-      "elk.hierarchyHandling": "INCLUDE_CHILDREN",
     },
-    children: elkNodes,
-    edges: elkEdges,
-  })
+    // appStore/graphStore are stable zustand hook results within a render; the
+    // effective dep is opencodePort, which gates whether a fetch makes sense.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [opencodePort],
+  )
 
-  // Map positions back to React Flow nodes
-  const positionMap = new Map<string, { x: number; y: number }>()
-  function extractPositions(elkChildren: typeof graph.children): void {
-    if (!elkChildren) return
-    for (const n of elkChildren) {
-      positionMap.set(n.id, { x: n.x ?? 0, y: n.y ?? 0 })
-      if (n.children) extractPositions(n.children)
+  useEffect(() => {
+    if (!opencodePort) return
+    const ref = { cancelled: false }
+    populate(ref)
+    return () => {
+      ref.cancelled = true
     }
-  }
-  extractPositions(graph.children)
+  }, [opencodePort, populate])
 
-  const positionedNodes = nodes.map((n) => {
-    const pos = positionMap.get(n.id)
-    return pos ? { ...n, position: pos } : n
-  })
+  const repopulate = useCallback(() => {
+    if (!opencodePort) return
+    populate()
+  }, [opencodePort, populate])
 
-  return { nodes: positionedNodes, edges }
+  return { repopulate }
 }

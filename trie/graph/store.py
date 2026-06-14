@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import functools
 import sqlite3
+import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -10,7 +12,10 @@ from pathlib import Path
 from trie.parse.python import Symbol
 from trie.parse.references import Reference
 
-SCHEMA_VERSION = 3
+# v8: extended symbol-kind vocabulary (interface/type/enum/enum_member/property)
+# for multi-language indexing. The `kind` column is free-text so no schema change
+# is needed — the bump forces a clean cache rebuild so TS files index cleanly.
+SCHEMA_VERSION = 8
 
 # All schema is created if not present. The DB is a regenerable cache under .trie/;
 # bumping SCHEMA_VERSION blows it away and triggers a re-scan on next connect.
@@ -38,6 +43,7 @@ CREATE TABLE IF NOT EXISTS symbols (
     is_public INTEGER NOT NULL,
     start_line INTEGER NOT NULL,
     end_line INTEGER NOT NULL,
+    decorators TEXT NOT NULL DEFAULT '',
     UNIQUE (file_path, qualified_name)
 );
 CREATE INDEX IF NOT EXISTS idx_symbols_file ON symbols(file_path);
@@ -46,6 +52,7 @@ CREATE INDEX IF NOT EXISTS idx_symbols_qname ON symbols(qualified_name);
 CREATE TABLE IF NOT EXISTS edges (
     src_symbol_id INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
     dst_symbol_id INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL DEFAULT 'calls',
     PRIMARY KEY (src_symbol_id, dst_symbol_id)
 );
 CREATE INDEX IF NOT EXISTS idx_edges_dst ON edges(dst_symbol_id);
@@ -55,10 +62,16 @@ CREATE TABLE IF NOT EXISTS triefact_sections (
     symbol_id INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
     section_fingerprint TEXT NOT NULL,
     one_liner TEXT,
+    role TEXT NOT NULL DEFAULT '',
+    boundary TEXT NOT NULL DEFAULT '',
     last_generated_at INTEGER NOT NULL,
+    hist_mass REAL NOT NULL DEFAULT 0,
+    hist_mass_ts REAL NOT NULL DEFAULT 0,
     PRIMARY KEY (triefact_path, symbol_id)
 );
 CREATE INDEX IF NOT EXISTS idx_sections_symbol ON triefact_sections(symbol_id);
+CREATE INDEX IF NOT EXISTS idx_sections_role ON triefact_sections(role);
+CREATE INDEX IF NOT EXISTS idx_sections_boundary ON triefact_sections(boundary);
 
 CREATE TABLE IF NOT EXISTS patches (
     id INTEGER PRIMARY KEY,
@@ -66,10 +79,29 @@ CREATE TABLE IF NOT EXISTS patches (
     note TEXT NOT NULL,
     reason TEXT NOT NULL,
     session_id TEXT NOT NULL,
-    created_at INTEGER NOT NULL
+    created_at INTEGER NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'modify',
+    rename_to TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_patches_symbol ON patches(symbol_id);
 CREATE INDEX IF NOT EXISTS idx_patches_session ON patches(session_id);
+
+-- Create patches target a symbol that does NOT yet exist, so they cannot key on
+-- symbol_id (which is NOT NULL elsewhere). Kept in their own table to avoid
+-- threading NULLs through every symbol_id consumer.
+CREATE TABLE IF NOT EXISTS create_patches (
+    id INTEGER PRIMARY KEY,
+    target_file TEXT NOT NULL,
+    target_qname TEXT NOT NULL,
+    anchor_qname TEXT,
+    parent_class TEXT,
+    note TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_create_patches_file ON create_patches(target_file);
+CREATE INDEX IF NOT EXISTS idx_create_patches_session ON create_patches(session_id);
 """
 
 
@@ -117,6 +149,9 @@ class SymbolDetail:
     inbound_count: int
     outbound_count: int
     one_liner: str  # "" when no triefact section exists
+    role: str = ""  # LLM-inferred architectural role; "" when unknown
+    boundary: str = ""  # LLM-inferred boundary class: entry/exit/internal; "" unknown
+    decorators: str = ""  # newline-joined decorator lines; "" when none
     pending_patches: list[dict] = field(default_factory=list)
     pending_patch_count: int = 0
 
@@ -133,7 +168,10 @@ class GrepPredicate:
 
     name_contains: str | None = None
     kind: str | None = (
-        None  # "function" | "class" | "method" | "constant" | "module" | "any" | None
+        # One of trie.parse.types.KINDS, or "any", or None. See KINDS for the
+        # full vocabulary (function/class/method/constant/module + the typed-
+        # language kinds interface/type/enum/enum_member/property).
+        None
     )
     scope_prefix: str | None = None
     scope_exclude: tuple[str, ...] = ()
@@ -144,6 +182,47 @@ class GrepPredicate:
     outbound_count_max: int | None = None
 
 
+def _synchronized(method: Callable) -> Callable:
+    """Wrap a Store method so its whole body runs under ``self._lock``.
+
+    Store reuses a single sqlite3 connection across all sync workers
+    (``check_same_thread=False``), and SQLite forbids concurrent use of one
+    connection from multiple threads. Without serialisation the races surface
+    as misleading errors — ``OperationalError: unable to open database file``,
+    spurious "database is locked", or ``recursive use of cursors`` — rather
+    than a clean failure. The re-entrant lock makes the documented invariant
+    real: every public method holds it for the duration of its DB work.
+    """
+
+    @functools.wraps(method)
+    def wrapper(self: Store, *args: object, **kwargs: object) -> object:
+        with self._lock:
+            return method(self, *args, **kwargs)
+
+    return wrapper
+
+
+def _synchronize_store(cls: type) -> type:
+    """Class decorator: apply ``_synchronized`` to every public method.
+
+    Skips dunders (``__init__`` / ``__enter__`` / ``__exit__`` manage the lock's
+    own lifecycle) and the ``transaction`` contextmanager, which yields control
+    back to caller code and must not hold the lock across that yield — callers
+    that use ``transaction`` are already responsible for serialising access, and
+    the methods they call inside it re-acquire the re-entrant lock harmlessly.
+    """
+    skip = {"transaction"}
+    for name, attr in list(vars(cls).items()):
+        if name.startswith("__"):
+            continue
+        if name in skip:
+            continue
+        if callable(attr) and not isinstance(attr, (staticmethod, classmethod)):
+            setattr(cls, name, _synchronized(attr))
+    return cls
+
+
+@_synchronize_store
 class Store:
     """SQLite-backed persistence for trie's symbol graph and file fingerprints.
 
@@ -156,10 +235,22 @@ class Store:
     def __init__(self, db_path: Path) -> None:
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        # Re-entrant lock guarding all connection access. Wave-based sync runs
+        # multiple files concurrently; each may read (file_ref_counts) or write
+        # (upsert_section_record) the store from a worker thread. SQLite forbids
+        # concurrent use of one connection, so every public method must hold this
+        # lock for its whole body — enforced automatically by the
+        # @_synchronize_store class decorator rather than by hand. The lock is
+        # re-entrant so methods that call other Store methods nest safely. DB ops
+        # are microseconds next to the multi-second LLM calls, so serialising them
+        # costs nothing measurable.
+        self._lock = threading.RLock()
         self._open()
 
     def _open(self) -> None:
-        self._conn = sqlite3.connect(str(self.db_path))
+        # check_same_thread=False because the lock — not thread affinity —
+        # provides the mutual exclusion sqlite requires.
+        self._conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
         self._conn.execute("PRAGMA foreign_keys = ON")
         # Detect a stale schema and nuke the DB before applying the current one. The DB is
         # a regenerable cache under .trie/, so a bump triggers a clean rebuild on the next
@@ -173,7 +264,10 @@ class Store:
         if existing_version is not None and existing_version != SCHEMA_VERSION:
             self._conn.close()
             self.db_path.unlink(missing_ok=True)
-            self._conn = sqlite3.connect(str(self.db_path))
+            # Same check_same_thread=False as the primary open above: the lock,
+            # not thread affinity, provides sqlite's required mutual exclusion.
+            # Dropping it here broke threaded sync immediately after a schema bump.
+            self._conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
             self._conn.execute("PRAGMA foreign_keys = ON")
             existing_version = None
         self._conn.executescript(SCHEMA_SQL)
@@ -243,8 +337,9 @@ class Store:
                 """
                 INSERT INTO symbols (
                     file_path, qualified_name, name, kind, signature, docstring,
-                    body_normalized_hash, signature_hash, is_public, start_line, end_line
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    body_normalized_hash, signature_hash, is_public, start_line, end_line,
+                    decorators
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     (
@@ -259,6 +354,7 @@ class Store:
                         int(s.is_public),
                         s.start_line,
                         s.end_line,
+                        "\n".join(s.decorators),
                     )
                     for s in symbols
                 ],
@@ -281,6 +377,25 @@ class Store:
         """Return the number of rows in ``triefact_sections``."""
         return int(self._conn.execute("SELECT COUNT(*) FROM triefact_sections").fetchone()[0])
 
+    def count_symbols_missing_role(self) -> int:
+        """Count symbols with no non-empty role tag in ``triefact_sections``.
+
+        A symbol is "missing a role" if it has no section record, or its section's
+        role is the empty string. Drives the role auto-backfill's short-circuit:
+        zero means every symbol is tagged and no LLM classification is needed.
+        """
+        return int(
+            self._conn.execute(
+                """
+                SELECT COUNT(*) FROM symbols s
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM triefact_sections ts
+                    WHERE ts.symbol_id = s.id AND ts.role != ''
+                )
+                """
+            ).fetchone()[0]
+        )
+
     # --- edge ops ---
 
     def replace_all_edges(self, references_by_file: dict[str, list[Reference]]) -> int:
@@ -294,7 +409,7 @@ class Store:
         for row in self._conn.execute("SELECT id, qualified_name FROM symbols"):
             qname_to_id[row[1]] = row[0]
 
-        rows: list[tuple[int, int]] = []
+        rows: list[tuple[int, int, str]] = []
         seen_pairs: set[tuple[int, int]] = set()
         for refs in references_by_file.values():
             for ref in refs:
@@ -306,12 +421,12 @@ class Store:
                 if pair in seen_pairs:
                     continue
                 seen_pairs.add(pair)
-                rows.append((src_id, dst_id))
+                rows.append((src_id, dst_id, ref.kind))
 
         with self.transaction() as conn:
             conn.execute("DELETE FROM edges")
             conn.executemany(
-                "INSERT INTO edges (src_symbol_id, dst_symbol_id) VALUES (?, ?)",
+                "INSERT INTO edges (src_symbol_id, dst_symbol_id, kind) VALUES (?, ?, ?)",
                 rows,
             )
         return len(rows)
@@ -438,28 +553,29 @@ class Store:
         Intra-file edges are excluded — they aren't "callers from elsewhere" or "calls
         out to elsewhere", which is what these counts surface in the triefact metadata.
         """
-        inbound = int(
-            self._conn.execute(
-                """
-                SELECT COUNT(*) FROM edges e
-                JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
-                JOIN symbols s_src ON s_src.id = e.src_symbol_id
-                WHERE s_dst.file_path = ? AND s_src.file_path != ?
-                """,
-                (file_path, file_path),
-            ).fetchone()[0]
-        )
-        outbound = int(
-            self._conn.execute(
-                """
-                SELECT COUNT(*) FROM edges e
-                JOIN symbols s_src ON s_src.id = e.src_symbol_id
-                JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
-                WHERE s_src.file_path = ? AND s_dst.file_path != ?
-                """,
-                (file_path, file_path),
-            ).fetchone()[0]
-        )
+        with self._lock:
+            inbound = int(
+                self._conn.execute(
+                    """
+                    SELECT COUNT(*) FROM edges e
+                    JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
+                    JOIN symbols s_src ON s_src.id = e.src_symbol_id
+                    WHERE s_dst.file_path = ? AND s_src.file_path != ?
+                    """,
+                    (file_path, file_path),
+                ).fetchone()[0]
+            )
+            outbound = int(
+                self._conn.execute(
+                    """
+                    SELECT COUNT(*) FROM edges e
+                    JOIN symbols s_src ON s_src.id = e.src_symbol_id
+                    JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
+                    WHERE s_src.file_path = ? AND s_dst.file_path != ?
+                    """,
+                    (file_path, file_path),
+                ).fetchone()[0]
+            )
         return inbound, outbound
 
     def file_stats(self) -> list[FileStats]:
@@ -495,6 +611,10 @@ class Store:
         symbol_qname: str,
         section_fingerprint: str,
         one_liner: str,
+        role: str = "",
+        boundary: str = "",
+        hist_mass: float = 0.0,
+        hist_mass_ts: float = 0.0,
         now: int | None = None,
     ) -> None:
         """Record (or refresh) the metadata trie keeps in lockstep with a generated section.
@@ -502,28 +622,67 @@ class Store:
         Looks up the symbol's current id from `symbols`. If the symbol no longer exists
         (e.g. renamed/deleted between scan and sync), the row is silently skipped — the
         next scan + sync will clean things up.
+
+        `role` is the LLM-inferred architectural role tag; '' when unknown. `boundary`
+        is the LLM-inferred boundary class (entry/exit/internal); '' when unknown. An
+        empty value on update does not clobber a previously-stored non-empty one, so a
+        metadata-only refresh that lacks LLM inference preserves the existing tags.
+
+        `hist_mass`/`hist_mass_ts` are the AGM cross-session historical mass parsed
+        from the triefact sentinel (the source of truth); this column is a rebuildable
+        read cache. A zero mass does not clobber a stored non-zero one, mirroring the
+        role/boundary preserve-on-empty rule — so a metadata-only refresh that didn't
+        re-parse the sentinel keeps the existing mass.
         """
         ts = now if now is not None else int(time.time())
-        row = self._conn.execute(
-            "SELECT id FROM symbols WHERE qualified_name = ? LIMIT 1",
-            (symbol_qname,),
-        ).fetchone()
-        if row is None:
-            return
-        symbol_id = int(row[0])
-        self._conn.execute(
-            """
-            INSERT INTO triefact_sections
-                (triefact_path, symbol_id, section_fingerprint, one_liner, last_generated_at)
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(triefact_path, symbol_id) DO UPDATE SET
-                section_fingerprint = excluded.section_fingerprint,
-                one_liner = excluded.one_liner,
-                last_generated_at = excluded.last_generated_at
-            """,
-            (triefact_path, symbol_id, section_fingerprint, one_liner, ts),
-        )
-        self._conn.commit()
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT id FROM symbols WHERE qualified_name = ? LIMIT 1",
+                (symbol_qname,),
+            ).fetchone()
+            if row is None:
+                return
+            symbol_id = int(row[0])
+            self._conn.execute(
+                """
+                INSERT INTO triefact_sections
+                    (triefact_path, symbol_id, section_fingerprint, one_liner, role,
+                     boundary, last_generated_at, hist_mass, hist_mass_ts)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(triefact_path, symbol_id) DO UPDATE SET
+                    section_fingerprint = excluded.section_fingerprint,
+                    one_liner = excluded.one_liner,
+                    role = CASE
+                        WHEN excluded.role != '' THEN excluded.role
+                        ELSE triefact_sections.role
+                    END,
+                    boundary = CASE
+                        WHEN excluded.boundary != '' THEN excluded.boundary
+                        ELSE triefact_sections.boundary
+                    END,
+                    last_generated_at = excluded.last_generated_at,
+                    hist_mass = CASE
+                        WHEN excluded.hist_mass != 0 THEN excluded.hist_mass
+                        ELSE triefact_sections.hist_mass
+                    END,
+                    hist_mass_ts = CASE
+                        WHEN excluded.hist_mass != 0 THEN excluded.hist_mass_ts
+                        ELSE triefact_sections.hist_mass_ts
+                    END
+                """,
+                (
+                    triefact_path,
+                    symbol_id,
+                    section_fingerprint,
+                    one_liner,
+                    role,
+                    boundary,
+                    ts,
+                    hist_mass,
+                    hist_mass_ts,
+                ),
+            )
+            self._conn.commit()
 
     def one_liner_for(self, qualified_name: str) -> str:
         """Return the cached one-liner for a symbol, or '' if no section exists yet."""
@@ -555,6 +714,39 @@ class Store:
         ).fetchall()
         return {row[0]: (row[1] or "") for row in rows}
 
+    def historical_mass_all(self, *, now: float | None = None) -> dict[str, float]:
+        """Return {qname: decayed historical mass} for every symbol with non-zero
+        AGM historical mass.
+
+        Mass is stored in `triefact_sections.hist_mass` (rehydrated from the
+        triefact sentinel, the source of truth) along with the timestamp it was
+        stamped; this decays each value forward to `now` on the AGM historical
+        half-life so callers get a current importance signal without re-stamping.
+        Symbols with zero mass are omitted.
+        """
+        import math as _math
+        import time as _time
+
+        from trie.attention import HISTORICAL_LAMBDA
+
+        ts_now = _time.time() if now is None else now
+        rows = self._conn.execute(
+            """
+            SELECT s.qualified_name, ts.hist_mass, ts.hist_mass_ts
+            FROM triefact_sections ts
+            JOIN symbols s ON s.id = ts.symbol_id
+            WHERE ts.hist_mass > 0
+            """
+        ).fetchall()
+        out: dict[str, float] = {}
+        for qname, mass, mass_ts in rows:
+            if mass_ts and mass_ts > 0:
+                dt = max(0.0, ts_now - float(mass_ts))
+                out[qname] = float(mass) * _math.exp(-HISTORICAL_LAMBDA * dt)
+            else:
+                out[qname] = float(mass)
+        return out
+
     # --- patch ops ---
 
     def add_patch(
@@ -563,10 +755,15 @@ class Store:
         note: str,
         reason: str,
         session_id: str,
+        *,
+        kind: str = "modify",
+        rename_to: str | None = None,
     ) -> int:
-        """Add a new patch row for the given symbol qname.
+        """Add a new patch row for the given (existing) symbol qname.
 
-        Returns the new patch id, or raises KeyError if qname is not found.
+        `kind` is one of 'modify' | 'delete' | 'rename'. `rename_to` is the new
+        local name, required when kind == 'rename'. Returns the new patch id, or
+        raises KeyError if qname is not found.
         """
         row = self._conn.execute(
             "SELECT id FROM symbols WHERE qualified_name = ? LIMIT 1",
@@ -577,13 +774,100 @@ class Store:
         symbol_id = int(row[0])
         now = int(time.time())
         cur = self._conn.execute(
-            """INSERT INTO patches (symbol_id, note, reason, session_id, created_at)
-               VALUES (?, ?, ?, ?, ?)""",
-            (symbol_id, note, reason, session_id, now),
+            """INSERT INTO patches
+               (symbol_id, note, reason, session_id, created_at, kind, rename_to)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (symbol_id, note, reason, session_id, now, kind, rename_to),
         )
         self._conn.commit()
         assert cur.lastrowid is not None, "INSERT of patch should produce a rowid"
         return int(cur.lastrowid)
+
+    def add_delete_patch(self, qname: str, reason: str, session_id: str) -> int:
+        """Stage a deletion of an existing symbol. Raises KeyError if absent."""
+        return self.add_patch(qname, "", reason, session_id, kind="delete")
+
+    def add_rename_patch(self, qname: str, new_name: str, reason: str, session_id: str) -> int:
+        """Stage a rename of an existing symbol to `new_name` (local name)."""
+        return self.add_patch(qname, "", reason, session_id, kind="rename", rename_to=new_name)
+
+    def add_create_patch(
+        self,
+        *,
+        target_file: str,
+        target_qname: str,
+        note: str,
+        reason: str,
+        session_id: str,
+        anchor_qname: str | None = None,
+        parent_class: str | None = None,
+    ) -> int:
+        """Stage creation of a NEW symbol that does not yet exist in the graph.
+
+        Returns the new create_patch id. Does not validate that target_qname is
+        absent — callers (the MCP tool) enforce that for a clean error message.
+        """
+        now = int(time.time())
+        cur = self._conn.execute(
+            """INSERT INTO create_patches
+               (target_file, target_qname, anchor_qname, parent_class, note, reason,
+                session_id, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (target_file, target_qname, anchor_qname, parent_class, note, reason, session_id, now),
+        )
+        self._conn.commit()
+        assert cur.lastrowid is not None, "INSERT of create_patch should produce a rowid"
+        return int(cur.lastrowid)
+
+    def get_create_patches_grouped(self) -> dict[str, list[dict]]:
+        """Return all pending create patches grouped by target_file."""
+        rows = self._conn.execute(
+            """SELECT id, target_file, target_qname, anchor_qname, parent_class,
+                      note, reason, session_id, created_at
+               FROM create_patches ORDER BY target_file, id"""
+        ).fetchall()
+        result: dict[str, list[dict]] = {}
+        for r in rows:
+            result.setdefault(str(r[1]), []).append(
+                {
+                    "id": int(r[0]),
+                    "target_file": r[1],
+                    "target_qname": r[2],
+                    "anchor_qname": r[3],
+                    "parent_class": r[4],
+                    "note": r[5],
+                    "reason": r[6],
+                    "session_id": r[7],
+                    "created_at": int(r[8]),
+                }
+            )
+        return result
+
+    def delete_create_patches(
+        self,
+        *,
+        target_qname: str | None = None,
+        session_id: str | None = None,
+        all: bool = False,
+    ) -> int:
+        """Delete create patches by target_qname / session_id / all."""
+        if all:
+            count = self._conn.execute("DELETE FROM create_patches").rowcount
+            self._conn.commit()
+            return count
+        if target_qname is not None:
+            count = self._conn.execute(
+                "DELETE FROM create_patches WHERE target_qname = ?", (target_qname,)
+            ).rowcount
+            self._conn.commit()
+            return count
+        if session_id is not None:
+            count = self._conn.execute(
+                "DELETE FROM create_patches WHERE session_id = ?", (session_id,)
+            ).rowcount
+            self._conn.commit()
+            return count
+        return 0
 
     def get_patches_for_qname(self, qname: str) -> list[dict]:
         """Return all pending patches for the given symbol as dicts."""
@@ -598,7 +882,8 @@ class Store:
 
     def _get_patches_by_symbol_id(self, symbol_id: int) -> list[dict]:
         rows = self._conn.execute(
-            "SELECT id, note, reason, session_id, created_at FROM patches WHERE symbol_id = ? ORDER BY id",
+            """SELECT id, note, reason, session_id, created_at, kind, rename_to
+               FROM patches WHERE symbol_id = ? ORDER BY id""",
             (symbol_id,),
         ).fetchall()
         return [
@@ -608,6 +893,8 @@ class Store:
                 "reason": r[2],
                 "session_id": r[3],
                 "created_at": int(r[4]),
+                "kind": r[5] or "modify",
+                "rename_to": r[6],
             }
             for r in rows
         ]
@@ -618,7 +905,7 @@ class Store:
         Result maps symbol_id -> list of patch dicts.
         """
         rows = self._conn.execute(
-            """SELECT id, symbol_id, note, reason, session_id, created_at
+            """SELECT id, symbol_id, note, reason, session_id, created_at, kind, rename_to
                FROM patches ORDER BY symbol_id, id"""
         ).fetchall()
         result: dict[int, list[dict]] = {}
@@ -631,6 +918,8 @@ class Store:
                     "reason": r[3],
                     "session_id": r[4],
                     "created_at": int(r[5]),
+                    "kind": r[6] or "modify",
+                    "rename_to": r[7],
                 }
             )
         return result
@@ -689,6 +978,37 @@ class Store:
         ).fetchone()
         return int(row[0]) if row else 0
 
+    def patch_summary(self) -> dict[str, object]:
+        """Aggregate pending-patch state — the single shared reader for status /
+        activity() / patch_list.
+
+        Returns {total_patches, symbol_count, create_count, by_origin, qnames}.
+        `by_origin` buckets symbols by patch session origin (agent/cascade/mixed).
+        """
+        patch_rows = self._conn.execute(
+            """SELECT s.qualified_name, p.session_id
+               FROM patches p JOIN symbols s ON s.id = p.symbol_id"""
+        ).fetchall()
+        sessions_by_qname: dict[str, set[str]] = {}
+        for qname, sid in patch_rows:
+            sessions_by_qname.setdefault(qname, set()).add(sid)
+        by_origin = {"agent": 0, "cascade": 0, "mixed": 0}
+        for sessions in sessions_by_qname.values():
+            if sessions == {"cascade"}:
+                by_origin["cascade"] += 1
+            elif len(sessions) > 1:
+                by_origin["mixed"] += 1
+            else:
+                by_origin["agent"] += 1
+        create_count = int(self._conn.execute("SELECT COUNT(*) FROM create_patches").fetchone()[0])
+        return {
+            "total_patches": len(patch_rows),
+            "symbol_count": len(sessions_by_qname),
+            "create_count": create_count,
+            "by_origin": by_origin,
+            "qnames": sorted(sessions_by_qname.keys()),
+        }
+
     # --- symbol detail / locate ---
 
     def get_symbol_detail(self, qualified_name: str) -> SymbolDetail | None:
@@ -703,7 +1023,16 @@ class Store:
                 COALESCE(
                     (SELECT one_liner FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
                     ''
-                ) AS one_liner
+                ) AS one_liner,
+                COALESCE(
+                    (SELECT role FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
+                    ''
+                ) AS role,
+                COALESCE(
+                    (SELECT boundary FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
+                    ''
+                ) AS boundary,
+                COALESCE(s.decorators, '') AS decorators
             FROM symbols s
             WHERE s.qualified_name = ?
             LIMIT 1
@@ -725,6 +1054,9 @@ class Store:
             inbound_count=int(row[8]),
             outbound_count=int(row[9]),
             one_liner=row[10] or "",
+            role=row[11] or "",
+            boundary=row[12] or "",
+            decorators=row[13] or "",
             pending_patches=patches,
             pending_patch_count=len(patches),
         )
@@ -797,6 +1129,15 @@ class Store:
                     (SELECT one_liner FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
                     ''
                 ) AS one_liner,
+                COALESCE(
+                    (SELECT role FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
+                    ''
+                ) AS role,
+                COALESCE(
+                    (SELECT boundary FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
+                    ''
+                ) AS boundary,
+                COALESCE(s.decorators, '') AS decorators,
                 {patch_subq} AS patch_count
             FROM symbols s
             {where_sql}
@@ -818,7 +1159,10 @@ class Store:
                 inbound_count=int(row[8]),
                 outbound_count=int(row[9]),
                 one_liner=row[10] or "",
-                pending_patch_count=int(row[11]),
+                role=row[11] or "",
+                boundary=row[12] or "",
+                decorators=row[13] or "",
+                pending_patch_count=int(row[14]),
             )
             for row in rows
         ]
@@ -832,6 +1176,27 @@ class Store:
         """All qualified names. Used to suggest near-misses on explain/walk not-found."""
         rows = self._conn.execute("SELECT qualified_name FROM symbols").fetchall()
         return [row[0] for row in rows]
+
+    def survey_symbols(self, *, public_only: bool = False) -> list[tuple[str, str, str, str]]:
+        """Return `(qualified_name, kind, one_liner, file_path)` for every symbol.
+
+        Feeds role-taxonomy derivation: a compact, codebase-wide picture (names +
+        one-line descriptions + location) the model uses to propose a coherent role
+        vocabulary. The one_liner is the section's, '' when no triefact exists yet.
+        """
+        where = "WHERE s.is_public = 1" if public_only else ""
+        rows = self._conn.execute(
+            f"""
+            SELECT s.qualified_name, s.kind,
+                   COALESCE(ts.one_liner, '') AS one_liner,
+                   s.file_path
+            FROM symbols s
+            LEFT JOIN triefact_sections ts ON ts.symbol_id = s.id
+            {where}
+            ORDER BY s.file_path, s.start_line
+            """
+        ).fetchall()
+        return [(r[0], r[1], r[2], r[3]) for r in rows]
 
     def find_paths(
         self,
