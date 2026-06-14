@@ -11,7 +11,7 @@
 
 ## 🖥️ trie on Mac — a graph-view editor for agentic engineering *(in development)*
 
-![trie on Mac — live graph view with an embedded coding agent](docs/assets/trie-mac-app.png)
+![trie on Mac — live graph view with an embedded coding agent](docs/assets/trie-desktop.png)
 
 A native **macOS app** is in active development: a live **graph view** of your codebase
 — roles, subsystems and call edges — with an embedded coding agent whose every
