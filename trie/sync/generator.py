@@ -95,6 +95,12 @@ def _symbol_context_clause(symbol: Symbol) -> str:
     if symbol.kind == "class" and symbol.decorators:
         dec_str = " ".join(symbol.decorators)
         return f"a class (decorated with {dec_str})"
+    # Typed-language member kinds: name the owning container so prose reads
+    # "a member of enum `Color`" / "a field of class `Foo`" rather than bare.
+    if symbol.kind == "enum_member" and symbol.parent_class:
+        return f"a member of enum `{symbol.parent_class}`"
+    if symbol.kind == "property" and symbol.parent_class:
+        return f"a field/property of `{symbol.parent_class}` (describe it as an attribute)"
     return f"a {symbol.kind}"
 
 

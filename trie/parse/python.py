@@ -1,31 +1,18 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
 
 import tree_sitter_python
 from tree_sitter import Language, Node, Parser
 
+# Symbol now lives in the language-neutral types module. Re-exported here so the
+# many existing `from trie.parse.python import Symbol` call sites keep working.
+from trie.parse.types import KINDS, Symbol
+
+__all__ = ["KINDS", "Symbol"]
+
 PY_LANGUAGE = Language(tree_sitter_python.language())
-
-
-@dataclass(frozen=True)
-class Symbol:
-    qualified_name: str
-    kind: str  # "function" | "class" | "method" | "constant" | "module"
-    name: str
-    file_path: str  # source-root-relative, e.g. "src/foo.py"
-    signature: str
-    docstring: str | None
-    body_text: str
-    body_normalized_hash: str
-    signature_hash: str
-    start_line: int  # 1-indexed
-    end_line: int  # 1-indexed inclusive
-    is_public: bool
-    parent_class: str | None = None  # set for methods; the unqualified class name
-    decorators: tuple[str, ...] = ()  # decorator lines, e.g. ("@classmethod",)
 
 
 def _make_parser() -> Parser:
@@ -560,3 +547,42 @@ def extract_symbols(
     if module_sym is not None:
         result.append(module_sym)
     return result
+
+
+class PythonBackend:
+    """The reference `LanguageBackend` — delegates to this module's free
+    functions. Pure delegation: no behavior change versus the pre-registry code.
+    """
+
+    name = "python"
+    extensions = (".py",)
+
+    def extract_file_data(self, file_path, source_root=None, *, source_text=None):
+        # references.py imports python.py at module load, so import lazily here
+        # to avoid a circular import at definition time.
+        from trie.parse.references import extract_file_data
+
+        if source_text is not None:
+            raise NotImplementedError("source_text override is not supported for extract_file_data")
+        return extract_file_data(file_path, source_root=source_root)
+
+    def extract_symbols(self, file_path, source_root=None, *, source_text=None):
+        return extract_symbols(file_path, source_root=source_root, source_text=source_text)
+
+    def source_suffix(self) -> str:
+        return ".py"
+
+    def lsp_backends(self):
+        # Empty → the configured Edits.lsp_backends default (pyright) applies.
+        return []
+
+    def overlay_globs(self) -> tuple[str, ...]:
+        return ("*.py",)
+
+    def overlay_extra_files(self) -> tuple[str, ...]:
+        return ()
+
+    def system_prompt(self) -> str:
+        from trie.sync.generator import SYSTEM_PROMPT
+
+        return SYSTEM_PROMPT

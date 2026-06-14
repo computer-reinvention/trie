@@ -49,22 +49,39 @@ class InitError(Exception):
     pass
 
 
-def _detect_python_project(root: Path) -> list[str]:
-    """Return non-empty list of detected Python project markers, or [] if none."""
+def _detect_supported_project(root: Path) -> list[str]:
+    """Return non-empty list of detected project markers for any supported
+    language, or [] if none.
+
+    Checks well-known config markers (Python packaging, JS/TS `package.json` /
+    `tsconfig.json`) first, then falls back to scanning for any file whose
+    extension a registered language backend claims (top level or one dir deep).
+    """
+    from trie.parse import registry
+
     markers = []
-    for marker in ("pyproject.toml", "setup.py", "setup.cfg", "requirements.txt"):
+    for marker in (
+        "pyproject.toml",
+        "setup.py",
+        "setup.cfg",
+        "requirements.txt",
+        "package.json",
+        "tsconfig.json",
+    ):
         if (root / marker).exists():
             markers.append(marker)
     if markers:
         return markers
-    # Fallback: any .py file at the top level or one directory deep.
-    for path in root.glob("*.py"):
-        if path.is_file():
-            return ["*.py files"]
-    for path in root.glob("*/*.py"):
-        if path.is_file():
-            return ["*.py files"]
+    # Fallback: any indexable source file at the top level or one directory deep.
+    for pattern in ("*", "*/*"):
+        for path in root.glob(pattern):
+            if path.is_file() and registry.is_indexable(path):
+                return [f"*{registry.get_backend_for_file(path).extensions[0]} files"]
     return []
+
+
+# Backward-compatible alias (tests / external callers may import this name).
+_detect_python_project = _detect_supported_project
 
 
 def _ensure_gitignore_entry(gitignore: Path, line: str) -> bool:
@@ -132,10 +149,11 @@ def init_project(
     if not root.is_dir():
         raise InitError(f"{root} is not a directory")
 
-    markers = _detect_python_project(root)
+    markers = _detect_supported_project(root)
     if not markers and not force:
         raise InitError(
-            f"{root} does not look like a Python project (no pyproject.toml / setup.py / *.py). "
+            f"{root} does not look like a supported project (no pyproject.toml / "
+            "setup.py / package.json / tsconfig.json / source files). "
             "Re-run with --force to initialise anyway."
         )
 

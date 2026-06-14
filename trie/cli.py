@@ -3115,6 +3115,8 @@ def patch_create_symbol_cmd(
         if store.get_symbol_detail(qname) is not None:
             reporter.error(f"{qname!r} already exists — use `trie patch create` to change it")
             raise typer.Exit(code=1)
+        # qname carries no language signal; default to Python's suffix. Pass
+        # `--file` to create a symbol in another language (e.g. a .ts module).
         target_file = file or (qname.split(":", 1)[0] + ".py")
         cid = store.add_create_patch(
             target_file=target_file,

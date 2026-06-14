@@ -1,7 +1,19 @@
 // Shared TypeScript types mirroring the trie Python data model
 // and the opencode desktop event protocol.
 
-export type SymbolKind = "function" | "class" | "method" | "constant" | "module"
+// Mirrors trie.parse.types.KINDS (the Python source of truth). The last five
+// are the typed-language kinds added for multi-language indexing (TypeScript+).
+export type SymbolKind =
+  | "function"
+  | "class"
+  | "method"
+  | "constant"
+  | "module"
+  | "interface"
+  | "type"
+  | "enum"
+  | "enum_member"
+  | "property"
 export type AgentState =
   | "idle"
   | "reading"
