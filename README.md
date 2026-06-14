@@ -9,18 +9,26 @@
 
 ---
 
-## 🖥️ trie on Mac — a graph-view editor for agentic engineering *(in development)*
+## 🖥️ trie on Mac — an attention-map editor for agentic engineering *(experimental)*
 
-![trie on Mac — live graph view with an embedded coding agent](docs/assets/trie-desktop.png)
+![trie on Mac — live attention map with an embedded coding agent](docs/assets/trie-desktop.png)
 
-A native **macOS app** is in active development: a live **graph view** of your codebase
-— roles, subsystems and call edges — with an embedded coding agent whose every
-`read` / `search` / `edit` lights up the graph in real time. It pairs the graph with
-source + triefact tabs, multi-session chat, and a patch-review surface, so you watch
-the agent navigate and edit instead of reading raw diffs.
+A native **macOS app** with an embedded coding agent, built around a live
+**attention map** of your codebase. The map isn't a static call graph — it's a
+turn-by-turn picture of *where the agent is thinking*. As the agent works, every
+`read` / `grep` / `trace` / `edit` deposits decaying **attention mass** on the
+symbols it touches, so the map lights up around the agent's current focus and
+fades as attention moves on. Each prompt opens a fresh investigation; the live
+field resets per turn while the underlying topology (its fixed angular geography)
+stays put.
 
-It's an early work-in-progress, tracked on the
-[**`pg/editor` draft PR (#1)**](https://github.com/computer-reinvention/trie/pull/1).
+A separate **topology** tab keeps the classic structural view — roles,
+subsystems, and call edges — and there are source + triefact tabs, multi-session
+chat, and a patch-review surface where the agent's staged edits land for review
+before they're applied. You watch the agent navigate and edit your system instead
+of reading raw diffs.
+
+Experimental and under active development.
 
 ---
 
@@ -465,7 +473,7 @@ Hand-written prose between sentinels is still indexed by GitHub's search; only t
 - **M10** ✓ — symbol-set expansion: `constant` (module-level `NAME = value`) and `module` (synthetic per-file behaviour) symbol kinds, so triefacts cover what files *do* at import time, not just their helper functions
 - **M11** ✓ — telemetry split: per-call `cli_call` and `mcp_call` events with surface-aware audit aggregation, including a `mode` breakdown for the `read` override (qname / triefact / source / show_source)
 - **M12** ✓ — agent-surface trim: the `read` override's full mode strips trie's internal frontmatter (`trie_version`, `file_fingerprint`, `last_synced_at`, `source`) and every section sentinel (with their fingerprints) before handing the triefact to the agent. Mirrored in `trie.sync.writer.render_for_agent` for the Python side. Agents see prose; machinery stays out of context
-- **Desktop (in progress)** — native macOS graph-view editor: live system graph, embedded coding agent with real-time graph choreography, source/triefact tabs, multi-session chat, and a patch-review surface. Tracked on the [`pg/editor` draft PR (#1)](https://github.com/computer-reinvention/trie/pull/1).
+- **Desktop (experimental)** — native macOS editor built on a live, turn-by-turn **attention map** (decaying attention mass per symbol as the agent reads/edits), with a separate structural topology view, an embedded coding agent, source/triefact tabs, multi-session chat, and a patch-review surface for the agent's staged edits. Merged to `main`; still experimental.
 - **v0.2** — SCIP precision (replace tree-sitter heuristic with `scip-python` for type-aware references), TypeScript support, vector-over-triefacts retrieval, `trie watch` daemon, rename detection in reconcile
 
 ## License
