@@ -11,6 +11,9 @@ export class ProcessManager {
   private opencodePort = 4096
   private currentProjectDir: string | null = null
   private currentTrieMcpBin: string | null = null
+  // True while we are intentionally tearing the process down (restart / quit),
+  // so its `exit` event isn't misreported to the renderer as a crash.
+  private expectingExit = false
 
   constructor(private win: BrowserWindow) {}
 
@@ -33,6 +36,7 @@ export class ProcessManager {
     // this, a second open-project (re-open, StrictMode, retry) orphans the
     // prior opencode-server, leaking processes and ports.
     if (this.opencodeProc && !this.opencodeProc.killed) {
+      this.expectingExit = true
       try {
         this.opencodeProc.kill("SIGTERM")
       } catch {
@@ -42,6 +46,8 @@ export class ProcessManager {
     }
 
     this.opencodePort = await findFreePort(4096)
+    // We're (re)starting a fresh process — any subsequent exit is unexpected.
+    this.expectingExit = false
 
     const { opencodeBin, trieMcpBin, trieCliBin } = resolveResourcePaths()
     this.currentProjectDir = projectDir
@@ -99,7 +105,10 @@ export class ProcessManager {
 
     this.opencodeProc.on("exit", (code) => {
       console.log("[opencode] exited with code", code)
-      this.win.webContents.send("ipc:opencode-exited", { code })
+      // `expected` lets the renderer distinguish an intentional restart/quit
+      // teardown from a genuine crash (which it surfaces to the user).
+      const expected = this.expectingExit
+      this.win.webContents.send("ipc:opencode-exited", { code, expected })
     })
 
     const timeout = new Promise<void>((_, reject) =>
@@ -197,6 +206,7 @@ export class ProcessManager {
 
   killAll(): void {
     if (this.opencodeProc && !this.opencodeProc.killed) {
+      this.expectingExit = true
       this.opencodeProc.kill("SIGTERM")
     }
   }
@@ -204,12 +214,26 @@ export class ProcessManager {
   getOpenCodePort(): number {
     return this.opencodePort
   }
+
+  /** The directory of the currently-open project, or null before any open. */
+  getProjectDir(): string | null {
+    return this.currentProjectDir
+  }
+
+  /** Absolute path to the bundled trie-cli wrapper (may not exist on disk). */
+  getTrieCliBin(): string {
+    return resolveResourcePaths().trieCliBin
+  }
 }
 
 // ---------------------------------------------------------------------------
 // Resource path resolution
 // ---------------------------------------------------------------------------
-function resolveResourcePaths(): { opencodeBin: string; trieMcpBin: string; trieCliBin: string } {
+export function resolveResourcePaths(): {
+  opencodeBin: string
+  trieMcpBin: string
+  trieCliBin: string
+} {
   let resourcesDir: string
 
   if (app.isPackaged) {

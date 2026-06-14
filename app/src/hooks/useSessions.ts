@@ -143,7 +143,13 @@ export function useSessions() {
       graphClient.setInvestigation({ label, status: "active", investigation_id: invId }).catch(() => {})
       store.getState().appendLocalUser(id, text)
       const model = useModelStore.getState().selected ?? undefined
-      await opencodeClient.sendMessage(id, text, model ? { model } : undefined)
+      try {
+        await opencodeClient.sendMessage(id, text, model ? { model } : undefined)
+      } catch (err) {
+        // The POST failed (server down / timeout) — stop the spinner and show
+        // the reason inline instead of leaving the turn hanging forever.
+        store.getState().setError(id, err instanceof Error ? err.message : String(err))
+      }
     },
     [store],
   )

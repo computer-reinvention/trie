@@ -12,9 +12,14 @@ import { useOpenCodeSSE } from "@/hooks/useOpenCodeSSE"
 import { useGraphPopulation } from "@/hooks/useGraphPopulation"
 import { useTrieRefresh } from "@/hooks/useTrieRefresh"
 import { useActivityPoll } from "@/hooks/useActivityPoll"
+import { useConnectionHealth } from "@/hooks/useConnectionHealth"
+import { useTrieCommandEffects } from "@/hooks/useTrieCommandEffects"
 import { TriefactStatus } from "@/components/TriefactStatus"
 import { ContextMenu } from "@/components/ContextMenu"
 import { ActivityBadge } from "@/components/ActivityBadge"
+import { ConnectionBanner } from "@/components/ConnectionBanner"
+import { useConnectionStore } from "@/store/connectionStore"
+import { useTrieConfigStore } from "@/store/trieConfigStore"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const trie = () => (window as any).trie
@@ -29,6 +34,11 @@ function AppShell() {
   useTrieRefresh(repopulate)
   // Poll the cross-process activity DB to glow syncing/stale files + badge.
   useActivityPoll(!!opencodePort && opencodePort > 0)
+  // Surface opencode crashes / stream drops instead of silently hanging.
+  useConnectionHealth()
+  // After a trie command (init/sync/refresh) finishes, reload config +
+  // repopulate the graph + refresh the project summary.
+  useTrieCommandEffects(repopulate)
 
   // ⌘, opens settings; Esc closes it.
   useEffect(() => {
@@ -69,6 +79,7 @@ function AppShell() {
         {/* Settings fills the area BELOW the title bar so traffic lights stay clear */}
         {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
       </div>
+      <ConnectionBanner />
       <TriefactStatus />
       <ContextMenu />
     </div>
@@ -120,22 +131,32 @@ function OpenProjectScreen({ onOpen }: { onOpen: () => void }) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-slate-950">
+    <div className="flex flex-col h-full" style={{ background: "var(--bg-app)" }}>
       <TitleBar title="trie" />
       <div className="flex-1 flex items-center justify-center">
       <div className="flex flex-col items-center gap-6">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-slate-100 font-mono tracking-tight">trie</h1>
-          <p className="text-slate-500 text-sm mt-2">graph-based code editor</p>
+          <h1 className="text-4xl font-bold text-1 font-mono tracking-tight">trie</h1>
+          <p className="text-3 text-sm mt-2">graph-based code editor</p>
         </div>
         {error && (
-          <p className="text-red-400 text-sm bg-red-900/20 border border-red-800 rounded px-3 py-2 max-w-sm text-center">
+          <p
+            className="text-sm rounded px-3 py-2 max-w-sm text-center"
+            style={{
+              color: "#fda4af",
+              background: "var(--danger-soft)",
+              border: "1px solid color-mix(in srgb, var(--danger) 40%, transparent)",
+            }}
+          >
             {error}
           </p>
         )}
         {autoOpening && !error ? (
-          <div className="flex items-center gap-2 text-slate-500 text-sm">
-            <span className="w-4 h-4 border-2 border-slate-600 border-t-indigo-400 rounded-full animate-spin" />
+          <div className="flex items-center gap-2 text-3 text-sm">
+            <span
+              className="w-4 h-4 border-2 rounded-full animate-spin"
+              style={{ borderColor: "var(--border-strong)", borderTopColor: "var(--accent)" }}
+            />
             Opening last project…
           </div>
         ) : (
@@ -149,11 +170,11 @@ function OpenProjectScreen({ onOpen }: { onOpen: () => void }) {
             </button>
             {recent.length > 0 && (
               <div className="flex flex-col items-stretch gap-1 w-72">
-                <p className="text-slate-600 text-xs uppercase tracking-wide">Recent</p>
+                <p className="text-faint text-xs uppercase tracking-wide">Recent</p>
                 {recent.slice(0, 5).map((p) => (
                   <button
                     key={p}
-                    className="text-left text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded px-2 py-1.5 text-xs font-mono truncate"
+                    className="text-left text-2 hover:text-1 hover:surface-2 rounded px-2 py-1.5 text-xs font-mono truncate transition-colors"
                     onClick={() => openDir(p)}
                     disabled={loading}
                     title={p}
@@ -192,6 +213,13 @@ export function App() {
       setGraphClientBase(ports.opencodePort)
       setOpenCodeClientBase(ports.opencodePort)
       setServers(ports)
+      // The sidecar is up and the clients are wired — mark the connection live.
+      // (A later crash/restart flips this via useConnectionHealth.)
+      useConnectionStore.getState().setLive()
+
+      // Load trie.toml early so the graph's empty-state knows whether the
+      // project is initialised (offers "Initialize trie" vs "Build graph").
+      useTrieConfigStore.getState().load(ports.projectDir)
 
       try {
         const summary = await graphClient.summary()

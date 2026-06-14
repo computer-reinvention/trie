@@ -60,6 +60,13 @@ function applyTheme(v: Record<string, Value>): void {
   root.dataset.accent = String(v["appearance.accent"] ?? "indigo")
   root.dataset.density = String(v["appearance.uiDensity"] ?? "comfortable")
   root.style.setProperty("--ui-font-size", `${Number(v["appearance.fontSize"] ?? 13)}px`)
+  // Reduced-motion: mirror the setting to a data attribute so CSS animations
+  // (spinners, pulses, message entrances) honour an explicit force-on/off, not
+  // just the OS preference. "auto" defers to the @media query in globals.css.
+  const rm = String(v["motion.reducedMotion"] ?? "auto")
+  if (rm === "force-on") root.dataset.reducedMotion = "on"
+  else if (rm === "force-off") root.dataset.reducedMotion = "off"
+  else delete root.dataset.reducedMotion
 }
 
 // Convenience hook for components.

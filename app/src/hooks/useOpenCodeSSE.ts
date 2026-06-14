@@ -14,6 +14,7 @@ import {
 import { graphClient } from "@/api/graphClient"
 import { motionPrefs, playCascade, ghostCascade, conductGlance, useConductor } from "@/graph/conductor"
 import { usePatchesStore } from "@/store/patchesStore"
+import { useConnectionStore } from "@/store/connectionStore"
 import type { ToolPart } from "@/api/types"
 
 // Bridges the opencode event bus (the general /event SSE stream) to the
@@ -242,6 +243,11 @@ export function useOpenCodeSSE(opencodePort: number): void {
     }
 
     const handleEvent = (rawData: string) => {
+      // Any event arriving means the stream is flowing again — recover from a
+      // prior "degraded" (SSE-dropped) state without waiting for a restart.
+      const conn = useConnectionStore.getState()
+      if (conn.status === "degraded") conn.setLive()
+
       let ev: { type: string; properties: Record<string, unknown> }
       try {
         ev = JSON.parse(rawData) as { type: string; properties: Record<string, unknown> }

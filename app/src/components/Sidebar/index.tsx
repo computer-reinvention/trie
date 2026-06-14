@@ -63,13 +63,13 @@ export function Sidebar() {
   if (collapsed) {
     return (
       <aside
-        className="w-9 shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-2 gap-3 cursor-pointer hover:bg-slate-800/60 group"
+        className="w-9 shrink-0 surface-1 border-r border-subtle flex flex-col items-center py-2 gap-3 cursor-pointer hover:surface-2 group"
         onClick={() => setCollapsed(false)}
         title="Expand file tree"
       >
-        <span className="text-slate-500 group-hover:text-slate-300 text-xs leading-none">›</span>
+        <span className="text-3 group-hover:text-2 text-xs leading-none">›</span>
         <span
-          className="text-slate-600 group-hover:text-slate-400 text-[10px] uppercase tracking-widest select-none"
+          className="text-faint group-hover:text-3 text-[10px] uppercase tracking-widest select-none"
           style={{ writingMode: "vertical-rl" }}
         >
           files
@@ -79,22 +79,22 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-60 shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col overflow-hidden">
-      <div className="h-8 px-3 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
+    <aside className="w-60 shrink-0 surface-1 border-r border-subtle flex flex-col overflow-hidden">
+      <div className="h-8 px-3 border-b border-subtle flex items-center justify-between gap-2 shrink-0">
         <button
-          className="text-slate-600 hover:text-slate-300 text-xs leading-none shrink-0"
+          className="text-faint hover:text-2 text-xs leading-none shrink-0 transition-colors"
           onClick={() => setCollapsed(true)}
           title="Collapse file tree"
         >
           ‹
         </button>
-        <p className="text-slate-500 text-xs font-mono truncate flex-1">
+        <p className="text-3 text-xs font-mono truncate flex-1">
           {projectDir.split("/").pop()}
         </p>
-        <div className="flex rounded overflow-hidden border border-slate-700 text-[9px] font-mono shrink-0">
+        <div className="flex rounded overflow-hidden border border-strong text-[9px] font-mono shrink-0">
           <button
-            className={`px-1.5 py-0.5 ${
-              treeMode === "source" ? "bg-slate-700 text-slate-100" : "text-slate-500 hover:text-slate-300"
+            className={`px-1.5 py-0.5 transition-colors ${
+              treeMode === "source" ? "surface-3 text-1" : "text-3 hover:text-2"
             }`}
             onClick={() => setTreeMode("source")}
             title="Click opens source"
@@ -102,10 +102,8 @@ export function Sidebar() {
             src
           </button>
           <button
-            className={`px-1.5 py-0.5 ${
-              treeMode === "triefact"
-                ? "bg-indigo-500/30 text-indigo-200"
-                : "text-slate-500 hover:text-slate-300"
+            className={`px-1.5 py-0.5 transition-colors ${
+              treeMode === "triefact" ? "bg-accent-soft text-accent" : "text-3 hover:text-2"
             }`}
             onClick={() => setTreeMode("triefact")}
             title="Click opens triefact prose"
@@ -122,16 +120,16 @@ export function Sidebar() {
 
       {/* Legend is a collapsible drawer pinned to the bottom; collapsed by
           default so the tree gets the room. Its own bounded scroll when open. */}
-      <div className="shrink-0 border-t border-slate-800">
+      <div className="shrink-0 border-t border-subtle">
         <button
-          className="w-full px-3 py-1.5 flex items-center gap-1.5 text-left hover:bg-slate-800/50"
+          className="w-full px-3 py-1.5 flex items-center gap-1.5 text-left hover:surface-2 transition-colors"
           onClick={() => setLegendOpen((v) => !v)}
         >
-          <span className="text-slate-600 text-xs">{legendOpen ? "▾" : "▸"}</span>
-          <span className="text-slate-500 text-[10px] uppercase tracking-wide">Graph legend</span>
+          <span className="text-faint text-xs">{legendOpen ? "▾" : "▸"}</span>
+          <span className="text-3 text-[10px] uppercase tracking-wide">Graph legend</span>
         </button>
         {legendOpen && (
-          <div className="max-h-[45vh] overflow-y-auto scroll-thin border-t border-slate-800">
+          <div className="max-h-[45vh] overflow-y-auto scroll-thin border-t border-subtle">
             <Legend />
           </div>
         )}

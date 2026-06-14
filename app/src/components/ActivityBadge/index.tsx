@@ -24,13 +24,15 @@ export function ActivityBadge() {
     const counter = status.total > 0 ? `${status.done}/${status.total}` : null
     return (
       <div
-        className="flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px] font-mono"
-        style={{ background: "var(--bg-panel, #0f172a)", color: "var(--text, #e2e8f0)" }}
+        className="flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px] font-mono surface-2 text-1"
         title={status.current_file ?? label}
       >
-        <span className="w-3 h-3 border-2 border-slate-600 border-t-accent rounded-full animate-spin" />
+        <span
+          className="w-3 h-3 border-2 rounded-full animate-spin"
+          style={{ borderColor: "var(--border-strong)", borderTopColor: "var(--accent)" }}
+        />
         <span>{label}</span>
-        {counter && <span className="text-slate-500">{counter}</span>}
+        {counter && <span className="text-3">{counter}</span>}
       </div>
     )
   }
@@ -38,7 +40,11 @@ export function ActivityBadge() {
   if (status?.state === "error") {
     return (
       <div
-        className="rounded px-2 py-0.5 text-[11px] font-mono text-red-400 bg-red-500/10"
+        className="rounded px-2 py-0.5 text-[11px] font-mono"
+        style={{
+          color: "var(--danger)",
+          background: "color-mix(in srgb, var(--danger) 12%, transparent)",
+        }}
         title={status.error ?? "Last run failed"}
       >
         sync failed
@@ -49,7 +55,11 @@ export function ActivityBadge() {
   if (pending && pending.count > 0) {
     return (
       <div
-        className="rounded px-2 py-0.5 text-[11px] font-mono text-amber-300 bg-amber-500/10"
+        className="rounded px-2 py-0.5 text-[11px] font-mono"
+        style={{
+          color: "#fcd34d",
+          background: "color-mix(in srgb, var(--warn) 12%, transparent)",
+        }}
         title={`${pending.count} file${pending.count !== 1 ? "s" : ""} need a sync:\n${pending.stale
           .slice(0, 12)
           .join("\n")}${pending.stale.length > 12 ? "\n…" : ""}`}

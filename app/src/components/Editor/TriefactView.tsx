@@ -27,7 +27,7 @@ function anchorId(qname: string): string {
 function RoleBadge({ role }: { role: string }) {
   if (!role) return null
   return (
-    <span className="rounded bg-indigo-500/15 text-indigo-300 px-1.5 py-0.5 text-[10px] uppercase tracking-wide">
+    <span className="rounded bg-accent-soft text-accent px-1.5 py-0.5 text-[10px] uppercase tracking-wide">
       {role}
     </span>
   )
@@ -45,7 +45,7 @@ function SectionCard({
   return (
     <div
       id={anchorId(section.qname)}
-      className="scroll-mt-4 rounded-lg border border-slate-800 bg-slate-900/40 overflow-hidden"
+      className="scroll-mt-4 rounded-lg border border-subtle surface-1 overflow-hidden"
       onContextMenu={(e) =>
         openContextMenu(e, [
           ...(section.start_line > 0 && onOpenSource
@@ -62,13 +62,13 @@ function SectionCard({
         ])
       }
     >
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-800 bg-slate-900/60">
-        <span className="text-[10px] text-slate-500 uppercase">{section.kind || "symbol"}</span>
-        <span className="font-mono text-xs text-slate-200 truncate flex-1">{section.qname}</span>
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-subtle surface-2">
+        <span className="text-[10px] text-3 uppercase">{section.kind || "symbol"}</span>
+        <span className="font-mono text-xs text-1 truncate flex-1">{section.qname}</span>
         <RoleBadge role={section.role} />
         {section.start_line > 0 && onOpenSource && (
           <button
-            className="text-[10px] text-slate-500 hover:text-indigo-300 font-mono"
+            className="text-[10px] text-3 hover:text-accent font-mono transition-colors"
             onClick={() => onOpenSource(section.start_line, section.qname)}
             title="Jump to source"
           >
@@ -80,7 +80,7 @@ function SectionCard({
         {section.body ? (
           <ReactMarkdown>{section.body}</ReactMarkdown>
         ) : (
-          <p className="text-slate-600 italic">{section.one_liner || "No prose."}</p>
+          <p className="text-faint italic">{section.one_liner || "No prose."}</p>
         )}
       </div>
     </div>
@@ -126,22 +126,26 @@ export function TriefactView({
     const el = document.getElementById(anchorId(focusQname))
     if (el) {
       el.scrollIntoView({ block: "center" })
-      el.classList.add("ring-1", "ring-indigo-400/60")
-      setTimeout(() => el.classList.remove("ring-1", "ring-indigo-400/60"), 1600)
+      el.classList.add("ring-1", "ring-accent")
+      setTimeout(() => el.classList.remove("ring-1", "ring-accent"), 1600)
     }
     onFocusConsumed?.()
   }, [loading, focusQname, data, onFocusConsumed])
 
   if (error) {
-    return <div className="p-4 text-xs text-red-400 font-mono">Failed to load triefact: {error}</div>
+    return (
+      <div className="p-4 text-xs font-mono" style={{ color: "var(--danger)" }}>
+        Failed to load triefact: {error}
+      </div>
+    )
   }
   if (loading) {
-    return <div className="p-4 text-xs text-slate-500 font-mono">loading triefact…</div>
+    return <div className="p-4 text-xs text-3 font-mono">loading triefact…</div>
   }
   if (!data || !data.exists) {
     return (
-      <div className="p-6 text-center text-xs text-slate-500 font-mono">
-        No triefact for <span className="text-slate-300">{relPath}</span> yet.
+      <div className="p-6 text-center text-xs text-3 font-mono">
+        No triefact for <span className="text-1">{relPath}</span> yet.
         <br />
         Run a sync to generate prose for this file.
       </div>
@@ -151,8 +155,8 @@ export function TriefactView({
   return (
     <div ref={scrollRef} className="h-full min-h-0 overflow-y-auto scroll-thin p-4 space-y-3">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-mono text-sm text-slate-200">{relPath}</h2>
-        <span className="text-[10px] text-slate-500">{data.sections.length} symbols</span>
+        <h2 className="font-mono text-sm text-1">{relPath}</h2>
+        <span className="text-[10px] text-3">{data.sections.length} symbols</span>
       </div>
       {data.sections.map((section) => (
         <SectionCard

@@ -4,6 +4,8 @@ import { join } from "path"
 import * as http from "http"
 import type { ProcessManager } from "./process-manager"
 import { readOpencodeConfig, writeOpencodeConfig } from "./opencode-config"
+import { readTrieConfig, writeTrieConfig, trieConfigExists } from "./trie-config"
+import { TrieCommandRunner } from "./trie-command"
 import {
   listProviderKeys,
   hasProviderKey,
@@ -45,27 +47,59 @@ export function registerIpcHandlers(pm: ProcessManager): void {
   // HTTP proxy — renderer cannot reach 127.0.0.1 directly on this machine.
   // All fetch calls go through here instead.
   // ---------------------------------------------------------------------------
+  // Per-request timeout. opencode operations (graph queries, session writes)
+  // should complete in well under this; a request that hangs longer than this
+  // is treated as a failure so the renderer's promise never dangles forever.
+  const HTTP_REQUEST_TIMEOUT_MS = 30_000
+
   ipcMain.handle("http-request", async (_event, opts: {
     method: string
     url: string
     headers?: Record<string, string>
     body?: string
+    timeoutMs?: number
   }) => {
-    return new Promise<{ status: number; body: string }>((resolve, reject) => {
+    return new Promise<{ status: number; body: string }>((resolve) => {
       const url = new URL(opts.url)
       const reqOpts: http.RequestOptions = {
         hostname: url.hostname,
-        port: url.port ? parseInt(url.port) : 80,
+        // Default to the opencode port, not 80 — every URL we proxy is the
+        // local opencode server. A portless URL almost certainly means a
+        // mis-constructed base, so fall back to the live server port.
+        port: url.port ? parseInt(url.port) : pm.getOpenCodePort(),
         path: url.pathname + url.search,
         method: opts.method,
         headers: { "Content-Type": "application/json", ...(opts.headers ?? {}) },
       }
+      let settled = false
       const req = http.request(reqOpts, (res) => {
         let data = ""
         res.on("data", (chunk) => { data += chunk })
-        res.on("end", () => resolve({ status: res.statusCode ?? 200, body: data }))
+        res.on("end", () => {
+          if (settled) return
+          settled = true
+          resolve({ status: res.statusCode ?? 200, body: data })
+        })
       })
-      req.on("error", reject)
+      // Guard against a hung connection: abort after the timeout and surface a
+      // synthetic 504 so callers can show "request timed out" instead of
+      // spinning forever.
+      req.setTimeout(opts.timeoutMs ?? HTTP_REQUEST_TIMEOUT_MS, () => {
+        if (settled) return
+        settled = true
+        req.destroy()
+        resolve({ status: 504, body: JSON.stringify({ error: "request timed out" }) })
+      })
+      // A connection-level failure (server down / refused) resolves as a
+      // synthetic 503 rather than rejecting. Rejecting forces every caller to
+      // wrap each call in try/catch or risk an unhandled rejection; a uniform
+      // status code lets the clients treat "server unreachable" like any other
+      // non-2xx.
+      req.on("error", (err) => {
+        if (settled) return
+        settled = true
+        resolve({ status: 503, body: JSON.stringify({ error: String(err) }) })
+      })
       if (opts.body) req.write(opts.body)
       req.end()
     })
@@ -237,6 +271,56 @@ export function registerIpcHandlers(pm: ProcessManager): void {
     await pm.restart()
     return { ok: true }
   })
+
+  // ---------------------------------------------------------------------------
+  // trie.toml — read the project's trie config and merge-write a delta of
+  // changed keys, preserving hand-authored keys. Per-project scope. The
+  // renderer's trie settings UI is the source of truth for managed keys.
+  // ---------------------------------------------------------------------------
+  ipcMain.handle("trie-config-read", (_event, projectDir: string) => {
+    return { exists: trieConfigExists(projectDir), config: readTrieConfig(projectDir) }
+  })
+
+  ipcMain.handle(
+    "trie-config-write",
+    (_event, projectDir: string, delta: Record<string, unknown>) => {
+      try {
+        writeTrieConfig(projectDir, delta)
+        return { ok: true }
+      } catch (err) {
+        return { ok: false, error: String(err) }
+      }
+    },
+  )
+
+  // ---------------------------------------------------------------------------
+  // trie CLI commands — run a trie subcommand (sync / plan / verify / status /
+  // audit / refresh) in the open project, streaming lifecycle events to the
+  // renderer over `ipc:trie-command`. One run at a time; a new run cancels the
+  // previous. trie itself takes a write lock, so overlap would exit-2 anyway.
+  // ---------------------------------------------------------------------------
+  const trieRunner = new TrieCommandRunner(
+    () => pm.getProjectDir(),
+    () => pm.getTrieCliBin(),
+  )
+
+  ipcMain.handle(
+    "trie-command-run",
+    (_event, spec: { command: string; args?: string[]; json?: boolean }) => {
+      try {
+        return { ok: true, ...trieRunner.start(spec) }
+      } catch (err) {
+        return { ok: false, error: String(err) }
+      }
+    },
+  )
+
+  ipcMain.handle("trie-command-cancel", () => {
+    trieRunner.cancel()
+    return { ok: true }
+  })
+
+  ipcMain.handle("trie-command-running", () => ({ running: trieRunner.isRunning() }))
 
   // ---------------------------------------------------------------------------
   // Provider API keys — stored in the Keychain, injected as env vars at spawn.

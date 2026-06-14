@@ -3,7 +3,14 @@ import { AGMCanvas } from "@/components/AGMCanvas"
 import { TabStrip } from "./TabStrip"
 import { FileTabContent } from "./FileTabContent"
 import { PatchesPanel } from "./PatchesPanel"
-import { useTabsStore, GRAPH_TAB_ID, TOPOLOGY_TAB_ID, PATCHES_TAB_ID } from "@/store/tabsStore"
+import { TriePanel } from "./TriePanel"
+import {
+  useTabsStore,
+  GRAPH_TAB_ID,
+  TOPOLOGY_TAB_ID,
+  PATCHES_TAB_ID,
+  TRIE_TAB_ID,
+} from "@/store/tabsStore"
 
 // The central editor area: a tab strip over a stacked content region. Two
 // permanent graph views are mounted once and kept alive (so layout/zoom survive
@@ -17,6 +24,7 @@ export function Editor() {
   const attentionActive = activeId === GRAPH_TAB_ID
   const topologyActive = activeId === TOPOLOGY_TAB_ID
   const patchesActive = activeId === PATCHES_TAB_ID
+  const trieActive = activeId === TRIE_TAB_ID
 
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0">
@@ -53,13 +61,24 @@ export function Editor() {
           <PatchesPanel />
         </div>
 
+        {/* trie: lifecycle command runner + live output. Always mounted so a
+            long-running sync keeps streaming while you look at other tabs. */}
+        <div
+          className="absolute inset-0"
+          style={{ visibility: trieActive ? "visible" : "hidden", zIndex: trieActive ? 2 : 0 }}
+        >
+          <TriePanel />
+        </div>
+
         {/* File tabs: each kept mounted once opened, shown only when active. */}
         {tabs.map((tab) =>
           tab.kind === "file" ? (
             <div
               key={tab.id}
-              className="absolute inset-0 bg-slate-950"
+              className="absolute inset-0"
+              // file body sits on the app background so it reads as the deepest surface
               style={{
+                background: "var(--bg-app)",
                 visibility: activeId === tab.id ? "visible" : "hidden",
                 zIndex: activeId === tab.id ? 2 : 0,
               }}
