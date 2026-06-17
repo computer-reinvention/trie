@@ -406,8 +406,27 @@ trie uses `path/to/file:LocalName` for top-level symbols and
 `path/to/file:ClassName.method` for methods. Drop the `.py` extension;
 use forward slashes regardless of OS.
 
-When any tool returns a `qname`, pass it straight back to another tool.
-Round-trip without rewriting.
+This format is for **reading** qnames that tools hand you — not for
+**constructing** them. **Never hand-build a qname from a file path and a
+symbol name and pass it to `«read»`.** The graph keys symbols by how the
+indexer recorded them (scope prefixes, module paths, package roots vary),
+so a guessed qname will miss even when the source plainly contains the
+symbol — and a raw file read of the same file will succeed, masking the
+real cause.
+
+When you only know a file path and a symbol name, **look the qname up
+first**:
+
+```python
+«grep_symbol»("sync_single_file")           # fuzzy: best match + alternatives
+«grep»({ "name_contains": "sync_single_file" })  # predicate search
+```
+
+Take the `qname` from the result and pass it — unchanged — to `«read»`,
+`«trace»`, etc. When any tool returns a `qname`, round-trip it without
+rewriting. If a lookup returns nothing, the symbol isn't in the
+graph (out of scope, or the index is stale — run `trie refresh`); a
+hand-built qname won't fix that.
 
 ---
 
@@ -416,6 +435,10 @@ Round-trip without rewriting.
 - **Don't reach for shell `rg` or grep on source code.** You lose
   symbol attribution and graph context. `«grep»` / `«grep_str»` handle
   every case.
+- **Don't hand-construct a qname for `«read»`.** Guessing
+  `path/to/file:symbol` from the file path and function name will return
+  `not_found` even when the symbol exists. Look it up with `«grep_symbol»`
+  or `«grep»` first, then round-trip the returned qname.
 - **Don't call `«read»` repeatedly to traverse a graph.** Use `«trace»`
   instead. `«read»` is heavier (full prose); use it when you actually
   want to understand a symbol.

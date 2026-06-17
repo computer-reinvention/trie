@@ -7,6 +7,7 @@ from trie.sync.writer import (
     Prose,
     Section,
     TriefactFile,
+    compact_triefact_view,
     hash_body,
     render_for_agent,
 )
@@ -510,3 +511,60 @@ def test_agent_front_matter_keys_constant():
         "incoming_refs",
         "outgoing_refs",
     }
+
+
+# --- compact_triefact_view -------------------------------------------------
+
+
+def test_compact_view_headers_file_and_lists_symbols():
+    out = compact_triefact_view(_sample_triefact(), "mod.py")
+    assert out.startswith("# mod.py (compact triefact view)")
+    assert "description: A module doing things." in out
+    assert "incoming_refs: 3" in out
+    assert "outgoing_refs: 7" in out
+    # One header per defined symbol, by qname + kind + lines.
+    assert "## mod:foo (function, lines 1-10)" in out
+    assert "## mod:bar (function, lines 12-20)" in out
+
+
+def test_compact_view_includes_signature_and_intro():
+    out = compact_triefact_view(_sample_triefact(), "mod.py")
+    # Signature line pulled from the `## ...` body header.
+    assert "signature: `" in out
+    assert "`foo()`" in out
+    # First-sentence intro of each section body.
+    assert "Foo does foo." in out
+    assert "Bar does bar." in out
+
+
+def test_compact_view_is_not_raw_source():
+    out = compact_triefact_view(_sample_triefact(), "mod.py")
+    # Compact view must never emit line-numbered source or trie sentinels.
+    assert "1: " not in out
+    assert "trie:section" not in out
+
+
+def test_compact_view_marks_private_symbols():
+    text = (
+        "---\n"
+        "defines:\n"
+        "- kind: function\n"
+        "  qualified_name: mod:_helper\n"
+        "  lines: 1-5\n"
+        "---\n"
+        "<!-- trie:section symbol=mod:_helper fingerprint=ff -->\n"
+        "## `_helper()`\n\nInternal helper.\n"
+        "<!-- trie:end -->\n"
+    )
+    out = compact_triefact_view(text, "mod.py")
+    assert "## mod:_helper (function, lines 1-5, private)" in out
+
+
+def test_compact_view_store_overrides_take_precedence():
+    out = compact_triefact_view(
+        _sample_triefact(),
+        "mod.py",
+        lines_by_qname={"mod:foo": "100-200"},
+        kind_by_qname={"mod:foo": "method"},
+    )
+    assert "## mod:foo (method, lines 100-200)" in out
