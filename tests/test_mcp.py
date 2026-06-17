@@ -413,6 +413,61 @@ def test_read_fuzzy_suggestion_for_typo(tools: TrieTools):
     assert "slugify" in suggestion or "grep(" in suggestion
 
 
+# --- read dispatch: file path → triefact-first ----------------------------
+
+
+def test_read_file_path_returns_compact_triefact_view(tools: TrieTools):
+    """A FILE PATH (not a qname) returns the compact triefact view by default."""
+    out = tools.read("lib.py")
+    assert out["mode"] == "triefact_compact"
+    body = out["output"]
+    assert "lib.py (compact triefact view)" in body
+    # One entry per symbol, by qname, with the intro prose — not raw source.
+    assert "lib:slugify" in body
+    assert "Lowercase" in body
+    # Compact view is not line-numbered raw source.
+    assert not body.lstrip().startswith("1: ")
+
+
+def test_read_file_path_full_returns_prose_without_sentinels(tools: TrieTools):
+    """`full=True` returns the full prose bundle with trie sentinels stripped."""
+    out = tools.read("lib.py", full=True)
+    assert out["mode"] == "triefact_full"
+    body = out["output"]
+    assert "trie:section" not in body
+    assert "trie:end" not in body
+    assert "Lowercase" in body
+
+
+def test_read_file_path_show_source_returns_numbered_source(tools: TrieTools):
+    """`show_source=True` forces raw line-numbered source even when a triefact exists."""
+    out = tools.read("lib.py", show_source=True)
+    assert out["lines"].startswith("1: ")
+    assert "def slugify" in out["lines"]
+
+
+def test_read_file_path_offset_limit_implies_source(tools: TrieTools):
+    """offset/limit window the raw source (and imply source mode)."""
+    out = tools.read("lib.py", offset=1, limit=2)
+    lines = out["lines"].split("\n")
+    assert len(lines) == 2
+    assert lines[0].startswith("1: ")
+
+
+def test_read_non_indexed_file_falls_back_to_source(tools: TrieTools, populated_project: Path):
+    """A real file with no triefact (e.g. trie.toml) returns raw source, not an error."""
+    out = tools.read("trie.toml")
+    assert "lines" in out
+    assert "error" not in out
+
+
+def test_read_file_with_line_suffix_reads_source_window(tools: TrieTools):
+    """A `path:LINE` cursor reference on a real file reads that source window."""
+    out = tools.read("lib.py:1")
+    assert "lines" in out
+    assert out["lines"].startswith("1: ")
+
+
 # --- trace ----------------------------------------------------------------
 
 

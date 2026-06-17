@@ -56,6 +56,7 @@ Example agent wiring (Claude Code's mcp_servers config):
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 from collections import deque
@@ -142,6 +143,26 @@ def _symbol_summary(detail: SymbolDetail, *, one_liner_max: int) -> dict[str, An
         "signature": detail.signature or "",
         "one_liner": _truncate(detail.one_liner, one_liner_max),
     }
+
+
+_URL_SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://")
+_WIN_DRIVE_RE = re.compile(r"^[A-Za-z]:[\\/]")
+
+
+def _looks_like_qname(s: str) -> bool:
+    """True when `s` has the shape of a trie qname (`path/to/file:Name`).
+
+    A qname contains a `:` but is not a URL (`scheme://...`) and not a Windows
+    drive prefix (`C:\\`). Mirrors `looksLikeQname` in the opencode fork so the
+    qname-vs-file-path dispatch is identical across surfaces. Note: a `:`-bearing
+    string can still resolve to a real file (e.g. a `file:LINE` cursor ref); the
+    caller probes the filesystem before committing to the graph.
+    """
+    if ":" not in s:
+        return False
+    if _URL_SCHEME_RE.match(s):
+        return False
+    return not _WIN_DRIVE_RE.match(s)
 
 
 def _close_qname_matches(qname: str, candidates: list[str], *, n: int = 3) -> list[str]:
@@ -1581,7 +1602,138 @@ class TrieTools:
 
     # --- read --------------------------------------------------------------
 
-    def read(self, qname: str) -> dict[str, Any]:
+    def read(
+        self,
+        path: str,
+        *,
+        full: bool = False,
+        show_source: bool = False,
+        offset: int | None = None,
+        limit: int | None = None,
+    ) -> dict[str, Any]:
+        """Read source code or trie's synthesised description of it — triefact-first.
+
+        Dispatch on `path`:
+
+        - A qualified symbol name ('pkg/module:Name' or 'pkg/module:Class.method')
+          with no matching file on disk → that symbol's prose plus one-liners for
+          every immediate caller and callee.
+        - A FILE PATH with a triefact → a COMPACT view by default (file
+          description, ref counts, one entry per symbol: qname, kind, lines,
+          signature, intro). Pass `full=True` for every section's full prose.
+        - `show_source=True`, or `offset`/`limit`, or a file with no triefact, or a
+          `path:LINE` cursor reference → raw line-numbered source.
+
+        Use `grep`/`grep_symbol` to resolve a qname rather than hand-building one;
+        a guessed qname returns `not_found` even when the source contains the symbol.
+        """
+        force_source = show_source or offset is not None or limit is not None
+
+        # Explicit source mode: read bytes directly.
+        if force_source:
+            return self.read_source(self._strip_line_ref(path)[0], offset=offset, limit=limit)
+
+        is_qname = _looks_like_qname(path)
+
+        # A colon-bearing string is usually a qname, but a real on-disk file can
+        # carry a colon and editors pass `path/to/file:LINE` cursor refs. Prefer
+        # the file whenever one exists, so a file read never 404s into the graph.
+        candidate, line_offset, line_limit = self._strip_line_ref(path)
+        file_target = self._resolve_in_root(candidate)
+        file_exists = file_target is not None and file_target.exists() and file_target.is_file()
+
+        if is_qname and not file_exists:
+            return self._read_symbol(path)
+
+        # A `:LINE` (or `:START-END`) suffix on a real file → source window.
+        if file_exists and line_offset is not None:
+            return self.read_source(candidate, offset=line_offset, limit=line_limit)
+
+        # File path: prefer the triefact view; fall back to raw source for
+        # non-indexed files (configs, markdown, freshly added files).
+        if file_exists or self._resolve_in_root(path) is not None:
+            rel = candidate if file_exists else path
+            view = self._triefact_view(rel, full=full)
+            if view is not None:
+                return view
+            return self.read_source(rel if file_exists else path)
+
+        # Neither a known file nor resolvable: treat as a qname so the agent
+        # gets a structured not_found with a suggestion.
+        return self._read_symbol(path)
+
+    @staticmethod
+    def _strip_line_ref(path: str) -> tuple[str, int | None, int | None]:
+        """Split a trailing `:LINE` or `:START-END` cursor suffix off a path.
+
+        Returns (path_without_suffix, offset, limit). When there's no numeric
+        suffix, returns (path, None, None).
+        """
+        m = re.match(r"^(.*):(\d+)(?:-(\d+))?$", path)
+        if m is None:
+            return path, None, None
+        start = int(m.group(2))
+        limit = int(m.group(3)) - start + 1 if m.group(3) else 1
+        return m.group(1), start, limit
+
+    def _resolve_in_root(self, path: str) -> Path | None:
+        """Resolve `path` to an absolute path under the project root, or None.
+
+        None when the path escapes the root (so callers can refuse out-of-scope
+        reads consistently with `read_source`).
+        """
+        target = Path(path)
+        target = target.resolve() if target.is_absolute() else (self.root / path).resolve()
+        if target == self.root or target.is_relative_to(self.root):
+            return target
+        return None
+
+    def _triefact_view(self, file_path: str, *, full: bool) -> dict[str, Any] | None:
+        """Render a file's triefact as compact (default) or full prose.
+
+        Returns None when no triefact exists for the file (caller falls back to
+        raw source). `file_path` is interpreted relative to the project root.
+        """
+        from trie.sync.writer import compact_triefact_view, render_for_agent
+
+        target = self._resolve_in_root(file_path)
+        if target is None:
+            return None
+        rel = (
+            target.relative_to(self.root).as_posix()
+            if target.is_relative_to(self.root)
+            else file_path
+        )
+        triefact_path = self.triefacts_root / Path(rel).with_suffix(".md")
+        if not triefact_path.exists():
+            return None
+
+        text = triefact_path.read_text()
+        if full:
+            output = render_for_agent(text)
+            mode = "triefact_full"
+        else:
+            lines_by_qname: dict[str, str] = {}
+            kind_by_qname: dict[str, str] = {}
+            for row in self.store._conn.execute(
+                "SELECT qualified_name, start_line, end_line, kind FROM symbols WHERE file_path = ?",
+                (rel,),
+            ).fetchall():
+                lines_by_qname[row[0]] = f"{row[1]}-{row[2]}"
+                kind_by_qname[row[0]] = row[3]
+            output = compact_triefact_view(
+                text, rel, lines_by_qname=lines_by_qname, kind_by_qname=kind_by_qname
+            )
+            mode = "triefact_compact"
+
+        tele_args = {"path": rel} if telemetry.capture_args() else {}
+        with telemetry.timed(self.event_name, tool="read", args=tele_args) as tele_ctx:
+            tele_ctx["mode"] = mode
+            tele_ctx["result_kind"] = "ok"
+            tele_ctx["response_bytes"] = len(output)
+        return {"path": rel, "mode": mode, "output": output}
+
+    def _read_symbol(self, qname: str) -> dict[str, Any]:
         """Read a symbol's prose plus one-liners for every immediate caller and callee.
 
         Returns `{qname, signature, prose, source_pointer, callers, callees, notes?}`.

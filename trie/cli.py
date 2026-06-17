@@ -2514,24 +2514,29 @@ def grep_cmd(
 @app.command("read")
 def read_cmd(
     ctx: typer.Context,
-    qname: str = typer.Argument(
+    path: str = typer.Argument(
         ...,
-        help="Symbol qname (e.g. 'trie/sync/cascade:compute_cascade'), or a file path with --source.",
+        help="Symbol qname (e.g. 'trie/sync/cascade:compute_cascade') OR a file path.",
+    ),
+    full: bool = typer.Option(
+        False,
+        "--full",
+        help="For a file path: return every section's full prose instead of the compact view.",
     ),
     source: bool = typer.Option(
         False,
         "--source",
-        help="Treat the argument as a FILE PATH and return raw line-numbered source (any file, indexed or not).",
+        help="Force raw line-numbered source for a FILE PATH (any file, indexed or not).",
     ),
     offset: int | None = typer.Option(
         None,
         "--offset",
-        help="With --source: 1-indexed first line to include.",
+        help="With a file path: 1-indexed first line to include (implies --source).",
     ),
     limit: int | None = typer.Option(
         None,
         "--limit",
-        help="With --source: maximum number of lines to return from offset.",
+        help="With a file path: maximum number of lines to return from offset (implies --source).",
     ),
     as_json: bool = typer.Option(
         False,
@@ -2539,35 +2544,47 @@ def read_cmd(
         help="Emit the raw MCP envelope as JSON instead of a human-readable summary.",
     ),
 ) -> None:
-    """Read a symbol's prose + neighbours, or raw file source with --source.
+    """Read source code or trie's synthesised description of it — triefact-first.
 
-    Default (qname): mirror of the MCP `read` tool — the symbol's signature,
-    triefact prose, source pointer, and one-liner descriptions of every caller
-    and callee in one round trip.
+    Mirror of the MCP `read` tool. Dispatch on the argument:
 
-    With `--source` (EXT-3/EXT-4): treat the argument as a file path and return
-    raw, line-numbered source for ANY file under the project root — indexed or
-    not — with optional `--offset`/`--limit` windowing.
+    - A symbol qname → its signature, triefact prose, source pointer, and
+      one-liner descriptions of every caller and callee in one round trip.
+    - A file path → a COMPACT triefact view by default (one entry per symbol:
+      qname, kind, lines, signature, intro). Pass `--full` for every section's
+      full prose, or `--source` (or `--offset`/`--limit`) for raw source.
 
     Examples:
 
       trie read trie/sync/cascade:compute_cascade
-      trie read --source package.json
-      trie read --source src/app.ts --offset 1 --limit 40
+      trie read trie/sync/cascade.py            # compact triefact view
+      trie read trie/sync/cascade.py --full     # full prose bundle
+      trie read package.json --source
+      trie read src/app.ts --offset 1 --limit 40
     """
     reporter = _get_reporter(ctx)
     tools = _open_tools(reporter)
     try:
-        if source:
-            envelope = tools.read_source(qname, offset=offset, limit=limit)
-        else:
-            envelope = tools.read(qname)
+        envelope = tools.read(path, full=full, show_source=source, offset=offset, limit=limit)
     finally:
         tools.close()
-    if source:
-        _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_read_source)
+    _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_read_dispatch)
+
+
+def _render_read_dispatch(envelope: dict[str, object], reporter: Reporter) -> None:
+    """Render whichever shape `tools.read` returned: symbol / triefact view / source."""
+    err = envelope.get("error")
+    if isinstance(err, dict):
+        _render_error_envelope(err, reporter)
+        return
+    # read_source envelope carries `lines`; the triefact view carries `output`;
+    # a symbol read carries `prose`/`callers`/`callees`.
+    if "lines" in envelope:
+        _render_read_source(envelope, reporter)
+    elif "output" in envelope:
+        reporter.console.print(str(envelope.get("output", "")))
     else:
-        _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_read)
+        _render_read(envelope, reporter)
 
 
 def _render_read_source(envelope: dict[str, object], reporter: Reporter) -> None:

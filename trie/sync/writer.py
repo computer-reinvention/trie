@@ -503,3 +503,99 @@ def render_for_agent(text: str) -> str:
             prev_was_section = True
 
     return "".join(parts)
+
+
+def _section_signature(body: str) -> str:
+    """Pull the signature line from a section body.
+
+    Bodies conventionally start with `## <signature>`; return that signature
+    with the leading heading marker stripped. Empty string when the body
+    doesn't lead with a heading (legacy/partial sections).
+    """
+    for raw in body.splitlines():
+        line = raw.rstrip()
+        if not line.strip():
+            continue
+        if line.lstrip().startswith("## "):
+            return line.lstrip()[3:].strip()
+        return ""
+    return ""
+
+
+def _is_public_qname(qname: str) -> bool:
+    """A symbol is public unless its local name starts with `_` (dunders count as public)."""
+    local = qname.rsplit(":", 1)[-1]
+    if local.startswith("__") and local.endswith("__") and len(local) > 4:
+        return True
+    return not local.startswith("_")
+
+
+def compact_triefact_view(
+    text: str,
+    file_path: str,
+    *,
+    lines_by_qname: dict[str, str] | None = None,
+    kind_by_qname: dict[str, str] | None = None,
+) -> str:
+    """Render a file's triefact as a COMPACT, token-cheap overview.
+
+    Emits the file's description and ref counts, then one entry per defined
+    symbol: its qname, kind, source line range, public/private flag, the
+    signature line, and the first-sentence intro of its prose. This is the
+    cheapest way for a reader to answer "what's in this file?" before drilling
+    into a specific symbol with a qname-shaped `read`.
+
+    `lines_by_qname` / `kind_by_qname` supply per-symbol line ranges and kinds
+    (the section sentinel doesn't carry them — callers pull them from the store,
+    as `file_triefact` does). When omitted, the renderer falls back to the
+    frontmatter `defines` manifest, which carries the same fields.
+
+    Kept in lockstep with the TypeScript `renderCompact` in the opencode fork's
+    trie_read tool so the agent surface is identical across MCP, CLI, and the
+    native fork tool.
+    """
+    tf = TriefactFile.parse(text)
+    fm = tf.front_matter
+    lines_by_qname = lines_by_qname or {}
+    kind_by_qname = kind_by_qname or {}
+
+    # Symbol order + fallback line/kind come from the `defines` manifest.
+    defines = fm.get("defines") or []
+
+    out: list[str] = [f"# {file_path} (compact triefact view)"]
+    description = fm.get("description")
+    if description:
+        out.append(f"description: {description}")
+    refs: list[str] = []
+    if fm.get("incoming_refs") is not None:
+        refs.append(f"incoming_refs: {fm['incoming_refs']}")
+    if fm.get("outgoing_refs") is not None:
+        refs.append(f"outgoing_refs: {fm['outgoing_refs']}")
+    if refs:
+        out.append(" \u00b7 ".join(refs))
+    out.append("")
+    out.append(
+        f"Symbols ({len(defines)}). Use `read(<qname>)` for full prose, "
+        "or `read(<path>, full=true)` for the full file bundle."
+    )
+    out.append("")
+
+    for entry in defines:
+        qn = entry.get("qualified_name", "")
+        kind = kind_by_qname.get(qn) or entry.get("kind", "")
+        line_range = lines_by_qname.get(qn) or entry.get("lines", "")
+        sec = tf.get_section(qn)
+        privacy = "" if _is_public_qname(qn) else ", private"
+        header = f"## {qn} ({kind}, lines {line_range}{privacy})"
+        out.append(header)
+        if sec is not None:
+            signature = _section_signature(sec.body)
+            if signature:
+                out.append(f"signature: `{signature}`")
+            intro = extract_one_liner(sec.body)
+            if intro:
+                out.append("")
+                out.append(intro)
+        out.append("")
+
+    return "\n".join(out)

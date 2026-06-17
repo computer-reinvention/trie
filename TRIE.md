@@ -57,8 +57,8 @@ know a literal string or pattern rather than a symbol name.
 
 **`grep_entry_points`** finds public, high-inbound symbols whose
 triefact prose fuzzy-matches a topic or concept. Use for orienting in
-an unfamiliar codebase: _"authentication"_, _"error handling"_, _"config
-loading"_.
+an unfamiliar codebase: *"authentication"*, *"error handling"*, *"config
+loading"*.
 
 **`grep_symbol`** fuzzy-matches a symbol name fragment and returns the
 best match plus up to 9 similar alternatives. Use when you have a rough
@@ -228,13 +228,9 @@ grep({ "scope_prefix": "src/", "public_only": true },
   "signature": "...",
   "prose": "...",
   "source_pointer": "...",
-  "callers": [
-    /* { qname, signature, one_liner } */
-  ],
-  "callees": [
-    /* same shape */
-  ],
-  "notes": "..." // present only when there's something to flag
+  "callers": [ /* { qname, signature, one_liner } */ ],
+  "callees": [ /* same shape */ ],
+  "notes": "..."       // present only when there's something to flag
 }
 ```
 
@@ -254,9 +250,7 @@ grep({ "scope_prefix": "src/", "public_only": true },
 ```json
 {
   "best": { "qname": "...", "one_liner": "..." },
-  "similar": [
-    /* up to 9 alternatives */
-  ],
+  "similar": [ /* up to 9 alternatives */ ],
   "note": "..."
 }
 ```
@@ -267,12 +261,10 @@ grep({ "scope_prefix": "src/", "public_only": true },
 {
   "paths_found": 2,
   "paths": [
-    ["qname1", "qname2", "qname3"],
-    ["qname1", "qname4", "qname3"]
+    [ "qname1", "qname2", "qname3" ],
+    [ "qname1", "qname4", "qname3" ]
   ],
-  "narratives": [
-    /* explain_flow only — one per path */
-  ]
+  "narratives": [ /* explain_flow only — one per path */ ]
 }
 ```
 
@@ -282,12 +274,8 @@ grep({ "scope_prefix": "src/", "public_only": true },
 {
   "symbol": { "qname": "...", "prose": "..." },
   "narrative": "...",
-  "callers": [
-    /* with prose */
-  ],
-  "callees": [
-    /* with prose */
-  ]
+  "callers": [ /* with prose */ ],
+  "callees": [ /* with prose */ ]
 }
 ```
 
@@ -420,8 +408,27 @@ trie uses `path/to/file:LocalName` for top-level symbols and
 `path/to/file:ClassName.method` for methods. Drop the `.py` extension;
 use forward slashes regardless of OS.
 
-When any tool returns a `qname`, pass it straight back to another tool.
-Round-trip without rewriting.
+This format is for **reading** qnames that tools hand you — not for
+**constructing** them. **Never hand-build a qname from a file path and a
+symbol name and pass it to `read`.** The graph keys symbols by how the
+indexer recorded them (scope prefixes, module paths, package roots vary),
+so a guessed qname will miss even when the source plainly contains the
+symbol — and a raw file read of the same file will succeed, masking the
+real cause.
+
+When you only know a file path and a symbol name, **look the qname up
+first**:
+
+```python
+grep_symbol("sync_single_file")           # fuzzy: best match + alternatives
+grep({ "name_contains": "sync_single_file" })  # predicate search
+```
+
+Take the `qname` from the result and pass it — unchanged — to `read`,
+`trace`, etc. When any tool returns a `qname`, round-trip it without
+rewriting. If a lookup returns nothing, the symbol isn't in the
+graph (out of scope, or the index is stale — run `trie refresh`); a
+hand-built qname won't fix that.
 
 ---
 
@@ -430,6 +437,10 @@ Round-trip without rewriting.
 - **Don't reach for shell `rg` or grep on source code.** You lose
   symbol attribution and graph context. `grep` / `grep_str` handle
   every case.
+- **Don't hand-construct a qname for `read`.** Guessing
+  `path/to/file:symbol` from the file path and function name will return
+  `not_found` even when the symbol exists. Look it up with `grep_symbol`
+  or `grep` first, then round-trip the returned qname.
 - **Don't call `read` repeatedly to traverse a graph.** Use `trace`
   instead. `read` is heavier (full prose); use it when you actually
   want to understand a symbol.
@@ -453,13 +464,13 @@ response.
 
 **Output modes by command:**
 
-| Human-readable (pass `--json` for machine) | JSON-only (always machine-readable)                                    |
-| ------------------------------------------ | ---------------------------------------------------------------------- |
-| `trie grep`, `trie read`, `trie trace`     | `trie grep-str`, `trie grep-entry-points`                              |
-|                                            | `trie grep-symbol`, `trie grep-symbol-neighbours`                      |
-|                                            | `trie explain-symbol`, `trie explain-symbol-refs`                      |
-|                                            | `trie trace-flow`, `trie explain-flow`                                 |
-|                                            | `trie patch`, `trie patch-drop`, `trie patch-list`, `trie patch-apply` |
+| Human-readable (pass `--json` for machine) | JSON-only (always machine-readable) |
+|---|---|
+| `trie grep`, `trie read`, `trie trace` | `trie grep-str`, `trie grep-entry-points` |
+| | `trie grep-symbol`, `trie grep-symbol-neighbours` |
+| | `trie explain-symbol`, `trie explain-symbol-refs` |
+| | `trie trace-flow`, `trie explain-flow` |
+| | `trie patch`, `trie patch-drop`, `trie patch-list`, `trie patch-apply` |
 
 ```
 trie grep         [--name STR] [--kind K] [--scope-prefix P]
@@ -485,7 +496,6 @@ trie explain-flow        <sym1> <sym2>
 ```
 
 CLI-specific behaviour:
-
 - **Human-readable commands** (grep, read, trace) output Rich tables /
   structured prose by default. Pass `--json` for the raw MCP envelope.
 - **JSON-only commands** always output JSON; they accept no `--json` flag.
@@ -519,15 +529,15 @@ trie mcp uninstall [--target NAME] [--all] [--scope project|user]
 If `trie setup --target opencode` was run, the agent's built-in tools
 may already route through trie:
 
-| Built-in                                                                                     | Override behaviour                                                                                                  |
-| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **`grep`**                                                                                   | Routes through `trie grep` — symbol-predicate search with fallback.                                                 |
-| **`read`**                                                                                   | Qname-shaped paths → `trie read`; plain file paths → compact triefact view; `show_source: true` → raw source bytes. |
-| **`trace`**                                                                                  | Added as bare `trace` tool for graph traversal.                                                                     |
-| **`grep_str`**, **`grep_entry_points`**, **`grep_symbol`**, **`grep_symbol_and_neighbours`** | Custom tools wrapping the corresponding CLI.                                                                        |
-| **`explain_symbol`**, **`explain_symbol_references`**                                        | Custom tools for deep symbol understanding.                                                                         |
-| **`trace_flow`**, **`explain_flow`**                                                         | Custom tools for inter-symbol path finding.                                                                         |
-| **`patch`**, **`patch_drop`**, **`patch_list`**, **`patch_apply`**                           | Custom tools for edit patch workflow — post notes, manage, and execute.                                             |
+| Built-in | Override behaviour |
+|---|---|
+| **`grep`** | Routes through `trie grep` — symbol-predicate search with fallback. |
+| **`read`** | Qname-shaped paths → `trie read`; plain file paths → compact triefact view; `show_source: true` → raw source bytes. |
+| **`trace`** | Added as bare `trace` tool for graph traversal. |
+| **`grep_str`**, **`grep_entry_points`**, **`grep_symbol`**, **`grep_symbol_and_neighbours`** | Custom tools wrapping the corresponding CLI. |
+| **`explain_symbol`**, **`explain_symbol_references`** | Custom tools for deep symbol understanding. |
+| **`trace_flow`**, **`explain_flow`** | Custom tools for inter-symbol path finding. |
+| **`patch`**, **`patch_drop`**, **`patch_list`**, **`patch_apply`** | Custom tools for edit patch workflow — post notes, manage, and execute. |
 
 When the override isn't installed, all tools work through the trie MCP
 server (prefixed as `grep`, `read`, etc.) and the `trie` CLI.
