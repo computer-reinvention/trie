@@ -1,52 +1,58 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/edits/apply.py
-file_fingerprint: f02b108f7d1bb53723f2fa43559b961cb307a568d73e7c191f94780b375671aa
-last_synced_at: '2026-06-09T09:58:44Z'
+file_fingerprint: 6fde96ac12b73e8ba804bd6f0444813c4c28c957b57851bc5097ab7398918c46
+last_synced_at: '2026-06-17T16:41:23Z'
 defines:
 - kind: module
   qualified_name: trie/edits/apply:__module__
-  lines: 1-622
+  lines: 1-676
 - kind: function
   qualified_name: trie/edits/apply:_parse_pyright_output
   lines: 27-43
 - kind: function
   qualified_name: trie/edits/apply:_parse_ruff_output
   lines: 46-64
+- kind: function
+  qualified_name: trie/edits/apply:_parse_tsc_output
+  lines: 67-96
 - kind: constant
   qualified_name: trie/edits/apply:_PARSERS
-  lines: 67-70
+  lines: 99-103
+- kind: function
+  qualified_name: trie/edits/apply:lsp_backends_for_file
+  lines: 106-123
 - kind: function
   qualified_name: trie/edits/apply:_lsp_diagnostics
-  lines: 73-98
+  lines: 126-151
 - kind: function
   qualified_name: trie/edits/apply:_format_diagnostics
-  lines: 101-109
+  lines: 154-162
 - kind: function
   qualified_name: trie/edits/apply:_file_fixup
-  lines: 112-135
+  lines: 165-188
 - kind: function
   qualified_name: trie/edits/apply:_compile_check
-  lines: 138-143
+  lines: 191-196
 - kind: function
   qualified_name: trie/edits/apply:_expand_callers
-  lines: 146-176
+  lines: 199-229
 - kind: function
   qualified_name: trie/edits/apply:_refresh_file
-  lines: 179-188
+  lines: 232-241
 - kind: function
   qualified_name: trie/edits/apply:apply_patches
-  lines: 191-543
+  lines: 244-597
 - kind: function
   qualified_name: trie/edits/apply:_read_source_span
-  lines: 546-549
+  lines: 600-603
 - kind: function
   qualified_name: trie/edits/apply:_write_prose_section
-  lines: 552-590
+  lines: 606-644
 - kind: function
   qualified_name: trie/edits/apply:preview_patches
-  lines: 593-621
-incoming_refs: 30
+  lines: 647-675
+incoming_refs: 31
 outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/edits/apply:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a240e61e0147c739eb5cd28dd5d4841e0cc3638151c3dc00315a599b3dfc1b23 source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 role=code-editing -->
@@ -73,8 +79,17 @@ Parses JSON output from ruff linter into standardized diagnostic dictionaries.
 - Extracts line/column from either "location" object or top-level fields
 - Uses "ruff" as default code when none provided
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/apply:_PARSERS fingerprint=b2a5f90b8926406f02cb4d57b896878b47a5719443a5587d105fd7e953b0ffe3 body_fp=0a7af5e9c42418fd7fd5bd63cbdee215a3722ffc970df069c495e921b899c037 source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 role=code-editing -->
+<!-- trie:section symbol=trie/edits/apply:_parse_tsc_output fingerprint=4e7b3fc67ed463a1a0613350c6fdad9d71d56ea9ac762e122e356e7d0f027a8e body_fp=62d8dacd6bd7a2fe60dde2bfe2a093ce7f0037692e55ea1b73b3cd94e8b1b083 source_ref=a7fb7cb9cbd7823c587ac4fb8982d9d21c96782a role=parsing -->
+Parse `tsc --noEmit --pretty false` stdout into a list of `{line, column, code, message}` dicts, skipping unparseable lines and ignoring file paths.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/edits/apply:_PARSERS fingerprint=3e68341b59006e6ea766950d98918abcb3e3054575409c9149fa3d81f82b2134 body_fp=0a7af5e9c42418fd7fd5bd63cbdee215a3722ffc970df069c495e921b899c037 source_ref=a7fb7cb9cbd7823c587ac4fb8982d9d21c96782a role=config -->
 Maps LSP backend output format names to their corresponding diagnostic parser functions.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/edits/apply:lsp_backends_for_file fingerprint=8f66bb3b2b26b9c8df9632584c3c4e6990be1aad4c1d0a85c9553cf54d284785 body_fp=8e0c3de9dc99073f89e44fc2c8e01f4e724db90a8f957eb164a51bbde235e767 source_ref=a7fb7cb9cbd7823c587ac4fb8982d9d21c96782a role=config -->
+Resolve the ordered list of `LspBackend` checkers to use for `file_path`, applying language-config overrides before backend defaults before global fallback.
+
+- `file_path`: used to look up the language backend via the parse registry.
+- Returns language override `lsp_backends` → backend defaults → `config.edits.lsp_backends`, in that priority order.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/apply:_lsp_diagnostics fingerprint=05ed364b4019b1dd4ee6b40ad27905b4e918ad82dad02288a52221ccf51d3133 body_fp=9f7ec5b77d4a171ca91ae826e7e73786ee6491cf573cd9c2ba540a7494d76089 source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 role=code-editing -->
 Runs LSP backends sequentially against a file and returns diagnostics from the first successful tool.
@@ -104,12 +119,12 @@ Expands seed symbols to include their callers up to cascade_depth levels, skippi
 <!-- trie:section symbol=trie/edits/apply:_refresh_file fingerprint=cb12cf48ef733d72f2273ca2661a206c03fd153e474426a121e05919824950cf body_fp=955ded022f1c7bd954e595349b4351a1c217a03811eeb235cbfe4e97dcad3124 source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 role=documentation-sync -->
 Updates triefact metadata for a single file after source code changes.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/apply:apply_patches fingerprint=b411312d1e51179183a893eee54a84f485a6766817c2e6032704d596ae09e72b body_fp=3219db8500790fdd654351a42dc528c0ebdf53840e84136371d5e9ae960357f9 source_ref=fda8d865f5854a6e1d6ea5ce64cf35f8776b45dc role=orchestration -->
+<!-- trie:section symbol=trie/edits/apply:apply_patches fingerprint=54ec3ad839c7e0c34b39766cbf4ebfb2dda64f40b7bb8a424057ecf10faa8b17 body_fp=541755c5f6e7980ecf803b28f77639a18a6a425160f65073fa1b530570dab5a0 source_ref=a7fb7cb9cbd7823c587ac4fb8982d9d21c96782a role=orchestration -->
 Applies all pending patches by cascading changes, generating source and prose, running LSP fixups, and verifying project consistency.
 
 - **patches**: groups patches by symbol, expands to caller symbols via cascade
 - **generation**: uses LLM to generate new source code and triefact prose
-- **fixups**: runs configured LSP backends to fix diagnostics iteratively
+- **fixups**: runs per-file LSP backends (resolved via `lsp_backends_for_file`) to fix diagnostics iteratively
 - **verification**: clears patches before checking project consistency and refreshes metadata
 - **concurrency**: processes files in parallel using ThreadPoolExecutor
 - **progress**: optional callback interface for progress reporting
@@ -121,7 +136,7 @@ Extracts source code lines from a file between specified start and end line numb
 - Uses 1-based line numbering from detail object
 - Preserves line endings in the extracted span
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/apply:_write_prose_section fingerprint=8af674914055253618af885b0cd4c3668e2e7e6ddb737d486007b02b58a61a00 body_fp=ca4201fe30a99d8eee3d573ef2ca84278000fd5429b048029ef2586f3818c8b9 source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 role=documentation-sync -->
+<!-- trie:section symbol=trie/edits/apply:_write_prose_section fingerprint=aea4fbaab5639e27cfaa5f549726c77161755f1d384227db31a66c930b3150b5 body_fp=ca4201fe30a99d8eee3d573ef2ca84278000fd5429b048029ef2586f3818c8b9 source_ref=a7fb7cb9cbd7823c587ac4fb8982d9d21c96782a role=persistence -->
 Updates or creates a prose documentation section for a symbol in its triefact file.
 
 - Creates triefact markdown file if it doesn't exist

@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_edits_apply_pipeline.py
 file_fingerprint: 67852ab74e5c7d6d3c30a07e51a72c8c4df1f46f3ea2350e0c5c04099f0ce15a
-last_synced_at: '2026-06-09T09:58:40Z'
+last_synced_at: '2026-06-17T16:43:07Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_apply_pipeline:__module__
@@ -251,8 +251,8 @@ Tests apply_patches failure handling including compile errors, file rollback, an
 - `test_rollback_restores_files`: confirms files are restored to committed state after compilation failure
 - `test_patches_preserved_after_rollback`: ensures patches remain in database after failed application for retry
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_apply_pipeline:TestApplyPatchesFailure.test_compile_error_returns_failure fingerprint=7b976fafa7a1afc907025f2a67b3d835498e614f830138b4237e1b326f1dc85e body_fp=bb0986c51d332d405f32761171acb78fc6f9c6b67029865b611ee3bcf590801f source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test -->
-Tests that TestApplyPatchesFailure apply_patches returns failure result when BrokenClient generates invalid Python syntax.
+<!-- trie:section symbol=tests/test_edits_apply_pipeline:TestApplyPatchesFailure.test_compile_error_returns_failure fingerprint=7b976fafa7a1afc907025f2a67b3d835498e614f830138b4237e1b326f1dc85e body_fp=8ac75ddfa0a37d0e734f3fc2afab845ecb3ac4147926e2b1467961add6e1d7fe source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test -->
+Tests that `TestApplyPatchesFailure` `apply_patches` returns failure result when `BrokenClient` generates invalid Python syntax.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_apply_pipeline:TestApplyPatchesFailure.test_rollback_restores_files fingerprint=9c9c2b5d980a1af2036d0ade4a96141ba1d5d81042ef0ee3defc9ee40a3adecf body_fp=0a1e764aa690607797b03ec075440f003f9c07f36cb3efceab71dcff5ebbd85b source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test -->
 Verifies that TestApplyPatchesFailure restores files to their original state after patch application fails.

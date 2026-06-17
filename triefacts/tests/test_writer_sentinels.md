@@ -1,113 +1,128 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_writer_sentinels.py
-file_fingerprint: caa376b519aa734acc4ffb51698d2385b1f3e378043a9cc30955851334bc849d
-last_synced_at: '2026-06-10T13:17:12Z'
+file_fingerprint: 5eb64a1c16bbd3b52e461b6a1b33bc9af17509f8e02c43085ebe48dddf252c26
+last_synced_at: '2026-06-17T16:41:09Z'
 defines:
 - kind: module
   qualified_name: tests/test_writer_sentinels:__module__
-  lines: 1-513
+  lines: 1-571
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_empty
-  lines: 17-20
+  lines: 18-21
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_only_prose
-  lines: 23-28
+  lines: 24-29
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_front_matter_only
-  lines: 31-35
+  lines: 32-36
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_front_matter_and_prose
-  lines: 38-44
+  lines: 39-45
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_single_section
-  lines: 47-66
+  lines: 48-67
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_multiple_sections_with_prose_between
-  lines: 69-84
+  lines: 70-85
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_unterminated_section_raises
-  lines: 87-90
+  lines: 88-91
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_parse_dedupes_duplicate_sections_keeping_last
-  lines: 93-125
+  lines: 94-126
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_roundtrip_only_prose_is_byte_identical
-  lines: 131-133
+  lines: 132-134
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_roundtrip_with_front_matter_and_section_carrying_body_fp
-  lines: 136-150
+  lines: 137-151
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_roundtrip_multiple_sections_with_human_prose
-  lines: 153-172
+  lines: 154-173
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_legacy_section_without_body_fp_parses_and_promotes_on_render
-  lines: 175-185
+  lines: 176-186
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_section_round_trips_source_ref
-  lines: 188-202
+  lines: 189-203
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_section_without_source_ref_renders_without_it
-  lines: 205-212
+  lines: 206-213
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_section_with_source_ref_renders_field_in_stable_position
-  lines: 215-230
+  lines: 216-231
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_section_legacy_format_with_source_ref_appended_parses
-  lines: 233-247
+  lines: 234-248
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_upsert_replaces_existing_section_preserves_prose
-  lines: 253-276
+  lines: 254-277
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_upsert_appends_new_section_at_end
-  lines: 279-287
+  lines: 280-288
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_upsert_into_empty_triefact
-  lines: 290-298
+  lines: 291-299
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_remove_section
-  lines: 301-318
+  lines: 302-319
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_remove_missing_section_returns_false
-  lines: 321-323
+  lines: 322-324
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_section_qnames_in_order
-  lines: 326-333
+  lines: 327-334
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_human_edit_between_sections_survives_regen
-  lines: 339-370
+  lines: 340-371
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_front_matter_re_renders_in_insertion_order
-  lines: 373-379
+  lines: 374-380
 - kind: function
   qualified_name: tests/test_writer_sentinels:_sample_triefact
-  lines: 385-417
+  lines: 386-418
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_render_for_agent_strips_internal_frontmatter
-  lines: 420-428
+  lines: 421-429
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_render_for_agent_keeps_agent_frontmatter
-  lines: 431-442
+  lines: 432-443
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_render_for_agent_strips_sentinels_and_fingerprints
-  lines: 445-453
+  lines: 446-454
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_render_for_agent_keeps_section_bodies_and_interleaved_prose
-  lines: 456-469
+  lines: 457-470
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_render_for_agent_omits_frontmatter_when_no_agent_keys
-  lines: 472-490
+  lines: 473-491
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_render_for_agent_empty_input
-  lines: 493-494
+  lines: 494-495
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_render_for_agent_prose_only_no_sentinels
-  lines: 497-502
+  lines: 498-503
 - kind: function
   qualified_name: tests/test_writer_sentinels:test_agent_front_matter_keys_constant
-  lines: 505-512
+  lines: 506-513
+- kind: function
+  qualified_name: tests/test_writer_sentinels:test_compact_view_headers_file_and_lists_symbols
+  lines: 519-527
+- kind: function
+  qualified_name: tests/test_writer_sentinels:test_compact_view_includes_signature_and_intro
+  lines: 530-537
+- kind: function
+  qualified_name: tests/test_writer_sentinels:test_compact_view_is_not_raw_source
+  lines: 540-544
+- kind: function
+  qualified_name: tests/test_writer_sentinels:test_compact_view_marks_private_symbols
+  lines: 547-560
+- kind: function
+  qualified_name: tests/test_writer_sentinels:test_compact_view_store_overrides_take_precedence
+  lines: 563-570
 incoming_refs: 0
-outgoing_refs: 48
+outgoing_refs: 53
 ---
 <!-- trie:section symbol=tests/test_writer_sentinels:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=b090a7da0bb84889c079565a7c4fc125a9e9a8c12ecaa519759621dd369fadfa source_ref=da68e1ccc1166d342f5b38d5c6453cf2fcfde631 role=test-infrastructure -->
 Tests parsing, rendering, and mutation of TriefactFile with sentinel-wrapped sections and front matter.
@@ -229,4 +244,19 @@ Tests that `render_for_agent` passes through plain prose without frontmatter or 
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_writer_sentinels:test_agent_front_matter_keys_constant fingerprint=64acc40a3816c88839dddb297dcc73231822240b25e6f37b53bd7d0d3808e85b body_fp=9f6c3bb0789d136cbba831e6fa16415b62345eab8dbe51c114dbb7a2aa4b0949 source_ref=3349599c47ac1dba711eb916647d1db06dea96d1 role=test -->
 Validates that `AGENT_FRONT_MATTER_KEYS` contains exactly the expected set of frontmatter field names.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_writer_sentinels:test_compact_view_headers_file_and_lists_symbols fingerprint=23e86a5b46f7cd9d510599bb1463c4cc4d9eb80fbef9c5e006917d459ef27cfb body_fp=6eab607b7e47ff128e00f8167f649d0eab69dba703d1f9c746ed48623b8f53fa source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test -->
+Assert `compact_triefact_view` emits a file-level header, agent frontmatter fields, and per-symbol subheadings with qname, kind, and line range.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_writer_sentinels:test_compact_view_includes_signature_and_intro fingerprint=75ad7b86ca55ea41d1a3cdae2004249f5aadd3f5ef1bee256401480f7ec7bb60 body_fp=3bd2fab78b139992a9b93d3f9d74961159d9181dd34b92d998c5f409fbc20e99 source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test -->
+Assert that `compact_triefact_view` includes a `signature:` line and the first-sentence intro for each section body.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_writer_sentinels:test_compact_view_is_not_raw_source fingerprint=37682f46fcf91f28f61d3799b91e2aa6b8980d52bd515b74ef8ef83cf5c10fcd body_fp=38b6bd0fc02405b0b8b5c39a969c4cefc903bfb9cccec145871e22262d38e504 source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test -->
+Assert that `compact_triefact_view` output contains neither line-numbered source (`"1: "`) nor raw trie sentinel markers.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_writer_sentinels:test_compact_view_marks_private_symbols fingerprint=38210f88f32837b140dc1f08f6df7a6ce3d28e90889d4cb835db007e08526868 body_fp=ec18a2185218d53d17353eb0b29c18852cb57ebf13cbacbbd4982bb1bcef6a7a source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test -->
+Assert that `compact_triefact_view` appends a `private` label to the section header for symbols whose qualified name begins with an underscore.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_writer_sentinels:test_compact_view_store_overrides_take_precedence fingerprint=f6461ee4b3c51cb0b1c112e79ae2766c678850fc90401b315e38d9b72a52dea3 body_fp=ab620ebd84e331352ee6cf1d6b58898eea22bcf974e4a2bba73612932665dcb0 source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test -->
+Verify that `lines_by_qname` and `kind_by_qname` overrides passed to `compact_triefact_view` supersede the values from the triefact front matter.
 <!-- trie:end -->

@@ -1,12 +1,12 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/sync/generator.py
-file_fingerprint: e4b08356ce52f5baceac62a8adbd1450fd449e782259df83185eddcb560f71fe
-last_synced_at: '2026-06-09T09:58:55Z'
+file_fingerprint: 5e7e71efc7f6551e1aa2790118a9d8a2cef2b03935bc4c784ab88cd275f15b5f
+last_synced_at: '2026-06-17T16:42:01Z'
 defines:
 - kind: module
   qualified_name: trie/sync/generator:__module__
-  lines: 1-262
+  lines: 1-268
 - kind: constant
   qualified_name: trie/sync/generator:SYSTEM_PROMPT
   lines: 12-30
@@ -27,31 +27,31 @@ defines:
   lines: 80-85
 - kind: function
   qualified_name: trie/sync/generator:_symbol_context_clause
-  lines: 88-98
+  lines: 88-104
 - kind: function
   qualified_name: trie/sync/generator:_symbol_source
-  lines: 101-106
+  lines: 107-112
 - kind: function
   qualified_name: trie/sync/generator:_build_request
-  lines: 109-116
+  lines: 115-122
 - kind: function
   qualified_name: trie/sync/generator:_build_diff_aware_request
-  lines: 119-134
+  lines: 125-140
 - kind: function
   qualified_name: trie/sync/generator:generate_section
-  lines: 137-177
+  lines: 143-183
 - kind: constant
   qualified_name: trie/sync/generator:ROLE_SYSTEM_PROMPT
-  lines: 180-189
+  lines: 186-195
 - kind: class
   qualified_name: trie/sync/generator:InferredRole
-  lines: 193-202
+  lines: 199-208
 - kind: function
   qualified_name: trie/sync/generator:_taxonomy_clause
-  lines: 205-208
+  lines: 211-214
 - kind: function
   qualified_name: trie/sync/generator:infer_role
-  lines: 211-261
+  lines: 217-267
 incoming_refs: 33
 outgoing_refs: 2
 ---
@@ -86,11 +86,13 @@ Represents the result of generating documentation for a single symbol, including
 <!-- trie:section symbol=trie/sync/generator:build_cached_context fingerprint=34a370dbfcfc18986700426fc5c4d20f78bf632efbbbb8fa306a9f6e2ac0df1f body_fp=df5e710483d89bfcbd36a5292b923844141f5aae8d297d2548d1229e8561762c source_ref=24a303d77a226761266352fc352f56726b09a861 role=documentation-sync -->
 Builds a cached context string that includes the file path and complete source code for LLM prompting.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/generator:_symbol_context_clause fingerprint=c09e100e6fb7e7cc96cdc11924de704c27a8ccd8dfe93971657b33f5d5703293 body_fp=e77866ebfe06d98483def51687fc630575ad27b3764646e5227b40b64a1a9035 source_ref=24a303d77a226761266352fc352f56726b09a861 role=documentation-sync -->
+<!-- trie:section symbol=trie/sync/generator:_symbol_context_clause fingerprint=938c1b91eb07818906515b99b7ac59a305eb263b56a7facf16c9b43d6eff7c66 body_fp=0bac71a6d3776471300d91f1210a04b16be1fdefb66dd86e5dae2c6ab2913c80 source_ref=21b7e93e31c07db925e2c129b972ded57bd0626f role=util -->
 Returns a descriptive string categorizing a Symbol for documentation prompts.
 
 - Returns method type with class name for methods, including decorator labels for @property/@classmethod/@staticmethod/@abstractmethod
 - Returns decorated class description when class has decorators
+- Returns enum member description with owning enum name for `enum_member` kind
+- Returns field/property description with owning class name for `property` kind
 - Falls back to basic symbol kind for other cases
 <!-- trie:end -->
 <!-- trie:section symbol=trie/sync/generator:_symbol_source fingerprint=68bf268b9a98ae2d58e9e30fa409031d97d648fe216e5835e1c5fe53e4b7b3a5 body_fp=b38916be0f63a761b71d6d16f930e79567da2423ef5a05723e0bb6343a30be21 source_ref=24a303d77a226761266352fc352f56726b09a861 role=documentation-sync -->

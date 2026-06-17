@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/diff_cmd.py
 file_fingerprint: aede83b4992eaaf7ba79ed2b696080f3c91639d232164fe2f26f1fe01131e4dd
-last_synced_at: '2026-06-10T13:17:00Z'
+last_synced_at: '2026-06-17T16:43:22Z'
 defines:
 - kind: module
   qualified_name: trie/diff_cmd:__module__

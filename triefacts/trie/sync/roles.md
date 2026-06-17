@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/sync/roles.py
-file_fingerprint: 60be4163dc186100c413d972ab203f666cfcb0d8e01008745d63a2e0e957bb50
-last_synced_at: '2026-06-10T13:17:08Z'
+file_fingerprint: d3b1f5ed4cf82a407ddb2c03ab7acb016c9fdd483933614ed5190d743094f0f6
+last_synced_at: '2026-06-17T16:42:05Z'
 description: 'Roles-only sync: (re)infer the architectural role tag for every symbol
   without'
 defines:
@@ -33,7 +33,7 @@ Immutable result dataclass tracking counts and token usage from a roles-only syn
 - `taxonomy_derived`: whether a new role taxonomy was generated (vs loaded from disk)
 - `taxonomy_size`: number of roles in the taxonomy used for classification
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/roles:run_roles_only fingerprint=bcfbeab39e775eee9869f82052331db766409491fc96570ba0a5bd42f97bc7d4 body_fp=1bfca6606465de582892d8bf412b4a6fb44d78a014f96bcea578d99a5f9df34a source_ref=2760a291866703b29ffecc33cfaae9e9cbba027c role=orchestration -->
+<!-- trie:section symbol=trie/sync/roles:run_roles_only fingerprint=99e069efc3ba251f0d98a80c0236e8da9b1fd72d649785f37bebed41325d73ae body_fp=1bfca6606465de582892d8bf412b4a6fb44d78a014f96bcea578d99a5f9df34a source_ref=7bb340291770ab9926f46045bd9a0bc92437a1aa role=orchestration -->
 Infers and persists architectural role tags for all symbols with existing triefacts.
 
 - `only_missing`: when True, only classifies symbols lacking a role tag

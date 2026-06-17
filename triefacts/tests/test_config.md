@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_config.py
-file_fingerprint: c659474b9bf3edbb4f7ce11684a1910ce0fdcfeeb1e98b156f427f0788592352
-last_synced_at: '2026-06-09T09:58:31Z'
+file_fingerprint: 19135655e050e0adc481d5f9f16a2abda87e78960cec4031673abec7cf184454
+last_synced_at: '2026-06-17T16:40:54Z'
 defines:
 - kind: module
   qualified_name: tests/test_config:__module__
@@ -42,7 +42,7 @@ Tests configuration loading, merging, and validation for the Config class.
 - `test_unknown_top_level_keys_are_ignored`: Verifies forward compatibility with unknown sections
 - `test_unknown_keys_within_known_section_raise`: Ensures typos in known sections fail loudly
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_config:test_defaults_when_empty_dict fingerprint=7079d25ce5bd1212e3cd6b3e6e1f639440d455340183fa74f6757abae21a6ca7 body_fp=8e23f2407170afea9f1b23b78a647d3fc882b9229c95d5c31f1a24ca7436043c source_ref=ce0170296e1b69f535154cc3d8fa01546c83fc5e role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_config:test_defaults_when_empty_dict fingerprint=a8a9627e48f8e76ff72f844c2b0f13b9bfd9f8e0f1995a8fbb98c73bde2e19c9 body_fp=8e23f2407170afea9f1b23b78a647d3fc882b9229c95d5c31f1a24ca7436043c source_ref=fc39661b30c3a7ba13e052fbab6504196bb5bc1d role=test -->
 Verifies that Config.from_dict uses default values when initialized with empty dictionary.
 
 - Checks version, scope patterns, triefacts root, model names, and cascade settings
@@ -51,7 +51,7 @@ Verifies that Config.from_dict uses default values when initialized with empty d
 <!-- trie:section symbol=tests/test_config:test_overrides_merge_per_section fingerprint=5baed518a1d25e4a0508e76368d6bdcfd516757fecf5e7e4f4e79b4a9731b35e body_fp=cba865c6b785bc6d77a4e69e8ca96aa5868e8ddfc45a5afac55fb6a7dcc6425f source_ref=ce0170296e1b69f535154cc3d8fa01546c83fc5e role=test-infrastructure -->
 Tests that Config.from_dict merges overrides per section while preserving defaults for untouched sections and keys.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_config:test_load_roundtrips_default_template fingerprint=7976917fe1d121c59caeee292e0ba1615d530e55cb060757bdf0763e61f59674 body_fp=f1c706a20bc4863d933f2f914c487448722750b9d2a3c369ab4724891c45e9bf source_ref=ce0170296e1b69f535154cc3d8fa01546c83fc5e role=test -->
+<!-- trie:section symbol=tests/test_config:test_load_roundtrips_default_template fingerprint=4941b8d7135c895583d06e3d3ddce455c6f36c141bccd12fdb654835f13e8542 body_fp=f1c706a20bc4863d933f2f914c487448722750b9d2a3c369ab4724891c45e9bf source_ref=fc39661b30c3a7ba13e052fbab6504196bb5bc1d role=test -->
 Verifies that Config.load can parse the default TOML configuration template and produces expected defaults.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_config:test_find_and_load_walks_up fingerprint=c2e6b43592156a913d5cfee00fbb8028609cdf2318d3de8a975915503cbec7dd body_fp=28882492ca4ad2950d26e82976d8d6014e40aa4ca48c771478d82de341ebf79b source_ref=ce0170296e1b69f535154cc3d8fa01546c83fc5e role=test -->

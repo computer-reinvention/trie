@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_edits_structural.py
 file_fingerprint: 3160b689c49e4ceb68bcf95d7c3233b22070566e675ac0c797f12db53a99e4d2
-last_synced_at: '2026-06-09T09:58:34Z'
+last_synced_at: '2026-06-17T16:42:43Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_structural:__module__

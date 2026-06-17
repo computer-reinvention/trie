@@ -1,12 +1,12 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/check.py
-file_fingerprint: 7f06c7053f40e5352b290eaab4c216f06e376680c60d9886afcf46daa647c6aa
-last_synced_at: '2026-06-10T13:16:57Z'
+file_fingerprint: 4d3434ff06d42849c109b1f44fba3822707e8a0c90131d255d551fe78926dcd2
+last_synced_at: '2026-06-17T16:41:00Z'
 defines:
 - kind: module
   qualified_name: trie/check:__module__
-  lines: 1-173
+  lines: 1-175
 - kind: class
   qualified_name: trie/check:StaleReason
   lines: 14-20
@@ -27,9 +27,9 @@ defines:
   lines: 46-63
 - kind: function
   qualified_name: trie/check:_check_project_inner
-  lines: 66-172
+  lines: 66-174
 incoming_refs: 23
-outgoing_refs: 6
+outgoing_refs: 7
 ---
 <!-- trie:section symbol=trie/check:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=e75d59ec8e0be55d54ce1acd9587d0bf4fd631bb2424d3f9513a7179e684f3a9 source_ref=b13418772d94c7dea0e494653a1d4aadcca3a1c6 role=change-detection -->
 Detects staleness between source files and their triefact documentation by comparing symbol fingerprints.
@@ -73,10 +73,11 @@ Compute stale items by comparing each in-scope source file's symbols to its trie
 - Detects missing triefact files, missing sections, stale sections, orphan sections, tampered bodies, and legacy sections
 - Uses fingerprints from triefact sentinels for integrity verification without database access
 <!-- trie:end -->
-<!-- trie:section symbol=trie/check:_check_project_inner fingerprint=43b2ccab358f3cca3c315d2d842d841287809a0a13c40e980ba1e1b5498e925e body_fp=c3c2f2c170543ef017cb1bf035939e0aeb6262e25dd28dc74777749cd6641005 source_ref=b13418772d94c7dea0e494653a1d4aadcca3a1c6 role=orchestration -->
+<!-- trie:section symbol=trie/check:_check_project_inner fingerprint=bf2d197cea220e508b06db86a276191edfa167f1c4f28cbe71f97e47fbaf0284 body_fp=db3c278a6235581ea0d2f9625fd17f266269d412ca99d22629b80dc6355b3142 source_ref=bdf5b1aeff28db9a76b101300b3cdf1198813fab role=domain -->
 Performs bidirectional staleness detection between source symbols and triefact sections, populating telemetry.
 
 - Discovers in-scope files, extracts symbols, and compares with existing triefact sections
+- Skips files not indexable by the parser registry before counting or processing them
 - Detects missing triefacts, missing/stale/orphaned sections, tampered bodies, and legacy sections
 - Records file counts, issue counts, and issue breakdown by reason in telemetry dictionary
 <!-- trie:end -->

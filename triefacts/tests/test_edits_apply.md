@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_edits_apply.py
 file_fingerprint: 19c66220dfebe979e907a3cc90b1c56b693dd7f97076bef11d320d853633637c
-last_synced_at: '2026-06-07T03:57:22Z'
+last_synced_at: '2026-06-17T16:42:53Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_apply:__module__
@@ -54,8 +54,8 @@ Tests the `_expand_callers` function with mock store implementations to verify c
 <!-- trie:section symbol=tests/test_edits_apply:TestExpandCallers.test_empty_seeds fingerprint=21246c66547b52c429fa89a1a656ec2530052c26f5250a447b555b9e7c85e104 body_fp=5474805fa0ecdfc57d794ff47c7e017974deabe9874ab30c255cc1eca9da3f9d source_ref=bc54244d8829f05b1f4b35cf791afb49a820ad23 role=test -->
 Tests that `_expand_callers` returns empty set when given empty seed list.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_apply:TestExpandCallers.test_seeds_not_in_store fingerprint=61de725e945f9129f4a11e6f13e460ffffa69092ce801fd42a48e54671044a58 body_fp=5f38382791ac0d6a0d9fcdf9d38dbe563de04bfb7dae8fb42b7a36f13188c1f0 source_ref=bc54244d8829f05b1f4b35cf791afb49a820ad23 role=test -->
-Tests that TestExpandCallers._expand_callers returns empty set when given seeds not present in the store.
+<!-- trie:section symbol=tests/test_edits_apply:TestExpandCallers.test_seeds_not_in_store fingerprint=61de725e945f9129f4a11e6f13e460ffffa69092ce801fd42a48e54671044a58 body_fp=b65edd3490d4cff1ce505653a28eaea3479b3da8b5d0b70709b448dbe879c87a source_ref=bc54244d8829f05b1f4b35cf791afb49a820ad23 role=test -->
+Tests that `TestExpandCallers._expand_callers` returns empty set when given seeds not present in the store.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_apply:TestCompileCheck fingerprint=8fc2a428faa925362cd3b6f1fc47572ca2b93dd2bed641f8a90d959f6d40724c body_fp=ad88d332cd585451e49ec3b1d43a2662891c600b93b9c497e943d501dd3e2a6f source_ref=bc54244d8829f05b1f4b35cf791afb49a820ad23 role=test -->
 Tests the `_compile_check` function's Python syntax validation behavior.

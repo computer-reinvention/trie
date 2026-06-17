@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/fake_client.py
 file_fingerprint: 0d18b2c2cab5e0a1aae7dff95ef472d83c9b84faace25f84f24ffab23089bcaf
-last_synced_at: '2026-06-09T09:58:37Z'
+last_synced_at: '2026-06-17T16:42:44Z'
 defines:
 - kind: module
   qualified_name: tests/fake_client:__module__

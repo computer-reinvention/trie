@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/sync/scheduler.py
 file_fingerprint: 057955bf550d298b274c7a8c5babf3afd0a573bf9a3ebdef0f903ca782de13e1
-last_synced_at: '2026-06-10T13:17:14Z'
+last_synced_at: '2026-06-17T16:43:32Z'
 description: Wave-based file scheduler for parallel triefact sync.
 defines:
 - kind: module
@@ -84,7 +84,7 @@ Mutable state accumulator for wave-based parallel file processing with budget an
 - `skip_all`: marks remaining tasks as skipped when caps are hit
 - `_collect`: processes completed futures, updates totals, and checks stop conditions
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/scheduler:_RunState.__init__ fingerprint=075ca8698682dc1b1bc5d8c0433231e495a47add91c846d61e63c73459b73eb0 body_fp=23961dc48431b5f07d088490a981c783fd201e13b78f71a9f2072bf0d41d8bb7 source_ref=2bf723ae8e006fdd21a9f434926ea4420d9cc1e2 role=model -->
+<!-- trie:section symbol=trie/sync/scheduler:_RunState.__init__ fingerprint=075ca8698682dc1b1bc5d8c0433231e495a47add91c846d61e63c73459b73eb0 body_fp=23961dc48431b5f07d088490a981c783fd201e13b78f71a9f2072bf0d41d8bb7 source_ref=2bf723ae8e006fdd21a9f434926ea4420d9cc1e2 role=domain -->
 Initializes _RunState with scheduler configuration and zeroed accumulator state for tracking sync results and costs.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/sync/scheduler:_RunState._cap_reason fingerprint=745db94439eb199837294a37912fe7401e59543bcc3a5d10be2a2d8dff59f02c body_fp=bf8642d1217240d4f2144cac8e75a6122272a86da463a24453aa13d06b594109 source_ref=95bf65ae092aa07f5efb15802ab19c1bddc0a8e9 role=util -->

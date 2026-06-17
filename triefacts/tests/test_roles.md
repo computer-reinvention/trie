@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_roles.py
 file_fingerprint: ff86cc085fcd8cb0287a107ab29a87127a6330b72afa35c176e26f4d9c1e8e1c
-last_synced_at: '2026-06-10T13:16:50Z'
+last_synced_at: '2026-06-17T16:43:12Z'
 description: 'Tests for role tagging: durable persistence, derived taxonomy, and the'
 defines:
 - kind: module

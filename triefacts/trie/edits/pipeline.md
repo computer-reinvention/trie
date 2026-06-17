@@ -1,60 +1,63 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/edits/pipeline.py
-file_fingerprint: f72cb42a2facab02d3ad0f250a6817952de73780e719d6fd37b6516918a35011
-last_synced_at: '2026-06-10T13:17:00Z'
+file_fingerprint: 8c5fb54d4570e43c8a68ad40e5992e262a2c5151c5a82c62ea78c4dcaf229642
+last_synced_at: '2026-06-17T16:41:27Z'
 description: The stage/commit edit pipeline.
 defines:
 - kind: module
   qualified_name: trie/edits/pipeline:__module__
-  lines: 1-1063
+  lines: 1-1094
 - kind: function
   qualified_name: trie/edits/pipeline:_splice
-  lines: 54-65
+  lines: 55-66
 - kind: function
   qualified_name: trie/edits/pipeline:_fix_imports_for_structural
-  lines: 68-112
+  lines: 69-113
 - kind: function
   qualified_name: trie/edits/pipeline:_read_span
-  lines: 115-117
+  lines: 116-118
 - kind: function
   qualified_name: trie/edits/pipeline:_rename_source
-  lines: 120-163
+  lines: 121-164
 - kind: function
   qualified_name: trie/edits/pipeline:_synthesize_session_note
-  lines: 166-179
+  lines: 167-180
 - kind: class
   qualified_name: trie/edits/pipeline:_GenJob
-  lines: 183-193
+  lines: 184-194
 - kind: function
   qualified_name: trie/edits/pipeline:stage
-  lines: 196-518
+  lines: 197-519
 - kind: function
   qualified_name: trie/edits/pipeline:_expand_caller_jobs
-  lines: 521-620
+  lines: 522-621
 - kind: function
   qualified_name: trie/edits/pipeline:_expand_structural_caller_jobs
-  lines: 623-688
+  lines: 624-689
 - kind: function
   qualified_name: trie/edits/pipeline:_stage_creates
-  lines: 691-821
+  lines: 692-822
 - kind: function
   qualified_name: trie/edits/pipeline:_place_new_symbol
-  lines: 824-842
+  lines: 825-843
 - kind: function
   qualified_name: trie/edits/pipeline:_multifile_scratch_lsp
-  lines: 845-904
+  lines: 846-910
+- kind: constant
+  qualified_name: trie/edits/pipeline:_OVERLAY_SKIP_PARTS
+  lines: 913-913
 - kind: function
   qualified_name: trie/edits/pipeline:_overlay_package
-  lines: 907-922
+  lines: 916-953
 - kind: function
   qualified_name: trie/edits/pipeline:commit
-  lines: 925-1045
+  lines: 956-1076
 - kind: function
   qualified_name: trie/edits/pipeline:stage_and_commit
-  lines: 1048-1062
+  lines: 1079-1093
 incoming_refs: 32
-outgoing_refs: 34
+outgoing_refs: 35
 ---
 <!-- trie:section symbol=trie/edits/pipeline:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=e9452fa5658e80ab55660f3be77286f883bbd5a3f02d8be7a680e82f156d1c30 source_ref=acbee5dfa56099ae5afd4c2ba335609bcbbb64c6 role=orchestration -->
 Implements the stage/commit edit pipeline for parallel symbol modification with cascade validation.
@@ -151,19 +154,25 @@ Insert new_source after the anchor symbol's span, else at end-of-file.
 - For empty files, returns just the new symbol block
 - Otherwise appends with three newlines at end-of-file
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:_multifile_scratch_lsp fingerprint=b42a350ea8859858567ac71c433f31fb59a0d6ebf2cbb8cf706cc980492414d1 body_fp=d2e316b7ceaa771d28cdc26e12984bc332e868848799d178522a9003d13fb339 source_ref=acbee5dfa56099ae5afd4c2ba335609bcbbb64c6 role=orchestration -->
+<!-- trie:section symbol=trie/edits/pipeline:_multifile_scratch_lsp fingerprint=91329a859cefe2c13d6b4a424e7cdfc8a3bc2a8f42fa82a1a73d700a4713a472 body_fp=a6cc3bf47aaf19757cbd0fca63b77cc38d268e0bda47fff9654c8dab004bde7e source_ref=afa6244798668a85b5b12de47f75345fb12f3148 role=io -->
 Runs LSP diagnostics + fixup over all changed files in one consistent scratch tree.
 
 - Creates temporary directory with hardlinked package structure for import resolution
-- Overlays staged file candidates and runs LSP check with bounded retry fixup
+- Overlays staged file candidates and runs per-file LSP check (via `lsp_backends_for_file`) with bounded retry fixup
+- Skips entirely if no candidate file has a registered LSP checker
 - Mutates `staged` in place with LSP-cleaned versions of `after_file_bytes`
 - Cross-file consistency: renamed symbols appear defined to checker, preventing reversion
 - Degrades gracefully on errors, leaving candidates unchanged
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:_overlay_package fingerprint=0572434e0c9ef0c1490e059b4bde11b22a40e7fba22f4248c01f00f17dadce3d body_fp=70efcf64f90ed6802f0c505bf59fdf82a4910f0845c160ba51435bfd45c2d960 source_ref=acbee5dfa56099ae5afd4c2ba335609bcbbb64c6 role=io -->
-Hardlinks all .py files from src_root into scratch_root to create a complete import context.
+<!-- trie:section symbol=trie/edits/pipeline:_OVERLAY_SKIP_PARTS fingerprint=3ae41bda7d1b2f3ec7baba171162384d44b95e98599b4bcdbc251301c4a79533 body_fp=69e39da3ddbc683a431d8fe63e873cf1f3833327a81d8434ad989e66249f5f42 source_ref=afa6244798668a85b5b12de47f75345fb12f3148 role=config -->
+Directory name segments skipped during `_overlay_package` hardlink traversal.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/edits/pipeline:_overlay_package fingerprint=2aea15a23cf210178914b315eff21e723dd0c415ce825cf600fb06750973d284 body_fp=a112aa647285b1f298c276fa7d484d2e2baaa71bd1c7a48fc104bb92ea17340a source_ref=afa6244798668a85b5b12de47f75345fb12f3148 role=io -->
+Hardlinks all indexable source files and language-specific config files (e.g. `tsconfig.json`) from `src_root` into `scratch_root`, using globs from registered language backends.
 
-- Skips .trie and __pycache__ directories
+- Skips paths containing any part in `_OVERLAY_SKIP_PARTS` (`.trie`, `__pycache__`, `.git`, etc.)
+- File sets are driven by `registry.all_backends()` — covers all registered languages, not just Python
+- Extra config files (e.g. `tsconfig.json`) are linked via `backend.overlay_extra_files()`
 - Falls back to copying on hardlink failure
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/pipeline:commit fingerprint=2d6d9be2fe2e9cc86fc4fbfd7b8402de57292fc992035d9c68e7fe6aa0e547a7 body_fp=b484ac98666bc29ac23de20359288f430ff387b8fe1f3c8e4c7c259c443a8ee0 source_ref=acbee5dfa56099ae5afd4c2ba335609bcbbb64c6 role=orchestration -->

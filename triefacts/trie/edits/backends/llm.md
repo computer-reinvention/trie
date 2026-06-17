@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/edits/backends/llm.py
 file_fingerprint: c3b3ec518de4871852248ea4449e909e7c069306001955bc654049e4e2104adf
-last_synced_at: '2026-06-09T09:58:50Z'
+last_synced_at: '2026-06-17T16:43:21Z'
 description: "In-process LLM edit backend \u2014 the default `SymbolEditBackend`."
 defines:
 - kind: module
@@ -59,18 +59,18 @@ Renders an EditRequest into the user prompt for the LLM.
 - Adds special handling for "create" operations to indicate new symbol creation
 - Returns structured prompt with symbol info, prose, notes, and source code
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/backends/llm:InProcessLLMBackend fingerprint=65334ff01ec835b103b86ca9e204296891170d1acb51def58c0960e143daf279 body_fp=42e6d279e69dede18632266b004902e8c43854d2f57a599b1b8e5be76449c244 source_ref=eb90916dfbd9c9ba0da5fcc7686aa9fd79380eca role=domain -->
+<!-- trie:section symbol=trie/edits/backends/llm:InProcessLLMBackend fingerprint=65334ff01ec835b103b86ca9e204296891170d1acb51def58c0960e143daf279 body_fp=13c63df107d567fdb170028bda5bdd3189d2a9a6693f7272dcb7965f251de62e source_ref=eb90916dfbd9c9ba0da5fcc7686aa9fd79380eca role=io -->
 Generates new source code and prose for symbols by calling an LLM via TrieClient.
 
-- max_tokens: Maximum tokens for LLM responses, defaults to 4096
-- generate: Returns EditResult with new source/prose on success, error details on failure
+- `max_tokens`: Maximum tokens for LLM responses, defaults to 4096
+- `generate`: Returns `EditResult` with new source/prose on success, error details on failure
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/backends/llm:InProcessLLMBackend.__init__ fingerprint=828227fd47c583b3ef2e580a997f6fac7b2194a5866ef4fadd607e5d1c5bc3f3 body_fp=07e96a997f456822ac23cc8d9cf58961274e99e93247414d89834d80936846be source_ref=eb90916dfbd9c9ba0da5fcc7686aa9fd79380eca role=model -->
 Initializes an InProcessLLMBackend with a TrieClient and maximum token limit.
 
 - `max_tokens`: limits the LLM response length (default 4096)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/backends/llm:InProcessLLMBackend.generate fingerprint=d5f61bbaf4c47e8b48dbb2f635411c4ad84b260da764aefd84999bd433a2444c body_fp=e85dc44c1b706ee9a4975334e607c5e17c79a21f39bfd89ec70530527421fed1 source_ref=eb90916dfbd9c9ba0da5fcc7686aa9fd79380eca role=domain -->
+<!-- trie:section symbol=trie/edits/backends/llm:InProcessLLMBackend.generate fingerprint=d5f61bbaf4c47e8b48dbb2f635411c4ad84b260da764aefd84999bd433a2444c body_fp=e85dc44c1b706ee9a4975334e607c5e17c79a21f39bfd89ec70530527421fed1 source_ref=eb90916dfbd9c9ba0da5fcc7686aa9fd79380eca role=io -->
 InProcessLLMBackend.generate processes an EditRequest through the LLM client and returns an EditResult with generated source and prose.
 
 - Returns EditResult with ok=False and error message on any exception

@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_models_retry.py
 file_fingerprint: a5309de55fd03bd05db3a25c39f8ebd73bbfe3cc202e811b6f822520a663ba29
-last_synced_at: '2026-06-09T09:58:19Z'
+last_synced_at: '2026-06-17T16:43:15Z'
 description: Retry-on-rate-limit behaviour of `AnthropicClient`.
 defines:
 - kind: module
@@ -112,16 +112,16 @@ Records the sleep duration in `_Recorder.sleeps` list without actually blocking 
 <!-- trie:section symbol=tests/test_models_retry:_frozen_rng fingerprint=21a30f0dca12cc5a6c96c27a311a47b71773540767a177151ea8082a02589cbf body_fp=ff28d8f00435d123e2bd007ad86c835f319096104261522e1bf057cdbc46bf1d source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=test-infrastructure -->
 Creates a seeded Random instance for deterministic test outcomes.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_is_retryable_picks_up_rate_limit_and_5xx_and_timeout fingerprint=57e8cdd19d86cc19a2e20ade35d7eec104a0e39a2510080690d734677e8027dd body_fp=6bd58bc9505959ef161d8b4c54c24fa41f5423bd0ba4f31b3eef9236e2d27f6e source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_models_retry:test_is_retryable_picks_up_rate_limit_and_5xx_and_timeout fingerprint=57e8cdd19d86cc19a2e20ade35d7eec104a0e39a2510080690d734677e8027dd body_fp=6bd58bc9505959ef161d8b4c54c24fa41f5423bd0ba4f31b3eef9236e2d27f6e source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
 Verifies that `_is_retryable` returns True for rate limit, 5xx server errors, and timeout exceptions.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_is_retryable_picks_up_connection_errors fingerprint=b84afa39a66ae629bd3f4b4a9ca4b6101e84fe979bae7325a8e82096f1f7affd body_fp=a8b02be901737f72e8aa8515b662e1ccd6fc5ab08b79596a4bd5eb7275bdae7f source_ref=b6626fd590539f62931e347b0989efc369d58854 role=test -->
+<!-- trie:section symbol=tests/test_models_retry:test_is_retryable_picks_up_connection_errors fingerprint=b84afa39a66ae629bd3f4b4a9ca4b6101e84fe979bae7325a8e82096f1f7affd body_fp=a8b02be901737f72e8aa8515b662e1ccd6fc5ab08b79596a4bd5eb7275bdae7f source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
 Tests that `_is_retryable` correctly identifies `APIConnectionError` as retryable.
 
 - Creates an `APIConnectionError` representing transient network failures like DNS lookup or connection refused
 - Verifies the error is classified as retryable to prevent sync crashes
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_is_retryable_rejects_auth_and_other_4xx fingerprint=ad1733d7e18cc28b638ccebae3dbd460280fc5547172d8d6b73456101792f9ea body_fp=5d8e0ae7d24399fcea49939c98ddeb21cf3558f66278b976a23349cf6270c1ec source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=llm-client -->
+<!-- trie:section symbol=tests/test_models_retry:test_is_retryable_rejects_auth_and_other_4xx fingerprint=ad1733d7e18cc28b638ccebae3dbd460280fc5547172d8d6b73456101792f9ea body_fp=5d8e0ae7d24399fcea49939c98ddeb21cf3558f66278b976a23349cf6270c1ec source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
 Verifies `_is_retryable` returns False for authentication errors and non-API exceptions.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_models_retry:test_is_retryable_unwraps_pydantic_ai_model_api_error fingerprint=3d88bbfec2cfe3c0211f9ac1e50594a8126e088e50452d10f07d0950f39a9bcc body_fp=9c8baab32cc5644582b792f5c2d6dc53e1c0ba77bbf9f87eade043a979f1e478 source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
@@ -134,53 +134,53 @@ Tests that `_is_retryable` correctly handles pydantic-ai's ModelAPIError wrapper
 <!-- trie:section symbol=tests/test_models_retry:test_per_thread_models_are_distinct_and_reused fingerprint=8d223b1bbd94023b408c389bf435b8f82b4f09420d56812fd38db9b00df4e288 body_fp=e757240910fa9b0821f116037fc3052396546a73b41f92a73a89c33a49a3cfb0 source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
 Tests that TrieClient creates distinct models per thread but reuses within threads.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_retry_after_reads_header_when_present fingerprint=8a962d853de085e033e2f8972799ca75d5534b32d48aca2c5962f79497c57210 body_fp=a87690f558ffe11f70c34dec1565177c138b6a32af0c708170bc583bc22a5051 source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=llm-client -->
+<!-- trie:section symbol=tests/test_models_retry:test_retry_after_reads_header_when_present fingerprint=8a962d853de085e033e2f8972799ca75d5534b32d48aca2c5962f79497c57210 body_fp=a87690f558ffe11f70c34dec1565177c138b6a32af0c708170bc583bc22a5051 source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
 Tests that `_retry_after_seconds` correctly parses numeric retry-after header values from rate limit errors.
 
 - Verifies both integer ("3") and decimal ("0.5") string values are converted to floats
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_retry_after_none_when_header_missing_or_unparseable fingerprint=840924acaed456cea64cc1304e5051d92ea6b63661cce9ef689669eb57b0b949 body_fp=71d2695bdbebd97b498de9d6462d0e61242c8d49a3ed6b20288a47683a5de9d0 source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=llm-client -->
+<!-- trie:section symbol=tests/test_models_retry:test_retry_after_none_when_header_missing_or_unparseable fingerprint=840924acaed456cea64cc1304e5051d92ea6b63661cce9ef689669eb57b0b949 body_fp=71d2695bdbebd97b498de9d6462d0e61242c8d49a3ed6b20288a47683a5de9d0 source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
 Tests that `_retry_after_seconds` returns `None` when the retry-after header is missing or contains unparseable values.
 
 - Returns `None` when `retry_after` parameter is `None`
 - Returns `None` when `retry_after` contains non-numeric string
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_backoff_delay_within_cap fingerprint=01fcdc55abf97e3557281070b9ad43c1bcc8b05701af9f4be88ee8b3aef8fef8 body_fp=2b95be74ba55044d8400f0b6b5a19bd06400dd12b15d8ef81d981074eb4e2742 source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=llm-client -->
-Tests that _backoff_delay respects the retry cap even when attempt count would exceed it.
+<!-- trie:section symbol=tests/test_models_retry:test_backoff_delay_within_cap fingerprint=01fcdc55abf97e3557281070b9ad43c1bcc8b05701af9f4be88ee8b3aef8fef8 body_fp=77e88ad67321c5f8af6bc5a9cfea054d1c5a2d65e74705b06a795b1966f0522c source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
+Tests that `_backoff_delay` respects the retry cap even when attempt count would exceed it.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_run_with_retry_honours_retry_after_exactly fingerprint=14003a3322d64979d8d605ba62373a1f973903240285043c6ef912db080fa0af body_fp=b76723507d54309e704bcb9a0c8907bd3cbace6609f713cc8bd4abab241d1084 source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=llm-client -->
+<!-- trie:section symbol=tests/test_models_retry:test_run_with_retry_honours_retry_after_exactly fingerprint=14003a3322d64979d8d605ba62373a1f973903240285043c6ef912db080fa0af body_fp=b76723507d54309e704bcb9a0c8907bd3cbace6609f713cc8bd4abab241d1084 source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
 Verifies `_run_with_retry` respects the retry-after header value exactly without applying jitter.
 
 - Tests that a 429 with retry-after="7" causes exactly 7.0 seconds of sleep
 - Confirms the function succeeds after one retry and two total attempts
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_run_with_retry_caps_retry_after fingerprint=da7b5b845dc1ed536c16b052cdbc62c4a53bdcbdffb39690d9129610c14a8852 body_fp=a56214a92a4fffc2664b7b0cd5225ca37e8b56fd07f771aec5537c687598e93f source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=llm-client -->
+<!-- trie:section symbol=tests/test_models_retry:test_run_with_retry_caps_retry_after fingerprint=da7b5b845dc1ed536c16b052cdbc62c4a53bdcbdffb39690d9129610c14a8852 body_fp=a56214a92a4fffc2664b7b0cd5225ca37e8b56fd07f771aec5537c687598e93f source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
 Tests that retry-after headers exceeding retry_cap_seconds are clamped to the configured maximum delay.
 
 - Simulates malicious 9999-second retry-after header that gets clamped to 2.0 seconds
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_run_with_retry_uses_backoff_when_no_retry_after fingerprint=10f2bc60c406fba9d3c61e64e5ddcb970900091a2089b53dbe6780fa279acdc0 body_fp=7e5e15cf98808fbc4b8c2b27e6adbdb8bd47a7e8956f7cbab4acbd91ca24e2a8 source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=llm-client -->
+<!-- trie:section symbol=tests/test_models_retry:test_run_with_retry_uses_backoff_when_no_retry_after fingerprint=10f2bc60c406fba9d3c61e64e5ddcb970900091a2089b53dbe6780fa279acdc0 body_fp=7e5e15cf98808fbc4b8c2b27e6adbdb8bd47a7e8956f7cbab4acbd91ca24e2a8 source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
 Tests that `_run_with_retry` uses exponential backoff with jitter when rate limit responses lack retry-after headers.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_run_with_retry_backs_off_on_overloaded fingerprint=3cec4f4c645759f9a9756073727e18d70e342d25313642ed06bdaafb168d3516 body_fp=c5a6d0339c3185833b107ee1b472dc0c92f3dc24a8b57a944cca47bdfbfee20b source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=llm-client -->
+<!-- trie:section symbol=tests/test_models_retry:test_run_with_retry_backs_off_on_overloaded fingerprint=3cec4f4c645759f9a9756073727e18d70e342d25313642ed06bdaafb168d3516 body_fp=c5a6d0339c3185833b107ee1b472dc0c92f3dc24a8b57a944cca47bdfbfee20b source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
 Verifies that `_run_with_retry` applies exponential backoff with jitter when encountering 5xx server overload errors.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_run_with_retry_gives_up_after_max_retries fingerprint=c4f15661eb0102df7180752f5c2ff0bb83396f79eb0b98358af3ad2d3ae96517 body_fp=356fb1ed512440e68175da0f7f5e8c0e9d47235d10d39112c7714233dd4ecda3 source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=llm-client -->
+<!-- trie:section symbol=tests/test_models_retry:test_run_with_retry_gives_up_after_max_retries fingerprint=c4f15661eb0102df7180752f5c2ff0bb83396f79eb0b98358af3ad2d3ae96517 body_fp=356fb1ed512440e68175da0f7f5e8c0e9d47235d10d39112c7714233dd4ecda3 source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
 Verifies _run_with_retry respects max_retries and propagates the original exception after exhausting attempts.
 
 - Creates scenario where call always fails with rate limit
 - Confirms 2 retries means 2 sleep calls (3 total attempts)
 - Validates original RateLimitError propagates after limit reached
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_run_with_retry_propagates_non_retryable_immediately fingerprint=9503d02df17aa8a31ae1080d7f49b5535de0952085b6062231401a67680e32cb body_fp=9a36162247989afbdc01e54877c5c180ae80131041136948cd7c8da5454ca775 source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=llm-client -->
+<!-- trie:section symbol=tests/test_models_retry:test_run_with_retry_propagates_non_retryable_immediately fingerprint=9503d02df17aa8a31ae1080d7f49b5535de0952085b6062231401a67680e32cb body_fp=9a36162247989afbdc01e54877c5c180ae80131041136948cd7c8da5454ca775 source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
 Verifies that `_run_with_retry` immediately propagates non-retryable errors without sleeping or retrying.
 
 - Sets up a function that always raises `AuthenticationError` (non-retryable)
 - Confirms the error propagates without any recorded sleep calls
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_count_tokens_retries_on_rate_limit fingerprint=fe50e5e6a9dd7a4d2c7beea67c571e08c7c8d43d55c786363d5329ffdd6b20ed body_fp=79fe91b06b09ee9d10e4437d03335a2a8fbda8214307c3692cc6e5bc74b413c4 source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=llm-client -->
+<!-- trie:section symbol=tests/test_models_retry:test_count_tokens_retries_on_rate_limit fingerprint=fe50e5e6a9dd7a4d2c7beea67c571e08c7c8d43d55c786363d5329ffdd6b20ed body_fp=79fe91b06b09ee9d10e4437d03335a2a8fbda8214307c3692cc6e5bc74b413c4 source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
 Verifies that TrieClient.count_tokens retries on rate limit errors during token counting.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_trie_client_disables_sdk_internal_retries fingerprint=57bed553715f6bf5438ecc76ca930cd69fb6526f471cbbddb3e343bb1bf51044 body_fp=195842083fcb86d3e841ce8b0790cc8e83afeb288fb172a10f9ac85ec8893d79 source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_models_retry:test_trie_client_disables_sdk_internal_retries fingerprint=57bed553715f6bf5438ecc76ca930cd69fb6526f471cbbddb3e343bb1bf51044 body_fp=195842083fcb86d3e841ce8b0790cc8e83afeb288fb172a10f9ac85ec8893d79 source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
 Verifies that TrieClient passes `max_retries=0` to the Anthropic SDK to disable its internal retry layer.
 <!-- trie:end -->

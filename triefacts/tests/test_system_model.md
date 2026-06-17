@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_system_model.py
 file_fingerprint: a975006e4e09e3e3e7f6c43d81370995712cc49e55fa59e210e45dfcc036446b
-last_synced_at: '2026-06-10T13:17:08Z'
+last_synced_at: '2026-06-17T16:43:32Z'
 defines:
 - kind: module
   qualified_name: tests/test_system_model:__module__

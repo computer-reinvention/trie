@@ -457,11 +457,11 @@ T = Any  # TypeVar placeholder for the inner retry helper
 # ---------------------------------------------------------------------------
 
 # Map from trie's "provider/model" config format to pydantic_ai's "provider:model" format.
-_MODEL_ID_ALIASES: dict[str, str] = {
-    "anthropic/claude-sonnet-4-6": "anthropic:claude-sonnet-4-20250514",
-    "anthropic/claude-haiku-4-5-20251001": "anthropic:claude-haiku-4-5-20251001",
-    "anthropic/claude-opus-4-7": "anthropic:claude-opus-4-7",
-}
+# Only needed for model ids whose pydantic_ai form differs from a plain `/`→`:`
+# swap. `claude-sonnet-4-6` is a real Anthropic model id and must pass through
+# untouched — the previous alias rewrote it to the now-deprecated dated snapshot
+# `claude-sonnet-4-20250514`, which 404s.
+_MODEL_ID_ALIASES: dict[str, str] = {}
 
 
 def _pydantic_ai_model_id(full_model_id: str) -> str:
