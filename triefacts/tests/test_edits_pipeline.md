@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_edits_pipeline.py
 file_fingerprint: 22595cb1a540e07d2a01a6de15146a945299621326b20e3be889f9c386d057d8
-last_synced_at: '2026-06-09T09:58:35Z'
+last_synced_at: '2026-06-17T16:42:41Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_pipeline:__module__

@@ -1,12 +1,12 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/init.py
-file_fingerprint: 0a0f50d06e8a6f9d4f79bb977d3e2bd80e6beb28d3ea51ded39a2599aad8aeb4
-last_synced_at: '2026-06-09T09:58:49Z'
+file_fingerprint: c1b3cf76407f4b8f9c3768c0a8e8d6d50202560ad5c0c691d2477d546b8c6b88
+last_synced_at: '2026-06-17T16:41:29Z'
 defines:
 - kind: module
   qualified_name: trie/init:__module__
-  lines: 1-179
+  lines: 1-197
 - kind: constant
   qualified_name: trie/init:GITIGNORE_LINE
   lines: 9-9
@@ -29,17 +29,20 @@ defines:
   qualified_name: trie/init:InitError
   lines: 48-49
 - kind: function
+  qualified_name: trie/init:_detect_supported_project
+  lines: 52-80
+- kind: constant
   qualified_name: trie/init:_detect_python_project
-  lines: 52-67
+  lines: 84-84
 - kind: function
   qualified_name: trie/init:_ensure_gitignore_entry
-  lines: 70-83
+  lines: 87-100
 - kind: function
   qualified_name: trie/init:install_pre_commit_hook
-  lines: 86-115
+  lines: 103-132
 - kind: function
   qualified_name: trie/init:init_project
-  lines: 118-178
+  lines: 135-196
 incoming_refs: 36
 outgoing_refs: 1
 ---
@@ -86,12 +89,14 @@ Dataclass capturing the results of running `init_project`.
 <!-- trie:section symbol=trie/init:InitError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=0608fb2467addf6ea99f2f342293f5ea72918d08d5ba1536e595d176171c39fd source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=config-management -->
 Exception raised when project initialization fails due to validation errors or conflicts.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/init:_detect_python_project fingerprint=d6552c9bad1130f26878d296aa1117bad09a3cd47ec50d67215c497e7f3de1eb body_fp=462b56136c095071268ace80a0f37ec8a026f2562d00906bd8bedaf1b0ebb8a1 source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=config-management -->
-Detects Python project markers in a directory and returns their filenames as a list.
+<!-- trie:section symbol=trie/init:_detect_supported_project fingerprint=e93bb812f3d47d42259fa3390f77e4a44476de0f308e4131805d5e1c6efe0f94 body_fp=e5a88e156f55e27abbb39cd35c44335ab67ee7cce9859bc877dabdcc998c83c6 source_ref=0bc865bbbbdbcc66c09082ed000b5e52b1a2994b role=domain -->
+Return a list of detected project-type markers under `root`, or `[]` if none are found.
 
-- Checks for standard files (pyproject.toml, setup.py, setup.cfg, requirements.txt) first
-- Falls back to scanning for .py files at root level or one directory deep
-- Returns empty list if no Python project indicators found
+- Falls back to scanning top-level and one-directory-deep files via the language backend registry if no well-known config file exists.
+- Fallback entries are formatted as `*<ext> files` strings, not filenames.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/init:_detect_python_project fingerprint=3f2725d49b3f8ac9cf540f3717eaebc0e0bb8745bf2c4e453d961f8839362d84 body_fp=91caaf5aac1141f436776eb3c89a2543bb7d3fc5e04013eb68517f8950b5c365 source_ref=0bc865bbbbdbcc66c09082ed000b5e52b1a2994b role=util -->
+Backward-compatible alias for `_detect_supported_project`; retains the old name for tests and external callers.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/init:_ensure_gitignore_entry fingerprint=70d84e5eee964e2def6cf234ec4d0cf31e6e2f6ddb5176994fee2664237d2df1 body_fp=ec00e524ece61f7cd93620290e7d9278a8e032c3bda802430faa753d942433ff source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=agent-integration -->
 Append `line` to `gitignore` if not already present, returning True if file changed.
@@ -104,11 +109,11 @@ Installs a pre-commit hook that runs `trie verify --quiet` using different strat
 - "git_hook" strategy: appends marker-fenced block to `.git/hooks/pre-commit`
 - "none" strategy: no action when `.git` directory absent
 <!-- trie:end -->
-<!-- trie:section symbol=trie/init:init_project fingerprint=96c40ec7a1db079af60e0e7a3b69c77d33eb36824cd1f0838888f69fb647c494 body_fp=086ac1fb291668d5e50542898d926d28243cc22f4235f3f7f69c60e257be4c83 source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=orchestration -->
+<!-- trie:section symbol=trie/init:init_project fingerprint=8d32d68da2ffa430f2ff755cfab94b08979379fa9364f896a299dffdecad2d3a body_fp=c78d28169d578562f2d155bda18154c1168c5fbe27698161ceb7009d773c282d source_ref=0bc865bbbbdbcc66c09082ed000b5e52b1a2994b role=orchestration -->
 Initialise trie in a directory, creating configuration and optionally scanning for symbols.
 
-- `force`: bypass Python project detection and overwrite existing configuration
+- `force`: bypass supported-project detection and overwrite existing configuration
 - `install_hooks`: install pre-commit hooks to run `trie verify`
 - `run_scan`: perform initial symbol scan to populate the graph database
-- Raises `InitError` if directory is not a Python project or configuration exists
+- Raises `InitError` if directory is not a supported project or configuration exists
 <!-- trie:end -->

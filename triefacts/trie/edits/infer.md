@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/edits/infer.py
 file_fingerprint: afdf2df5e2a3a859f2fb1d76788b94c5cb2cb57c8578807d53b70e9808f0db37
-last_synced_at: '2026-06-09T09:58:52Z'
+last_synced_at: '2026-06-17T16:43:24Z'
 defines:
 - kind: module
   qualified_name: trie/edits/infer:__module__
@@ -79,20 +79,20 @@ Template string for prompting an LLM to fix Python diagnostics errors in file co
 <!-- trie:section symbol=trie/edits/infer:_format_bullets fingerprint=276d8d146737b65b171b6b1d440db66fa18b94a20cbc45c2cf752f35f5cd26d4 body_fp=2b929f50319b728e7169b14c5aae6b74989318303d98f0b88d5b234601c5fa79 source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=code-editing -->
 Formats lists of notes and reasons into bullet-point text with `<bullet>` prefixes.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:merge_notes fingerprint=94dfc8addb1bd5773ab4bb3e59e5f6e274f144ce32f80b8cb25fb89f64ee037c body_fp=db377d7618c36731c51edfd5bb863c1ca91f2608dd50c578137928aae6d71676 source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=orchestration -->
+<!-- trie:section symbol=trie/edits/infer:merge_notes fingerprint=94dfc8addb1bd5773ab4bb3e59e5f6e274f144ce32f80b8cb25fb89f64ee037c body_fp=db377d7618c36731c51edfd5bb863c1ca91f2608dd50c578137928aae6d71676 source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=domain -->
 Deduplicates and merges implementation note patches, returning consolidated notes and reasons.
 
 - patches: list of dicts with "note" and "reason" keys
 - Returns: tuple of deduplicated notes list and corresponding reasons list
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:infer_source_and_prose fingerprint=6a6b9a2bd30ede6d692c4097578a5ba2440d3e24f2a42aa4ea5d4ba051f91a8d body_fp=4ca260804d6f6d0ee4de8c294ab9ffa5c320653a7bb5bf3d40fd2014d5b3206a source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=orchestration -->
+<!-- trie:section symbol=trie/edits/infer:infer_source_and_prose fingerprint=6a6b9a2bd30ede6d692c4097578a5ba2440d3e24f2a42aa4ea5d4ba051f91a8d body_fp=4ca260804d6f6d0ee4de8c294ab9ffa5c320653a7bb5bf3d40fd2014d5b3206a source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=io -->
 Generates updated source code and prose documentation for a symbol using implementation notes via LLM inference.
 
 - Returns tuple of (new_source, new_prose)
 - Uses INFER_SYSTEM_PROMPT to guide LLM behavior  
 - Formats notes and reasons as bulleted implementation notes in prompt
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:infer_file_source fingerprint=9addb0f4c9d475f9f098ba59262116ec023f13c570665f8bb39c7326bb164db1 body_fp=267c8570762e9b3e70b576a54d8f9481d76760ef5f1bccd62899cef2dd2f2f2a source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=orchestration -->
+<!-- trie:section symbol=trie/edits/infer:infer_file_source fingerprint=9addb0f4c9d475f9f098ba59262116ec023f13c570665f8bb39c7326bb164db1 body_fp=267c8570762e9b3e70b576a54d8f9481d76760ef5f1bccd62899cef2dd2f2f2a source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=io -->
 Generates updated file content and symbol prose by applying multiple symbol changes through LLM inference.
 
 - `symbols_data`: list of dicts containing `qname`, `old_source`, `old_prose`, `merged_notes`, and `merged_reasons`
@@ -108,7 +108,7 @@ Builds caller summary dictionaries with symbol metadata, prose from triefact fil
 <!-- trie:section symbol=trie/edits/infer:_read_prose fingerprint=e1a7046a605c3879cfdfc6f1f5061c1f7d0d2767cc919b6ca7bb05b92321a738 body_fp=38174f97de3023d749cde3168198b7cf9038182109fb23db13ad6e2e14565922 source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=documentation-sync -->
 Extracts prose documentation for a symbol from its triefact markdown file.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:pre_filter_batch fingerprint=9d38b535f74cd6dfc4386afc93e14976a77f214e2b9e085824cbb09c0e36e9b2 body_fp=0a1e12bbc862446219ef3bf68ed513a2fa6c57e5f4c6a33c5f0d0cd1f6afe520 source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=io -->
+<!-- trie:section symbol=trie/edits/infer:pre_filter_batch fingerprint=9d38b535f74cd6dfc4386afc93e14976a77f214e2b9e085824cbb09c0e36e9b2 body_fp=0a1e12bbc862446219ef3bf68ed513a2fa6c57e5f4c6a33c5f0d0cd1f6afe520 source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=orchestration -->
 Determines which callers need updates when their callees change by batching LLM requests.
 
 - `callee_pairs`: tuples of (callee_qname, old_prose, callers_list, notes_reasons_list)

@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/graph/system_model.py
-file_fingerprint: 85c547af616f9aa638dabdd5148e0adf8de9d0b7f724a025b1113eb615d48116
-last_synced_at: '2026-06-10T13:15:54Z'
+file_fingerprint: 4d965b685811eca21d87c7983fbfb8ae451474e5aee560dbc839304df783a901
+last_synced_at: '2026-06-17T16:41:32Z'
 description: Assemble a high-level *system model* from the symbol graph.
 defines:
 - kind: module
   qualified_name: trie/graph/system_model:__module__
-  lines: 1-770
+  lines: 1-775
 - kind: constant
   qualified_name: trie/graph/system_model:_ENTRY_DECORATOR_RE
   lines: 50-55
@@ -76,25 +76,25 @@ defines:
   lines: 382-383
 - kind: function
   qualified_name: trie/graph/system_model:_classify
-  lines: 386-426
+  lines: 386-429
 - kind: function
   qualified_name: trie/graph/system_model:_salience
-  lines: 429-452
+  lines: 432-455
 - kind: function
   qualified_name: trie/graph/system_model:_build_axis
-  lines: 460-508
+  lines: 463-511
 - kind: function
   qualified_name: trie/graph/system_model:build_system_model
-  lines: 516-655
+  lines: 519-656
 - kind: function
   qualified_name: trie/graph/system_model:system_model_to_dict
-  lines: 658-707
+  lines: 659-712
 - kind: function
   qualified_name: trie/graph/system_model:_graph_fingerprint
-  lines: 715-727
+  lines: 720-732
 - kind: function
   qualified_name: trie/graph/system_model:build_system_model_cached
-  lines: 730-769
+  lines: 735-774
 incoming_refs: 16
 outgoing_refs: 0
 ---
@@ -233,13 +233,13 @@ Computes stable 2D layout positions for graph nodes with vertical layers by dept
 <!-- trie:section symbol=trie/graph/system_model:_has_entry_decorator fingerprint=668c8654d8a205435c3178f8951d885fc2ca542e12286690bdd4bf1a674f0296 body_fp=705580d29ae745ed2bf5d7385456d455694b5db33df80cd8c7b9d965a3152670 source_ref=8a6a7770f2c56a96f3cc380d783818f7deedc2b1 role=graph-database -->
 Checks if a symbol has decorators matching framework entry-point patterns.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/graph/system_model:_classify fingerprint=514962a634ddb2ab5ed2f746f20a713cb1fb67b2cc5bf634db0ca6644bc80571 body_fp=2ee85a299f40cf55f703c4ea51836160baa5080c6173e7d18e4fa4034c343634 source_ref=53916a96e0fd72b42dc0aa3b935f9f016be780e4 role=graph-database -->
+<!-- trie:section symbol=trie/graph/system_model:_classify fingerprint=93a02f08801a3746194bcd791aeb3b4e09361b92d4a753c4a67d8919dca1f128 body_fp=511035d341328d9b8a556c10ad710418cde4bb63131337ef68d9cdc8016e47f3 source_ref=b48b48234ef44a2d6ffbb152cecce37fbeb367c3 role=domain -->
 Assigns a skeleton class to a symbol using multi-signal heuristics across decorators, boundaries, and connectivity patterns.
 
 - Returns one of: door, exit, hub, bedrock, internal, orphan, normal
-- Uses precedence order: door beats all others, then exit, hub, bedrock, internal (blind-spot rule), orphan, normal  
+- Uses precedence order: door beats all others, then exit, hub, bedrock, internal (blind-spot rule), orphan, normal
 - Door detection: entry decorators, pyproject targets, boundary="entry", or public+no-prod-inbound+has-outbound
-- Blind-spot rule: zero-edge methods whose owning class is connected return "internal" instead of "orphan"
+- Blind-spot rule: zero-edge methods, enum_members, or properties whose owning class is connected return "internal" instead of "orphan"
 <!-- trie:end -->
 <!-- trie:section symbol=trie/graph/system_model:_salience fingerprint=d035a0a3e0bef5a6bf235ebf49c6a2d5bb429942f9222690d8e37666d2503117 body_fp=fbf5e8371a13e9bef1ff00c2478d7c4b6b594efe56578aaa31b85c5b11f4ca00 source_ref=53916a96e0fd72b42dc0aa3b935f9f016be780e4 role=graph-database -->
 Calculates importance score (0..1) for a system node by combining class weight, degree centrality, and betweenness.
@@ -269,7 +269,7 @@ Computes a complete system model from the store by separating production and tes
 - Generates precomputed layered layout positions and component axes aggregating by role and subsystem
 - Includes connected classes tracking for the blind-spot rule detecting dynamically dispatched methods
 <!-- trie:end -->
-<!-- trie:section symbol=trie/graph/system_model:system_model_to_dict fingerprint=68297b3f83368a199aa1095e3f08af6bfbe0ca171940c91f6c0a36b85f4e393c body_fp=33b981ea399853473e6bcdfabc75f187c57c88f4b221c537c8061a85ba59c01c source_ref=53916a96e0fd72b42dc0aa3b935f9f016be780e4 role=graph-database -->
+<!-- trie:section symbol=trie/graph/system_model:system_model_to_dict fingerprint=902915ccaf7e3beb0f907301d3e4de54fe0a262534c32b18e145d394dce97b39 body_fp=33b981ea399853473e6bcdfabc75f187c57c88f4b221c537c8061a85ba59c01c source_ref=b48b48234ef44a2d6ffbb152cecce37fbeb367c3 role=persistence -->
 Serializes a SystemModel to the JSON shape that the desktop endpoint returns.
 
 - `include_tests`: if True, combines model.nodes and model.test_nodes in output

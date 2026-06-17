@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/models.py
-file_fingerprint: c949d343f70edfaa3ad425b773374a89ef1f4c24d9e888cda40dd4b302f824c2
-last_synced_at: '2026-06-09T09:58:26Z'
+file_fingerprint: ea50dd69f15ab39bff46d145bd10157a43a3c4b0562880f6d92f7e06e0ba3978
+last_synced_at: '2026-06-17T16:41:26Z'
 defines:
 - kind: module
   qualified_name: trie/models:__module__
@@ -111,7 +111,7 @@ defines:
   lines: 452-452
 - kind: constant
   qualified_name: trie/models:_MODEL_ID_ALIASES
-  lines: 460-464
+  lines: 464-464
 - kind: function
   qualified_name: trie/models:_pydantic_ai_model_id
   lines: 467-469
@@ -309,8 +309,8 @@ Executes a callable with exponential backoff retry logic for rate limits, timeou
 <!-- trie:section symbol=trie/models:T fingerprint=511f85b873237a1963584329b2ded56f290efb33b59ff4f1f52a3ff84742f48d body_fp=d54080f28b388848817988e57cc93775750bb1d46b147449f3fe09535a32e6c4 source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
 Type alias for Any used as a TypeVar placeholder in the retry helper function.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:_MODEL_ID_ALIASES fingerprint=d436771cb40ad6b40d58029730c3e289ab040b962b73ae7492868749c08d6618 body_fp=5d9fcbfd1b775034361a99f4fae78c8a73ef555ffd4c78064d2c8488d9f2c319 source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
-Maps trie's `provider/model` format to pydantic_ai's `provider:model` format for model ID conversion.
+<!-- trie:section symbol=trie/models:_MODEL_ID_ALIASES fingerprint=8ea596648226175d01cd1ab68d645474d71f1cfbfdcfb7979035a854a0124f68 body_fp=3c9f7a7e8db2d345ae74211923836c8d2d5c347f1539b3938a84a75bc2a382f1 source_ref=4b7e4089969de6d955dc0a0a5314c5d7d6aacd57 role=config -->
+Empty mapping; reserved for trie `provider/model` → pydantic_ai `provider:model` overrides when a model ID requires non-trivial translation beyond a `/`→`:` swap.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/models:_pydantic_ai_model_id fingerprint=a0a6b3d1a8febf77bc636de899705a5808a8091b4f9ec907ce9d9611400a53ec body_fp=3de559806ca1742ec8f60138929d9d4db6171d99971d8b00a183783b63e33a6f source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
 Converts trie's provider/model format to pydantic_ai's provider:model format using aliases or simple substitution.

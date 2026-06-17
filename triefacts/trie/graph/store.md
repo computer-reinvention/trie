@@ -1,188 +1,188 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/graph/store.py
-file_fingerprint: 7db5acbd595b0ea2632ef2ae890d94d99ceb4c41873c960cce2eefc2d7d8290d
-last_synced_at: '2026-06-10T13:16:09Z'
+file_fingerprint: e5b70b34734d5d9668e4fea9abfb14f3b04eb93947f6dd31421ab180c5f47fa4
+last_synced_at: '2026-06-17T16:41:22Z'
 defines:
 - kind: module
   qualified_name: trie/graph/store:__module__
-  lines: 1-1270
+  lines: 1-1276
 - kind: constant
   qualified_name: trie/graph/store:SCHEMA_VERSION
-  lines: 15-15
+  lines: 18-18
 - kind: constant
   qualified_name: trie/graph/store:SCHEMA_SQL
-  lines: 19-102
+  lines: 22-105
 - kind: class
   qualified_name: trie/graph/store:FileRecord
-  lines: 106-109
+  lines: 109-112
 - kind: class
   qualified_name: trie/graph/store:FileStats
-  lines: 113-116
+  lines: 116-119
 - kind: class
   qualified_name: trie/graph/store:SymbolHit
-  lines: 120-127
+  lines: 123-130
 - kind: class
   qualified_name: trie/graph/store:SymbolDetail
-  lines: 131-153
+  lines: 134-156
 - kind: class
   qualified_name: trie/graph/store:GrepPredicate
-  lines: 157-176
+  lines: 160-182
 - kind: function
   qualified_name: trie/graph/store:_synchronized
-  lines: 179-196
+  lines: 185-202
 - kind: function
   qualified_name: trie/graph/store:_synchronize_store
-  lines: 199-216
+  lines: 205-222
 - kind: class
   qualified_name: trie/graph/store:Store
-  lines: 220-1269
+  lines: 226-1275
 - kind: method
   qualified_name: trie/graph/store:Store.__init__
-  lines: 229-242
+  lines: 235-248
 - kind: method
   qualified_name: trie/graph/store:Store._open
-  lines: 244-270
+  lines: 250-276
 - kind: method
   qualified_name: trie/graph/store:Store.close
-  lines: 272-273
-- kind: method
-  qualified_name: trie/graph/store:Store.__enter__
-  lines: 275-276
-- kind: method
-  qualified_name: trie/graph/store:Store.__exit__
   lines: 278-279
 - kind: method
+  qualified_name: trie/graph/store:Store.__enter__
+  lines: 281-282
+- kind: method
+  qualified_name: trie/graph/store:Store.__exit__
+  lines: 284-285
+- kind: method
   qualified_name: trie/graph/store:Store.transaction
-  lines: 282-288
+  lines: 288-294
 - kind: method
   qualified_name: trie/graph/store:Store.get_file
-  lines: 292-297
+  lines: 298-303
 - kind: method
   qualified_name: trie/graph/store:Store.upsert_file
-  lines: 299-310
+  lines: 305-316
 - kind: method
   qualified_name: trie/graph/store:Store.delete_file
-  lines: 312-314
+  lines: 318-320
 - kind: method
   qualified_name: trie/graph/store:Store.list_files
-  lines: 316-322
+  lines: 322-328
 - kind: method
   qualified_name: trie/graph/store:Store.replace_file_symbols
-  lines: 326-355
+  lines: 332-361
 - kind: method
   qualified_name: trie/graph/store:Store.count_symbols
-  lines: 357-368
+  lines: 363-374
 - kind: method
   qualified_name: trie/graph/store:Store.count_section_records
-  lines: 370-372
+  lines: 376-378
 - kind: method
   qualified_name: trie/graph/store:Store.count_symbols_missing_role
-  lines: 374-391
+  lines: 380-397
 - kind: method
   qualified_name: trie/graph/store:Store.replace_all_edges
-  lines: 395-426
+  lines: 401-432
 - kind: method
   qualified_name: trie/graph/store:Store.references_in
-  lines: 428-440
+  lines: 434-446
 - kind: method
   qualified_name: trie/graph/store:Store.references_in_with_files
-  lines: 442-454
+  lines: 448-460
 - kind: method
   qualified_name: trie/graph/store:Store.qnames_in_file
-  lines: 456-462
+  lines: 462-468
 - kind: method
   qualified_name: trie/graph/store:Store.symbols_in_file_with_lines
-  lines: 464-483
+  lines: 470-489
 - kind: method
   qualified_name: trie/graph/store:Store.search_symbols
-  lines: 485-512
+  lines: 491-518
 - kind: method
   qualified_name: trie/graph/store:Store.references_out
-  lines: 514-526
+  lines: 520-532
 - kind: method
   qualified_name: trie/graph/store:Store.count_edges
-  lines: 528-529
+  lines: 534-535
 - kind: method
   qualified_name: trie/graph/store:Store.inbound_count_per_symbol
-  lines: 531-540
+  lines: 537-546
 - kind: method
   qualified_name: trie/graph/store:Store.file_ref_counts
-  lines: 542-573
+  lines: 548-579
 - kind: method
   qualified_name: trie/graph/store:Store.file_stats
-  lines: 575-597
+  lines: 581-603
 - kind: method
   qualified_name: trie/graph/store:Store.upsert_section_record
-  lines: 601-679
+  lines: 607-685
 - kind: method
   qualified_name: trie/graph/store:Store.one_liner_for
-  lines: 681-694
+  lines: 687-700
 - kind: method
   qualified_name: trie/graph/store:Store.one_liners_for
-  lines: 696-709
+  lines: 702-715
 - kind: method
   qualified_name: trie/graph/store:Store.historical_mass_all
-  lines: 711-742
+  lines: 717-748
 - kind: method
   qualified_name: trie/graph/store:Store.add_patch
-  lines: 746-778
+  lines: 752-784
 - kind: method
   qualified_name: trie/graph/store:Store.add_delete_patch
-  lines: 780-782
+  lines: 786-788
 - kind: method
   qualified_name: trie/graph/store:Store.add_rename_patch
-  lines: 784-786
+  lines: 790-792
 - kind: method
   qualified_name: trie/graph/store:Store.add_create_patch
-  lines: 788-814
+  lines: 794-820
 - kind: method
   qualified_name: trie/graph/store:Store.get_create_patches_grouped
-  lines: 816-838
+  lines: 822-844
 - kind: method
   qualified_name: trie/graph/store:Store.delete_create_patches
-  lines: 840-864
+  lines: 846-870
 - kind: method
   qualified_name: trie/graph/store:Store.get_patches_for_qname
-  lines: 866-875
+  lines: 872-881
 - kind: method
   qualified_name: trie/graph/store:Store._get_patches_by_symbol_id
-  lines: 877-894
+  lines: 883-900
 - kind: method
   qualified_name: trie/graph/store:Store.get_all_patches_grouped
-  lines: 896-919
+  lines: 902-925
 - kind: method
   qualified_name: trie/graph/store:Store.delete_patches
-  lines: 921-955
+  lines: 927-961
 - kind: method
   qualified_name: trie/graph/store:Store.get_patched_qnames
-  lines: 957-965
+  lines: 963-971
 - kind: method
   qualified_name: trie/graph/store:Store.patch_count_for_symbol
-  lines: 967-973
+  lines: 973-979
 - kind: method
   qualified_name: trie/graph/store:Store.patch_summary
-  lines: 975-1004
+  lines: 981-1010
 - kind: method
   qualified_name: trie/graph/store:Store.get_symbol_detail
-  lines: 1008-1056
+  lines: 1014-1062
 - kind: method
   qualified_name: trie/graph/store:Store.grep_symbols
-  lines: 1058-1162
+  lines: 1064-1168
 - kind: method
   qualified_name: trie/graph/store:Store.all_symbol_names
-  lines: 1164-1167
+  lines: 1170-1173
 - kind: method
   qualified_name: trie/graph/store:Store.all_qualified_names
-  lines: 1169-1172
+  lines: 1175-1178
 - kind: method
   qualified_name: trie/graph/store:Store.survey_symbols
-  lines: 1174-1193
+  lines: 1180-1199
 - kind: method
   qualified_name: trie/graph/store:Store.find_paths
-  lines: 1195-1269
+  lines: 1201-1275
 incoming_refs: 123
-outgoing_refs: 2
+outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/graph/store:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=6f905ee5b88763bc3efda571c4cc279538d18efe8ee96eddcd1224a9d34490e2 source_ref=c7ae3282b7daa8851d972e12a49a88b5b44a3638 role=persistence -->
 SQLite-backed persistence layer for trie's symbol graph, file fingerprints, and documentation metadata.
@@ -193,7 +193,7 @@ SQLite-backed persistence layer for trie's symbol graph, file fingerprints, and 
 - Supports patch management for pending documentation updates
 - Provides search, path-finding, and batch operations for agent tools
 <!-- trie:end -->
-<!-- trie:section symbol=trie/graph/store:SCHEMA_VERSION fingerprint=af8f236b323a21430d1b518fa4344b277391f114013b0d70fa465fc3d0add0e1 body_fp=6a09e5a6737a4a1a5d051ca7dcd499b0b89812f914c6a1cbb2d50b95edffa080 source_ref=dd47f824faeb09b6106e6961b05962e87fe03c05 role=config -->
+<!-- trie:section symbol=trie/graph/store:SCHEMA_VERSION fingerprint=1b84fdf531e974e4db5ffcf9a264b8ddf4a1f0a67790a342cbf4ba091bfa08eb body_fp=6a09e5a6737a4a1a5d051ca7dcd499b0b89812f914c6a1cbb2d50b95edffa080 source_ref=9fbbc74e02d932f320ba27167fa9ab6ff4e6b362 role=config -->
 Version number for the SQLite database schema, triggering recreation when incremented.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/graph/store:SCHEMA_SQL fingerprint=7cee1415a5555416a1675079288d2a0a887ae388cecca9e52b3e38523e9d32b6 body_fp=63d4e2eeb7c45ddff2f267923c2561563ed157f4b9be4a465e15f0095969c20e source_ref=dd47f824faeb09b6106e6961b05962e87fe03c05 role=model -->

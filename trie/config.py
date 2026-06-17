@@ -12,11 +12,18 @@ class TrieMeta:
 
 @dataclass
 class Scope:
-    include: list[str] = field(default_factory=lambda: ["**/*.py"])
+    include: list[str] = field(
+        default_factory=lambda: [
+            "**/*.py",
+            "**/*.ts",
+            "**/*.tsx",
+        ]
+    )
     exclude: list[str] = field(
         default_factory=lambda: [
+            "**/.*/**",
             "**/__pycache__/**",
-            "**/.venv/**",
+            "**/node_modules/**",
             "**/build/**",
             "**/dist/**",
         ]
@@ -300,12 +307,18 @@ version = "0.1.9"
 
 [scope]
 # Glob patterns relative to the project root (the directory containing this file).
+# Defaults cover every language trie has a parser backend for (Python +
+# TypeScript/TSX). Trim this list to just the extensions your project uses to
+# keep discovery fast and sync cost down.
 # Tests are included by default — they encode behavioral spec worth documenting.
 # Add `"**/tests/**"` to `exclude` if you'd rather skip them to keep cost down.
-include = ["**/*.py"]
+include = ["**/*.py", "**/*.ts", "**/*.tsx"]
+# `**/.*/**` prunes every hidden directory (.git, .trie, .venv, .opencode,
+# .vscode, …) — none of those are project source.
 exclude = [
+    "**/.*/**",
     "**/__pycache__/**",
-    "**/.venv/**",
+    "**/node_modules/**",
     "**/build/**",
     "**/dist/**",
 ]

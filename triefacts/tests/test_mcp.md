@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_mcp.py
-file_fingerprint: 57cbd904fe83b73f073eb426fdcf36426be9241ec20841e124e2b08ab7d67a8b
-last_synced_at: '2026-06-10T13:16:59Z'
+file_fingerprint: fa7bc927051a639288ae49c11d9043a718c1da2927163b8d52abb07827395ce4
+last_synced_at: '2026-06-17T16:41:00Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: module
   qualified_name: tests/test_mcp:__module__
-  lines: 1-829
+  lines: 1-884
 - kind: constant
   qualified_name: tests/test_mcp:PROJECT_TOML
   lines: 21-30
@@ -108,110 +108,128 @@ defines:
   qualified_name: tests/test_mcp:test_read_fuzzy_suggestion_for_typo
   lines: 407-413
 - kind: function
+  qualified_name: tests/test_mcp:test_read_file_path_returns_compact_triefact_view
+  lines: 419-429
+- kind: function
+  qualified_name: tests/test_mcp:test_read_file_path_full_returns_prose_without_sentinels
+  lines: 432-439
+- kind: function
+  qualified_name: tests/test_mcp:test_read_file_path_show_source_returns_numbered_source
+  lines: 442-446
+- kind: function
+  qualified_name: tests/test_mcp:test_read_file_path_offset_limit_implies_source
+  lines: 449-454
+- kind: function
+  qualified_name: tests/test_mcp:test_read_non_indexed_file_falls_back_to_source
+  lines: 457-461
+- kind: function
+  qualified_name: tests/test_mcp:test_read_file_with_line_suffix_reads_source_window
+  lines: 464-468
+- kind: function
   qualified_name: tests/test_mcp:test_trace_callers_returns_topology
-  lines: 419-425
+  lines: 474-480
 - kind: function
   qualified_name: tests/test_mcp:test_trace_callees_returns_outbound
-  lines: 428-431
+  lines: 483-486
 - kind: function
   qualified_name: tests/test_mcp:test_trace_both_directions
-  lines: 434-439
+  lines: 489-494
 - kind: function
   qualified_name: tests/test_mcp:test_trace_invalid_direction_returns_error
-  lines: 442-445
+  lines: 497-500
 - kind: function
   qualified_name: tests/test_mcp:test_trace_unknown_qname_returns_not_found
-  lines: 448-451
+  lines: 503-506
 - kind: function
   qualified_name: tests/test_mcp:test_trace_depth_zero_returns_only_root
-  lines: 454-457
+  lines: 509-512
 - kind: function
   qualified_name: tests/test_mcp:test_trace_depth_clamp_adds_note
-  lines: 460-464
+  lines: 515-519
 - kind: function
   qualified_name: tests/test_mcp:test_build_server_registers_three_verbs
-  lines: 470-493
+  lines: 525-548
 - kind: function
   qualified_name: tests/test_mcp:test_build_server_wire_names_bind_to_internal_methods
-  lines: 496-513
+  lines: 551-568
 - kind: function
   qualified_name: tests/test_mcp:dual_rank_project
-  lines: 522-579
+  lines: 577-634
 - kind: function
   qualified_name: tests/test_mcp:test_grep_entry_points_niche_ranks_before_hub
-  lines: 582-605
+  lines: 637-660
 - kind: function
   qualified_name: tests/test_mcp:test_grep_entry_points_hits_carry_score
-  lines: 608-620
+  lines: 663-675
 - kind: function
   qualified_name: tests/test_mcp:test_grep_symbol_typo_tolerance
-  lines: 623-629
+  lines: 678-684
 - kind: function
   qualified_name: tests/test_mcp:test_grep_symbol_returns_score_field
-  lines: 632-640
+  lines: 687-695
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fuzzy_prose_fallback
-  lines: 643-658
+  lines: 698-713
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_fuzzy_fallback
-  lines: 661-671
+  lines: 716-726
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_fuzzy_fallback_finds_close_name
-  lines: 674-690
+  lines: 729-745
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_all_finds_non_indexed_file
-  lines: 696-702
+  lines: 751-757
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_all_attributes_indexed_hits_to_symbols
-  lines: 705-709
+  lines: 760-764
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_default_does_not_see_non_indexed
-  lines: 712-717
+  lines: 767-772
 - kind: function
   qualified_name: tests/test_mcp:test_find_files_by_extension
-  lines: 720-724
+  lines: 775-779
 - kind: function
   qualified_name: tests/test_mcp:test_find_files_by_bare_name
-  lines: 727-730
+  lines: 782-785
 - kind: function
   qualified_name: tests/test_mcp:test_find_files_indexed_only
-  lines: 733-737
+  lines: 788-792
 - kind: function
   qualified_name: tests/test_mcp:test_find_files_prunes_trie_dir
-  lines: 740-743
+  lines: 795-798
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_non_indexed_file
-  lines: 746-751
-- kind: function
-  qualified_name: tests/test_mcp:test_read_source_offset_limit
-  lines: 754-759
-- kind: function
-  qualified_name: tests/test_mcp:test_read_source_missing_file_errors
-  lines: 762-766
-- kind: function
-  qualified_name: tests/test_mcp:test_read_source_directory_errors
-  lines: 769-773
-- kind: function
-  qualified_name: tests/test_mcp:test_blast_radius_reports_cascade
-  lines: 776-782
-- kind: function
-  qualified_name: tests/test_mcp:test_blast_radius_unknown_symbol_errors
-  lines: 785-789
-- kind: function
-  qualified_name: tests/test_mcp:test_write_file_creates_new_file
-  lines: 792-798
-- kind: function
-  qualified_name: tests/test_mcp:test_write_file_refuses_clobber_without_overwrite
   lines: 801-806
 - kind: function
-  qualified_name: tests/test_mcp:test_write_file_overwrite_flag
+  qualified_name: tests/test_mcp:test_read_source_offset_limit
   lines: 809-814
 - kind: function
-  qualified_name: tests/test_mcp:test_write_file_indexed_path_flags_needs_sync
+  qualified_name: tests/test_mcp:test_read_source_missing_file_errors
   lines: 817-821
 - kind: function
-  qualified_name: tests/test_mcp:test_write_file_outside_root_errors
+  qualified_name: tests/test_mcp:test_read_source_directory_errors
   lines: 824-828
+- kind: function
+  qualified_name: tests/test_mcp:test_blast_radius_reports_cascade
+  lines: 831-837
+- kind: function
+  qualified_name: tests/test_mcp:test_blast_radius_unknown_symbol_errors
+  lines: 840-844
+- kind: function
+  qualified_name: tests/test_mcp:test_write_file_creates_new_file
+  lines: 847-853
+- kind: function
+  qualified_name: tests/test_mcp:test_write_file_refuses_clobber_without_overwrite
+  lines: 856-861
+- kind: function
+  qualified_name: tests/test_mcp:test_write_file_overwrite_flag
+  lines: 864-869
+- kind: function
+  qualified_name: tests/test_mcp:test_write_file_indexed_path_flags_needs_sync
+  lines: 872-876
+- kind: function
+  qualified_name: tests/test_mcp:test_write_file_outside_root_errors
+  lines: 879-883
 incoming_refs: 0
 outgoing_refs: 12
 ---
@@ -378,6 +396,24 @@ Tests that the read tool returns a fuzzy suggestion when given a qname with a ty
 
 - Calls `tools.read("lib:slugfy")` with a misspelled qname ("slugfy" instead of "slugify")
 - Verifies the response contains an error with a suggestion that either mentions "slugify" directly or guides the user to use `grep()`
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_file_path_returns_compact_triefact_view fingerprint=6b57267237051b42a5318728289aa553c37e72ce7444fa3438811b3a536569d7 body_fp=7bb3207f720052d6b4c9c5ee845c80bf944339bdf3bfac5d754e2c1f5dc65621 source_ref=d14cdee45bc748fa9b5d3b29a20a71ccf63972ea role=test -->
+Assert that `TrieTools.read` with a file path returns `mode="triefact_compact"` and an output body containing per-symbol prose, not line-numbered raw source.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_file_path_full_returns_prose_without_sentinels fingerprint=2f4863371456f360a8c3f384298cfc091e166fdff563fd1d4c2816c88fa27f8c body_fp=f96bda2e05abe2513374f96c62427079a08cbdb63a918b34de4af5e4d50af81a source_ref=d14cdee45bc748fa9b5d3b29a20a71ccf63972ea role=test -->
+Assert that `TrieTools.read` with `full=True` returns mode `"triefact_full"` and strips `trie:section`/`trie:end` sentinels from the prose output.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_file_path_show_source_returns_numbered_source fingerprint=f91ec45789a68f8762848156a39f5bf01e3ba346ce19be5133acb819801d71a4 body_fp=edc59dbd2cf296d2cb6dfb3e5e44c1d9f0dcf221d2c2f2dc0a228289acfcf6c7 source_ref=d14cdee45bc748fa9b5d3b29a20a71ccf63972ea role=test -->
+Assert that `TrieTools.read` with `show_source=True` returns raw line-numbered source, bypassing any existing triefact.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_file_path_offset_limit_implies_source fingerprint=d13150b206237c05dd2aaa58c2cd5e6ecff3e3abbe8e63e8e23e6b0b390f5438 body_fp=c1b445456371ade3ff95853fec2de7c654eaed528830626162c485fdd0aa4584 source_ref=d14cdee45bc748fa9b5d3b29a20a71ccf63972ea role=test -->
+Assert that `TrieTools.read` with `offset`/`limit` returns a 2-line raw source window with 1-indexed line-number prefixes.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_non_indexed_file_falls_back_to_source fingerprint=abde138a5ab1033de13f6c0d1070a9c412642989343f50d3f03160c83d074511 body_fp=6390d537d71c3a6460b8c4b7a9ba31e832c9324c4e4c6b6ffcfe90cadf84568d source_ref=d14cdee45bc748fa9b5d3b29a20a71ccf63972ea role=test -->
+Assert that `TrieTools.read` returns raw source lines for a real file with no triefact entry, rather than an error.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_file_with_line_suffix_reads_source_window fingerprint=27731a689d725ac5dca781084b196761ac061473f6052ff512d70e7120589537 body_fp=c116956f1b85a1b175b559017c95ec2b542fb3e55e442d86b42e5d27d924496f source_ref=d14cdee45bc748fa9b5d3b29a20a71ccf63972ea role=test -->
+Verify that `TrieTools.read` with a `path:LINE` cursor string returns a windowed source response with 1-indexed line-numbered output.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp:test_trace_callers_returns_topology fingerprint=ba52df6ec0918227c8a41b6a0d14ab17f8fca12de24f0684dd8eb190b5e31c9d body_fp=97b4192f602a4fc81208a94636a971a6351aa38b31de0eb75dae3450189ceb73 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Verifies that TrieTools.trace returns correct topology with root, nodes, and caller edges for direction="callers".

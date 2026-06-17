@@ -1,12 +1,12 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/cli.py
-file_fingerprint: 758a2460c1ee010cfd0eff9994eb60b71c0cad7b7212d7e7d725303410b20b8d
-last_synced_at: '2026-06-10T13:15:54Z'
+file_fingerprint: 19a3adc2b3e59cfd8e5125f325032a43ca26adafb566af998c13350e163fe271
+last_synced_at: '2026-06-17T16:41:16Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
-  lines: 1-3650
+  lines: 1-3669
 - kind: constant
   qualified_name: trie/cli:app
   lines: 77-80
@@ -210,139 +210,142 @@ defines:
   lines: 2408-2511
 - kind: function
   qualified_name: trie/cli:read_cmd
-  lines: 2515-2570
+  lines: 2515-2571
+- kind: function
+  qualified_name: trie/cli:_render_read_dispatch
+  lines: 2574-2587
 - kind: function
   qualified_name: trie/cli:_render_read_source
-  lines: 2573-2582
+  lines: 2590-2599
 - kind: function
   qualified_name: trie/cli:trace_cmd
-  lines: 2586-2628
+  lines: 2603-2645
 - kind: function
   qualified_name: trie/cli:blast_radius_cmd
-  lines: 2632-2662
+  lines: 2649-2679
 - kind: function
   qualified_name: trie/cli:_render_blast_radius
-  lines: 2665-2695
+  lines: 2682-2712
 - kind: function
   qualified_name: trie/cli:_print_plain
-  lines: 2705-2719
+  lines: 2722-2736
 - kind: function
   qualified_name: trie/cli:grep_str_cmd
-  lines: 2723-2749
+  lines: 2740-2766
 - kind: function
   qualified_name: trie/cli:find_cmd
-  lines: 2753-2782
+  lines: 2770-2799
 - kind: function
   qualified_name: trie/cli:write_cmd
-  lines: 2786-2826
+  lines: 2803-2843
 - kind: function
   qualified_name: trie/cli:_render_write
-  lines: 2829-2838
+  lines: 2846-2855
 - kind: function
   qualified_name: trie/cli:_render_find
-  lines: 2841-2856
+  lines: 2858-2873
 - kind: function
   qualified_name: trie/cli:grep_entry_points_cmd
-  lines: 2860-2875
+  lines: 2877-2892
 - kind: function
   qualified_name: trie/cli:grep_symbol_cmd
-  lines: 2879-2894
+  lines: 2896-2911
 - kind: function
   qualified_name: trie/cli:grep_symbol_neighbours_cmd
-  lines: 2898-2913
+  lines: 2915-2930
 - kind: function
   qualified_name: trie/cli:explain_symbol_cmd
-  lines: 2917-2932
+  lines: 2934-2949
 - kind: function
   qualified_name: trie/cli:explain_symbol_refs_cmd
-  lines: 2936-2951
+  lines: 2953-2968
 - kind: function
   qualified_name: trie/cli:trace_flow_cmd
-  lines: 2955-2971
+  lines: 2972-2988
 - kind: function
   qualified_name: trie/cli:explain_flow_cmd
-  lines: 2975-2991
+  lines: 2992-3008
 - kind: constant
   qualified_name: trie/cli:patch_app
-  lines: 2999-3003
+  lines: 3016-3020
 - kind: class
   qualified_name: trie/cli:_RichApplyProgress
-  lines: 3007-3059
+  lines: 3024-3076
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.__init__
-  lines: 3017-3019
+  lines: 3034-3036
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.stage
-  lines: 3021-3022
+  lines: 3038-3039
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_start
-  lines: 3024-3025
+  lines: 3041-3042
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_symbol
-  lines: 3027-3033
+  lines: 3044-3050
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_generate
-  lines: 3035-3037
+  lines: 3052-3054
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_fixup
-  lines: 3039-3042
+  lines: 3056-3059
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_prose
-  lines: 3044-3047
+  lines: 3061-3064
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_done
-  lines: 3049-3053
+  lines: 3066-3070
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.refresh
-  lines: 3055-3056
+  lines: 3072-3073
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.verify
-  lines: 3058-3059
+  lines: 3075-3076
 - kind: function
   qualified_name: trie/cli:patch_create_cmd
-  lines: 3063-3089
+  lines: 3080-3106
 - kind: function
   qualified_name: trie/cli:patch_create_symbol_cmd
-  lines: 3093-3129
+  lines: 3110-3148
 - kind: function
   qualified_name: trie/cli:patch_delete_symbol_cmd
-  lines: 3133-3160
+  lines: 3152-3179
 - kind: function
   qualified_name: trie/cli:patch_rename_symbol_cmd
-  lines: 3164-3193
+  lines: 3183-3212
 - kind: function
   qualified_name: trie/cli:patch_apply_cmd
-  lines: 3197-3282
+  lines: 3216-3301
 - kind: function
   qualified_name: trie/cli:patch_preview_cmd
-  lines: 3286-3329
+  lines: 3305-3348
 - kind: function
   qualified_name: trie/cli:patch_list_cmd
-  lines: 3333-3375
+  lines: 3352-3394
 - kind: function
   qualified_name: trie/cli:patch_drop_cmd
-  lines: 3379-3417
+  lines: 3398-3436
 - kind: constant
   qualified_name: trie/cli:mcp_app
-  lines: 3425-3432
+  lines: 3444-3451
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 3437-3439
+  lines: 3456-3458
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 3442-3452
+  lines: 3461-3471
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 3456-3525
+  lines: 3475-3544
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 3528-3543
+  lines: 3547-3562
 - kind: function
   qualified_name: trie/cli:mcp_uninstall_cmd
-  lines: 3547-3622
+  lines: 3566-3641
 - kind: function
   qualified_name: trie/cli:_render_uninstall_plan
-  lines: 3625-3645
+  lines: 3644-3664
 incoming_refs: 91
 outgoing_refs: 147
 ---
@@ -816,13 +819,17 @@ CLI command that finds symbols matching predicates through the TrieTools.grep me
 - **limit**: maximum hits to return (default 10)
 - **as_json**: emit raw MCP envelope instead of human-readable table
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:read_cmd fingerprint=999c32758b0757009db6b380a89b15347e4ce6f97cd22e8ce501bbec455d810a body_fp=b8f0cd73d6ec972de4963691d3c3e09813f7a3b1a04cbe45e16b3832336baa26 source_ref=28797ad23f63ab76a0d693ea640c1de9c59f6c50 role=api -->
-CLI command for reading a symbol's prose plus its immediate callers and callees, or raw source file content.
+<!-- trie:section symbol=trie/cli:read_cmd fingerprint=f157c62cefb20c5ee457408324931e4371a70d0ee371d50341364671b409d5ac body_fp=c2c90731c33d1fb462e4ebd4612e5d4211fda99d429c0433c9d12f7cff795612 source_ref=b325efc3edba660c5ed59d60e141bf03e531c2cd role=api -->
+CLI command that reads source code or trie's synthesised description — dispatches via a single `tools.read()` call.
 
-- Default mode: opens TrieTools session and calls `tools.read(qname)` to retrieve symbol metadata
-- `--source` mode: calls `tools.read_source()` with optional `--offset`/`--limit` windowing for any project file
-- Emits response as JSON (`--json`) or human-readable format via `_render_read` or `_render_read_source`
-- Mirror of the MCP `read` tool for agents that prefer CLI over MCP protocol
+- Accepts a symbol qname **or** a file path as the positional argument
+- `--full`: for file paths, returns every section's full prose instead of the compact triefact view
+- `--source` / `--offset` / `--limit`: force raw line-numbered source with optional windowing
+- Delegates rendering to `_render_read_dispatch`, which fans out to `_render_read_source`, plain output, or `_render_read` based on envelope shape
+- `--json` emits the raw MCP envelope verbatim; mirrors the MCP `read` tool wire response
+<!-- trie:end -->
+<!-- trie:section symbol=trie/cli:_render_read_dispatch fingerprint=2259360f989712d808ec20d13c4379463c02d8176fc94e720e458dbbb7a384d9 body_fp=93d96bba49f5483e3faf0566d24c684b1c11e8e933601bf7aa130bac37f4d8f7 source_ref=b325efc3edba660c5ed59d60e141bf03e531c2cd role=util -->
+Dispatch a `tools.read` response envelope to the correct human-readable renderer based on its shape.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:_render_read_source fingerprint=fddcf9841287b22b0ffbf1e488f06c1ae46eacc63bd5bc0397b58066053c792b body_fp=2c21247aa600ab31b580d3ba509b35df8cbe2e05f7a97108985455e7adf1c980 source_ref=28797ad23f63ab76a0d693ea640c1de9c59f6c50 role=util -->
 Human-readable renderer for `read_source` tool envelope responses.

@@ -1,47 +1,47 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/sync/single_file.py
-file_fingerprint: 92abb3bc080bff9f51204b24cc1a5091634e01a0f392738a3ff5e3c18f7785b6
-last_synced_at: '2026-06-10T13:16:18Z'
+file_fingerprint: 3b3d84bdcaf28dc782d5cca46e1a9c3446d1ca41a80a1e1c62f38b11300c5d0b
+last_synced_at: '2026-06-17T16:42:17Z'
 defines:
 - kind: module
   qualified_name: trie/sync/single_file:__module__
-  lines: 1-611
+  lines: 1-618
 - kind: function
   qualified_name: trie/sync/single_file:backfill_section_records
-  lines: 25-60
+  lines: 25-62
 - kind: class
   qualified_name: trie/sync/single_file:FileSyncResult
-  lines: 64-75
+  lines: 66-77
 - kind: class
   qualified_name: trie/sync/single_file:MetadataRefreshResult
-  lines: 79-87
+  lines: 81-89
 - kind: class
   qualified_name: trie/sync/single_file:_SymbolJob
-  lines: 91-101
+  lines: 93-103
 - kind: function
   qualified_name: trie/sync/single_file:_file_fingerprint
-  lines: 104-105
+  lines: 106-107
 - kind: function
   qualified_name: trie/sync/single_file:_triefact_path_for
-  lines: 108-112
+  lines: 110-114
 - kind: function
   qualified_name: trie/sync/single_file:_file_description
-  lines: 115-130
+  lines: 117-137
 - kind: function
   qualified_name: trie/sync/single_file:_build_defines
-  lines: 133-146
+  lines: 140-153
 - kind: function
   qualified_name: trie/sync/single_file:_resolve_previous_symbols
-  lines: 149-194
+  lines: 156-201
 - kind: function
   qualified_name: trie/sync/single_file:refresh_triefact_metadata
-  lines: 197-291
+  lines: 204-298
 - kind: function
   qualified_name: trie/sync/single_file:sync_single_file
-  lines: 294-610
+  lines: 301-617
 incoming_refs: 72
-outgoing_refs: 22
+outgoing_refs: 24
 ---
 <!-- trie:section symbol=trie/sync/single_file:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=962cb42fd231e6a72fa197d03a93bef26647d2e4f96f38d6e53a0c5332b417c1 source_ref=da91ee7ba7df534c772bf0cfb02b2cfcdb8bce67 role=documentation-sync -->
 Synchronizes individual Python source files to their corresponding triefact documentation files.
@@ -52,10 +52,11 @@ Synchronizes individual Python source files to their corresponding triefact docu
 - `FileSyncResult` — captures statistics from a single file sync operation
 - `MetadataRefreshResult` — reports whether metadata refresh changed file contents
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:backfill_section_records fingerprint=3e85d88cf6931eabfa672b17a87da6462a61a5e96fd12514e87f93e12190fb68 body_fp=5656b912df1951a7a46754f532e6b101359092cf9d2333e7775e123c706d8dba source_ref=444a9fef0b8e5f82578d20f10068ff693245e924 role=persistence -->
+<!-- trie:section symbol=trie/sync/single_file:backfill_section_records fingerprint=a73874091c4df04be254a5ca512b72ab6cd54aafb968f4a172c4ca448961f757 body_fp=9b78bc2968df32f352476287d25f9e9e0a7cba89fb1a42a44e20f0ab9d211b7b source_ref=6cd32bcbcf3b954f87385b8932e63a19b2514a6f role=persistence -->
 Populate `triefact_sections` records from existing triefact files for every section discovered on disk.
 
 - Reads all triefact files in the project and ensures database records exist
+- Skips source files not recognized as indexable by the parser registry
 - Idempotent operation safe for repeated execution
 - Preserves role tags and historical mass from persisted sentinels to avoid re-running LLM
 <!-- trie:end -->
@@ -81,10 +82,10 @@ Computes a SHA256 hash of the input text as a hexadecimal string.
 <!-- trie:section symbol=trie/sync/single_file:_triefact_path_for fingerprint=1c2e2cf4fa444cf778b7950d1adb2c52f77952ba318f32650aa629fbcb6ee9a5 body_fp=f3af242cde387d60e322268b4dc3f74f73599045beed4a87abeba99d881e0cc2 source_ref=da91ee7ba7df534c772bf0cfb02b2cfcdb8bce67 role=documentation-sync -->
 Computes the triefact file path for a given source file by mapping its relative position under the source root to the triefacts root with a .md extension.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:_file_description fingerprint=97cc879f813f006954b5d0e6ede8050e2fe029e19ecc73d275a9986d8eaed371 body_fp=1381706f5e1497febc88fededae11ae982aeeb37aadbf1d614a2147844e4fdb7 source_ref=da91ee7ba7df534c772bf0cfb02b2cfcdb8bce67 role=source-parsing -->
+<!-- trie:section symbol=trie/sync/single_file:_file_description fingerprint=bc5c4ab179593304d4c7bfa09b1ce03affab3167c1f68d40a19bf0dce86bb1c7 body_fp=b9379c5cb3fe7a496660497957aa5ad17c5778e2c8bf4786bd67ebb26216d80c source_ref=6cd32bcbcf3b954f87385b8932e63a19b2514a6f role=util -->
 Extracts the first non-empty line from a source file's module docstring as a description.
 
-- Returns None when the file has no module docstring
+- Returns `None` for non-Python files or files with no module docstring
 - Strips string literal syntax and whitespace from the raw docstring content
 <!-- trie:end -->
 <!-- trie:section symbol=trie/sync/single_file:_build_defines fingerprint=ff4c3234574641e864f5fd19df73f86a54f735ea2a1cb641153e502aca6f4f1a body_fp=b2334208541a186a51f8bdc0e3a4d9d975d9342bd83bc9f5fd7eb17596feb6e0 source_ref=da91ee7ba7df534c772bf0cfb02b2cfcdb8bce67 role=documentation-sync -->
@@ -93,14 +94,14 @@ Builds a list of dictionaries containing symbol metadata for triefact front matt
 - Returns entries with `kind`, `qualified_name`, and `lines` fields for each symbol
 - Sorted by start line to match source file order
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:_resolve_previous_symbols fingerprint=7248cfa7303b0870f3a978ae9e249057d98b22401fd3291ebff715fa17660edf body_fp=3ef5d1ca85f338214adda448cc6ab6e663574abfbbd1fd7d649152fbe09a75d1 source_ref=da91ee7ba7df534c772bf0cfb02b2cfcdb8bce67 role=documentation-sync -->
+<!-- trie:section symbol=trie/sync/single_file:_resolve_previous_symbols fingerprint=8fc33ac4cad57a5d5e9a3db964b2bf5766b470e96a0556c471e7c51c9e16544f body_fp=3ef5d1ca85f338214adda448cc6ab6e663574abfbbd1fd7d649152fbe09a75d1 source_ref=6cd32bcbcf3b954f87385b8932e63a19b2514a6f role=util -->
 Retrieve previous Symbol instances for qualified names that have git blob references by fetching and parsing historical file content.
 
 - Groups lookups by blob hash to minimize git calls and parsing overhead
 - Returns empty dict when no section references exist
 - Skips symbols that can't be resolved due to unreachable blobs or parse errors
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:refresh_triefact_metadata fingerprint=22c4df71adb33d8327a2ecbd2d9475971bd9a0f875943e7b3a4a251f85b8ab92 body_fp=a937a868bc56aca5b842b6ac79a293451b67b3e9320335e0f68c81e301406c64 source_ref=d9f17ad8d2158f7df5b7b2aea935a84599db7085 role=orchestration -->
+<!-- trie:section symbol=trie/sync/single_file:refresh_triefact_metadata fingerprint=a89b7a84b9d768fa81770ad6b46a9489e16633f805a84e271026faf557776631 body_fp=a937a868bc56aca5b842b6ac79a293451b67b3e9320335e0f68c81e301406c64 source_ref=6cd32bcbcf3b954f87385b8932e63a19b2514a6f role=orchestration -->
 Refreshes a triefact file's front matter from the current store without calling the LLM.
 
 - `store` — when None, skips reference counts in front matter; other metadata still updates
@@ -108,7 +109,7 @@ Refreshes a triefact file's front matter from the current store without calling 
 - Preserves existing `last_synced_at` timestamp and all section bodies unchanged
 - No-op returning `changed=False` when the triefact file doesn't exist
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:sync_single_file fingerprint=d4eebd9457e61f1aefd976533eac10f315befd949ac3b8365cd3c4bcfe296b27 body_fp=b097931c2565727156d01ac8b8e18b51f4973c031e2bc36e91bca4a72d091d5f source_ref=444a9fef0b8e5f82578d20f10068ff693245e924 role=orchestration -->
+<!-- trie:section symbol=trie/sync/single_file:sync_single_file fingerprint=263ae0c8810427513ba48a487686d011c5d81abe5def65e5f8fed2114d4f6db0 body_fp=b097931c2565727156d01ac8b8e18b51f4973c031e2bc36e91bca4a72d091d5f source_ref=6cd32bcbcf3b954f87385b8932e63a19b2514a6f role=orchestration -->
 Generate or refresh the triefact file for a single Python source file using LLM calls.
 
 - `symbols_to_regen`: when None, regenerates all symbols; when a set, only regenerates listed symbols

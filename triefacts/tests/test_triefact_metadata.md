@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_triefact_metadata.py
 file_fingerprint: c9ca8a05dc8bfff00b6d53711b19041182ab22506e795915e8ed0e2a2fb05b19
-last_synced_at: '2026-06-03T21:08:54Z'
+last_synced_at: '2026-06-17T16:43:18Z'
 description: Front-matter enrichment in `sync_single_file`.
 defines:
 - kind: module
@@ -86,13 +86,13 @@ Verifies that triefact front matter includes incoming and outgoing reference cou
 <!-- trie:section symbol=tests/test_triefact_metadata:test_front_matter_omits_ref_counts_when_store_omitted fingerprint=b8a11ed0dde2e80e66c5039c273850007dfd84c56d987d2572aa211bab042004 body_fp=cd1a31b8d26e61018b77384dc4f03c2926f0ae0dfda7af56b0aa63f545ab0646 source_ref=05954546e31c15368c9e6e45fc073fbf819f6008 role=documentation-sync -->
 Verifies that front matter excludes `incoming_refs` and `outgoing_refs` fields when no Store is provided to `sync_single_file`.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_triefact_metadata:test_extract_module_docstring_handles_triple_and_single fingerprint=1cfd4844764f5e2082c950006db93fa6d0a41a109ff06111406258d599e7f3bc body_fp=a0399b4458cfbd93daf450c677f1d85923349b0b797f549396e123856d5a57b3 source_ref=05954546e31c15368c9e6e45fc073fbf819f6008 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_triefact_metadata:test_extract_module_docstring_handles_triple_and_single fingerprint=1cfd4844764f5e2082c950006db93fa6d0a41a109ff06111406258d599e7f3bc body_fp=a0399b4458cfbd93daf450c677f1d85923349b0b797f549396e123856d5a57b3 source_ref=05954546e31c15368c9e6e45fc073fbf819f6008 role=test -->
 Tests that `extract_module_docstring` correctly parses both triple-quoted and single-quoted module docstrings.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_triefact_metadata:test_extract_module_docstring_returns_none_when_first_stmt_is_code fingerprint=68b783549b5457bdd3f1846ee29508cfa2d1c27d734ffb2a0a8346d943c0838a body_fp=da5558860543c216cc2859a52f9433c6b9a3e8397af16dc4cdfc74935711683a source_ref=05954546e31c15368c9e6e45fc073fbf819f6008 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_triefact_metadata:test_extract_module_docstring_returns_none_when_first_stmt_is_code fingerprint=68b783549b5457bdd3f1846ee29508cfa2d1c27d734ffb2a0a8346d943c0838a body_fp=da5558860543c216cc2859a52f9433c6b9a3e8397af16dc4cdfc74935711683a source_ref=05954546e31c15368c9e6e45fc073fbf819f6008 role=test -->
 Verifies that `extract_module_docstring` returns None when the first statement is code rather than a docstring.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_triefact_metadata:test_strip_string_literal_handles_prefixes fingerprint=8b2d4eddda3179deef4980bea85d25288bf4e925a587700a787f76d9a0a38c2f body_fp=d057ab1d96ba832597508113ff05a2ca89b594f3b4dcf1a0c4f477cdd18dfda3 source_ref=05954546e31c15368c9e6e45fc073fbf819f6008 role=source-parsing -->
+<!-- trie:section symbol=tests/test_triefact_metadata:test_strip_string_literal_handles_prefixes fingerprint=8b2d4eddda3179deef4980bea85d25288bf4e925a587700a787f76d9a0a38c2f body_fp=d057ab1d96ba832597508113ff05a2ca89b594f3b4dcf1a0c4f477cdd18dfda3 source_ref=05954546e31c15368c9e6e45fc073fbf819f6008 role=test -->
 Verifies `strip_string_literal` correctly removes prefixes and quotes from raw, bytes, and f-string literals.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_triefact_metadata:test_store_file_ref_counts_excludes_intra_file_edges fingerprint=7bb62d803209039d82fbe1de4e4a165960d12a629bb3466f5ab6d896bcea8933 body_fp=d154ec63946b7b7f849d55ae52289e700f24ed01dbd9aa1ab29f5d4cb442dabe source_ref=05954546e31c15368c9e6e45fc073fbf819f6008 role=test-infrastructure -->

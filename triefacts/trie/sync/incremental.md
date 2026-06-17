@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/sync/incremental.py
 file_fingerprint: 15a45b1e239e298ae6d2aaa809707ec6779cdcf4e4f7467501bb7807be8094fe
-last_synced_at: '2026-06-10T13:17:12Z'
+last_synced_at: '2026-06-17T16:43:33Z'
 defines:
 - kind: module
   qualified_name: trie/sync/incremental:__module__
@@ -48,7 +48,7 @@ Results and statistics from running incremental sync on a project.
 - `orphan_triefacts_removed`: list of orphaned triefact files that were deleted
 - `sync_results`: detailed results for each file that was successfully synced
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/incremental:compute_incremental_worklist fingerprint=3c8386c7f8572fc00dc5dc15bce15bda702346e82a53d1bfc3344998aa6c6c47 body_fp=5cb5abe44f02f42ee162b426ac76cca776498797b85b6de3d864d7e4d10966c3 source_ref=549bb001d03e465de4697570041eabaf93893a7f role=change-detection -->
+<!-- trie:section symbol=trie/sync/incremental:compute_incremental_worklist fingerprint=3c8386c7f8572fc00dc5dc15bce15bda702346e82a53d1bfc3344998aa6c6c47 body_fp=5cb5abe44f02f42ee162b426ac76cca776498797b85b6de3d864d7e4d10966c3 source_ref=0007e08c6d700f4d99f851ebc327be2322a06af4 role=orchestration -->
 Scans project, identifies stale triefacts, computes cascade dependencies, and returns worklist without executing sync.
 
 - Filters out staleness items for deleted source files (treats as orphan triefacts)

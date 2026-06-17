@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/__init__.py
-file_fingerprint: acf49f5a021eab661654fc8448e030081b7cbdfb6c4e9224b8b0060c4cf24507
-last_synced_at: '2026-06-03T21:09:22Z'
+file_fingerprint: 5c86b16cc6f288ff8bde482e4751a1c62ac56e54d788747594c7c35484ef1d42
+last_synced_at: '2026-06-17T16:40:58Z'
 defines:
 - kind: constant
   qualified_name: trie/__init__:__version__
@@ -10,6 +10,6 @@ defines:
 incoming_refs: 0
 outgoing_refs: 0
 ---
-<!-- trie:section symbol=trie/__init__:__version__ fingerprint=dde86dad69a9fd7a3e592c414aec23c5d29cbb0126020d6f1286dbdbb651501a body_fp=b766fc219dba05993abdd930d0fc3a1613cc2589c94d274beee66217cbe04fa2 source_ref=1276d0254ffc2b5e4fcf48cd868123238d4ad06f role=config-management -->
+<!-- trie:section symbol=trie/__init__:__version__ fingerprint=aead7df9478acf55355ebced8dbdcfd461ea9dbe839fcae2e5e655851b63d195 body_fp=b766fc219dba05993abdd930d0fc3a1613cc2589c94d274beee66217cbe04fa2 source_ref=c11f861afbe7abb68881200b40f9ef2c5f08ad1f role=config -->
 Package version string for the trie module.
 <!-- trie:end -->

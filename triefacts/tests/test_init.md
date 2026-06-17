@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_init.py
-file_fingerprint: 4f7cf1e91a3a43649f2db6b12773746816c15047ce7c0b98276a4bee1ff8996c
-last_synced_at: '2026-06-06T13:20:20Z'
+file_fingerprint: 23440baad5c67e08efb6226f75f5a32c84631a451696d0d7680a699b9c639144
+last_synced_at: '2026-06-17T16:40:51Z'
 defines:
 - kind: module
   qualified_name: tests/test_init:__module__
@@ -44,7 +44,7 @@ defines:
   qualified_name: tests/test_init:test_init_happy_path
   lines: 95-101
 - kind: function
-  qualified_name: tests/test_init:test_init_errors_on_non_python_without_force
+  qualified_name: tests/test_init:test_init_errors_on_unsupported_without_force
   lines: 104-107
 - kind: function
   qualified_name: tests/test_init:test_init_force_overrides_detection
@@ -179,8 +179,8 @@ Tests successful project initialization, verifying config file creation, gitigno
 - Validates trie.toml creation and gitignore entry addition
 - Confirms pyproject.toml is detected as a Python project marker
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_init:test_init_errors_on_non_python_without_force fingerprint=175132ec9ad82aad871956f864eec5c66355d6bfcebbc0592e4b02b5f5d7f764 body_fp=d5745ef9aa94ecbb0e996bd7acd8b04a5e877c99e1c55ca8356046d14dde3239 source_ref=0f97acda485ff7a046c788feb9cbfd63ccd9448a role=test-infrastructure -->
-Verifies that init_project raises InitError when the directory contains no Python files or markers.
+<!-- trie:section symbol=tests/test_init:test_init_errors_on_unsupported_without_force fingerprint=1acf0f97f1ac873068b9b3f81414311d1cb3908ed6f791863d2bdc1a154e112e body_fp=fb0c81817f0e5f7f9a8ee32c15ce0a5fd2fd1825791a97d416b7041da814c2e8 source_ref=83a82c26e1f4e7fdeba880b286a81c0302c804c1 role=test -->
+Assert that `init_project` raises `InitError` matching "does not look like a supported project" when the directory contains no Python indicators and `force` is not set.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_init:test_init_force_overrides_detection fingerprint=0e7743bfb02091b186cbf1edf0fc412e9e29c88784df204666aae28d8c8bb074 body_fp=8c3aa583f95605df5ef239ec3e5e2db3b585f256fff897c3f3192e0eff15cbef source_ref=0f97acda485ff7a046c788feb9cbfd63ccd9448a role=test-infrastructure -->
 Tests that `init_project` succeeds in non-Python directories when `force=True` is specified.
@@ -282,41 +282,3 @@ Tests that the `trie init` command automatically runs `trie setup` when user acc
 <!-- trie:section symbol=tests/test_init:test_cli_init_does_not_run_setup_when_user_declines_prompt fingerprint=2b88a1a18da864f17d833277406db5bf219c9e374d807aafa36d720cb4263986 body_fp=40c757ce965b70c083f760acd74cb81ec53dc3bbeb4285e8fdd8082be1c3a71a source_ref=0f97acda485ff7a046c788feb9cbfd63ccd9448a role=test-infrastructure -->
 Tests that declining the setup prompt in `trie init` skips auto-setup while preserving manual instruction.
 <!-- trie:end -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

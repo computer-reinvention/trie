@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/freshness.py
 file_fingerprint: 6667a9d9073e66122b06cf34d53d4644f1e6880d1097dfc5cc726682e13e9bca
-last_synced_at: '2026-06-10T13:17:05Z'
+last_synced_at: '2026-06-17T16:43:19Z'
 description: 'Freshness gate: keep the graph + triefact tree current with respect
   to disk and HEAD.'
 defines:
