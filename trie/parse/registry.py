@@ -87,6 +87,32 @@ def is_indexable(path: str | Path) -> bool:
     return get_backend_for_file(path) is not None
 
 
+def resolve_create_target(source_root: Path, qname: str) -> str:
+    """Map a new-symbol qname to its source file path (relative to source_root).
+
+    The qname's module part is the file path minus extension. Probe the
+    registered suffixes (longest first, e.g. `.d.ts` before `.ts`) for an
+    existing file — the file the symbol should be added to. When none exists
+    (true new-file creation), infer the language from a sibling source file in
+    the target directory, else fall back to the first backend's default
+    `source_suffix()`, else `.py`.
+    """
+    module = qname.split(":", 1)[0]
+    for suf in source_suffixes():
+        if (source_root / (module + suf)).is_file():
+            return module + suf
+    target_dir = (source_root / module).parent
+    if target_dir.is_dir():
+        for child in sorted(target_dir.iterdir()):
+            if not child.is_file():
+                continue
+            sibling_backend = get_backend_for_file(child)
+            if sibling_backend is not None:
+                return module + sibling_backend.source_suffix()
+    backends = all_backends()
+    return module + (backends[0].source_suffix() if backends else ".py")
+
+
 def extract_file_data(
     file_path: Path,
     source_root: Path | None = None,

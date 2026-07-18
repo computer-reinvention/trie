@@ -94,6 +94,21 @@ class Edits:
     # Max regeneration attempts for a symbol whose generated source won't compile,
     # before surfacing it in ApplyReport.unresolved with the failed source verbatim.
     compile_retry_cap: int = 2
+    # How many times pydantic-ai may re-ask the model when its STRUCTURED output
+    # fails to parse/validate (separate from network retries). The library
+    # defaults to 1, which makes a single malformed structured response abort the
+    # whole apply ("Exceeded maximum output retries"). Large symbols (e.g. a long
+    # React component regenerated as one source string) trip this; give the model
+    # a few chances to return well-formed output before failing the symbol.
+    output_retries: int = 3
+    # Max output tokens for a code-generation call (per-symbol body, whole-file
+    # regeneration, or LSP fixup). The model supports far more (Sonnet 4.x: 64K);
+    # a low cap silently TRUNCATES the structured tool-call JSON mid-string on any
+    # non-trivial symbol, which surfaces as "Exceeded maximum output retries" and
+    # aborts the apply. Set generously so regenerating a large file/component fits
+    # in one response. You pay only for tokens actually produced, so a high ceiling
+    # costs nothing on small symbols.
+    max_output_tokens: int = 16384
 
 
 @dataclass

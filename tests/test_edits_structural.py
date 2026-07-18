@@ -6,6 +6,7 @@ import pytest
 
 from trie.config import Config
 from trie.edits.backends import FakeBackend
+from trie.edits.backends.fake import _MARKER
 from trie.edits.pipeline import stage_and_commit
 from trie.graph.store import Store
 from trie.models import ModelResult, SectionBody
@@ -51,6 +52,39 @@ def project(tmp_path: Path) -> Path:
         scan_project(project_root=tmp_path, config=config, store=store)
         sync_single_file(
             tmp_path / "src/gamma.py",
+            project_root=tmp_path,
+            config=config,
+            client=FakeTriefactClient(),
+            store=store,
+        )
+    return tmp_path
+
+
+@pytest.fixture
+def class_project(tmp_path: Path) -> Path:
+    """A project with a class (for method-create tests)."""
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "__init__.py").write_text("")
+    (src / "box.py").write_text(
+        "class Box:\n"
+        '    """A box."""\n'
+        "\n"
+        "    def __init__(self, w: int, h: int) -> None:\n"
+        "        self.w = w\n"
+        "        self.h = h\n"
+        "\n"
+        "    def area(self) -> int:\n"
+        '        """Area."""\n'
+        "        return self.w * self.h\n"
+    )
+    (tmp_path / "trie.toml").write_text(PROJECT_TOML)
+    (tmp_path / ".gitignore").write_text(".trie/\n__pycache__/\n")
+    config, _ = Config.find_and_load(tmp_path)
+    with Store(tmp_path / ".trie" / "graph.db") as store:
+        scan_project(project_root=tmp_path, config=config, store=store)
+        sync_single_file(
+            tmp_path / "src/box.py",
             project_root=tmp_path,
             config=config,
             client=FakeTriefactClient(),
@@ -149,7 +183,9 @@ class TestCreate:
         assert orphan and orphan[0].qname == "src/gamma:helper"
         assert not orphan[0].blocking
 
-    def test_create_in_missing_file_unresolved(self, project: Path):
+    def test_create_in_missing_file_creates_new_file(self, project: Path):
+        # True new-file creation: a create patch targeting a not-yet-existing
+        # file scaffolds that file (Fix 3b), rather than failing file_not_found.
         cfg = _config(project)
         with Store(project / ".trie" / "graph.db") as store:
             store.add_create_patch(
@@ -160,8 +196,80 @@ class TestCreate:
                 session_id="s1",
             )
             report = stage_and_commit(store, cfg, FakeBackend("passthrough"), project)
-        assert not report.ok
-        assert any(u.code == "file_not_found" for u in report.unresolved)
+        # The new file exists on disk with the generated symbol.
+        new_file = project / "src" / "nope.py"
+        assert new_file.is_file()
+        assert "def thing" in new_file.read_text()
+        # No blocking file_not_found; the create applied (orphan-create advisory
+        # is acceptable since nothing references the new symbol yet).
+        assert not any(u.code == "file_not_found" and u.blocking for u in report.unresolved)
+
+    def test_create_in_missing_nested_dir_creates_dirs(self, project: Path):
+        # New file in a not-yet-existing subdirectory: parents are created.
+        cfg = _config(project)
+        with Store(project / ".trie" / "graph.db") as store:
+            store.add_create_patch(
+                target_file="src/new_pkg/mod.py",
+                target_qname="src/new_pkg/mod:helper",
+                note="x",
+                reason="y",
+                session_id="s1",
+            )
+            stage_and_commit(store, cfg, FakeBackend("passthrough"), project)
+        created = project / "src" / "new_pkg" / "mod.py"
+        assert created.is_file()
+        assert "def helper" in created.read_text()
+
+    def test_create_method_into_class(self, class_project: Path):
+        # A create whose qname is `Module:Class.method` lands INSIDE the class.
+        cfg = _config(class_project)
+        with Store(class_project / ".trie" / "graph.db") as store:
+            store.add_create_patch(
+                target_file="src/box.py",
+                target_qname="src/box:Box.volume",
+                note="volume method",
+                reason="needed",
+                session_id="s1",
+            )
+            report = stage_and_commit(store, cfg, FakeBackend("passthrough"), class_project)
+        assert report.committed
+        text = (class_project / "src/box.py").read_text()
+        # New method present AND indented as a class member (not at file scope).
+        assert "def volume" in text
+        for line in text.splitlines():
+            if "def volume" in line:
+                assert line.startswith("    "), f"method not indented into class: {line!r}"
+
+    def test_modify_and_create_method_same_file(self, class_project: Path):
+        # Same-file batch: modify an existing method AND create a new one in the
+        # same class. Both must land and the file must compile (Python gate).
+        cfg = _config(class_project)
+        with Store(class_project / ".trie" / "graph.db") as store:
+            store.add_patch("src/box:Box.area", "append a marker line", "x", "s1")
+            store.add_create_patch(
+                target_file="src/box.py",
+                target_qname="src/box:Box.perimeter",
+                note="perimeter method",
+                reason="needed",
+                session_id="s1",
+            )
+            report = stage_and_commit(
+                store,
+                cfg,
+                FakeBackend("append", per_qname={}),
+                class_project,
+                session_note="add area marker + perimeter method",
+            )
+        assert report.committed, report.error
+        text = (class_project / "src/box.py").read_text()
+        # The created method landed...
+        assert "def perimeter" in text
+        # ...AND the modified method's marker landed...
+        assert _MARKER.strip() in text
+        # ...and the file is still valid Python.
+        import ast
+
+        ast.parse(text)
 
     def test_create_broken_source_unresolved(self, project: Path):
         cfg = _config(project)

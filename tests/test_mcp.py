@@ -881,3 +881,43 @@ def test_write_file_outside_root_errors(tools: TrieTools):
     result = tools.write_file("../escape.txt", "x\n")
     assert "error" in result
     assert result["error"]["code"] == "out_of_scope"
+
+
+def test_batch_patch_stages_mixed_items(tools: TrieTools):
+    """batch_patch stages edits + creates in one call, reporting per-item results."""
+    result = tools.batch_patch(
+        [
+            {"op": "patch", "qname": "lib:slugify", "note": "also strip punctuation"},
+            {"op": "patch", "qname": "lib:capitalize", "note": "handle empty string"},
+            {"op": "create", "qname": "lib:titlecase", "note": "Title-case a string."},
+        ]
+    )
+    assert result["staged"] == 3
+    assert result["failed"] == 0
+    ok = {r["qname"]: r for r in result["results"]}
+    assert ok["lib:slugify"]["ok"] is True and ok["lib:slugify"]["op"] == "patch"
+    assert ok["lib:titlecase"]["ok"] is True and ok["lib:titlecase"]["op"] == "create"
+    assert result["pending_patch_count"] >= 3
+
+
+def test_batch_patch_reports_bad_items_without_aborting(tools: TrieTools):
+    """A missing symbol or empty note is reported but does not abort the batch."""
+    result = tools.batch_patch(
+        [
+            {"op": "patch", "qname": "lib:slugify", "note": "tweak"},
+            {"op": "patch", "qname": "lib:does_not_exist", "note": "x"},
+            {"op": "patch", "qname": "lib:capitalize", "note": ""},
+        ]
+    )
+    assert result["staged"] == 1
+    assert result["failed"] == 2
+    by_q = {r["qname"]: r for r in result["results"]}
+    assert by_q["lib:slugify"]["ok"] is True
+    assert by_q["lib:does_not_exist"]["ok"] is False
+    assert by_q["lib:capitalize"]["ok"] is False
+
+
+def test_batch_patch_empty_list_errors(tools: TrieTools):
+    result = tools.batch_patch([])
+    assert "error" in result
+    assert result["error"]["code"] == "invalid_argument"

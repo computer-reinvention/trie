@@ -42,7 +42,11 @@ def make_backend(
     if name == "llm":
         if client is None:
             client = make_client(model or config.models.edits, sync_cfg=config.sync)
-        return InProcessLLMBackend(client)
+        return InProcessLLMBackend(
+            client,
+            max_tokens=config.edits.max_output_tokens,
+            output_retries=config.edits.output_retries,
+        )
 
     if name == "opencode":
         # Phase 2: OpencodeInstanceBackend implements the same protocol. Until it

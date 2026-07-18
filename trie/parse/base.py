@@ -91,3 +91,30 @@ class LanguageBackend(Protocol):
     def system_prompt(self) -> str:
         """The language-tuned generator system prompt for triefact prose."""
         ...
+
+    def edit_system_prompt(self) -> str:
+        """The language-tuned system prompt for the EDIT pipeline.
+
+        Distinct from `system_prompt()` (which documents prose): this instructs
+        the model that it is editing THIS language's source and returning updated
+        source + prose. Python's is the historical default; TypeScript's tells
+        the model to emit idiomatic TS/TSX so the spliced result passes `tsc`.
+        """
+        ...
+
+    def code_fence(self) -> str:
+        """Markdown code-fence language tag for this backend (e.g. "python",
+        "typescript"). Used when embedding source in edit prompts so the model
+        is shown the right language."""
+        ...
+
+    def validate_syntax(self, source: str, *, file_path: Path) -> bool:
+        """Cheap/authoritative syntax gate for a candidate spliced file.
+
+        Returns True when `source` is well-formed for this language. Python uses
+        the builtin `compile`; TypeScript runs `tsc --noEmit` on the candidate in
+        an isolated scratch dir. `file_path` is the project-relative target path
+        (its extension/name can matter, e.g. `.tsx`). Must never raise — on any
+        internal error it should return True (degrade to "accept"; the LSP/tsc
+        diagnostics pass remains the real gate)."""
+        ...

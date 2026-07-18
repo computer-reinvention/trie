@@ -21,12 +21,27 @@ class TestMergeNotes:
         assert len(notes) == 1
         assert "gzip" in notes[0]
 
-    def test_empty_response_returns_empty(self):
+    def test_empty_llm_response_falls_back_to_raw_notes(self):
+        # merge is an optional dedup pass; an empty/garbage LLM response must NOT
+        # drop the agent's notes (which previously aborted the whole apply on a
+        # MergeNotesOutput validation error). Fall back to the raw notes.
         client = FakeTrieClient(output_notes=[], output_reasons=[])
-        patches = [{"note": "old change", "reason": "no longer relevant"}]
+        patches = [
+            {"note": "change A", "reason": "r1"},
+            {"note": "change B", "reason": "r2"},
+        ]
         notes, reasons = merge_notes(client, patches)
-        assert notes == []
-        assert reasons == []
+        assert notes == ["change A", "change B"]
+        assert reasons == ["r1", "r2"]
+
+    def test_single_patch_skips_llm(self):
+        # A single patch has nothing to merge — return verbatim without an LLM
+        # call (so a flaky merge call can't break a one-symbol apply).
+        client = FakeTrieClient(output_notes=[], output_reasons=[])
+        patches = [{"note": "old change", "reason": "still relevant"}]
+        notes, reasons = merge_notes(client, patches)
+        assert notes == ["old change"]
+        assert reasons == ["still relevant"]
 
     def test_preserves_reasons_via_delimiter(self):
         client = FakeTrieClient(

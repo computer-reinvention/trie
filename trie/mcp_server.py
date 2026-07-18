@@ -358,6 +358,86 @@ class TrieTools:
             "blast_radius": self._blast_radius_brief(qname),
         }
 
+    def batch_patch(self, items: list[dict[str, Any]]) -> dict[str, Any]:
+        """Stage MANY patches/creates in ONE call — the batch staging entrypoint.
+
+        `items` is a list of objects, each:
+          {"op": "patch",  "qname": "src/foo:bar", "note": "...", "reason": "..."}
+          {"op": "create", "qname": "src/foo:baz", "note": "...",
+           "file_path": "...", "anchor_qname": "...", "reason": "..."}
+        `op` defaults to "patch". Staging is a cheap DB write; batching collapses
+        what would be N separate tool calls (N agent turns) into one. Items are
+        independent — a bad item is reported in `results` but does not abort the
+        rest. Returns {staged, failed, results, pending_patch_count}.
+        """
+        if not isinstance(items, list) or not items:
+            return _error("invalid_argument", "items must be a non-empty list of patch objects.")
+
+        from trie.parse import registry
+
+        src_root = (self.root / self.config.triefacts.source_root).resolve()
+        results: list[dict[str, Any]] = []
+        staged = 0
+        for idx, item in enumerate(items):
+            if not isinstance(item, dict):
+                results.append({"index": idx, "ok": False, "error": "item is not an object"})
+                continue
+            qname = str(item.get("qname", "")).strip()
+            note = str(item.get("note", "")).strip()
+            reason = str(item.get("reason", "") or "")
+            op = str(item.get("op", "patch")).strip().lower() or "patch"
+            if not qname or not note:
+                results.append(
+                    {"index": idx, "qname": qname, "ok": False, "error": "qname and note required"}
+                )
+                continue
+            try:
+                if op == "create":
+                    if self.store.get_symbol_detail(qname) is not None:
+                        results.append(
+                            {
+                                "index": idx,
+                                "qname": qname,
+                                "ok": False,
+                                "error": "symbol exists — use op=patch",
+                            }
+                        )
+                        continue
+                    target_file = str(item.get("file_path", "")) or registry.resolve_create_target(
+                        src_root, qname
+                    )
+                    cid = self.store.add_create_patch(
+                        target_file=target_file,
+                        target_qname=qname,
+                        note=note,
+                        reason=reason,
+                        session_id=self._session_id,
+                        anchor_qname=str(item.get("anchor_qname", "")) or None,
+                    )
+                    results.append(
+                        {"index": idx, "qname": qname, "ok": True, "op": "create", "patch_id": cid}
+                    )
+                    staged += 1
+                else:
+                    pid = self.store.add_patch(qname, note, reason, self._session_id)
+                    results.append(
+                        {"index": idx, "qname": qname, "ok": True, "op": "patch", "patch_id": pid}
+                    )
+                    staged += 1
+            except KeyError:
+                results.append(
+                    {"index": idx, "qname": qname, "ok": False, "error": "symbol not found"}
+                )
+        pending = len(self.store.get_patched_qnames()) + sum(
+            len(v) for v in self.store.get_create_patches_grouped().values()
+        )
+        return {
+            "staged": staged,
+            "failed": len(results) - staged,
+            "results": results,
+            "pending_patch_count": pending,
+        }
+
     def _blast_radius_brief(self, qname: str) -> dict[str, Any]:
         """Compact blast-radius for patch returns (no LLM). Best-effort."""
         try:
@@ -397,10 +477,15 @@ class TrieTools:
                 "use patch(qname=..., note=...) to change its body instead.",
                 fix={"tool": "patch", "args": {"qname": qname, "note": note}},
             )
-        # qname carries no language signal, so default new-symbol creation to
-        # Python's suffix; pass `file_path` explicitly to create in another
-        # language (e.g. a .ts module).
-        target_file = file_path or (qname.split(":", 1)[0] + ".py")
+        # Resolve the target source file. An explicit `file_path` always wins.
+        # Otherwise the qname's module part names the file MINUS extension — probe
+        # the registered language suffixes for an existing file on disk (the
+        # common "add a symbol to an existing module" case), so a `.ts`/`.tsx`
+        # module isn't mis-resolved to a non-existent `.py`. Only when no file
+        # exists yet (true new-file creation) do we fall back to a default suffix,
+        # inferred from a sibling file in the same directory when possible, else
+        # the first registered backend's source_suffix.
+        target_file = file_path or self._resolve_create_target(qname)
         cid = self.store.add_create_patch(
             target_file=target_file,
             target_qname=qname,
@@ -410,6 +495,12 @@ class TrieTools:
             anchor_qname=anchor_qname or None,
         )
         return {"create_patch_id": int(cid), "qname": qname, "target_file": target_file}
+
+    def _resolve_create_target(self, qname: str) -> str:
+        """Map a new-symbol qname to its source file path (registry-driven)."""
+        from trie.parse import registry
+
+        return registry.resolve_create_target(self.src_root, qname)
 
     def delete_symbol(self, qname: str, reason: str = "") -> dict[str, Any]:
         """Stage deletion of an existing symbol. Returns {patch_id, qname, dependents}.
@@ -1731,7 +1822,69 @@ class TrieTools:
             tele_ctx["mode"] = mode
             tele_ctx["result_kind"] = "ok"
             tele_ctx["response_bytes"] = len(output)
-        return {"path": rel, "mode": mode, "output": output}
+        result: dict[str, Any] = {"path": rel, "mode": mode, "output": output}
+        # Surface staged-but-unapplied patches for symbols in THIS file. Without
+        # this, a file read shows only the committed triefact — so an agent that
+        # has batch-staged patches (and especially one re-reading after a partial
+        # apply) sees no trace of its own pending work, concludes nothing
+        # happened, and falls back to hand-editing. Mirror what _read_symbol
+        # already does for qname reads, so the patch pipeline is visible through
+        # the agent's primary lens (file reads).
+        pending = self._pending_patches_for_file(rel)
+        if pending:
+            result["pending_patches"] = pending
+            result["has_pending_patches"] = True
+            result["notes"] = [
+                f"{len(pending)} symbol(s) in this file have STAGED patches awaiting "
+                "trie_patch_apply. Do NOT hand-edit them — run trie_patch_apply "
+                "(or trie_patch_list to review, trie_patch_drop to discard)."
+            ]
+        else:
+            result["has_pending_patches"] = False
+        return result
+
+    def _pending_patches_for_file(self, rel_path: str) -> list[dict[str, Any]]:
+        """Pending patch + create notes for every symbol in `rel_path`.
+
+        Used by the file-read view so staged work is visible on a file read, not
+        just a qname read. Best-effort; returns [] on any store hiccup.
+        """
+        try:
+            out: list[dict[str, Any]] = []
+            # Edits to existing symbols: match patched qnames that live in this file.
+            file_qnames = {
+                row[0]
+                for row in self.store._conn.execute(
+                    "SELECT qualified_name FROM symbols WHERE file_path = ?", (rel_path,)
+                ).fetchall()
+            }
+            for qn in self.store.get_patched_qnames():
+                if qn not in file_qnames:
+                    continue
+                notes = self.store.get_patches_for_qname(qn)
+                out.append(
+                    {
+                        "qname": qn,
+                        "op": "patch",
+                        "count": len(notes),
+                        "notes": [n.get("note", "") for n in notes],
+                    }
+                )
+            # New-symbol creates targeting this file.
+            for group in self.store.get_create_patches_grouped().values():
+                for c in group:
+                    if c.get("target_file") == rel_path:
+                        out.append(
+                            {
+                                "qname": c.get("target_qname", ""),
+                                "op": "create",
+                                "count": 1,
+                                "notes": [c.get("note", "")],
+                            }
+                        )
+            return out
+        except Exception:
+            return []
 
     def _read_symbol(self, qname: str) -> dict[str, Any]:
         """Read a symbol's prose plus one-liners for every immediate caller and callee.
@@ -3025,6 +3178,7 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     server.tool(name="explain_flow")(tools.explain_flow)
     # Edit tools — declare intent (modify/create/delete/rename) then preview/commit
     server.tool(name="patch")(tools.patch)
+    server.tool(name="batch_patch")(tools.batch_patch)
     server.tool(name="create_symbol")(tools.create_symbol)
     server.tool(name="delete_symbol")(tools.delete_symbol)
     server.tool(name="rename_symbol")(tools.rename_symbol)

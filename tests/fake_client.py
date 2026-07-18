@@ -160,5 +160,85 @@ class FakeTrieClient:
         )()
         return ModelResult(output=output, usage=usage)
 
+    def run_text(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        max_tokens: int = 1024,
+        cache_prefix: str | None = None,
+    ) -> ModelResult:
+        """Return canned plaintext for the code-gen path.
+
+        The real code path now asks for a fenced code block plus delimited prose
+        sections (see ``trie.edits.textgen``) instead of structured output. We
+        synthesise that text from the same canned fields the structured ``run``
+        used, so existing tests keep their assertions on source/prose/content.
+
+        Which body to emit is inferred from the prompt: a fixup prompt yields the
+        fixup content; a multi-symbol file prompt yields the file content with a
+        prose section per requested qname; otherwise a single symbol edit.
+        """
+        from trie.edits import textgen
+
+        self.calls += 1
+        self.last_output_type = None
+        self.last_system_prompt = system_prompt
+        self.last_user_prompt = user_prompt
+        self.last_max_tokens = max_tokens
+        self.last_cache_prefix = cache_prefix
+
+        is_fixup = "diagnostics errors" in user_prompt.lower() or "Diagnostics:" in user_prompt
+        # The multi-symbol file prompt embeds one section per changed symbol and
+        # asks for qname-keyed prose blocks; detect it by that delimiter request.
+        is_file = textgen.PROSE_OPEN_QNAME in user_prompt
+
+        if is_fixup:
+            code = self.output_fixup_content or ""
+            text = f"```\n{code}\n```\n"
+        elif is_file:
+            code = self.output_file_content or ""
+            qnames = self._extract_requested_qnames(user_prompt)
+            sections = "".join(
+                f"{textgen.PROSE_OPEN_QNAME}{qn}>>>\n{self.output_prose}\n{textgen.PROSE_END}\n"
+                for qn in qnames
+            )
+            text = f"```\n{code}\n```\n\n{sections}"
+        else:
+            code = self.output_source or ""
+            text = (
+                f"```\n{code}\n```\n\n"
+                f"{textgen.PROSE_OPEN}\n{self.output_prose}\n{textgen.PROSE_END}\n"
+            )
+
+        usage = type(
+            "Usage",
+            (),
+            {
+                "input_tokens": self.input_tokens,
+                "output_tokens": self.output_tokens,
+                "details": {
+                    "cache_creation_input_tokens": self.cache_creation_input_tokens,
+                    "cache_read_input_tokens": self.cache_read_input_tokens,
+                },
+            },
+        )()
+        return ModelResult(output=text, usage=usage)
+
+    @staticmethod
+    def _extract_requested_qnames(user_prompt: str) -> list[str]:
+        from trie.edits import textgen
+
+        qnames: list[str] = []
+        for chunk in user_prompt.split(textgen.PROSE_OPEN_QNAME)[1:]:
+            qn = chunk.split(">>>", 1)[0].strip()
+            if qn:
+                qnames.append(qn)
+        # De-dup while preserving order; fall back to a single empty-key section
+        # so callers that key prose by "" (legacy single-symbol fakes) still work.
+        seen: set[str] = set()
+        out = [q for q in qnames if not (q in seen or seen.add(q))]
+        return out or [""]
+
     def count_tokens(self, system_prompt: str, user_prompt: str) -> int:
         return 100

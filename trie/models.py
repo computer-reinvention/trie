@@ -53,7 +53,7 @@ from trie.config import Sync
 # storage is released at thread exit, so the short-lived nested ThreadPools that
 # churn workers don't leak.
 class _LoopHolder:
-    __slots__ = ("_aclient", "loop", "model")
+    __slots__ = ("aclient", "loop", "model")
 
     def __init__(
         self,
@@ -63,7 +63,10 @@ class _LoopHolder:
     ) -> None:
         self.loop = loop
         self.model = model
-        self._aclient = aclient
+        # Public so the plaintext code-gen path (TrieClient.run_text) can drive
+        # this thread's loop-bound AsyncAnthropic directly with messages.create,
+        # reusing the same per-thread loop/client as the structured run() path.
+        self.aclient = aclient
 
     def __del__(self) -> None:
         # Close the async client on its own loop (closing its connection pool)
@@ -72,9 +75,9 @@ class _LoopHolder:
         loop = self.loop
         with suppress(Exception):
             if loop is not None and not loop.is_closed():
-                if self._aclient is not None:
+                if self.aclient is not None:
                     with suppress(Exception):
-                        loop.run_until_complete(self._aclient.close())
+                        loop.run_until_complete(self.aclient.close())
                 loop.close()
 
 
@@ -289,9 +292,16 @@ class CallerDecision(BaseModel):
 
 
 class BatchFilterOutput(BaseModel):
-    """Batch filter decisions for all callee→caller pairs."""
+    """Batch filter decisions for all callee→caller pairs.
 
-    decisions: list[CallerDecision]
+    ``decisions`` defaults to an empty list so a model reply of ``{}`` (which
+    happens when it judges that no caller needs updating) validates instead of
+    raising a pydantic ``ValidationError`` → ``UnexpectedModelBehavior`` that
+    aborts the whole apply. An empty decision set is the correct, safe meaning:
+    "no callers need to change."
+    """
+
+    decisions: list[CallerDecision] = Field(default_factory=list)
 
 
 class FixupOutput(BaseModel):
@@ -480,8 +490,10 @@ class TrieClient:
     """Pydantic AI-powered LLM client.
 
     ``run()`` creates a one-shot ``Agent`` with ``output_type`` and
-    ``system_prompt``, calls ``agent.run_sync(user_prompt)``, and returns a
-    ``ModelResult`` with the structured output and token usage.
+    ``system_prompt`` and drives it via ``agent.run`` on a per-thread event loop
+    (never ``run_sync`` — see ``_thread_holder`` for the fd-leak reasoning),
+    returning a ``ModelResult`` with the output and token usage. Pass
+    ``output_type=str`` (or use ``run_text``) for plain-text/code generation.
 
     ``count_tokens()`` still uses the Anthropic SDK ``count_tokens`` endpoint
     (free, no generation) to estimate prompt sizes before a run.
@@ -529,14 +541,21 @@ class TrieClient:
 
     def run(
         self,
-        output_type: type[BaseModel],
+        output_type: type[BaseModel] | type[str],
         system_prompt: str,
         user_prompt: str,
         *,
         max_tokens: int = 1024,
         cache_prefix: str | None = None,
+        output_retries: int = 3,
     ) -> ModelResult:
         """Run an agent with structured output.
+
+        Passing ``output_type=str`` selects pydantic-ai's plain-text output mode:
+        the model replies with free text (no JSON schema, no tool call) and
+        ``result.output`` is the raw string. The code-generation path uses this
+        via ``run_text`` so large code bodies are never forced through an escaped
+        JSON string field — the source of the apply-time ``UnexpectedModelBehavior``.
 
         Prompt caching (critical for cost control on multi-symbol files):
 
@@ -575,6 +594,13 @@ class TrieClient:
                     holder.model,
                     output_type=output_type,
                     system_prompt=system_prompt,
+                    # pydantic-ai defaults to 1 output retry: a single malformed
+                    # structured response (common for large symbols like a 200-line
+                    # React component regenerated as one SymbolEdit.source) aborts
+                    # the whole apply with "Exceeded maximum output retries (1)".
+                    # Our network retry wrapper does NOT cover output-validation
+                    # failures, so give pydantic-ai room to re-ask the model.
+                    retries=output_retries,
                 )
                 with _inflight_slot():
                     return holder.loop.run_until_complete(
@@ -603,6 +629,38 @@ class TrieClient:
                 "cache_read_input_tokens", 0
             ) or 0
             return ModelResult(output=result.output, usage=usage)
+
+    def run_text(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        max_tokens: int = 1024,
+        cache_prefix: str | None = None,
+    ) -> ModelResult:
+        """Run the model in plain-text mode and return its raw TEXT output.
+
+        This is the code-generation path. Routing code through a pydantic
+        structured-output schema forces the model to emit a large body as an
+        escaped JSON string field; under load that JSON malforms or truncates and
+        pydantic-ai exhausts its output retries with ``UnexpectedModelBehavior``
+        — a ~100s dead end on big files. Instead we use pydantic-ai's first-class
+        plain-text output mode (``output_type=str``): the model replies with free
+        text (a fenced code block the caller parses via ``trie.edits.textgen``),
+        with no JSON schema that a long code body could fail to satisfy.
+
+        Delegates to ``run`` so prompt caching, the per-thread loop/client, the
+        in-flight governor, and network retries are all shared with the
+        structured path — only the output mode differs. ``result.output`` is the
+        raw string.
+        """
+        return self.run(
+            str,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            max_tokens=max_tokens,
+            cache_prefix=cache_prefix,
+        )
 
     def count_tokens(self, system_prompt: str, user_prompt: str) -> int:
         """Return the number of input tokens via the Anthropic count_tokens API."""

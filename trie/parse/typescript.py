@@ -704,6 +704,31 @@ Also classify the symbol's architectural role via the `role` field. Pick the sin
 """
 
 
+def _find_tsc(file_path: Path) -> list[str] | None:
+    """Locate a `tsc` command for the project containing `file_path`.
+
+    Prefers a project-local `node_modules/.bin/tsc` (walking up from the file,
+    then from cwd), falling back to a `tsc` on PATH. Returns the argv prefix
+    (e.g. `["/path/node_modules/.bin/tsc"]`) or None when none is found.
+    """
+    import os
+    import shutil
+
+    def _walk_for_bin(start: Path) -> Path | None:
+        cur = start.resolve()
+        for d in [cur, *cur.parents]:
+            cand = d / "node_modules" / ".bin" / "tsc"
+            if cand.is_file() and os.access(cand, os.X_OK):
+                return cand
+        return None
+
+    local = _walk_for_bin(Path(file_path).parent) or _walk_for_bin(Path.cwd())
+    if local is not None:
+        return [str(local)]
+    on_path = shutil.which("tsc")
+    return [on_path] if on_path else None
+
+
 class TypeScriptBackend:
     """`LanguageBackend` for TypeScript / TSX / declaration files."""
 
@@ -747,3 +772,68 @@ class TypeScriptBackend:
 
     def system_prompt(self) -> str:
         return TS_SYSTEM_PROMPT
+
+    def edit_system_prompt(self) -> str:
+        return (
+            "You update TypeScript / TSX source code based on implementation notes and "
+            "return the updated source and an updated prose summary of the symbol's "
+            "purpose. Emit idiomatic, well-typed TypeScript that passes `tsc` and keeps "
+            "JSX valid in .tsx files. "
+            "CRITICAL: return ONLY this one symbol's own definition (the function / "
+            "class / interface / type / const / component) — nothing else. Do NOT include "
+            "`import` statements (static OR dynamic `import(...)`), and do NOT include any "
+            "other top-level declaration. The returned code is spliced back in at the "
+            "symbol's exact location, so a stray import or extra declaration lands "
+            "mid-file (or mid-body) and breaks the parse. If the change needs a new "
+            "import, name it in the module-remarks section; if it needs a new external "
+            "package, name it in the new-deps section. The prose should describe what the "
+            "symbol does at a high level — do not include implementation notes or bullet "
+            "points."
+        )
+
+    def code_fence(self) -> str:
+        return "typescript"
+
+    def validate_syntax(self, source: str, *, file_path: Path) -> bool:
+        """Run `tsc --noEmit --noResolve` and fail only on SYNTAX errors (TS1xxx).
+
+        `--noResolve` means imports/types aren't resolved, so type-and-resolution
+        errors (TS2xxx) are expected in this isolated check and are ignored — the
+        full overlay diagnostics pass (with tsconfig + the package hardlinked) is
+        the real type gate. We reject only genuine parse failures so the fixup
+        loop keeps a candidate that merely has unresolved imports in isolation.
+        """
+        import re
+        import shutil
+        import subprocess
+        import tempfile
+
+        tsc = _find_tsc(file_path)
+        if tsc is None:
+            return True  # no tsc available → don't block; degrade to accept
+
+        # Preserve the real extension so .tsx is parsed as TSX.
+        suffix = "".join(Path(file_path).suffixes) or ".ts"
+        if not suffix.startswith("."):
+            suffix = ".ts"
+        tmp_dir = tempfile.mkdtemp(prefix="trie-tsgate-")
+        try:
+            cand = Path(tmp_dir) / ("candidate" + suffix)
+            cand.write_text(source, encoding="utf-8")
+            try:
+                proc = subprocess.run(
+                    [*tsc, "--noEmit", "--noResolve", "--pretty", "false", str(cand)],
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                )
+            except (OSError, subprocess.TimeoutExpired):
+                return True  # tsc unavailable/slow → don't block
+            out = (proc.stdout or "") + (proc.stderr or "")
+            # Syntax errors are TS1xxx. Only those, scoped to our candidate file,
+            # are a parse failure; TS2xxx (resolution/type) are ignored here.
+            return all(not m.group(1).startswith("1") for m in re.finditer(r"error TS(\d+):", out))
+        except Exception:
+            return True
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
