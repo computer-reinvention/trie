@@ -3,14 +3,14 @@ name = "trie"
 version = "0.1.9"
 description = "Documentation tree as coding harness anchor — LSP/SCIP-aware cascade keeps a Markdown doc tree coherent with code."
 readme = "README.md"
-license = { text = "Proprietary - patented, source-available, no outside contributions" }
+license = { text = "MIT" }
 authors = [{ name = "Pankaj Garkoti" }]
 requires-python = ">=3.11"
 keywords = ["documentation", "code-intelligence", "scip", "lsp", "ai-agents", "mcp"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: Other/Proprietary License",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -40,6 +40,7 @@ dev = [
 
 [project.scripts]
 trie = "trie.cli:app"
+trie-mcp = "trie.mcp_server:main"
 
 [project.urls]
 Homepage = "https://github.com/pankajgarkoti/trie"
@@ -54,26 +55,20 @@ packages = ["trie"]
 
 [tool.hatch.build]
 exclude = [
-    "app/",
-    "opencode/",
     "landing/",
     "triefacts/",
     "tmp/",
     "dist/",
     "*.spec",
-    "trie_mcp_entry.py",
 ]
 
 [tool.hatch.build.targets.sdist]
 exclude = [
-    "app/",
-    "opencode/",
     "landing/",
     "triefacts/",
     "tmp/",
     "dist/",
     "*.spec",
-    "trie_mcp_entry.py",
 ]
 
 # Bundle the agent-facing usage guide as package data. `trie setup` copies it

@@ -3211,3 +3211,23 @@ def run_stdio(project_root: Path) -> None:
     sys.stderr.reconfigure(line_buffering=True)  # type: ignore[attr-defined]
     server, _tools = build_server(project_root)
     server.run()
+
+
+def main() -> None:
+    """Console-script entry point: ``trie-mcp <project-dir>``.
+
+    Runs the stdio MCP server for the given project. This is the surface
+    external harnesses (including the trie desktop app) spawn as a sidecar.
+    """
+    import sys
+
+    if len(sys.argv) < 2:
+        print("usage: trie-mcp <project-dir>", file=sys.stderr)
+        sys.exit(1)
+
+    project_root = Path(sys.argv[1]).resolve()
+    if not project_root.exists():
+        print(f"error: project directory does not exist: {project_root}", file=sys.stderr)
+        sys.exit(1)
+
+    run_stdio(project_root)
