@@ -46,9 +46,10 @@ jobs:
 
       - name: sync landing/ to public pages repo
         # We clone the public repo, mirror the current landing/ contents
-        # over its working tree (preserving .git), and push only if there
-        # is an actual diff. The commit message points back at the trie
-        # commit that triggered this run so the public history is traceable.
+        # into its trie/ subdirectory (the org site root is the experiments
+        # index; each project lives at /<name>/), and push only if there is
+        # an actual diff. The commit message points back at the trie commit
+        # that triggered this run so the public history is traceable.
         env:
           SRC_SHA: ${{ github.sha }}
           SRC_REPO: ${{ github.repository }}
@@ -58,11 +59,12 @@ jobs:
           DEST_DIR="$RUNNER_TEMP/site"
           git clone --depth 1 git@github.com:computer-reinvention/computer-reinvention.github.io.git "$DEST_DIR"
 
-          # Wipe the destination tree (except .git) and copy landing/ over it.
-          # rsync with --delete would also work but requires --exclude=.git;
-          # find+rm is explicit and obvious.
-          find "$DEST_DIR" -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
-          cp -R landing/. "$DEST_DIR"/
+          # Wipe only the trie/ subtree and copy landing/ over it. The rest
+          # of the site (root index, sibling project pages) is owned by the
+          # pages repo itself and must survive trie deploys.
+          rm -rf "$DEST_DIR/trie"
+          mkdir -p "$DEST_DIR/trie"
+          cp -R landing/. "$DEST_DIR"/trie/
 
           cd "$DEST_DIR"
           git config user.name  "trie-pages-deploy"
