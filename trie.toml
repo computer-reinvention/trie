@@ -8,34 +8,20 @@ version = "0.1.2"
 # Tests are included by default — they encode behavioral spec worth documenting.
 # Add `"**/tests/**"` to `exclude` if you'd rather skip them to keep cost down.
 #
-# Multi-language: Python core + the TypeScript desktop app (app/) and the
-# vendored opencode fork (opencode/, a git submodule — only indexed when it is
-# checked out). First-party .d.ts files are indexed (declarations are behaviour
-# in a typed language); third-party .d.ts under node_modules is excluded below.
 include = [
     "**/*.py",
     "**/*.ts",
     "**/*.tsx",
 ]
 exclude = [
-    # Prune every hidden dir (.git, .trie, .venv, .opencode, .opencode.bak,
-    # .vite, .output, .sst, …) — none are project source.
+    # Prune every hidden dir (.git, .trie, .venv, .opencode, …) — none are project source.
     "**/.*/**",
     "**/__pycache__/**",
     "**/build/**",
     "**/dist/**",
-    # Non-source TS subtrees: dependencies, build output, and generated bundles.
     "**/node_modules/**",
-    "**/dist-electron/**",
-    "**/out/**",
     "tmp/**",        # session scratch (backfill scripts, notes); never trie-managed
-    # Vendored opencode fork (git submodule) — not our source; ~45% of all
-    # indexed symbols came from here, swamping the graph with third-party code.
-    "opencode/**",
-    # Desktop app dev tooling: build scripts (build-*, render-svg, setup-*,
-    # validate-*) and the sim/ simulation+verification harness. Internal
-    # scaffolding, not app behaviour.
-    "app/scripts/**",
+    "landing/**",    # static marketing site, not product source
 ]
 
 [triefacts]
