@@ -129,3 +129,17 @@ def test_run_caches_system_instructions(mocker):
     # AnthropicModelSettings is a TypedDict — a plain dict at runtime.
     assert settings["anthropic_cache_instructions"] is True
     assert settings["max_tokens"] == 1024
+
+
+def test_batch_filter_output_tolerates_empty_object():
+    """A model reply of `{}` must validate to an empty decision set.
+
+    Regression: the model returned `{}` for the caller pre-filter step, and
+    `decisions` being a required field raised pydantic ValidationError →
+    UnexpectedModelBehavior, aborting the whole patch apply. An empty decision
+    set is the correct meaning: no callers need updating.
+    """
+    from trie.models import BatchFilterOutput
+
+    assert BatchFilterOutput.model_validate({}).decisions == []
+    assert BatchFilterOutput().decisions == []

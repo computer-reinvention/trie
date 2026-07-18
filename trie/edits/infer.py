@@ -2,11 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from trie.edits import textgen
 from trie.models import (
     BatchFilterOutput,
-    FileEdit,
     MergeNotesOutput,
-    SymbolEdit,
     TrieClient,
 )
 
@@ -20,6 +19,26 @@ Return the deduplicated notes and reasons."""
 
 INFER_SYSTEM_PROMPT = """\
 You update Python source code based on implementation notes and return the updated source and an updated prose summary of the symbol's purpose. The prose should describe what the symbol does at a high level — do not include implementation notes or bullet points."""
+
+
+def _backend_for(file_path: str | None):
+    """Resolve the language backend for a file, or None when unknown."""
+    if not file_path:
+        return None
+    from trie.parse import registry
+
+    return registry.get_backend_for_file(Path(file_path))
+
+
+def _system_prompt_for(file_path: str | None) -> str:
+    backend = _backend_for(file_path)
+    return backend.edit_system_prompt() if backend is not None else INFER_SYSTEM_PROMPT
+
+
+def _fence_for(file_path: str | None) -> str:
+    backend = _backend_for(file_path)
+    return backend.code_fence() if backend is not None else "python"
+
 
 BATCH_PRE_FILTER_PROMPT = """\
 For each changed callee below, decide which of its callers must be updated to stay
@@ -38,7 +57,7 @@ FILE_GEN_PROMPT = """\
 You are updating symbols in the file {file_path}.
 
 Below is the current file content for context:
-```python
+```{fence}
 {file_content}
 ```
 
@@ -46,19 +65,21 @@ Symbols that need changes:
 
 {symbol_sections}
 
-Apply every symbol's change into the file and return the complete updated file content plus updated prose for every changed symbol."""
+Apply every symbol's change into the file. {code_instructions}
+
+{prose_instructions}"""
 
 FILE_FIXUP_PROMPT = """\
 The following file has diagnostics errors. Fix all errors.
 
-```python
+```{fence}
 {file_content}
 ```
 
 Diagnostics:
 {diagnostics}
 
-Return the complete corrected file content."""
+{code_instructions}"""
 
 
 def _format_bullets(notes: list[str], reasons: list[str]) -> str:
@@ -74,16 +95,32 @@ def merge_notes(client: TrieClient, patches: list[dict]) -> tuple[list[str], lis
 
     notes = [p["note"] for p in patches]
     reasons = [p["reason"] for p in patches]
-    bullet_list = _format_bullets(notes, reasons)
 
-    result = client.run(
-        MergeNotesOutput,
-        system_prompt="",
-        user_prompt=MERGE_PROMPT.format(bullet_list=bullet_list),
-        max_tokens=512,
-    )
-    merged: MergeNotesOutput = result.output
-    return merged.notes, merged.reasons
+    # The merge step only DEDUPES contradictory notes — it is an optimization,
+    # never load-bearing. A single patch has nothing to merge, and any LLM
+    # hiccup (empty/malformed object, network error, schema validation failure)
+    # must NOT abort the whole apply: fall back to the raw notes verbatim. This
+    # is what made a clean single-patch apply crash on a `MergeNotesOutput`
+    # validation error when the model returned `{}`.
+    if len(patches) == 1:
+        return notes, reasons
+
+    bullet_list = _format_bullets(notes, reasons)
+    try:
+        result = client.run(
+            MergeNotesOutput,
+            system_prompt="",
+            user_prompt=MERGE_PROMPT.format(bullet_list=bullet_list),
+            max_tokens=512,
+        )
+        merged: MergeNotesOutput = result.output
+        if merged.notes:
+            return merged.notes, merged.reasons
+    except Exception:
+        pass
+    # Degrade to the un-merged notes — correctness is preserved, we just skip
+    # the dedup pass.
+    return notes, reasons
 
 
 def infer_source_and_prose(
@@ -92,8 +129,12 @@ def infer_source_and_prose(
     old_prose: str,
     notes: list[str],
     reasons: list[str],
+    *,
+    file_path: str | None = None,
+    max_tokens: int = 16384,
 ) -> tuple[str, str]:
     bullet_list = _format_bullets(notes, reasons)
+    fence = _fence_for(file_path)
 
     user_prompt = f"""\
 Old prose (the symbol's documented purpose):
@@ -103,18 +144,21 @@ Implementation notes (what changed):
 {bullet_list}
 
 Old source:
-```python
+```{fence}
 {old_source}
-```"""
+```
 
-    result = client.run(
-        SymbolEdit,
-        system_prompt=INFER_SYSTEM_PROMPT,
+{textgen.code_block_instructions(fence)}
+
+{textgen.single_prose_instructions()}"""
+
+    result = client.run_text(
+        system_prompt=_system_prompt_for(file_path),
         user_prompt=user_prompt,
-        max_tokens=4096,
+        max_tokens=max_tokens,
     )
-    edit: SymbolEdit = result.output
-    return edit.source, edit.prose
+    text = result.output
+    return textgen.parse_code(text), textgen.parse_single_prose(text)
 
 
 def infer_file_source(
@@ -123,8 +167,9 @@ def infer_file_source(
     file_content: str,
     symbols_data: list[dict],
     *,
-    max_tokens: int = 8192,
+    max_tokens: int = 16384,
 ) -> tuple[str, dict[str, str]]:
+    fence = _fence_for(file_path)
     sections: list[str] = []
     for idx, sd in enumerate(symbols_data, 1):
         notes_text = "".join(
@@ -133,26 +178,30 @@ def infer_file_source(
         )
         sections.append(
             f"--- SYMBOL {idx}: {sd['qname']} ---\n"
-            f"Old source:\n```python\n{sd['old_source']}\n```\n\n"
+            f"Old source:\n```{fence}\n{sd['old_source']}\n```\n\n"
             f"Old prose:\n{sd['old_prose']}\n\n"
             f"Implementation notes:\n{notes_text}\n"
         )
 
+    qnames = [sd["qname"] for sd in symbols_data]
     user_prompt = FILE_GEN_PROMPT.format(
+        fence=fence,
         file_path=file_path,
         file_content=file_content,
         symbol_sections="\n".join(sections),
+        code_instructions=textgen.code_block_instructions(fence),
+        prose_instructions=textgen.multi_prose_instructions(qnames),
     )
 
-    result = client.run(
-        FileEdit,
-        system_prompt=INFER_SYSTEM_PROMPT,
+    result = client.run_text(
+        system_prompt=_system_prompt_for(file_path),
         user_prompt=user_prompt,
         max_tokens=max_tokens,
     )
-    file_edit: FileEdit = result.output
-    proses = {sp.qname: sp.prose for sp in file_edit.prose}
-    return file_edit.content, proses
+    text = result.output
+    content = textgen.parse_code(text)
+    proses = textgen.parse_qname_prose(text)
+    return content, proses
 
 
 def _build_caller_summaries(

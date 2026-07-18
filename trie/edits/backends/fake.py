@@ -40,10 +40,17 @@ class FakeBackend:
             return EditResult(req.qname, "def (((broken", f"prose for {req.qname}", ok=True)
 
         # Create always synthesizes a valid def for the new symbol, regardless of
-        # mode — there is no old_source to append to / pass through.
+        # mode — there is no old_source to append to / pass through. For a
+        # `Class.method` qname, emit just the method name with a `self` param so
+        # the generated def is valid once placed inside the class body.
         if req.op == "create":
-            name = req.qname.rsplit(":", 1)[-1]
-            src = f"def {name}():\n    return None\n"
+            local = req.qname.rsplit(":", 1)[-1]
+            if "." in local:
+                name = local.rsplit(".", 1)[-1]
+                src = f"def {name}(self):\n    return None\n"
+            else:
+                name = local
+                src = f"def {name}():\n    return None\n"
             return EditResult(req.qname, src, f"prose for {req.qname}", ok=True)
 
         if mode == "append":

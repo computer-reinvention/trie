@@ -3106,6 +3106,124 @@ def patch_create_cmd(
     reporter.success(f"patch #{patch_id} posted for {qname}")
 
 
+@patch_app.command("create-batch")
+def patch_create_batch_cmd(
+    ctx: typer.Context,
+    json_file: str = typer.Option(
+        "", "--json-file", help="Path to a JSON file with the patch array (else read stdin)."
+    ),
+) -> None:
+    """Stage MANY patches/creates in one call. Reads a JSON array.
+
+    Source: `--json-file PATH` if given, otherwise stdin. Each item is an object:
+      {"op": "patch",  "qname": "src/foo:bar", "note": "...", "reason": "..."}
+      {"op": "create", "qname": "src/foo:baz", "note": "...", "file": "...",
+       "anchor": "...", "reason": "..."}
+    `op` defaults to "patch". This collapses what would be N separate
+    `patch create` invocations (N agent turns) into one: the staging itself is a
+    cheap DB write, so the win is removing the per-call round-trip. Items are
+    processed independently — a bad item is reported but does not abort the rest.
+    Emits a JSON summary on stdout: {staged, failed, results:[...]}.
+    """
+    import json as _json
+    import sys as _sys
+
+    reporter = _get_reporter(ctx)
+    try:
+        _config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    if json_file:
+        try:
+            raw = Path(json_file).read_text()
+        except OSError as exc:
+            reporter.error(f"cannot read --json-file {json_file!r}: {exc}")
+            raise typer.Exit(code=1) from exc
+    else:
+        raw = _sys.stdin.read()
+    try:
+        items = _json.loads(raw)
+    except _json.JSONDecodeError as exc:
+        reporter.error(f"stdin is not valid JSON: {exc}")
+        raise typer.Exit(code=1) from exc
+    if not isinstance(items, list) or not items:
+        reporter.error("stdin must be a non-empty JSON array of patch items")
+        raise typer.Exit(code=1)
+
+    from trie.parse import registry
+
+    src_root = (project_root / _config.triefacts.source_root).resolve()
+    store = Store(project_root / ".trie" / "graph.db")
+    session_id = _cli_session_id(project_root)
+    results: list[dict[str, object]] = []
+    staged = 0
+    try:
+        for idx, item in enumerate(items):
+            if not isinstance(item, dict):
+                results.append({"index": idx, "ok": False, "error": "item is not an object"})
+                continue
+            qname = str(item.get("qname", "")).strip()
+            note = str(item.get("note", "")).strip()
+            reason = str(item.get("reason", "") or "")
+            op = str(item.get("op", "patch")).strip().lower() or "patch"
+            if not qname or not note:
+                results.append(
+                    {"index": idx, "qname": qname, "ok": False, "error": "qname and note required"}
+                )
+                continue
+            try:
+                if op == "create":
+                    if store.get_symbol_detail(qname) is not None:
+                        results.append(
+                            {
+                                "index": idx,
+                                "qname": qname,
+                                "ok": False,
+                                "error": "symbol exists — use op=patch",
+                            }
+                        )
+                        continue
+                    target_file = str(item.get("file", "")) or registry.resolve_create_target(
+                        src_root, qname
+                    )
+                    cid = store.add_create_patch(
+                        target_file=target_file,
+                        target_qname=qname,
+                        note=note,
+                        reason=reason,
+                        session_id=session_id,
+                        anchor_qname=str(item.get("anchor", "")) or None,
+                    )
+                    results.append(
+                        {"index": idx, "qname": qname, "ok": True, "op": "create", "patch_id": cid}
+                    )
+                    staged += 1
+                else:
+                    pid = store.add_patch(qname, note, reason, session_id)
+                    results.append(
+                        {"index": idx, "qname": qname, "ok": True, "op": "patch", "patch_id": pid}
+                    )
+                    staged += 1
+            except KeyError:
+                results.append(
+                    {
+                        "index": idx,
+                        "qname": qname,
+                        "ok": False,
+                        "error": "symbol not found in graph",
+                    }
+                )
+    finally:
+        store.close()
+
+    failed = len(results) - staged
+    reporter.console.print_json(data={"staged": staged, "failed": failed, "results": results})
+    if staged == 0:
+        raise typer.Exit(code=1)
+
+
 @patch_app.command("create-symbol")
 def patch_create_symbol_cmd(
     ctx: typer.Context,
@@ -3132,9 +3250,13 @@ def patch_create_symbol_cmd(
         if store.get_symbol_detail(qname) is not None:
             reporter.error(f"{qname!r} already exists — use `trie patch create` to change it")
             raise typer.Exit(code=1)
-        # qname carries no language signal; default to Python's suffix. Pass
-        # `--file` to create a symbol in another language (e.g. a .ts module).
-        target_file = file or (qname.split(":", 1)[0] + ".py")
+        # Resolve target file via the registry: existing module file wins, else
+        # infer the language for a new file (sibling, then default suffix). Pass
+        # `--file` to override explicitly.
+        from trie.parse import registry
+
+        src_root = (project_root / _config.triefacts.source_root).resolve()
+        target_file = file or registry.resolve_create_target(src_root, qname)
         cid = store.add_create_patch(
             target_file=target_file,
             target_qname=qname,

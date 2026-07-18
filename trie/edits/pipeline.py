@@ -44,6 +44,7 @@ from trie.edits.report import (
     STAGE_GENERATE,
     AppliedItem,
     ApplyReport,
+    ModuleRemark,
     StagedChange,
     UnresolvedItem,
     session_note_ok,
@@ -64,6 +65,52 @@ def _splice(file_lines: list[str], start_line: int, end_line: int, new_src: str)
     block = new_src if new_src.endswith("\n") else new_src + "\n"
     out[start_line - 1 : end_line] = [block]
     return out
+
+
+def _per_symbol_compile_salvage(before_bytes, items, per_symbol_new, file_path):
+    """Salvage a failed whole-file batch by keeping only symbols that compile.
+
+    The whole-file splice didn't compile. Re-splice each successful symbol ALONE
+    onto the original file and keep it only if that single-symbol result compiles;
+    then splice all the survivors together (highest-line-first so spans stay
+    valid) and confirm the combined file compiles. Returns
+    ``(good_items, combined_after_bytes)``. If even the combined survivors fail
+    (a cross-symbol interaction), returns ``([], original_bytes)``.
+
+    This makes one bad generation cost only its own symbol instead of failing
+    every other symbol in the file — the difference between "apply did nothing"
+    and "apply landed 9 of 10".
+    """
+    good = []
+    for it in items:
+        job, res = it
+        if not res.ok:
+            continue
+        single = _splice(
+            before_bytes.splitlines(keepends=True),
+            job.detail.start_line,
+            job.detail.end_line,
+            per_symbol_new.get(job.qname, ""),
+        )
+        candidate = "".join(single)
+        if not candidate.endswith("\n"):
+            candidate += "\n"
+        if _compile_check(candidate, file_path):
+            good.append(it)
+    if not good:
+        return [], before_bytes
+    # Splice all survivors together, highest-line-first so earlier spans stay valid.
+    lines = before_bytes.splitlines(keepends=True)
+    for job, _res in sorted(good, key=lambda it: it[0].detail.start_line, reverse=True):
+        lines = _splice(
+            lines, job.detail.start_line, job.detail.end_line, per_symbol_new[job.qname]
+        )
+    combined = "".join(lines)
+    if not combined.endswith("\n"):
+        combined += "\n"
+    if not _compile_check(combined, file_path):
+        return [], before_bytes
+    return good, combined
 
 
 def _fix_imports_for_structural(
@@ -417,6 +464,8 @@ def stage(
         file_lines = before_bytes.splitlines(keepends=True)
         per_symbol_new: dict[str, str] = {}
         per_symbol_prose: dict[str, str] = {}
+        per_symbol_remarks: dict[str, str] = {}
+        per_symbol_deps: dict[str, tuple[str, ...]] = {}
         failed_in_file = False
 
         for job, res in items_sorted:
@@ -449,6 +498,10 @@ def stage(
             )
             per_symbol_new[job.qname] = res.new_source
             per_symbol_prose[job.qname] = res.new_prose
+            if res.module_remarks.strip():
+                per_symbol_remarks[job.qname] = res.module_remarks.strip()
+            if res.new_dependencies:
+                per_symbol_deps[job.qname] = tuple(res.new_dependencies)
 
         if failed_in_file:
             continue
@@ -468,14 +521,24 @@ def stage(
         )
 
         # Compile gate (well-formedness, not correctness).
-        if not _compile_check(after_bytes):
-            for job, _res in items:
+        if not _compile_check(after_bytes, file_path):
+            # All-symbols splice didn't compile. Don't doom the whole file: a
+            # single bad symbol (e.g. a body that smuggled in an import) would
+            # otherwise mark every other (perfectly good) symbol in the file as
+            # failed and commit nothing — which is what drove agents off the
+            # pipeline into hand-edits. Degrade to per-symbol: re-splice each
+            # symbol alone onto the ORIGINAL file and keep the ones that compile.
+            good_items, after_bytes = _per_symbol_compile_salvage(
+                before_bytes, items, per_symbol_new, file_path
+            )
+            bad_items = [it for it in items if it not in good_items]
+            for job, _res in bad_items:
                 report.unresolved.append(
                     UnresolvedItem(
                         qname=job.qname,
                         stage=STAGE_COMPILE,
                         code=CODE_SYNTAX_AFTER_CAP,
-                        message="spliced file does not compile",
+                        message="spliced symbol does not compile",
                         source_pointer=f"{file_path}:{job.detail.start_line}",
                         repatch={
                             "tool": "patch",
@@ -486,8 +549,11 @@ def stage(
                         },
                     )
                 )
-            report.ok = False
-            continue
+            if bad_items:
+                report.ok = False
+            if not good_items:
+                continue
+            items = good_items
 
         for job, _res in items:
             staged.append(
@@ -501,6 +567,8 @@ def stage(
                     before_file_bytes=before_bytes,
                     after_file_bytes=after_bytes,
                     lsp_iterations=0,
+                    module_remarks=per_symbol_remarks.get(job.qname, ""),
+                    new_dependencies=per_symbol_deps.get(job.qname, ()),
                 )
             )
 
@@ -721,25 +789,15 @@ def _stage_creates(
             try:
                 true_before = full_path.read_text()
             except FileNotFoundError:
-                # New-file creation is deferred (WS: new files). For now require the
-                # target file to exist; surface a clear, re-patchable error.
-                for cp in creates:
-                    report.unresolved.append(
-                        UnresolvedItem(
-                            qname=cp["target_qname"],
-                            stage=STAGE_GENERATE,
-                            code="file_not_found",
-                            message=f"target file {file_path} does not exist (new-file create "
-                            "not supported in v1)",
-                            source_pointer=file_path,
-                        )
-                    )
-                    report.ok = False
-                continue
+                # True new-file creation: scaffold from empty. The generated
+                # symbol source becomes the file body; commit() mkdirs parents
+                # and the post-commit scan absorbs the new file into the graph.
+                true_before = ""
             after_bytes = true_before
 
         before_bytes = true_before
-        placed: list[tuple[str, str]] = []  # (qname, new_source)
+        # (qname, new_source, module_remarks, new_dependencies)
+        placed: list[tuple[str, str, str, tuple[str, ...]]] = []
         for cp in creates:
             qname = cp["target_qname"]
             req = EditRequest(
@@ -772,9 +830,11 @@ def _stage_creates(
                 report.ok = False
                 continue
             after_bytes = _place_new_symbol(
-                after_bytes, res.new_source, cp.get("anchor_qname"), store
+                after_bytes, res.new_source, cp.get("anchor_qname"), store, qname=qname
             )
-            placed.append((qname, res.new_source))
+            placed.append(
+                (qname, res.new_source, res.module_remarks.strip(), tuple(res.new_dependencies))
+            )
 
         if not placed:
             continue
@@ -782,8 +842,8 @@ def _stage_creates(
         if not after_bytes.endswith("\n"):
             after_bytes += "\n"
 
-        if not _compile_check(after_bytes):
-            for qname, new_src in placed:
+        if not _compile_check(after_bytes, file_path):
+            for qname, new_src, _remarks, _deps in placed:
                 report.unresolved.append(
                     UnresolvedItem(
                         qname=qname,
@@ -806,7 +866,7 @@ def _stage_creates(
             if ch.file_path == file_path:
                 staged[i] = replace(ch, after_file_bytes=after_bytes)
 
-        for qname, new_src in placed:
+        for qname, new_src, remarks, deps in placed:
             staged.append(
                 StagedChange(
                     qname=qname,
@@ -818,6 +878,8 @@ def _stage_creates(
                     before_file_bytes=before_bytes,
                     after_file_bytes=after_bytes,
                     lsp_iterations=0,
+                    module_remarks=remarks,
+                    new_dependencies=deps,
                 )
             )
 
@@ -827,9 +889,32 @@ def _place_new_symbol(
     new_source: str,
     anchor_qname: str | None,
     store: Store,
+    *,
+    qname: str | None = None,
 ) -> str:
-    """Insert new_source after the anchor symbol's span, else at end-of-file."""
+    """Insert new_source into file_text.
+
+    Placement priority:
+    1. A member create (`module:Parent.child`) is inserted INSIDE the parent's
+       body, re-indented to member level, so a new class method/field lands in
+       the class rather than at file scope (which would be invalid).
+    2. An explicit `anchor_qname` → directly after that symbol's span.
+    3. Otherwise end-of-file (or the whole file when empty).
+    """
     block = new_source if new_source.endswith("\n") else new_source + "\n"
+
+    # (1) Member create: route into the parent container's body.
+    if qname is not None:
+        module, _, local = qname.partition(":")
+        if "." in local:
+            parent_local = local.rsplit(".", 1)[0]
+            parent_detail = store.get_symbol_detail(f"{module}:{parent_local}")
+            if parent_detail is not None:
+                parent_name = parent_local.rsplit(".", 1)[-1]
+                placed = _insert_into_parent(file_text, block, parent_detail, parent_name)
+                if placed is not None:
+                    return placed
+
     if anchor_qname:
         detail = store.get_symbol_detail(anchor_qname)
         if detail is not None:
@@ -841,6 +926,130 @@ def _place_new_symbol(
     if not file_text.strip():
         return block
     return file_text.rstrip("\n") + "\n\n\n" + block
+
+
+def _find_container_span(lines: list[str], name: str | None) -> tuple[int, int] | None:
+    """Locate `name`'s container declaration span (0-indexed start, exclusive end).
+
+    Used to recover a parent class/interface span when stored line numbers are
+    stale. Finds the first line declaring the container by name (matching
+    `class`/`interface`/`enum`/`namespace`/`def`-style headers loosely via the
+    name + an opening `{` or `:`), then computes its end:
+    - brace style: balance `{`/`}` from the opening line to the matching close.
+    - colon/indent style (Python): the run of lines indented deeper than the
+      header until the first line at or below the header's indentation.
+    Returns None when not found.
+    """
+    if not name:
+        return None
+    header_idx = None
+    for i, ln in enumerate(lines):
+        stripped = ln.strip()
+        if name in ln and (
+            stripped.startswith(("class ", "export class ", "interface ", "export interface "))
+            or stripped.startswith(("enum ", "export enum ", "namespace ", "abstract class "))
+            or (stripped.startswith(("class ", "def ")) and stripped.rstrip().endswith(":"))
+        ):
+            # Confirm the matched word is the declared name (next token).
+            header_idx = i
+            break
+    if header_idx is None:
+        return None
+
+    opening = lines[header_idx]
+    if "{" in opening:
+        depth = 0
+        seen = False
+        for j in range(header_idx, len(lines)):
+            for ch in lines[j]:
+                if ch == "{":
+                    depth += 1
+                    seen = True
+                elif ch == "}":
+                    depth -= 1
+            if seen and depth == 0:
+                return (header_idx, j + 1)
+        return None
+    # Indentation (Python) style.
+    header_indent = len(opening) - len(opening.lstrip())
+    end = header_idx + 1
+    for j in range(header_idx + 1, len(lines)):
+        if not lines[j].strip():
+            end = j + 1
+            continue
+        indent = len(lines[j]) - len(lines[j].lstrip())
+        if indent <= header_indent:
+            break
+        end = j + 1
+    return (header_idx, end)
+
+
+def _insert_into_parent(
+    file_text: str, block: str, parent_detail, parent_name: str | None = None
+) -> str | None:
+    """Insert `block` as the last member inside the parent container's body.
+
+    Language-neutral: re-indents `block` to one level deeper than the parent's
+    own indentation and splices it just before the parent's final line. For a
+    brace language (TS/JS) the parent's last line is the closing `}`; for an
+    indentation language (Python) it's the last member line, so we append after
+    the body instead. Returns None when the span looks unusable (caller falls
+    back to file-scope placement).
+
+    `parent_detail`'s stored line numbers can be STALE when an earlier change in
+    the same batch shifted the file (a modify stacked before this create). We
+    validate the span against the current text using `parent_name`; if it no
+    longer points at the parent declaration, we recompute the span by searching
+    the text for the declaration, so same-file modify+create batches stay valid.
+    """
+    lines = file_text.splitlines(keepends=True)
+    start = parent_detail.start_line - 1  # 0-indexed
+    end = parent_detail.end_line  # 1-indexed inclusive → exclusive slice bound
+
+    # The stored span can be STALE: an earlier in-batch modify shifts the
+    # closing boundary (and possibly the opening) without updating the store.
+    # The opening line rarely moves (classes are declared near file top), but the
+    # `end` almost always does. So whenever we can verify by name, recompute the
+    # WHOLE span from the text — brace-matched / indent-scanned — which is robust
+    # to any in-batch shift. Fall back to the stored span only when we have no
+    # name to search by.
+    def _opens_parent(idx: int) -> bool:
+        return 0 <= idx < len(lines) and parent_name is not None and parent_name in lines[idx]
+
+    if parent_name is not None:
+        span = _find_container_span(lines, parent_name)
+        if span is not None:
+            start, end = span
+        elif not _opens_parent(start):
+            return None
+
+    if start < 0 or end > len(lines) or start >= end:
+        return None
+
+    # Parent's own indentation, from its opening line.
+    opening = lines[start]
+    parent_indent = opening[: len(opening) - len(opening.lstrip())]
+    member_indent = parent_indent + "    "
+
+    # Re-indent the generated block to member level. The block is generated as a
+    # standalone declaration (no indentation); indent each non-blank line.
+    reindented = "".join(
+        (member_indent + ln if ln.strip() else ln) for ln in block.splitlines(keepends=True)
+    )
+    if not reindented.endswith("\n"):
+        reindented += "\n"
+
+    last_line = lines[end - 1]
+    if last_line.lstrip().startswith("}"):
+        # Brace language: insert before the closing brace line.
+        head = "".join(lines[: end - 1])
+        tail = "".join(lines[end - 1 :])
+        sep = "" if head.endswith("\n\n") else ("\n" if head.endswith("\n") else "\n\n")
+        return head + sep + reindented + tail
+    # Indentation language (Python): append after the parent's body.
+    head = "".join(lines[:end])
+    tail = "".join(lines[end:])
+    return head.rstrip("\n") + "\n\n" + reindented + ("\n" + tail if tail else "\n")
 
 
 def _multifile_scratch_lsp(
@@ -890,8 +1099,10 @@ def _multifile_scratch_lsp(
                 diags = _lsp_diagnostics(sf, file_lsp_backends)
                 if not diags:
                     break
-                fixed = _file_fixup(client, fp, content, diags)
-                if fixed is None or not _compile_check(fixed):
+                fixed = _file_fixup(
+                    client, fp, content, diags, max_tokens=config.edits.max_output_tokens
+                )
+                if fixed is None or not _compile_check(fixed, fp):
                     break
                 if not fixed.endswith("\n"):
                     fixed += "\n"
@@ -991,12 +1202,18 @@ def commit(
     # symbol does not remove its create_patch row, so we clear them explicitly.
     create_qnames = [ch.qname for ch in staged if ch.op == "create"]
     written: list[tuple[str, str]] = []  # (file_path, before_bytes) for rollback
+    created_files: list[str] = []  # files that did NOT exist before → unlink on rollback
     try:
         # Write source first; the source tree (git-backed) is the unit we roll back.
         for file_path, changes in by_file.items():
             full_path = src_root / file_path
             before = changes[0].before_file_bytes
             after = changes[0].after_file_bytes
+            if not full_path.exists():
+                # True new-file creation: ensure parent dirs exist and remember to
+                # unlink (not restore) this path if the commit later rolls back.
+                full_path.parent.mkdir(parents=True, exist_ok=True)
+                created_files.append(file_path)
             full_path.write_text(after)
             written.append((file_path, before))
 
@@ -1029,13 +1246,20 @@ def commit(
             store.delete_create_patches(target_qname=qn)
     except Exception as exc:
         # Restore source from in-memory before-images (no persistent journal).
+        # Files that did not exist before are unlinked rather than restored.
+        new_set = set(created_files)
         for file_path, before in written:
-            (src_root / file_path).write_text(before)
+            target = src_root / file_path
+            if file_path in new_set:
+                target.unlink(missing_ok=True)
+            else:
+                target.write_text(before)
         report.ok = False
         report.committed = False
         report.error = f"commit failed, rolled back: {exc}"
         return report
 
+    seen_deps: set[str] = set()
     for ch in staged:
         report.applied.append(
             AppliedItem(
@@ -1046,6 +1270,19 @@ def commit(
                 lsp_iterations=ch.lsp_iterations,
             )
         )
+        # Post-apply agent actions: dedup deps across the batch (first-seen order),
+        # collect module-level remarks the splice couldn't apply. format_files is
+        # derived from applied files in to_dict().
+        for dep in ch.new_dependencies:
+            if dep not in seen_deps:
+                seen_deps.add(dep)
+                report.new_dependencies.append(dep)
+        if ch.module_remarks.strip():
+            report.module_remarks.append(
+                ModuleRemark(
+                    qname=ch.qname, file_path=ch.file_path, remarks=ch.module_remarks.strip()
+                )
+            )
 
     # Forward-wiring advisory: a freshly CREATED symbol that nothing references is
     # an orphan — the system can't auto-discover who should call it (the edge does

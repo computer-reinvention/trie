@@ -10,13 +10,15 @@ from typing import Any
 from trie.check import check_project
 from trie.config import Config, LspBackend
 from trie.graph.store import Store
-from trie.models import FixupOutput, TrieClient
+from trie.models import TrieClient
 
+from . import textgen
 from .infer import (
     FILE_FIXUP_PROMPT,
-    INFER_SYSTEM_PROMPT,
     _build_caller_summaries,
+    _fence_for,
     _read_prose,
+    _system_prompt_for,
     infer_file_source,
     infer_source_and_prose,
     merge_notes,
@@ -167,28 +169,44 @@ def _file_fixup(
     file_path: str,
     file_content: str,
     diagnostics: list[dict],
+    *,
+    max_tokens: int = 16384,
 ) -> str | None:
     diag_text = _format_diagnostics(diagnostics)
     if not diag_text.strip():
         return file_content
 
+    fence = _fence_for(file_path)
     user_prompt = FILE_FIXUP_PROMPT.format(
+        fence=fence,
         file_path=file_path,
         file_content=file_content,
         diagnostics=diag_text,
+        code_instructions=textgen.code_block_instructions(fence),
     )
 
-    result = client.run(
-        FixupOutput,
-        system_prompt=INFER_SYSTEM_PROMPT,
+    result = client.run_text(
+        system_prompt=_system_prompt_for(file_path),
         user_prompt=user_prompt,
-        max_tokens=4096,
+        max_tokens=max_tokens,
     )
-    fixup: FixupOutput = result.output
-    return fixup.content
+    return textgen.parse_code(result.output)
 
 
-def _compile_check(source: str) -> bool:
+def _compile_check(source: str, file_path: str | Path | None = None) -> bool:
+    """Language-aware syntax gate for a candidate file.
+
+    When `file_path` resolves to a registered language backend, delegate to that
+    backend's `validate_syntax` (Python → `compile`, TypeScript → `tsc`). Falls
+    back to a Python `compile` check when no path/backend is given so existing
+    Python-only call sites behave exactly as before.
+    """
+    if file_path is not None:
+        from trie.parse import registry
+
+        backend = registry.get_backend_for_file(Path(file_path))
+        if backend is not None:
+            return backend.validate_syntax(source, file_path=Path(file_path))
     try:
         compile(source, "<trie-patch>", "exec")
         return True
@@ -430,6 +448,8 @@ def apply_patches(
                     old_prose=sd["old_prose"],
                     notes=sd["merged_notes"],
                     reasons=sd["merged_reasons"],
+                    file_path=file_path,
+                    max_tokens=config.edits.max_output_tokens,
                 )
                 start = sd["detail"].start_line - 1
                 end = sd["detail"].end_line
@@ -441,14 +461,20 @@ def apply_patches(
         new_content: str = ""
         proses: dict[str, str] = {}
         try:
-            new_content, proses = infer_file_source(client, file_path, file_content, symbol_details)
+            new_content, proses = infer_file_source(
+                client,
+                file_path,
+                file_content,
+                symbol_details,
+                max_tokens=config.edits.max_output_tokens,
+            )
         except (ValueError, Exception):
             new_content, proses = _fallback_per_symbol()
 
-        if not _compile_check(new_content):
+        if not _compile_check(new_content, file_path):
             new_content, proses = _fallback_per_symbol()
 
-        if not _compile_check(new_content):
+        if not _compile_check(new_content, file_path):
             if progress:
                 progress.file_done(file_path, False, "syntax error after generation + fallback")
             return {
@@ -469,10 +495,12 @@ def apply_patches(
                 break
             if progress:
                 progress.file_fixup(i + 1, len(diags))
-            fixed = _file_fixup(client, file_path, new_content, diags)
+            fixed = _file_fixup(
+                client, file_path, new_content, diags, max_tokens=config.edits.max_output_tokens
+            )
             if fixed is None:
                 break
-            if not _compile_check(fixed):
+            if not _compile_check(fixed, file_path):
                 if progress:
                     progress.file_done(file_path, False, "syntax error after fixup")
                 return {"path": file_path, "ok": False, "error": "syntax error after lsp fixup"}

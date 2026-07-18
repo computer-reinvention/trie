@@ -69,6 +69,18 @@ def _is_merge_prompt(request: str) -> bool:
     return "The following patch notes exist" in request
 
 
+def _plain_edit_text(source: str, prose: str) -> str:
+    """Render canned source+prose as the plaintext code-gen path expects.
+
+    Mirrors the format produced by the model under ``TrieClient.run_text`` and
+    parsed by ``trie.edits.textgen``: a fenced code block followed by one
+    delimited prose section.
+    """
+    from trie.edits import textgen
+
+    return f"```\n{source}\n```\n\n{textgen.PROSE_OPEN}\n{prose}\n{textgen.PROSE_END}\n"
+
+
 def _make_usage(**overrides: int):
     return type(
         "Usage",
@@ -143,6 +155,21 @@ class FakeEditClient:
         )
 
     @staticmethod
+    def run_text(
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        max_tokens: int = 1024,
+        cache_prefix: str | None = None,
+    ) -> ModelResult:
+        old_source = _extract_old_source(user_prompt)
+        new_source = old_source + "\n# patch-applied"
+        return ModelResult(
+            output=_plain_edit_text(new_source, "## Updated\n\nModified by patch.\n"),
+            usage=_make_usage(),
+        )
+
+    @staticmethod
     def count_tokens(system_prompt: str, user_prompt: str) -> int:
         return 100
 
@@ -179,6 +206,21 @@ class PassthroughClient:
         )
 
     @staticmethod
+    def run_text(
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        max_tokens: int = 1024,
+        cache_prefix: str | None = None,
+    ) -> ModelResult:
+        old_source = _extract_old_source(user_prompt)
+        old_prose = _extract_old_prose(user_prompt)
+        return ModelResult(
+            output=_plain_edit_text(old_source, old_prose),
+            usage=_make_usage(),
+        )
+
+    @staticmethod
     def count_tokens(system_prompt: str, user_prompt: str) -> int:
         return 100
 
@@ -209,6 +251,19 @@ class BrokenClient:
             )
         return ModelResult(
             output=SymbolEdit(source="def broken(:", prose="Broken."),
+            usage=_make_usage(),
+        )
+
+    @staticmethod
+    def run_text(
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        max_tokens: int = 1024,
+        cache_prefix: str | None = None,
+    ) -> ModelResult:
+        return ModelResult(
+            output=_plain_edit_text("def broken(:", "Broken."),
             usage=_make_usage(),
         )
 
@@ -398,3 +453,24 @@ class TestApplyPatchesFailure:
             remaining = store.get_patches_for_qname("src/gamma:gamma_fn")
 
         assert len(remaining) == 1
+
+
+def test_apply_report_has_post_apply_actions_block():
+    """ApplyReport.to_dict() surfaces the consolidated agent punch-list."""
+    from trie.edits.report import AppliedItem, ApplyReport, ModuleRemark
+
+    report = ApplyReport(session_note="add feature")
+    report.applied.append(AppliedItem(qname="m:f", op="modify", file_path="src/a.ts"))
+    report.applied.append(AppliedItem(qname="m:g", op="create", file_path="src/b.ts"))
+    report.new_dependencies.extend(["uuid", "zod"])
+    report.module_remarks.append(
+        ModuleRemark(qname="m:f", file_path="src/a.ts", remarks="add import X")
+    )
+
+    d = report.to_dict()
+    paa = d["post_apply_actions"]
+    # format_files = every applied file, deduped + sorted
+    assert paa["format_files"] == ["src/a.ts", "src/b.ts"]
+    assert "format_note" in paa
+    assert paa["new_dependencies"] == ["uuid", "zod"]
+    assert paa["module_remarks"][0]["remarks"] == "add import X"

@@ -586,3 +586,28 @@ class PythonBackend:
         from trie.sync.generator import SYSTEM_PROMPT
 
         return SYSTEM_PROMPT
+
+    def edit_system_prompt(self) -> str:
+        return (
+            "You update Python source code based on implementation notes and return "
+            "the updated source and an updated prose summary of the symbol's purpose. "
+            "Return ONLY this one symbol's own definition — do not include `import` "
+            "statements or other top-level declarations; the code is spliced back in at "
+            "the symbol's exact location. If the change needs a new import, name it in "
+            "the module-remarks section; if it needs a new package, name it in the "
+            "new-deps section. The prose should describe what the symbol does at a high "
+            "level — do not include implementation notes or bullet points."
+        )
+
+    def code_fence(self) -> str:
+        return "python"
+
+    def validate_syntax(self, source: str, *, file_path: Path) -> bool:
+        try:
+            compile(source, "<trie-patch>", "exec")
+            return True
+        except SyntaxError:
+            return False
+        except Exception:
+            # Never block on an unexpected error; LSP remains the real gate.
+            return True

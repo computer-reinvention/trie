@@ -68,6 +68,14 @@ class EditResult:
     new_prose: str
     ok: bool = True
     error: str | None = None
+    # Free-text module-level remarks: new imports / top-level changes the symbol
+    # body needs to compile or work. The pipeline does not apply these; it
+    # surfaces them in the ApplyReport for the agent to handle via force-edit.
+    module_remarks: str = ""
+    # New external package names the symbol introduced. trie does not install
+    # them; they are deduped across the batch and reported for the agent to
+    # install via shell.
+    new_dependencies: tuple[str, ...] = ()
 
 
 @runtime_checkable

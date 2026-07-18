@@ -374,6 +374,55 @@ recover the source path for a given triefact.
   language-neutral; TS symbols populate `start_line`/`end_line` the same way.
   The fingerprint-recompute path (`apply.py:573`) routes through the registry.
 
+### 7.1 Post-implementation addendum — three missed spots (now fixed)
+
+The first implementation pass covered diagnostics, `lsp_backends()`, and the
+overlay (above) but left **three Python-hardcoded spots inside the edit
+pipeline**, which made a real TS `trie_patch_apply` fail with
+`syntax_error_after_retry_cap` and `file_not_found`. All three are now
+backend-routed:
+
+1. **Generation prompt** (`edits/infer.py`, `edits/backends/llm.py`). The
+   prompt told the model it was editing *Python* and fenced old source as
+   ` ```python `. Added `LanguageBackend.edit_system_prompt()` +
+   `code_fence()` (Python + TS); the edit/infer/fixup paths resolve the
+   backend by `file_path` and use the language-correct prompt and fence.
+2. **Syntax gate** (`edits/apply.py:_compile_check`). It used Python's
+   `compile(src, "exec")` for ALL languages, so every spliced TS file failed
+   and the LSP-fixup loop discarded every TS fix. Added
+   `LanguageBackend.validate_syntax(source, file_path)` — Python uses
+   `compile`; TS runs `tsc --noEmit --noResolve` and fails only on **TS1xxx
+   syntax** errors (TS2xxx resolution/type errors are expected in isolation;
+   the overlay diagnostics pass is the real type gate). `_compile_check`
+   takes an optional `file_path` and routes through the registry; it degrades
+   to "accept" when no `tsc` is present so it never hard-blocks.
+3. **Create-symbol file resolution** (`mcp_server.py`, `cli.py`,
+   `registry.resolve_create_target`). `qname.split(":")[0] + ".py"` hardcoded
+   `.py`. Now probes registered `source_suffixes()` for an existing module
+   file, infers a new file's language from a sibling, and only then falls
+   back to a default suffix.
+
+Two robustness improvements landed alongside:
+
+- **True new-file creation** (`pipeline.py`): a create targeting a
+  non-existent file now scaffolds it (empty → generated body), `commit`
+  `mkdir`s parents and the post-commit scan absorbs it; rollback unlinks new
+  files. (Previously surfaced "new-file create not supported in v1".)
+- **Class-method placement** (`pipeline._place_new_symbol` /
+  `_insert_into_parent` / `_find_container_span`): a `Module:Class.method`
+  create is inserted INSIDE the parent body (brace-matched for TS, indent for
+  Python), re-indented to member level, with stale-span recovery for
+  same-file modify+create batches.
+- **`merge_notes` resilience** (`infer.py`): a single patch skips the merge
+  LLM call; any merge failure/empty response degrades to the raw notes
+  instead of aborting the whole apply on a `MergeNotesOutput` validation
+  error.
+
+Tests: `tests/test_edits_typescript.py` (fences, prompts, `validate_syntax`
+TS1-vs-TS2 decision, create-target resolution, class-method placement,
+merge_notes resilience) + `tests/test_edits_structural.py` (new-file create,
+nested-dir create, method-into-class, same-file modify+create-method).
+
 ---
 
 ## 8. Config & scope
