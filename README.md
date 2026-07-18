@@ -2,33 +2,10 @@
 
 > **Your codebase, in prose. Kept in sync with the code by a reference-graph cascade.**
 
-[![Source available](https://img.shields.io/badge/source-available-blue.svg)](#license)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](#license)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](#status)
 [![Tests](https://img.shields.io/badge/tests-826%20passing-brightgreen.svg)](#)
-
----
-
-## 🖥️ trie on Mac — an attention-map editor for agentic engineering *(experimental)*
-
-![trie on Mac — live attention map with an embedded coding agent](docs/assets/trie-desktop.png)
-
-A native **macOS app** with an embedded coding agent, built around a live
-**attention map** of your codebase. The map isn't a static call graph — it's a
-turn-by-turn picture of *where the agent is thinking*. As the agent works, every
-`read` / `grep` / `trace` / `edit` deposits decaying **attention mass** on the
-symbols it touches, so the map lights up around the agent's current focus and
-fades as attention moves on. Each prompt opens a fresh investigation; the live
-field resets per turn while the underlying topology (its fixed angular geography)
-stays put.
-
-A separate **topology** tab keeps the classic structural view — roles,
-subsystems, and call edges — and there are source + triefact tabs, multi-session
-chat, and a patch-review surface where the agent's staged edits land for review
-before they're applied. You watch the agent navigate and edit your system instead
-of reading raw diffs.
-
-Experimental and under active development.
 
 ---
 
@@ -223,7 +200,7 @@ The write side has its own **cascade**, and it's the mirror of the read-side one
 Two properties make this safe to hand an agent:
 
 - **Prose and code move together.** Applying a code change regenerates the affected triefacts in the same step. The system's self-description can't fall behind an edit the way comments and docs always do.
-- **Humans gate the writes.** Staged edits land in a review surface (the patch panel in the desktop app, or a `preview` call) before anything is applied. A multi-symbol change has to come with a one-line statement of intent. And because the artifact you review is the *prose* that changed, you're reading what the edit *means*, not reconstructing it from a diff.
+- **Humans gate the writes.** Staged edits land in a review surface (a `preview` call, or the patch panel in the experimental [trie-app](https://github.com/computer-reinvention/trie-app) desktop editor) before anything is applied. A multi-symbol change has to come with a one-line statement of intent. And because the artifact you review is the *prose* that changed, you're reading what the edit *means*, not reconstructing it from a diff.
 
 So the loop closes: the agent reads the system as narrative, proposes changes as narrative, and you ratify narrative — while the executable code is kept conformant underneath.
 
@@ -521,11 +498,11 @@ Hand-written prose between sentinels is still indexed by GitHub's search; only t
 - **M11** ✓ — telemetry split: per-call `cli_call` and `mcp_call` events with surface-aware audit aggregation, including a `mode` breakdown for the `read` override (qname / triefact / source / show_source)
 - **M12** ✓ — agent-surface trim: the `read` override's full mode strips trie's internal frontmatter (`trie_version`, `file_fingerprint`, `last_synced_at`, `source`) and every section sentinel (with their fingerprints) before handing the triefact to the agent. Mirrored in `trie.sync.writer.render_for_agent` for the Python side. Agents see prose; machinery stays out of context
 - **M13** ✓ — the write pipeline: symbol-level staged edits (`patch` / `create` / `delete` / `rename`), a write-side cascade that pulls in affected callers, a parse/compile gate before any byte is written, prose regenerated alongside code on apply, and a human review surface — agents now edit the graph, not just read it
-- **Desktop (experimental)** — native macOS editor built on a live, turn-by-turn **attention map** (decaying attention mass per symbol as the agent reads/edits), with a separate structural topology view, an embedded coding agent, source/triefact tabs, multi-session chat, and a patch-review surface for the agent's staged edits. Merged to `main`; still experimental.
+- **Desktop (experimental)** — the native macOS attention-map editor now lives in its own repo, [trie-app](https://github.com/computer-reinvention/trie-app). It consumes trie as an installed dependency (`trie` / `trie-mcp`); this repo is the stable, supported core.
 - **v0.2** — SCIP precision (replace tree-sitter heuristic with `scip-python` for type-aware references), TypeScript support, vector-over-triefacts retrieval, `trie watch` daemon, rename detection in reconcile
 
 ## License
 
-trie is open source — the code is here to read, audit, and learn from — but it is **not** an open-contribution project. Pull requests and patches from outside the core team will not be accepted. Please don't open one; it'll be closed unread.
+MIT. See [LICENSE](LICENSE).
 
-The underlying technology is **patented**. No license, express or implied, is granted by the publication of this source. If you want to use trie in a commercial setting, or build on its design, get in touch first.
+Contributions are welcome — issues, discussions, and pull requests. If you're planning a large change, open an issue first so we can talk through the design.
