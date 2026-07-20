@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/docs_install.py
-file_fingerprint: 76aee4d6c89d5e1089a5357507b1a32f664d0988821f6b27d46af35cbc247f99
-last_synced_at: '2026-06-03T21:10:36Z'
+file_fingerprint: cdecbbc0d47f1119851ee35680f9f605a136dbe5b988a84e22fc7cab1dd0f430
+last_synced_at: '2026-07-20T13:08:58Z'
 description: Project-local agent documentation install.
 defines:
 - kind: module
   qualified_name: trie/docs_install:__module__
-  lines: 1-462
+  lines: 1-477
 - kind: constant
   qualified_name: trie/docs_install:Action
   lines: 35-35
@@ -49,37 +49,40 @@ defines:
   lines: 118-133
 - kind: constant
   qualified_name: trie/docs_install:ALL_TOOL_NAMES
-  lines: 136-152
+  lines: 136-156
 - kind: constant
   qualified_name: trie/docs_install:CORE_TOOL_NAMES
-  lines: 154-154
+  lines: 158-158
 - kind: constant
   qualified_name: trie/docs_install:_BARE_NAME_TARGETS
-  lines: 159-159
+  lines: 163-163
+- kind: constant
+  qualified_name: trie/docs_install:_BARE_NAME_OVERRIDES
+  lines: 169-172
 - kind: function
   qualified_name: trie/docs_install:_render_tool_names
-  lines: 162-180
+  lines: 175-195
 - kind: function
   qualified_name: trie/docs_install:_render_trie_doc_body
-  lines: 183-198
+  lines: 198-213
 - kind: function
   qualified_name: trie/docs_install:_multi_target_footer
-  lines: 201-234
+  lines: 216-249
 - kind: function
   qualified_name: trie/docs_install:_write_trie_doc
-  lines: 237-292
+  lines: 252-307
 - kind: function
   qualified_name: trie/docs_install:_pointer_block_for
-  lines: 295-305
+  lines: 310-320
 - kind: function
   qualified_name: trie/docs_install:_apply_pointer
-  lines: 308-374
+  lines: 323-389
 - kind: function
   qualified_name: trie/docs_install:_splice_pointer_block
-  lines: 377-406
+  lines: 392-421
 - kind: function
   qualified_name: trie/docs_install:install
-  lines: 409-461
+  lines: 424-476
 incoming_refs: 51
 outgoing_refs: 2
 ---
@@ -144,7 +147,7 @@ Return the bundled `TRIE.md` body as text from the package's data directory.
 
 - Raises `DocsInstallError` if the bundled file is missing from the package
 <!-- trie:end -->
-<!-- trie:section symbol=trie/docs_install:ALL_TOOL_NAMES fingerprint=4fd83f1dc4db3a96c0251f624a649d307e4ad6aecd159781022bfee6c221243c body_fp=66a348f456b8b87b0a37f5047808c649fb84bb62bde0f5120fe7693b2fad0cbf source_ref=637a214fb02121ef02ef39bfc864ca1f54b4ab48 role=agent-integration -->
+<!-- trie:section symbol=trie/docs_install:ALL_TOOL_NAMES fingerprint=e9218d394222ca4cd51b8543dd4ee4290e7868053f4e9efa494ac7154398454d body_fp=66a348f456b8b87b0a37f5047808c649fb84bb62bde0f5120fe7693b2fad0cbf source_ref=b11f520c43aa24dfcbd24ba256b957c76b45b6d6 role=config -->
 Tuple containing the canonical names of all trie MCP tools for documentation rendering.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/docs_install:CORE_TOOL_NAMES fingerprint=a01417ad0bf41b11233db4c1efafe4be8cd1310ada273677c106bfa1a6c60159 body_fp=3e6f2e90a54b3efeb99501f1c00c9c7afabeb441a9fae64fff073e65483e7bfd source_ref=637a214fb02121ef02ef39bfc864ca1f54b4ab48 role=agent-integration -->
@@ -153,10 +156,13 @@ Tuple of the three core tool names that appear in agent doc pointer lines.
 <!-- trie:section symbol=trie/docs_install:_BARE_NAME_TARGETS fingerprint=e18bb59a3074732896d7e1791b0d5835544dd5e5b1eeb6b69a46e7259fad0ae9 body_fp=49d386ee99d2a5e2bba236d1305bcdb5434e49983c22d995e4f618ec82949f80 source_ref=637a214fb02121ef02ef39bfc864ca1f54b4ab48 role=agent-integration -->
 Frozen set of target names that expose bare tool names without MCP prefixes.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/docs_install:_render_tool_names fingerprint=f68f5f905e855e1cdfe74aa87bdb1c3bc3ec9f8f1c3a351eeff961c2c5635bc2 body_fp=aeb56350b1b806aaf8863782763a2191b11fc3e683365ee9e03f488730d3c499 source_ref=637a214fb02121ef02ef39bfc864ca1f54b4ab48 role=agent-integration -->
+<!-- trie:section symbol=trie/docs_install:_BARE_NAME_OVERRIDES fingerprint=5f93cfef34be890e1dd5f86939c5ea90f7803b07133113f2887f7becab0bd59b body_fp=c077e408a38e86efe543585a15cead52abd5d6abfbedef42a1b094facdf3a364 source_ref=b11f520c43aa24dfcbd24ba256b957c76b45b6d6 role=config -->
+Maps the two MCP tool names that bare-name targets expose under shortened aliases to those shorter forms.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/docs_install:_render_tool_names fingerprint=1994bcc1f47d5af53555c4fd23dca1537dabc713696c0212bb1cebc6a1c67f8a body_fp=5f5d764edff0669e34c7b5593f1fd59d8e1d43021a0da66721035c10c54fb0dd source_ref=b11f520c43aa24dfcbd24ba256b957c76b45b6d6 role=util -->
 Resolves tool names for a target harness, applying prefixes according to the target's naming convention or returning bare names for override targets.
 
-- Returns bare tool names for opencode target or when target is None/unknown
+- Returns bare tool names for opencode target (with two shortened exceptions via `_BARE_NAME_OVERRIDES`) or when target is None/unknown
 - Applies `MCPTarget.tool_name_format` template for other targets (e.g. `mcp__trie__grep`)
 <!-- trie:end -->
 <!-- trie:section symbol=trie/docs_install:_render_trie_doc_body fingerprint=f808b5ce80ae80c0f3e96a795081963edfdb15d0d83ff8f244285247d78b367e body_fp=7f721ae0a8cbda6d9614a3878ec9d4693fb9eabcb14e5c11abc347df0f381422 source_ref=637a214fb02121ef02ef39bfc864ca1f54b4ab48 role=agent-integration -->

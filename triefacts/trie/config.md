@@ -102,7 +102,7 @@ Configures telemetry logging for trie operations, controlled by the TRIE_DEBUG e
 - `capture_responses`: includes full LLM response bodies in logs (large data)
 - `redact_keys`: field paths to elide from logged data
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Edits fingerprint=a36dfe52ee715aae6c469e703a0098d9e87c9452bd686375f6932169ecfa2f44 body_fp=4b127f4d46af4f4af3cb65ca4219f797062affd2c614dc38963e63baebdbb27c -->
+<!-- trie:section symbol=trie/config:Edits fingerprint=a36dfe52ee715aae6c469e703a0098d9e87c9452bd686375f6932169ecfa2f44 body_fp=4b127f4d46af4f4af3cb65ca4219f797062affd2c614dc38963e63baebdbb27c role=config-management -->
 Configures the patch-apply pipeline and LSP backend settings for code editing operations, including retry limits, LSP backend definitions, commit failure handling, and the edit generation backend (`"llm"`, `"opencode"`, or `"agent"`), where `"agent"` causes patch apply to return an agent-executable worklist instead of performing inline code generation.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:LanguageConfig fingerprint=53c630a38d44498a9e194e86c35198bb9a6d7eec5f7143a19503cfb475db89f8 body_fp=7ea5116333d3272467cb2cc54cd3c40fdc54b238da538ff650de7611b481d532 source_ref=64675d426ee121ee07f6aca6b23643e1d1ad5991 role=config -->

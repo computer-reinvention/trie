@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.9
 source: tests/test_edits_pipeline.py
-file_fingerprint: 22595cb1a540e07d2a01a6de15146a945299621326b20e3be889f9c386d057d8
-last_synced_at: '2026-07-20T09:54:54Z'
+file_fingerprint: 395bca6405e94b92aca6ce0f87d43bde520a2f8fa6c1741626d6045e73c74a23
+last_synced_at: '2026-07-20T13:08:56Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_pipeline:__module__
@@ -94,13 +94,13 @@ Tests the edits pipeline functionality including staging, committing, and import
 <!-- trie:section symbol=tests/test_edits_pipeline:PROJECT_TOML fingerprint=ea44d5615a2611cc14e40b5b84f8141a4679269bc80e3914e4fef0417f24d38b body_fp=b7b98764eb81bf3ef9f1f482ed1f8f6147ed54d9a609a09894f8a54d83f33e9d source_ref=e0282d34035b65bdf7e8d362970ae8d5376a0584 role=test -->
 TOML configuration string used as fixture data for test project setup.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_pipeline:FakeTriefactClient fingerprint=10c1d860217fcab07de3ba678d36d5663ed564e1bad97a10efd8ef14e3dec4eb body_fp=a04c0a5551995d65bda028f5916723cb44737b743d85c73468d9b9fa6efda7b1 source_ref=e0282d34035b65bdf7e8d362970ae8d5376a0584 role=test -->
+<!-- trie:section symbol=tests/test_edits_pipeline:FakeTriefactClient fingerprint=abc776db76bd96e3f1a3f6efb96cd46a26959eb427f8fc70127c35192f894100 body_fp=a04c0a5551995d65bda028f5916723cb44737b743d85c73468d9b9fa6efda7b1 source_ref=e9a1fcfbdd86b9a58a0fe397dc3d0a6349304435 role=test -->
 Test double client that returns deterministic ModelResult with fixed prose content and usage metrics.
 
 - `full_model_id`: Always "fake/fake"
 - `run()`: Returns ModelResult with "fake prose." body and 1 input/output token usage
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_pipeline:FakeTriefactClient.run fingerprint=ddf5f4d5a413797c8ae0c5853e9d1be123cf1571583cd546aead0c3037ad7075 body_fp=1736a87e86d441fbf7c226a87fcc64371278db93fd64b5bec35da9e6b01ab2b0 source_ref=e0282d34035b65bdf7e8d362970ae8d5376a0584 role=test -->
+<!-- trie:section symbol=tests/test_edits_pipeline:FakeTriefactClient.run fingerprint=245921977f71d8c42c7796c61eaf884795f199a0f58fd762bbeb242de7e54a6b body_fp=1736a87e86d441fbf7c226a87fcc64371278db93fd64b5bec35da9e6b01ab2b0 source_ref=e9a1fcfbdd86b9a58a0fe397dc3d0a6349304435 role=test -->
 FakeTriefactClient.run returns a deterministic ModelResult with fake prose for testing documentation generation.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_pipeline:project fingerprint=f790f2074b937f90ed8ee4a255893c84214d9160080042f169967e3d0630e0fc body_fp=34a51b2b764c5fe4cbe18f8330f810d4e7a094de0dfb8d2de4bc2b6364d24cd0 source_ref=e0282d34035b65bdf7e8d362970ae8d5376a0584 role=test -->

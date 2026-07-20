@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_edits_apply_pipeline.py
 file_fingerprint: d64dc7c59f7e1b053381c3696fa00f910a3a99f031adb1920166c878f767228b
-last_synced_at: '2026-07-20T09:53:47Z'
+last_synced_at: '2026-07-20T13:09:41Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_apply_pipeline:__module__
@@ -161,13 +161,13 @@ Render `source` and `prose` into the fenced-block + delimited-prose format that 
 <!-- trie:section symbol=tests/test_edits_apply_pipeline:_make_usage fingerprint=778ea16dee0036412660edb79d77aa94f191365fcd8e9c689ed41ba866b067a1 body_fp=c2ba52a602d955b98298d3fe4cd086700011488958cda0f95658315b40ecd5c1 source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test-infrastructure -->
 Creates a mock usage object with configurable token counts for testing LLM responses.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_apply_pipeline:FakeTriefactClient fingerprint=c11b80b954b967f6175c495c1c8d9749a556ac092e87dc5b8d01452a1bb1faf6 body_fp=e5dcc7625417bdae4954de71767899dfc1217a44753e2053058e8f1121bf689c source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test -->
+<!-- trie:section symbol=tests/test_edits_apply_pipeline:FakeTriefactClient fingerprint=c11b80b954b967f6175c495c1c8d9749a556ac092e87dc5b8d01452a1bb1faf6 body_fp=e5dcc7625417bdae4954de71767899dfc1217a44753e2053058e8f1121bf689c source_ref=6176a83a45d7cb5f697f12f7d4613107e399ade4 role=test -->
 Mock LLM client that returns static triefact documentation for testing sync operations.
 
 - `run`: Returns fixed SectionBody with "Auto-generated prose" content
 - `count_tokens`: Always returns 100 regardless of input
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_apply_pipeline:FakeTriefactClient.run fingerprint=aa2a88a9411d02e5505faa8a887e26efa9c481c5ae82a19d96ed33eb9a68478b body_fp=91fb01eae60c869436388da4e063f738b3bd6fd4e12f99f985110c0d98e34cf2 source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test -->
+<!-- trie:section symbol=tests/test_edits_apply_pipeline:FakeTriefactClient.run fingerprint=aa2a88a9411d02e5505faa8a887e26efa9c481c5ae82a19d96ed33eb9a68478b body_fp=91fb01eae60c869436388da4e063f738b3bd6fd4e12f99f985110c0d98e34cf2 source_ref=6176a83a45d7cb5f697f12f7d4613107e399ade4 role=test -->
 FakeTriefactClient.run returns a static ModelResult with auto-generated prose for testing triefact generation.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_apply_pipeline:FakeTriefactClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=10e86678d18ecc1d95267c251ac099688276c3bec2c17224bcc650c91af5766b source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test-infrastructure -->
@@ -182,7 +182,7 @@ Mock LLM client that simulates patch application by appending `# patch-applied` 
 - `run_text` returns the same modification as plaintext format via `_plain_edit_text`
 - Always returns fixed usage metrics and token counts
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_apply_pipeline:FakeEditClient.run fingerprint=bc56c6959c2a9044f8ebbe0632c45e1585f7a0f86c1f9a24568791f931915ab3 body_fp=ee7913fdb0a812d013c1f5cb07dbbe64058932a3ae85fe5945919fdb72eeed0a source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test -->
+<!-- trie:section symbol=tests/test_edits_apply_pipeline:FakeEditClient.run fingerprint=bc56c6959c2a9044f8ebbe0632c45e1585f7a0f86c1f9a24568791f931915ab3 body_fp=ee7913fdb0a812d013c1f5cb07dbbe64058932a3ae85fe5945919fdb72eeed0a source_ref=6176a83a45d7cb5f697f12f7d4613107e399ade4 role=test -->
 ## FakeEditClient.run
 
 FakeEditClient static method that simulates LLM edit responses by appending "# patch-applied" to extracted source code.
@@ -205,7 +205,7 @@ Mock LLM client that returns unchanged source and prose for edit operations.
 - For `BatchFilterOutput`: returns empty decisions list
 - `run_text`: echoes old source/prose as plaintext code-gen format
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_apply_pipeline:PassthroughClient.run fingerprint=9346deca9763f8a2f77fea6524e9d1db47b6388696fe2a588f6f0a60583c161d body_fp=4b631dbcfb8fb04bf3d6f5c731dfd0834f12ee71cb6ad7352b8dc3b5dc8aed25 source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test -->
+<!-- trie:section symbol=tests/test_edits_apply_pipeline:PassthroughClient.run fingerprint=9346deca9763f8a2f77fea6524e9d1db47b6388696fe2a588f6f0a60583c161d body_fp=4b631dbcfb8fb04bf3d6f5c731dfd0834f12ee71cb6ad7352b8dc3b5dc8aed25 source_ref=6176a83a45d7cb5f697f12f7d4613107e399ade4 role=test -->
 PassthroughClient.run returns existing source and prose unchanged, serving as a no-op test double for LLM editing operations.
 
 - Returns static output for MergeNotesOutput and empty decisions for BatchFilterOutput
@@ -224,7 +224,7 @@ Test double that mimics an LLM client returning syntactically invalid Python sou
 - `run_text` method: returns the same invalid source via the plaintext code-gen path
 - `count_tokens` method: always returns 100 tokens for consistent test behavior
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_apply_pipeline:BrokenClient.run fingerprint=409a604a9de51871d52d433242c4dd9b14b28806674d3b6021a89db8fabf9e88 body_fp=7dac93f69a4c334a29aadafead495947c366dca44a40f3d828d203f08ee53a6e source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test -->
+<!-- trie:section symbol=tests/test_edits_apply_pipeline:BrokenClient.run fingerprint=409a604a9de51871d52d433242c4dd9b14b28806674d3b6021a89db8fabf9e88 body_fp=7dac93f69a4c334a29aadafead495947c366dca44a40f3d828d203f08ee53a6e source_ref=6176a83a45d7cb5f697f12f7d4613107e399ade4 role=test -->
 BrokenClient.run returns syntactically invalid Python source code to simulate LLM failures in tests.
 
 - Returns standard outputs for MergeNotesOutput and BatchFilterOutput types

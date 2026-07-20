@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.9
 source: tests/test_edits_structural.py
-file_fingerprint: 22e48a83114b15e23cfadf3a7af16cf9ab5be58c141ee2b30ae31089d23a9261
-last_synced_at: '2026-07-20T09:53:35Z'
+file_fingerprint: aea92ac1d0e2459b5141555a96b5c0e893c5b9c2a07e776a9a27525cf2a2b9af
+last_synced_at: '2026-07-20T13:08:57Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_structural:__module__
@@ -103,13 +103,13 @@ TOML configuration string used to create test project files with trie settings.
 
 - Contains project metadata, file scope, triefacts root, model configurations, and cascade parameters
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_structural:FakeTriefactClient fingerprint=c22c1583950633f73a49f72533e33f452437ffe5aee920b7029a55345ae38703 body_fp=9c8baad9c45962ae43b28d29c8fb15fa3a126ebc6630e465f9ae4cf582bfbd6d source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
+<!-- trie:section symbol=tests/test_edits_structural:FakeTriefactClient fingerprint=eb21c1c8e78d2dfbdaa15ef552db52c7f8e034d8a0e48c02c7d739e2f9ea2007 body_fp=9c8baad9c45962ae43b28d29c8fb15fa3a126ebc6630e465f9ae4cf582bfbd6d source_ref=e5ac16e397973bd3b23fa3dbece8648e8e5b21d9 role=test -->
 Mock triefact client that returns fixed SectionBody output with minimal token usage for testing.
 
 - `full_model_id`: Always returns "fake/fake"
 - `run()`: Returns ModelResult with hardcoded "fake prose." body and 1 input/output token usage
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_structural:FakeTriefactClient.run fingerprint=ddf5f4d5a413797c8ae0c5853e9d1be123cf1571583cd546aead0c3037ad7075 body_fp=f1f667bb1c44fd8cc7ea44d1a7da7aaaffba3738dd2ff6507f9224481de9f7c7 source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
+<!-- trie:section symbol=tests/test_edits_structural:FakeTriefactClient.run fingerprint=245921977f71d8c42c7796c61eaf884795f199a0f58fd762bbeb242de7e54a6b body_fp=f1f667bb1c44fd8cc7ea44d1a7da7aaaffba3738dd2ff6507f9224481de9f7c7 source_ref=e5ac16e397973bd3b23fa3dbece8648e8e5b21d9 role=test -->
 FakeTriefactClient.run returns a fake ModelResult with hardcoded SectionBody and minimal Usage for testing.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_structural:project fingerprint=454ba7d4fb51d84562aa6b26ddbe62b83dd544935bc4f7d0a049e3dffac6c82b body_fp=b141eef4f01e37f9e57370b09fa5121a37b77bbee77a82537bd958f30e212b96 source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
