@@ -33,20 +33,27 @@ CI runs the same four commands. Tests + ruff must both pass before pushing.
 
 ## Navigating the codebase
 
-trie indexes itself. An MCP server is registered for this workdir (see
-`.mcp.json` / `opencode.json` / equivalent), exposing three navigation
-tools: `locate`, `explain`, and `walk`. **Read [`USING_TRIE.md`](USING_TRIE.md)
-for the full usage guide.**
+trie indexes itself. The tool overrides installed for this workdir route
+the built-in `grep` and `read` through trie and add the full trie
+toolset (`trace`, the explain family, and the patch family) as custom
+tools. The tools are self-describing; **read
+[`USING_TRIE.md`](USING_TRIE.md) for the concepts, the edit workflow,
+and the sharp edges.**
 
-One repo-specific note that goes beyond the general guide:
+Repo-specific notes that go beyond the general guide:
 
-- **We bootstrap trie with trie.** A session where you reach for `grep`
-  to answer a code-side question is a session that didn't exercise the
-  thing we're building. `locate` handles every search inside source —
-  including literal strings and module-level constants, via the
-  rg-backed fallback. If a navigation flow feels awkward through these
-  tools, that's a signal to fix the tool, not to silently fall back to
-  grep. Note it in a session summary or open an issue.
+- **We bootstrap trie with trie.** A session where you reach for shell
+  `rg` to answer a code-side question is a session that didn't exercise
+  the thing we're building. The `grep` tool handles every search inside
+  source — including literal strings and module-level constants, via
+  the rg-backed fallback. If a navigation flow feels awkward through
+  these tools, that's a signal to fix the tool, not to silently fall
+  back to shell grep. Note it in a session summary or open an issue.
+- **Edits go through the patch pipeline. Always.** Stage intent with
+  `patch` / `create_symbol` / `batch_patch`, review with `patch_list`,
+  apply once with `patch_apply` (session note required for multi-symbol
+  applies). Direct edits to indexed source are not an escape hatch —
+  if the pipeline fights you, fix the pipeline and note the friction.
 
 ## What's in scope
 

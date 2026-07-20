@@ -59,4 +59,4 @@ capture_responses = false         # full response bodies are large; keep off
 redact_keys = []                  # field paths to elide, e.g. ["args.predicate"]
 
 [edits]
-backend = "agent"
+backend = "llm"

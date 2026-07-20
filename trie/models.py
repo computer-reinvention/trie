@@ -23,7 +23,14 @@ from pydantic_ai import Agent, CachePoint
 from pydantic_ai.exceptions import ModelAPIError
 from pydantic_ai.models.anthropic import AnthropicModel, AnthropicModelSettings
 from pydantic_ai.providers.anthropic import AnthropicProvider
-from pydantic_ai.usage import Usage
+
+try:
+    # pydantic_ai >= 0.1 renamed Usage to RunUsage; the old name was kept as
+    # a deprecated alias and then removed. Prefer the new name, fall back for
+    # older installs.
+    from pydantic_ai.usage import RunUsage as Usage
+except ImportError:  # pragma: no cover — depends on installed pydantic_ai
+    from pydantic_ai.usage import Usage  # type: ignore[no-redef,attr-defined]
 
 from trie import telemetry
 from trie.config import Sync

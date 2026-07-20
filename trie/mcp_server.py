@@ -1527,7 +1527,7 @@ class TrieTools:
         # now" — surface it loudly rather than mask it.
         if proc.returncode not in (0, 1):
             raise RuntimeError(
-                f"rg failed (exit {proc.returncode}): {proc.stderr.strip() or 'no stderr'}"
+                f"rg failed (exit {proc.returncode}): {proc.stderr.strip() or proc.stdout.strip() or 'no output'}"
             )
 
         # Build the in-scope file set once so we can do O(1) membership

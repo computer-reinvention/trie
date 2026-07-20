@@ -28,7 +28,7 @@ class FakeTriefactClient:
     full_model_id = "fake/fake"
 
     def run(self, output_type, system_prompt, user_prompt, *, max_tokens=1024, cache_prefix=None):
-        from pydantic_ai.usage import Usage
+        from trie.models import Usage
 
         return ModelResult(
             output=SectionBody(body="fake prose.", role="util", boundary="internal"),

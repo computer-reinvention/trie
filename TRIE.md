@@ -5,400 +5,59 @@
 A guide for coding agents working in a project that has trie installed.
 
 trie indexes source code into a graph of symbols and references, attaches
-prose to each public symbol, and exposes **fifteen tools** over
-MCP — eleven for navigation and four for edit patches. This document is how to use them well.
+prose to each public symbol, and exposes that graph through a set of
+tools (an MCP server, the `trie` CLI, and — on some harnesses — overrides
+of the built-in file tools). The tools are self-describing: each one's
+schema and description tell you what it does and how to call it. This
+document covers only what the tool surface can't: the concepts, the edit
+workflow, and the sharp edges.
 
 If you take one thing from this guide: **`grep` is the right tool for
 every code-side search.** Reach for it before the shell's `rg`/grep,
-before file reads, before any other text-search tool. The reasons are
-below.
-
-> Naming note: `grep`, `read`, `trace`, etc. are MCP tools served
-> by the trie process — not shell utilities. When this guide refers to
-> shell utilities, it says so explicitly: "shell `rg`", "shell `grep`",
-> "shell `cat`". Plain `grep` / `read` always means the MCP tool.
+before file reads, before any other text-search tool. It searches the
+indexed symbol graph first and falls back to ripgrep over in-scope
+source bodies, attributing hits to their enclosing symbols — you get
+signatures, one-liners, and call-graph context instead of raw lines.
 
 ---
 
-## The fifteen tools
-
-```
-grep                      Find symbols (and substrings) by predicate
-read                      Understand a symbol + its callers/callees
-trace                     Follow the call graph outward by BFS
-grep_str                  Regex search of source bodies
-grep_entry_points         Find architectural entry points by topic
-grep_symbol               Fuzzy symbol name lookup
-grep_symbol_and_neighbours  Fuzzy lookup + immediate neighbours
-explain_symbol            Full prose narrative weaving callers + callees
-explain_symbol_references  Usage narrative from callers' prose only
-trace_flow                Find call chain(s) between two symbols
-explain_flow              Trace + narrate each step of the chain
-patch                     Post an implementation note against a symbol
-patch_drop                Remove pending patches (all or by symbol)
-patch_list                List all pending patches grouped by symbol
-patch_apply               Execute all pending patches (generate + write)
-```
-
----
-
-## Tool categories
-
-### grep family — code search
-
-**`grep`** is the workhorse. It searches by predicate (name substring,
-kind, scope, inbound/outbound count, public-only) and falls back to
-ripgrep against indexed source bodies when no symbol name matches.
-See [Predicate fields](#predicate-fields) for the full query syntax.
-
-**`grep_str`** searches source bodies with a regex pattern and
-attributes each match to the smallest enclosing symbol. Use when you
-know a literal string or pattern rather than a symbol name.
-
-**`grep_entry_points`** finds public, high-inbound symbols whose
-triefact prose fuzzy-matches a topic or concept. Use for orienting in
-an unfamiliar codebase: *"authentication"*, *"error handling"*, *"config
-loading"*.
-
-**`grep_symbol`** fuzzy-matches a symbol name fragment and returns the
-best match plus up to 9 similar alternatives. Use when you have a rough
-name but not the exact qname — typo-tolerant.
-
-**`grep_symbol_and_neighbours`** does the same fuzzy lookup but also
-returns immediate caller/callee summaries in one round trip. Use for
-orienting around an uncertain target without a follow-up read.
-
-### read — understanding one symbol
-
-```
-read(qname)
-```
-
-Returns the symbol's signature, full prose, source pointer, and every
-caller and callee with their one-liners. One round trip for the whole
-one-hop neighbourhood.
-
-The key property: **callers and callees come back with one-liners.**
-You don't need a follow-up call to know "what does that caller do?"
-The one-sentence summary is in the response.
-
-### trace family — following topology
-
-**`trace`** walks the call graph via BFS from a starting symbol.
-Returns `{root, nodes{}, edges[], truncated_at[]}`. Direction is
-`"callers"`, `"callees"`, or `"both"`. Hubs (very-high-inbound symbols)
-cap expansion and are listed in `truncated_at`.
-
-**`trace_flow`** finds the shortest call chain(s) between two symbols
-by following callee edges. Returns each path as a sequence of qnames.
-If no path exists within the search depth, says so clearly.
-
-**`explain_flow`** does the same path search but enriches each step
-with the symbol's prose narrative. Use when you want the story of the
-execution flow from entry to target.
-
-### explain family — deep understanding
-
-**`explain_symbol`** returns the full triefact prose for a symbol plus
-a woven narrative that joins the prose of its callers and callees. Use
-when you want to deeply understand a symbol and how it fits into the
-system.
-
-**`explain_symbol_references`** returns the usage story — callers'
-prose only, skipping the symbol's own prose. Use when you want to
-understand how a symbol is used, by whom, and in what context.
-
-### patch family — edit patches
-
-**`patch`** posts an implementation note against a symbol (fire-and-forget).
-The note includes a `reason` explaining the change. Patches are stored in
-the trie store and consumed by `patch_apply`.
-
-**`patch_drop`** removes pending patches. With no argument, drops all
-patches created in the current session. Pass a `qname` to drop patches
-for a specific symbol only.
-
-**`patch_list`** lists all pending patches grouped by symbol, showing
-each patch's note, reason, and origin session.
-
-**`patch_apply`** executes every pending patch in a single pipeline:
-merges notes for the same symbol, batches symbols by file, generates
-new source via LLM (one call per file), runs LSP diagnostics with up to
-3 fixup iterations, writes prose sections, and verifies trie consistency
-with `trie verify`. Returns per-file results with status and any errors.
-
-> **Agent workflow**: use `patch` to record intended changes, then
-> call `patch_apply` once to materialise everything. This avoids
-> editing source directly — the agent posts notes against symbols and
-> the system generates the code. Multiple agents can post notes
-> independently; `patch_apply` merges them before generation.
-
----
-
-## Predicate fields
-
-Build your `grep` query as one nested object.
-
-**At least one filter field is required.** An empty predicate is
-rejected — there's no "list everything" mode because the result would
-be the alphabetically-first N public symbols.
-
-```python
-# Find by name substring (case-insensitive, local name only)
-grep({ "name_contains": "compute_cascade" })
-
-# Restrict to a path prefix
-grep({ "name_contains": "cascade", "scope_prefix": "trie/" })
-
-# Exclude paths
-grep({ "name_contains": "config", "scope_exclude": ["tests/", "vendor/"] })
-
-# Filter by symbol kind
-grep({ "kind": "class", "scope_prefix": "trie/" })
-# kind: "function" | "class" | "method" | "constant" | "module" | "any"
-#   - constant: module-level `NAME = value`
-#   - module:   synthetic `__module__` symbol for file-level behaviour
-
-# Only public symbols
-grep({ "name_contains": "store", "public_only": true })
-
-# Hubs (most-called) or leaves (uncalled)
-grep({ "inbound_count": { "min": 20 } })          # hubs
-grep({ "outbound_count": { "max": 0 } })          # leaves
-grep({ "inbound_count": { "min": 5, "max": 15 } }) # mid-tier
-```
-
----
-
-## Ranking
-
-```python
-grep({ ... }, rank_by="public_first")    # default; public symbols first
-grep({ ... }, rank_by="inbound_count")   # most-referenced first
-grep({ ... }, rank_by="alphabetical")    # by qname
-```
-
-`rank_by="inbound_count"` is the **architectural orientation
-primitive**. First call to make in an unfamiliar codebase:
-
-```python
-grep({ "scope_prefix": "src/", "public_only": true },
-     rank_by="inbound_count", limit=10)
-# → the 10 most-referenced public symbols. The architectural skyline.
-```
-
----
-
-## Return shapes
-
-### `grep` — symbol-name matches
-
-```json
-{
-  "qname": "trie/sync/cascade:compute_cascade",
-  "signature": "def compute_cascade(...) -> CascadeResult",
-  "file_pointer": "trie/sync/cascade.py:23",
-  "one_liner": "Walk the reference graph outward from changed symbols.",
-  "is_public": true,
-  "kind": "function",
-  "inbound_count": 7,
-  "outbound_count": 4
-}
-```
-
-### `grep` — fallback (text matches)
-
-```json
-{
-  "hits": [],
-  "fallback": {
-    "kind": "text_match" | "text_match_empty" | "none",
-    "matches": [ /* ranked enclosing symbols */ ],
-    "match_count": 47,
-    "unique_symbols": 12,
-    "note": "..."
-  }
-}
-```
-
-### `read`
-
-```json
-{
-  "signature": "...",
-  "prose": "...",
-  "source_pointer": "...",
-  "callers": [ /* { qname, signature, one_liner } */ ],
-  "callees": [ /* same shape */ ],
-  "notes": "..."       // present only when there's something to flag
-}
-```
-
-### `trace`
-
-```json
-{
-  "root": { "qname": "...", "signature": "...", "one_liner": "..." },
-  "nodes": { "qname1": { "signature": "...", "one_liner": "..." }, ... },
-  "edges": [ { "from": "qname1", "to": "qname2", "direction": "in" } ],
-  "truncated_at": ["hub_qname"]
-}
-```
-
-### `grep_symbol`
-
-```json
-{
-  "best": { "qname": "...", "one_liner": "..." },
-  "similar": [ /* up to 9 alternatives */ ],
-  "note": "..."
-}
-```
-
-### `trace_flow` / `explain_flow`
-
-```json
-{
-  "paths_found": 2,
-  "paths": [
-    [ "qname1", "qname2", "qname3" ],
-    [ "qname1", "qname4", "qname3" ]
-  ],
-  "narratives": [ /* explain_flow only — one per path */ ]
-}
-```
-
-### `explain_symbol` / `explain_symbol_references`
-
-```json
-{
-  "symbol": { "qname": "...", "prose": "..." },
-  "narrative": "...",
-  "callers": [ /* with prose */ ],
-  "callees": [ /* with prose */ ]
-}
-```
-
-### `grep_symbol_and_neighbours`
-
-Merged grep response with callers + callees under the match.
-
----
-
-## Errors
-
-Every error response:
-
-```json
-{
-  "error": {
-    "code": "not_found" | "invalid_argument" | "out_of_scope" | "internal",
-    "message": "...",
-    "suggestion": "..."
-  }
-}
-```
-
-The `suggestion` field is load-bearing. When you get a not-found, the
-suggestion will usually point you at the closest matching qname or
-suggest a broader `grep` query.
-
----
-
-## Worked examples
-
-**"What does `compute_cascade` do?"**
-
-```python
-read("trie/sync/cascade:compute_cascade")
-# → one call. Prose + immediate neighbours with one-liners.
-```
-
-**"Where is the cascade logic?"**
-
-```python
-grep({ "name_contains": "cascade", "scope_prefix": "trie/" })
-# → pick the right qname from one_liners, then read(that_qname).
-```
-
-**"What's the blast radius of refactoring `Store.replace_all_edges`?"**
-
-```python
-trace("trie/graph/store:Store.replace_all_edges",
-      direction="callers", depth=2)
-# → full topology of what transitively reaches this method.
-```
-
-**"Where do I start in this codebase?"**
-
-```python
-grep({ "scope_prefix": "src/", "public_only": true },
-     rank_by="inbound_count", limit=10)
-# → the 10 most-referenced public symbols. The architectural skyline.
-```
-
-**"Find hubs that aren't in tests"**
-
-```python
-grep({ "inbound_count": { "min": 20 }, "scope_exclude": ["tests/"] },
-     rank_by="inbound_count")
-```
-
-**"Where is the string 'rate limited' used?"**
-
-```python
-grep_str("rate limited")
-# → matches attributed to enclosing symbols with one-liners.
-```
-
-**"I vaguely remember a function called `compute_casc...`."**
-
-```python
-grep_symbol("compute_casc")
-# → fuzzy match returns best + similar alternatives.
-```
-
-**"What's that function around `compute_casc` connected to?"**
-
-```python
-grep_symbol_and_neighbours("compute_casc")
-# → fuzzy match + immediate callers/callees in one round trip.
-```
-
-**"How does `load_config` reach `read_file`?"**
-
-```python
-trace_flow("load_config", "read_file")
-# → the call chains between them.
-```
-
-**"Walk me through how `handle_request` gets to the database."**
-
-```python
-explain_flow("handle_request", "query_db")
-# → each path step narrated with prose.
-```
-
-**"Tell me everything about `Store.replace_all_edges`."**
-
-```python
-explain_symbol("Store.replace_all_edges")
-# → full prose + woven narrative of callers and callees.
-```
-
-**"Who calls `acquire_lock` and why?"**
-
-```python
-explain_symbol_references("acquire_lock")
-# → callers' prose only. The usage story.
-```
-
-**"What are the main entry points into the auth system?"**
-
-```python
-grep_entry_points("authentication")
-# → high-inbound public symbols whose prose mentions auth.
-```
+## The edit workflow
+
+Edits are staged as intent, reviewed, then applied in one shot — the
+agent posts notes against symbols and the system generates the code.
+**All edits to indexed source go through this pipeline.** Never patch
+line ranges directly.
+
+1. **Stage.** `patch` posts a note against an existing symbol
+   (posting against a qname that isn't in the graph is an error).
+   `create_symbol` stages a new symbol — the module part of its qname
+   may name a file that doesn't exist yet. `rename_symbol` /
+   `delete_symbol` stage structural changes; callers are
+   cascade-updated at apply time. `batch_patch` stages many items in
+   one call — items are independent, a bad one doesn't abort the rest.
+   Staging is a cheap DB write; nothing touches the source tree.
+2. **Review.** `patch_list` shows the queue grouped by symbol.
+   `trie patch preview` shows what apply would do without paying for
+   generation.
+3. **Apply.** `patch_apply` merges notes per symbol, expands to
+   affected callers via the call graph, generates source and prose,
+   runs LSP diagnostics with fixups, writes atomically, and verifies
+   trie consistency.
+
+Two things the apply step enforces:
+
+- **Session note.** Applying patches that span more than one symbol
+  requires a session note stating the unifying intent. Without one the
+  apply fails with a guided error that includes a synthesised draft
+  note you can adopt or rewrite. Single-symbol applies skip the gate.
+- **Backend.** `llm` generates through trie's own pipeline; `agent`
+  skips generation and returns a structured workorder for the calling
+  agent to execute. The default comes from `edits.backend` in
+  `trie.toml`; both it and `commit_mode` (`all_or_nothing` | `per_item`
+  | `per_group`) can be overridden per apply.
+
+Patches accumulate across turns and across agents; drop stale ones with
+`patch_drop`.
 
 ---
 
@@ -410,24 +69,17 @@ use forward slashes regardless of OS.
 
 This format is for **reading** qnames that tools hand you — not for
 **constructing** them. **Never hand-build a qname from a file path and a
-symbol name and pass it to `read`.** The graph keys symbols by how the
-indexer recorded them (scope prefixes, module paths, package roots vary),
-so a guessed qname will miss even when the source plainly contains the
-symbol — and a raw file read of the same file will succeed, masking the
-real cause.
+symbol name.** The graph keys symbols by how the indexer recorded them
+(scope prefixes, module paths, package roots vary), so a guessed qname
+will miss even when the source plainly contains the symbol — and a raw
+file read of the same file will succeed, masking the real cause.
 
 When you only know a file path and a symbol name, **look the qname up
-first**:
-
-```python
-grep_symbol("sync_single_file")           # fuzzy: best match + alternatives
-grep({ "name_contains": "sync_single_file" })  # predicate search
-```
-
+first** with `grep_symbol` (fuzzy) or `grep` (predicate search).
 Take the `qname` from the result and pass it — unchanged — to `read`,
 `trace`, etc. When any tool returns a `qname`, round-trip it without
-rewriting. If a lookup returns nothing, the symbol isn't in the
-graph (out of scope, or the index is stale — run `trie refresh`); a
+rewriting. If a lookup returns nothing, the symbol isn't in the graph
+(out of scope, or the index is stale — run `trie refresh`); a
 hand-built qname won't fix that.
 
 ---
@@ -437,10 +89,10 @@ hand-built qname won't fix that.
 - **Don't reach for shell `rg` or grep on source code.** You lose
   symbol attribution and graph context. `grep` / `grep_str` handle
   every case.
-- **Don't hand-construct a qname for `read`.** Guessing
-  `path/to/file:symbol` from the file path and function name will return
-  `not_found` even when the symbol exists. Look it up with `grep_symbol`
-  or `grep` first, then round-trip the returned qname.
+- **Don't hand-construct a qname.** Guessing `path/to/file:symbol` from
+  the file path and function name will return `not_found` even when the
+  symbol exists. Look it up with `grep_symbol` or `grep` first, then
+  round-trip the returned qname.
 - **Don't call `read` repeatedly to traverse a graph.** Use `trace`
   instead. `read` is heavier (full prose); use it when you actually
   want to understand a symbol.
@@ -453,24 +105,18 @@ hand-built qname won't fix that.
 - **Don't worry about whether a triefact exists.** If a symbol has no
   prose yet, `read` still returns signature, callers, and callees;
   `prose` is empty and `notes` says so.
+- **Don't edit indexed source directly. Ever.** All edits go through
+  the patch pipeline: stage intent through the patch family so callers
+  cascade and prose stays in sync. Raw text edits bypass the cascade,
+  desync the triefacts, and fail `trie verify`.
 
 ---
 
-## CLI equivalents
+## CLI reference
 
-Every MCP tool is also available as a `trie` CLI subcommand. The CLI
-calls the same code; `--json` output is byte-equivalent to the wire
-response.
-
-**Output modes by command:**
-
-| Human-readable (pass `--json` for machine) | JSON-only (always machine-readable) |
-|---|---|
-| `trie grep`, `trie read`, `trie trace` | `trie grep-str`, `trie grep-entry-points` |
-| | `trie grep-symbol`, `trie grep-symbol-neighbours` |
-| | `trie explain-symbol`, `trie explain-symbol-refs` |
-| | `trie trace-flow`, `trie explain-flow` |
-| | `trie patch`, `trie patch-drop`, `trie patch-list`, `trie patch-apply` |
+Every tool is also available as a `trie` CLI subcommand, calling the
+same code. `--json` output (where offered) is byte-equivalent to the
+tool response.
 
 ```
 trie grep         [--name STR] [--kind K] [--scope-prefix P]
@@ -493,15 +139,28 @@ trie explain-symbol      <sym>
 trie explain-symbol-refs <sym>
 trie trace-flow          <sym1> <sym2>
 trie explain-flow        <sym1> <sym2>
+
+trie patch create        <qname> --note STR [--reason STR]
+trie patch create-batch  [--json-file PATH]   (else reads JSON array on stdin)
+trie patch create-symbol <qname> --note STR [--file PATH] [--anchor QNAME]
+                         [--reason STR]
+trie patch rename-symbol <qname> <new_name> [--reason STR]
+trie patch delete-symbol <qname> [--reason STR]
+trie patch preview
+trie patch list
+trie patch drop          [--qname QNAME | --all]
+trie patch apply         [--note STR] [--model MODEL] [--backend llm|agent]
+                         [--commit-mode all_or_nothing|per_item|per_group]
 ```
 
 CLI-specific behaviour:
-- **Human-readable commands** (grep, read, trace) output Rich tables /
-  structured prose by default. Pass `--json` for the raw MCP envelope.
-- **JSON-only commands** always output JSON; they accept no `--json` flag.
-- **Exit codes**: `0` on success, `1` on tool error, `2` on argument errors.
-- **The same project is targeted** as the MCP server — both find
-  `trie.toml` by walking up from the current directory.
+- **`trie grep` / `trie read` / `trie trace`** output Rich tables /
+  structured prose by default; pass `--json` for the raw envelope. The
+  other query commands are JSON-only and accept no `--json` flag.
+- **Exit codes**: `0` on success, `1` on tool error, `2` on argument
+  errors. Errors print to **stderr**.
+- **The same project is targeted** regardless of surface — everything
+  finds `trie.toml` by walking up from the current directory.
 
 Management subcommands:
 
@@ -526,21 +185,16 @@ trie mcp uninstall [--target NAME] [--all] [--scope project|user]
 
 ## Built-in tool overrides
 
-If `trie setup --target opencode` was run, the agent's built-in tools
-may already route through trie:
+If `trie setup --target opencode` was run, the agent's built-in `grep`
+and `read` already route through trie, and the remaining trie tools are
+installed as bare-named custom tools (`trace`, `grep_str`, the patch
+family, and so on). Two custom-tool names are shortened relative to
+their MCP counterparts: `grep_symbol_neighbours` (MCP:
+`grep_symbol_and_neighbours`) and `explain_symbol_refs` (MCP:
+`explain_symbol_references`).
 
-| Built-in | Override behaviour |
-|---|---|
-| **`grep`** | Routes through `trie grep` — symbol-predicate search with fallback. |
-| **`read`** | Qname-shaped paths → `trie read`; plain file paths → compact triefact view; `show_source: true` → raw source bytes. |
-| **`trace`** | Added as bare `trace` tool for graph traversal. |
-| **`grep_str`**, **`grep_entry_points`**, **`grep_symbol`**, **`grep_symbol_and_neighbours`** | Custom tools wrapping the corresponding CLI. |
-| **`explain_symbol`**, **`explain_symbol_references`** | Custom tools for deep symbol understanding. |
-| **`trace_flow`**, **`explain_flow`** | Custom tools for inter-symbol path finding. |
-| **`patch`**, **`patch_drop`**, **`patch_list`**, **`patch_apply`** | Custom tools for edit patch workflow — post notes, manage, and execute. |
-
-When the override isn't installed, all tools work through the trie MCP
-server (prefixed as `grep`, `read`, etc.) and the `trie` CLI.
+When the overrides aren't installed, the same tools are available
+through the trie MCP server and the `trie` CLI.
 
 ---
 
@@ -573,15 +227,15 @@ config files trie's scope doesn't cover. That's it.
 
 ## TL;DR
 
-- **`grep`** for every code-side search — symbol names, literal strings,
-  structural filters, usage patterns.
-- **`read`** for one symbol + its neighbours. Drill in once you know
-  the qname.
-- **`trace`** / **`trace_flow`** for graph topology beyond one hop.
-- **`explain_symbol`** / **`explain_symbol_references`** for deep
-  understanding.
-- **`grep_entry_points`** to orient in an unfamiliar codebase.
-- **`grep_symbol`** / **`grep_symbol_and_neighbours`** for fuzzy name
-  discovery.
-- **`grep_str`** for literal/pattern searches in source bodies.
+- **`grep`** for every code-side search; **`grep_str`** for regex
+  over source bodies; **`grep_symbol`** for fuzzy name lookup;
+  **`grep_entry_points`** to orient in an unfamiliar codebase.
+- **`read`** for one symbol + neighbours; **`trace`** /
+  **`trace_flow`** for topology; the explain tools for narrative
+  depth.
+- **Edits**: always through the pipeline — stage (`patch` /
+  `create_symbol` / `rename_symbol` / `delete_symbol` /
+  `batch_patch`) → review (`patch_list`) → apply once
+  (`patch_apply`, with a session note for multi-symbol changes).
+  Never raw-edit indexed source.
 - Shell `rg`/grep for non-code files only.
