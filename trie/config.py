@@ -83,8 +83,13 @@ class Edits:
             LspBackend(command="pyright", check_args=["--outputjson"], output_format="pyright"),
         ]
     )
-    # Per-symbol edit generation backend: "llm" (default, in-process) or
-    # "opencode" (Phase 2, one targeted instance per symbol). See trie/edits/backends.
+    # Per-symbol edit generation backend:
+    #   "llm"      (default) — in-process LLM code generation
+    #   "opencode" — one targeted opencode instance per symbol (Phase 2)
+    #   "agent"    — patch apply returns an agent-executable worklist (workorder)
+    #                instead of generating code; generation becomes opt-in at the
+    #                call site. A repo opts into this flow by setting backend = "agent".
+    # See trie/edits/backends.
     backend: str = "llm"
     # How a multi-item apply commits on partial failure:
     #   "all_or_nothing" (default) — any item failing aborts the whole commit

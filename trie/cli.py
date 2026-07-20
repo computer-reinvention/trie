@@ -3358,6 +3358,11 @@ def patch_apply_cmd(
         "--commit-mode",
         help="all_or_nothing (default) | per_item | per_group.",
     ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Emit raw JSON output (useful for agent consumers).",
+    ),
 ) -> None:
     """Stage + commit all pending patches via the cascade-editing pipeline."""
     reporter = _get_reporter(ctx)
@@ -3367,19 +3372,112 @@ def patch_apply_cmd(
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
+    # Determine the effective backend before any generation machinery is
+    # touched.  The CLI option takes precedence; otherwise fall back to the
+    # project configuration, then to 'llm'.
+    effective_backend = (
+        backend
+        or getattr(getattr(config, "edits", None), "backend", None)
+        or getattr(config, "backend", None)
+        or "llm"
+    )
+
+    def _build_location(item: dict) -> str:
+        """Construct a file:start_line-end_line string from envelope item keys."""
+        file_path = item.get("file_path") or item.get("file") or ""
+        start = item.get("start_line") if item.get("start_line") is not None else item.get("start")
+        end = item.get("end_line") if item.get("end_line") is not None else item.get("end")
+        start_str = str(start) if start is not None else ""
+        end_str = str(end) if end is not None else ""
+        if file_path and start_str and end_str:
+            return f"{file_path}:{start_str}-{end_str}"
+        elif file_path and start_str:
+            return f"{file_path}:{start_str}"
+        else:
+            return file_path
+
+    # --- agent / workorder path (no generation, no client, no lock) ----------
+    if effective_backend == "agent":
+        from trie.edits.pipeline import build_workorder
+
+        store = Store(project_root / ".trie" / "graph.db")
+        try:
+            envelope = build_workorder(
+                store,
+                config,
+                project_root,
+                client=None,
+                session_note=note,
+            )
+        finally:
+            store.close()
+
+        if json_output:
+            import json as _json
+            console.print_json(_json.dumps(envelope))
+        else:
+            from rich.table import Table
+
+            session_note_val = envelope.get("session_note") or note or "(no session note)"
+            console.print(f"\n[bold]Worklist[/bold] — {session_note_val}\n")
+
+            items = envelope.get("items") or []
+            if items:
+                tbl = Table(show_header=True, header_style="bold cyan")
+                tbl.add_column("qname")
+                tbl.add_column("op")
+                tbl.add_column("location")
+                tbl.add_column("note")
+                for item in items:
+                    location = _build_location(item)
+                    notes = item.get("notes") or []
+                    first_note = str(notes[0]) if notes else ""
+                    if len(first_note) > 60:
+                        first_note = first_note[:57] + "..."
+                    tbl.add_row(
+                        item.get("qname", ""),
+                        item.get("op", ""),
+                        location,
+                        first_note,
+                    )
+                console.print(tbl)
+
+            creates = envelope.get("creates") or []
+            if creates:
+                console.print("\n[bold]Creates[/bold]")
+                ctbl = Table(show_header=True, header_style="bold magenta")
+                ctbl.add_column("target_qname")
+                ctbl.add_column("target_file")
+                ctbl.add_column("anchor")
+                for c in creates:
+                    ctbl.add_row(
+                        c.get("target_qname", ""),
+                        c.get("target_file", ""),
+                        c.get("anchor", ""),
+                    )
+                console.print(ctbl)
+
+            next_instruction = envelope.get("next")
+            if next_instruction:
+                console.print(f"\n[dim]{next_instruction}[/dim]")
+
+        return
+
+    # --- all other backends: run the full generative pipeline ----------------
     from trie.edits.backends import make_backend
     from trie.edits.pipeline import stage_and_commit
 
     client = make_client(model or config.models.edits, sync_cfg=config.sync)
+
     try:
-        edit_backend = make_backend(config, backend=backend, client=client)
+        edit_backend = make_backend(config, backend=effective_backend, client=client)
     except (ValueError, NotImplementedError) as exc:
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
     store = Store(project_root / ".trie" / "graph.db")
     try:
-        report = stage_and_commit(
+        result = stage_and_commit(
             store,
             config,
             edit_backend,
@@ -3391,6 +3489,63 @@ def patch_apply_cmd(
     finally:
         store.close()
 
+    # A non-agent backend might still return a workorder envelope in some
+    # configurations; handle it gracefully here too.
+    envelope = result if isinstance(result, dict) else getattr(result, "_envelope", None)
+    if envelope is not None and envelope.get("mode") == "workorder":
+        if json_output:
+            import json as _json
+            console.print_json(_json.dumps(envelope))
+        else:
+            from rich.table import Table
+
+            session_note_val = envelope.get("session_note") or note or "(no session note)"
+            console.print(f"\n[bold]Worklist[/bold] — {session_note_val}\n")
+
+            items = envelope.get("items") or []
+            if items:
+                tbl = Table(show_header=True, header_style="bold cyan")
+                tbl.add_column("qname")
+                tbl.add_column("op")
+                tbl.add_column("location")
+                tbl.add_column("note")
+                for item in items:
+                    location = _build_location(item)
+                    notes = item.get("notes") or []
+                    first_note = str(notes[0]) if notes else ""
+                    if len(first_note) > 60:
+                        first_note = first_note[:57] + "..."
+                    tbl.add_row(
+                        item.get("qname", ""),
+                        item.get("op", ""),
+                        location,
+                        first_note,
+                    )
+                console.print(tbl)
+
+            creates = envelope.get("creates") or []
+            if creates:
+                console.print("\n[bold]Creates[/bold]")
+                ctbl = Table(show_header=True, header_style="bold magenta")
+                ctbl.add_column("target_qname")
+                ctbl.add_column("target_file")
+                ctbl.add_column("anchor")
+                for c in creates:
+                    ctbl.add_row(
+                        c.get("target_qname", ""),
+                        c.get("target_file", ""),
+                        c.get("anchor", ""),
+                    )
+                console.print(ctbl)
+
+            next_instruction = envelope.get("next")
+            if next_instruction:
+                console.print(f"\n[dim]{next_instruction}[/dim]")
+
+        return
+
+    # --- normal (LLM-generated) report path ---------------------------------
+    report = result
     d = report.to_dict()
     if report.committed and report.ok:
         reporter.success(
