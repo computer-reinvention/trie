@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/parse/python.py
-file_fingerprint: 4c93f5d5a9330be6363a21846ad646882638f15500e5d9495a4807d943cd2bd7
-last_synced_at: '2026-06-17T16:41:46Z'
+file_fingerprint: c3105ec83a590cdb48918ac375b60bf2ff57d0a8d657d563cc3e218c5af628cb
+last_synced_at: '2026-07-20T09:54:31Z'
 defines:
 - kind: module
   qualified_name: trie/parse/python:__module__
-  lines: 1-589
+  lines: 1-614
 - kind: constant
   qualified_name: trie/parse/python:__all__
   lines: 13-13
@@ -69,7 +69,7 @@ defines:
   lines: 403-549
 - kind: class
   qualified_name: trie/parse/python:PythonBackend
-  lines: 552-588
+  lines: 552-613
 - kind: method
   qualified_name: trie/parse/python:PythonBackend.extract_file_data
   lines: 560-567
@@ -91,7 +91,16 @@ defines:
 - kind: method
   qualified_name: trie/parse/python:PythonBackend.system_prompt
   lines: 585-588
-incoming_refs: 77
+- kind: method
+  qualified_name: trie/parse/python:PythonBackend.edit_system_prompt
+  lines: 590-600
+- kind: method
+  qualified_name: trie/parse/python:PythonBackend.code_fence
+  lines: 602-603
+- kind: method
+  qualified_name: trie/parse/python:PythonBackend.validate_syntax
+  lines: 605-613
+incoming_refs: 79
 outgoing_refs: 4
 ---
 <!-- trie:section symbol=trie/parse/python:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=1d0b1eaee344de28ead43745e7b68d7058f187ab37abeaf153eec6b6f8fa3fc2 source_ref=5e8d03050d1b221cab9968d16c6e9555575ee417 role=source-parsing -->
@@ -213,11 +222,13 @@ Parse Python file and extract its top-level symbols: functions, classes, methods
 - Creates synthetic `__module__` symbol for residual code not captured by other symbols
 - Handles decorators, overloads, and property setter deduplication via last-wins strategy
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/python:PythonBackend fingerprint=36e8790a5b7fc7e08d27ed3fa350c013ad1028e920e059325885df623a873631 body_fp=b1c82d065b271d442a88f4ee5dd5f6695c6f03526e0fbad07bbc8b12a24161db source_ref=c24423fc5755b20e2aa7c07664aecc657778685c role=api -->
+<!-- trie:section symbol=trie/parse/python:PythonBackend fingerprint=65967b7cabbb0570f214204b75e850eb49d1a391d4bdd0706ec45448f84c986e body_fp=91a46e9e90666b2fe095d1d91fd767f37e9d1f9f37f7f8dbfeb41ec057425cf2 source_ref=996e2d69785c5e755a928385bfd043ea2fd48914 role=api -->
 Python `LanguageBackend` implementation that delegates all operations to this module's free functions.
 
 - `extract_file_data`: raises `NotImplementedError` if `source_text` is supplied; lazily imports `trie.parse.references` to avoid circular imports.
 - `lsp_backends`: returns empty list, deferring to the configured default (pyright).
+- `edit_system_prompt`: returns the system prompt string used when editing Python symbols.
+- `validate_syntax`: compiles `source` to check for `SyntaxError`; returns `True` on any unexpected exception to avoid blocking patches.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/python:PythonBackend.extract_file_data fingerprint=169cc9961183027877e5b6fb2092fa09a4097ed41a2bc6e9f7ade56f6e2b8196 body_fp=3e3ed468a7ee9c26a374f40df9c3be1c0b6f35fa35de6132ccddfc7cbc52d3b7 source_ref=c24423fc5755b20e2aa7c07664aecc657778685c role=api -->
 Delegates `PythonBackend.extract_file_data` to `trie.parse.references.extract_file_data`, importing it lazily to avoid a circular import.
@@ -241,4 +252,13 @@ Return the `PythonBackend` glob patterns used to select files for overlay; alway
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/python:PythonBackend.system_prompt fingerprint=68b3879b22e142efeeb345e19a76ef40d2ca51ec128a736a06d639dcd6b839fe body_fp=96e4822f83a3fb892198a62f924d1246077f7a96ad1e2ddf2a3e8093f3b715c3 source_ref=c24423fc5755b20e2aa7c07664aecc657778685c role=config -->
 Return the system prompt string for `PythonBackend` by importing and returning `SYSTEM_PROMPT` from `trie.sync.generator`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/parse/python:PythonBackend.edit_system_prompt fingerprint=ff42d2dce2a158995ff9635b0ef97fda161f19b3933196c0ad3335b6a5e620b4 body_fp=f211b7ab565aa67bd1d3014b88f9f7b11a30b9b760133b36498387f219e7cacc source_ref=996e2d69785c5e755a928385bfd043ea2fd48914 role=config -->
+Returns the hardcoded system prompt string used by `PythonBackend` to instruct an LLM when editing a Python symbol.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/parse/python:PythonBackend.code_fence fingerprint=c268edf20b5ae1f83062ccca310b197cba477cc215ef6ac9d1f93c49da0c3c5d body_fp=97a4101017dea9853f81caf5b5cd688d5a0afa4ae66ab21849ca25e4b8b57fd0 source_ref=996e2d69785c5e755a928385bfd043ea2fd48914 role=util -->
+Return the code fence language tag `"python"` for `PythonBackend`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/parse/python:PythonBackend.validate_syntax fingerprint=bd8a8fb1afeeb9977fc4183dcbbc513c1e504cbae5ccbf208d116658bdf717a6 body_fp=491d0a2320a004ae0c00cf231fadab2eceabaa815bed4ba5417c6faea3566a1a source_ref=996e2d69785c5e755a928385bfd043ea2fd48914 role=domain -->
+Compile `source` via Python's built-in `compile` to check syntax validity, returning `False` only on `SyntaxError` and `True` for all other outcomes including unexpected exceptions.
 <!-- trie:end -->

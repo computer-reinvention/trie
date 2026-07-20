@@ -1,59 +1,59 @@
 ---
 trie_version: 0.1.9
 source: trie/edits/apply.py
-file_fingerprint: 6fde96ac12b73e8ba804bd6f0444813c4c28c957b57851bc5097ab7398918c46
-last_synced_at: '2026-06-17T16:41:23Z'
+file_fingerprint: 6051b3b065e1ac7b9fad3385ef1364a6d8828c598b9aedf9b1366e5608b57b99
+last_synced_at: '2026-07-20T09:53:54Z'
 defines:
 - kind: module
   qualified_name: trie/edits/apply:__module__
-  lines: 1-676
+  lines: 1-704
 - kind: function
   qualified_name: trie/edits/apply:_parse_pyright_output
-  lines: 27-43
+  lines: 29-45
 - kind: function
   qualified_name: trie/edits/apply:_parse_ruff_output
-  lines: 46-64
+  lines: 48-66
 - kind: function
   qualified_name: trie/edits/apply:_parse_tsc_output
-  lines: 67-96
+  lines: 69-98
 - kind: constant
   qualified_name: trie/edits/apply:_PARSERS
-  lines: 99-103
+  lines: 101-105
 - kind: function
   qualified_name: trie/edits/apply:lsp_backends_for_file
-  lines: 106-123
+  lines: 108-125
 - kind: function
   qualified_name: trie/edits/apply:_lsp_diagnostics
-  lines: 126-151
+  lines: 128-153
 - kind: function
   qualified_name: trie/edits/apply:_format_diagnostics
-  lines: 154-162
+  lines: 156-164
 - kind: function
   qualified_name: trie/edits/apply:_file_fixup
-  lines: 165-188
+  lines: 167-193
 - kind: function
   qualified_name: trie/edits/apply:_compile_check
-  lines: 191-196
+  lines: 196-214
 - kind: function
   qualified_name: trie/edits/apply:_expand_callers
-  lines: 199-229
+  lines: 217-247
 - kind: function
   qualified_name: trie/edits/apply:_refresh_file
-  lines: 232-241
+  lines: 250-259
 - kind: function
   qualified_name: trie/edits/apply:apply_patches
-  lines: 244-597
+  lines: 262-625
 - kind: function
   qualified_name: trie/edits/apply:_read_source_span
-  lines: 600-603
+  lines: 628-631
 - kind: function
   qualified_name: trie/edits/apply:_write_prose_section
-  lines: 606-644
+  lines: 634-672
 - kind: function
   qualified_name: trie/edits/apply:preview_patches
-  lines: 647-675
-incoming_refs: 31
-outgoing_refs: 2
+  lines: 675-703
+incoming_refs: 32
+outgoing_refs: 1
 ---
 <!-- trie:section symbol=trie/edits/apply:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a240e61e0147c739eb5cd28dd5d4841e0cc3638151c3dc00315a599b3dfc1b23 source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 role=code-editing -->
 Applies pending code patches by cascading to callers, generating new source with LLM inference, fixing syntax errors via LSP diagnostics, and updating triefact documentation.
@@ -101,13 +101,16 @@ Runs LSP backends sequentially against a file and returns diagnostics from the f
 <!-- trie:section symbol=trie/edits/apply:_format_diagnostics fingerprint=f8f1a2a1db2af1f7d97e5492cd064ae2f56b6574b386af817e0a4e13e5490c56 body_fp=dd40ea53611c19768ecf0ce91283a911c80749520b7b9390e3e3a7fef52351aa source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 role=code-editing -->
 Formats diagnostic messages from LSP backends into a human-readable string with line:column positions.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/apply:_file_fixup fingerprint=bbadd2dda12f9b9865bdf44285d919b279240223f85f1fca9335ac9413ccd9e7 body_fp=a62a14c70277c17d6757e988996b7a48867adaced13d0de6e86b9aec7c2b5344 source_ref=fda8d865f5854a6e1d6ea5ce64cf35f8776b45dc role=io -->
+<!-- trie:section symbol=trie/edits/apply:_file_fixup fingerprint=8a56129bc4fde095ea7872ac9028d107fd5ee47d9f0199d7998369c212819be4 body_fp=d46da136f6b4e039fb66f11a317b5cdaa0ed8993b8e68ac704cf835779fc0e54 source_ref=6c360551ccc7a74292aba2af28574f19a5c81247 role=domain -->
 Uses LLM client to fix diagnostic issues in file content, returning corrected code or original if no diagnostics.
 
-- Returns None if LLM fails to generate fix, original content if diagnostics are empty
+- `max_tokens`: keyword-only; controls LLM output limit (default 16384)
+- Returns `None` if LLM fails to generate a fix, original content if diagnostics are empty
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/apply:_compile_check fingerprint=7a854ad40befe46ef361c13e67a4678144ea8a66457bd5ceeb3562379b1703cf body_fp=1017686e8f2277f506b67ab920df22daf551148d046db5c4ce2f251a025758a5 source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 role=code-editing -->
-Compiles Python source code to check for syntax errors, returning True if valid.
+<!-- trie:section symbol=trie/edits/apply:_compile_check fingerprint=1dd0aa83a4812382f94608e6bcf75eaa0627f3b38821426965801ec3eead41f3 body_fp=4664f277e41542e9a65fcefc1c18f5b21f99762c8c318cf1e752bc348f8e4710 source_ref=6c360551ccc7a74292aba2af28574f19a5c81247 role=util -->
+Validate source syntax using a language-aware backend when `file_path` resolves to a registered backend, falling back to Python `compile` otherwise.
+
+- `file_path`: optional path used to detect the language backend; omit for Python-only behaviour.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/apply:_expand_callers fingerprint=3b8ad849b2ca5152c41cf726107bdb2e7194d9434696c747cf3a92eb2c4dabd8 body_fp=820918d91cd2c48bf16ebb028ff59fe9c7312826318adca723b058867193daf3 source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 role=change-detection -->
 Expands seed symbols to include their callers up to cascade_depth levels, skipping hub symbols.
@@ -119,7 +122,7 @@ Expands seed symbols to include their callers up to cascade_depth levels, skippi
 <!-- trie:section symbol=trie/edits/apply:_refresh_file fingerprint=cb12cf48ef733d72f2273ca2661a206c03fd153e474426a121e05919824950cf body_fp=955ded022f1c7bd954e595349b4351a1c217a03811eeb235cbfe4e97dcad3124 source_ref=cc1f6acfd303f2f5f4ce93250a206220e69621c9 role=documentation-sync -->
 Updates triefact metadata for a single file after source code changes.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/apply:apply_patches fingerprint=54ec3ad839c7e0c34b39766cbf4ebfb2dda64f40b7bb8a424057ecf10faa8b17 body_fp=541755c5f6e7980ecf803b28f77639a18a6a425160f65073fa1b530570dab5a0 source_ref=a7fb7cb9cbd7823c587ac4fb8982d9d21c96782a role=orchestration -->
+<!-- trie:section symbol=trie/edits/apply:apply_patches fingerprint=b616555b5e8b4e89cff8e51e1b3a61eee2a7f90ad203005cea3fde990d9f8d53 body_fp=541755c5f6e7980ecf803b28f77639a18a6a425160f65073fa1b530570dab5a0 source_ref=6c360551ccc7a74292aba2af28574f19a5c81247 role=orchestration -->
 Applies all pending patches by cascading changes, generating source and prose, running LSP fixups, and verifying project consistency.
 
 - **patches**: groups patches by symbol, expands to caller symbols via cascade

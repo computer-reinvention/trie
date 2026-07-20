@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/config.py
-file_fingerprint: 5f226d63bea7007bd08e75d4bac2053d5844965f4b5f2a61019a2892fff36750
-last_synced_at: '2026-06-17T16:41:18Z'
+file_fingerprint: aa428506be60bf77477d7305da1dd328f03f35f572948c9ab811e1222dcf4c6e
+last_synced_at: '2026-07-20T09:53:41Z'
 defines:
 - kind: module
   qualified_name: trie/config:__module__
-  lines: 1-414
+  lines: 1-429
 - kind: class
   qualified_name: trie/config:TrieMeta
   lines: 9-10
@@ -27,38 +27,38 @@ defines:
   lines: 57-73
 - kind: class
   qualified_name: trie/config:Edits
-  lines: 77-96
+  lines: 77-111
 - kind: class
   qualified_name: trie/config:LanguageConfig
-  lines: 100-108
+  lines: 115-123
 - kind: class
   qualified_name: trie/config:Sync
-  lines: 112-150
+  lines: 127-165
 - kind: class
   qualified_name: trie/config:Debug
-  lines: 154-173
+  lines: 169-188
 - kind: class
   qualified_name: trie/config:Mcp
-  lines: 177-233
+  lines: 192-248
 - kind: class
   qualified_name: trie/config:Config
-  lines: 237-295
+  lines: 252-310
 - kind: method
   qualified_name: trie/config:Config.from_dict
-  lines: 250-273
+  lines: 265-288
 - kind: method
   qualified_name: trie/config:Config.load
-  lines: 276-279
+  lines: 291-294
 - kind: method
   qualified_name: trie/config:Config.find_and_load
-  lines: 282-295
+  lines: 297-310
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
-  lines: 298-299
+  lines: 313-314
 - kind: constant
   qualified_name: trie/config:DEFAULT_CONFIG_TOML
-  lines: 302-413
-incoming_refs: 207
+  lines: 317-428
+incoming_refs: 210
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/config:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=73508aef5ccf98a204e6bf0fa288e0420baac8315fc2fb1aa7e8d1bf91d72a01 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
@@ -113,7 +113,7 @@ Configures a language server backend for diagnostics during patch application.
 - `output_format`: determines stdout parsing format - "pyright" or "ruff"
 - `exit_ok_codes`: exit codes interpreted as "no diagnostics found"
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Edits fingerprint=18a8d3e0df78081ea47e08cd712835fea37ff36a2acc32f7965cfcf75845c865 body_fp=1df955f8f9569268b2202114a02a1bf068d3d2c782a0b2bdc6496493bafed6f4 source_ref=804cbe955566bb7dc234ec68033f1e84827f016f role=config -->
+<!-- trie:section symbol=trie/config:Edits fingerprint=a36dfe52ee715aae6c469e703a0098d9e87c9452bd686375f6932169ecfa2f44 body_fp=305a226f919f868170ed95083ddd81df4fcc8e780a88db6a3deba4c3fa715400 source_ref=e5bb60aaf967f6b8135d506ffb1eab58da9b1e53 role=config -->
 Configures patch-apply pipeline and LSP backend settings for code editing operations.
 
 - `lsp_max_retries`: maximum retry attempts when LSP diagnostics fail
@@ -121,6 +121,8 @@ Configures patch-apply pipeline and LSP backend settings for code editing operat
 - `backend`: edit generation backend, either "llm" or "opencode"
 - `commit_mode`: partial failure handling, one of "all_or_nothing", "per_item", or "per_group"
 - `compile_retry_cap`: maximum regeneration attempts for symbols with compilation errors
+- `output_retries`: max times pydantic-ai re-prompts the model on structured output parse failure
+- `max_output_tokens`: token ceiling for a single code-generation call; defaults to 16384
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:LanguageConfig fingerprint=53c630a38d44498a9e194e86c35198bb9a6d7eec5f7143a19503cfb475db89f8 body_fp=7ea5116333d3272467cb2cc54cd3c40fdc54b238da538ff650de7611b481d532 source_ref=64675d426ee121ee07f6aca6b23643e1d1ad5991 role=config -->
 Dataclass holding per-language config overrides, keyed by backend name (e.g. `"typescript"`).

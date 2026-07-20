@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_edits_apply.py
 file_fingerprint: 19c66220dfebe979e907a3cc90b1c56b693dd7f97076bef11d320d853633637c
-last_synced_at: '2026-06-17T16:42:53Z'
+last_synced_at: '2026-07-20T09:55:04Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_apply:__module__

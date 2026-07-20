@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: tests/test_models.py
-file_fingerprint: 8f1edbf377de7342617fc8884113224228431515ab09acca8bd8f2aea0c5b83d
-last_synced_at: '2026-06-17T16:42:57Z'
+file_fingerprint: cc3db9128544e3b040f80b32aaad23339f99bbe04de346be0f87b836d79a7c90
+last_synced_at: '2026-07-20T09:53:24Z'
 defines:
 - kind: module
   qualified_name: tests/test_models:__module__
-  lines: 1-132
+  lines: 1-146
 - kind: function
   qualified_name: tests/test_models:_make_client
   lines: 13-18
@@ -37,6 +37,9 @@ defines:
 - kind: function
   qualified_name: tests/test_models:test_run_caches_system_instructions
   lines: 123-131
+- kind: function
+  qualified_name: tests/test_models:test_batch_filter_output_tolerates_empty_object
+  lines: 134-145
 incoming_refs: 0
 outgoing_refs: 12
 ---
@@ -83,4 +86,7 @@ Tests that TrieClient.run with cache_prefix creates a three-element user input l
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_models:test_run_caches_system_instructions fingerprint=3b36a8d3e4deb5a4cf342762aaf8ae850418601ec55f7c2117c0a462a582eb1c body_fp=a4daf31905cfcd5c45b6d43e13229f698e250eaa2041b9285bb6bdb59231b65b source_ref=cd01e48f99e715d106504085b600e52b32176ce5 role=test -->
 Verifies TrieClient.run passes anthropic_cache_instructions=True and max_tokens=1024 in model_settings.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_models:test_batch_filter_output_tolerates_empty_object fingerprint=72f3b581341ea22e805b3f44c40b2b8298c646765cde22c8bf6466b0a2446f4c body_fp=28ae0be7ed7e7b7f978c589484dfc617ada78db3015ee3c460f368265a8f9aa6 source_ref=5cc4e8f43f2f4332eaa79612f94c3e1071fb95ff role=test -->
+Assert that `BatchFilterOutput` validates an empty dict `{}` to an instance with `decisions == []`, preventing a pydantic `ValidationError` regression.
 <!-- trie:end -->

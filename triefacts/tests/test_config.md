@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_config.py
 file_fingerprint: 19135655e050e0adc481d5f9f16a2abda87e78960cec4031673abec7cf184454
-last_synced_at: '2026-06-17T16:40:54Z'
+last_synced_at: '2026-07-20T09:54:51Z'
 defines:
 - kind: module
   qualified_name: tests/test_config:__module__
@@ -54,7 +54,7 @@ Tests that Config.from_dict merges overrides per section while preserving defaul
 <!-- trie:section symbol=tests/test_config:test_load_roundtrips_default_template fingerprint=4941b8d7135c895583d06e3d3ddce455c6f36c141bccd12fdb654835f13e8542 body_fp=f1c706a20bc4863d933f2f914c487448722750b9d2a3c369ab4724891c45e9bf source_ref=fc39661b30c3a7ba13e052fbab6504196bb5bc1d role=test -->
 Verifies that Config.load can parse the default TOML configuration template and produces expected defaults.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_config:test_find_and_load_walks_up fingerprint=c2e6b43592156a913d5cfee00fbb8028609cdf2318d3de8a975915503cbec7dd body_fp=28882492ca4ad2950d26e82976d8d6014e40aa4ca48c771478d82de341ebf79b source_ref=ce0170296e1b69f535154cc3d8fa01546c83fc5e role=test -->
+<!-- trie:section symbol=tests/test_config:test_find_and_load_walks_up fingerprint=c2e6b43592156a913d5cfee00fbb8028609cdf2318d3de8a975915503cbec7dd body_fp=28882492ca4ad2950d26e82976d8d6014e40aa4ca48c771478d82de341ebf79b source_ref=fc39661b30c3a7ba13e052fbab6504196bb5bc1d role=test -->
 Verifies Config.find_and_load() walks up from deeply nested directories to find configuration files.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_config:test_find_and_load_raises_when_missing fingerprint=34e4b7c5c6730ec2a6f2bf88e37ab6412ebad59f63491fcba83fb3be61de3093 body_fp=c2ab318e15cc867027117c569ed94aa73cdf3bd4764dcd944fa525c4e3140e6e source_ref=ce0170296e1b69f535154cc3d8fa01546c83fc5e role=test-infrastructure -->

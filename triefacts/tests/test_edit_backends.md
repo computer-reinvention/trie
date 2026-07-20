@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_edit_backends.py
 file_fingerprint: 03967fff93e74808a87cc64df8af9f035f3cf850a0a1a817e03145505b524396
-last_synced_at: '2026-06-09T09:24:26Z'
+last_synced_at: '2026-07-20T09:54:57Z'
 defines:
 - kind: module
   qualified_name: tests/test_edit_backends:__module__

@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/parse/typescript_refs.py
 file_fingerprint: 2cd2fb5108edf6da41ba75d347deb20420291f51ab2165aef1e969e155aeea2b
-last_synced_at: '2026-06-17T16:42:18Z'
+last_synced_at: '2026-07-20T09:55:31Z'
 description: TypeScript reference (edge) extraction via tree-sitter.
 defines:
 - kind: module

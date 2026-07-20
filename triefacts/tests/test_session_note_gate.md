@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_session_note_gate.py
 file_fingerprint: 33c0335e0de01abd6e4b37454c3b2dab17b3136e41a2b5ff9d000aa152c679d9
-last_synced_at: '2026-06-17T16:43:13Z'
+last_synced_at: '2026-07-20T09:55:15Z'
 defines:
 - kind: module
   qualified_name: tests/test_session_note_gate:__module__
@@ -88,8 +88,8 @@ Loads project config and disables LSP backends for testing.
 <!-- trie:section symbol=tests/test_session_note_gate:TestSessionNoteValidator fingerprint=cb404f85d1f6477f3ad8a29f2343b5a6fdf96254a75f71a9daef8ae3041849f3 body_fp=b56ac37b23cd5b9ebf4027c6acb1e380b073de0e5c0af80f2ef53c3d2b9324c8 source_ref=bd0edcc7b73ff757beb7e1edebbf57e3b02a1d80 role=test -->
 Tests session note validation logic to ensure commit messages meet quality requirements.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_note_gate:TestSessionNoteValidator.test_rejects_short_and_boilerplate fingerprint=b1dadfac08c2e99d945f98058b43f2f7ce8df18be7ad0d3c233b7f49d3174447 body_fp=591a8b372e27bbee6642805cdc7722d0fecc0638b51254f240f39344fea47462 source_ref=bd0edcc7b73ff757beb7e1edebbf57e3b02a1d80 role=test -->
-Tests TestSessionNoteValidator rejects empty strings, whitespace-only text, generic words like "fix" and "update", single characters, and strings under 12 characters.
+<!-- trie:section symbol=tests/test_session_note_gate:TestSessionNoteValidator.test_rejects_short_and_boilerplate fingerprint=b1dadfac08c2e99d945f98058b43f2f7ce8df18be7ad0d3c233b7f49d3174447 body_fp=4c7484d67c9d1a4a7105524c025aad2b46d65eca5afeecab51075cf37d508a42 source_ref=bd0edcc7b73ff757beb7e1edebbf57e3b02a1d80 role=test -->
+Tests `TestSessionNoteValidator` rejects empty strings, whitespace-only text, generic words like "fix" and "update", single characters, and strings under 12 characters.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_session_note_gate:TestSessionNoteValidator.test_accepts_real_note fingerprint=da49169bceda82d38935b38d47a057a3cc4f02091b4975c072522a624195dd69 body_fp=31c3aaecb76fabdf8c45803b2f531e97d216fa38287e3725ade79a0cbed384b9 source_ref=bd0edcc7b73ff757beb7e1edebbf57e3b02a1d80 role=test -->
 TestSessionNoteValidator.test_accepts_real_note verifies session_note_ok returns True for a meaningful commit message.

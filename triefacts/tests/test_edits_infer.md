@@ -1,15 +1,15 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_edits_infer.py
-file_fingerprint: 6fdeece8d17321d4559245f3bdb69afcba5fe2c060d0914855856b79c3f41ef0
-last_synced_at: '2026-06-06T13:18:22Z'
+file_fingerprint: 2d12a55eb51640bceeedc21cd3faa978e9053dc680c646f42e974e6690eb72e7
+last_synced_at: '2026-07-20T09:53:34Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_infer:__module__
-  lines: 1-130
+  lines: 1-145
 - kind: class
   qualified_name: tests/test_edits_infer:TestMergeNotes
-  lines: 7-80
+  lines: 7-95
 - kind: method
   qualified_name: tests/test_edits_infer:TestMergeNotes.test_empty_patches
   lines: 8-12
@@ -17,34 +17,37 @@ defines:
   qualified_name: tests/test_edits_infer:TestMergeNotes.test_single_patch_preserved
   lines: 14-22
 - kind: method
-  qualified_name: tests/test_edits_infer:TestMergeNotes.test_empty_response_returns_empty
-  lines: 24-29
+  qualified_name: tests/test_edits_infer:TestMergeNotes.test_empty_llm_response_falls_back_to_raw_notes
+  lines: 24-35
+- kind: method
+  qualified_name: tests/test_edits_infer:TestMergeNotes.test_single_patch_skips_llm
+  lines: 37-44
 - kind: method
   qualified_name: tests/test_edits_infer:TestMergeNotes.test_preserves_reasons_via_delimiter
-  lines: 31-40
+  lines: 46-55
 - kind: method
   qualified_name: tests/test_edits_infer:TestMergeNotes.test_preserves_reasons_multiple_lines
-  lines: 42-53
+  lines: 57-68
 - kind: method
   qualified_name: tests/test_edits_infer:TestMergeNotes.test_fallback_no_delimiter
-  lines: 55-66
+  lines: 70-81
 - kind: method
   qualified_name: tests/test_edits_infer:TestMergeNotes.test_mixed_bullet_formats
-  lines: 68-80
+  lines: 83-95
 - kind: class
   qualified_name: tests/test_edits_infer:TestInferSourceAndProse
-  lines: 83-129
+  lines: 98-144
 - kind: method
   qualified_name: tests/test_edits_infer:TestInferSourceAndProse.test_basic_inference
-  lines: 84-97
+  lines: 99-112
 - kind: method
   qualified_name: tests/test_edits_infer:TestInferSourceAndProse.test_source_without_code_block
-  lines: 99-113
+  lines: 114-128
 - kind: method
   qualified_name: tests/test_edits_infer:TestInferSourceAndProse.test_multiline_prose
-  lines: 115-129
+  lines: 130-144
 incoming_refs: 0
-outgoing_refs: 24
+outgoing_refs: 26
 ---
 <!-- trie:section symbol=tests/test_edits_infer:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=e28b9274beb27d92743f93e6809cd4a1811d1f6e40641814f79d473227e478c2 source_ref=70a5baf39073b2a061c8be75cc64f5da1284a6d1 role=test-infrastructure -->
 Test suite for the edits inference module, covering note merging and source/prose generation.
@@ -52,12 +55,13 @@ Test suite for the edits inference module, covering note merging and source/pros
 - `TestMergeNotes` — tests `merge_notes` function with various patch scenarios
 - `TestInferSourceAndProse` — tests `infer_source_and_prose` function with different output formats
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes fingerprint=536c144865fac54b0f67efce337e4540069db0d99d77a55a9d1f8ce7cfa4d0e7 body_fp=e622048f382c355185e9dce22fa297de591059643536d0ec503ee893f7ed0639 source_ref=70a5baf39073b2a061c8be75cc64f5da1284a6d1 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes fingerprint=34ea1fe7738105ede09581b4bd711d5d7583d2ed1f7a4d633972caf1f7b29ba3 body_fp=8c0ead6a7573ee1a98fcf9bb96886c41d2420757f2015c043dffdcfb5181b189 source_ref=8ea01afef00d5c188d9dfbde511de34766e2f2cd role=test -->
 Tests merge_notes function with various patch configurations and client responses.
 
 - `test_empty_patches`: verifies empty patch list returns empty results
 - `test_single_patch_preserved`: checks single patch handling with matching client output
-- `test_empty_response_returns_empty`: ensures empty client response overrides input patches
+- `test_empty_llm_response_falls_back_to_raw_notes`: ensures empty LLM response falls back to raw input notes, not empty
+- `test_single_patch_skips_llm`: verifies a single patch is returned verbatim without an LLM call
 - `test_preserves_reasons_via_delimiter`: validates reason preservation in output
 - `test_preserves_reasons_multiple_lines`: tests multiple patch merging with paired reasons
 - `test_fallback_no_delimiter`: verifies fallback behavior when delimiters absent
@@ -69,8 +73,11 @@ Tests that TestMergeNotes.test_empty_patches returns empty lists when given no i
 <!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_single_patch_preserved fingerprint=c503a6a0b86c3889717b4bc8e6546c1863424f629e6457a18e54820d070295ad body_fp=b47ecfe1074a2c90a8a348caf5b1ba25f135d8dc309ec5d799014a22387a6155 source_ref=70a5baf39073b2a061c8be75cc64f5da1284a6d1 role=code-editing -->
 Verifies TestMergeNotes merge_notes preserves a single patch note when client returns matching output.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_empty_response_returns_empty fingerprint=333e3f8fef5e7cb72b3c886d24b7dbd7829bee752b3a5efa8cb31bb75102133c body_fp=d7463990a7f1ca80c92c140bef5319350b2d9118748df4bdf3b16ce3c1b36c79 source_ref=70a5baf39073b2a061c8be75cc64f5da1284a6d1 role=test-infrastructure -->
-Verifies that TestMergeNotes.merge_notes returns empty lists when the client provides empty responses.
+<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_empty_llm_response_falls_back_to_raw_notes fingerprint=4b08966d359031bcbd969f98b8d0f3f279fcc51ac1f2fe572564b0b275f0600d body_fp=7d3a91fc56529e99dd6e7e186223b92b0c4c66628718395653afcac06a6d4a63 source_ref=8ea01afef00d5c188d9dfbde511de34766e2f2cd role=test -->
+Asserts that `TestMergeNotes` falls back to raw patch notes and reasons when the LLM returns an empty response, preventing data loss on a failed merge pass.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_single_patch_skips_llm fingerprint=432b05438a7b108fe01ac8f5eb6fab4555ada4c49305f27c7d314075c0fb4bc1 body_fp=d700b72e45ab9fb7796b39f7cdae9f0f90b7b70f205c913b38d8c25fdb8c9c7f source_ref=8ea01afef00d5c188d9dfbde511de34766e2f2cd role=test -->
+Assert that `TestMergeNotes` returns a single patch verbatim without invoking the LLM when only one patch is provided.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_infer:TestMergeNotes.test_preserves_reasons_via_delimiter fingerprint=1836d50cfcb4e992a0a26cd20fc4b687002a516548cebcc50f8ff9fd35348c92 body_fp=0b9b06504264dcd395aa9ebf1234f33b4186ea85879cd34dab83ac8de2c5bd79 source_ref=70a5baf39073b2a061c8be75cc64f5da1284a6d1 role=test-infrastructure -->
 Tests that TestMergeNotes preserves reasons when merging notes with matching content.
@@ -103,16 +110,3 @@ Tests that TestInferSourceAndProse.test_source_without_code_block handles LLM re
 <!-- trie:section symbol=tests/test_edits_infer:TestInferSourceAndProse.test_multiline_prose fingerprint=30ad28170ee5253cdba42ed7d90de74e8a10d3dbf65af86594b5b304ebeaaf61 body_fp=1e0bae2413a0bdc8bef687f2ec1802a2fd9ddfe6c6e1aabb162420ee2b662af3 source_ref=70a5baf39073b2a061c8be75cc64f5da1284a6d1 role=test-infrastructure -->
 TestInferSourceAndProse.test_multiline_prose verifies that infer_source_and_prose preserves multi-paragraph prose output from the client.
 <!-- trie:end -->
-
-
-
-
-
-
-
-
-
-
-
-
-

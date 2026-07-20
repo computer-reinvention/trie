@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: tests/test_edits_apply_pipeline.py
-file_fingerprint: 67852ab74e5c7d6d3c30a07e51a72c8c4df1f46f3ea2350e0c5c04099f0ce15a
-last_synced_at: '2026-06-17T16:43:07Z'
+file_fingerprint: d64dc7c59f7e1b053381c3696fa00f910a3a99f031adb1920166c878f767228b
+last_synced_at: '2026-07-20T09:53:47Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_apply_pipeline:__module__
-  lines: 1-401
+  lines: 1-477
 - kind: constant
   qualified_name: tests/test_edits_apply_pipeline:PROJECT_TOML
   lines: 21-29
@@ -26,88 +26,103 @@ defines:
   qualified_name: tests/test_edits_apply_pipeline:_is_merge_prompt
   lines: 68-69
 - kind: function
+  qualified_name: tests/test_edits_apply_pipeline:_plain_edit_text
+  lines: 72-81
+- kind: function
   qualified_name: tests/test_edits_apply_pipeline:_make_usage
-  lines: 72-84
+  lines: 84-96
 - kind: class
   qualified_name: tests/test_edits_apply_pipeline:FakeTriefactClient
-  lines: 87-108
+  lines: 99-120
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:FakeTriefactClient.run
-  lines: 93-104
+  lines: 105-116
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:FakeTriefactClient.count_tokens
-  lines: 107-108
+  lines: 119-120
 - kind: class
   qualified_name: tests/test_edits_apply_pipeline:FakeEditClient
-  lines: 111-147
+  lines: 123-174
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:FakeEditClient.run
-  lines: 120-143
+  lines: 132-155
+- kind: method
+  qualified_name: tests/test_edits_apply_pipeline:FakeEditClient.run_text
+  lines: 158-170
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:FakeEditClient.count_tokens
-  lines: 146-147
+  lines: 173-174
 - kind: class
   qualified_name: tests/test_edits_apply_pipeline:PassthroughClient
-  lines: 150-183
+  lines: 177-225
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:PassthroughClient.run
-  lines: 156-179
+  lines: 183-206
+- kind: method
+  qualified_name: tests/test_edits_apply_pipeline:PassthroughClient.run_text
+  lines: 209-221
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:PassthroughClient.count_tokens
-  lines: 182-183
+  lines: 224-225
 - kind: class
   qualified_name: tests/test_edits_apply_pipeline:BrokenClient
-  lines: 186-217
+  lines: 228-272
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:BrokenClient.run
-  lines: 192-213
+  lines: 234-255
+- kind: method
+  qualified_name: tests/test_edits_apply_pipeline:BrokenClient.run_text
+  lines: 258-268
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:BrokenClient.count_tokens
-  lines: 216-217
+  lines: 271-272
 - kind: function
   qualified_name: tests/test_edits_apply_pipeline:project
-  lines: 221-274
+  lines: 276-329
 - kind: class
   qualified_name: tests/test_edits_apply_pipeline:TestApplyPatchesEmpty
-  lines: 277-297
+  lines: 332-352
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:TestApplyPatchesEmpty.test_no_patches_returns_immediately
-  lines: 278-284
+  lines: 333-339
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:TestApplyPatchesEmpty.test_git_clean_after_empty_apply
-  lines: 286-297
+  lines: 341-352
 - kind: class
   qualified_name: tests/test_edits_apply_pipeline:TestApplyPatchesSuccess
-  lines: 300-364
+  lines: 355-419
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:TestApplyPatchesSuccess.test_applies_single_symbol
-  lines: 301-312
+  lines: 356-367
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:TestApplyPatchesSuccess.test_patches_deleted_after_success
-  lines: 314-323
+  lines: 369-378
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:TestApplyPatchesSuccess.test_no_git_commit_created
-  lines: 325-339
+  lines: 380-394
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:TestApplyPatchesSuccess.test_applies_in_topo_order
-  lines: 341-348
+  lines: 396-403
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:TestApplyPatchesSuccess.test_cascaded_no_change_skips_write
-  lines: 350-364
+  lines: 405-419
 - kind: class
   qualified_name: tests/test_edits_apply_pipeline:TestApplyPatchesFailure
-  lines: 367-400
+  lines: 422-455
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:TestApplyPatchesFailure.test_compile_error_returns_failure
-  lines: 368-376
+  lines: 423-431
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:TestApplyPatchesFailure.test_rollback_restores_files
-  lines: 378-389
+  lines: 433-444
 - kind: method
   qualified_name: tests/test_edits_apply_pipeline:TestApplyPatchesFailure.test_patches_preserved_after_rollback
-  lines: 391-400
+  lines: 446-455
+- kind: function
+  qualified_name: tests/test_edits_apply_pipeline:test_apply_report_has_post_apply_actions_block
+  lines: 458-476
 incoming_refs: 0
-outgoing_refs: 71
+outgoing_refs: 74
 ---
 <!-- trie:section symbol=tests/test_edits_apply_pipeline:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=749ce6ff9fae10110ed0ce09ad8ceaf01562e0e5201b12a9bf0aa263eb32abec source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test-infrastructure -->
 Integration tests for the patch application pipeline, including success and failure scenarios.
@@ -140,6 +155,9 @@ Extracts documented prose from an LLM infer prompt by finding the "Old prose" se
 <!-- trie:section symbol=tests/test_edits_apply_pipeline:_is_merge_prompt fingerprint=13df75d98109396ebce3eeae9f2acd9b95400180791f4b8d1b4d6a5d780269ca body_fp=fdfaf6c19087f0e22cacc45883906e8a3e91442a43c1b5de01833e422d265592 source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test-infrastructure -->
 Determines if a prompt string is for merging patch notes by checking for a specific marker phrase.
 <!-- trie:end -->
+<!-- trie:section symbol=tests/test_edits_apply_pipeline:_plain_edit_text fingerprint=af59e23b69158e0304fff9e943c234c915d073bc7052d8c466e123e08c3abcc9 body_fp=51ef93ec59940983027d55e89beeac6ebc26fbecb4707c0e3cebbe496e622fb7 source_ref=6176a83a45d7cb5f697f12f7d4613107e399ade4 role=util -->
+Render `source` and `prose` into the fenced-block + delimited-prose format that `trie.edits.textgen` parses from `TrieClient.run_text` output.
+<!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_apply_pipeline:_make_usage fingerprint=778ea16dee0036412660edb79d77aa94f191365fcd8e9c689ed41ba866b067a1 body_fp=c2ba52a602d955b98298d3fe4cd086700011488958cda0f95658315b40ecd5c1 source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test-infrastructure -->
 Creates a mock usage object with configurable token counts for testing LLM responses.
 <!-- trie:end -->
@@ -155,12 +173,13 @@ FakeTriefactClient.run returns a static ModelResult with auto-generated prose fo
 <!-- trie:section symbol=tests/test_edits_apply_pipeline:FakeTriefactClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=10e86678d18ecc1d95267c251ac099688276c3bec2c17224bcc650c91af5766b source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test-infrastructure -->
 Returns a static token count of 100 for FakeTriefactClient prompt measurement.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_apply_pipeline:FakeEditClient fingerprint=ba1ad5dbebe3c61dccc3510b73f4bc25468b89efdd042035e8c3a87f70648e4a body_fp=2b31f5a13c8a55e95eaedbf6fb263fd79cc398ad208336ac024c7a93defe0f51 source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test -->
+<!-- trie:section symbol=tests/test_edits_apply_pipeline:FakeEditClient fingerprint=3d5a65ba1ccde334fa72ea8ba1278c6a7a64cae762a0799db0d27f2b5f4645cb body_fp=0eac8950d45123fb0362d913470a2e358f900114c575ccb296d25f4ecdbcc200 source_ref=6176a83a45d7cb5f697f12f7d4613107e399ade4 role=test -->
 ## FakeEditClient
 
 Mock LLM client that simulates patch application by appending `# patch-applied` to source code.
 
 - Returns different responses based on output type: merge notes, batch filter decisions, or modified source
+- `run_text` returns the same modification as plaintext format via `_plain_edit_text`
 - Always returns fixed usage metrics and token counts
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_apply_pipeline:FakeEditClient.run fingerprint=bc56c6959c2a9044f8ebbe0632c45e1585f7a0f86c1f9a24568791f931915ab3 body_fp=ee7913fdb0a812d013c1f5cb07dbbe64058932a3ae85fe5945919fdb72eeed0a source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test -->
@@ -172,15 +191,19 @@ FakeEditClient static method that simulates LLM edit responses by appending "# p
 - Returns empty BatchFilterOutput for filter operations  
 - Extracts old source from user prompt and appends patch comment for SymbolEdit outputs
 <!-- trie:end -->
+<!-- trie:section symbol=tests/test_edits_apply_pipeline:FakeEditClient.run_text fingerprint=bda16ad3d341fd16fe21bbff7ab3a5ee3a89f0ddd91eca0525186d95edaadd77 body_fp=1e0a3ece93b8ff8250980ff2c5a8442aebb0fb33830815623695d7729bf2ed31 source_ref=6176a83a45d7cb5f697f12f7d4613107e399ade4 role=test -->
+Return a `ModelResult` with plaintext-format output appending `# patch-applied` to the old source extracted from `user_prompt`.
+<!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_apply_pipeline:FakeEditClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=8d06b42f4089a391f93079df1ba1b0d30ecc4f53973a5c78a5d78fe1dc9ac45f source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test-infrastructure -->
 Returns a fixed token count of 100 for FakeEditClient testing.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_apply_pipeline:PassthroughClient fingerprint=9eb0398197bdc8a26374b3cad67013ac0a65a4dd5c8bce789d33ee816958af59 body_fp=1a7f760189325e2843919a85e553094949912c4e08253cb727ee49e4968faae5 source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test -->
+<!-- trie:section symbol=tests/test_edits_apply_pipeline:PassthroughClient fingerprint=c73ac4a13d9df431500777d174e78440f4bfe4694f5d7ff896b7ef00885a13b4 body_fp=fd8d0d115db208f05fd8e30ef382ce09d6e59b8511d67bc49d32eb23c2204d51 source_ref=6176a83a45d7cb5f697f12f7d4613107e399ade4 role=test -->
 Mock LLM client that returns unchanged source and prose for edit operations.
 
 - For `SymbolEdit` outputs: extracts and returns the original source/prose from the prompt
 - For `MergeNotesOutput`: returns static test notes and reasons
 - For `BatchFilterOutput`: returns empty decisions list
+- `run_text`: echoes old source/prose as plaintext code-gen format
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_apply_pipeline:PassthroughClient.run fingerprint=9346deca9763f8a2f77fea6524e9d1db47b6388696fe2a588f6f0a60583c161d body_fp=4b631dbcfb8fb04bf3d6f5c731dfd0834f12ee71cb6ad7352b8dc3b5dc8aed25 source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test -->
 PassthroughClient.run returns existing source and prose unchanged, serving as a no-op test double for LLM editing operations.
@@ -188,13 +211,17 @@ PassthroughClient.run returns existing source and prose unchanged, serving as a 
 - Returns static output for MergeNotesOutput and empty decisions for BatchFilterOutput
 - Extracts and echoes back original source/prose from user_prompt for SymbolEdit requests
 <!-- trie:end -->
+<!-- trie:section symbol=tests/test_edits_apply_pipeline:PassthroughClient.run_text fingerprint=76ab8821b266bf4ed35395f6a561152768172b56860bf56320af5a731ee3bb72 body_fp=9eecb7806bbf1fa5cd2c7ce6947bc7ab6cf6306ca4da45b445d857021953011a source_ref=6176a83a45d7cb5f697f12f7d4613107e399ade4 role=test -->
+Static method on `PassthroughClient` that returns a `ModelResult` with the original source and prose extracted from `user_prompt`, unchanged, in plaintext code-gen format.
+<!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_apply_pipeline:PassthroughClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=9707104e956e15886709311289faaf04377c47e73f40ebaef3585e258cad4de7 source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test-infrastructure -->
 PassthroughClient.count_tokens returns a fixed token count of 100 for any prompt pair.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_apply_pipeline:BrokenClient fingerprint=32e4f66b0c2045144a69b17fb195fb3d3cef0cd43e6f7f810f0df232ee6e8510 body_fp=89ca3ed6b304a306b1a7b43c79ca6ef875a95cdda743913494fe56024519d1f8 source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test -->
+<!-- trie:section symbol=tests/test_edits_apply_pipeline:BrokenClient fingerprint=0872e9b82ff67d8284ae7d1d0b638ff6ac4e0b2c04d50535c38967243b6c23e2 body_fp=52f164bc11706ccb378bfc5e795b93e70a05fb83cb807ba11b22f600f0d18144 source_ref=6176a83a45d7cb5f697f12f7d4613107e399ade4 role=test -->
 Test double that mimics an LLM client returning syntactically invalid Python source code.
 
 - `run` method: returns broken source "def broken(:" to simulate syntax errors in patch application
+- `run_text` method: returns the same invalid source via the plaintext code-gen path
 - `count_tokens` method: always returns 100 tokens for consistent test behavior
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_apply_pipeline:BrokenClient.run fingerprint=409a604a9de51871d52d433242c4dd9b14b28806674d3b6021a89db8fabf9e88 body_fp=7dac93f69a4c334a29aadafead495947c366dca44a40f3d828d203f08ee53a6e source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test -->
@@ -202,6 +229,9 @@ BrokenClient.run returns syntactically invalid Python source code to simulate LL
 
 - Returns standard outputs for MergeNotesOutput and BatchFilterOutput types
 - Returns SymbolEdit with malformed source "def broken(:" for other output types
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_edits_apply_pipeline:BrokenClient.run_text fingerprint=36a089ab590e5134d8988e36bdb74b0aee58a894948d201039c1289d1ddfd332 body_fp=d5831b2f92b18201ba5c948677f975f00eae6345a04088e19c890f7b829b7bee source_ref=6176a83a45d7cb5f697f12f7d4613107e399ade4 role=test -->
+Return a `ModelResult` containing syntactically invalid Python source via the plaintext code-gen path, regardless of input.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_apply_pipeline:BrokenClient.count_tokens fingerprint=d2e54258807160cae2cd3e384f807ff7ab8c686f8c79830c0798dd9ba6b1e027 body_fp=515a99293ac625ac393e4417c3edc3cba6fbfdfac5013c7303e77655f449dee3 source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test-infrastructure -->
 BrokenClient class method that returns a fixed token count of 100 for any prompt pair.
@@ -259,4 +289,7 @@ Verifies that TestApplyPatchesFailure restores files to their original state aft
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_apply_pipeline:TestApplyPatchesFailure.test_patches_preserved_after_rollback fingerprint=1a3f1e74c954f82a8471c620bf35e0f09bcfc22a8ac69d6e9d69acf38ff84ab4 body_fp=1a02b9997eec5c9d02ac592b4885bb5e842fe97ddb5ca703d291e2c26f2654d7 source_ref=561fe032a463723a9caeb0fc7ff996886e2079de role=test -->
 Verifies TestApplyPatchesFailure patches remain in database after apply_patches failure for retry.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_edits_apply_pipeline:test_apply_report_has_post_apply_actions_block fingerprint=f204e7e392f6d8f9ba887854bf1654e63a39d0d6a03bdb9cd91b5a85829c8c11 body_fp=31b373f130dc730cf3a8f186d98ff6c1683505aac253dfadb0b81081e545e19a source_ref=6176a83a45d7cb5f697f12f7d4613107e399ade4 role=test -->
+Verify that `ApplyReport.to_dict()` includes a `post_apply_actions` block with deduplicated file list, dependency list, and module remarks.
 <!-- trie:end -->
