@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/edits/infer.py
 file_fingerprint: 31c267118dadd1368cd795308141ee0a105b9af3ca0e132aa3b22d5a9fe81da8
-last_synced_at: '2026-07-20T09:54:15Z'
+last_synced_at: '2026-07-20T13:09:47Z'
 defines:
 - kind: module
   qualified_name: trie/edits/infer:__module__
@@ -52,7 +52,7 @@ defines:
 - kind: function
   qualified_name: trie/edits/infer:pre_filter_batch
   lines: 280-343
-incoming_refs: 14
+incoming_refs: 15
 outgoing_refs: 8
 ---
 <!-- trie:section symbol=trie/edits/infer:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=51e52733e963bf3d48183853d2dfa4df351467373cac1a8e7cf5a3b4a9cf592a source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=code-editing -->
@@ -97,10 +97,10 @@ Template string for prompting an LLM to fix Python diagnostics errors in file co
 <!-- trie:section symbol=trie/edits/infer:_format_bullets fingerprint=276d8d146737b65b171b6b1d440db66fa18b94a20cbc45c2cf752f35f5cd26d4 body_fp=2b929f50319b728e7169b14c5aae6b74989318303d98f0b88d5b234601c5fa79 source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=code-editing -->
 Formats lists of notes and reasons into bullet-point text with `<bullet>` prefixes.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:merge_notes fingerprint=38cf05d5252872271e75b079389f7f02a91982879efb3c13470d9b446ac63436 body_fp=f72b023ace00a7dd68fa8339e04e7e90d03981de86ed7e5963e034308b2e6c65 source_ref=694cc0728ce47184322f0b0cd4b5aec5484426a2 role=orchestration -->
+<!-- trie:section symbol=trie/edits/infer:merge_notes fingerprint=38cf05d5252872271e75b079389f7f02a91982879efb3c13470d9b446ac63436 body_fp=562abcf30929708463cffd8d6f1a804ba07cacb64fd247ea00b06e94e26b2ff7 source_ref=694cc0728ce47184322f0b0cd4b5aec5484426a2 role=domain -->
 Deduplicates and merges implementation note patches, returning consolidated notes and reasons; bypasses the LLM call for single-patch inputs and falls back to raw notes on any error.
 
-- patches: list of dicts with "note" and "reason" keys
+- `patches`: list of dicts with "note" and "reason" keys
 - Returns single-element inputs immediately without calling the LLM
 - Falls back to unmerged notes if the LLM call raises or returns an empty result
 <!-- trie:end -->
@@ -127,7 +127,7 @@ Builds caller summary dictionaries with symbol metadata, prose from triefact fil
 <!-- trie:section symbol=trie/edits/infer:_read_prose fingerprint=e1a7046a605c3879cfdfc6f1f5061c1f7d0d2767cc919b6ca7bb05b92321a738 body_fp=38174f97de3023d749cde3168198b7cf9038182109fb23db13ad6e2e14565922 source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=documentation-sync -->
 Extracts prose documentation for a symbol from its triefact markdown file.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:pre_filter_batch fingerprint=9d38b535f74cd6dfc4386afc93e14976a77f214e2b9e085824cbb09c0e36e9b2 body_fp=0a1e12bbc862446219ef3bf68ed513a2fa6c57e5f4c6a33c5f0d0cd1f6afe520 source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=orchestration -->
+<!-- trie:section symbol=trie/edits/infer:pre_filter_batch fingerprint=9d38b535f74cd6dfc4386afc93e14976a77f214e2b9e085824cbb09c0e36e9b2 body_fp=0a1e12bbc862446219ef3bf68ed513a2fa6c57e5f4c6a33c5f0d0cd1f6afe520 source_ref=694cc0728ce47184322f0b0cd4b5aec5484426a2 role=orchestration -->
 Determines which callers need updates when their callees change by batching LLM requests.
 
 - `callee_pairs`: tuples of (callee_qname, old_prose, callers_list, notes_reasons_list)

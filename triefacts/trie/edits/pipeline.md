@@ -200,7 +200,7 @@ Generates a concise session note summarizing pending edit operations from seed s
 - Returns: formatted summary like "edit symbol1, symbol2, create symbol3" or "batch edit" if empty
 - Truncates to first 8 operations to keep the summary manageable
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:build_workorder fingerprint=ff53c12851a5d02495eaafdfd04e2697000eae52a0570dd0bce4d8afd4ff4c5c body_fp=28ed8bf09d5932b893b9d3555cab3302a6896d0f0ff0e04561a8e3612a9c41cd -->
+<!-- trie:section symbol=trie/edits/pipeline:build_workorder fingerprint=ff53c12851a5d02495eaafdfd04e2697000eae52a0570dd0bce4d8afd4ff4c5c body_fp=28ed8bf09d5932b893b9d3555cab3302a6896d0f0ff0e04561a8e3612a9c41cd role=code-editing -->
 `build_workorder` assembles a structured work-order envelope from the store's pending patch queue. It resolves each queued symbol-id to a qualified name and detail record, gates multi-item commits behind a session note (returning a guided error with a synthesised draft note on failure), classifies each symbol's operation via last-structural-wins over patch kinds, optionally merges notes and reasons through the LLM helper, attaches neighbour-context caller lists, and flattens create-patch groups into a creates list — returning a single dictionary that downstream commit and apply commands can act on directly.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/pipeline:commit fingerprint=06ced628869956a36ceca8c94a2d7ab640e7c5507ad6859cf8608637e0a23ec3 body_fp=57a1ca11eda3824dee7a38fe6437d2800c10c0b81f0808368618ca7c5a907861 source_ref=3756feeb097f734409469642535809b6daae49f1 role=orchestration -->

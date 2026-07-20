@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_tool_override_install.py
 file_fingerprint: 70443976502e772d6583cdcb2efc6b6b18b2bdec426c108020010d44ad3f3536
-last_synced_at: '2026-06-03T21:08:39Z'
+last_synced_at: '2026-07-20T13:09:44Z'
 description: 'Tests for `trie.tool_override_install`: replacing agent built-in tools
   with trie wrappers.'
 defines:
@@ -259,18 +259,18 @@ Verifies that `--dry-run` returns `skipped` when files already match expected co
 - Creates files with first install, then runs second install with `dry_run=True`
 - Asserts second install reports `skipped` action since no changes needed
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_install_with_empty_target_names_raises fingerprint=de0258da2c32f2c009bcd96277b319ba9b02d3ed14cff07f8674efeaf77483ba body_fp=804951ad161ebcc915d375adfbb8d7aabffc0fd1e0c701fd77153f758c6823a6 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_tool_override_install:test_install_with_empty_target_names_raises fingerprint=de0258da2c32f2c009bcd96277b319ba9b02d3ed14cff07f8674efeaf77483ba body_fp=804951ad161ebcc915d375adfbb8d7aabffc0fd1e0c701fd77153f758c6823a6 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test -->
 Tests that `install` raises `ToolOverrideInstallError` when called with empty or null target names.
 
 - Verifies both `[]` and `None` as invalid inputs trigger the exception
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_install_with_unknown_target_raises fingerprint=572c2b692bcbb73e70155902d114481a3ce552681a94400872b8619403e3456e body_fp=787cd2ca6b03d2b1016d534da86a9ae319c57544ba0db1f31c8e903e3799db63 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_tool_override_install:test_install_with_unknown_target_raises fingerprint=572c2b692bcbb73e70155902d114481a3ce552681a94400872b8619403e3456e body_fp=787cd2ca6b03d2b1016d534da86a9ae319c57544ba0db1f31c8e903e3799db63 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test -->
 Verifies `install()` raises `ToolOverrideInstallError` for unknown target names.
 
 - Checks error message includes the invalid target name
 - Verifies error message lists valid options for fixing typos
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_tool_override_install:test_apply_one_uses_needs_manual_setup_for_targets_with_no_files fingerprint=f33b7ea65004cd19d365772957c29eacf6c1e64c4485bb643ac88dc9fb8692c1 body_fp=7aad40739435e62250b4adbbbed514620510ddc00a5437067260c9c1bfea6439 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_tool_override_install:test_apply_one_uses_needs_manual_setup_for_targets_with_no_files fingerprint=f33b7ea65004cd19d365772957c29eacf6c1e64c4485bb643ac88dc9fb8692c1 body_fp=7aad40739435e62250b4adbbbed514620510ddc00a5437067260c9c1bfea6439 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test -->
 Tests that `apply_one` returns `needs_manual_setup` for targets with empty file tuples.
 
 - Verifies harnesses with only manual instructions return appropriate action without disk writes

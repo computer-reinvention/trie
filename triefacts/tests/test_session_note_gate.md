@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.9
 source: tests/test_session_note_gate.py
-file_fingerprint: 33c0335e0de01abd6e4b37454c3b2dab17b3136e41a2b5ff9d000aa152c679d9
-last_synced_at: '2026-07-20T09:55:15Z'
+file_fingerprint: 93283c3e5a7deef50d5ed581a1704426ae035061409f468aded1e3f68d2a992e
+last_synced_at: '2026-07-20T13:08:58Z'
 defines:
 - kind: module
   qualified_name: tests/test_session_note_gate:__module__
@@ -69,10 +69,10 @@ TOML configuration string fixture for creating test trie projects.
 
 - Contains standard trie sections: version, scope patterns, triefacts paths, model configurations, and cascade settings
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_note_gate:FakeTriefactClient fingerprint=c22c1583950633f73a49f72533e33f452437ffe5aee920b7029a55345ae38703 body_fp=d46bb60c333818318aed4f39b50fb8a1675f76cdaa7f59d3ed9b6ac12bce4e7d source_ref=bd0edcc7b73ff757beb7e1edebbf57e3b02a1d80 role=test -->
+<!-- trie:section symbol=tests/test_session_note_gate:FakeTriefactClient fingerprint=eb21c1c8e78d2dfbdaa15ef552db52c7f8e034d8a0e48c02c7d739e2f9ea2007 body_fp=d46bb60c333818318aed4f39b50fb8a1675f76cdaa7f59d3ed9b6ac12bce4e7d source_ref=36d355d0cfd2e6c99e1ed76fdeb78b7906375dab role=test -->
 Mock client for testing triefact generation that returns fixed SectionBody output with minimal usage stats.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_note_gate:FakeTriefactClient.run fingerprint=ddf5f4d5a413797c8ae0c5853e9d1be123cf1571583cd546aead0c3037ad7075 body_fp=d920f97cec27e1d9ba3ddd2ac8c0be2a1f9ff75c0836836ce7eb24fc37cf6df5 source_ref=bd0edcc7b73ff757beb7e1edebbf57e3b02a1d80 role=test -->
+<!-- trie:section symbol=tests/test_session_note_gate:FakeTriefactClient.run fingerprint=245921977f71d8c42c7796c61eaf884795f199a0f58fd762bbeb242de7e54a6b body_fp=d920f97cec27e1d9ba3ddd2ac8c0be2a1f9ff75c0836836ce7eb24fc37cf6df5 source_ref=36d355d0cfd2e6c99e1ed76fdeb78b7906375dab role=test -->
 FakeTriefactClient.run returns a fixed ModelResult with fake prose and minimal token usage for testing.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_session_note_gate:project fingerprint=69b41fe4013d4d2cea578ac0c10a996e91c0aa573085cdcc3e0168761612f50d body_fp=59fa3c54f7eaf240fda7ec169b41cc96ff685138c6eabff70da0fdd1c9909e19 source_ref=bd0edcc7b73ff757beb7e1edebbf57e3b02a1d80 role=test -->

@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_models.py
 file_fingerprint: cc3db9128544e3b040f80b32aaad23339f99bbe04de346be0f87b836d79a7c90
-last_synced_at: '2026-07-20T09:53:24Z'
+last_synced_at: '2026-07-20T13:09:26Z'
 defines:
 - kind: module
   qualified_name: tests/test_models:__module__
@@ -50,7 +50,7 @@ Tests for the `trie.models` module, focusing on `TrieClient` token counting and 
 - Ensures prompt caching integration works correctly with pydantic-ai Agent
 - Tests edge cases like empty prompts and system message handling
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models:_make_client fingerprint=a87fc52a2f0cb01b6398fe71cfd598d23333ce14a768a02b8cadfec453057b6e body_fp=59c2016d33cb90c7c93194cb9d923e4e6492004e2888658b1ebd7acb4b0c57f8 source_ref=cd01e48f99e715d106504085b600e52b32176ce5 role=test -->
+<!-- trie:section symbol=tests/test_models:_make_client fingerprint=a87fc52a2f0cb01b6398fe71cfd598d23333ce14a768a02b8cadfec453057b6e body_fp=59c2016d33cb90c7c93194cb9d923e4e6492004e2888658b1ebd7acb4b0c57f8 source_ref=5cc4e8f43f2f4332eaa79612f94c3e1071fb95ff role=test -->
 Creates a TrieClient with a mocked Anthropic client for testing token counting functionality.
 
 - `input_tokens`: configures the mock to return this token count from count_tokens calls
@@ -72,19 +72,19 @@ Tests that TrieClient.count_tokens substitutes non-whitespace placeholder for em
 
 - Verifies placeholder content is non-whitespace when user_prompt is empty, spaces, or tabs
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models:_mock_agent fingerprint=5d921d57ad5ad09b4fc1dfe5a3ffc79ed26a5962b14ba670203ab8daac6a6552 body_fp=94fa3fe6fbfa42c6025d585c97214f940ac52fcfd869980a471ceeae08c769ab source_ref=cd01e48f99e715d106504085b600e52b32176ce5 role=test -->
+<!-- trie:section symbol=tests/test_models:_mock_agent fingerprint=5d921d57ad5ad09b4fc1dfe5a3ffc79ed26a5962b14ba670203ab8daac6a6552 body_fp=94fa3fe6fbfa42c6025d585c97214f940ac52fcfd869980a471ceeae08c769ab source_ref=5cc4e8f43f2f4332eaa79612f94c3e1071fb95ff role=test -->
 Patches trie.models.Agent to return canned results and record calls for testing.
 
 • Returns tuple of (mock agent class, calls dict) for test assertions
 • Mock run method returns fake SectionBody output with predetermined usage stats
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models:test_run_without_cache_prefix_sends_bare_string fingerprint=caa80bfff386b0f6fd54edaa2ce9788b218cfebd3216710e9d27541355286f7a body_fp=b4a57fba20362fc3df7469ca07712c7ea24a3361a051035de56d07eb08a15783 source_ref=cd01e48f99e715d106504085b600e52b32176ce5 role=test -->
+<!-- trie:section symbol=tests/test_models:test_run_without_cache_prefix_sends_bare_string fingerprint=caa80bfff386b0f6fd54edaa2ce9788b218cfebd3216710e9d27541355286f7a body_fp=b4a57fba20362fc3df7469ca07712c7ea24a3361a051035de56d07eb08a15783 source_ref=5cc4e8f43f2f4332eaa79612f94c3e1071fb95ff role=test -->
 Verifies TrieClient.run passes the user prompt as a plain string when no cache prefix is provided.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models:test_run_with_cache_prefix_inserts_cachepoint fingerprint=7358de945990d8a124cacf2562d4ca168840e828b1d277b254d6851498d1c9bd body_fp=6a64f08d49877c2ecb9f1adcdad8b9aba7166be12e7f557d3478ff22d6a304d7 source_ref=cd01e48f99e715d106504085b600e52b32176ce5 role=test -->
+<!-- trie:section symbol=tests/test_models:test_run_with_cache_prefix_inserts_cachepoint fingerprint=7358de945990d8a124cacf2562d4ca168840e828b1d277b254d6851498d1c9bd body_fp=6a64f08d49877c2ecb9f1adcdad8b9aba7166be12e7f557d3478ff22d6a304d7 source_ref=5cc4e8f43f2f4332eaa79612f94c3e1071fb95ff role=test -->
 Tests that TrieClient.run with cache_prefix creates a three-element user input list with cache prefix, CachePoint, and user prompt.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models:test_run_caches_system_instructions fingerprint=3b36a8d3e4deb5a4cf342762aaf8ae850418601ec55f7c2117c0a462a582eb1c body_fp=a4daf31905cfcd5c45b6d43e13229f698e250eaa2041b9285bb6bdb59231b65b source_ref=cd01e48f99e715d106504085b600e52b32176ce5 role=test -->
+<!-- trie:section symbol=tests/test_models:test_run_caches_system_instructions fingerprint=3b36a8d3e4deb5a4cf342762aaf8ae850418601ec55f7c2117c0a462a582eb1c body_fp=a4daf31905cfcd5c45b6d43e13229f698e250eaa2041b9285bb6bdb59231b65b source_ref=5cc4e8f43f2f4332eaa79612f94c3e1071fb95ff role=test -->
 Verifies TrieClient.run passes anthropic_cache_instructions=True and max_tokens=1024 in model_settings.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_models:test_batch_filter_output_tolerates_empty_object fingerprint=72f3b581341ea22e805b3f44c40b2b8298c646765cde22c8bf6466b0a2446f4c body_fp=28ae0be7ed7e7b7f978c589484dfc617ada78db3015ee3c460f368265a8f9aa6 source_ref=5cc4e8f43f2f4332eaa79612f94c3e1071fb95ff role=test -->

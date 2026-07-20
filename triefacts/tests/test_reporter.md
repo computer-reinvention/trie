@@ -1,53 +1,59 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_reporter.py
-file_fingerprint: 2a312d540691237fe4d78d91e1298c168ea3453009e339901e94e9669a4eff48
-last_synced_at: '2026-06-09T10:07:38Z'
+file_fingerprint: 2687fddcd8fd3190739e2dfc9f7de9cc4c857a52f2ef14254e74a34b8f2eab2b
+last_synced_at: '2026-07-20T13:08:58Z'
 defines:
 - kind: module
   qualified_name: tests/test_reporter:__module__
-  lines: 1-143
+  lines: 1-160
 - kind: function
   qualified_name: tests/test_reporter:_make_reporter
   lines: 12-15
 - kind: function
-  qualified_name: tests/test_reporter:test_mute_suppresses_info_and_success
+  qualified_name: tests/test_reporter:_make_reporter_with_stderr
   lines: 18-23
 - kind: function
+  qualified_name: tests/test_reporter:test_mute_suppresses_info_and_success
+  lines: 26-31
+- kind: function
   qualified_name: tests/test_reporter:test_mute_still_emits_errors
-  lines: 26-29
+  lines: 34-37
+- kind: function
+  qualified_name: tests/test_reporter:test_errors_go_to_stderr_not_stdout
+  lines: 40-46
 - kind: function
   qualified_name: tests/test_reporter:test_medium_emits_info_and_success_but_not_detail
-  lines: 32-40
+  lines: 49-57
 - kind: function
   qualified_name: tests/test_reporter:test_verbose_emits_everything
-  lines: 43-49
+  lines: 60-66
 - kind: function
   qualified_name: tests/test_reporter:test_progress_mute_is_noop
-  lines: 52-59
+  lines: 69-76
 - kind: function
   qualified_name: tests/test_reporter:test_progress_medium_prints_finish_lines
-  lines: 62-70
+  lines: 79-87
 - kind: function
   qualified_name: tests/test_reporter:test_progress_verbose_includes_token_detail
-  lines: 73-79
+  lines: 90-96
 - kind: function
   qualified_name: tests/test_reporter:test_progress_marks_cascade_files
-  lines: 82-93
+  lines: 99-110
 - kind: function
   qualified_name: tests/test_reporter:test_progress_adapter_prints_plan_header_and_section_separators
-  lines: 96-115
+  lines: 113-132
 - kind: function
   qualified_name: tests/test_reporter:test_progress_adapter_plan_is_silent_when_nothing_to_sync
-  lines: 118-125
+  lines: 135-142
 - kind: function
   qualified_name: tests/test_reporter:test_root_quiet_and_verbose_are_mutually_exclusive
-  lines: 131-135
+  lines: 148-152
 - kind: function
   qualified_name: tests/test_reporter:test_root_version_still_works_with_verbosity_flags
-  lines: 138-142
+  lines: 155-159
 incoming_refs: 0
-outgoing_refs: 14
+outgoing_refs: 16
 ---
 <!-- trie:section symbol=tests/test_reporter:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=fa430be3ec87445f293f027c2caea83ff425a3a5b12a05014e7d843942d78fdb source_ref=df741a005acc31e764a566519cdb2c64bda589ef role=test-infrastructure -->
 Tests the Reporter class and CLI verbosity handling across different output levels.
@@ -62,11 +68,19 @@ Creates a Reporter instance with a string buffer console for testing purposes.
 
 - Returns Reporter configured with given verbosity level and a StringIO buffer for capturing output
 <!-- trie:end -->
+<!-- trie:section symbol=tests/test_reporter:_make_reporter_with_stderr fingerprint=6096e5e51f6e4b433bae31820706b59e85ab319c3a3883521dd09d165e5e3069 body_fp=58ab1af98b9984286f2e08f1c9e253a06271d688ffff4050c3d6a3d92e8978ac source_ref=924ac6da38ef7268ebeb8333be41cc9bf62c78d7 role=test -->
+Create a `Reporter` with separate stdout and stderr `StringIO` buffers for the given `Verbosity` level, returning all three.
+
+- `returns` — `(reporter, out_buf, err_buf)` tuple for asserting channel separation
+<!-- trie:end -->
 <!-- trie:section symbol=tests/test_reporter:test_mute_suppresses_info_and_success fingerprint=f63e90635d0ad62f227a9b8d564b4d187a86cc47cd33366b448730a2d327eca7 body_fp=888100b3ad2cbca6e995972ade7c5da25810cf67ed5f9e6d956a1bcc0db67c5b source_ref=df741a005acc31e764a566519cdb2c64bda589ef role=test-infrastructure -->
 Verifies that Reporter with MUTE verbosity suppresses info, success, and detail messages.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_reporter:test_mute_still_emits_errors fingerprint=a7e2fa1d4951cdb11c6b26264cfd3101e79815e5b529673f4a8442c60569171f body_fp=6efde0b22762af16dc57625e4c69387dc3d014ac78fd323ec72bb6dcce626b19 source_ref=df741a005acc31e764a566519cdb2c64bda589ef role=test-infrastructure -->
-Verifies that Reporter with MUTE verbosity still outputs error messages despite suppressing other output types.
+<!-- trie:section symbol=tests/test_reporter:test_mute_still_emits_errors fingerprint=d78cf44bbe3eaad650bd9aef8567186b5f60d24ac911dbb4f51fbc655b2464a8 body_fp=b0eaed99636682addaefb208b25b0a91eeaafcd5b9d99a9c571cc08be77e3b33 source_ref=924ac6da38ef7268ebeb8333be41cc9bf62c78d7 role=test -->
+Verifies that Reporter with MUTE verbosity still outputs error messages to stderr despite suppressing other output types.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_reporter:test_errors_go_to_stderr_not_stdout fingerprint=2b07e69584f55ab544c63df9addbbda11de4c778d60492e0108ac8c253e6e72d body_fp=31ce075bc7d3c26401a54c0e3c1e36e043e2d103b1fdc7141aee207fc2a6751a source_ref=924ac6da38ef7268ebeb8333be41cc9bf62c78d7 role=test -->
+Assert that `Reporter.error` writes to stderr and not stdout under `Verbosity.MEDIUM`.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_reporter:test_medium_emits_info_and_success_but_not_detail fingerprint=45c067950323a5746f4fd463459904b0cac10a32639cc3182a4984e4a08e46d8 body_fp=3e0707280e03c87b9853987913da624121bc8274f1fcfe2c9a063a3d90d0b90d source_ref=df741a005acc31e764a566519cdb2c64bda589ef role=test-infrastructure -->
 Tests that Reporter with medium verbosity outputs info and success messages but suppresses detail messages.
