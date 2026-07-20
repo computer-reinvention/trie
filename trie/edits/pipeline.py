@@ -587,6 +587,123 @@ def stage(
     return report, staged
 
 
+def build_workorder(store, config, project_root, *, client=None, session_note=''):
+    patches_by_sym_id = store.get_all_patches_grouped()
+    create_grouped = store.get_create_patches_grouped()
+
+    # Resolve seed qnames from symbol_id keys
+    seeds = []
+    unresolved = []
+    for sym_id, patches in patches_by_sym_id.items():
+        row = store._conn.execute(
+            "SELECT qualified_name FROM symbols WHERE id = ?", (sym_id,)
+        ).fetchone()
+        if row is None:
+            continue
+        qname = row[0]
+        detail = store.get_symbol_detail(qname)
+        if detail is None:
+            unresolved.append({'qname': qname, 'code': 'not_found', 'message': f'{qname} not found in store'})
+            continue
+        seeds.append((qname, detail, patches))
+
+    seed_qnames = [s[0] for s in seeds]
+
+    # Session-note gate
+    total_items = len(seeds) + sum(len(v) for v in create_grouped.values())
+    if not session_note_ok(session_note) and total_items > 1:
+        return {
+            'ok': False,
+            'mode': 'workorder',
+            'error': 'session_note_required',
+            'unresolved': [
+                {
+                    'qname': '<session>',
+                    'code': 'session_note_required',
+                    'message': 'A session_note is required when committing more than one symbol.',
+                    'repatch': {
+                        'tool': 'commit',
+                        'args': {
+                            'session_note': _synthesize_session_note(seed_qnames, create_grouped)
+                        },
+                    },
+                }
+            ],
+        }
+
+    # Build items for modify/delete/rename seeds
+    items = []
+    for qname, detail, patches in seeds:
+        # Classify op with last-structural-wins rule
+        op = 'modify'
+        rename_to = None
+        for p in patches:
+            kind = p.get('kind')
+            if kind in ('delete', 'rename', 'modify'):
+                op = kind
+                if kind == 'rename':
+                    rename_to = p.get('rename_to')
+
+        # Merge notes and reasons
+        if client is not None and op == 'modify':
+            notes, reasons = merge_notes(client, patches)
+        else:
+            notes = [p['note'] for p in patches if p.get('note')]
+            reasons = [p['reason'] for p in patches if p.get('reason')]
+
+        # Compute callers to review
+        _callees, callers = neighbour_context(qname, store)
+        callers_to_review = [c.qname for c in callers]
+
+        item = {
+            'qname': qname,
+            'op': op,
+            'file_path': detail.file_path,
+            'start_line': detail.start_line,
+            'end_line': detail.end_line,
+            'notes': notes,
+            'reasons': reasons,
+            'callers_to_review': callers_to_review,
+        }
+        if op == 'rename' and rename_to is not None:
+            item['rename_to'] = rename_to
+
+        items.append(item)
+
+    # Build creates list by flattening create_grouped values
+    creates = []
+    for _target_file, cpatches in create_grouped.items():
+        for cpatch in cpatches:
+            creates.append({
+                'target_qname': cpatch.get('target_qname', ''),
+                'target_file': cpatch.get('target_file', ''),
+                'anchor_qname': cpatch.get('anchor_qname', ''),
+                'parent_class': cpatch.get('parent_class', ''),
+                'note': cpatch.get('note', ''),
+                'reason': cpatch.get('reason', ''),
+            })
+
+    # Compute expected_symbols
+    item_qnames = [item['qname'] for item in items]
+    create_qnames = [c['target_qname'] for c in creates]
+    expected_symbols = sorted(set(item_qnames + create_qnames))
+
+    return {
+        'ok': True,
+        'mode': 'workorder',
+        'session_note': session_note,
+        'items': items,
+        'creates': creates,
+        'expected_symbols': expected_symbols,
+        'unresolved': unresolved,
+        'next': (
+            'Edit the listed symbols natively with your own tools, honoring every note. '
+            'Then run trie refresh to regenerate prose, and trie patch drop --all to clear the queue. '
+            'Out-of-plan symbol edits should get an amending patch note before you finish.'
+        ),
+    }
+
+
 def _expand_caller_jobs(
     modify_seeds: list[tuple[str, list[str], list[str]]],
     queued: set[str],

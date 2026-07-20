@@ -686,6 +686,9 @@ class TrieTools:
         `session_note` is required for multi-symbol applies (the unifying intent).
         `backend` overrides the configured edit backend ('llm' default). Uses an
         exclusive lock to prevent concurrent applies.
+
+        When the effective backend is 'agent', returns an executable worklist
+        immediately without acquiring the apply lock or performing any generation.
         """
         import concurrent.futures
 
@@ -693,6 +696,18 @@ class TrieTools:
         from trie.edits.pipeline import stage_and_commit
         from trie.models import make_client
         from trie.refresh_lock import try_acquire
+
+        effective_backend = backend if backend else self.config.edits.backend
+        if effective_backend == "agent":
+            from trie.edits.pipeline import build_workorder
+
+            return build_workorder(
+                self.store,
+                self.config,
+                self.root,
+                client=None,
+                session_note=session_note,
+            )
 
         with try_acquire(self.root, name="apply") as holder:
             if not holder.acquired:
