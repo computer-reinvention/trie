@@ -82,9 +82,18 @@ class Reporter:
     instead, so they stay Rich-free.
     """
 
-    def __init__(self, verbosity: Verbosity = Verbosity.MEDIUM, console: Console | None = None):
+    def __init__(
+        self,
+        verbosity: Verbosity = Verbosity.MEDIUM,
+        console: Console | None = None,
+        err_console: Console | None = None,
+    ):
         self.verbosity = verbosity
         self.console = console or Console()
+        # Errors go to stderr so subprocess wrappers (e.g. the opencode tool
+        # overrides) can surface failures from the stderr stream, matching
+        # POSIX convention. Injectable for tests.
+        self.err_console = err_console or Console(stderr=True)
         self._start = time.monotonic()
 
     def info(self, msg: str) -> None:
@@ -105,7 +114,9 @@ class Reporter:
             self.console.print(f"[yellow]![/yellow] {msg}")
 
     def error(self, msg: str) -> None:
-        self.console.print(f"[red]error:[/red] {msg}")
+        # Unconditional (even in MUTE) and routed to stderr: error text must
+        # survive stdout being consumed, piped, or discarded by a wrapper.
+        self.err_console.print(f"[red]error:[/red] {msg}")
 
     def status(self, msg: str) -> AbstractContextManager[Any]:
         """Render a transient spinner while a step is in flight (MEDIUM+ only)."""

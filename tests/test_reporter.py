@@ -15,6 +15,14 @@ def _make_reporter(level: Verbosity) -> tuple[Reporter, io.StringIO]:
     return Reporter(verbosity=level, console=console), buf
 
 
+def _make_reporter_with_stderr(level: Verbosity) -> tuple[Reporter, io.StringIO, io.StringIO]:
+    out_buf = io.StringIO()
+    err_buf = io.StringIO()
+    console = Console(file=out_buf, width=120, force_terminal=False, no_color=True)
+    err_console = Console(file=err_buf, width=120, force_terminal=False, no_color=True)
+    return Reporter(verbosity=level, console=console, err_console=err_console), out_buf, err_buf
+
+
 def test_mute_suppresses_info_and_success():
     reporter, buf = _make_reporter(Verbosity.MUTE)
     reporter.info("hello")
@@ -24,9 +32,18 @@ def test_mute_suppresses_info_and_success():
 
 
 def test_mute_still_emits_errors():
-    reporter, buf = _make_reporter(Verbosity.MUTE)
+    reporter, _out, err_buf = _make_reporter_with_stderr(Verbosity.MUTE)
     reporter.error("boom")
-    assert "boom" in buf.getvalue()
+    assert "boom" in err_buf.getvalue()
+
+
+def test_errors_go_to_stderr_not_stdout():
+    # Subprocess wrappers (e.g. the opencode tool overrides) surface stderr
+    # on failure; errors must land there, not on the stdout console.
+    reporter, out_buf, err_buf = _make_reporter_with_stderr(Verbosity.MEDIUM)
+    reporter.error("boom")
+    assert "boom" in err_buf.getvalue()
+    assert "boom" not in out_buf.getvalue()
 
 
 def test_medium_emits_info_and_success_but_not_detail():

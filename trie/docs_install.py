@@ -146,6 +146,10 @@ ALL_TOOL_NAMES = (
     "trace_flow",
     "explain_flow",
     "patch",
+    "batch_patch",
+    "create_symbol",
+    "rename_symbol",
+    "delete_symbol",
     "patch_drop",
     "patch_list",
     "patch_apply",
@@ -157,6 +161,15 @@ CORE_TOOL_NAMES = ("grep", "read", "trace")
 # (no MCP prefix). Currently only opencode's custom-tools API supports
 # replacing built-in tools with bare-name wrappers.
 _BARE_NAME_TARGETS = frozenset({"opencode"})
+
+# Two override files use shortened names relative to the MCP server's
+# registered tool names (the .ts basenames were chosen for brevity).
+# Rendered docs for bare-name targets must use the override names or the
+# agent will call tools that don't exist.
+_BARE_NAME_OVERRIDES = {
+    "grep_symbol_and_neighbours": "grep_symbol_neighbours",
+    "explain_symbol_references": "explain_symbol_refs",
+}
 
 
 def _render_tool_names(
@@ -174,7 +187,9 @@ def _render_tool_names(
     harness-specific prefix.
     """
     if target_name and target_name in _BARE_NAME_TARGETS:
-        return tuple(tool_names)  # bare names — overrides expose them directly
+        # Bare names — overrides expose them directly (with two shortened
+        # exceptions, see _BARE_NAME_OVERRIDES).
+        return tuple(_BARE_NAME_OVERRIDES.get(t, t) for t in tool_names)
     target = MCP_TARGETS.get(target_name) if target_name else None
     fmt = target.tool_name_format if target is not None else "{tool}"
     return tuple(fmt.format(tool=t) for t in tool_names)
