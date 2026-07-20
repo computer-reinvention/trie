@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/edits/backends/base.py
-file_fingerprint: 5985c9643904ee201b3dcacdf1f53bce35e0f144ff755f6e983670f4ecb694d0
-last_synced_at: '2026-06-09T09:25:36Z'
+file_fingerprint: ffc813b8bd8b255e00e3b06c45bce2bd36484fbeec13b46183cc3e2e55b80178
+last_synced_at: '2026-07-20T09:53:46Z'
 description: The pluggable per-symbol edit backend seam.
 defines:
 - kind: module
   qualified_name: trie/edits/backends/base:__module__
-  lines: 1-78
+  lines: 1-86
 - kind: class
   qualified_name: trie/edits/backends/base:NeighbourCtx
   lines: 21-32
@@ -16,13 +16,13 @@ defines:
   lines: 36-53
 - kind: class
   qualified_name: trie/edits/backends/base:EditResult
-  lines: 57-70
+  lines: 57-78
 - kind: class
   qualified_name: trie/edits/backends/base:SymbolEditBackend
-  lines: 74-77
+  lines: 82-85
 - kind: method
   qualified_name: trie/edits/backends/base:SymbolEditBackend.generate
-  lines: 77-77
+  lines: 85-85
 incoming_refs: 0
 outgoing_refs: 0
 ---
@@ -51,11 +51,13 @@ Contains all information needed by a backend to generate new source code and doc
 - `callers`: context about functions that call this symbol
 - `new_name`: only populated when op is "rename"
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/backends/base:EditResult fingerprint=87fe2f53d59c5cf08401c8623550aaf8f7eee4b1ebd884d8df7ffb2f08a1d77b body_fp=c6df0c2455cac4973b3c73e29eaafa2c33d4f4c4951b26789c7f54ff2acdccd8 source_ref=4c1df07d84035f809e84797956cafd68d221c059 role=model -->
+<!-- trie:section symbol=trie/edits/backends/base:EditResult fingerprint=e53088cdbfe60c40a44bfd60e95b7b846af4575f37b5d8c1777c637e7a7d2cd3 body_fp=e6c6a825de2d5446154c50f9f51c473ef64dc57085bbcc38fba7c2d44a10c602 source_ref=637e986fe7f89d47636a3bd8e41f753ab033f7fc role=model -->
 Contains the generated source code and prose returned by a backend for one symbol edit.
 
 - `ok=False` with populated `error` indicates backend-level failure (no candidate produced)
 - `ok=True` with broken code is allowed; downstream gates judge well-formedness
+- `module_remarks`: free-text hints for imports/top-level changes; surfaced in `ApplyReport`, not applied
+- `new_dependencies`: external package names introduced; deduped across batch and reported for agent to install
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/backends/base:SymbolEditBackend fingerprint=af804fd3d4ad3e4113818da1a6aedee74a6f8605e89abbafea020d15f118c858 body_fp=3de43fb6ce4d965f292d9c3135645c6e4a2ce00670a3fcaa115428aa5ed789ca source_ref=4c1df07d84035f809e84797956cafd68d221c059 role=api -->
 Protocol defining the interface for pluggable edit backends that generate symbol modifications.

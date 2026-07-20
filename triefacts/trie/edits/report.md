@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/edits/report.py
-file_fingerprint: 0b475993408eb1c488e2e28ba31c9fb748ee4aae7ac203f02bf3d50798b51bec
-last_synced_at: '2026-06-09T09:33:56Z'
+file_fingerprint: f38371014a9c65d110640805d01d83957cbcf256f8e720b73643c30c94d7ab51
+last_synced_at: '2026-07-20T09:54:09Z'
 description: 'The hand-off contract: the staged change-set and the ApplyReport.'
 defines:
 - kind: module
   qualified_name: trie/edits/report:__module__
-  lines: 1-160
+  lines: 1-212
 - kind: constant
   qualified_name: trie/edits/report:_SESSION_NOTE_STOPLIST
   lines: 14-14
@@ -52,35 +52,44 @@ defines:
   lines: 43-43
 - kind: class
   qualified_name: trie/edits/report:StagedChange
-  lines: 47-62
+  lines: 47-64
 - kind: class
   qualified_name: trie/edits/report:UnresolvedItem
-  lines: 66-92
+  lines: 68-94
 - kind: method
   qualified_name: trie/edits/report:UnresolvedItem.to_dict
-  lines: 83-92
+  lines: 85-94
 - kind: class
   qualified_name: trie/edits/report:AppliedItem
-  lines: 96-110
+  lines: 98-112
 - kind: method
   qualified_name: trie/edits/report:AppliedItem.to_dict
-  lines: 103-110
+  lines: 105-112
 - kind: class
   qualified_name: trie/edits/report:CascadeAppliedItem
-  lines: 114-120
+  lines: 116-122
 - kind: method
   qualified_name: trie/edits/report:CascadeAppliedItem.to_dict
-  lines: 119-120
+  lines: 121-122
+- kind: class
+  qualified_name: trie/edits/report:ModuleRemark
+  lines: 126-140
+- kind: method
+  qualified_name: trie/edits/report:ModuleRemark.to_dict
+  lines: 139-140
 - kind: class
   qualified_name: trie/edits/report:ApplyReport
-  lines: 124-159
+  lines: 144-211
 - kind: method
   qualified_name: trie/edits/report:ApplyReport.blocking_unresolved
-  lines: 137-138
+  lines: 159-160
 - kind: method
   qualified_name: trie/edits/report:ApplyReport.to_dict
-  lines: 140-159
-incoming_refs: 25
+  lines: 162-182
+- kind: method
+  qualified_name: trie/edits/report:ApplyReport._post_apply_actions
+  lines: 184-211
+incoming_refs: 26
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/edits/report:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a12e01a96f2e880035a99ec411fe16f34189cac4ff4722cbda7a62f64e3037a0 source_ref=72eb7aebeb3590c206ef0fb47bb2a32f97412c09 role=model -->
@@ -136,7 +145,7 @@ Error code indicating a symbol creation attempt failed because it lacks a valid 
 <!-- trie:section symbol=trie/edits/report:CODE_FILE_NOT_FOUND fingerprint=bdb334af596cbda1a87c55e9cb37b5642e67a93d54f86f9872adbf0782a19e7c body_fp=1b78ee509179944ddf2fb071f313b4b362d979c352e1ee68329550004e58f31c source_ref=72eb7aebeb3590c206ef0fb47bb2a32f97412c09 role=model -->
 String constant identifying UnresolvedItem failures where the target file could not be located.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/report:StagedChange fingerprint=f65a953299cbb04838ace596c8f1950dcfef813018c3d32fff182789980f98b5 body_fp=0747facb737c55ee41cfe8a58cfe6ce7d341247eea1ba759a8bb2b9fa047b485 source_ref=72eb7aebeb3590c206ef0fb47bb2a32f97412c09 role=model -->
+<!-- trie:section symbol=trie/edits/report:StagedChange fingerprint=ba2e99ecd549af7e85556f8bbab64d2eecc7e0b5051d2a16534c23da7180eb66 body_fp=34cdf057fd66d8082563d831d4bc782982697e1bd513c7aade6a25290ebb26b5 source_ref=16646a6ef544e59e30c25f799b737ff689e6450f role=model -->
 Represents one symbol's proposed edit with complete before/after state for commit processing.
 
 - `op`: Operation type - modify, create, delete, or rename
@@ -144,6 +153,8 @@ Represents one symbol's proposed edit with complete before/after state for commi
 - `new_source`: Symbol's new span content, empty string for delete operations
 - `before_file_bytes`: Complete original file content for rollback capability
 - `after_file_bytes`: Complete proposed file content after applying the edit
+- `module_remarks`: New imports or module-level changes the body requires; empty string if none
+- `new_dependencies`: External packages introduced by the edit; empty tuple if none
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/report:UnresolvedItem fingerprint=bd316205b7810635b9e0cb4019973afed3bf375e0ccc1c965930b1cd9ae0e0f0 body_fp=47738a4c3b80cedf94fedca796a6a66a20944a0a99a13985ec9cc5c101c93ef7 source_ref=72eb7aebeb3590c206ef0fb47bb2a32f97412c09 role=model -->
 Represents a symbol that failed processing and requires agent intervention to resolve.
@@ -175,7 +186,15 @@ Records a symbol that was automatically updated during cascade application.
 <!-- trie:section symbol=trie/edits/report:CascadeAppliedItem.to_dict fingerprint=25a5a2c0d19dcc47d1024b368b2a714f13c1e2fa37f424b34e3aa247acb81e5c body_fp=f4eb7e652d6a4fb3d775c7a72fbd762fc5d58c9bbd563fbb829313a462bb9e38 source_ref=72eb7aebeb3590c206ef0fb47bb2a32f97412c09 role=util -->
 Converts CascadeAppliedItem to a dictionary with qname, note, and origin fields.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/report:ApplyReport fingerprint=86f00efc570230506af3dc04d328405a8270359588a0c465398bf28054249a82 body_fp=e0c8de25622e47e60fd2fc54f1a204ecb7e31e608a8f9834f27123333618de63 source_ref=72eb7aebeb3590c206ef0fb47bb2a32f97412c09 role=model -->
+<!-- trie:section symbol=trie/edits/report:ModuleRemark fingerprint=1d7df70284a8feac91295bb843572c29cfb20e74e034002bc25b0131fe2afbed body_fp=588b2d29e04013a7d5f87d8b991c01acca8f8a1bfd67320d9103f896637d159c source_ref=16646a6ef544e59e30c25f799b737ff689e6450f role=model -->
+Immutable advisory record of a module-level change (e.g. a new import) the agent must apply after a symbol commits.
+
+- `remarks`: human-readable description of the required module-level edit to apply via `force`
+<!-- trie:end -->
+<!-- trie:section symbol=trie/edits/report:ModuleRemark.to_dict fingerprint=54693b8d8b8864a7ab503c8d479a387a6ec520b646cc17055d937087dc223d33 body_fp=285e052893e0ca63127cdd6fd854be8e34061c2cc7d8267f314e2a5ad62cb4a0 source_ref=16646a6ef544e59e30c25f799b737ff689e6450f role=model -->
+Serialize a `ModuleRemark` instance to a plain dict with `qname`, `file_path`, and `remarks` keys.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/edits/report:ApplyReport fingerprint=7add20cbd826dc8af1ac8d79822efc2a67a8369434560385c017f073fc19f65d body_fp=bbff876f5774c5fcf22e9a36aaeec81e06fb541f107c24fac731792f49e02f5b source_ref=16646a6ef544e59e30c25f799b737ff689e6450f role=model -->
 Read-only feedback artifact returned by commit operations containing apply results and any unresolved items.
 
 - `ok`: overall success status; false if any blocking unresolved items exist
@@ -183,12 +202,18 @@ Read-only feedback artifact returned by commit operations containing apply resul
 - `applied`: successfully processed symbol changes
 - `cascade_applied`: additional symbols modified due to cascading effects
 - `unresolved`: symbols that failed processing, with repatch calls for recovery
+- `module_remarks`: advisory module-level fixups the agent must apply manually
+- `new_dependencies`: external packages introduced by the edit, for agent to install
 - `blocking_unresolved`: property filtering unresolved items that prevent commits
 - `requested`: total number of symbols originally requested for processing
+- `to_dict`: output includes a `post_apply_actions` block consolidating formatter, dependency, and module-remark follow-ups for the agent
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/report:ApplyReport.blocking_unresolved fingerprint=64d443eec2ddb0daad218693cad07c9293e8637001ebf0bd3a5228df3c477f63 body_fp=e4a94c987144eac039043abb5ede394ddbe2db22a00017dc91a01c06b07003c2 source_ref=72eb7aebeb3590c206ef0fb47bb2a32f97412c09 role=util -->
 Filters ApplyReport.unresolved to return only items with blocking=True.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/report:ApplyReport.to_dict fingerprint=c7348d6fc806e932ac2229e9d8fb8376ca58c6dedf87e11b8b49d771d67249c1 body_fp=0e413c7d88363551f0fe152b25575ee27b70a822b5dbaa84adbeda3847f1894c source_ref=72eb7aebeb3590c206ef0fb47bb2a32f97412c09 role=model -->
-Serializes ApplyReport instance to dictionary with aggregated file counts and nested item details.
+<!-- trie:section symbol=trie/edits/report:ApplyReport.to_dict fingerprint=60e1c50a73cb06077e571f72df98468729b843c5ac9a16ad3c83c5528f24ab82 body_fp=e54f286d652503a8a7ff70c01e479aa2474aef47c9aeea7356ee494408ffb652 source_ref=16646a6ef544e59e30c25f799b737ff689e6450f role=model -->
+Serializes `ApplyReport` instance to a dictionary with aggregated file counts, nested item details, and a `post_apply_actions` block.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/edits/report:ApplyReport._post_apply_actions fingerprint=b0acaf9e2950a73996b507e4bdd4d8415b989e1159b10d9249d63982dce95a4a body_fp=47ec17545a8a428f70ffd3a669ed5178c31b102b70dfb842844b55d985d7631b source_ref=16646a6ef544e59e30c25f799b737ff689e6450f role=domain -->
+Build and return `ApplyReport`'s consolidated post-commit action dict covering files to format, new dependencies to install, and module remarks to apply manually.
 <!-- trie:end -->

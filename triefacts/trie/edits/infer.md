@@ -1,50 +1,59 @@
 ---
 trie_version: 0.1.9
 source: trie/edits/infer.py
-file_fingerprint: afdf2df5e2a3a859f2fb1d76788b94c5cb2cb57c8578807d53b70e9808f0db37
-last_synced_at: '2026-06-17T16:43:24Z'
+file_fingerprint: 31c267118dadd1368cd795308141ee0a105b9af3ca0e132aa3b22d5a9fe81da8
+last_synced_at: '2026-07-20T09:54:15Z'
 defines:
 - kind: module
   qualified_name: trie/edits/infer:__module__
-  lines: 1-295
+  lines: 1-344
 - kind: constant
   qualified_name: trie/edits/infer:MERGE_PROMPT
-  lines: 13-19
+  lines: 12-18
 - kind: constant
   qualified_name: trie/edits/infer:INFER_SYSTEM_PROMPT
-  lines: 21-22
+  lines: 20-21
+- kind: function
+  qualified_name: trie/edits/infer:_backend_for
+  lines: 24-30
+- kind: function
+  qualified_name: trie/edits/infer:_system_prompt_for
+  lines: 33-35
+- kind: function
+  qualified_name: trie/edits/infer:_fence_for
+  lines: 38-40
 - kind: constant
   qualified_name: trie/edits/infer:BATCH_PRE_FILTER_PROMPT
-  lines: 24-35
+  lines: 43-54
 - kind: constant
   qualified_name: trie/edits/infer:FILE_GEN_PROMPT
-  lines: 37-49
+  lines: 56-70
 - kind: constant
   qualified_name: trie/edits/infer:FILE_FIXUP_PROMPT
-  lines: 51-61
+  lines: 72-82
 - kind: function
   qualified_name: trie/edits/infer:_format_bullets
-  lines: 64-68
+  lines: 85-89
 - kind: function
   qualified_name: trie/edits/infer:merge_notes
-  lines: 71-86
+  lines: 92-123
 - kind: function
   qualified_name: trie/edits/infer:infer_source_and_prose
-  lines: 89-117
+  lines: 126-161
 - kind: function
   qualified_name: trie/edits/infer:infer_file_source
-  lines: 120-155
+  lines: 164-204
 - kind: function
   qualified_name: trie/edits/infer:_build_caller_summaries
-  lines: 158-205
+  lines: 207-254
 - kind: function
   qualified_name: trie/edits/infer:_read_prose
-  lines: 208-228
+  lines: 257-277
 - kind: function
   qualified_name: trie/edits/infer:pre_filter_batch
-  lines: 231-294
-incoming_refs: 13
-outgoing_refs: 4
+  lines: 280-343
+incoming_refs: 14
+outgoing_refs: 8
 ---
 <!-- trie:section symbol=trie/edits/infer:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=51e52733e963bf3d48183853d2dfa4df351467373cac1a8e7cf5a3b4a9cf592a source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=code-editing -->
 Provides LLM-driven inference functions for generating updated Python source code and documentation from implementation notes.
@@ -59,6 +68,15 @@ Prompt template for deduplicating and merging contradictory implementation notes
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/infer:INFER_SYSTEM_PROMPT fingerprint=03492b7e67e6343a9d05de7ac4c4923f98ac304cf4fa541ec9103643090f1948 body_fp=31e2b0d568b0e6c86b8f82775d3661e4846b9f25d0fa3ab4d370537dba59f3bc source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=code-editing -->
 System prompt instructing an LLM to update Python source code and generate high-level prose documentation from implementation notes.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/edits/infer:_backend_for fingerprint=2f34da59ad1937d0feb67a6a8bd25393313a552e381e2ef3de2605dd18c4235e body_fp=82d80e482be58b61e80f1e2e7f17cbcecc18c9f1d843cd38b93cbcb6d9c0afc5 source_ref=694cc0728ce47184322f0b0cd4b5aec5484426a2 role=util -->
+Resolve and return the language-specific backend for `file_path`, or `None` if the path is absent or unrecognised.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/edits/infer:_system_prompt_for fingerprint=23fa700cfc201af321432bd9f865834255ba939ea87d7a2217a8cc1f7c01e779 body_fp=5e994765774157e52e54126599d33223b2db922303af239dd08e8c689e0ec376 source_ref=694cc0728ce47184322f0b0cd4b5aec5484426a2 role=util -->
+Return the appropriate LLM system prompt string for the given file path, falling back to `INFER_SYSTEM_PROMPT` when no backend is found.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/edits/infer:_fence_for fingerprint=bf1935a046d1973fb537157386a4c803313e2811c8482a85cdb04089de69125a body_fp=7df63fac2ecfd992b37fc777f839d6965ba4723c6bcef8187720949d1971c8d1 source_ref=694cc0728ce47184322f0b0cd4b5aec5484426a2 role=util -->
+Return the code-fence language string for `file_path`, defaulting to `"python"` when no backend is found.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/infer:BATCH_PRE_FILTER_PROMPT fingerprint=1bbaed87a2efbbcc434fbaecdddfeb484e11070f4c70473d1879a4ce9c78d08c body_fp=1705ee5fbc6247b886ce958d3b21d4486977832cc00c4ac50b04b922f58d932f source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=code-editing -->
 Prompt template for filtering caller symbols that require updates based on callee changes.
@@ -79,21 +97,22 @@ Template string for prompting an LLM to fix Python diagnostics errors in file co
 <!-- trie:section symbol=trie/edits/infer:_format_bullets fingerprint=276d8d146737b65b171b6b1d440db66fa18b94a20cbc45c2cf752f35f5cd26d4 body_fp=2b929f50319b728e7169b14c5aae6b74989318303d98f0b88d5b234601c5fa79 source_ref=f3c6b6754ac6e98c7524e99b8a14f67071f93724 role=code-editing -->
 Formats lists of notes and reasons into bullet-point text with `<bullet>` prefixes.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:merge_notes fingerprint=94dfc8addb1bd5773ab4bb3e59e5f6e274f144ce32f80b8cb25fb89f64ee037c body_fp=db377d7618c36731c51edfd5bb863c1ca91f2608dd50c578137928aae6d71676 source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=domain -->
-Deduplicates and merges implementation note patches, returning consolidated notes and reasons.
+<!-- trie:section symbol=trie/edits/infer:merge_notes fingerprint=38cf05d5252872271e75b079389f7f02a91982879efb3c13470d9b446ac63436 body_fp=f72b023ace00a7dd68fa8339e04e7e90d03981de86ed7e5963e034308b2e6c65 source_ref=694cc0728ce47184322f0b0cd4b5aec5484426a2 role=orchestration -->
+Deduplicates and merges implementation note patches, returning consolidated notes and reasons; bypasses the LLM call for single-patch inputs and falls back to raw notes on any error.
 
 - patches: list of dicts with "note" and "reason" keys
-- Returns: tuple of deduplicated notes list and corresponding reasons list
+- Returns single-element inputs immediately without calling the LLM
+- Falls back to unmerged notes if the LLM call raises or returns an empty result
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:infer_source_and_prose fingerprint=6a6b9a2bd30ede6d692c4097578a5ba2440d3e24f2a42aa4ea5d4ba051f91a8d body_fp=4ca260804d6f6d0ee4de8c294ab9ffa5c320653a7bb5bf3d40fd2014d5b3206a source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=io -->
+<!-- trie:section symbol=trie/edits/infer:infer_source_and_prose fingerprint=bf3845311c74f9548a7f3a16146db8a418904243211496e1ebce9125000d8632 body_fp=3ba470da4c26c147962af0086bb06096836da65b26efd80c8559cb5a280a58bf source_ref=694cc0728ce47184322f0b0cd4b5aec5484426a2 role=io -->
 Generates updated source code and prose documentation for a symbol using implementation notes via LLM inference.
 
-- Returns tuple of (new_source, new_prose)
-- Uses INFER_SYSTEM_PROMPT to guide LLM behavior  
-- Formats notes and reasons as bulleted implementation notes in prompt
+- `file_path`: selects the language backend for system prompt, code fence, and output parsing
+- `max_tokens`: upper bound on LLM response length; defaults to 16384
+- Returns tuple of (new_source, new_prose) parsed from free-text LLM output
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/infer:infer_file_source fingerprint=9addb0f4c9d475f9f098ba59262116ec023f13c570665f8bb39c7326bb164db1 body_fp=267c8570762e9b3e70b576a54d8f9481d76760ef5f1bccd62899cef2dd2f2f2a source_ref=54a33c67c9d8e36844ac25ddbe9d64b173793af3 role=io -->
-Generates updated file content and symbol prose by applying multiple symbol changes through LLM inference.
+<!-- trie:section symbol=trie/edits/infer:infer_file_source fingerprint=9700673afd79b117f218f25f7481174d3fdd3b03e9e5eaec5ebdd77c22948d6a body_fp=c104d7d305e7c1c38f2055a40ee6e17c246d8fc608f166346b325b87b27fafc1 source_ref=694cc0728ce47184322f0b0cd4b5aec5484426a2 role=io -->
+Generates updated file content and per-symbol prose by applying multiple symbol changes through LLM inference via `client.run_text`, using a language-aware fence and text-parsing helpers.
 
 - `symbols_data`: list of dicts containing `qname`, `old_source`, `old_prose`, `merged_notes`, and `merged_reasons`
 - Returns updated file content and mapping of symbol qnames to updated prose descriptions

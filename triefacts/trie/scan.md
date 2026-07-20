@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/scan.py
 file_fingerprint: eff8da70c2e94c57499a045e82c240e95445373c0211cf18e2e7e13b3a62f5be
-last_synced_at: '2026-06-17T16:42:00Z'
+last_synced_at: '2026-07-20T09:55:19Z'
 defines:
 - kind: module
   qualified_name: trie/scan:__module__
@@ -16,7 +16,7 @@ defines:
 - kind: function
   qualified_name: trie/scan:scan_project
   lines: 31-110
-incoming_refs: 28
+incoming_refs: 29
 outgoing_refs: 5
 ---
 <!-- trie:section symbol=trie/scan:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=707e1d430cd869746b7ed5377a65ba2e430bacec467f40f67f40b4d789502e8c source_ref=ba0d38d68c99a578b6395e4b44522d5825f9668d role=source-parsing -->

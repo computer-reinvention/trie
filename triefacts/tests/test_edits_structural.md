@@ -1,80 +1,92 @@
 ---
 trie_version: 0.1.9
 source: tests/test_edits_structural.py
-file_fingerprint: 3160b689c49e4ceb68bcf95d7c3233b22070566e675ac0c797f12db53a99e4d2
-last_synced_at: '2026-06-17T16:42:43Z'
+file_fingerprint: 22e48a83114b15e23cfadf3a7af16cf9ab5be58c141ee2b30ae31089d23a9261
+last_synced_at: '2026-07-20T09:53:35Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_structural:__module__
-  lines: 1-310
+  lines: 1-418
 - kind: constant
   qualified_name: tests/test_edits_structural:PROJECT_TOML
-  lines: 15-23
+  lines: 16-24
 - kind: class
   qualified_name: tests/test_edits_structural:FakeTriefactClient
-  lines: 26-35
+  lines: 27-36
 - kind: method
   qualified_name: tests/test_edits_structural:FakeTriefactClient.run
-  lines: 29-35
+  lines: 30-36
 - kind: function
   qualified_name: tests/test_edits_structural:project
-  lines: 39-59
+  lines: 40-60
+- kind: function
+  qualified_name: tests/test_edits_structural:class_project
+  lines: 64-93
 - kind: function
   qualified_name: tests/test_edits_structural:_config
-  lines: 62-65
+  lines: 96-99
 - kind: class
   qualified_name: tests/test_edits_structural:TestDelete
-  lines: 68-81
+  lines: 102-115
 - kind: method
   qualified_name: tests/test_edits_structural:TestDelete.test_delete_removes_symbol_source
-  lines: 69-81
+  lines: 103-115
 - kind: class
   qualified_name: tests/test_edits_structural:TestRename
-  lines: 84-110
+  lines: 118-144
 - kind: method
   qualified_name: tests/test_edits_structural:TestRename.test_rename_updates_definition
-  lines: 85-97
+  lines: 119-131
 - kind: method
   qualified_name: tests/test_edits_structural:TestRename.test_rename_invalid_identifier_refused
-  lines: 99-110
+  lines: 133-144
 - kind: class
   qualified_name: tests/test_edits_structural:TestCreate
-  lines: 113-180
+  lines: 147-288
 - kind: method
   qualified_name: tests/test_edits_structural:TestCreate.test_create_adds_new_symbol
-  lines: 114-133
+  lines: 148-167
 - kind: method
   qualified_name: tests/test_edits_structural:TestCreate.test_create_unreferenced_surfaces_orphan_advisory
-  lines: 135-150
+  lines: 169-184
 - kind: method
-  qualified_name: tests/test_edits_structural:TestCreate.test_create_in_missing_file_unresolved
-  lines: 152-164
+  qualified_name: tests/test_edits_structural:TestCreate.test_create_in_missing_file_creates_new_file
+  lines: 186-205
+- kind: method
+  qualified_name: tests/test_edits_structural:TestCreate.test_create_in_missing_nested_dir_creates_dirs
+  lines: 207-221
+- kind: method
+  qualified_name: tests/test_edits_structural:TestCreate.test_create_method_into_class
+  lines: 223-241
+- kind: method
+  qualified_name: tests/test_edits_structural:TestCreate.test_modify_and_create_method_same_file
+  lines: 243-272
 - kind: method
   qualified_name: tests/test_edits_structural:TestCreate.test_create_broken_source_unresolved
-  lines: 166-180
+  lines: 274-288
 - kind: class
   qualified_name: tests/test_edits_structural:TestSameFileMultiLane
-  lines: 183-238
+  lines: 291-346
 - kind: method
   qualified_name: tests/test_edits_structural:TestSameFileMultiLane.test_modify_and_create_same_file_both_land
-  lines: 192-214
+  lines: 300-322
 - kind: method
   qualified_name: tests/test_edits_structural:TestSameFileMultiLane.test_rename_and_create_same_file_both_land
-  lines: 216-238
+  lines: 324-346
 - kind: function
   qualified_name: tests/test_edits_structural:two_file_project
-  lines: 242-264
+  lines: 350-372
 - kind: class
   qualified_name: tests/test_edits_structural:TestStructuralCascade
-  lines: 267-309
+  lines: 375-417
 - kind: method
   qualified_name: tests/test_edits_structural:TestStructuralCascade.test_delete_cascades_to_caller
-  lines: 270-289
+  lines: 378-397
 - kind: method
   qualified_name: tests/test_edits_structural:TestStructuralCascade.test_rename_cascades_to_caller
-  lines: 291-309
+  lines: 399-417
 incoming_refs: 0
-outgoing_refs: 45
+outgoing_refs: 57
 ---
 <!-- trie:section symbol=tests/test_edits_structural:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=ec4390bf15b62b6613a0fe71e4d18d40ff73d943dbe459bd79fd9fcc22ef1ea5 source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
 Tests structural edit operations (delete, rename, create) and their cascading effects on dependent symbols.
@@ -106,6 +118,9 @@ Creates a pytest fixture providing a temporary project directory with a single P
 - Returns the project root path containing `src/gamma.py` with a `gamma_fn` function
 - Scans the project and syncs the source file to populate the graph database
 <!-- trie:end -->
+<!-- trie:section symbol=tests/test_edits_structural:class_project fingerprint=9975b7647a4660cd668e962049db5fb8fc644fa6ce8446794f3d93d353927e85 body_fp=6c4df08bcf69f133de46ca9c9a1308b7eb209aeaab1e1be3c446d4d3c7723c86 source_ref=3105a5fed65ee67fcfa8304d60b02f219c503b9a role=test -->
+Pytest fixture that creates a temporary project containing a `Box` class with `__init__` and `area` methods, scanned and synced into the graph store.
+<!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_structural:_config fingerprint=2212d2ec1f6d36b65a66e8e256c0410684c26b19d40509bd6f5469cf10d0fcd7 body_fp=a9ace222b40bbaec93fded0181aea6ca255a809983bbc262c902dace9ca4711a source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
 Loads project config and disables LSP backends for test isolation.
 <!-- trie:end -->
@@ -129,12 +144,15 @@ Tests that TestRename.test_rename_updates_definition successfully renames a symb
 <!-- trie:section symbol=tests/test_edits_structural:TestRename.test_rename_invalid_identifier_refused fingerprint=57e59f916770158d6ba6b634fc811e72798f0dd348a236e3096c1d60d30b56d9 body_fp=c9e93069edc8f50f12c417057de0e779a8a7051a1df1f52d62aaa714b5520ad2 source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
 Tests that TestRename rejects rename operations with invalid Python identifiers and leaves source unchanged.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_structural:TestCreate fingerprint=6942c2ef289f5fbafa5716c4e8337382742e135a78abf3f76b43f3ae6f6b55bd body_fp=7fec2ce3c26b799da529adf79a767a35e4ba9d6afd1844173fe8afb25808b9bf source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
+<!-- trie:section symbol=tests/test_edits_structural:TestCreate fingerprint=bd70770626e39b61c6b9d96ea1c12433f0a45a9eb62bd707353a9f5986121255 body_fp=8b71580526b85148c3cf3e1580e58a67ed25b9ee63e71238c067a6278ff29046 source_ref=3105a5fed65ee67fcfa8304d60b02f219c503b9a role=test -->
 Tests the create symbol pipeline functionality for adding new code symbols to project files.
 
 - `test_create_adds_new_symbol`: verifies successful symbol creation and graph absorption
-- `test_create_unreferenced_surfaces_orphan_advisory`: checks orphaned symbols generate non-blocking advisories  
-- `test_create_in_missing_file_unresolved`: ensures missing target files produce blocking errors
+- `test_create_unreferenced_surfaces_orphan_advisory`: checks orphaned symbols generate non-blocking advisories
+- `test_create_in_missing_file_creates_new_file`: verifies missing target file is scaffolded on disk, not rejected
+- `test_create_in_missing_nested_dir_creates_dirs`: verifies parent directories are created when needed
+- `test_create_method_into_class`: verifies class-method qnames land indented inside the class body
+- `test_modify_and_create_method_same_file`: verifies same-file modify+create batch both land and remain valid Python
 - `test_create_broken_source_unresolved`: validates broken source generation fails gracefully
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_structural:TestCreate.test_create_adds_new_symbol fingerprint=ce45f65576c6133efc3cc120623a8732f17d1e2a86e4c8fb9d07f91ff6d23bc7 body_fp=4de79f7fee80af0db5807a12621a55335e2abfa68b74d7af301a3d81eca45109 source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
@@ -143,8 +161,17 @@ Tests that TestCreate successfully stages and commits a create patch, adding a n
 <!-- trie:section symbol=tests/test_edits_structural:TestCreate.test_create_unreferenced_surfaces_orphan_advisory fingerprint=9de47d73c65141508085a52204f32096c7926549ff7658d765df8f61d2954c0c body_fp=934bb6e75c49972c0fa6c91b536eb6d30aa6da1fbc1ea7f15f3cf9f2c9583837 source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
 Tests that creating a symbol with no callers generates a non-blocking orphan_create advisory in the commit report.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_structural:TestCreate.test_create_in_missing_file_unresolved fingerprint=f74761a3af2e58cadaea45bdb68cea7a04d0bafaf7fc88b72d795bd3c28ea2d2 body_fp=9c24f607399485a0187b6ad7a81b8de39b5903cf2168a86b3f41bf5a0fb64590 source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
-TestCreate.test_create_in_missing_file_unresolved verifies that create patches targeting non-existent files produce unresolved errors.
+<!-- trie:section symbol=tests/test_edits_structural:TestCreate.test_create_in_missing_file_creates_new_file fingerprint=40dd7e9c8e3b351eccc4c43bd101ebec72b3c300fb103b0aede8a180f8e18836 body_fp=6883d2f144cc914e42c280cb70e63c00a98b29682718f486d80348533273728e source_ref=3105a5fed65ee67fcfa8304d60b02f219c503b9a role=test -->
+Assert that `TestCreate.test_create_in_missing_file_creates_new_file` scaffolds a new source file when a create patch targets a path that does not yet exist, without raising a blocking `file_not_found` unresolved item.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_edits_structural:TestCreate.test_create_in_missing_nested_dir_creates_dirs fingerprint=3ff41f9b142d06ab9409ba7cc2db61b2aeaf9f719102e7210b29e2a223cb3f51 body_fp=375c35327a9c167ff30a2e50447ca7c5ffb90b1a824f8eb20a549bb57f910ebd source_ref=3105a5fed65ee67fcfa8304d60b02f219c503b9a role=test -->
+Verify `TestCreate` that a create patch targeting a file in a non-existent subdirectory causes `stage_and_commit` to create all intermediate parent directories and the file.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_edits_structural:TestCreate.test_create_method_into_class fingerprint=138ea81f05cd1c54b0a8def41c87ae94eeff82771ed2d8d2d7a8fc4642239335 body_fp=59ada17876eeccb00293537d3cfcae880bda4bbfb9cee31268e94bbcd705ef84 source_ref=3105a5fed65ee67fcfa8304d60b02f219c503b9a role=test -->
+Assert that a create patch with a `Class.method` qname inserts the new method inside the class body, indented as a class member.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_edits_structural:TestCreate.test_modify_and_create_method_same_file fingerprint=a24013ec14a88522b3c4ef74cddd50bb29849e0ae0567de5cdbf57566833b47a body_fp=8e7c2d1cc81cb8e335fe1b356a5dd821836db7c80bd685d75b4089e8783b5c74 source_ref=3105a5fed65ee67fcfa8304d60b02f219c503b9a role=test -->
+Verify that a same-file batch combining a method modify and a method create both land and leave the file valid Python.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_structural:TestCreate.test_create_broken_source_unresolved fingerprint=edb4eda89216f719f240104fb4339537d1fed662a7f3bc41a3ba3e0ba06a3715 body_fp=3846918c836b6bccdcbfdb7dbd9c438fc0f04003d9efee0419146e012d4f1327 source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
 TestCreate.test_create_broken_source_unresolved tests that create patches fail gracefully when backend generates broken code, leaving source unchanged.

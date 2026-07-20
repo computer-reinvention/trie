@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/cli.py
-file_fingerprint: 19a3adc2b3e59cfd8e5125f325032a43ca26adafb566af998c13350e163fe271
-last_synced_at: '2026-06-17T16:41:16Z'
+file_fingerprint: 62b1ecc0dfce3c1a32fa61fd394cb8c588e94ef9af83cededdf6d67047821419
+last_synced_at: '2026-07-20T09:53:42Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
-  lines: 1-3669
+  lines: 1-3791
 - kind: constant
   qualified_name: trie/cli:app
   lines: 77-80
@@ -305,49 +305,52 @@ defines:
   qualified_name: trie/cli:patch_create_cmd
   lines: 3080-3106
 - kind: function
+  qualified_name: trie/cli:patch_create_batch_cmd
+  lines: 3110-3224
+- kind: function
   qualified_name: trie/cli:patch_create_symbol_cmd
-  lines: 3110-3148
+  lines: 3228-3270
 - kind: function
   qualified_name: trie/cli:patch_delete_symbol_cmd
-  lines: 3152-3179
+  lines: 3274-3301
 - kind: function
   qualified_name: trie/cli:patch_rename_symbol_cmd
-  lines: 3183-3212
+  lines: 3305-3334
 - kind: function
   qualified_name: trie/cli:patch_apply_cmd
-  lines: 3216-3301
+  lines: 3338-3423
 - kind: function
   qualified_name: trie/cli:patch_preview_cmd
-  lines: 3305-3348
+  lines: 3427-3470
 - kind: function
   qualified_name: trie/cli:patch_list_cmd
-  lines: 3352-3394
+  lines: 3474-3516
 - kind: function
   qualified_name: trie/cli:patch_drop_cmd
-  lines: 3398-3436
+  lines: 3520-3558
 - kind: constant
   qualified_name: trie/cli:mcp_app
-  lines: 3444-3451
+  lines: 3566-3573
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 3456-3458
+  lines: 3578-3580
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 3461-3471
+  lines: 3583-3593
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 3475-3544
+  lines: 3597-3666
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 3547-3562
+  lines: 3669-3684
 - kind: function
   qualified_name: trie/cli:mcp_uninstall_cmd
-  lines: 3566-3641
+  lines: 3688-3763
 - kind: function
   qualified_name: trie/cli:_render_uninstall_plan
-  lines: 3644-3664
+  lines: 3766-3786
 incoming_refs: 91
-outgoing_refs: 147
+outgoing_refs: 150
 ---
 <!-- trie:section symbol=trie/cli:__module__ fingerprint=d16be5917b98ff58f36f3487c349d240fc53396bc24bb9e0d8903c2f9e48f690 body_fp=10f0e1573012e0fc76e1358d4da306bc2ba6e70254a41da3bf25ef8b26e41199 source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
 Main CLI module for trie providing comprehensive project management, triefact synchronization, and agent integration commands.
@@ -1022,12 +1025,20 @@ Creates a fire-and-forget edit patch against a symbol in the trie graph store.
 - Uses a stable CLI session ID for tracking related patches together
 - Returns the patch ID after successful creation
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:patch_create_symbol_cmd fingerprint=987a31523820e084310e05aac9c7e0452772d66f82558e6dee1204db3e6fc8e6 body_fp=b089aababacc7b5af26b45bb6f0ec8f552b606acd8d5484508b70c8116b34bc5 source_ref=28797ad23f63ab76a0d693ea640c1de9c59f6c50 role=api -->
+<!-- trie:section symbol=trie/cli:patch_create_batch_cmd fingerprint=e8e49da442695fe76c0d074020c7390caae868f905570564bc9678a174304a88 body_fp=f2b2c9232877c2aee649df8fdb2a4200e6b7666b107dac2ca4683917d156861a source_ref=85e57bbb035420774c33a2c6594da614a72f3d47 role=api -->
+Stage multiple `patch` or `create` operations in one call, reading a JSON array from `--json-file` or stdin.
+
+- `op`: `"patch"` (default) modifies an existing symbol; `"create"` stages a new symbol.
+- Items are processed independently; failures are reported without aborting remaining items.
+- Emits `{"staged": N, "failed": N, "results": [...]}` as JSON to stdout.
+- Exits 1 if zero items were staged successfully.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/cli:patch_create_symbol_cmd fingerprint=eb7419a1e9a7e32d6229ca974f46c5ac781021bfa99e565ebad0910d60401c8a body_fp=79674ac48e601f3bff45ba7f2dcc544e031a970b69412f598d3d9f3bb01f3d3a source_ref=85e57bbb035420774c33a2c6594da614a72f3d47 role=api -->
 Stage creation of a new symbol to be applied by `trie patch apply`.
 
 - **qname**: intended qualified name like `pkg/mod:new_fn`
 - **note**: what the new symbol should do (required)
-- **file**: target source file, defaults to `qname.split(':')[0] + '.py'`
+- **file**: target source file; when omitted, resolved via `registry.resolve_create_target` (existing module wins, else language-inferred suffix)
 - **anchor**: place the symbol after this existing qname
 - **reason**: why the symbol is needed
 - Validates qname doesn't already exist in the graph

@@ -1,63 +1,72 @@
 ---
 trie_version: 0.1.9
 source: trie/edits/pipeline.py
-file_fingerprint: 8c5fb54d4570e43c8a68ad40e5992e262a2c5151c5a82c62ea78c4dcaf229642
-last_synced_at: '2026-06-17T16:41:27Z'
+file_fingerprint: 503071e184431c25b4b5f8470e616c78ea055244c44e3b183373f0608fde8e2b
+last_synced_at: '2026-07-20T09:54:15Z'
 description: The stage/commit edit pipeline.
 defines:
 - kind: module
   qualified_name: trie/edits/pipeline:__module__
-  lines: 1-1094
+  lines: 1-1331
 - kind: function
   qualified_name: trie/edits/pipeline:_splice
-  lines: 55-66
+  lines: 56-67
+- kind: function
+  qualified_name: trie/edits/pipeline:_per_symbol_compile_salvage
+  lines: 70-113
 - kind: function
   qualified_name: trie/edits/pipeline:_fix_imports_for_structural
-  lines: 69-113
+  lines: 116-160
 - kind: function
   qualified_name: trie/edits/pipeline:_read_span
-  lines: 116-118
+  lines: 163-165
 - kind: function
   qualified_name: trie/edits/pipeline:_rename_source
-  lines: 121-164
+  lines: 168-211
 - kind: function
   qualified_name: trie/edits/pipeline:_synthesize_session_note
-  lines: 167-180
+  lines: 214-227
 - kind: class
   qualified_name: trie/edits/pipeline:_GenJob
-  lines: 184-194
+  lines: 231-241
 - kind: function
   qualified_name: trie/edits/pipeline:stage
-  lines: 197-519
+  lines: 244-587
 - kind: function
   qualified_name: trie/edits/pipeline:_expand_caller_jobs
-  lines: 522-621
+  lines: 590-689
 - kind: function
   qualified_name: trie/edits/pipeline:_expand_structural_caller_jobs
-  lines: 624-689
+  lines: 692-757
 - kind: function
   qualified_name: trie/edits/pipeline:_stage_creates
-  lines: 692-822
+  lines: 760-884
 - kind: function
   qualified_name: trie/edits/pipeline:_place_new_symbol
-  lines: 825-843
+  lines: 887-928
+- kind: function
+  qualified_name: trie/edits/pipeline:_find_container_span
+  lines: 931-984
+- kind: function
+  qualified_name: trie/edits/pipeline:_insert_into_parent
+  lines: 987-1052
 - kind: function
   qualified_name: trie/edits/pipeline:_multifile_scratch_lsp
-  lines: 846-910
+  lines: 1055-1121
 - kind: constant
   qualified_name: trie/edits/pipeline:_OVERLAY_SKIP_PARTS
-  lines: 913-913
+  lines: 1124-1124
 - kind: function
   qualified_name: trie/edits/pipeline:_overlay_package
-  lines: 916-953
+  lines: 1127-1164
 - kind: function
   qualified_name: trie/edits/pipeline:commit
-  lines: 956-1076
+  lines: 1167-1313
 - kind: function
   qualified_name: trie/edits/pipeline:stage_and_commit
-  lines: 1079-1093
-incoming_refs: 32
-outgoing_refs: 35
+  lines: 1316-1330
+incoming_refs: 35
+outgoing_refs: 37
 ---
 <!-- trie:section symbol=trie/edits/pipeline:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=e9452fa5658e80ab55660f3be77286f883bbd5a3f02d8be7a680e82f156d1c30 source_ref=acbee5dfa56099ae5afd4c2ba335609bcbbb64c6 role=orchestration -->
 Implements the stage/commit edit pipeline for parallel symbol modification with cascade validation.
@@ -76,6 +85,11 @@ Replace a span of file lines with new source code, handling line-based splicing.
 - `new_src`: replacement text (empty string removes the span entirely)
 - Returns new list of file lines with the splice applied
 - Ensures replacement text ends with newline unless empty
+<!-- trie:end -->
+<!-- trie:section symbol=trie/edits/pipeline:_per_symbol_compile_salvage fingerprint=d20711b1f745f4bd104120c5e579f70ad4c4c9242010cb1971f089380af39035 body_fp=cc29bf8ddec655a5e9dad559ff62fc9592cbe03938ec259ef556d523448e8982 source_ref=3756feeb097f734409469642535809b6daae49f1 role=domain -->
+Salvage a failed whole-file compile by re-splicing each successful symbol individually onto the original, keeping only those that compile alone and together.
+
+- Returns `(good_items, combined_after_bytes)`; falls back to `([], original_bytes)` if combined survivors also fail to compile.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/pipeline:_fix_imports_for_structural fingerprint=da6ef33786c3d50ec51f1170a8f431a4229a1579ce481a6ce0b757a1097c7d1e body_fp=15d7d0d857db7f60c1d3b1f3c16eb701d2564ba5d1a11f413db29b62f83f850b source_ref=acbee5dfa56099ae5afd4c2ba335609bcbbb64c6 role=util -->
 Rewrites `from ... import ...` lines after symbol delete/rename operations by dropping deleted names and updating renamed names while preserving aliases.
@@ -116,7 +130,7 @@ Holds parameters for one symbol's edit generation job during parallel processing
 - `new_name`: target name for rename operations (empty for modify/delete)
 - `callees`/`callers`: neighbor context lists for generation backend
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:stage fingerprint=26f5bfa86b685e8c174fe3fa652967449aa9e219212806e074117248fc8c5846 body_fp=58796615c92d33d69c33b057c09f670ec0754c47207b571c2662ebbc118478a4 source_ref=acbee5dfa56099ae5afd4c2ba335609bcbbb64c6 role=orchestration -->
+<!-- trie:section symbol=trie/edits/pipeline:stage fingerprint=327c639cc30077c47133560af0bc2a77d94cbbab2230142f494f42003c4c36ec body_fp=58796615c92d33d69c33b057c09f670ec0754c47207b571c2662ebbc118478a4 source_ref=3756feeb097f734409469642535809b6daae49f1 role=orchestration -->
 Generate and validate all pending patches in parallel without writing to the real source tree.
 
 - `staged_changes`: ready for commit if report.ok is True, otherwise carry repatch calls
@@ -139,22 +153,40 @@ Cascade callers of deleted/renamed symbols by adding generation jobs to rewrite 
 
 Unlike modify cascades, this requires no LLM gate since call sites referencing vanishing/renamed symbols are definitively affected. For each caller of a deleted symbol, queues a modify job with instructions to remove all calls. For rename callers, queues jobs to update call syntax from old to new name.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:_stage_creates fingerprint=dcefb272df37ca2ef10688261bbc5196feacbd85e156b6ae8cbed23042a4682f body_fp=2fef5ca8f84de04dc484cc31f5ccff8e1882cf32fb61d6c6a1bba26a529a60dd source_ref=acbee5dfa56099ae5afd4c2ba335609bcbbb64c6 role=orchestration -->
+<!-- trie:section symbol=trie/edits/pipeline:_stage_creates fingerprint=e912d333329c298b1efe5e77510da37479ec40cbe6d51faf7c42f9f58f8922ef body_fp=acda77cb77a565c1023a026001e5ce6dacce99b167795828d6b70bebb870e204 source_ref=3756feeb097f734409469642535809b6daae49f1 role=orchestration -->
 Generate and stage each new symbol creation, appending StagedChanges with op='create'.
 
-- placement: after anchor symbol if resolvable, otherwise at end-of-file  
+- placement: after anchor symbol if resolvable, otherwise at end-of-file; member creates route into the parent container via `_place_new_symbol`
 - stacks creates atop existing file modifications to maintain single coherent after_file_bytes
+- `FileNotFoundError` on the target file now scaffolds from empty (true new-file creation) instead of surfacing an unresolved error
+- each StagedChange now carries `module_remarks` and `new_dependencies` captured from the backend result
 - compile-gates each file after placement; failures go to unresolved with generated source
 - updates prior staged changes to share final file content for atomic commit
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:_place_new_symbol fingerprint=15f7408a31b1e11cdb6104b1687251d43f2c606af404e399394eaa81d99cc475 body_fp=51d3e273af37dd7ae1015db49b0d7c7cdfb49d7f558ad093bfa006e93331ba5a source_ref=acbee5dfa56099ae5afd4c2ba335609bcbbb64c6 role=util -->
-Insert new_source after the anchor symbol's span, else at end-of-file.
+<!-- trie:section symbol=trie/edits/pipeline:_place_new_symbol fingerprint=a7c48ded07d7d6fc8dc439292d4b0e564ffeda96c8a5354905a0d38f43efa4da body_fp=81c3e268c5b79f5f284803a795344579a84f51850b6393b341e1a5f98e470d04 source_ref=3756feeb097f734409469642535809b6daae49f1 role=util -->
+Insert `new_source` into `file_text` using a three-priority placement strategy.
 
-- If anchor exists and is found, places new symbol after its end_line with two newlines
-- For empty files, returns just the new symbol block
-- Otherwise appends with three newlines at end-of-file
+- `qname` with a dotted local (e.g. `module:Parent.child`) inserts inside the parent body via `_insert_into_parent`, re-indented to member level
+- `anchor_qname` (if resolvable) places the block after that symbol's end line with two newlines
+- Empty file returns the block alone; otherwise appends with three newlines at end-of-file
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:_multifile_scratch_lsp fingerprint=91329a859cefe2c13d6b4a424e7cdfc8a3bc2a8f42fa82a1a73d700a4713a472 body_fp=a6cc3bf47aaf19757cbd0fca63b77cc38d268e0bda47fff9654c8dab004bde7e source_ref=afa6244798668a85b5b12de47f75345fb12f3148 role=io -->
+<!-- trie:section symbol=trie/edits/pipeline:_find_container_span fingerprint=4c489a60377f7ac90db90e55664c010b01bcbb6e8777a95febf1a5c4dd9b8ae9 body_fp=c1f316c0ed6aee7e8534d2922538862ea3e9e913f5668bdc4f60c725c99adeb8 source_ref=3756feeb097f734409469642535809b6daae49f1 role=util -->
+Scan `lines` for a container declaration matching `name` and return its `(start, end)` span as 0-indexed start and exclusive end.
+
+- Supports brace-delimited (TS/JS) and indentation-delimited (Python) bodies.
+- Returns `None` if `name` is falsy or no matching header is found.
+- Brace style: balances `{`/`}` from the opening line; returns `None` if unmatched.
+- Indent style: span ends at the first line at or below the header's indentation level.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/edits/pipeline:_insert_into_parent fingerprint=65da59d298cf892b1f20473a442f662218e99d2728058845124608fefb9c0dfb body_fp=a9b4dbfe901fff4442e0545acd9a5c3c80ba3cbd18a1a59188f8ca44e466c7ce source_ref=3756feeb097f734409469642535809b6daae49f1 role=util -->
+Re-indent `block` to member level and splice it as the last member inside the parent container's body in `file_text`.
+
+- `parent_detail`: stored `SymbolDetail`; span may be stale if a prior in-batch modify shifted lines — recomputed from text when `parent_name` is provided.
+- `parent_name`: used to locate the container via `_find_container_span`; falls back to stored span if `None`.
+- Returns `None` when the span is unusable; caller falls back to file-scope placement.
+- Brace languages (TS/JS): inserts before the closing `}` line; indentation languages (Python): appends after the body.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/edits/pipeline:_multifile_scratch_lsp fingerprint=43f30c715415f30a62d2017424c263b2fe640486d22b7689c61c609d5531f61a body_fp=a6cc3bf47aaf19757cbd0fca63b77cc38d268e0bda47fff9654c8dab004bde7e source_ref=3756feeb097f734409469642535809b6daae49f1 role=orchestration -->
 Runs LSP diagnostics + fixup over all changed files in one consistent scratch tree.
 
 - Creates temporary directory with hardlinked package structure for import resolution
@@ -175,12 +207,13 @@ Hardlinks all indexable source files and language-specific config files (e.g. `t
 - Extra config files (e.g. `tsconfig.json`) are linked via `backend.overlay_extra_files()`
 - Falls back to copying on hardlink failure
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:commit fingerprint=2d6d9be2fe2e9cc86fc4fbfd7b8402de57292fc992035d9c68e7fe6aa0e547a7 body_fp=b484ac98666bc29ac23de20359288f430ff387b8fe1f3c8e4c7c259c443a8ee0 source_ref=acbee5dfa56099ae5afd4c2ba335609bcbbb64c6 role=orchestration -->
+<!-- trie:section symbol=trie/edits/pipeline:commit fingerprint=06ced628869956a36ceca8c94a2d7ab640e7c5507ad6859cf8608637e0a23ec3 body_fp=57a1ca11eda3824dee7a38fe6437d2800c10c0b81f0808368618ca7c5a907861 source_ref=3756feeb097f734409469642535809b6daae49f1 role=orchestration -->
 Writes validated staged changes to disk atomically, rescans affected files, updates prose sections, and drops applied patches.
 
 - `commit_mode`: "all_or_nothing" (default) blocks write if blocking unresolved exist; "per_item" writes each file independently
 - Returns updated report with `committed` flag and populated `applied` list
-- Rolls back source files from in-memory before-images on any failure
+- Rolls back source files from in-memory before-images on any failure; newly created files are unlinked rather than restored
+- Populates `report.new_dependencies` and `report.module_remarks` from staged changes
 - Surfaces orphan created symbols (no inbound references) as advisory unresolved items
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/pipeline:stage_and_commit fingerprint=f3c9c0549a51b6d0981b55e34a9abc544268459499eb490329eadc4e21956b96 body_fp=7fcdd9c33e30220e28f31d8d26c36069b20e25d9ca7988040f95bd0854cb3dfa source_ref=acbee5dfa56099ae5afd4c2ba335609bcbbb64c6 role=orchestration -->

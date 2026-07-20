@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: tests/test_mcp.py
-file_fingerprint: fa7bc927051a639288ae49c11d9043a718c1da2927163b8d52abb07827395ce4
-last_synced_at: '2026-06-17T16:41:00Z'
+file_fingerprint: f8dccd04c8178419f0b993789ffd1a28f20b4e6b31d5847df31967eb945d4f91
+last_synced_at: '2026-07-20T09:53:32Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: module
   qualified_name: tests/test_mcp:__module__
-  lines: 1-884
+  lines: 1-924
 - kind: constant
   qualified_name: tests/test_mcp:PROJECT_TOML
   lines: 21-30
@@ -230,6 +230,15 @@ defines:
 - kind: function
   qualified_name: tests/test_mcp:test_write_file_outside_root_errors
   lines: 879-883
+- kind: function
+  qualified_name: tests/test_mcp:test_batch_patch_stages_mixed_items
+  lines: 886-900
+- kind: function
+  qualified_name: tests/test_mcp:test_batch_patch_reports_bad_items_without_aborting
+  lines: 903-917
+- kind: function
+  qualified_name: tests/test_mcp:test_batch_patch_empty_list_errors
+  lines: 920-923
 incoming_refs: 0
 outgoing_refs: 12
 ---
@@ -596,4 +605,13 @@ Verify that writing a Python file in scope sets the `needs_sync` flag to True.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp:test_write_file_outside_root_errors fingerprint=ffdc9ecc8c71ab21b24a1e08a3111cc2cb3d83f2a4372ef9fe180f1686049b11 body_fp=75744372034835aae59ee6cb4e5d92bc6cb2cc13fe7b10be8b3b524e414cce47 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
 Tests that TrieTools.write_file rejects paths outside the project root with an "out_of_scope" error.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_batch_patch_stages_mixed_items fingerprint=3d00e899a80e9e08eeef7d73b4336b913c66c1de9778b844a3013c6fdc1b22bb body_fp=47ca80dc8ca8489ecf39a2b411fc1aa5542a84917a2bb9536f5d15f8066a5d31 source_ref=34ac800409ea7e9fc313a6fa636048bec513d2b2 role=test -->
+Verify `TrieTools.batch_patch` stages a mixed list of `patch` and `create` operations in one call and reports per-item results with zero failures.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_batch_patch_reports_bad_items_without_aborting fingerprint=9a65c75c5ae6a3bd4f214a494038a2354da197d8c454e2ac0dfc5bb16569fc60 body_fp=5f8f0ff28c52febb0de4c760dcb1afadfb1c3b90e2cefd98c84e3bcdfa30754a source_ref=34ac800409ea7e9fc313a6fa636048bec513d2b2 role=test -->
+Assert that `batch_patch` reports per-item failures for a missing symbol and an empty note without aborting the remaining valid item.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_batch_patch_empty_list_errors fingerprint=fcc2566ebf71c33e9a5308d9357a7fa63ae48b40444578b6c6a0a1241780390f body_fp=58ebc6287f6237ffa8c27c546de0f125ba83dd7cbfdbbc6635521c6640bdcaf0 source_ref=34ac800409ea7e9fc313a6fa636048bec513d2b2 role=test -->
+Assert that `TrieTools.batch_patch` returns an `invalid_argument` error when called with an empty list.
 <!-- trie:end -->

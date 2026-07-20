@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: trie/parse/registry.py
-file_fingerprint: 3731039df89a3839e1573e71cd6ab9e2fbe9876a59577add64cdba31d85a5a86
-last_synced_at: '2026-06-17T16:41:55Z'
+file_fingerprint: e634231b55c749e429666733542cd8e16baf0b306c22f9ddf3fefdb58b430960
+last_synced_at: '2026-07-20T09:54:21Z'
 description: "Language-backend registry \u2014 dispatch by file extension."
 defines:
 - kind: module
   qualified_name: trie/parse/registry:__module__
-  lines: 1-118
+  lines: 1-144
 - kind: function
   qualified_name: trie/parse/registry:_build_registry
   lines: 24-36
@@ -33,12 +33,15 @@ defines:
   qualified_name: trie/parse/registry:is_indexable
   lines: 85-87
 - kind: function
+  qualified_name: trie/parse/registry:resolve_create_target
+  lines: 90-113
+- kind: function
   qualified_name: trie/parse/registry:extract_file_data
-  lines: 90-104
+  lines: 116-130
 - kind: function
   qualified_name: trie/parse/registry:extract_symbols
-  lines: 107-117
-incoming_refs: 21
+  lines: 133-143
+incoming_refs: 25
 outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/parse/registry:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=564c5ea59f7a063651a525e0104d098afaccb1fadf02b5a8d84b5f1483f91a24 source_ref=eb8b31b98e0c496b7ffd217770dd85030edef53d role=orchestration -->
@@ -72,6 +75,13 @@ Return all registered source suffixes ordered longest-first for triefact↔sourc
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/registry:is_indexable fingerprint=cdf7e81ad2821ec4a4f3d142b36046beb869504cc31aecc43caafd0b6dd3542c body_fp=8372d3572b9e488c8e43e4353da5c3dc5d9825818115b565b535763c51a585ef source_ref=eb8b31b98e0c496b7ffd217770dd85030edef53d role=util -->
 Return `True` if any registered backend claims `path`'s file extension.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/parse/registry:resolve_create_target fingerprint=e099a99206c404ca08232f217217118480a3f1ad98b807a6cf0c56c3e890a70b body_fp=8bf066972fb62e037047d567ae8ea46d49cd8b2c50dc1b3e0bf210cc4994dbea source_ref=686152e31595ecc66442a77f00cd86db541a8f0b role=domain -->
+Map a qualified name to its source file path (relative to `source_root`), probing registered suffixes longest-first, then sibling inference, then fallback.
+
+- `qname`: colon-separated `module:symbol`; only the module part determines the path.
+- Returns a relative path string (`module + suffix`) without guaranteeing the file exists.
+- Fallback order: first registered backend's `source_suffix()`, then `.py` if no backends.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/registry:extract_file_data fingerprint=ecef07bb33418b374c79a28476d5caa71f68ed21737adc4ad7a5c19ced08837c body_fp=99aaa2a5db78201085fb44782d3cfdffaff2a5fe9403f0de8b9fded4a61a0a50 source_ref=eb8b31b98e0c496b7ffd217770dd85030edef53d role=orchestration -->
 Dispatch `file_path` parsing to the owning backend and return a `FileData` object.

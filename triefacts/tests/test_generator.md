@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_generator.py
 file_fingerprint: 32d167cd301e41d5d07933657a71663079790354e205071a9411338c7dcc3c47
-last_synced_at: '2026-06-17T16:43:01Z'
+last_synced_at: '2026-07-20T09:54:57Z'
 defines:
 - kind: module
   qualified_name: tests/test_generator:__module__

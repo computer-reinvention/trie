@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/sync/generator.py
 file_fingerprint: 5e7e71efc7f6551e1aa2790118a9d8a2cef2b03935bc4c784ab88cd275f15b5f
-last_synced_at: '2026-06-17T16:42:01Z'
+last_synced_at: '2026-07-20T09:55:25Z'
 defines:
 - kind: module
   qualified_name: trie/sync/generator:__module__
@@ -108,7 +108,7 @@ Builds a user prompt for diff-aware documentation generation that compares previ
 - **previous_prose**: Existing documentation to potentially preserve
 - **current_source**: Current version of the symbol's source code
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/generator:generate_section fingerprint=ce4cab4168c3b93f3e1cedb7680f1a179adffb56e9c298754ee1afad94da334d body_fp=4b0558ca4e045c434a17185848d00f28d714026ca40421b3d88fc727e23e0bc5 source_ref=f21aebb2ba00fc12bbd954ea8c5fbeba249f65e7 role=orchestration -->
+<!-- trie:section symbol=trie/sync/generator:generate_section fingerprint=ce4cab4168c3b93f3e1cedb7680f1a179adffb56e9c298754ee1afad94da334d body_fp=4b0558ca4e045c434a17185848d00f28d714026ca40421b3d88fc727e23e0bc5 source_ref=21b7e93e31c07db925e2c129b972ded57bd0626f role=orchestration -->
 Generates documentation for a Python symbol using an LLM client, optionally using diff-aware regeneration.
 
 - `previous_source` and `previous_prose`: when both provided, enables diff-aware mode that preserves existing prose unless behavior changed
@@ -131,7 +131,7 @@ Renders a list of role names and descriptions into a formatted prompt string for
 - Returns a string starting with "Choose exactly one role from this vocabulary:"
 - Each role becomes a bulleted line, with description if provided
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/generator:infer_role fingerprint=667c778f7f1ac6e10347561c7372c3b091feb87da78916d6b85e1640a037ce08 body_fp=96b21b7143e329b35348de5685ec792063de6f525d61966a58deab841c177b0f source_ref=f21aebb2ba00fc12bbd954ea8c5fbeba249f65e7 role=domain -->
+<!-- trie:section symbol=trie/sync/generator:infer_role fingerprint=667c778f7f1ac6e10347561c7372c3b091feb87da78916d6b85e1640a037ce08 body_fp=96b21b7143e329b35348de5685ec792063de6f525d61966a58deab841c177b0f source_ref=21b7e93e31c07db925e2c129b972ded57bd0626f role=domain -->
 Classifies a Python symbol's architectural role using an LLM against a fixed vocabulary without regenerating prose.
 
 - `allowed_roles`: List of (name, description) tuples defining the role taxonomy
