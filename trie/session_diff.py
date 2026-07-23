@@ -34,13 +34,14 @@ def collect_session_diff(
     *,
     session_id: str | None = None,
     base: str = "HEAD",
+    since: float | None = None,
 ) -> SessionDiff:
-    """Gather one session's evidence: git diff of the triefact tree vs `base`, applied patch notes from the session log, and still-pending patch notes from the store. `session_id=None` means 'everything available'."""
+    """Gather one session's evidence: git diff of the triefact tree vs `base`, applied patch notes from the session log, and still-pending patch notes from the store. `session_id=None` means 'everything available'. `since` restricts applied log entries to those recorded after the given timestamp."""
     from trie.git_helpers import diff_paths
     from trie.session_log import read_entries
 
     diff = diff_paths(project_root, [config.triefacts.root], base=base) or ""
-    applied = read_entries(project_root, session_id=session_id)
+    applied = read_entries(project_root, session_id=session_id, since=since)
     pending: list[dict[str, Any]] = []
     for qname in store.get_patched_qnames():
         for row in store.get_patches_for_qname(qname):
@@ -60,6 +61,75 @@ def collect_session_diff(
     if session_id is not None:
         pending = [r for r in pending if r.get("session_id") == session_id]
     return SessionDiff(triefact_diff=diff, applied=applied, pending=pending, base=base)
+
+
+def _diff_stat(diff_text: str) -> list[tuple[str, int, int]]:
+    results: list[tuple[str, int, int]] = []
+    current_path: str | None = None
+    added = 0
+    removed = 0
+
+    for line in diff_text.splitlines():
+        if line.startswith("diff --git "):
+            if current_path is not None:
+                results.append((current_path, added, removed))
+            added = 0
+            removed = 0
+            current_path = None
+
+            # Parse path from "diff --git a/... b/..."
+            line[len("diff --git ") :].split(" ")
+            # Find the b/ side: last token starting with "b/"
+            # For no-index diffs the format may differ slightly
+            a_side = None
+            b_side = None
+            # Rebuild splitting on ' b/' to handle spaces in paths
+            rest = line[len("diff --git ") :]
+            # Try to split on ' b/' boundary
+            mid = rest.find(" b/")
+            if mid != -1:
+                a_side_raw = rest[:mid]
+                b_side_raw = rest[mid + 1 :]
+                a_side = a_side_raw[2:] if a_side_raw.startswith("a/") else a_side_raw
+                b_side = b_side_raw[2:] if b_side_raw.startswith("b/") else b_side_raw
+            else:
+                # Fall back: last space-separated token
+                tokens = rest.split(" ")
+                raw = tokens[-1]
+                b_side = raw[2:] if raw.startswith("b/") else raw
+                if len(tokens) >= 2:
+                    raw_a = tokens[0]
+                    a_side = raw_a[2:] if raw_a.startswith("a/") else raw_a
+
+            # Prefer non-/dev/null side
+            if b_side and b_side != "/dev/null":
+                current_path = b_side
+            elif a_side and a_side != "/dev/null":
+                current_path = a_side
+            else:
+                current_path = b_side or a_side or ""
+
+            # Strip any leading absolute-path prefix, keep relative form
+            if current_path and current_path.startswith("/"):
+                # Try to find a/ or b/ marker within the path
+                for marker in ("/a/", "/b/"):
+                    idx = current_path.find(marker)
+                    if idx != -1:
+                        current_path = current_path[idx + len(marker) :]
+                        break
+                else:
+                    current_path = current_path.lstrip("/")
+
+        elif current_path is not None:
+            if line.startswith("+") and not line.startswith("+++"):
+                added += 1
+            elif line.startswith("-") and not line.startswith("---"):
+                removed += 1
+
+    if current_path is not None:
+        results.append((current_path, added, removed))
+
+    return results
 
 
 _FENCE = "`" * 3
@@ -167,3 +237,127 @@ def synthesize_narrative(
     except TypeError:
         result = client.run_text(_NARRATIVE_SYSTEM_PROMPT, prompt, max_tokens=max_tokens)
     return str(result.output).strip()
+
+
+def render_digest_section(
+    data: SessionDiff,
+    *,
+    base_short: str,
+    date_str: str,
+    narrative: str = "",
+) -> str:
+    """Render one digest entry as a markdown section string."""
+    lines: list[str] = []
+
+    # Entry heading — parse anchor for upsert_digest
+    lines.append(f"## {date_str} · base {base_short}")
+    lines.append("")
+
+    # Optional narrative paragraph
+    if narrative:
+        lines.append(narrative.strip())
+        lines.append("")
+
+    # ### Intent — deduped, insertion-ordered session_note values
+    seen_notes: list[str] = []
+    seen_set: set[str] = set()
+    for entry in data.applied:
+        note = entry.get("session_note")
+        if note and note not in seen_set:
+            seen_notes.append(note)
+            seen_set.add(note)
+    if seen_notes:
+        lines.append("### Intent")
+        lines.append("")
+        for note in seen_notes:
+            lines.append(f"- {note}")
+        lines.append("")
+
+    # ### Applied
+    if data.applied:
+        lines.append("### Applied")
+        lines.append("")
+        for entry in data.applied:
+            entry_notes = entry.get("notes") or []
+            notes_str = "; ".join(entry_notes) if entry_notes else ""
+            bullet = f"- [{entry.get('op', '')}] {entry.get('qname', '')}"
+            if notes_str:
+                bullet += f" — {notes_str}"
+            reasons = entry.get("reasons")
+            if reasons:
+                reasons_str = "; ".join(reasons)
+                bullet += f" (reason: {reasons_str})"
+            lines.append(bullet)
+        lines.append("")
+
+    # ### Pending (staged, not applied)
+    if data.pending:
+        lines.append("### Pending (staged, not applied)")
+        lines.append("")
+        for entry in data.pending:
+            note_str = entry.get("note", "")
+            bullet = f"- [{entry.get('op', '')}] {entry.get('qname', '')}"
+            if note_str:
+                bullet += f" — {note_str}"
+            reason = entry.get("reason")
+            if reason:
+                bullet += f" (reason: {reason})"
+            lines.append(bullet)
+        lines.append("")
+
+    # ### Triefact changes
+    lines.append("### Triefact changes")
+    lines.append("")
+    stat = _diff_stat(data.triefact_diff)
+    if not stat:
+        lines.append("- (no triefact changes)")
+    else:
+        for path, adds, dels in stat:
+            lines.append(f"- {path} (+{adds}/-{dels})")
+    lines.append("")
+
+    return "\n".join(lines)
+
+
+DIGEST_HEADER = """\
+# TRIE_DIFF
+
+<!-- auto-generated by `trie diff --write` (wired into the pre-commit hook)
+     prepend-only, newest entry first; do not edit by hand;
+     entries roll off after max_entries -->
+"""
+
+
+def upsert_digest(
+    existing_text: str,
+    section: str,
+    *,
+    base_short: str,
+    max_entries: int = 20,
+) -> str:
+    """Prepend-only update of the TRIE_DIFF.md digest.
+
+    Maintains a newest-first list of per-commit digest entries.  If the
+    current head entry already covers the same *base_short* commit (amend /
+    retry scenario) it is replaced in-place; otherwise the new *section* is
+    prepended.  The result is truncated to *max_entries* and always begins
+    with the canonical DIGEST_HEADER so that header evolution is self-healing.
+    """
+    import re
+
+    # Split existing_text into ## … blocks; ignore anything before the first.
+    raw_entries = re.split(r"(?m)(?=^## )", existing_text)
+    entries = [e.rstrip("\n") for e in raw_entries if re.match(r"^## ", e)]
+
+    new_section = section.rstrip("\n")
+
+    if entries and f"base {base_short}" in entries[0]:
+        # Replace the newest entry — same commit, amend/retry.
+        entries[0] = new_section
+    else:
+        entries.insert(0, new_section)
+
+    entries = entries[:max_entries]
+
+    body = "\n\n".join(entries)
+    return DIGEST_HEADER + "\n" + body + "\n"

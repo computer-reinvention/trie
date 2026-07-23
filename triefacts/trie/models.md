@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/models.py
 file_fingerprint: 4551e2c3692b9295337b6653dd03e5a8e5486e381aadb9c53f47b71c2e92a67b
-last_synced_at: '2026-07-20T13:08:54Z'
+last_synced_at: '2026-07-23T16:52:25Z'
 defines:
 - kind: module
   qualified_name: trie/models:__module__
@@ -139,7 +139,7 @@ defines:
 - kind: function
   qualified_name: trie/models:make_client
   lines: 698-711
-incoming_refs: 94
+incoming_refs: 95
 outgoing_refs: 6
 ---
 <!-- trie:section symbol=trie/models:__module__ fingerprint=040dd73062f452f0be03d3b12bd0034fbdf69902b59a94606a29415a8bde56d9 body_fp=9b387fda13f0c60ba17cbe1d813fca36e81accdb48ac1477cbbc51fd87ee73ba source_ref=8f45f466ffa9b5cb61224b64456ad3d91e218ec8 role=orchestration -->
@@ -321,7 +321,7 @@ Converts trie's provider/model format to pydantic_ai's provider:model format usi
 <!-- trie:section symbol=trie/models:_anthropic_model_name fingerprint=3c87d22ca61cada7c6dd2721cf27ba2000942a7010fc3dac57aeb0cd6ca74261 body_fp=9f60ebe4d744a72dcf3f42d216efade5c4613aa01f6d939ef3729a3781e6bf20 source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
 Extract the bare Anthropic model name from a full trie model ID by stripping the provider prefix.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:TrieClient fingerprint=0718f8b901193e0a54803cf1d16c21bc9c4d11d9ad7d63597d9c4e6e29072331 body_fp=dac333d9d56bde67a681063506e3985ae3c0f0353b5a4a02960cbb928e90ddcf source_ref=cf43f636b926264d14e4819c6c4e6e236424e130 role=io -->
+<!-- trie:section symbol=trie/models:TrieClient fingerprint=0718f8b901193e0a54803cf1d16c21bc9c4d11d9ad7d63597d9c4e6e29072331 body_fp=dac333d9d56bde67a681063506e3985ae3c0f0353b5a4a02960cbb928e90ddcf source_ref=8f45f466ffa9b5cb61224b64456ad3d91e218ec8 role=io -->
 Wraps Pydantic AI agent creation and execution with structured output, prompt caching, and retry logic.
 
 - `run`: Creates one-shot agent; accepts `output_type=str` for plain-text mode or a `BaseModel` subclass for structured output; supports configurable `output_retries` for pydantic-ai's internal validation retries
@@ -331,7 +331,7 @@ Wraps Pydantic AI agent creation and execution with structured output, prompt ca
 - Applies exponential backoff retry on rate limits and server errors
 - Configures request timeouts to prevent hung connections from blocking worker threads indefinitely
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:TrieClient.__init__ fingerprint=5ea067cab1ad71d37698daec406cb31c07a5b9df936a7ce4902ac6f4796b706c body_fp=dfe7c5ca5571689413f666f132f5f10e054e51d4fc49bb10b2ef084f0db137a6 source_ref=ed7528610d689f316f521122951d852adcfc8a59 role=model -->
+<!-- trie:section symbol=trie/models:TrieClient.__init__ fingerprint=5ea067cab1ad71d37698daec406cb31c07a5b9df936a7ce4902ac6f4796b706c body_fp=dfe7c5ca5571689413f666f132f5f10e054e51d4fc49bb10b2ef084f0db137a6 source_ref=8f45f466ffa9b5cb61224b64456ad3d91e218ec8 role=domain -->
 Initializes TrieClient with model ID conversion, timeout configuration, and raw Anthropic client.
 
 - `full_model_id`: trie's provider/model format (e.g., "anthropic/claude-sonnet-4-6")

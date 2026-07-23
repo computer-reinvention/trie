@@ -254,6 +254,30 @@ class Mcp:
 
 
 @dataclass
+class Diff:
+    """Config surface for the committed trie-diff digest system.
+
+    TRIE_DIFF.md is a prepend-only, newest-first digest of per-commit session
+    intent (patch notes + triefact change stats, optionally an LLM narrative).
+    Prepend-only means a PR's diff of this file is a pure green block of new
+    digest entries — no diff-of-a-diff noise.
+    """
+
+    narrative: bool = True
+    """Synthesise an LLM narrative at the top of each digest entry; falls back
+    to deterministic evidence when the client/key is unavailable."""
+
+    write_path: str = "TRIE_DIFF.md"
+    """Digest file, relative to project root.  The pre-commit hook block
+    hardcodes the default name, so changing this requires editing the hook."""
+
+    max_entries: int = 20
+    """Prepend-only digest keeps at most this many entries; older ones roll off
+    the bottom."""
+
+
+@dataclass
+@dataclass
 class Config:
     trie: TrieMeta = field(default_factory=TrieMeta)
     scope: Scope = field(default_factory=Scope)
@@ -264,6 +288,7 @@ class Config:
     mcp: Mcp = field(default_factory=Mcp)
     debug: Debug = field(default_factory=Debug)
     edits: Edits = field(default_factory=Edits)
+    diff: Diff = field(default_factory=Diff)
     languages: dict[str, LanguageConfig] = field(default_factory=dict)
 
     @classmethod
@@ -289,6 +314,7 @@ class Config:
             mcp=Mcp(**data.get("mcp", {})),
             debug=Debug(**data.get("debug", {})),
             edits=Edits(**raw_edits),
+            diff=Diff(**data.get("diff", {})),
             languages=languages,
         )
 
@@ -419,6 +445,11 @@ lsp_max_retries = 3
 command = "pyright"
 check_args = ["--outputjson"]
 output_format = "pyright"
+
+# [diff]
+# narrative = true        # LLM narrative at the top of each TRIE_DIFF.md entry (falls back to raw evidence without an API key)
+# write_path = "TRIE_DIFF.md"
+# max_entries = 20        # older digest entries roll off the bottom
 
 [debug]
 # Append-only JSONL telemetry for trie's own operations. Off by default; flip on

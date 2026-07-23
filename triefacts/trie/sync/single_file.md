@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/sync/single_file.py
 file_fingerprint: 3b3d84bdcaf28dc782d5cca46e1a9c3446d1ca41a80a1e1c62f38b11300c5d0b
-last_synced_at: '2026-07-20T23:25:52Z'
+last_synced_at: '2026-07-23T16:52:28Z'
 defines:
 - kind: module
   qualified_name: trie/sync/single_file:__module__
@@ -94,7 +94,7 @@ Builds a list of dictionaries containing symbol metadata for triefact front matt
 - Returns entries with `kind`, `qualified_name`, and `lines` fields for each symbol
 - Sorted by start line to match source file order
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:_resolve_previous_symbols fingerprint=8fc33ac4cad57a5d5e9a3db964b2bf5766b470e96a0556c471e7c51c9e16544f body_fp=3ef5d1ca85f338214adda448cc6ab6e663574abfbbd1fd7d649152fbe09a75d1 source_ref=6cd32bcbcf3b954f87385b8932e63a19b2514a6f role=domain -->
+<!-- trie:section symbol=trie/sync/single_file:_resolve_previous_symbols fingerprint=8fc33ac4cad57a5d5e9a3db964b2bf5766b470e96a0556c471e7c51c9e16544f body_fp=3ef5d1ca85f338214adda448cc6ab6e663574abfbbd1fd7d649152fbe09a75d1 source_ref=6cd32bcbcf3b954f87385b8932e63a19b2514a6f role=util -->
 Retrieve previous Symbol instances for qualified names that have git blob references by fetching and parsing historical file content.
 
 - Groups lookups by blob hash to minimize git calls and parsing overhead

@@ -82,6 +82,20 @@ def current_head(repo_root: Path) -> str | None:
     return text or None
 
 
+def commit_timestamp(repo_root: Path, ref: str = "HEAD") -> float | None:
+    """Return the committer unix timestamp of *ref* as a float, or None on any failure."""
+    result = _run_git(["show", "-s", "--format=%ct", ref], cwd=repo_root)
+    if result is None:
+        return None
+    raw = result.decode("utf-8", errors="replace").strip()
+    if not raw:
+        return None
+    try:
+        return float(raw.splitlines()[0].strip())
+    except (ValueError, IndexError):
+        return None
+
+
 def compute_blob_hash(file_path: Path, *, max_bytes: int | None = None) -> str | None:
     """Compute the git blob hash for the working-tree content of `file_path`.
 

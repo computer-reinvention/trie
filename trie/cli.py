@@ -1159,6 +1159,11 @@ def diff_cmd(
     model: str | None = typer.Option(
         None, "--model", help="Override the model used for narrative synthesis."
     ),
+    write: bool = typer.Option(
+        False,
+        "--write",
+        help="Prepend a digest entry to the TRIE_DIFF file (config diff.write_path) and exit; used by the pre-commit hook.",
+    ),
 ) -> None:
     """Describe what changed in a session at the intent level.
 
@@ -1166,11 +1171,17 @@ def diff_cmd(
     when edits were staged (applied notes from the session log, pending notes from
     the patch queue) and synthesises a coherent narrative via the LLM.  Use --raw
     or --json to inspect the underlying evidence without paying for synthesis.
+    Pass --write to prepend a digest entry to the configured TRIE_DIFF file instead
+    of rendering to the terminal; this is the mode used by the pre-commit hook.
     """
     reporter = _get_reporter(ctx)
 
     if raw and as_json:
         reporter.error("--raw and --json are mutually exclusive")
+        raise typer.Exit(code=1)
+
+    if write and as_json:
+        reporter.error("--write and --json are mutually exclusive")
         raise typer.Exit(code=1)
 
     try:
@@ -1179,7 +1190,19 @@ def diff_cmd(
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
-    from trie.session_diff import collect_session_diff, synthesize_narrative
+    from trie.session_diff import (
+        collect_session_diff,
+        render_digest_section,
+        synthesize_narrative,
+        upsert_digest,
+    )
+
+    if write:
+        from trie.git_helpers import commit_timestamp, current_head
+
+        since = commit_timestamp(project_root, base)
+    else:
+        since = None
 
     store = Store(project_root / ".trie" / "graph.db")
     try:
@@ -1189,9 +1212,59 @@ def diff_cmd(
             store,
             session_id=session,
             base=base,
+            since=since,
         )
     finally:
         store.close()
+
+    if write:
+        if data.is_empty():
+            reporter.info("no session changes; digest not updated")
+            return
+
+        # Resolve a short ref for the base
+        if base == "HEAD":
+            head = current_head(project_root)
+            base_short = head[:12] if head else base
+        else:
+            base_short = base[:12]
+
+        narrative = ""
+        if getattr(config.diff, "narrative", True) and not raw:
+            try:
+                client = make_client(model or config.models.cascade, sync_cfg=config.sync)
+                narrative = synthesize_narrative(data, client)
+            except Exception:
+                narrative = ""
+
+        from datetime import datetime
+
+        date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        section = render_digest_section(
+            data,
+            base_short=base_short,
+            date_str=date_str,
+            narrative=narrative,
+        )
+
+        digest_path = project_root / config.diff.write_path
+        existing = digest_path.read_text() if digest_path.exists() else ""
+        digest_path.write_text(
+            upsert_digest(
+                existing,
+                section,
+                base_short=base_short,
+                max_entries=config.diff.max_entries,
+            )
+        )
+
+        backed_by = "narrative" if narrative else "raw evidence"
+        reporter.info(f"digest written to {digest_path} ({backed_by})")
+        return
+
+    # ------------------------------------------------------------------ #
+    # Terminal rendering modes                                             #
+    # ------------------------------------------------------------------ #
 
     if data.is_empty():
         reporter.info("no session changes detected (no triefact diff, no patch notes)")

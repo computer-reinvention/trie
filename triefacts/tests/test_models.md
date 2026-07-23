@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_models.py
 file_fingerprint: cc3db9128544e3b040f80b32aaad23339f99bbe04de346be0f87b836d79a7c90
-last_synced_at: '2026-07-20T13:09:26Z'
+last_synced_at: '2026-07-23T16:52:22Z'
 defines:
 - kind: module
   qualified_name: tests/test_models:__module__
