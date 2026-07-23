@@ -1136,6 +1136,125 @@ def _resolve_audit_log_path(log: Path | None, reporter: Reporter) -> Path:
     return cfg_path
 
 
+@app.command("diff")
+def diff_cmd(
+    ctx: typer.Context,
+    session: str | None = typer.Option(
+        None,
+        "--session",
+        "-s",
+        help="Restrict to one session id (defaults to all recorded activity).",
+    ),
+    base: str = typer.Option("HEAD", "--base", help="Git ref to diff the triefact tree against."),
+    raw: bool = typer.Option(
+        False,
+        "--raw",
+        help="Skip LLM synthesis; print patch notes and the raw triefact diff.",
+    ),
+    as_json: bool = typer.Option(
+        False,
+        "--json",
+        help="Emit the collected evidence as JSON (no LLM call). Mutually exclusive with --raw.",
+    ),
+    model: str | None = typer.Option(
+        None, "--model", help="Override the model used for narrative synthesis."
+    ),
+) -> None:
+    """Describe what changed in a session at the intent level.
+
+    Combines the raw git diff of the triefact tree with the patch notes recorded
+    when edits were staged (applied notes from the session log, pending notes from
+    the patch queue) and synthesises a coherent narrative via the LLM.  Use --raw
+    or --json to inspect the underlying evidence without paying for synthesis.
+    """
+    reporter = _get_reporter(ctx)
+
+    if raw and as_json:
+        reporter.error("--raw and --json are mutually exclusive")
+        raise typer.Exit(code=1)
+
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    from trie.session_diff import collect_session_diff, synthesize_narrative
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        data = collect_session_diff(
+            project_root,
+            config,
+            store,
+            session_id=session,
+            base=base,
+        )
+    finally:
+        store.close()
+
+    if data.is_empty():
+        reporter.info("no session changes detected (no triefact diff, no patch notes)")
+        return
+
+    console = reporter.console
+
+    if as_json:
+        import json as _json
+
+        typer.echo(
+            _json.dumps(
+                {
+                    "base": data.base,
+                    "session_ids": data.session_ids(),
+                    "triefact_diff": data.triefact_diff,
+                    "applied": data.applied,
+                    "pending": data.pending,
+                },
+                indent=2,
+                default=str,
+            )
+        )
+        return
+
+    if raw:
+        console.print("[bold]Applied patch notes[/bold]")
+        for entry in data.applied:
+            notes_text = (
+                "; ".join(entry.get("notes") or []) if entry.get("notes") else "[dim](none)[/dim]"
+            )
+            op = entry.get("op", "?")
+            qname = entry.get("qname", "?")
+            console.print(f"  [green]✓[/green] [{op}] {qname} — {notes_text}")
+
+        console.print("[bold]Pending patch notes[/bold]")
+        for entry in data.pending:
+            note_val = entry.get("note", "")
+            notes_text = note_val if note_val else "[dim](none)[/dim]"
+            op = entry.get("op", "?")
+            qname = entry.get("qname", "?")
+            console.print(f"  [yellow]○[/yellow] [{op}] {qname} — {notes_text}")
+
+        if data.triefact_diff.strip():
+            console.print("[bold]Raw triefact diff[/bold]")
+            console.print(data.triefact_diff, highlight=False, markup=False)
+
+        return
+
+    # Default path: LLM narrative synthesis
+    client = make_client(model or config.models.cascade, sync_cfg=config.sync)
+    with console.status("synthesising session narrative..."):
+        narrative = synthesize_narrative(data, client)
+
+    from rich.markdown import Markdown
+
+    console.print(Markdown(narrative))
+    console.print(
+        f"[dim]{len(data.applied)} applied, {len(data.pending)} pending patch note(s);"
+        f" diff vs {data.base}[/dim]"
+    )
+
+
 def _print_scan_breakdown(
     reporter: Reporter, scan_result, db_path: Path, project_root: Path
 ) -> None:
@@ -3414,6 +3533,7 @@ def patch_apply_cmd(
 
         if json_output:
             import json as _json
+
             console.print_json(_json.dumps(envelope))
         else:
             from rich.table import Table
@@ -3495,6 +3615,7 @@ def patch_apply_cmd(
     if envelope is not None and envelope.get("mode") == "workorder":
         if json_output:
             import json as _json
+
             console.print_json(_json.dumps(envelope))
         else:
             from rich.table import Table

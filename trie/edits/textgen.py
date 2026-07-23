@@ -63,8 +63,14 @@ REMARKS_END = "<<<END-REMARKS>>>"
 NEW_DEPS_OPEN = "<<<NEW-DEPS>>>"
 NEW_DEPS_END = "<<<END-DEPS>>>"
 
-# A fenced block: ```optional-lang\n ... \n``` — non-greedy body, DOTALL.
-_FENCE_RE = re.compile(r"```[^\n]*\n(.*?)\n?```", re.DOTALL)
+# A fenced code block: opening fence + optional language, non-greedy body, DOTALL.
+# The closing fence is line-anchored (must start at column 0, followed only by
+# optional spaces/tabs then a newline or end-of-string) so that triple-backtick
+# runs embedded mid-line inside string literals in the generated code — e.g. a
+# function that builds a markdown diff fence — don't terminate extraction early
+# and truncate the code. An inner fence alone on its own line can still end the
+# match early; acceptable residual, models rarely emit that inside code.
+_FENCE_RE = re.compile(r"```[^\n]*\n(.*?)\n```[ \t]*(?:\n|$)", re.DOTALL)
 
 _SINGLE_PROSE_RE = re.compile(
     re.escape(PROSE_OPEN) + r"\s*\n(.*?)\n?" + re.escape(PROSE_END),
@@ -159,6 +165,11 @@ def parse_code(text: str) -> str:
     If the model omitted the fence entirely (rare), we treat the whole response,
     minus any trailing prose sections, as the code — better than failing the
     whole apply over a missing pair of backticks.
+
+    The closing fence is only recognised at the start of a line, so
+    triple-backticks embedded mid-line inside the code body (e.g. markdown
+    fence markers built inside string literals) do not prematurely truncate
+    extraction.
     """
     m = _FENCE_RE.search(text)
     if m is not None:
