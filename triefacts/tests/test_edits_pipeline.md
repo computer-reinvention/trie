@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_edits_pipeline.py
 file_fingerprint: 395bca6405e94b92aca6ce0f87d43bde520a2f8fa6c1741626d6045e73c74a23
-last_synced_at: '2026-07-20T13:08:56Z'
+last_synced_at: '2026-07-20T23:25:48Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_pipeline:__module__
@@ -114,13 +114,13 @@ Creates a test project with three Python files in a dependency chain and pre-pop
 <!-- trie:section symbol=tests/test_edits_pipeline:_config fingerprint=2212d2ec1f6d36b65a66e8e256c0410684c26b19d40509bd6f5469cf10d0fcd7 body_fp=75bc670a33c5169f6b44d9565ffd59d553fa170565a26a9c54d26ca9dcdfdb3e source_ref=e0282d34035b65bdf7e8d362970ae8d5376a0584 role=test -->
 Creates test Config from project path with LSP backends disabled for unit testing.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_pipeline:TestStageNoWrites fingerprint=6d4a2bd7881aeba99043f361adf36e7441c4646b46c48dccb683a520d7946a3f body_fp=d1e187e8d7b0921ff3445a27c4ad5c63ac58f695e502a525b3961f90f9ae62b5 source_ref=e0282d34035b65bdf7e8d362970ae8d5376a0584 role=test -->
+<!-- trie:section symbol=tests/test_edits_pipeline:TestStageNoWrites fingerprint=6d4a2bd7881aeba99043f361adf36e7441c4646b46c48dccb683a520d7946a3f body_fp=d1e187e8d7b0921ff3445a27c4ad5c63ac58f695e502a525b3961f90f9ae62b5 source_ref=e9a1fcfbdd86b9a58a0fe397dc3d0a6349304435 role=test -->
 Tests that the stage function prepares edits without modifying source files.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_pipeline:TestStageNoWrites.test_stage_does_not_touch_source fingerprint=024c7341e523c2bfb1f2cf7d22016c998848746886c0640ef6a1ab2ab88001a9 body_fp=8d1245939a903726af5bc2654e4bcafd457b0e04265c2aa156c174693027879f source_ref=e0282d34035b65bdf7e8d362970ae8d5376a0584 role=test -->
+<!-- trie:section symbol=tests/test_edits_pipeline:TestStageNoWrites.test_stage_does_not_touch_source fingerprint=024c7341e523c2bfb1f2cf7d22016c998848746886c0640ef6a1ab2ab88001a9 body_fp=8d1245939a903726af5bc2654e4bcafd457b0e04265c2aa156c174693027879f source_ref=e9a1fcfbdd86b9a58a0fe397dc3d0a6349304435 role=test -->
 Verifies that `stage()` prepares edits without modifying source files on disk.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_pipeline:TestStageNoWrites.test_empty_patches_clean_report fingerprint=866abcbbc733fc1cb730880d527d75c7f3e4e63824a8f66d3228292a64635177 body_fp=ba150e7ff054196119615cf127274837a186fb8f0bace56cab4f93c95f2e82cf source_ref=e0282d34035b65bdf7e8d362970ae8d5376a0584 role=test -->
+<!-- trie:section symbol=tests/test_edits_pipeline:TestStageNoWrites.test_empty_patches_clean_report fingerprint=866abcbbc733fc1cb730880d527d75c7f3e4e63824a8f66d3228292a64635177 body_fp=ba150e7ff054196119615cf127274837a186fb8f0bace56cab4f93c95f2e82cf source_ref=e9a1fcfbdd86b9a58a0fe397dc3d0a6349304435 role=test -->
 TestStageNoWrites.test_empty_patches_clean_report verifies that staging with no patches produces a clean success report.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_pipeline:TestCommitApplies fingerprint=b29497451100629d15a5aea38952f7809423ef5ce753254a055aa8169cbf1b72 body_fp=f20a54aa40765162418515de9b7467d39a412b5f97f3885baa3275ad1506f700 source_ref=e0282d34035b65bdf7e8d362970ae8d5376a0584 role=test -->

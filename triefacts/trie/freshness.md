@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/freshness.py
 file_fingerprint: 6667a9d9073e66122b06cf34d53d4644f1e6880d1097dfc5cc726682e13e9bca
-last_synced_at: '2026-06-17T16:43:19Z'
+last_synced_at: '2026-07-20T23:25:46Z'
 description: 'Freshness gate: keep the graph + triefact tree current with respect
   to disk and HEAD.'
 defines:
@@ -108,11 +108,11 @@ Returns modification times for all in-scope source files as a dictionary mapping
 - Skips files outside the configured source root or that don't exist
 - Runs on every turn boundary to detect file changes without full scans
 <!-- trie:end -->
-<!-- trie:section symbol=trie/freshness:_require_git fingerprint=166feea2e74bf1d5b8f9f739d158f1b9adadb6c127a9c2e746f8f4d11a5f0cb7 body_fp=14454ffe8a0ed45d7ecc28f500d9cc12422f874506518ebb6eabbfe6be60d9fd source_ref=03c354e2bc01cc9a770ee44dfa2954fb8bba6f78 role=change-detection -->
-Returns the current git HEAD SHA or raises NotAGitRepoError if the project lacks git or commits.
+<!-- trie:section symbol=trie/freshness:_require_git fingerprint=166feea2e74bf1d5b8f9f739d158f1b9adadb6c127a9c2e746f8f4d11a5f0cb7 body_fp=77dc9ebfafe28c0852dcf11b7d1a9edc758729845904d60d5c40ab6b41818ad3 source_ref=c6ce1d9dad031d3054b2bceb7224cbf06f70da61 role=util -->
+Returns the current git HEAD SHA or raises `NotAGitRepoError` if the project lacks git or commits.
 
-- Raises NotAGitRepoError when the project is not in a git repository
-- Raises NotAGitRepoError when the repository exists but has no commits
+- Raises `NotAGitRepoError` when the project is not in a git repository
+- Raises `NotAGitRepoError` when the repository exists but has no commits
 <!-- trie:end -->
 <!-- trie:section symbol=trie/freshness:_mtimes_differ fingerprint=2389c54fdae5ee854c5b80798bf3c260d7ac0ce740a8ae1f711ad01fb1e9b551 body_fp=1cf8c54cb76f51d4b2bd082edc06c14f30944668415598c951facfd855dfb1be source_ref=03c354e2bc01cc9a770ee44dfa2954fb8bba6f78 role=change-detection -->
 Returns True if two mtime dictionaries disagree on any file path or modification time.

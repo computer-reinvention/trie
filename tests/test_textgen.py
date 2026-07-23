@@ -33,6 +33,16 @@ class TestParseCode:
     def test_missing_fence_and_no_prose_returns_stripped_text(self):
         assert textgen.parse_code("\ndef f():\n    return 1\n") == "def f():\n    return 1"
 
+    def test_inner_triple_backticks_in_string_do_not_truncate(self):
+        import ast
+
+        # Regression: generated code that BUILDS a markdown fence in a string
+        # literal must not terminate extraction early (lazy fence regex bug).
+        src = 'def build(diff):\n    parts = ["```diff", diff, "```"]\n    return "\\n".join(parts)'
+        text = f"```python\n{src}\n```\n"
+        assert textgen.parse_code(text) == src
+        ast.parse(textgen.parse_code(text))
+
 
 class TestParseSingleProse:
     def test_extracts_delimited_prose(self):

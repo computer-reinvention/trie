@@ -287,6 +287,42 @@ class TestCreate:
         assert any(u.stage in ("compile", "generate") for u in report.unresolved)
         assert (project / "src/gamma.py").read_text() == before
 
+    def test_one_broken_create_does_not_poison_siblings(self, project: Path):
+        cfg = _config(project)
+        with Store(project / ".trie" / "graph.db") as store:
+            store.add_create_patch(
+                target_file="src/duo.py",
+                target_qname="src/duo:good",
+                note="a",
+                reason="r",
+                session_id="s1",
+            )
+            store.add_create_patch(
+                target_file="src/duo.py",
+                target_qname="src/duo:bad",
+                note="b",
+                reason="r",
+                session_id="s1",
+            )
+            report = stage_and_commit(
+                store,
+                cfg,
+                FakeBackend("passthrough", per_qname={"src/duo:bad": "broken"}),
+                project,
+                session_note="two creates, one broken — salvage the good one",
+                commit_mode="per_item",
+            )
+        text = (project / "src" / "duo.py").read_text()
+        assert "def good" in text
+        assert "broken" not in text
+        assert report.committed
+        broken = [u for u in report.unresolved if u.qname == "src/duo:bad" and u.stage == "compile"]
+        assert broken
+        assert any(a.qname == "src/duo:good" and a.op == "create" for a in report.applied)
+        import ast
+
+        ast.parse(text)
+
 
 class TestSameFileMultiLane:
     """Regression: modify/rename/create on the SAME file must not clobber each other.

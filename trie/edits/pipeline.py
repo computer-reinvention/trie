@@ -14,6 +14,7 @@ The agent owns correctness; this pipeline owns speed (parallelism), blast-radius
 
 from __future__ import annotations
 
+import contextlib
 import os
 import shutil
 import tempfile
@@ -51,6 +52,7 @@ from trie.edits.report import (
 )
 from trie.graph.store import Store, SymbolDetail
 from trie.models import TrieClient
+from trie.session_log import record_applied
 
 
 def _splice(file_lines: list[str], start_line: int, end_line: int, new_src: str) -> list[str]:
@@ -587,7 +589,7 @@ def stage(
     return report, staged
 
 
-def build_workorder(store, config, project_root, *, client=None, session_note=''):
+def build_workorder(store, config, project_root, *, client=None, session_note=""):
     patches_by_sym_id = store.get_all_patches_grouped()
     create_grouped = store.get_create_patches_grouped()
 
@@ -603,7 +605,9 @@ def build_workorder(store, config, project_root, *, client=None, session_note=''
         qname = row[0]
         detail = store.get_symbol_detail(qname)
         if detail is None:
-            unresolved.append({'qname': qname, 'code': 'not_found', 'message': f'{qname} not found in store'})
+            unresolved.append(
+                {"qname": qname, "code": "not_found", "message": f"{qname} not found in store"}
+            )
             continue
         seeds.append((qname, detail, patches))
 
@@ -613,18 +617,18 @@ def build_workorder(store, config, project_root, *, client=None, session_note=''
     total_items = len(seeds) + sum(len(v) for v in create_grouped.values())
     if not session_note_ok(session_note) and total_items > 1:
         return {
-            'ok': False,
-            'mode': 'workorder',
-            'error': 'session_note_required',
-            'unresolved': [
+            "ok": False,
+            "mode": "workorder",
+            "error": "session_note_required",
+            "unresolved": [
                 {
-                    'qname': '<session>',
-                    'code': 'session_note_required',
-                    'message': 'A session_note is required when committing more than one symbol.',
-                    'repatch': {
-                        'tool': 'commit',
-                        'args': {
-                            'session_note': _synthesize_session_note(seed_qnames, create_grouped)
+                    "qname": "<session>",
+                    "code": "session_note_required",
+                    "message": "A session_note is required when committing more than one symbol.",
+                    "repatch": {
+                        "tool": "commit",
+                        "args": {
+                            "session_note": _synthesize_session_note(seed_qnames, create_grouped)
                         },
                     },
                 }
@@ -635,38 +639,38 @@ def build_workorder(store, config, project_root, *, client=None, session_note=''
     items = []
     for qname, detail, patches in seeds:
         # Classify op with last-structural-wins rule
-        op = 'modify'
+        op = "modify"
         rename_to = None
         for p in patches:
-            kind = p.get('kind')
-            if kind in ('delete', 'rename', 'modify'):
+            kind = p.get("kind")
+            if kind in ("delete", "rename", "modify"):
                 op = kind
-                if kind == 'rename':
-                    rename_to = p.get('rename_to')
+                if kind == "rename":
+                    rename_to = p.get("rename_to")
 
         # Merge notes and reasons
-        if client is not None and op == 'modify':
+        if client is not None and op == "modify":
             notes, reasons = merge_notes(client, patches)
         else:
-            notes = [p['note'] for p in patches if p.get('note')]
-            reasons = [p['reason'] for p in patches if p.get('reason')]
+            notes = [p["note"] for p in patches if p.get("note")]
+            reasons = [p["reason"] for p in patches if p.get("reason")]
 
         # Compute callers to review
         _callees, callers = neighbour_context(qname, store)
         callers_to_review = [c.qname for c in callers]
 
         item = {
-            'qname': qname,
-            'op': op,
-            'file_path': detail.file_path,
-            'start_line': detail.start_line,
-            'end_line': detail.end_line,
-            'notes': notes,
-            'reasons': reasons,
-            'callers_to_review': callers_to_review,
+            "qname": qname,
+            "op": op,
+            "file_path": detail.file_path,
+            "start_line": detail.start_line,
+            "end_line": detail.end_line,
+            "notes": notes,
+            "reasons": reasons,
+            "callers_to_review": callers_to_review,
         }
-        if op == 'rename' and rename_to is not None:
-            item['rename_to'] = rename_to
+        if op == "rename" and rename_to is not None:
+            item["rename_to"] = rename_to
 
         items.append(item)
 
@@ -674,32 +678,34 @@ def build_workorder(store, config, project_root, *, client=None, session_note=''
     creates = []
     for _target_file, cpatches in create_grouped.items():
         for cpatch in cpatches:
-            creates.append({
-                'target_qname': cpatch.get('target_qname', ''),
-                'target_file': cpatch.get('target_file', ''),
-                'anchor_qname': cpatch.get('anchor_qname', ''),
-                'parent_class': cpatch.get('parent_class', ''),
-                'note': cpatch.get('note', ''),
-                'reason': cpatch.get('reason', ''),
-            })
+            creates.append(
+                {
+                    "target_qname": cpatch.get("target_qname", ""),
+                    "target_file": cpatch.get("target_file", ""),
+                    "anchor_qname": cpatch.get("anchor_qname", ""),
+                    "parent_class": cpatch.get("parent_class", ""),
+                    "note": cpatch.get("note", ""),
+                    "reason": cpatch.get("reason", ""),
+                }
+            )
 
     # Compute expected_symbols
-    item_qnames = [item['qname'] for item in items]
-    create_qnames = [c['target_qname'] for c in creates]
+    item_qnames = [item["qname"] for item in items]
+    create_qnames = [c["target_qname"] for c in creates]
     expected_symbols = sorted(set(item_qnames + create_qnames))
 
     return {
-        'ok': True,
-        'mode': 'workorder',
-        'session_note': session_note,
-        'items': items,
-        'creates': creates,
-        'expected_symbols': expected_symbols,
-        'unresolved': unresolved,
-        'next': (
-            'Edit the listed symbols natively with your own tools, honoring every note. '
-            'Then run trie refresh to regenerate prose, and trie patch drop --all to clear the queue. '
-            'Out-of-plan symbol edits should get an amending patch note before you finish.'
+        "ok": True,
+        "mode": "workorder",
+        "session_note": session_note,
+        "items": items,
+        "creates": creates,
+        "expected_symbols": expected_symbols,
+        "unresolved": unresolved,
+        "next": (
+            "Edit the listed symbols natively with your own tools, honoring every note. "
+            "Then run trie refresh to regenerate prose, and trie patch drop --all to clear the queue. "
+            "Out-of-plan symbol edits should get an amending patch note before you finish."
         ),
     }
 
@@ -887,8 +893,11 @@ def _stage_creates(
     """Generate + place each new symbol; append StagedChanges with op='create'.
 
     Placement: after the anchor symbol's span if given and resolvable, else at
-    end-of-file. The whole resulting file is compile-gated; on failure the symbol
-    goes to unresolved with its generated source verbatim for re-patching.
+    end-of-file. The whole resulting file is compile-gated; on failure each symbol
+    is re-placed alone against the pre-creates base image and the compiling subset
+    is salvaged (mirroring the modify lane's per-symbol compile salvage). Only
+    genuinely broken symbols surface as unresolved; their compiling siblings land
+    normally.
     """
     src_root = (project_root / config.triefacts.source_root).resolve()
     for file_path, creates in create_grouped.items():
@@ -913,8 +922,11 @@ def _stage_creates(
             after_bytes = true_before
 
         before_bytes = true_before
-        # (qname, new_source, module_remarks, new_dependencies)
-        placed: list[tuple[str, str, str, tuple[str, ...]]] = []
+        # Capture the pre-creates file image for per-symbol salvage.
+        base_bytes = after_bytes
+
+        # (qname, new_source, module_remarks, new_dependencies, anchor_qname)
+        placed: list[tuple[str, str, str, tuple[str, ...], str | None]] = []
         for cp in creates:
             qname = cp["target_qname"]
             req = EditRequest(
@@ -946,11 +958,18 @@ def _stage_creates(
                 )
                 report.ok = False
                 continue
+            anchor_qname = cp.get("anchor_qname")
             after_bytes = _place_new_symbol(
-                after_bytes, res.new_source, cp.get("anchor_qname"), store, qname=qname
+                after_bytes, res.new_source, anchor_qname, store, qname=qname
             )
             placed.append(
-                (qname, res.new_source, res.module_remarks.strip(), tuple(res.new_dependencies))
+                (
+                    qname,
+                    res.new_source,
+                    res.module_remarks.strip(),
+                    tuple(res.new_dependencies),
+                    anchor_qname,
+                )
             )
 
         if not placed:
@@ -960,22 +979,73 @@ def _stage_creates(
             after_bytes += "\n"
 
         if not _compile_check(after_bytes, file_path):
-            for qname, new_src, _remarks, _deps in placed:
-                report.unresolved.append(
-                    UnresolvedItem(
-                        qname=qname,
-                        stage=STAGE_COMPILE,
-                        code=CODE_SYNTAX_AFTER_CAP,
-                        message="file does not compile after inserting new symbol",
-                        source_pointer=file_path,
-                        repatch={
-                            "tool": "create_symbol",
-                            "args": {"qname": qname, "source": new_src},
-                        },
+            # Per-symbol salvage: re-place each symbol alone against base_bytes
+            # and check if it compiles individually.
+            good: list[tuple[str, str, str, tuple[str, ...], str | None]] = []
+            bad: list[tuple[str, str, str, tuple[str, ...], str | None]] = []
+            for entry in placed:
+                qname, new_src, remarks, deps, anchor_qname = entry
+                candidate = _place_new_symbol(base_bytes, new_src, anchor_qname, store, qname=qname)
+                if not candidate.endswith("\n"):
+                    candidate += "\n"
+                if _compile_check(candidate, file_path):
+                    good.append(entry)
+                else:
+                    bad.append(entry)
+
+            # Try to rebuild cumulatively from the good set.
+            salvaged = False
+            if good:
+                rebuilt = base_bytes
+                for entry in good:
+                    qname, new_src, remarks, deps, anchor_qname = entry
+                    rebuilt = _place_new_symbol(rebuilt, new_src, anchor_qname, store, qname=qname)
+                if not rebuilt.endswith("\n"):
+                    rebuilt += "\n"
+                if _compile_check(rebuilt, file_path):
+                    after_bytes = rebuilt
+                    placed = good
+                    salvaged = True
+                    # Report the bad ones as unresolved.
+                    for entry in bad:
+                        qname, new_src, _remarks, _deps, _anchor = entry
+                        report.unresolved.append(
+                            UnresolvedItem(
+                                qname=qname,
+                                stage=STAGE_COMPILE,
+                                code=CODE_SYNTAX_AFTER_CAP,
+                                message=(
+                                    "generated source for this symbol does not compile; "
+                                    "sibling creates in the file were salvaged"
+                                ),
+                                source_pointer=file_path,
+                                repatch={
+                                    "tool": "create_symbol",
+                                    "args": {"qname": qname, "source": new_src},
+                                },
+                            )
+                        )
+                    report.ok = False
+
+            if not salvaged:
+                # Nothing could be salvaged — fail all placed entries.
+                for entry in placed:
+                    qname, new_src, _remarks, _deps, _anchor = entry
+                    report.unresolved.append(
+                        UnresolvedItem(
+                            qname=qname,
+                            stage=STAGE_COMPILE,
+                            code=CODE_SYNTAX_AFTER_CAP,
+                            message="file does not compile after inserting new symbol",
+                            source_pointer=file_path,
+                            repatch={
+                                "tool": "create_symbol",
+                                "args": {"qname": qname, "source": new_src},
+                            },
+                        )
                     )
-                )
-            report.ok = False
-            continue
+                report.ok = False
+                continue
 
         # Rewrite prior staged changes for this file so EVERY change to the file
         # shares the final after_file_bytes (commit writes one blob per file).
@@ -983,7 +1053,7 @@ def _stage_creates(
             if ch.file_path == file_path:
                 staged[i] = replace(ch, after_file_bytes=after_bytes)
 
-        for qname, new_src, remarks, deps in placed:
+        for qname, new_src, remarks, deps, _anchor in placed:
             staged.append(
                 StagedChange(
                     qname=qname,
@@ -1289,11 +1359,15 @@ def commit(
     staged: list[StagedChange],
     *,
     commit_mode: str | None = None,
+    session_note: str = "",
 ) -> ApplyReport:
     """Write the validated staged set to disk atomically; refresh + drop patches.
 
     all_or_nothing (default): any prior unresolved → write nothing.
     per_item: write each file's changes independently; failures stay unresolved.
+
+    session_note: the unifying intent string for this commit, archived alongside
+    the applied-patch records in the session log.
     """
     mode = (commit_mode or config.edits.commit_mode or "all_or_nothing").lower()
     src_root = (project_root / config.triefacts.source_root).resolve()
@@ -1318,6 +1392,36 @@ def commit(
     # Capture create-patch ids BEFORE any scan: a re-scan that introduces the new
     # symbol does not remove its create_patch row, so we clear them explicitly.
     create_qnames = [ch.qname for ch in staged if ch.op == "create"]
+
+    # Build archive entries from patch notes BEFORE any file writes, because the
+    # re-scan inside the try block cascades patch rows away.
+    create_rows_by_qname: dict[str, list[dict]] = {}
+    for rows in store.get_create_patches_grouped().values():
+        for row in rows:
+            create_rows_by_qname.setdefault(row["target_qname"], []).append(row)
+
+    archive_entries: list[dict] = []
+    for ch in staged:
+        if ch.op == "create":
+            rows = create_rows_by_qname.get(ch.qname, [])
+        else:
+            rows = store.get_patches_for_qname(ch.qname)
+        if not rows:
+            # Cascade-expanded callers have no patch rows of their own; skip.
+            continue
+        session_id = next((r["session_id"] for r in rows if r.get("session_id")), "")
+        archive_entries.append(
+            {
+                "session_id": session_id,
+                "session_note": session_note,
+                "qname": ch.qname,
+                "op": ch.op,
+                "file_path": ch.file_path,
+                "notes": [r["note"] for r in rows if r.get("note")],
+                "reasons": [r["reason"] for r in rows if r.get("reason")],
+            }
+        )
+
     written: list[tuple[str, str]] = []  # (file_path, before_bytes) for rollback
     created_files: list[str] = []  # files that did NOT exist before → unlink on rollback
     try:
@@ -1425,6 +1529,10 @@ def commit(
                 )
             )
 
+    # Archive applied patch notes to the session log (advisory; never fail a commit).
+    with contextlib.suppress(Exception):
+        record_applied(project_root, archive_entries)
+
     report.committed = True
     report.ok = not report.blocking_unresolved
     return report
@@ -1444,4 +1552,12 @@ def stage_and_commit(
     report, staged = stage(
         store, config, backend, project_root, client=client, session_note=session_note
     )
-    return commit(store, config, project_root, report, staged, commit_mode=commit_mode)
+    return commit(
+        store,
+        config,
+        project_root,
+        report,
+        staged,
+        commit_mode=commit_mode,
+        session_note=session_note,
+    )

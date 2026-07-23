@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/edits/backends/llm.py
 file_fingerprint: 71f1cb8ce78d68e982f84d72c8c75c95fc88dde7651d0ee93766500143d37e78
-last_synced_at: '2026-07-20T13:09:34Z'
+last_synced_at: '2026-07-20T23:25:52Z'
 description: "In-process LLM edit backend \u2014 the default `SymbolEditBackend`."
 defines:
 - kind: module
@@ -83,7 +83,7 @@ Renders an `EditRequest` into the user prompt for the LLM.
 - Adds special handling for "create" operations to indicate new symbol creation
 - Returns structured prompt with symbol info, prose, notes, source code, and output-format instructions
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/backends/llm:InProcessLLMBackend fingerprint=ca68aaeafd5210c27b250ff5aea88d6e9dd29778f855ed41b89c610ac0f080f9 body_fp=c7e8e2a5ae0ff951d200bcf0274c5c25c6239da9576a1df5d3bdb126aa161e40 source_ref=b57a11233c1cdb0e62472879a35ccc265849f415 role=domain -->
+<!-- trie:section symbol=trie/edits/backends/llm:InProcessLLMBackend fingerprint=ca68aaeafd5210c27b250ff5aea88d6e9dd29778f855ed41b89c610ac0f080f9 body_fp=c7e8e2a5ae0ff951d200bcf0274c5c25c6239da9576a1df5d3bdb126aa161e40 source_ref=b57a11233c1cdb0e62472879a35ccc265849f415 role=io -->
 Generates new source code and prose for symbols by calling an LLM via `TrieClient` using plaintext output parsing.
 
 - `max_tokens`: Maximum tokens for LLM responses, defaults to 16384
@@ -96,7 +96,7 @@ Initializes an `InProcessLLMBackend` with a `TrieClient`, maximum token limit, a
 - `max_tokens`: limits the LLM response length (default 16384)
 - `output_retries`: number of generation retries on output failure (default 3)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/backends/llm:InProcessLLMBackend.generate fingerprint=7e39083442726c0865ec564d0216a25bf8f63ec6f0210ec367d8db581ab7ffc1 body_fp=0036e70ebddf5be4af6285fd713cd89f5e864908fad380d3b962b58a250da529 source_ref=b57a11233c1cdb0e62472879a35ccc265849f415 role=domain -->
+<!-- trie:section symbol=trie/edits/backends/llm:InProcessLLMBackend.generate fingerprint=7e39083442726c0865ec564d0216a25bf8f63ec6f0210ec367d8db581ab7ffc1 body_fp=0036e70ebddf5be4af6285fd713cd89f5e864908fad380d3b962b58a250da529 source_ref=b57a11233c1cdb0e62472879a35ccc265849f415 role=io -->
 `InProcessLLMBackend.generate` processes an `EditRequest` through the LLM client and returns an `EditResult` with generated source and prose.
 
 - Uses `run_text` (plaintext, no schema) instead of a structured model call; source and prose are parsed from the raw text output
