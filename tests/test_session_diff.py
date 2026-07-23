@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    pass
 
 try:
-    import pytest
+    import pytest  # type: ignore[import-not-found]
 except ImportError:  # pragma: no cover
     pytest = None  # type: ignore[assignment]
 
@@ -113,7 +117,7 @@ def test_build_narrative_prompt_sections_and_truncation() -> None:
     assert "(no triefact changes)" in empty_prompt
 
 
-def test_collect_session_diff_gathers_all_evidence(tmp_path: Path) -> None:
+def test_collect_session_diff_gathers_all_evidence(tmp_path: Path, mocker) -> None:  # type: ignore[no-untyped-def]
     import shutil
 
     if not shutil.which("git"):
@@ -193,6 +197,31 @@ def test_collect_session_diff_gathers_all_evidence(tmp_path: Path) -> None:
         data_other = collect_session_diff(tmp_path, config, store, session_id="other", base="HEAD")
         assert data_other.applied == []
         assert data_other.pending == []
+
+        # --- Assert: `since` parameter is forwarded to read_entries ---
+        # A future timestamp should exclude the already-recorded entry
+        import time
+
+        future_ts = time.time() + 3600
+
+        from trie import session_log as _session_log
+
+        original_read_entries = _session_log.read_entries
+        captured_since = []
+
+        def capturing_read_entries(project_root, *, session_id=None, since=None):  # type: ignore[no-untyped-def]
+            captured_since.append(since)
+            return original_read_entries(project_root, session_id=session_id, since=since)
+
+        mocker.patch.object(_session_log, "read_entries", side_effect=capturing_read_entries)
+        data_since = collect_session_diff(
+            tmp_path, config, store, session_id=None, base="HEAD", since=future_ts
+        )
+
+        # Confirm since was forwarded
+        assert captured_since == [future_ts]
+        # No applied entries should exist after a future timestamp
+        assert data_since.applied == []
 
     finally:
         store.close()
@@ -309,3 +338,205 @@ def test_synthesize_narrative_uses_cache_prefix() -> None:
     assert result_fallback == "narrative md"
     recorded_user_no_cache = client_no_cache.recorded_user or ""
     assert "## Raw triefact diff" in recorded_user_no_cache
+
+
+def test_collect_session_diff_since_filters_applied(tmp_path: Path) -> None:
+    import shutil
+
+    from trie.session_diff import collect_session_diff as _collect_session_diff
+
+    if not shutil.which("git"):
+        if pytest is not None:
+            pytest.skip("git not available")
+        return
+
+    # Set up a minimal git repo so triefact diff doesn't fail
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "t@t"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "t"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "--allow-empty", "-m", "init"], cwd=tmp_path, check=True)
+
+    # Set up session log with two entries at explicit, distinct timestamps
+    record_applied(
+        tmp_path,
+        [
+            {
+                "session_id": "s1",
+                "qname": "pkg.early",
+                "op": "modify",
+                "notes": [],
+                "reasons": [],
+                "ts": 100.0,
+            }
+        ],
+    )
+    record_applied(
+        tmp_path,
+        [
+            {
+                "session_id": "s1",
+                "qname": "pkg.late",
+                "op": "modify",
+                "notes": [],
+                "reasons": [],
+                "ts": 200.0,
+            }
+        ],
+    )
+
+    # Build a minimal Store
+    db_dir = tmp_path / ".trie"
+    db_dir.mkdir(parents=True, exist_ok=True)
+    db_path = db_dir / "graph.db"
+    config = Config.from_dict({})
+    store = Store(db_path)
+    try:
+        # Sanity check: both entries recorded
+        all_entries = read_entries(tmp_path)
+        assert len(all_entries) == 2
+
+        # since=150.0 is between early (100.0) and late (200.0) — only the late entry should appear
+        data_filtered = _collect_session_diff(tmp_path, config, store, since=150.0, base="HEAD")
+        applied_qnames_filtered = [e["qname"] for e in data_filtered.applied]
+        assert "pkg.late" in applied_qnames_filtered
+        assert "pkg.early" not in applied_qnames_filtered
+
+        # since=None — both entries should appear
+        data_all = _collect_session_diff(tmp_path, config, store, since=None, base="HEAD")
+        applied_qnames_all = [e["qname"] for e in data_all.applied]
+        assert "pkg.early" in applied_qnames_all
+        assert "pkg.late" in applied_qnames_all
+    finally:
+        store.close()
+
+
+def test_render_digest_section_shape() -> None:
+    from trie.session_diff import SessionDiff, render_digest_section
+
+    triefact_diff = (
+        "diff --git a/triefacts/x.md b/triefacts/x.md\n"
+        "--- a/triefacts/x.md\n"
+        "+++ b/triefacts/x.md\n"
+        "@@ -1,2 +1,2 @@\n"
+        "-old line\n"
+        "+new line\n"
+        " unchanged\n"
+        "diff --git a/dev/null b/triefacts/y.md\n"
+        "new file mode 100644\n"
+        "--- /dev/null\n"
+        "+++ b/triefacts/y.md\n"
+        "@@ -0,0 +1,1 @@\n"
+        "+brand new file\n"
+    )
+
+    data = SessionDiff(
+        triefact_diff=triefact_diff,
+        applied=[
+            {
+                "op": "modify",
+                "qname": "m:f",
+                "notes": ["did x"],
+                "reasons": ["because"],
+                "session_note": "ship feature",
+            }
+        ],
+        pending=[
+            {
+                "op": "create",
+                "qname": "m:new",
+                "note": "make new",
+                "reason": "",
+            }
+        ],
+    )
+
+    output = render_digest_section(
+        data,
+        base_short="abc123def456",
+        date_str="2026-07-23 10:00",
+        narrative="The narrative.",
+    )
+
+    assert output.startswith("## 2026-07-23 10:00 · base abc123def456"), (
+        f"Header not found at start; got: {output[:80]!r}"
+    )
+    assert "The narrative." in output, "Narrative text missing"
+    assert "### Intent" in output, "Intent section missing"
+    assert "ship feature" in output, "Intent session_note missing"
+    assert "### Applied" in output, "Applied section missing"
+    assert "[modify] m:f" in output, "Applied entry missing"
+    assert "did x" in output, "Applied note missing"
+    assert "### Pending" in output, "Pending section missing"
+    assert "[create] m:new" in output, "Pending entry missing"
+    assert "### Triefact changes" in output, "Triefact changes section missing"
+    assert "triefacts/x.md (+1/-1)" in output, "Triefact diff summary for x.md missing"
+
+    output_no_narrative = render_digest_section(
+        data,
+        base_short="abc123def456",
+        date_str="2026-07-23 10:00",
+        narrative="",
+    )
+
+    assert "The narrative." not in output_no_narrative, (
+        "Narrative paragraph should be absent when narrative=''"
+    )
+    assert "### Intent" in output_no_narrative, "Intent section missing without narrative"
+    assert "### Applied" in output_no_narrative, "Applied section missing without narrative"
+    assert "### Pending" in output_no_narrative, "Pending section missing without narrative"
+    assert "### Triefact changes" in output_no_narrative, (
+        "Triefact changes section missing without narrative"
+    )
+    assert "[modify] m:f" in output_no_narrative, "Applied entry missing without narrative"
+    assert "[create] m:new" in output_no_narrative, "Pending entry missing without narrative"
+    assert "triefacts/x.md (+1/-1)" in output_no_narrative, (
+        "Triefact diff summary missing without narrative"
+    )
+
+
+def test_upsert_digest_prepend_replace_trim() -> None:
+    from trie.session_diff import DIGEST_HEADER, upsert_digest
+
+    section_a = "## 2024-01-01 00:00:00 · base aaaa\n\nContent for section A.\n"
+    section_b = "## 2024-01-02 00:00:00 · base bbbb\n\nContent for section B.\n"
+    section_b2 = "## 2024-01-02 01:00:00 · base bbbb\n\nReplaced content for section B2.\n"
+    section_c = "## 2024-01-03 00:00:00 · base cccc\n\nContent for section C.\n"
+
+    # 1. Fresh file: result starts with DIGEST_HEADER and contains section_a
+    result1 = upsert_digest("", section_a, base_short="aaaa")
+    assert result1.startswith(DIGEST_HEADER), (
+        f"Expected result to start with DIGEST_HEADER, got: {result1[:80]!r}"
+    )
+    assert "Content for section A." in result1
+
+    # 2. Prepend: section_b with base 'bbbb' appears BEFORE section_a in the output
+    result2 = upsert_digest(result1, section_b, base_short="bbbb")
+    pos_b = result2.index("Content for section B.")
+    pos_a = result2.index("Content for section A.")
+    assert pos_b < pos_a, "section_b should appear before section_a after prepend"
+    assert "Content for section A." in result2
+    assert "Content for section B." in result2
+
+    # 3. Replace on same base 'bbbb': section_b2 replaces section_b, section_a remains
+    result3 = upsert_digest(result2, section_b2, base_short="bbbb")
+    assert "Replaced content for section B2." in result3, (
+        "New body for base bbbb should appear in output"
+    )
+    assert "Content for section B." not in result3, (
+        "Old body for base bbbb should be removed after replace"
+    )
+    assert "Content for section A." in result3, (
+        "section_a should still be present after replace of bbbb"
+    )
+
+    # 4. Trim: with max_entries=2, adding a third distinct base keeps only 2 newest
+    result4 = upsert_digest(result3, section_c, base_short="cccc", max_entries=2)
+    # section_c (newest) and section_b2 (second newest) should be present
+    assert "Content for section C." in result4, "Newest section_c should be present"
+    assert "Replaced content for section B2." in result4, (
+        "Second-newest section_b2 should be present"
+    )
+    # section_a (oldest) should have been trimmed
+    assert "Content for section A." not in result4, (
+        "Oldest section_a should be trimmed when max_entries=2"
+    )

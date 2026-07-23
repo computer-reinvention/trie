@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/init.py
-file_fingerprint: c1b3cf76407f4b8f9c3768c0a8e8d6d50202560ad5c0c691d2477d546b8c6b88
-last_synced_at: '2026-07-20T09:55:13Z'
+file_fingerprint: c2dbf10325ceef76bfe6cce72e04144b734a9778c740ccd2e63116938601ec1e
+last_synced_at: '2026-07-23T16:52:16Z'
 defines:
 - kind: module
   qualified_name: trie/init:__module__
-  lines: 1-197
+  lines: 1-220
 - kind: constant
   qualified_name: trie/init:GITIGNORE_LINE
   lines: 9-9
@@ -21,28 +21,28 @@ defines:
   lines: 14-14
 - kind: constant
   qualified_name: trie/init:PRE_COMMIT_HOOK_BLOCK
-  lines: 24-31
+  lines: 42-52
 - kind: class
   qualified_name: trie/init:InitResult
-  lines: 35-45
+  lines: 56-66
 - kind: class
   qualified_name: trie/init:InitError
-  lines: 48-49
+  lines: 69-70
 - kind: function
   qualified_name: trie/init:_detect_supported_project
-  lines: 52-80
+  lines: 73-101
 - kind: constant
   qualified_name: trie/init:_detect_python_project
-  lines: 84-84
+  lines: 105-105
 - kind: function
   qualified_name: trie/init:_ensure_gitignore_entry
-  lines: 87-100
+  lines: 108-121
 - kind: function
   qualified_name: trie/init:install_pre_commit_hook
-  lines: 103-132
+  lines: 124-155
 - kind: function
   qualified_name: trie/init:init_project
-  lines: 135-196
+  lines: 158-219
 incoming_refs: 36
 outgoing_refs: 1
 ---
@@ -68,12 +68,8 @@ Comment string marking the start of trie's pre-commit hook block in `.git/hooks/
 <!-- trie:section symbol=trie/init:PRE_COMMIT_HOOK_END_MARKER fingerprint=d0c3f84018a4b0fdae65792bc7130e5d78252bcf888b935afbcbb1162fee2ec0 body_fp=0895ada7bc149132af314e0d92132481cf71ef7930b58b73f120bdb8d753f4d3 source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=agent-integration -->
 String constant marking the end of trie's pre-commit hook block in git hooks.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/init:PRE_COMMIT_HOOK_BLOCK fingerprint=aea969236fa4acff5bd395cd7cda878d70e23fa931773656426cb6b6397e037e body_fp=cfccd35789699ee7020bb51cf59acb93375b6fb4d3e19278c3f879a9126e3ecf source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=agent-integration -->
-Shell script block that checks for trie availability and runs lock-check and verify commands.
-
-- Wrapped in marker comments for idempotent installation
-- Degrades gracefully when trie is not on PATH
-- Runs two validation steps: lock-check (prevents commits during ongoing writes) and verify (drift detection)
+<!-- trie:section symbol=trie/init:PRE_COMMIT_HOOK_BLOCK fingerprint=7352a67939d344142450fd1424517dec6e954bd0db6308904caa30991deceb1d body_fp=d134c87daccc054b62db47ec29965683f10645c1026621253557987da0cb7d37 role=agent-integration -->
+Shell script block embedded in the project's pre-commit hook that, within a single guard checking for `trie` on PATH, runs three steps in order: `lock-check` and `verify` (both blocking — they exit with an error code on failure), followed by an advisory `trie diff --write` that prepends an intent-level digest entry to `TRIE_DIFF.md` and stages it with `git add`, ensuring every commit and PR carries the latest session digest as a pure-addition diff; the digest step never blocks the commit regardless of outcome. The block is wrapped in idempotency markers so it can be safely installed or detected without duplication.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/init:InitResult fingerprint=6159e79af9587c2f4c2280d80e815af142855cae81912c12db1958bb33088be7 body_fp=22b934ac643593344ab076a020e011cd3c7df79abe8c66349e5cf645293e5978 source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=config-management -->
 Dataclass capturing the results of running `init_project`.
@@ -101,15 +97,10 @@ Backward-compatible alias for `_detect_supported_project`; retains the old name 
 <!-- trie:section symbol=trie/init:_ensure_gitignore_entry fingerprint=70d84e5eee964e2def6cf234ec4d0cf31e6e2f6ddb5176994fee2664237d2df1 body_fp=ec00e524ece61f7cd93620290e7d9278a8e032c3bda802430faa753d942433ff source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=agent-integration -->
 Append `line` to `gitignore` if not already present, returning True if file changed.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/init:install_pre_commit_hook fingerprint=15a712a6e65acf0735cc39913a4311a1400df95b8e6582502023ebf3bb2fd821 body_fp=00ddc45a00b10db599994ac3eddd99a839cfdc22393af1366f05937a03024f8f source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=agent-integration -->
-Installs a pre-commit hook that runs `trie verify --quiet` using different strategies based on project setup.
-
-- Returns tuple of (installed, strategy, hook_path) indicating installation outcome
-- "framework" strategy: skips installation when `.pre-commit-config.yaml` exists  
-- "git_hook" strategy: appends marker-fenced block to `.git/hooks/pre-commit`
-- "none" strategy: no action when `.git` directory absent
+<!-- trie:section symbol=trie/init:install_pre_commit_hook fingerprint=d7786183af45b0f0b1c62bad0d5ceb58d2d2c31149d77e585959170621d8fc52 body_fp=a0892debce8a2515a37bff3a76083fe5ef9258108785318f82bab9d892b4517a role=agent-integration -->
+Installs a trie-managed pre-commit hook into a project's `.git/hooks/pre-commit` file using one of three strategies: skipping silently when a pre-commit framework configuration is already present ("framework"), appending a marker-fenced shell block that runs lock-check, verify, and digest refresh steps when a `.git` directory exists ("git_hook", idempotent on repeated calls), or doing nothing when no `.git` directory is found ("none"). Returns a tuple of (installed, strategy, hook_path) describing the outcome.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/init:init_project fingerprint=8d32d68da2ffa430f2ff755cfab94b08979379fa9364f896a299dffdecad2d3a body_fp=c78d28169d578562f2d155bda18154c1168c5fbe27698161ceb7009d773c282d source_ref=0bc865bbbbdbcc66c09082ed000b5e52b1a2994b role=orchestration -->
+<!-- trie:section symbol=trie/init:init_project fingerprint=8d32d68da2ffa430f2ff755cfab94b08979379fa9364f896a299dffdecad2d3a body_fp=c78d28169d578562f2d155bda18154c1168c5fbe27698161ceb7009d773c282d source_ref=874e50f276e3538d4a7a3c230ff737dbb8a542dc role=orchestration -->
 Initialise trie in a directory, creating configuration and optionally scanning for symbols.
 
 - `force`: bypass supported-project detection and overwrite existing configuration

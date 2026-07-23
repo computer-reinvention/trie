@@ -1,21 +1,63 @@
 ---
 trie_version: 0.1.9
 source: tests/test_git_helpers.py
-file_fingerprint: 16ea1668951658745e8735459354aca0bc1b210041a0a99d438e561990e71d82
-last_synced_at: '2026-07-20T23:25:54Z'
+file_fingerprint: 1c555bca51f12de5fd262ce289da6c6835aeb1d9dc7b36fb409a7742a75458be
+last_synced_at: '2026-07-23T16:52:06Z'
 description: Tests for the narrow git helpers used by diff-aware regen.
 defines:
 - kind: module
   qualified_name: tests/test_git_helpers:__module__
-  lines: 1-193
+  lines: 1-267
 - kind: function
   qualified_name: tests/test_git_helpers:_git
-  lines: 22-24
+  lines: 19-21
 - kind: function
   qualified_name: tests/test_git_helpers:_init_repo
-  lines: 27-30
+  lines: 24-27
+- kind: function
+  qualified_name: tests/test_git_helpers:repo
+  lines: 31-33
+- kind: function
+  qualified_name: tests/test_git_helpers:test_is_git_repo_true_inside_repo
+  lines: 36-37
+- kind: function
+  qualified_name: tests/test_git_helpers:test_is_git_repo_false_outside_repo
+  lines: 40-42
+- kind: function
+  qualified_name: tests/test_git_helpers:test_compute_blob_hash_matches_git_hash_object
+  lines: 45-56
+- kind: function
+  qualified_name: tests/test_git_helpers:test_compute_blob_hash_is_content_addressed
+  lines: 59-65
+- kind: function
+  qualified_name: tests/test_git_helpers:test_compute_blob_hash_changes_when_content_changes
+  lines: 68-74
+- kind: function
+  qualified_name: tests/test_git_helpers:test_compute_blob_hash_missing_file_returns_none
+  lines: 77-78
+- kind: function
+  qualified_name: tests/test_git_helpers:test_retrieve_blob_round_trips_committed_content
+  lines: 81-91
+- kind: function
+  qualified_name: tests/test_git_helpers:test_retrieve_blob_unreachable_blob_returns_none
+  lines: 94-103
+- kind: function
+  qualified_name: tests/test_git_helpers:test_retrieve_blob_malformed_hash_returns_none
+  lines: 106-109
+- kind: function
+  qualified_name: tests/test_git_helpers:test_retrieve_blob_outside_repo_returns_none
+  lines: 112-115
+- kind: function
+  qualified_name: tests/test_git_helpers:test_compute_blob_hash_outside_repo_returns_none
+  lines: 118-127
+- kind: function
+  qualified_name: tests/test_git_helpers:test_diff_paths_includes_untracked_files
+  lines: 130-209
+- kind: function
+  qualified_name: tests/test_git_helpers:test_commit_timestamp_returns_head_time
+  lines: 212-266
 incoming_refs: 0
-outgoing_refs: 0
+outgoing_refs: 13
 ---
 <!-- trie:section symbol=tests/test_git_helpers:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=935d7c8fc588b21c6a3a3e1213076dd69f0a3a086d3e2bd10e46daefd31e9d23 source_ref=6922d330926218a78e65a95d706a8038d95a55da role=test-infrastructure -->
 Tests for narrow git helpers used by diff-aware regen, constructing real git repos to exercise subprocess interactions.
@@ -72,4 +114,10 @@ Tests that `retrieve_blob` returns None when called outside a git repository.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_git_helpers:test_compute_blob_hash_outside_repo_returns_none fingerprint=e0c44ccc0765e2f01a9db5b7f7472eaf49d1e437d43767b50938a19402f8c317 body_fp=a8f51767eb8ada0034e1bbdeb622731922f75ec8b84d02075257bfdfcb5efdda source_ref=6922d330926218a78e65a95d706a8038d95a55da role=test -->
 Verifies that `compute_blob_hash` returns None when called outside a git repository.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_git_helpers:test_diff_paths_includes_untracked_files fingerprint=36bd29be1119b469acd5757f3016ac7ae0595d11513e49c877196796d086d333 body_fp=695c7a6f4b7c485ab3aa18793e8c456627f8859427c64ad9380422a65e3ded55 source_ref=e762d13c3fb2a4f90993208de222061d724757a6 role=test -->
+Verify that `diff_paths` includes both tracked modifications and untracked new files in its output, and returns `""` when no changes exist.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_git_helpers:test_commit_timestamp_returns_head_time fingerprint=bd4d7671c93ff0e0ed8d0052c52cb0e4e864373a35932cef2e288bc3deed39e3 body_fp=7af43b6ac10d7396922dacbacc37956fb4a014968ffdcb5a0a28032e6618f996 role=change-detection -->
+Tests that `commit_timestamp` returns a recent float timestamp for HEAD of a freshly-created git repository, returns the same value when explicitly passing "HEAD", returns `None` for a nonexistent ref, and returns `None` when given a directory that is not inside any git repository. The git repo is initialised in a `repo` subdirectory of `tmp_path` so that the "not a repo" probe directory — created as a sibling under `tmp_path` itself — is genuinely outside any git work tree.
 <!-- trie:end -->

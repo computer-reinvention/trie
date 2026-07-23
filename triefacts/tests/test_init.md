@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: tests/test_init.py
-file_fingerprint: 23440baad5c67e08efb6226f75f5a32c84631a451696d0d7680a699b9c639144
-last_synced_at: '2026-06-17T16:40:51Z'
+file_fingerprint: 153f9c9610810a7549728304d24b99bb11506fd61c0f2308120445e89261253a
+last_synced_at: '2026-07-23T16:52:06Z'
 defines:
 - kind: module
   qualified_name: tests/test_init:__module__
-  lines: 1-388
+  lines: 1-417
 - kind: function
   qualified_name: tests/test_init:python_project
   lines: 21-23
@@ -118,6 +118,9 @@ defines:
 - kind: function
   qualified_name: tests/test_init:test_cli_init_does_not_run_setup_when_user_declines_prompt
   lines: 368-387
+- kind: function
+  qualified_name: tests/test_init:test_hook_block_includes_diff_write
+  lines: 390-416
 incoming_refs: 0
 outgoing_refs: 46
 ---
@@ -281,4 +284,7 @@ Tests that the `trie init` command automatically runs `trie setup` when user acc
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_init:test_cli_init_does_not_run_setup_when_user_declines_prompt fingerprint=2b88a1a18da864f17d833277406db5bf219c9e374d807aafa36d720cb4263986 body_fp=40c757ce965b70c083f760acd74cb81ec53dc3bbeb4285e8fdd8082be1c3a71a source_ref=0f97acda485ff7a046c788feb9cbfd63ccd9448a role=test-infrastructure -->
 Tests that declining the setup prompt in `trie init` skips auto-setup while preserving manual instruction.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_init:test_hook_block_includes_diff_write fingerprint=a19a9edfb2bcf1bb958b2ede25c55e67eab704c4b9825b15e9d562a7a72363b9 body_fp=da75467b602371948e39e8919a149201f0f49d3106dfc88bd5f8b2bf43022ccc source_ref=2021d4a33f9bb83fc4f08c3104052f62f18d4dd3 role=test -->
+Assert that `PRE_COMMIT_HOOK_BLOCK` contains `trie -q diff --write` and `git add TRIE_DIFF.md`, that the diff-write command appears after `trie -q verify`, and that the diff-write line is non-blocking (no `|| exit`).
 <!-- trie:end -->
