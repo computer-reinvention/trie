@@ -1,6 +1,6 @@
 # trie
 
-> **Your codebase, in prose. Kept in sync with the code by a reference-graph cascade.**
+> **Compiler and Static Analyzer for English**
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](#license)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
