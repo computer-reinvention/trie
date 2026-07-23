@@ -9,6 +9,16 @@
 
 ---
 
+A coding agent augmented with trie does not interact with code directly. trie maintains a parallel prose mirror of the codebase and let's the agent operate based on intent. All source code is generated under tha hood. Writes go through a patch-apply pipeline. Trie makes your codebase **reactive**. Changes automatically propagate downstream by default in background.
+
+trie is also a live wiki that is bidirectionally synced and guarantees correctness. Reduces token spend by 3x and accelerates development massively by offloading actual code generation to the background.
+
+The interface is optimised for agents specifically rather than humans. Over the course of a session, patch notes accumulate, are merged and the final apply seals the deal.
+
+Easy to install into any project using just `trie init` and `trie setup` - your agent's default tools are overriden. For a less invasive way to use trie, there is an MCP server that is also installed during setup.
+
+## How trie works
+
 trie generates a Markdown description of every source file in your project. The descriptions live in a tree that mirrors your source tree, joined by the same reference graph the code has. Edit a function and the cascade regenerates the descriptions of every caller too. Humans review English prose; agents read the same prose instead of grepping code under context pressure.
 
 ```
