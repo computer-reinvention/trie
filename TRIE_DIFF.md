@@ -4,6 +4,51 @@
      prepend-only, newest entry first; do not edit by hand;
      entries roll off after max_entries -->
 
+## 2026-07-24 05:59 · base 89977460b5fb
+
+## UX polish: show project-relative digest path in `diff_cmd` write-mode output
+
+When `trie diff --write` succeeds, the success message now prints the digest path relative to the project root (e.g. `TRIE_DIFF.md`) instead of the full absolute path. If a relative path cannot be computed (e.g. the digest is on a different drive), the absolute path is used as a fallback.
+
+### Changes to `trie/cli`
+
+- **`diff_cmd`**: Added a `os.path.relpath` (or equivalent) call after `upsert_digest` to convert the absolute digest path to a project-root-relative one before printing the success message; falls back to the absolute path on failure. The triefact description is updated to document this behaviour. Line count for the function grew by 4 lines, shifting all subsequent symbol line numbers down uniformly across the file.
+
+No other behavioural changes were made this session. There are no pending staged changes.
+
+### Applied
+
+- [modify] trie/cli:diff_cmd — In the --write success message, print the digest path relative to the project root instead of the absolute path (fall back to the absolute path if relpath computation fails, e.g. different drive). Example: "digest written to TRIE_DIFF.md (narrative)" instead of "digest written to /Users/.../TRIE_DIFF.md (narrative)". (reason: UX polish: the absolute path is noise in hook output and terminal logs; the digest lives at a well-known project-relative location.)
+
+### Triefact changes
+
+- triefacts/trie/cli.md (+79/-79)
+
+## UX polish: print digest path relative to project root in `diff_cmd` write mode
+
+When `trie diff --write` succeeds, the success message now shows the digest file path relative to the project root (e.g. `TRIE_DIFF.md`) rather than its full absolute path. If the relative path cannot be computed (e.g. the digest lives on a different drive), the absolute path is used as a fallback.
+
+### Changed behaviour
+
+- **`trie/cli:diff_cmd`** — added a `os.path.relpath` (or equivalent) call on the digest path before printing the "digest written to …" confirmation message; falls back to the absolute path on failure. This keeps hook output and terminal logs clean by removing noisy filesystem prefixes.
+
+### Mechanical side-effects
+
+- The change adds 4 lines to `diff_cmd`, shifting all subsequent symbol line-number ranges down by 4 throughout `trie/cli.py` (visible across the entire triefact diff as uniform `+4` offsets on every symbol after line ~1140).
+- The `diff_cmd` triefact description was updated to document the new relative-path reporting behaviour; its `role` attribute was dropped from the section tag in this update (present in the old fingerprint block, absent in the new one — a minor inconsistency in the triefact metadata, though the description itself accurately reflects the code change).
+
+### No pending changes
+
+There are no staged-but-unapplied patches remaining.
+
+### Applied
+
+- [modify] trie/cli:diff_cmd — In the --write success message, print the digest path relative to the project root instead of the absolute path (fall back to the absolute path if relpath computation fails, e.g. different drive). Example: "digest written to TRIE_DIFF.md (narrative)" instead of "digest written to /Users/.../TRIE_DIFF.md (narrative)". (reason: UX polish: the absolute path is noise in hook output and terminal logs; the digest lives at a well-known project-relative location.)
+
+### Triefact changes
+
+- triefacts/trie/cli.md (+79/-79)
+
 ## 2026-07-23 22:23 · base 29461ee2dcb2
 
 ## TRIE_DIFF digest system: pre-commit hook wiring, CLI `--write` flag, and digest helpers
