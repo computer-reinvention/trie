@@ -1259,7 +1259,11 @@ def diff_cmd(
         )
 
         backed_by = "narrative" if narrative else "raw evidence"
-        reporter.info(f"digest written to {digest_path} ({backed_by})")
+        try:
+            display_path = digest_path.relative_to(project_root)
+        except ValueError:
+            display_path = digest_path
+        reporter.info(f"digest written to {display_path} ({backed_by})")
         return
 
     # ------------------------------------------------------------------ #
