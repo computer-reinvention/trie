@@ -493,6 +493,34 @@ def test_render_digest_section_shape() -> None:
         "Triefact diff summary missing without narrative"
     )
 
+    # Heading-demotion: H2 headings inside the narrative are demoted to H3,
+    # but H2 headings inside fenced code blocks are left untouched.
+    narrative_with_headings = "## Summary\n\nBody text.\n\n```\n## not a heading\n```\n"
+    output_demoted = render_digest_section(
+        data,
+        base_short="abc123def456",
+        date_str="2026-07-23 10:00",
+        narrative=narrative_with_headings,
+    )
+
+    # The H2 heading in the narrative must be demoted to H3
+    assert "### Summary" in output_demoted, (
+        "H2 heading inside narrative should be demoted to ### Summary"
+    )
+    # No bare H2 '## Summary' line should survive outside the entry header or fenced blocks
+    lines = output_demoted.splitlines()
+    in_fence = False
+    h2_lines = []
+    for ln in lines:
+        if ln.startswith("```"):
+            in_fence = not in_fence
+        if not in_fence and ln.startswith("## ") and "base abc123def456" not in ln:
+            h2_lines.append(ln)
+    assert not h2_lines, f"Unexpected H2 lines after demotion (outside fences): {h2_lines}"
+
+    # The fenced '## not a heading' line must survive unmodified
+    assert "## not a heading" in output_demoted, "H2 inside fenced code block must not be demoted"
+
 
 def test_upsert_digest_prepend_replace_trim() -> None:
     from trie.session_diff import DIGEST_HEADER, upsert_digest
@@ -539,4 +567,51 @@ def test_upsert_digest_prepend_replace_trim() -> None:
     # section_a (oldest) should have been trimmed
     assert "Content for section A." not in result4, (
         "Oldest section_a should be trimmed when max_entries=2"
+    )
+
+    # 5. Regression: narrative body containing a '## Inner heading' line must NOT
+    #    be mis-parsed as an entry boundary, causing a phantom entry or a broken
+    #    same-base replace.
+    #
+    #    Build a section for base 'cccc' whose body legitimately contains an inner
+    #    '## ' line (as an LLM narrative might produce before heading demotion).
+    section_cccc_with_inner = (
+        "## 2024-01-03 00:00:00 · base cccc\n\n"
+        "Narrative before inner heading.\n\n"
+        "## Inner heading that is narrative, not an entry\n\n"
+        "More narrative text after inner heading.\n"
+    )
+    # Start from a two-entry digest: aaaa + bbbb2
+    base_digest = upsert_digest("", section_a, base_short="aaaa")
+    base_digest = upsert_digest(base_digest, section_b2, base_short="bbbb")
+
+    # Insert the tricky cccc entry (with the inner ## heading in its body)
+    with_inner = upsert_digest(base_digest, section_cccc_with_inner, base_short="cccc")
+
+    # Now replace cccc with a clean new body
+    section_cccc_replacement = "## 2024-01-03 01:00:00 · base cccc\n\nClean replacement for cccc.\n"
+    replaced = upsert_digest(with_inner, section_cccc_replacement, base_short="cccc")
+
+    # The replacement body must be present
+    assert "Clean replacement for cccc." in replaced, (
+        "Replacement body for base cccc should be present"
+    )
+    # The old narrative text (both before and after the inner heading) must be gone
+    assert "Narrative before inner heading." not in replaced, (
+        "Old narrative text before inner heading should be removed on replace"
+    )
+    assert "## Inner heading that is narrative, not an entry" not in replaced, (
+        "Inner '## ' heading line in old narrative body should be removed on replace"
+    )
+    assert "More narrative text after inner heading." not in replaced, (
+        "Old narrative text after inner heading should be removed on replace"
+    )
+    # Other entries must survive intact
+    assert "Content for section A." in replaced, "section_a should survive the cccc replacement"
+    assert "Replaced content for section B2." in replaced, (
+        "section_b2 should survive the cccc replacement"
+    )
+    # The replacement must appear exactly once (no phantom duplicate)
+    assert replaced.count("Clean replacement for cccc.") == 1, (
+        "Replacement body should appear exactly once — no phantom duplicates"
     )

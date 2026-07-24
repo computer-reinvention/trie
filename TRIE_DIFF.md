@@ -4,9 +4,56 @@
      prepend-only, newest entry first; do not edit by hand;
      entries roll off after max_entries -->
 
+## 2026-07-24 06:43 · base 0dc0b749202c
+
+This session hardens the digest format against a live-demo bug where LLM-generated narratives containing `##` headings broke `upsert_digest`'s entry-boundary detection, causing phantom entries and failed same-base replacements. The fix is applied at three independent layers: stricter parsing in `upsert_digest`, heading demotion in `render_digest_section`, and a prompt-level instruction in `_NARRATIVE_SYSTEM_PROMPT`.
+
+### Entry-boundary parsing (`upsert_digest`)
+
+The core bug was that entry splitting matched any line starting with `## `, so a narrative containing `## Some Section` would be mis-parsed as a new entry boundary.
+
+- `upsert_digest` now uses a strict regex — `^## \d{4}-\d{2}-\d{2}.* · base [0-9a-fA-F]+` — that matches only lines with the canonical entry-heading shape. Bare `##` lines anywhere inside a narrative body are invisible to the splitter.
+- Same-base replace and `max_entries` trim semantics are unchanged.
+
+### Heading demotion in rendered output (`render_digest_section`)
+
+Even with correct parsing, an H1 or H2 inside a rendered entry breaks the document's visual hierarchy.
+
+- `render_digest_section` now post-processes the narrative line-by-line before embedding it: any line starting with `# ` or `## ` has its leading hashes replaced with `### `.
+- The pass is fence-aware: a running `in_fence` flag toggled on `` ``` `` lines ensures diff blocks and code samples are never mangled.
+- The triefact description for `render_digest_section` was updated to reflect that it is now responsible for this demotion step.
+
+### Prompt instruction (`_NARRATIVE_SYSTEM_PROMPT`)
+
+As the cheapest preventive layer, the system prompt now explicitly instructs the LLM to use `###` or deeper for any sub-headings in its output, never `#` or `##`, because the narrative will be embedded beneath an `##` entry heading. The `_NARRATIVE_SYSTEM_PROMPT` triefact description was updated to document this constraint, and `synthesize_narrative`'s description was updated to note that it inherits the prompt change automatically.
+
+### Tests
+
+- `test_render_digest_section_shape` was extended to pass a narrative containing an `## Summary` heading and a fenced block with `## not a heading`, then assert: the rendered output contains `### Summary` (demoted), no bare `## Summary` outside fences, and the fenced line survives verbatim. A follow-up fix made the H2-scanning assertion itself fence-aware so it does not incorrectly flag the fenced line.
+- `test_upsert_digest_prepend_replace_trim` was extended with a regression case: an entry whose narrative body contains `## Inner heading that is narrative, not an entry` is upserted, then replaced via same-base. The test asserts the inner `##` line did not create a phantom entry, the old body is gone, the replacement appears exactly once, and other entries are intact.
+
+### Intent
+
+- Fix the digest entry-boundary bug the live demo caught: LLM narratives legally contain ## headings, which upsert_digest mis-parsed as entry boundaries (phantom entries, broken same-base replace). Three layers: strict entry-heading regex in upsert_digest, heading demotion (fence-aware) in render_digest_section, and a prompt instruction to keep narrative headings at ### or deeper.
+
+### Applied
+
+- [modify] tests/test_session_diff:test_render_digest_section_shape — Extend: call render_digest_section with narrative containing an H2 line and a fenced code block holding a '## not a heading' line, e.g. narrative='## Summary\n\nBody text.\n\n```\n## not a heading\n```'. Assert the rendered output contains '### Summary' (demoted), does NOT contain a line '## Summary', and the fenced '## not a heading' line survives unmodified inside the fence. Keep all existing assertions. (reason: Spec for the heading-demotion pass including the code-fence guard.)
+- [modify] tests/test_session_diff:test_upsert_digest_prepend_replace_trim — Extend with the regression the demo caught: build a section whose narrative body contains a '## Fake inner heading' line (hand-written entry block is fine: '## 2024-01-03 00:00 · base cccc\n\nNarrative.\n\n## Inner heading that is narrative, not an entry\n\nmore text\n'). Upsert it, then upsert a replacement with the same base 'cccc' and a distinctive new body. Assert: (1) the inner '## ' line did NOT create a phantom entry — after the replacement, the old body text AND the old inner-heading line are both gone; (2) the replacement body is present exactly once; (3) other entries survive intact. (reason: Regression spec for the entry-boundary mis-parse observed live in commit 0dc0b74's digest.)
+- [modify] trie/session_diff:_NARRATIVE_SYSTEM_PROMPT — Append an instruction to the system prompt: the narrative is embedded inside a larger markdown document under an H2 entry heading, so use heading levels ### or deeper only — never # or ##. (reason: Cheapest layer of the fix: ask the model for compliant markdown so the demotion pass rarely has to fire.)
+- [modify] trie/session_diff:render_digest_section — Defence in depth: before embedding the narrative, demote any top-level markdown headings it contains so nothing inside an entry competes with the '## <date> · base <sha>' entry heading. Post-process the narrative line by line: lines starting with '# ' or '## ' get their leading hashes replaced with '### ' (deeper headings pass through unchanged). Skip lines inside fenced code blocks (track ``` toggling) so diff/code fences are never mangled. Everything else unchanged. (reason: Even with the stricter upsert parser, an H1/H2 inside an entry breaks the document's visual hierarchy; entries must render as self-contained ## sections.)
+- [modify] trie/session_diff:upsert_digest — Entry-boundary parsing is too loose: it splits on ANY line matching ^## , but the LLM narrative embedded inside an entry can itself contain '## ' headings, which get mis-parsed as entry boundaries (observed: a narrative chunk stranded as a phantom entry, and same-base replace leaving duplicates). Tighten the delimiter: only lines matching the actual entry-heading shape count as boundaries — regex ^## \d{4}-\d{2}-\d{2}.* · base [0-9a-fA-F]+ (multiline). Everything between one entry heading and the next belongs to that entry, including any '## ' lines the narrative contains. Same-base replace and max_entries trim semantics unchanged. (reason: Narrative markdown legally contains ## headings; the digest must never mis-parse its own entries.)
+- [modify] tests/test_session_diff:test_render_digest_section_shape — Fix the self-contradicting assertion: the blanket "no H2 lines besides the entry header" check counts the '## not a heading' line inside the code fence, which the spec explicitly requires to survive unmodified. Make the h2_lines sweep fence-aware: iterate lines while toggling an in_fence flag on lines starting with ``` and only collect H2 lines when not in_fence. Keep the specific assertions (contains '### Summary', no '## Summary' line outside fences, fenced line survives verbatim). (reason: Test contradicts its own fence-survival expectation; the demotion pass is correct.)
+
+### Triefact changes
+
+- triefacts/tests/test_session_diff.md (+9/-9)
+- triefacts/trie/cli.md (+1/-1)
+- triefacts/trie/session_diff.md (+23/-32)
+
 ## 2026-07-24 05:59 · base 89977460b5fb
 
-## UX polish: show project-relative digest path in `diff_cmd` write-mode output
+### UX polish: show project-relative digest path in `diff_cmd` write-mode output
 
 When `trie diff --write` succeeds, the success message now prints the digest path relative to the project root (e.g. `TRIE_DIFF.md`) instead of the full absolute path. If a relative path cannot be computed (e.g. the digest is on a different drive), the absolute path is used as a fallback.
 
@@ -24,34 +71,9 @@ No other behavioural changes were made this session. There are no pending staged
 
 - triefacts/trie/cli.md (+79/-79)
 
-## UX polish: print digest path relative to project root in `diff_cmd` write mode
-
-When `trie diff --write` succeeds, the success message now shows the digest file path relative to the project root (e.g. `TRIE_DIFF.md`) rather than its full absolute path. If the relative path cannot be computed (e.g. the digest lives on a different drive), the absolute path is used as a fallback.
-
-### Changed behaviour
-
-- **`trie/cli:diff_cmd`** — added a `os.path.relpath` (or equivalent) call on the digest path before printing the "digest written to …" confirmation message; falls back to the absolute path on failure. This keeps hook output and terminal logs clean by removing noisy filesystem prefixes.
-
-### Mechanical side-effects
-
-- The change adds 4 lines to `diff_cmd`, shifting all subsequent symbol line-number ranges down by 4 throughout `trie/cli.py` (visible across the entire triefact diff as uniform `+4` offsets on every symbol after line ~1140).
-- The `diff_cmd` triefact description was updated to document the new relative-path reporting behaviour; its `role` attribute was dropped from the section tag in this update (present in the old fingerprint block, absent in the new one — a minor inconsistency in the triefact metadata, though the description itself accurately reflects the code change).
-
-### No pending changes
-
-There are no staged-but-unapplied patches remaining.
-
-### Applied
-
-- [modify] trie/cli:diff_cmd — In the --write success message, print the digest path relative to the project root instead of the absolute path (fall back to the absolute path if relpath computation fails, e.g. different drive). Example: "digest written to TRIE_DIFF.md (narrative)" instead of "digest written to /Users/.../TRIE_DIFF.md (narrative)". (reason: UX polish: the absolute path is noise in hook output and terminal logs; the digest lives at a well-known project-relative location.)
-
-### Triefact changes
-
-- triefacts/trie/cli.md (+79/-79)
-
 ## 2026-07-23 22:23 · base 29461ee2dcb2
 
-## TRIE_DIFF digest system: pre-commit hook wiring, CLI `--write` flag, and digest helpers
+### TRIE_DIFF digest system: pre-commit hook wiring, CLI `--write` flag, and digest helpers
 
 This session added a complete `trie diff --write` digest pipeline — a prepend-only, newest-first `TRIE_DIFF.md` that every commit carries as a pure-addition diff — and fixed a batch of bugs and test defects that emerged during implementation. All changes are fully applied; nothing remains pending.
 

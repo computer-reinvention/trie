@@ -1,14 +1,14 @@
 ---
 trie_version: 0.1.9
 source: tests/test_session_diff.py
-file_fingerprint: 2380be4883819136e11925166b585db5160793a73a92b860f3b9c018ee48e179
-last_synced_at: '2026-07-23T16:52:11Z'
+file_fingerprint: c0ba10e9a7b9a04cc48edb91e94228104a19c577bc566307cce10ca4d08da269
+last_synced_at: '2026-07-24T01:12:56Z'
 description: Tests for the session log archive and the `trie diff` evidence collection/prompt
   assembly.
 defines:
 - kind: module
   qualified_name: tests/test_session_diff:__module__
-  lines: 1-543
+  lines: 1-618
 - kind: function
   qualified_name: tests/test_session_diff:test_record_and_read_entries_roundtrip
   lines: 24-61
@@ -32,10 +32,10 @@ defines:
   lines: 343-410
 - kind: function
   qualified_name: tests/test_session_diff:test_render_digest_section_shape
-  lines: 413-494
+  lines: 413-522
 - kind: function
   qualified_name: tests/test_session_diff:test_upsert_digest_prepend_replace_trim
-  lines: 497-542
+  lines: 525-617
 incoming_refs: 0
 outgoing_refs: 24
 ---
@@ -63,9 +63,9 @@ Verify that `synthesize_narrative` passes the triefact diff as `cache_prefix` wh
 <!-- trie:section symbol=tests/test_session_diff:test_collect_session_diff_since_filters_applied fingerprint=b8ad21187f0eed1369e497ac9b88cb62c894ddac513da36a098c170d0ffcfb7f body_fp=09b8b6feab2de3dcc762b79fe352bda9af2ba3b5238603bae54f6436ceec6f9f source_ref=17faca7a18030ef384494b789fa37a1b8d11cd20 role=test -->
 Verify that `collect_session_diff` filters applied session log entries by the `since` timestamp, excluding entries older than the cutoff while retaining newer ones.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_render_digest_section_shape fingerprint=375b31e5d64792260c021ac9eed41a1aae876462f0295dd45e0c1914f0ddd250 body_fp=ff0b4a26fc25101710f73c1290ba1996191be384a5b71b110e5f54cbe728e446 source_ref=17faca7a18030ef384494b789fa37a1b8d11cd20 role=test -->
-Verify that `render_digest_section` produces a correctly structured Markdown digest with header, narrative, intent, applied, pending, and triefact-change sections, and omits the narrative paragraph when `narrative` is empty.
+<!-- trie:section symbol=tests/test_session_diff:test_render_digest_section_shape fingerprint=a2cfd55d4341651648c1dad0d141558a85af940230184de3e709ec7004cedc59 body_fp=136785299f6b7efb88a968eb3340a9fbe3eb4df2bad29d8b9c6c2986fc3f4063 source_ref=c7fd41470ca43d27b6d8b02de542185d856de27e role=test -->
+Verify `render_digest_section` output structure, optional narrative inclusion, and H2-heading demotion inside narratives while preserving headings in fenced code blocks.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_upsert_digest_prepend_replace_trim fingerprint=1a5d2ded3951ca273be4c36b88c343b0345d023a4af8732a1ef7896c85e47eea body_fp=ecd57fd1db8a38e832e85c4ef97d9832621d710a0b924a6821b13171d9e83c52 source_ref=17faca7a18030ef384494b789fa37a1b8d11cd20 role=test -->
-Verify `upsert_digest` correctly prepends new sections, replaces existing sections with the same `base_short`, and trims oldest entries when `max_entries` is exceeded.
+<!-- trie:section symbol=tests/test_session_diff:test_upsert_digest_prepend_replace_trim fingerprint=5bb9d0370c51a52fbb4897d1dc9d55e1c52ee43c5674b05d60180e106dcd9b20 body_fp=77b241f48d2830479573e2cbfbfbc9aec3a3f69c7036507f03a86aeec0d5760f source_ref=c7fd41470ca43d27b6d8b02de542185d856de27e role=test -->
+Test `upsert_digest` for fresh-file creation, new-entry prepend, same-base replace, oldest-entry trimming, and correct handling of inner `##` headings inside narrative bodies.
 <!-- trie:end -->
