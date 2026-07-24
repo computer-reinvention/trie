@@ -210,7 +210,7 @@ def build_narrative_prompt(data: SessionDiff, *, max_diff_chars: int = 24000) ->
     return "\n\n".join(sections)
 
 
-_NARRATIVE_SYSTEM_PROMPT: str = """You are summarising one working session on a codebase. You receive two kinds of evidence: (1) patch notes the coding agent recorded when staging edits — the stated intent — and (2) the raw unified diff of the project's triefact documentation tree — the observed effect. Triefacts are per-file markdown descriptions of source symbols, so their diff reflects behavioural changes in the code. Write a coherent, intent-level description of what changed this session: start with a one-or-two-sentence summary, then short bullet groups organised by theme or subsystem, naming the key symbols touched. Clearly separate applied changes from still-pending (staged) ones when both exist. Describe intent and effect; do not mechanically restate the diff. If the evidence conflicts (a note claims X but the diff shows Y), say so. Output plain markdown with no preamble."""
+_NARRATIVE_SYSTEM_PROMPT: str = """You are summarising one working session on a codebase. You receive two kinds of evidence: (1) patch notes the coding agent recorded when staging edits — the stated intent — and (2) the raw unified diff of the project's triefact documentation tree — the observed effect. Triefacts are per-file markdown descriptions of source symbols, so their diff reflects behavioural changes in the code. Write a coherent, intent-level description of what changed this session: start with a one-or-two-sentence summary, then short bullet groups organised by theme or subsystem, naming the key symbols touched. Clearly separate applied changes from still-pending (staged) ones when both exist. Describe intent and effect; do not mechanically restate the diff. If the evidence conflicts (a note claims X but the diff shows Y), say so. Output plain markdown with no preamble. Important: this narrative will be embedded inside a larger markdown document beneath an H2 (##) entry heading, so use heading levels ### or deeper only — never # or ## — for any sub-headings you introduce."""
 
 
 def synthesize_narrative(
@@ -247,15 +247,36 @@ def render_digest_section(
     narrative: str = "",
 ) -> str:
     """Render one digest entry as a markdown section string."""
+
+    def _demote_narrative_headings(text: str) -> str:
+        """Demote H1/H2 headings in narrative to H3+, skipping fenced code blocks."""
+        result: list[str] = []
+        in_fence = False
+        for line in text.splitlines():
+            # Track fenced code block boundaries
+            if line.startswith("```"):
+                in_fence = not in_fence
+                result.append(line)
+                continue
+            if not in_fence:
+                # Demote '# ' → '### ' and '## ' → '### '
+                if line.startswith("## "):
+                    line = "### " + line[3:]
+                elif line.startswith("# "):
+                    line = "### " + line[2:]
+            result.append(line)
+        return "\n".join(result)
+
     lines: list[str] = []
 
     # Entry heading — parse anchor for upsert_digest
     lines.append(f"## {date_str} · base {base_short}")
     lines.append("")
 
-    # Optional narrative paragraph
+    # Optional narrative paragraph (headings demoted so they don't compete with entry heading)
     if narrative:
-        lines.append(narrative.strip())
+        demoted = _demote_narrative_headings(narrative.strip())
+        lines.append(demoted)
         lines.append("")
 
     # ### Intent — deduped, insertion-ordered session_note values
@@ -345,9 +366,17 @@ def upsert_digest(
     """
     import re
 
-    # Split existing_text into ## … blocks; ignore anything before the first.
-    raw_entries = re.split(r"(?m)(?=^## )", existing_text)
-    entries = [e.rstrip("\n") for e in raw_entries if re.match(r"^## ", e)]
+    # Only lines that match the strict entry-heading shape count as boundaries.
+    # This prevents LLM narrative content containing bare '## ' headings from
+    # being mis-parsed as entry delimiters.
+    ENTRY_HEADING = re.compile(r"(?m)(?=^## \d{4}-\d{2}-\d{2}.* · base [0-9a-fA-F]+)")
+
+    raw_entries = re.split(ENTRY_HEADING, existing_text)
+    entries = [
+        e.rstrip("\n")
+        for e in raw_entries
+        if re.match(r"^## \d{4}-\d{2}-\d{2}.* · base [0-9a-fA-F]+", e)
+    ]
 
     new_section = section.rstrip("\n")
 
