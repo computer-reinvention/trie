@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import random
+import sys
 import threading
 import time
 from collections.abc import Callable, Iterator
@@ -420,11 +421,20 @@ def _run_with_retry(
 ) -> T:
     rng = rng or random.Random()
     attempt = 0
+    started = time.monotonic()
+    budget = getattr(cfg, "retry_total_seconds", 0.0) or 0.0
     while True:
         try:
             return fn()
         except BaseException as exc:
             if not _is_retryable(exc) or attempt >= cfg.max_retries:
+                raise
+            if budget > 0 and time.monotonic() - started >= budget:
+                print(
+                    f"trie: giving up on {kind} call after {time.monotonic() - started:.0f}s "
+                    f"of retries ({attempt + 1} attempt(s)): {type(exc).__name__}",
+                    file=sys.stderr,
+                )
                 raise
             if isinstance(exc, RateLimitError):
                 hinted = _retry_after_seconds(exc)
@@ -461,6 +471,13 @@ def _run_with_retry(
                 delay_seconds=round(delay, 3),
                 reason=reason,
                 exception=type(exc).__name__,
+            )
+            # Retries were previously invisible outside debug.jsonl — a wedged
+            # network looked like a silent hang. One concise line per retry.
+            print(
+                f"trie: model call retry #{attempt + 1} ({reason}, {type(exc).__name__}) — "
+                f"waiting {delay:.1f}s",
+                file=sys.stderr,
             )
             sleep(delay)
             attempt += 1

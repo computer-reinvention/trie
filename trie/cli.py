@@ -541,6 +541,14 @@ def plan_cmd(
             "an established one."
         ),
     ),
+    offline: bool = typer.Option(
+        False,
+        "--offline",
+        help=(
+            "Skip the count_tokens cost preview (the only network calls plan makes). "
+            "Shows the worklist with symbol counts; estimates read $0."
+        ),
+    ),
 ) -> None:
     """Scan the project, surface drift, and show the worklist + estimated cost.
 
@@ -567,7 +575,17 @@ def plan_cmd(
         raise typer.Exit(code=1) from exc
 
     model_id = model or config.models.bootstrap
-    client = make_client(model_id, sync_cfg=config.sync)
+    if offline:
+        # count_tokens is plan's only network dependency; a zero-token stub
+        # keeps the worklist available with no key and no connectivity.
+        class _OfflineTokenStub:
+            def count_tokens(self, *args: object, **kwargs: object) -> int:
+                return 0
+
+        client = _OfflineTokenStub()  # type: ignore[assignment]
+        reporter.info("[dim]--offline: cost estimates skipped (worklist only)[/dim]")
+    else:
+        client = make_client(model_id, sync_cfg=config.sync)
     db_path = project_root / ".trie" / "graph.db"
     triefacts_root = project_root / config.triefacts.root
     use_incremental = not all_ and _has_existing_triefacts(triefacts_root)

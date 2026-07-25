@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: tests/test_models_retry.py
-file_fingerprint: a5309de55fd03bd05db3a25c39f8ebd73bbfe3cc202e811b6f822520a663ba29
-last_synced_at: '2026-07-25T00:40:51Z'
+file_fingerprint: 9c2ce050365972595913b15d85be1800d591f8e3e81c2f9f0916d296aa819c39
+last_synced_at: '2026-07-25T01:56:19Z'
 description: Retry-on-rate-limit behaviour of `AnthropicClient`.
 defines:
 - kind: module
   qualified_name: tests/test_models_retry:__module__
-  lines: 1-326
+  lines: 1-378
 - kind: function
   qualified_name: tests/test_models_retry:_fake_response
   lines: 42-48
@@ -77,8 +77,14 @@ defines:
 - kind: function
   qualified_name: tests/test_models_retry:test_trie_client_disables_sdk_internal_retries
   lines: 312-325
+- kind: function
+  qualified_name: tests/test_models_retry:test_retry_total_seconds_bounds_the_loop
+  lines: 328-355
+- kind: function
+  qualified_name: tests/test_models_retry:test_retry_total_seconds_zero_is_unbounded
+  lines: 358-377
 incoming_refs: 0
-outgoing_refs: 24
+outgoing_refs: 28
 ---
 <!-- trie:section symbol=tests/test_models_retry:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=6230e0b6dac96c666f4c643a238e8932016fce96586b9091c4f78ad67994b7c1 source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=test-infrastructure -->
 Tests retry behavior of `AnthropicClient` against rate limits, server errors, timeouts, and non-retryable exceptions.
@@ -183,4 +189,12 @@ Verifies that TrieClient.count_tokens retries on rate limit errors during token 
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_models_retry:test_trie_client_disables_sdk_internal_retries fingerprint=57bed553715f6bf5438ecc76ca930cd69fb6526f471cbbddb3e343bb1bf51044 body_fp=195842083fcb86d3e841ce8b0790cc8e83afeb288fb172a10f9ac85ec8893d79 source_ref=b6d9ec2215ba7e76948b5257834bfb9312fd1910 role=test -->
 Verifies that TrieClient passes `max_retries=0` to the Anthropic SDK to disable its internal retry layer.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_models_retry:test_retry_total_seconds_bounds_the_loop fingerprint=ef693c670abe4792072ca3f67a7c5d38b67a2b1b49aeacacd31daa77161247a6 body_fp=b0c2618056d7bf1918eb5c3c4ef94ba32fb565df668c17fc6b06e9a4959c2c4c source_ref=642bbe46cefd8feb139704cd6fe30e494544ec76 role=test -->
+Assert that `_run_with_retry` stops retrying once `retry_total_seconds` wall-clock budget is exceeded, regardless of remaining attempt count.
+
+- Monkeypatches `trie.models.time.monotonic` to advance 6 s per call, budget set to 10 s; expects exactly 2 calls before `APITimeoutError` propagates.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_models_retry:test_retry_total_seconds_zero_is_unbounded fingerprint=5328b52d5e0e10699af66b12676c3cbaa99efff8d938f19d7c312df902965312 body_fp=730f7fab0f6eba603f6b0dbc24f1b6a778e4c1053e0ccadccf626d16b1b8a7cd source_ref=642bbe46cefd8feb139704cd6fe30e494544ec76 role=test -->
+Assert that `retry_total_seconds=0.0` disables the wall-clock budget, allowing all `max_retries` attempts to complete.
 <!-- trie:end -->

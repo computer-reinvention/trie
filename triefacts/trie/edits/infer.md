@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/edits/infer.py
 file_fingerprint: 31c267118dadd1368cd795308141ee0a105b9af3ca0e132aa3b22d5a9fe81da8
-last_synced_at: '2026-07-20T23:25:49Z'
+last_synced_at: '2026-07-25T01:56:33Z'
 defines:
 - kind: module
   qualified_name: trie/edits/infer:__module__

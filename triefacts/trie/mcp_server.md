@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/mcp_server.py
 file_fingerprint: 3e369f76ada46e79dabf8ec43ccec81777d568c23f754e307520185a240a1ba0
-last_synced_at: '2026-07-25T01:46:20Z'
+last_synced_at: '2026-07-25T01:56:48Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
 - kind: module
@@ -337,13 +337,13 @@ Owns the Store and project config for process lifetime. Implements patch tools (
 - `rg_path`: resolved ripgrep binary path for text search fallbacks
 - `_session_id`: unique session identifier for patch operations (injectable via TRIE_SESSION_ID env var, falls back to 12-char hex UUID)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.__init__ fingerprint=da31ea5a8dabd217b86c7e6ed605fc3a1d2dbb26bb93f24bc8988024d73a4223 body_fp=1af7361563281662e6bb24529f529f5b296a49d4483c09673b0d6924f865a0ee source_ref=92d722c79d9b74d00c925144ac0a7b0dcc37fb0d role=orchestration -->
-Initialize TrieTools with project configuration, telemetry, store, and session state.
+<!-- trie:section symbol=trie/mcp_server:TrieTools.__init__ fingerprint=da31ea5a8dabd217b86c7e6ed605fc3a1d2dbb26bb93f24bc8988024d73a4223 body_fp=3f1442d7ffaffd877c13b2fbb819d2a8be0aafd969463aa996f25077eca51c52 source_ref=31ea5773e72df0b09ea019dcab835d5205588818 role=domain -->
+Initialize `TrieTools` with project configuration, telemetry, store, and session state.
 
 - Loads config from project root and validates ripgrep availability at startup
 - Configures telemetry from debug settings and emits server start event for MCP path only
-- Creates Store connection to graph database and generates session ID from TRIE_SESSION_ID env var or UUID
-- `event_name`: defaults to "mcp_call" for MCP server, "cli_call" for CLI usage
+- Creates Store connection to graph database and generates session ID from `TRIE_SESSION_ID` env var or UUID
+- `event_name`: defaults to `"mcp_call"` for MCP server, `"cli_call"` for CLI usage
 <!-- trie:end -->
 <!-- trie:section symbol=trie/mcp_server:TrieTools.close fingerprint=51581d83ec8f7571f9518e69587e72415b3fd4ca4abd2172e2a9129bfe37b523 body_fp=9967aa9f46cd1703a5cfd1ae72d466503e42628bc1c5d81769b7301acc822ebf source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 role=mcp-server -->
 Closes the underlying SQLite store connection.
