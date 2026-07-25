@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/session_diff.py
-file_fingerprint: ae6c3d9850a29fc280ee81f38bf03043b47cdbfff988d62832e5ccd500800c1b
-last_synced_at: '2026-07-25T00:07:12Z'
+file_fingerprint: 79b863090a71f76de28537d6bda370081f251724fabc2fa769534d7bedc7f856
+last_synced_at: '2026-07-25T00:11:27Z'
 defines:
 - kind: module
   qualified_name: trie/session_diff:__module__
-  lines: 1-551
+  lines: 1-556
 - kind: class
   qualified_name: trie/session_diff:SessionDiff
   lines: 8-27
@@ -21,34 +21,34 @@ defines:
   lines: 30-63
 - kind: function
   qualified_name: trie/session_diff:_one_line
-  lines: 66-93
+  lines: 66-98
 - kind: constant
   qualified_name: trie/session_diff:_FENCE
-  lines: 96-96
+  lines: 101-101
 - kind: function
   qualified_name: trie/session_diff:build_narrative_prompt
-  lines: 99-171
+  lines: 104-176
 - kind: constant
   qualified_name: trie/session_diff:_NARRATIVE_SYSTEM_PROMPT
-  lines: 174-183
+  lines: 179-188
 - kind: function
   qualified_name: trie/session_diff:synthesize_narrative
-  lines: 186-214
+  lines: 191-219
 - kind: function
   qualified_name: trie/session_diff:render_digest_section
-  lines: 217-356
+  lines: 222-361
 - kind: constant
   qualified_name: trie/session_diff:DIGEST_HEADER
-  lines: 359-365
+  lines: 364-370
 - kind: function
   qualified_name: trie/session_diff:upsert_digest
-  lines: 368-419
+  lines: 373-424
 - kind: function
   qualified_name: trie/session_diff:collect_symbol_deltas
-  lines: 422-529
+  lines: 427-534
 - kind: function
   qualified_name: trie/session_diff:merge_applied_by_symbol
-  lines: 532-550
+  lines: 537-555
 incoming_refs: 7
 outgoing_refs: 0
 ---
@@ -67,10 +67,10 @@ Return distinct, non-empty session IDs from `SessionDiff.applied` and `SessionDi
 <!-- trie:section symbol=trie/session_diff:collect_session_diff fingerprint=e99566072d1aa60f6284e1dbe197404a57f1a14b1669e9463722b79ca36d44bb body_fp=ec00c194b0806130bfe826c4e1e4a08be17e9ec42620e7edd0add19d7fafd040 role=monitoring-telemetry -->
 `collect_session_diff` assembles a complete `SessionDiff` for a given working session by retrieving the git diff of the triefact tree against a specified base ref, fetching applied patch-note entries from the session log (optionally restricted to entries recorded after a `since` timestamp and/or a specific `session_id`), gathering still-pending patch notes (both modifications and creations) from the store, optionally filtering everything down to a single `session_id`, and returning the bundled result.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/session_diff:_one_line fingerprint=384717fe484037c0a9a3c5459400bde858e91633f063ce9e3e1a4d73b62a5363 body_fp=e310279f4f1b8187832fcd4d88395418e5889ae114baf56f9a6be436c2ab8a5a source_ref=b52fb7d875efc22b57e789d47535774fa98128e8 role=util -->
+<!-- trie:section symbol=trie/session_diff:_one_line fingerprint=c9d246ecf903076038d2359f4e58b3377b6bf54c959c1b6eba19d30ac55795a3 body_fp=841114585aa8684f0cd69efb0b04199fe309daf2a83c450788450b07d7182c36 source_ref=6496768f11e8dbbd9f62de10da624109491b7be3 role=util -->
 Extract the first non-empty line of `text`, collapse whitespace, truncate at the first sentence boundary or `max_chars`, appending `…` if hard-truncated.
 
-- `max_chars`: character budget before hard truncation with ellipsis; default 160.
+- `max_chars`: character budget before hard truncation with ellipsis; hard cut prefers the last word boundary to avoid mid-word splits; default 160.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/session_diff:_FENCE fingerprint=7c0a24375f67cb32fbd350a1aa89f4ee1f6465b35df8cd422b0b4544c79625fd body_fp=495f5faefeb45ddc9bcce9c02534008c66427931a9356c9dbaa0b4f96ac92de2 source_ref=2fd24a66abd87a87819892d8d61ea7471cee29cb role=util -->
 Module-level constant holding a triple-backtick string used to open and close fenced code blocks in prompt assembly.

@@ -1203,8 +1203,8 @@ def diff_cmd(
         import time
         from datetime import datetime
 
-        from trie.digest_cursor import resolve_digest_window, save_digest_cursor
         from trie.git_helpers import commit_timestamp, current_head
+        from trie.session_log import resolve_digest_window, save_digest_cursor
 
         # 1. Resolve parent commit identity
         parent_sha = current_head(project_root)
@@ -1241,15 +1241,12 @@ def diff_cmd(
         deltas = collect_symbol_deltas(project_root, config, base=base)
 
         # 5. Derive a human title from the first non-empty session note
+        # (the per-apply unifying intent — NOT the per-symbol patch notes)
         title: str | None = None
         for entry in data.applied:
-            notes = entry.get("notes") or []
-            for note_text in notes:
-                candidate = _one_line(note_text, max_chars=80)
-                if candidate:
-                    title = candidate
-                    break
-            if title:
+            candidate = _one_line(entry.get("session_note", ""), max_chars=80)
+            if candidate:
+                title = candidate
                 break
         if not title:
             title = "Session changes"
