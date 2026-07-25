@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/sync/generator.py
 file_fingerprint: 5e7e71efc7f6551e1aa2790118a9d8a2cef2b03935bc4c784ab88cd275f15b5f
-last_synced_at: '2026-07-20T13:09:50Z'
+last_synced_at: '2026-07-25T01:56:37Z'
 defines:
 - kind: module
   qualified_name: trie/sync/generator:__module__

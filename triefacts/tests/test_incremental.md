@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_incremental.py
 file_fingerprint: 39ee651e056cf3e68589ae9559b0ef7f4a3e4acd621e332046c39ed57de9a36f
-last_synced_at: '2026-06-09T10:07:59Z'
+last_synced_at: '2026-07-25T01:37:06Z'
 defines:
 - kind: module
   qualified_name: tests/test_incremental:__module__

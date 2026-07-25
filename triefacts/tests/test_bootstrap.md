@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_bootstrap.py
 file_fingerprint: 2a28fdd6921642cebe5f76ec6a76802fcc99f3f3e03db137209908c06e9e16a6
-last_synced_at: '2026-06-09T09:52:53Z'
+last_synced_at: '2026-07-25T01:37:04Z'
 defines:
 - kind: module
   qualified_name: tests/test_bootstrap:__module__
@@ -87,39 +87,39 @@ Creates a scanned Store instance for the test project with populated symbol data
 
 - Returns context manager that must be used with `with` statement
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_bootstrap:test_plan_ranks_higher_score_first fingerprint=40427304095c2846dbbff8a2f455aab1384b43952e2733e744132d43eefba518 body_fp=716949baaeeb3aa197ee23c1c16127d83273db0363e31020ac67a0b2214133bb source_ref=1f9bf5173245eaa144dd62b7047e435686fee5af role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_bootstrap:test_plan_ranks_higher_score_first fingerprint=40427304095c2846dbbff8a2f455aab1384b43952e2733e744132d43eefba518 body_fp=716949baaeeb3aa197ee23c1c16127d83273db0363e31020ac67a0b2214133bb source_ref=982d1d0e9ae7e7ac2035a589831f5c3f674a6a13 role=test -->
 Verifies that bootstrap plan orders files by descending score based on symbol count multiplied by lines of code.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_bootstrap:test_plan_excludes_files_with_no_documentable_symbols fingerprint=2e21e8749c7579b6c606c86a2a9988b1169322c0ee9f9422d76e47f4ee7b71c2 body_fp=f0611423f84aaaa9efc32a2a69dea83454d79d204afde6206b4645f8eb7d2d9a source_ref=1f9bf5173245eaa144dd62b7047e435686fee5af role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_bootstrap:test_plan_excludes_files_with_no_documentable_symbols fingerprint=2e21e8749c7579b6c606c86a2a9988b1169322c0ee9f9422d76e47f4ee7b71c2 body_fp=f0611423f84aaaa9efc32a2a69dea83454d79d204afde6206b4645f8eb7d2d9a source_ref=982d1d0e9ae7e7ac2035a589831f5c3f674a6a13 role=test -->
 Tests that build_plan excludes files with no parser-surfaced symbols from documentation plans.
 
 - Creates imports-only file (excluded), constants-only file (included), and private-function file (included)
 - Verifies that only files with documentable symbols appear in the plan
 - Confirms underscore-prefixed symbols are documented, imports-only files are skipped
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_bootstrap:test_plan_with_unknown_model_zero_cost fingerprint=4f3e6cae5f4d17263391af3c3ffbb57f366fa56666a272dd7bafd479a388c68e body_fp=63b6cff0dd4022f02f96c59c2816206a4bafa1edbdcf572818f942a398ed72d4 source_ref=1f9bf5173245eaa144dd62b7047e435686fee5af role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_bootstrap:test_plan_with_unknown_model_zero_cost fingerprint=4f3e6cae5f4d17263391af3c3ffbb57f366fa56666a272dd7bafd479a388c68e body_fp=63b6cff0dd4022f02f96c59c2816206a4bafa1edbdcf572818f942a398ed72d4 source_ref=982d1d0e9ae7e7ac2035a589831f5c3f674a6a13 role=test -->
 Tests that `build_plan` sets zero cost and unknown pricing for unrecognized model IDs.
 
 - Uses "openai/some-model" which lacks pricing data in the system
 - Verifies `plan.pricing_known` returns `False` and `total_estimated_cost` is `0.0`
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_bootstrap:test_plan_only_files_restricts_worklist fingerprint=e321d8979a7335532ee65e02cd7ab534224347d76d55b2a11cc341ce5f022b59 body_fp=9c0a91fa1bc3eee247dcfbeb9a54534f1674e69d1d0530d5cfc6b5432adb3b7d source_ref=1f9bf5173245eaa144dd62b7047e435686fee5af role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_bootstrap:test_plan_only_files_restricts_worklist fingerprint=e321d8979a7335532ee65e02cd7ab534224347d76d55b2a11cc341ce5f022b59 body_fp=9c0a91fa1bc3eee247dcfbeb9a54534f1674e69d1d0530d5cfc6b5432adb3b7d source_ref=982d1d0e9ae7e7ac2035a589831f5c3f674a6a13 role=test -->
 Tests that `build_plan` with `only_files` parameter restricts the plan to specified files only.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_bootstrap:test_plan_only_files_empty_yields_empty_plan fingerprint=7d6eb63549e31de9fdea6f9528084eda6ecd794da18fa169e9cf51865b8eb8ca body_fp=b87d23e9918c1d54e5975c321d31ca5f44bde18f7bac46114152eeb437f34a96 source_ref=1f9bf5173245eaa144dd62b7047e435686fee5af role=documentation-sync -->
+<!-- trie:section symbol=tests/test_bootstrap:test_plan_only_files_empty_yields_empty_plan fingerprint=7d6eb63549e31de9fdea6f9528084eda6ecd794da18fa169e9cf51865b8eb8ca body_fp=b87d23e9918c1d54e5975c321d31ca5f44bde18f7bac46114152eeb437f34a96 source_ref=982d1d0e9ae7e7ac2035a589831f5c3f674a6a13 role=test -->
 Tests that `build_plan` returns an empty plan when `only_files` is an empty set.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_bootstrap:test_run_bootstrap_respects_limit fingerprint=70e8a39ca994df819ddab758a7970a484a4a829705884b7c8a1da2baba89db85 body_fp=547539a47d5d8c2ffefb57ea6031539cd5717b7e1ca788d518a5642383b0f6a3 source_ref=1f9bf5173245eaa144dd62b7047e435686fee5af role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_bootstrap:test_run_bootstrap_respects_limit fingerprint=70e8a39ca994df819ddab758a7970a484a4a829705884b7c8a1da2baba89db85 body_fp=547539a47d5d8c2ffefb57ea6031539cd5717b7e1ca788d518a5642383b0f6a3 source_ref=982d1d0e9ae7e7ac2035a589831f5c3f674a6a13 role=test -->
 Verifies that `run_bootstrap` stops after processing the specified `limit` of files.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_bootstrap:test_run_bootstrap_respects_budget fingerprint=6bc46da02f86461edf7e62e32814bfe6803a56c903f9dcec80cc0ec35c7c0d77 body_fp=c5092c97cfe540b18598a6fb4cbecb90be6467e4051cad25455039aa9ffbcae7 source_ref=1f9bf5173245eaa144dd62b7047e435686fee5af role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_bootstrap:test_run_bootstrap_respects_budget fingerprint=6bc46da02f86461edf7e62e32814bfe6803a56c903f9dcec80cc0ec35c7c0d77 body_fp=c5092c97cfe540b18598a6fb4cbecb90be6467e4051cad25455039aa9ffbcae7 source_ref=982d1d0e9ae7e7ac2035a589831f5c3f674a6a13 role=test -->
 Verifies that run_bootstrap stops processing files when the USD budget is exhausted.
 
 - Sets tiny budget (0.0001 USD) to force early termination
 - Validates files_synced is partial but at least 1
 - Allows slight cost overshoot due to file-level granularity
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_bootstrap:test_run_bootstrap_unbounded_processes_all fingerprint=90ebb573108d7fee2f9ca755f3fcdf07aebcfc48833a37c5f4dfd4a58ccdb5aa body_fp=69b37a0c0d01a4e770a110329a2f10e0293162eb507953bdbac6a57039570de8 source_ref=1f9bf5173245eaa144dd62b7047e435686fee5af role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_bootstrap:test_run_bootstrap_unbounded_processes_all fingerprint=90ebb573108d7fee2f9ca755f3fcdf07aebcfc48833a37c5f4dfd4a58ccdb5aa body_fp=69b37a0c0d01a4e770a110329a2f10e0293162eb507953bdbac6a57039570de8 source_ref=982d1d0e9ae7e7ac2035a589831f5c3f674a6a13 role=test -->
 Verifies run_bootstrap processes all files when no budget or limit constraints are set.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_bootstrap:test_cli_plan_makes_no_message_calls fingerprint=9d4cfe2a695823505ed77e7907401858b9d536e4525b17b195940e5c3ef894d6 body_fp=45a975f1212f0a9248d5d726e73ff6ab6df98ea2b216acd4a03609785d10c91c source_ref=1f9bf5173245eaa144dd62b7047e435686fee5af role=test-infrastructure -->

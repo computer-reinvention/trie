@@ -170,7 +170,10 @@ def test_cli_verify_detects_tampered_body(project: Path, monkeypatch: pytest.Mon
     runner = CliRunner()
     result = runner.invoke(app, ["verify"])
     assert result.exit_code == 1
-    assert "tampered" in result.output.lower()
+    # The label instructs rather than accuses: it must name the hand-edit and
+    # point at the fix (move prose outside the sentinels).
+    assert "hand-edited" in result.output.lower()
+    assert "outside" in result.output.lower()
     assert "src/alpha:alpha" in result.output
 
 
