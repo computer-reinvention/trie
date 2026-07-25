@@ -556,7 +556,7 @@ def test_write_digest_files_symlink_and_prune(tmp_path) -> None:
     rel_a = write_digest(tmp_path, section_a)
     file_a = tmp_path / rel_a
     assert file_a.is_file()
-    assert rel_a.startswith("trie/triediffs/")
+    assert rel_a.startswith("triefacts/triediffs/")
     assert re.fullmatch(r"\d{8}T\d{6}Z-[0-9a-f]{32}\.md", file_a.name), file_a.name
     text_a = file_a.read_text()
     assert text_a.startswith(DIGEST_FILE_HEADER)
@@ -583,7 +583,7 @@ def test_write_digest_files_symlink_and_prune(tmp_path) -> None:
     assert rel_b2 == rel_b, "amend/retry must rewrite the same file"
     assert "Rewritten entry B." in file_b.read_text()
     assert "Content for entry B." not in file_b.read_text()
-    md_files = list((tmp_path / "trie" / "triediffs").glob("*.md"))
+    md_files = list((tmp_path / "triefacts" / "triediffs").glob("*.md"))
     assert len(md_files) == 2, f"expected 2 digest files, got {md_files}"
 
     # 4. A regular file at the symlink path (pre-symlink layout) gets replaced
@@ -600,7 +600,7 @@ def test_write_digest_files_symlink_and_prune(tmp_path) -> None:
             f"## Title {i} — 2024-01-0{4 + i} (parent d{i}d{i})\n\nEntry {i}.\n",
             max_entries=3,
         )
-    remaining = sorted((tmp_path / "trie" / "triediffs").glob("*.md"))
+    remaining = sorted((tmp_path / "triefacts" / "triediffs").glob("*.md"))
     assert len(remaining) == 3, f"expected prune to 3 files, got {remaining}"
     # The symlink still resolves to an existing file (the newest)
     assert link.resolve().exists()
@@ -674,8 +674,22 @@ def test_collect_symbol_deltas_before_after(tmp_path):
     tf2.upsert_section(qualified_name="m:h", fingerprint="fp-h1", body="Brand new h.")
     mod_file.write_text(tf2.render())
 
+    # Digest archive lives INSIDE the triefact tree; anything in it must be
+    # invisible to evidence collection (no digest self-reference).
+    digest_dir = triefacts_dir / "triediffs"
+    digest_dir.mkdir()
+    tf_digest = TriefactFile.empty()
+    tf_digest.upsert_section(
+        qualified_name="digest:leak", fingerprint="fp-leak", body="Must never appear."
+    )
+    (digest_dir / "20240101T000000Z-deadbeef.md").write_text(tf_digest.render())
+
     config = Config.from_dict({})
     deltas = collect_symbol_deltas(repo, config, base="HEAD")
+
+    assert not any(d.get("qname") == "digest:leak" for d in deltas), (
+        f"digest archive leaked into evidence: {deltas}"
+    )
 
     changed_f = [d for d in deltas if d.get("qname") == "m:f" and d.get("status") == "changed"]
     added_h = [d for d in deltas if d.get("qname") == "m:h" and d.get("status") == "added"]

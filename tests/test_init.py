@@ -393,7 +393,7 @@ def test_hook_block_includes_diff_write():
     assert "trie -q diff --write" in PRE_COMMIT_HOOK_BLOCK, (
         "Hook block must contain 'trie -q diff --write' to maintain the digest file"
     )
-    assert "git add TRIE_DIFF.md trie/triediffs" in PRE_COMMIT_HOOK_BLOCK, (
+    assert "git add TRIE_DIFF.md triefacts/triediffs" in PRE_COMMIT_HOOK_BLOCK, (
         "Hook block must stage the TRIE_DIFF.md symlink and the triediffs dir "
         "after writing the digest"
     )

@@ -1,14 +1,14 @@
 ---
 trie_version: 0.1.9
 source: tests/test_session_diff.py
-file_fingerprint: e35e0dd16c6bd7d7a0bedc3ab0863a881d5d3a1513c06f11028283a04607a763
-last_synced_at: '2026-07-25T00:28:19Z'
+file_fingerprint: aebe04e68ba9cb3727e9bf46fc598eb9c3b84d760be4d92b1fc3b4153878e4ca
+last_synced_at: '2026-07-25T00:40:41Z'
 description: Tests for the session log archive and the `trie diff` evidence collection/prompt
   assembly.
 defines:
 - kind: module
   qualified_name: tests/test_session_diff:__module__
-  lines: 1-713
+  lines: 1-727
 - kind: function
   qualified_name: tests/test_session_diff:test_record_and_read_entries_roundtrip
   lines: 24-61
@@ -41,10 +41,10 @@ defines:
   lines: 610-637
 - kind: function
   qualified_name: tests/test_session_diff:test_collect_symbol_deltas_before_after
-  lines: 640-688
+  lines: 640-702
 - kind: function
   qualified_name: tests/test_session_diff:test_merge_applied_by_symbol_first_note_wins
-  lines: 691-712
+  lines: 705-726
 incoming_refs: 0
 outgoing_refs: 25
 ---
@@ -75,14 +75,14 @@ Verify that `collect_session_diff` filters applied session log entries by the `s
 <!-- trie:section symbol=tests/test_session_diff:test_render_digest_section_shape fingerprint=ce6e87b909a2e788f61327f21e9292f2470b06f81fc09d7ac35c79f85cfdd36d body_fp=b86e5fb0cd2f50c47b7fc4135264f2494231f9a983ad9e9f540c7b47ae44618e source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
 Verify `render_digest_section` output structure: header shape, H2-heading demotion in narratives, `### Changes` delta bullets, follow-up suffix, markdown-injection prevention, forbidden old-format artifacts, `### Staged (not applied)` section, and `max_changes` overflow truncation.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_write_digest_files_symlink_and_prune fingerprint=7541c51593781a5752f2c4691a0316f164f89b7764b7a086245328f5a99572d4 body_fp=1694e781125f3a78d20d6d49c893de9fa0ec2e49eff90deeb372ee48198cbdc1 source_ref=f8b0180101afeca9a2fa48a819f778e1642a5e49 role=test -->
-Test `write_digest` for filesystem contract: timestamped file creation under `trie/triediffs/`, `TRIE_DIFF.md` symlink management, in-place rewrite via `reuse_file`, legacy regular-file replacement, and `max_entries` retention pruning.
+<!-- trie:section symbol=tests/test_session_diff:test_write_digest_files_symlink_and_prune fingerprint=a6d890f9a90cbf52aa184a2c3c03461db319557c8aef09de529333e12344c58b body_fp=ff6430b9bac25e154f23862c4dde4c660c4fc2f4970913f6c48d50fe33553295 source_ref=c981fd16a4af08aa07186b13567aabbfcb9a0871 role=test -->
+Test `write_digest` for filesystem contract: timestamped file creation under `triefacts/triediffs/`, `TRIE_DIFF.md` symlink management, in-place rewrite via `reuse_file`, legacy regular-file replacement, and `max_entries` retention pruning.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_session_diff:test_one_line_flattens_and_truncates fingerprint=2f0ba482c18eb7978c4e4724a58f3a1e674200782e5d3f29c4a862a8f082989c body_fp=b0b2db762e1f94b4d614e613fd8aca35ce2348fe5a6f7b11e5ea5bb7d4203c80 source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
 Verify `_one_line` flattens multiline text, collapses whitespace, cuts at sentence boundaries, truncates long input to ≤200 chars with `…`, and returns `""` for empty input.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_collect_symbol_deltas_before_after fingerprint=f1ab528f43206ac3ce31ebcffc7085c62c62784fb0a001cd23633942a45532fb body_fp=ec2ed440703e696bdbedefdbbf646ca0faa3a0c7dbd2cdcba9f771a155054df4 source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
-Test that `collect_symbol_deltas` returns `changed` rows with `before`/`after` prose, `added` rows for new symbols, and no row for unchanged symbols.
+<!-- trie:section symbol=tests/test_session_diff:test_collect_symbol_deltas_before_after fingerprint=69389e9411dc11c1f5a44e402bb7eb71dbf9d3b752658f453a85ef6061c4ea8b body_fp=6b3606b0e5e94df200f2aed93cb75263556ef5e3c312158b78cb930c3550cbe5 source_ref=c981fd16a4af08aa07186b13567aabbfcb9a0871 role=test -->
+Test that `collect_symbol_deltas` returns `changed` rows with `before`/`after` prose, `added` rows for new symbols, no row for unchanged symbols, and excludes symbols from the digest archive subdirectory.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_session_diff:test_merge_applied_by_symbol_first_note_wins fingerprint=2a24c952c5e057186e3287e08d5a7ac89f95b21a54f20f7060f39b27b3fb0660 body_fp=dfc99a0c54ed5d2dc9c02a715e2846211f52df600ec1e2def897b4708396de45 source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
 Verify that `merge_applied_by_symbol` deduplicates entries by `qname`, preserves the first `op` and `note`, and counts subsequent entries as `followups`.

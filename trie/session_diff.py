@@ -27,6 +27,20 @@ class SessionDiff:
         return list(seen.keys())
 
 
+def _triefact_pathspecs(config: Any) -> list[str]:
+    """Git pathspecs selecting the triefact tree minus the digest archive.
+
+    The digest files under ``diff.diffs_dir`` live inside the triefact tree,
+    so evidence collection must exclude them — otherwise every digest write
+    would feed previous digests back into the next digest's evidence.
+    """
+    specs = [config.triefacts.root]
+    diffs_dir = getattr(getattr(config, "diff", None), "diffs_dir", "")
+    if diffs_dir:
+        specs.append(f":(exclude){diffs_dir}")
+    return specs
+
+
 def collect_session_diff(
     project_root: Any,
     config: Any,
@@ -40,7 +54,7 @@ def collect_session_diff(
     from trie.git_helpers import diff_paths
     from trie.session_log import read_entries
 
-    diff = diff_paths(project_root, [config.triefacts.root], base=base) or ""
+    diff = diff_paths(project_root, _triefact_pathspecs(config), base=base) or ""
     applied = read_entries(project_root, session_id=session_id, since=since)
     pending: list[dict[str, Any]] = []
     for qname in store.get_patched_qnames():
@@ -386,7 +400,7 @@ def write_digest(
     project_root: Any,
     section: str,
     *,
-    diffs_dir: str = "trie/triediffs",
+    diffs_dir: str = "triefacts/triediffs",
     symlink_path: str = "TRIE_DIFF.md",
     max_entries: int = 20,
     reuse_file: str | None = None,
@@ -463,12 +477,12 @@ def collect_symbol_deltas(project_root, config, base: str = "HEAD") -> list:
     from trie import git_helpers
     from trie.sync.writer import Section, TriefactFile, extract_one_liner
 
-    triefacts_root = config.triefacts.root
+    pathspecs = _triefact_pathspecs(config)
 
     # Collect changed tracked files
     changed_files = []
     tracked_output = git_helpers._run_git(
-        ["diff", "--name-only", base, "--", triefacts_root],
+        ["diff", "--name-only", base, "--", *pathspecs],
         cwd=project_root,
     )
     if tracked_output:
@@ -480,7 +494,7 @@ def collect_symbol_deltas(project_root, config, base: str = "HEAD") -> list:
 
     # Collect untracked files
     untracked_output = git_helpers._run_git(
-        ["ls-files", "--others", "--exclude-standard", "--", triefacts_root],
+        ["ls-files", "--others", "--exclude-standard", "--", *pathspecs],
         cwd=project_root,
     )
     if untracked_output:
