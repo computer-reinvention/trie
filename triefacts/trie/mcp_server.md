@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: trie/mcp_server.py
-file_fingerprint: b0d39e9f664e56c77e8e7b986c2ef724b54ea8731aeba108005ee146192592eb
-last_synced_at: '2026-07-25T06:17:13Z'
+file_fingerprint: 8cad143c4cd4cdaa5a069a9527fa487b9219c3de992077d6df919b8e5a4d3850
+last_synced_at: '2026-07-25T08:07:48Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
 - kind: module
   qualified_name: trie/mcp_server:__module__
-  lines: 1-3396
+  lines: 1-3409
 - kind: class
   qualified_name: trie/mcp_server:RipgrepNotFoundError
   lines: 77-89
@@ -52,7 +52,7 @@ defines:
   lines: 247-266
 - kind: class
   qualified_name: trie/mcp_server:TrieTools
-  lines: 269-3306
+  lines: 269-3319
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.__init__
   lines: 283-312
@@ -94,148 +94,148 @@ defines:
   lines: 657-681
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.commit
-  lines: 683-738
+  lines: 683-751
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.patch_apply
-  lines: 741-743
+  lines: 754-756
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.all_symbols
-  lines: 747-779
+  lines: 760-792
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.all_edges
-  lines: 781-798
+  lines: 794-811
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.system_model
-  lines: 800-830
+  lines: 813-843
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.summary
-  lines: 832-858
+  lines: 845-871
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.record_attention_event
-  lines: 860-887
+  lines: 873-900
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.attention
-  lines: 889-930
+  lines: 902-943
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.set_investigation
-  lines: 932-958
+  lines: 945-971
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.activity
-  lines: 960-1014
+  lines: 973-1027
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.symbols_by_file
-  lines: 1016-1055
+  lines: 1029-1068
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.file_triefact
-  lines: 1057-1118
+  lines: 1070-1131
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep
-  lines: 1122-1254
+  lines: 1135-1267
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._maybe_text_match_fallback
-  lines: 1256-1401
+  lines: 1269-1414
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._fuzzy_prose_fallback
-  lines: 1403-1479
+  lines: 1416-1492
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._text_match_in_scope
-  lines: 1481-1580
+  lines: 1494-1593
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._attribute_text_matches_to_symbols
-  lines: 1582-1605
+  lines: 1595-1618
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._candidate_matches_predicate
-  lines: 1607-1633
+  lines: 1620-1646
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._parse_predicate
-  lines: 1635-1707
+  lines: 1648-1720
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.read
-  lines: 1711-1774
+  lines: 1724-1787
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._strip_line_ref
-  lines: 1777-1788
+  lines: 1790-1801
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._resolve_in_root
-  lines: 1790-1800
+  lines: 1803-1813
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._triefact_view
-  lines: 1802-1890
+  lines: 1815-1903
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._pending_patches_for_file
-  lines: 1892-1933
+  lines: 1905-1946
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._read_symbol
-  lines: 1935-2008
+  lines: 1948-2021
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._digest_history
-  lines: 2010-2031
+  lines: 2023-2044
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._stale_qnames_for_file
-  lines: 2033-2055
+  lines: 2046-2068
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._section_fingerprint
-  lines: 2057-2075
+  lines: 2070-2088
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._staleness_notes
-  lines: 2077-2116
+  lines: 2090-2129
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._prose_for
-  lines: 2118-2155
+  lines: 2131-2168
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._neighbour_summaries
-  lines: 2157-2182
+  lines: 2170-2195
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.trace
-  lines: 2186-2340
+  lines: 2199-2353
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_str
-  lines: 2344-2503
+  lines: 2357-2516
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_str_all
-  lines: 2505-2618
+  lines: 2518-2631
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.read_source
-  lines: 2620-2678
+  lines: 2633-2691
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.write_file
-  lines: 2680-2740
+  lines: 2693-2753
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.find_files
-  lines: 2742-2813
+  lines: 2755-2826
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_entry_points
-  lines: 2815-2898
+  lines: 2828-2911
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_symbol
-  lines: 2900-3001
+  lines: 2913-3014
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_symbol_and_neighbours
-  lines: 3003-3029
+  lines: 3016-3042
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_symbol
-  lines: 3031-3115
+  lines: 3044-3128
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_symbol_references
-  lines: 3117-3180
+  lines: 3130-3193
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.trace_flow
-  lines: 3182-3240
+  lines: 3195-3253
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_flow
-  lines: 3242-3286
+  lines: 3255-3299
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._suggest_for_qname
-  lines: 3290-3306
+  lines: 3303-3319
 - kind: function
   qualified_name: trie/mcp_server:build_server
-  lines: 3312-3365
+  lines: 3325-3378
 - kind: function
   qualified_name: trie/mcp_server:run_stdio
-  lines: 3368-3375
+  lines: 3381-3388
 - kind: function
   qualified_name: trie/mcp_server:main
-  lines: 3378-3395
+  lines: 3391-3408
 incoming_refs: 13
 outgoing_refs: 68
 ---
@@ -330,10 +330,10 @@ Find the qname of the symbol whose line range contains `lineno`, preferring nest
 
 Iterates through the ordered list, updating `enclosing` with each symbol that brackets `lineno`. Since symbols are start-ordered, the last matching symbol is the most deeply nested one.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=c95a1e77d25b86bc40eae3baefa6b49256d4abcfbcdd38c6726a64e13f4fcd8d body_fp=c7d5400f97cfef4465d065cea251438a951c3297770b6eedb32307fbefa648ed source_ref=81a270b759f118deb5c5b87c2265bff8a79f1334 role=orchestration -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=144cc1f07609b93e99a13226d672184c554bb6e2469bedb57c42920207cedeb3 body_fp=c7c3d4ec22fa4e763dc27832ca0209656ebd08fe5264341f4f98f0a9c21dcc32 source_ref=c524ec363e06ada4ed2554fd152f1824ff6adf29 role=orchestration -->
 Core interface for MCP tools as plain methods, testable without transport.
 
-Owns the Store and project config for process lifetime. Implements patch tools (patch, batch_patch, create_symbol, delete_symbol, rename_symbol, blast_radius, patch_drop, patch_list, preview, commit), desktop app helpers (all_symbols, all_edges, system_model, summary, record_attention_event, attention, set_investigation, activity, symbols_by_file, file_triefact), three core operations (`grep`, `read`, `trace`), and extended wrappers (grep_str, grep_str_all, read_source, write_file, find_files, grep_entry_points, grep_symbol, grep_symbol_and_neighbours, explain_symbol, explain_symbol_references, trace_flow, explain_flow). All methods return structured dicts with error envelopes; telemetry is captured on each call with configurable event names to distinguish MCP vs CLI usage. `commit` short-circuits to return an executable worklist immediately when the effective backend is `"agent"`, without acquiring the apply lock. `_triefact_view` now prepends a staleness banner when any section's fingerprint predates the current source; `_read_symbol` now prepends staleness notes via `_staleness_notes`; `explain_symbol` likewise folds staleness notes into the response. `read`, `_triefact_view`, `_read_symbol`, `explain_symbol`, and `explain_symbol_references` accept a `history=True` flag to append the symbol's or file's intent trail from the session-digest archive.
+Owns the Store and project config for process lifetime. Implements patch tools (patch, batch_patch, create_symbol, delete_symbol, rename_symbol, blast_radius, patch_drop, patch_list, preview, commit), desktop app helpers (all_symbols, all_edges, system_model, summary, record_attention_event, attention, set_investigation, activity, symbols_by_file, file_triefact), three core operations (`grep`, `read`, `trace`), and extended wrappers (grep_str, grep_str_all, read_source, write_file, find_files, grep_entry_points, grep_symbol, grep_symbol_and_neighbours, explain_symbol, explain_symbol_references, trace_flow, explain_flow). All methods return structured dicts with error envelopes; telemetry is captured on each call with configurable event names to distinguish MCP vs CLI usage. `commit` short-circuits to `record_intent` (no code generation, no apply lock) when the effective backend is `"record"` (the new default), and returns an executable worklist immediately when the backend is `"agent"`, without acquiring the apply lock. `_triefact_view` prepends a staleness banner when any section's fingerprint predates the current source; `_read_symbol` prepends staleness notes via `_staleness_notes`; `explain_symbol` likewise folds staleness notes into the response. `read`, `_triefact_view`, `_read_symbol`, `explain_symbol`, and `explain_symbol_references` accept a `history=True` flag to append the symbol's or file's intent trail from the session-digest archive.
 
 - `event_name`: controls telemetry event name emitted on each call ("mcp_call" for MCP server, "cli_call" for CLI)
 - `store`: SQLite store containing symbol graph and triefact metadata
@@ -427,8 +427,12 @@ TrieTools.preview shows what commit would do without writing files or paying for
 - Returns patch counts, creates list, cascade symbols, and readiness flags
 - Sets `needs_session_note` to true when total symbols exceed one
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.commit fingerprint=c49b6f1c9ec16e23862c8fa0409b03b3babe9f950d2e209a9261f1e7c294d6f9 body_fp=ce4260eb05a167ce3b29fbd7a8950bb6c304ebf4c0159ece8edd3ffe5b9cfeb1 role=mcp-server -->
-Stages and applies all pending patches and creates, returning either an executable agent worklist or a serialized ApplyReport depending on the effective backend. When the resolved backend (the explicit `backend` argument if non-empty, otherwise `self.config.edits.backend`) is `'agent'`, the method returns the result of `build_workorder` immediately—without acquiring the exclusive apply lock or performing any text generation—so that the caller's agent can execute the changes directly. For all other backend values the method acquires the exclusive apply lock to prevent concurrent applies, builds the appropriate edit backend and LLM client, runs `stage_and_commit` off the event-loop thread via a `ThreadPoolExecutor`, and returns the serialized `ApplyReport`.
+<!-- trie:section symbol=trie/mcp_server:TrieTools.commit fingerprint=8d60f39c31bebb3cc8f5956aa166ec2c6ecf099524a14ebd373ef50b990c1212 body_fp=72d0812753e4b755245dabf1913e586ee09ae4286535a1dd5843e829e1872058 source_ref=c524ec363e06ada4ed2554fd152f1824ff6adf29 role=domain -->
+Apply all pending patches and creates for this `TrieTools` session, returning an `ApplyReport` dict.
+
+- `session_note`: required when more than one symbol is being patched; records unifying intent.
+- `backend`: overrides `config.edits.backend`; `"record"` archives intent only (no code generation); `"agent"` returns an executable worklist without acquiring the apply lock.
+- Generating backends acquire an exclusive apply lock; returns `{code: "conflict"}` if already held.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/mcp_server:TrieTools.patch_apply fingerprint=5231bb6b1868849393a8d96eade7fbaed3b10e8e1d76ad81897e1f14713b196a body_fp=cdf86101d9d922eafa9bd8ba612b356cd74482627253d1dd0b13f10bad3f2225 source_ref=2eb1969800e5124c94db178fe9d69fe146ad89ac role=util -->
 Deprecated alias for TrieTools.commit() with empty session note for single-symbol patch applications.

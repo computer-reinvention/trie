@@ -37,7 +37,16 @@ def make_backend(
     caller inject a pre-built TrieClient (so the apply pipeline reuses one client
     for the whole run); otherwise one is built from `model` or `config.models.edits`.
     """
-    name = (backend or config.edits.backend or "llm").lower()
+    name = (backend or config.edits.backend or "record").lower()
+
+    if name == "record":
+        # The record backend performs no generation — apply short-circuits to
+        # `pipeline.record_intent` before this factory is reached. Getting here
+        # means a caller wired a generation path to a non-generating backend.
+        raise ValueError(
+            "the 'record' backend generates no code; callers must route to "
+            "pipeline.record_intent (pass backend='llm' explicitly to generate)."
+        )
 
     if name == "llm":
         if client is None:

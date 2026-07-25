@@ -684,8 +684,9 @@ class TrieTools:
         """Stage + apply all pending patches and creates; return the ApplyReport.
 
         `session_note` is required for multi-symbol applies (the unifying intent).
-        `backend` overrides the configured edit backend ('llm' default). Uses an
-        exclusive lock to prevent concurrent applies.
+        `backend` overrides the configured edit backend ('record' default:
+        commit notes as intent to the session log, no code generation).
+        Generating backends use an exclusive lock to prevent concurrent applies.
 
         When the effective backend is 'agent', returns an executable worklist
         immediately without acquiring the apply lock or performing any generation.
@@ -698,6 +699,18 @@ class TrieTools:
         from trie.refresh_lock import try_acquire
 
         effective_backend = backend if backend else self.config.edits.backend
+        if effective_backend == "record":
+            # Default path: the patch pipeline is an intent store. Notes are
+            # archived to the session log (digest evidence + intent gate
+            # coverage); no code generation, no client, no apply lock.
+            from trie.edits.pipeline import record_intent
+
+            return record_intent(
+                self.store,
+                self.config,
+                self.root,
+                session_note=session_note,
+            )
         if effective_backend == "agent":
             from trie.edits.pipeline import build_workorder
 

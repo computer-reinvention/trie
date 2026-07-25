@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/models.py
 file_fingerprint: 0145d7f983e16008587c5599dc5d933a815d9dd830e57990db6493eb91295acb
-last_synced_at: '2026-07-25T06:06:13Z'
+last_synced_at: '2026-07-25T08:08:02Z'
 defines:
 - kind: module
   qualified_name: trie/models:__module__

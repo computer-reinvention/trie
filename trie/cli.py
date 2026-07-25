@@ -1154,6 +1154,60 @@ def _resolve_audit_log_path(log: Path | None, reporter: Reporter) -> Path:
     return cfg_path
 
 
+@app.command("intent")
+def intent_cmd(ctx: typer.Context) -> None:
+    """Gate: every changed symbol must carry a patch note (its intent).
+
+    Compares the working tree against HEAD at the normalized-body level (so
+    formatting and line shifts never gate), then checks each touched symbol
+    has intent on record — a pending patch note or an applied session-log row
+    from this commit window. Exits 1 with a copy-pasteable worklist when
+    coverage is missing. Runs in the pre-commit hook between `verify` and the
+    digest write; agents clear it with `trie patch create <qname> -n "<why>"`.
+    """
+    reporter = _get_reporter(ctx)
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    from trie.intent_gate import evaluate
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        report = evaluate(project_root, config, store)
+    finally:
+        store.close()
+
+    if not report.touched:
+        reporter.success("intent gate: no symbol-level changes vs HEAD")
+        return
+    if report.ok:
+        reporter.success(
+            f"intent gate: all {len(report.touched)} touched symbol(s) have notes on record"
+        )
+        return
+
+    reporter.error(
+        f"intent gate: {len(report.uncovered)} of {len(report.touched)} touched "
+        "symbol(s) have no patch note — every change must record its intent"
+    )
+    for t in report.uncovered:
+        reporter.console.print(f"  [yellow]{t.status:<8}[/yellow] {t.qname}")
+    reporter.console.print()
+    reporter.console.print("stage a note per symbol, then re-run:")
+    for t in report.uncovered[:3]:
+        suffix = " --gone" if t.status == "removed" else ""
+        reporter.console.print(f'  trie patch create {t.qname} -n "<why this changed>"{suffix}')
+    if len(report.uncovered) > 3:
+        reporter.console.print(f"  … and {len(report.uncovered) - 3} more")
+    reporter.console.print(
+        'then: trie patch apply -N "<session intent>"   (records notes; no code generation)'
+    )
+    raise typer.Exit(code=1)
+
+
 @app.command("index")
 def index_cmd(ctx: typer.Context) -> None:
     """Regenerate the triefact-tree index (<triefacts.root>/README.md).
@@ -3525,6 +3579,15 @@ def patch_create_cmd(
     reason: str = typer.Option(
         "", "--reason", "-r", help="Why the cascade needs to know about this change."
     ),
+    gone: bool = typer.Option(
+        False,
+        "--gone",
+        help=(
+            "The symbol was REMOVED (no longer in the graph): record the note "
+            "straight to the session log as a delete instead of queueing a patch. "
+            "This is how removals satisfy the `trie intent` gate."
+        ),
+    ),
 ) -> None:
     """Post a fire-and-forget edit patch against a symbol."""
     reporter = _get_reporter(ctx)
@@ -3534,12 +3597,35 @@ def patch_create_cmd(
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
+    if gone:
+        # Removed symbols have no graph row to queue against — archive the
+        # intent directly so the gate (and the digest) still get it.
+        from trie.session_log import record_applied
+
+        record_applied(
+            project_root,
+            [
+                {
+                    "qname": qname,
+                    "op": "delete",
+                    "notes": [note],
+                    "reasons": [reason] if reason else [],
+                    "session_id": _cli_session_id(project_root),
+                }
+            ],
+        )
+        reporter.success(f"removal note recorded for {qname} (session log)")
+        return
+
     store = Store(project_root / ".trie" / "graph.db")
     try:
         session_id = _cli_session_id(project_root)
         patch_id = store.add_patch(qname, note, reason, session_id)
     except KeyError:
-        reporter.error(f"symbol {qname!r} not found in the graph")
+        reporter.error(
+            f"symbol {qname!r} not found in the graph"
+            " — if it was removed, use --gone to record the note directly"
+        )
         raise typer.Exit(code=1) from None
     finally:
         store.close()
@@ -3792,7 +3878,7 @@ def patch_apply_cmd(
     backend: str | None = typer.Option(
         None,
         "--backend",
-        help="Override the edit backend ('llm' default; 'opencode' is Phase 2).",
+        help="Override the edit backend: 'record' (default; commit notes as intent, no codegen), 'llm', or 'agent' (workorder).",
     ),
     commit_mode: str | None = typer.Option(
         None,
@@ -3820,7 +3906,7 @@ def patch_apply_cmd(
         backend
         or getattr(getattr(config, "edits", None), "backend", None)
         or getattr(config, "backend", None)
-        or "llm"
+        or "record"
     )
 
     def _build_location(item: dict) -> str:
@@ -3836,6 +3922,32 @@ def patch_apply_cmd(
             return f"{file_path}:{start_str}"
         else:
             return file_path
+
+    # --- record path (default): commit notes as intent, zero generation ------
+    if effective_backend == "record":
+        from trie.edits.pipeline import record_intent
+
+        store = Store(project_root / ".trie" / "graph.db")
+        try:
+            envelope = record_intent(store, config, project_root, session_note=note)
+        finally:
+            store.close()
+        if json_output:
+            import json as _json
+
+            console.print_json(_json.dumps(envelope))
+        elif not envelope.get("ok"):
+            reporter.error(envelope.get("message", "record failed"))
+            raise typer.Exit(code=1)
+        elif envelope.get("recorded", 0) == 0:
+            reporter.info("no pending patches to record")
+        else:
+            reporter.success(
+                f"recorded intent for {envelope['recorded']} symbol(s) to the session log"
+            )
+            for q in envelope.get("symbols", []):
+                reporter.console.print(f"  [cyan]{q}[/cyan]")
+        return
 
     # --- agent / workorder path (no generation, no client, no lock) ----------
     if effective_backend == "agent":

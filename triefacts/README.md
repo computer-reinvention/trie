@@ -8,19 +8,19 @@ Prose descriptions of every in-scope source file and symbol, kept in sync with t
 
 The most-referenced public symbols — start reading here.
 
-- [`trie/config:Config`](trie/config.md) (165 refs) `config-management` — Root configuration dataclass aggregating all trie settings — including trie metadata, scope, triefacts, models, cascade, sync, MCP, debug, edits, diff, and per-language overrides — with TOML loading…
-- [`trie/graph/store:Store`](trie/graph/store.md) (121 refs) `persistence` — SQLite-backed persistence for trie's symbol graph and file fingerprints.
+- [`trie/config:Config`](trie/config.md) (170 refs) `config-management` — Root configuration dataclass aggregating all trie settings — including trie metadata, scope, triefacts, models, cascade, sync, MCP, debug, edits, diff, and per-language overrides — with TOML loading…
+- [`trie/graph/store:Store`](trie/graph/store.md) (124 refs) `persistence` — SQLite-backed persistence for trie's symbol graph and file fingerprints.
 - [`tests/fake_client:FakeTrieClient`](tests/fake_client.md) (92 refs) `test` — Test double for `TrieClient` that returns preconfigured structured outputs and records call parameters for verification.
 - [`trie/cli:app`](trie/cli.md) (91 refs) `cli-interface` — Top-level Typer application instance that defines the trie CLI interface.
 - [`tests/test_mcp:tools`](tests/test_mcp.md) (67 refs) `test` — Creates a TrieTools fixture for the populated test project and ensures cleanup after use.
-- [`trie/parse/python:extract_symbols`](trie/parse/python.md) (64 refs) `source-parsing` — Parse Python file and extract its top-level symbols: functions, classes, methods, constants, and module residuals.
+- [`trie/parse/python:extract_symbols`](trie/parse/python.md) (65 refs) `source-parsing` — Parse Python file and extract its top-level symbols: functions, classes, methods, constants, and module residuals.
 - [`trie/sync/writer:TriefactFile`](trie/sync/writer.md) (52 refs) `persistence` — Parses, manipulates, and renders triefact files containing YAML frontmatter and trie-managed documentation sections.
 - [`trie/sync/single_file:sync_single_file`](trie/sync/single_file.md) (43 refs) `orchestration` — Generate or refresh the triefact file for a single Python source file using LLM calls.
-- [`trie/cli:console`](trie/cli.md) (36 refs) `cli-interface` — Creates a Rich Console instance for styled terminal output across CLI commands.
+- [`trie/cli:console`](trie/cli.md) (37 refs) `cli-interface` — Creates a Rich Console instance for styled terminal output across CLI commands.
 - [`tests/test_mcp_install:project`](tests/test_mcp_install.md) (34 refs) `test-infrastructure` — Creates temporary project directory with trie.toml configuration file and cleans up MCP installation artifacts after test completion.
 - [`tests/test_store:store`](tests/test_store.md) (33 refs) `test-infrastructure` — Pytest fixture that creates a temporary Store instance and ensures cleanup after test completion.
+- [`trie/config:ConfigNotFoundError`](trie/config.md) (33 refs) `config-management` — Exception raised when Config.find_and_load cannot locate a trie.toml file in the directory tree.
 - [`trie/edits/pipeline:stage_and_commit`](trie/edits/pipeline.md) (33 refs) `orchestration` — Executes stage then commit in sequence, returning the final report.
-- [`trie/config:ConfigNotFoundError`](trie/config.md) (32 refs) `config-management` — Exception raised when Config.find_and_load cannot locate a trie.toml file in the directory tree.
 - [`trie/scan:scan_project`](trie/scan.md) (30 refs) `orchestration` — Walks the project, parses changed files, and persists symbols to the store with fingerprint-based change detection.
 - [`trie/reporter:Verbosity`](trie/reporter.md) (28 refs) `cli-interface` — Defines integer enum levels for controlling Reporter output verbosity.
 
@@ -54,6 +54,7 @@ The most-referenced public symbols — start reading here.
 - [test_incremental.md](tests/test_incremental.md)
 - [test_index.md](tests/test_index.md)
 - [test_init.md](tests/test_init.md)
+- [test_intent_gate.md](tests/test_intent_gate.md)
 - [test_mcp.md](tests/test_mcp.md) — Tests for the MCP tool surface: `grep`, `read`, `trace`.
 - [test_mcp_edit_tools.md](tests/test_mcp_edit_tools.md) — Tests for the MCP edit tool surface: patch/create/delete/rename/preview/list.
 - [test_mcp_install.md](tests/test_mcp_install.md)
@@ -128,6 +129,7 @@ The most-referenced public symbols — start reading here.
 - [hook_install.md](trie/hook_install.md) — Turn-boundary hook installation for coding agents.
 - [index.md](trie/index.md) — Generate the wiki front door: an index README for the triefact tree.
 - [init.md](trie/init.md)
+- [intent_gate.md](trie/intent_gate.md) — The intent gate: refuse commits when changed symbols carry no patch notes.
 - [mcp_install.md](trie/mcp_install.md)
 - [mcp_server.md](trie/mcp_server.md) — MCP server exposing the trie triefact tree + symbol graph to coding agents.
 - [models.md](trie/models.md)

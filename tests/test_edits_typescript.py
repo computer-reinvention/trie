@@ -335,6 +335,6 @@ def test_edit_backend_uses_larger_token_budget_and_retries():
     cfg = Config()
     assert cfg.edits.max_output_tokens >= 8192
     assert cfg.edits.output_retries >= 2
-    be = make_backend(cfg, client=_FakeClient())
+    be = make_backend(cfg, backend="llm", client=_FakeClient())
     assert be._max_tokens == cfg.edits.max_output_tokens
     assert be._output_retries == cfg.edits.output_retries

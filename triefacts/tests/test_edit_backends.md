@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: tests/test_edit_backends.py
-file_fingerprint: 03967fff93e74808a87cc64df8af9f035f3cf850a0a1a817e03145505b524396
-last_synced_at: '2026-07-20T09:54:57Z'
+file_fingerprint: d1653336689a288921fc1d9d73483635d1949536f9e6c3e76d4a17b30f2f4d23
+last_synced_at: '2026-07-25T08:07:27Z'
 defines:
 - kind: module
   qualified_name: tests/test_edit_backends:__module__
-  lines: 1-127
+  lines: 1-140
 - kind: function
   qualified_name: tests/test_edit_backends:_req
   lines: 17-31
@@ -48,21 +48,24 @@ defines:
   lines: 88-94
 - kind: class
   qualified_name: tests/test_edit_backends:TestFactory
-  lines: 97-126
+  lines: 97-139
 - kind: method
-  qualified_name: tests/test_edit_backends:TestFactory.test_default_is_llm
-  lines: 98-105
+  qualified_name: tests/test_edit_backends:TestFactory.test_default_is_record_which_never_generates
+  lines: 98-109
+- kind: method
+  qualified_name: tests/test_edit_backends:TestFactory.test_llm_backend_still_constructible_explicitly
+  lines: 111-118
 - kind: method
   qualified_name: tests/test_edit_backends:TestFactory.test_opencode_not_yet_implemented
-  lines: 107-110
+  lines: 120-123
 - kind: method
   qualified_name: tests/test_edit_backends:TestFactory.test_unknown_backend_raises
-  lines: 112-115
+  lines: 125-128
 - kind: method
   qualified_name: tests/test_edit_backends:TestFactory.test_run_override_wins_over_config
-  lines: 117-126
+  lines: 130-139
 incoming_refs: 0
-outgoing_refs: 8
+outgoing_refs: 9
 ---
 <!-- trie:section symbol=tests/test_edit_backends:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=cb692600c03509dccf85b05896333b7b7ac40a859c19008db5b5ad4fb0f598f5 source_ref=2fa76b15719e20b01695bdc39b43321036358d84 role=test -->
 Tests for edit backend implementations including FakeBackend, InProcessLLMBackend, and factory functions.
@@ -126,16 +129,20 @@ Verifies that TestLLMBackend includes "NEW symbol" clause in prompt for create o
 <!-- trie:section symbol=tests/test_edit_backends:TestLLMBackend.test_satisfies_protocol fingerprint=2144b003d2e858c91cf6155e2a82ea21a62b2426462b7a8b210faccd9811d0bd body_fp=481b80149e681e2a272e29142504414fe2d2ad8b94b012dfed01ca232b061740 source_ref=2fa76b15719e20b01695bdc39b43321036358d84 role=test -->
 TestLLMBackend.test_satisfies_protocol verifies InProcessLLMBackend implements the SymbolEditBackend protocol using a dummy client.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edit_backends:TestFactory fingerprint=d33845e34ec1cffdf468090baeb71fc35e2b4fb4e94721a8f511f7f6bd5d5b18 body_fp=66d686182a2532f4058fc350a61e3b7b3bd1675b78dc2c8340b0840a5aaf8b16 source_ref=2fa76b15719e20b01695bdc39b43321036358d84 role=test -->
+<!-- trie:section symbol=tests/test_edit_backends:TestFactory fingerprint=f35ba1ed0ec7ceac904b364d1a64aaea62857aabab1fbfe691582b2885724c1c body_fp=37f384700e67f48c9b0f3396f92354ad056447cd354a87f6e87600af27efcc98 source_ref=2fb795182dcddc943fe395897c70b900cbb1b1f3 role=test -->
 Tests the `make_backend` factory function behavior with different configuration and runtime parameters.
 
-- `test_default_is_llm`: verifies default backend type is InProcessLLMBackend
+- `test_default_is_record_which_never_generates`: verifies default backend "record" raises ValueError instead of silently falling back to LLM
+- `test_llm_backend_still_constructible_explicitly`: confirms InProcessLLMBackend is returned when `backend="llm"` is passed explicitly
 - `test_opencode_not_yet_implemented`: checks NotImplementedError for opencode backend
 - `test_unknown_backend_raises`: validates ValueError for invalid backend names
 - `test_run_override_wins_over_config`: confirms runtime parameter overrides config setting
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edit_backends:TestFactory.test_default_is_llm fingerprint=8fed25cac1a39146680533a9dd347584fd10b918d2ac66f48aeda7cad511902f body_fp=f543a0cad6142f6a6ec80438a89533306efad60ec9963a52d1e7ba7500a3d095 source_ref=2fa76b15719e20b01695bdc39b43321036358d84 role=test -->
-Verifies that TestFactory.make_backend returns an InProcessLLMBackend when no backend is explicitly specified.
+<!-- trie:section symbol=tests/test_edit_backends:TestFactory.test_default_is_record_which_never_generates fingerprint=289b999653868abf4e6c91a26a579e2ab5bd60efd01b839bf9a91fe54c03d659 body_fp=8613f45e23622dd0d944b92b7e6f5a5e771e9d3063fc1131d27de980411b8cbf source_ref=2fb795182dcddc943fe395897c70b900cbb1b1f3 role=test -->
+Assert that `TestFactory` verifies `make_backend` raises `ValueError` when the default `"record"` backend is used, preventing silent degradation to LLM generation.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_edit_backends:TestFactory.test_llm_backend_still_constructible_explicitly fingerprint=696305d362cac0e63c103dd99cac0b81032d9c7f2f74738c5b6878613cea648a body_fp=5ef51ba5fd83ef5678f04ec7890cbbf13739ff4b4c2d28dff52f2e26c5a1b8a5 source_ref=2fb795182dcddc943fe395897c70b900cbb1b1f3 role=test -->
+Assert that `TestFactory` can construct an `InProcessLLMBackend` by passing `backend="llm"` explicitly to `make_backend`.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edit_backends:TestFactory.test_opencode_not_yet_implemented fingerprint=0f78dc50048173b200eae42a221e7ac79119e4aa7919d5845f2e1d8d531bd462 body_fp=2388074d9d2246c0ad459396e588b8a091a4c73080e0cb7eea9f8413f78c3e8c source_ref=2fa76b15719e20b01695bdc39b43321036358d84 role=test -->
 TestFactory.test_opencode_not_yet_implemented verifies that make_backend raises NotImplementedError when given "opencode" backend.

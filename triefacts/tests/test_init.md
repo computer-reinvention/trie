@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: tests/test_init.py
-file_fingerprint: 71a98c7c48a3bdde3e2278d94c5ae4da0cab15b532c8b741fd4992e3f4d2b6e4
-last_synced_at: '2026-07-25T00:40:35Z'
+file_fingerprint: bde2802eed11bb346b58ca1dd7f9b967ea013e279ae2d78b4c902faa4cde363f
+last_synced_at: '2026-07-25T08:07:22Z'
 defines:
 - kind: module
   qualified_name: tests/test_init:__module__
-  lines: 1-418
+  lines: 1-424
 - kind: function
   qualified_name: tests/test_init:python_project
   lines: 21-23
@@ -120,7 +120,7 @@ defines:
   lines: 368-387
 - kind: function
   qualified_name: tests/test_init:test_hook_block_includes_diff_write
-  lines: 390-417
+  lines: 390-423
 incoming_refs: 0
 outgoing_refs: 46
 ---
@@ -285,6 +285,6 @@ Tests that the `trie init` command automatically runs `trie setup` when user acc
 <!-- trie:section symbol=tests/test_init:test_cli_init_does_not_run_setup_when_user_declines_prompt fingerprint=2b88a1a18da864f17d833277406db5bf219c9e374d807aafa36d720cb4263986 body_fp=40c757ce965b70c083f760acd74cb81ec53dc3bbeb4285e8fdd8082be1c3a71a source_ref=0f97acda485ff7a046c788feb9cbfd63ccd9448a role=test-infrastructure -->
 Tests that declining the setup prompt in `trie init` skips auto-setup while preserving manual instruction.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_init:test_hook_block_includes_diff_write fingerprint=5d753cf9c7a90e6dbf0f5ecf5950db4cfebfb1ef4e64897d8447abd59ef24a0f body_fp=3ed1ca816eaa0fd5f9a37519009f75eb8a453b9f101555e11d23d5770e603296 source_ref=312f9c508225944d496310f32614516805617297 role=test -->
-Assert that `PRE_COMMIT_HOOK_BLOCK` contains `trie -q diff --write` and `git add TRIE_DIFF.md triefacts/triediffs`, that the diff-write command appears after `trie -q verify`, and that the diff-write line is non-blocking (no `|| exit`).
+<!-- trie:section symbol=tests/test_init:test_hook_block_includes_diff_write fingerprint=388f0f3645fc4f5093d86d93e5ffcae9aa4ba9e680748fda429ff7d04491a3e8 body_fp=486ca689dedc6838212b817293419c87eaa92b39a6439739eb30ede188922211 source_ref=60d1c5f220cbf4d9589d8b16aafa2717ef6eac76 role=test -->
+Assert that `PRE_COMMIT_HOOK_BLOCK` contains `trie -q diff --write` and `git add TRIE_DIFF.md triefacts/triediffs`, that commands follow the order `verify → intent gate → diff-write`, that the `trie intent` line is blocking (`|| exit`) and non-quiet, and that the diff-write line is non-blocking (no `|| exit`).
 <!-- trie:end -->

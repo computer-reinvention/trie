@@ -23,38 +23,34 @@ signatures, one-liners, and call-graph context instead of raw lines.
 
 ## The edit workflow
 
-Edits are staged as intent, reviewed, then applied in one shot — the
-agent posts notes against symbols and the system generates the code.
-**All edits to indexed source go through this pipeline.** Never patch
-line ranges directly.
+**You own the code changes; trie owns the record of why.** Edit indexed
+source with your native tools. For every symbol you change, stage a
+patch note — the intent behind the change. `patch apply` commits those
+notes to the session log; **it generates no code**. The pre-commit
+`trie intent` gate refuses commits when a changed symbol carries no
+note, so the record is enforced, not aspirational.
 
-1. **Stage.** `patch` posts a note against an existing symbol
-   (posting against a qname that isn't in the graph is an error).
-   `create_symbol` stages a new symbol — the module part of its qname
-   may name a file that doesn't exist yet. `rename_symbol` /
-   `delete_symbol` stage structural changes; callers are
-   cascade-updated at apply time. `batch_patch` stages many items in
-   one call — items are independent, a bad one doesn't abort the rest.
-   Staging is a cheap DB write; nothing touches the source tree.
-2. **Review.** `patch_list` shows the queue grouped by symbol.
-   `trie patch preview` shows what apply would do without paying for
-   generation.
-3. **Apply.** `patch_apply` merges notes per symbol, expands to
-   affected callers via the call graph, generates source and prose,
-   runs LSP diagnostics with fixups, writes atomically, and verifies
-   trie consistency.
+1. **Edit.** Make source changes natively (your editor/tools).
+2. **Stage intent.** `patch` posts a note against an existing symbol;
+   `create_symbol` notes a new one; `rename_symbol` / `delete_symbol`
+   note structural changes. `batch_patch` stages many in one call.
+   Notes are one-to-two sentences of *why*, written for the reviewer
+   reading the PR digest later. Staging is a cheap DB write.
+3. **Review.** `patch_list` shows the queue grouped by symbol.
+4. **Apply.** `patch_apply` archives the notes to the session log and
+   clears the queue. Multi-symbol applies require a session note (the
+   unifying intent). The archived notes feed the per-commit digest
+   (`trie diff`), the PR digest comments, and `read --history`.
 
-Two things the apply step enforces:
+The gate (`trie intent`, runs in the pre-commit hook): compares the
+working tree to HEAD at the normalized-body level — formatting and
+line shifts never gate — and lists any touched symbol without a note,
+with copy-pasteable `trie patch <qname> -n "…"` commands. Synthetic
+`__module__` symbols are exempt.
 
-- **Session note.** Applying patches that span more than one symbol
-  requires a session note stating the unifying intent. Without one the
-  apply fails with a guided error that includes a synthesised draft
-  note you can adopt or rewrite. Single-symbol applies skip the gate.
-- **Backend.** `llm` generates through trie's own pipeline; `agent`
-  skips generation and returns a structured workorder for the calling
-  agent to execute. The default comes from `edits.backend` in
-  `trie.toml`; both it and `commit_mode` (`all_or_nothing` | `per_item`
-  | `per_group`) can be overridden per apply.
+Backends other than the default `record` exist for experiments
+(`agent` returns a workorder; `llm` is trie's legacy code generation)
+via `edits.backend` in `trie.toml` or `--backend` per apply.
 
 Patches accumulate across turns and across agents; drop stale ones with
 `patch_drop`.
@@ -105,10 +101,11 @@ hand-built qname won't fix that.
 - **Don't worry about whether a triefact exists.** If a symbol has no
   prose yet, `read` still returns signature, callers, and callees;
   `prose` is empty and `notes` says so.
-- **Don't edit indexed source directly. Ever.** All edits go through
-  the patch pipeline: stage intent through the patch family so callers
-  cascade and prose stays in sync. Raw text edits bypass the cascade,
-  desync the triefacts, and fail `trie verify`.
+- **Every source change needs a patch note.** Edit natively, then
+  record why: `patch` per touched symbol (CLI: `trie patch create <qname> -n "<why>"`). The
+  pre-commit `trie intent` gate blocks commits with unexplained
+  changes and prints the exact commands to fix it. `patch_apply`
+  archives the notes — it does not generate code.
 
 ---
 
