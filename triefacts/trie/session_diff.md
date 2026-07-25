@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/session_diff.py
-file_fingerprint: ff21966379c1c0c5993158671f9f42013c27c371072d60fd26e633a57b70c563
-last_synced_at: '2026-07-25T01:52:10Z'
+file_fingerprint: 71c4e2e7f76d268db5a6ea6f5ed60a1e6798ce92631706fec5cff50b5ace4f8e
+last_synced_at: '2026-07-25T02:06:42Z'
 defines:
 - kind: module
   qualified_name: trie/session_diff:__module__
-  lines: 1-606
+  lines: 1-610
 - kind: class
   qualified_name: trie/session_diff:SessionDiff
   lines: 8-27
@@ -36,25 +36,25 @@ defines:
   lines: 195-204
 - kind: function
   qualified_name: trie/session_diff:synthesize_narrative
-  lines: 207-235
+  lines: 207-239
 - kind: function
   qualified_name: trie/session_diff:render_digest_section
-  lines: 238-377
+  lines: 242-381
 - kind: constant
   qualified_name: trie/session_diff:DIGEST_FILE_HEADER
-  lines: 380-384
+  lines: 384-388
 - kind: function
   qualified_name: trie/session_diff:_new_digest_filename
-  lines: 387-398
+  lines: 391-402
 - kind: function
   qualified_name: trie/session_diff:write_digest
-  lines: 401-474
+  lines: 405-478
 - kind: function
   qualified_name: trie/session_diff:collect_symbol_deltas
-  lines: 477-584
+  lines: 481-588
 - kind: function
   qualified_name: trie/session_diff:merge_applied_by_symbol
-  lines: 587-605
+  lines: 591-609
 incoming_refs: 7
 outgoing_refs: 0
 ---
@@ -96,11 +96,12 @@ Assemble the LLM user prompt from a `SessionDiff`, ordering session intents, app
 <!-- trie:section symbol=trie/session_diff:_NARRATIVE_SYSTEM_PROMPT fingerprint=94f4e4216e8a9d9fc06825bafedd1bc8ae49d871919761f6fe9d2b579baa8d7f body_fp=07b82799f6257750ff5cb583288729e2f27720d65cac7e0fd9b15446d3f73ecf source_ref=b52fb7d875efc22b57e789d47535774fa98128e8 role=config -->
 System prompt string passed to the LLM in `synthesize_narrative`, instructing it to produce a ≤120-word plain-markdown PR change digest from patch-note and triefact-diff evidence.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/session_diff:synthesize_narrative fingerprint=6fce00f5e91562cd9f5469fd3086084b1875dc517acbd71920a6f1fbb590217a body_fp=087844e6f141b58f246e002987af61b63be0febf0172142e9324810f22d663c4 source_ref=b52fb7d875efc22b57e789d47535774fa98128e8 role=io -->
+<!-- trie:section symbol=trie/session_diff:synthesize_narrative fingerprint=77ff2de89049ab7e817394e55f1f3689da3660a22b84c046012771269e8540e7 body_fp=8e0a95b09fe11e5c6a84aff1bc75d9180ca290f2915184de244eb21ca04e61d4 source_ref=ead1a373e664710d47366cbb46a8ee56ee0ff28e role=io -->
 Send `SessionDiff` evidence to an LLM client and return a concise markdown session narrative.
 
 - `client`: must expose `run_text`; `cache_prefix` kwarg is used when supported, otherwise falls back to a single-prompt call.
 - `max_diff_chars`: forwarded to `build_narrative_prompt` to cap diff size before sending.
+- `max_tokens`: runaway guard only; default raised to 1024 to avoid mid-sentence truncation.
 - Returns stripped markdown text from `result.output`.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/session_diff:render_digest_section fingerprint=f10f6e53343eafd65a948ead2e37a63c1b0601e432cdec6c33e732e787fac7ca body_fp=019a5dfbae1a48a62cf17db686254b0ee9b73d94725ecfdc7d56bd932318835d source_ref=b52fb7d875efc22b57e789d47535774fa98128e8 role=domain -->
