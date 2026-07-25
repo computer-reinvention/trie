@@ -2060,12 +2060,15 @@ class TrieTools:
 
             src = self.root / detail.file_path
             record = self.store.get_file(detail.file_path)
-            if record is not None and src.is_file():
-                if file_fingerprint(src.read_text()) != record.fingerprint:
-                    notes.append(
-                        f"⚠ {detail.file_path} changed since the last graph refresh; "
-                        "this prose may be stale — run `trie refresh`."
-                    )
+            if (
+                record is not None
+                and src.is_file()
+                and file_fingerprint(src.read_text()) != record.fingerprint
+            ):
+                notes.append(
+                    f"⚠ {detail.file_path} changed since the last graph refresh; "
+                    "this prose may be stale — run `trie refresh`."
+                )
         except OSError:
             pass
         return notes
