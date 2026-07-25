@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_ts_resolve.py
 file_fingerprint: 9e72105cf525ec878b50c655514edd58ec8cf00f3d0c403e64d38452216f2826
-last_synced_at: '2026-06-17T16:41:23Z'
+last_synced_at: '2026-07-25T00:55:43Z'
 defines:
 - kind: module
   qualified_name: tests/test_ts_resolve:__module__
