@@ -1,72 +1,75 @@
 ---
 trie_version: 0.1.9
 source: trie/edits/pipeline.py
-file_fingerprint: 503071e184431c25b4b5f8470e616c78ea055244c44e3b183373f0608fde8e2b
-last_synced_at: '2026-07-20T09:54:15Z'
+file_fingerprint: c5da3d6a7aa2ee8a95ff31bd8fe205cac5690b9baa61419d12f8e1a9bd3bfc3c
+last_synced_at: '2026-07-25T01:02:09Z'
 description: The stage/commit edit pipeline.
 defines:
 - kind: module
   qualified_name: trie/edits/pipeline:__module__
-  lines: 1-1331
+  lines: 1-1564
 - kind: function
   qualified_name: trie/edits/pipeline:_splice
-  lines: 56-67
+  lines: 58-69
 - kind: function
   qualified_name: trie/edits/pipeline:_per_symbol_compile_salvage
-  lines: 70-113
+  lines: 72-115
 - kind: function
   qualified_name: trie/edits/pipeline:_fix_imports_for_structural
-  lines: 116-160
+  lines: 118-162
 - kind: function
   qualified_name: trie/edits/pipeline:_read_span
-  lines: 163-165
+  lines: 165-167
 - kind: function
   qualified_name: trie/edits/pipeline:_rename_source
-  lines: 168-211
+  lines: 170-213
 - kind: function
   qualified_name: trie/edits/pipeline:_synthesize_session_note
-  lines: 214-227
+  lines: 216-229
 - kind: class
   qualified_name: trie/edits/pipeline:_GenJob
-  lines: 231-241
+  lines: 233-243
 - kind: function
   qualified_name: trie/edits/pipeline:stage
-  lines: 244-587
+  lines: 246-589
+- kind: function
+  qualified_name: trie/edits/pipeline:build_workorder
+  lines: 592-710
 - kind: function
   qualified_name: trie/edits/pipeline:_expand_caller_jobs
-  lines: 590-689
+  lines: 713-812
 - kind: function
   qualified_name: trie/edits/pipeline:_expand_structural_caller_jobs
-  lines: 692-757
+  lines: 815-880
 - kind: function
   qualified_name: trie/edits/pipeline:_stage_creates
-  lines: 760-884
+  lines: 883-1071
 - kind: function
   qualified_name: trie/edits/pipeline:_place_new_symbol
-  lines: 887-928
+  lines: 1074-1115
 - kind: function
   qualified_name: trie/edits/pipeline:_find_container_span
-  lines: 931-984
+  lines: 1118-1171
 - kind: function
   qualified_name: trie/edits/pipeline:_insert_into_parent
-  lines: 987-1052
+  lines: 1174-1239
 - kind: function
   qualified_name: trie/edits/pipeline:_multifile_scratch_lsp
-  lines: 1055-1121
+  lines: 1242-1308
 - kind: constant
   qualified_name: trie/edits/pipeline:_OVERLAY_SKIP_PARTS
-  lines: 1124-1124
+  lines: 1311-1311
 - kind: function
   qualified_name: trie/edits/pipeline:_overlay_package
-  lines: 1127-1164
+  lines: 1314-1351
 - kind: function
   qualified_name: trie/edits/pipeline:commit
-  lines: 1167-1313
+  lines: 1354-1538
 - kind: function
   qualified_name: trie/edits/pipeline:stage_and_commit
-  lines: 1316-1330
-incoming_refs: 35
-outgoing_refs: 37
+  lines: 1541-1563
+incoming_refs: 36
+outgoing_refs: 41
 ---
 <!-- trie:section symbol=trie/edits/pipeline:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=e9452fa5658e80ab55660f3be77286f883bbd5a3f02d8be7a680e82f156d1c30 source_ref=acbee5dfa56099ae5afd4c2ba335609bcbbb64c6 role=orchestration -->
 Implements the stage/commit edit pipeline for parallel symbol modification with cascade validation.
@@ -140,6 +143,16 @@ Generate and validate all pending patches in parallel without writing to the rea
 - Gates on compile-check and multi-file LSP validation in scratch overlay
 - Returns (ApplyReport, list[StagedChange]) tuple
 <!-- trie:end -->
+<!-- trie:section symbol=trie/edits/pipeline:build_workorder fingerprint=6b88963e5f909bcda742fe8a23e0a6db7c55659a3c7ecf961004410a13f8ec7c body_fp=d4135453ce2385b79b4785294b2b48f5891d6328202a34722508509e443d6f59 source_ref=1f152994a6c01e47af87fa54c3ae20b8aedcc1d9 role=orchestration -->
+Resolve all pending patches into a structured work-order dict for native (non-LLM-pipeline) editing, without writing any files.
+
+- `items`: one entry per modify/delete/rename seed with merged notes, line span, and `callers_to_review`
+- `creates`: flattened list of create-patch descriptors
+- `expected_symbols`: sorted union of seed and create qnames
+- `unresolved`: symbols whose `store` detail could not be found
+- Returns `ok: False` with `session_note_required` when `> 1` item and note is absent/boilerplate
+- `next`: advisory string instructing the caller to edit natively, then `trie refresh` and `patch drop --all`
+<!-- trie:end -->
 <!-- trie:section symbol=trie/edits/pipeline:_expand_caller_jobs fingerprint=6a6443f4a4ca9125ad76cf2a7e0c59856afe4c6143435976f369a63d15b0bc3e body_fp=4fb39c7c1226dc9737fda9718a5738c4ab8376041a618616b422f7ad00cb4c45 source_ref=acbee5dfa56099ae5afd4c2ba335609bcbbb64c6 role=orchestration -->
 Expands the generation job list with callers that need updates due to modified seeds.
 
@@ -153,14 +166,14 @@ Cascade callers of deleted/renamed symbols by adding generation jobs to rewrite 
 
 Unlike modify cascades, this requires no LLM gate since call sites referencing vanishing/renamed symbols are definitively affected. For each caller of a deleted symbol, queues a modify job with instructions to remove all calls. For rename callers, queues jobs to update call syntax from old to new name.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:_stage_creates fingerprint=e912d333329c298b1efe5e77510da37479ec40cbe6d51faf7c42f9f58f8922ef body_fp=acda77cb77a565c1023a026001e5ce6dacce99b167795828d6b70bebb870e204 source_ref=3756feeb097f734409469642535809b6daae49f1 role=orchestration -->
+<!-- trie:section symbol=trie/edits/pipeline:_stage_creates fingerprint=317951afc6dcd5ab116cc56d031ba4afec5a5dfe87577e0935326c2547eb6fa0 body_fp=57dca16dc21b7b02661bb49cb1bcdb21419a0dfd360a43254c9ece114afcb4da source_ref=1f152994a6c01e47af87fa54c3ae20b8aedcc1d9 role=orchestration -->
 Generate and stage each new symbol creation, appending StagedChanges with op='create'.
 
 - placement: after anchor symbol if resolvable, otherwise at end-of-file; member creates route into the parent container via `_place_new_symbol`
 - stacks creates atop existing file modifications to maintain single coherent after_file_bytes
-- `FileNotFoundError` on the target file now scaffolds from empty (true new-file creation) instead of surfacing an unresolved error
-- each StagedChange now carries `module_remarks` and `new_dependencies` captured from the backend result
-- compile-gates each file after placement; failures go to unresolved with generated source
+- `FileNotFoundError` on the target file scaffolds from empty (true new-file creation)
+- each StagedChange carries `module_remarks` and `new_dependencies` captured from the backend result
+- compile-gates the whole file after placement; on failure, re-places each symbol alone against the pre-creates base image and salvages the compiling subset — only genuinely broken symbols surface as unresolved
 - updates prior staged changes to share final file content for atomic commit
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/pipeline:_place_new_symbol fingerprint=a7c48ded07d7d6fc8dc439292d4b0e564ffeda96c8a5354905a0d38f43efa4da body_fp=81c3e268c5b79f5f284803a795344579a84f51850b6393b341e1a5f98e470d04 source_ref=3756feeb097f734409469642535809b6daae49f1 role=util -->
@@ -207,16 +220,18 @@ Hardlinks all indexable source files and language-specific config files (e.g. `t
 - Extra config files (e.g. `tsconfig.json`) are linked via `backend.overlay_extra_files()`
 - Falls back to copying on hardlink failure
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:commit fingerprint=06ced628869956a36ceca8c94a2d7ab640e7c5507ad6859cf8608637e0a23ec3 body_fp=57a1ca11eda3824dee7a38fe6437d2800c10c0b81f0808368618ca7c5a907861 source_ref=3756feeb097f734409469642535809b6daae49f1 role=orchestration -->
+<!-- trie:section symbol=trie/edits/pipeline:commit fingerprint=c67fb5db394af86089cae1d139b87f7c3c782cebb5cc0635cdc679a984c61bf1 body_fp=3de8aaffc9b84f7dea2b5e5f5c7c58163b98323efdf9d7f9f12aac364d4b76e0 source_ref=1f152994a6c01e47af87fa54c3ae20b8aedcc1d9 role=orchestration -->
 Writes validated staged changes to disk atomically, rescans affected files, updates prose sections, and drops applied patches.
 
 - `commit_mode`: "all_or_nothing" (default) blocks write if blocking unresolved exist; "per_item" writes each file independently
+- `session_note`: archived alongside applied-patch records in the session log via `record_applied`
 - Returns updated report with `committed` flag and populated `applied` list
 - Rolls back source files from in-memory before-images on any failure; newly created files are unlinked rather than restored
 - Populates `report.new_dependencies` and `report.module_remarks` from staged changes
 - Surfaces orphan created symbols (no inbound references) as advisory unresolved items
+- Archives patch notes to the session log after a successful write; failures are suppressed
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:stage_and_commit fingerprint=f3c9c0549a51b6d0981b55e34a9abc544268459499eb490329eadc4e21956b96 body_fp=7fcdd9c33e30220e28f31d8d26c36069b20e25d9ca7988040f95bd0854cb3dfa source_ref=acbee5dfa56099ae5afd4c2ba335609bcbbb64c6 role=orchestration -->
+<!-- trie:section symbol=trie/edits/pipeline:stage_and_commit fingerprint=89f655eee91fd326d520a21e68afacb42ad9a979b3852e1e8b77773cdc8243b1 body_fp=7fcdd9c33e30220e28f31d8d26c36069b20e25d9ca7988040f95bd0854cb3dfa source_ref=1f152994a6c01e47af87fa54c3ae20b8aedcc1d9 role=orchestration -->
 Executes stage then commit in sequence, returning the final report.
 
 - Used by the `commit()` MCP tool for one-shot patch application

@@ -1,15 +1,15 @@
 ---
 trie_version: 0.1.9
 source: tests/test_textgen.py
-file_fingerprint: bec9bf659c54bb27d5fec5f57daf3647a6e8f2d642a3d04f1cbc41dc7256a865
-last_synced_at: '2026-07-20T09:54:08Z'
+file_fingerprint: 15040532184d20e156b07a8f6bfbe97591e69c66a9aa4afa839f718eedf01cf8
+last_synced_at: '2026-07-20T23:25:34Z'
 defines:
 - kind: module
   qualified_name: tests/test_textgen:__module__
-  lines: 1-90
+  lines: 1-100
 - kind: class
   qualified_name: tests/test_textgen:TestParseCode
-  lines: 6-34
+  lines: 6-44
 - kind: method
   qualified_name: tests/test_textgen:TestParseCode.test_extracts_fenced_block
   lines: 7-9
@@ -28,50 +28,53 @@ defines:
 - kind: method
   qualified_name: tests/test_textgen:TestParseCode.test_missing_fence_and_no_prose_returns_stripped_text
   lines: 33-34
+- kind: method
+  qualified_name: tests/test_textgen:TestParseCode.test_inner_triple_backticks_in_string_do_not_truncate
+  lines: 36-44
 - kind: class
   qualified_name: tests/test_textgen:TestParseSingleProse
-  lines: 37-46
+  lines: 47-56
 - kind: method
   qualified_name: tests/test_textgen:TestParseSingleProse.test_extracts_delimited_prose
-  lines: 38-43
+  lines: 48-53
 - kind: method
   qualified_name: tests/test_textgen:TestParseSingleProse.test_absent_prose_returns_empty
-  lines: 45-46
+  lines: 55-56
 - kind: class
   qualified_name: tests/test_textgen:TestParseQnameProse
-  lines: 49-60
+  lines: 59-70
 - kind: method
   qualified_name: tests/test_textgen:TestParseQnameProse.test_extracts_multiple_qname_sections
-  lines: 50-57
+  lines: 60-67
 - kind: method
   qualified_name: tests/test_textgen:TestParseQnameProse.test_no_sections_returns_empty_dict
-  lines: 59-60
+  lines: 69-70
 - kind: class
   qualified_name: tests/test_textgen:TestParseNewDeps
-  lines: 63-80
+  lines: 73-90
 - kind: method
   qualified_name: tests/test_textgen:TestParseNewDeps.test_extracts_package_names
-  lines: 64-73
+  lines: 74-83
 - kind: method
   qualified_name: tests/test_textgen:TestParseNewDeps.test_ignores_relative_specifiers_and_bullets
-  lines: 75-77
+  lines: 85-87
 - kind: method
   qualified_name: tests/test_textgen:TestParseNewDeps.test_absent_returns_empty
-  lines: 79-80
+  lines: 89-90
 - kind: class
   qualified_name: tests/test_textgen:TestRoundTrip
-  lines: 83-89
+  lines: 93-99
 - kind: method
   qualified_name: tests/test_textgen:TestRoundTrip.test_single_symbol_round_trips_through_format_and_parser
-  lines: 84-89
+  lines: 94-99
 incoming_refs: 0
-outgoing_refs: 21
+outgoing_refs: 22
 ---
 <!-- trie:section symbol=tests/test_textgen:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=1f6617a28d1b4734bfbf86d2156e755b7aa4b14e2260cbf051c249fa70473e1e source_ref=5d64306b1117cddff7c77af7f6a4bf9e4edd68e4 role=test -->
 Test suite for `trie.edits.textgen` covering `parse_code`, `parse_single_prose`, `parse_qname_prose`, `parse_new_deps`, and round-trip behaviour.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_textgen:TestParseCode fingerprint=b65c7a9eea8034978953431748e604340e17c308b4bdea5fb3a5954490d01270 body_fp=f0e77ad0df4074136eaf810fdc75ba597f779e67e722492797f056d67f2bcc93 source_ref=5d64306b1117cddff7c77af7f6a4bf9e4edd68e4 role=test -->
-Test suite for `textgen.parse_code`, covering fenced block extraction, language tag variants, blank-line preservation, prose-section isolation, and fallback behaviour when no fence is present.
+<!-- trie:section symbol=tests/test_textgen:TestParseCode fingerprint=17191aa7ed255e82779e5f10407e713a2cff842869967d17bf87044e70d9038f body_fp=8b528896fe19b8762b832756d8019de8cf86ddc35055bad37f91d7c8694e8528 source_ref=4ec5c8d1e1abe4ce63979b62fe646af7169b01b7 role=test -->
+Test suite for `textgen.parse_code`, covering fenced block extraction, language tag variants, blank-line preservation, prose-section isolation, fallback behaviour when no fence is present, and a regression guard against inner triple-backticks truncating extraction early.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_textgen:TestParseCode.test_extracts_fenced_block fingerprint=5102336f350d10a864cc7f73cb04c6d2ca4612150254b5059e51621fecee168b body_fp=be20ecea5f7384e5d2973373d4f2202ce0623dc2fde77d6429cba67f400637e4 source_ref=5d64306b1117cddff7c77af7f6a4bf9e4edd68e4 role=test -->
 Assert that `TestParseCode` extracts only the fenced code block body, stripping the fence markers and surrounding prose.
@@ -90,6 +93,9 @@ Assert that `TestParseCode.parse_code` returns raw text minus the prose block wh
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_textgen:TestParseCode.test_missing_fence_and_no_prose_returns_stripped_text fingerprint=a3099f07eca8a6628e5a680915e86e9455e5a140c845ac8df6813def26a22713 body_fp=9b3085dddeda10677643a53093d55f8a44f1722549436423d3a3f0b9f40a0d1a source_ref=5d64306b1117cddff7c77af7f6a4bf9e4edd68e4 role=test -->
 Assert that `TestParseCode` strips surrounding whitespace and returns raw text when no fence or prose markers are present.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_textgen:TestParseCode.test_inner_triple_backticks_in_string_do_not_truncate fingerprint=588b54ee6aebb08e135bc99e0929a2a10ca5e48c498a9f917a71ff247c212a2c body_fp=df49db05887318c0bede986cd757d2b1c7a435ff8544b791372bef3631637415 source_ref=4ec5c8d1e1abe4ce63979b62fe646af7169b01b7 role=test -->
+Regression test on `TestParseCode` verifying that triple backticks inside string literals do not prematurely terminate `parse_code` extraction.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_textgen:TestParseSingleProse fingerprint=d1b34c552cb75e97c7263e97843f8c8faeec90667079a539b00f7f1ea5f0c231 body_fp=594902ad1dade74a9df9dcdbad2591091b6ee027f85784f9dc2e539eebcca7d4 source_ref=5d64306b1117cddff7c77af7f6a4bf9e4edd68e4 role=test -->
 Tests `textgen.parse_single_prose` for correct extraction of delimited prose and empty-string fallback when no prose block is present.

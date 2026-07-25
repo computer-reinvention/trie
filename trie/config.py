@@ -83,8 +83,13 @@ class Edits:
             LspBackend(command="pyright", check_args=["--outputjson"], output_format="pyright"),
         ]
     )
-    # Per-symbol edit generation backend: "llm" (default, in-process) or
-    # "opencode" (Phase 2, one targeted instance per symbol). See trie/edits/backends.
+    # Per-symbol edit generation backend:
+    #   "llm"      (default) — in-process LLM code generation
+    #   "opencode" — one targeted opencode instance per symbol (Phase 2)
+    #   "agent"    — patch apply returns an agent-executable worklist (workorder)
+    #                instead of generating code; generation becomes opt-in at the
+    #                call site. A repo opts into this flow by setting backend = "agent".
+    # See trie/edits/backends.
     backend: str = "llm"
     # How a multi-item apply commits on partial failure:
     #   "all_or_nothing" (default) — any item failing aborts the whole commit
@@ -249,6 +254,37 @@ class Mcp:
 
 
 @dataclass
+class Diff:
+    """Config surface for the committed trie-diff digest system.
+
+    Every digest write produces one immutable file under `diffs_dir`, named
+    `<utc-timestamp>-<uuid>.md`, and repoints the `write_path` symlink at it.
+    One file per commit means a PR's digest always appears as a brand-new
+    file — pure additions, never a diff-of-a-diff. An amend/retry of the same
+    commit rewrites that commit's existing file instead of creating another.
+    """
+
+    narrative: bool = True
+    """Synthesise an LLM narrative at the top of each digest entry; falls back
+    to deterministic evidence when the client/key is unavailable."""
+
+    write_path: str = "TRIE_DIFF.md"
+    """Symlink at the project root pointing at the latest digest file under
+    `diffs_dir`. The pre-commit hook block hardcodes the default names, so
+    changing these requires editing the hook."""
+
+    diffs_dir: str = "triefacts/triediffs"
+    """Directory (relative to project root) holding one digest file per
+    commit. It lives inside the triefact tree, so digest evidence collection
+    explicitly excludes it — previous digests never feed back into new
+    ones."""
+
+    max_entries: int = 20
+    """Retention cap: keep at most this many digest files in `diffs_dir`;
+    the oldest are pruned (they remain in git history)."""
+
+
+@dataclass
 class Config:
     trie: TrieMeta = field(default_factory=TrieMeta)
     scope: Scope = field(default_factory=Scope)
@@ -259,6 +295,7 @@ class Config:
     mcp: Mcp = field(default_factory=Mcp)
     debug: Debug = field(default_factory=Debug)
     edits: Edits = field(default_factory=Edits)
+    diff: Diff = field(default_factory=Diff)
     languages: dict[str, LanguageConfig] = field(default_factory=dict)
 
     @classmethod
@@ -284,6 +321,7 @@ class Config:
             mcp=Mcp(**data.get("mcp", {})),
             debug=Debug(**data.get("debug", {})),
             edits=Edits(**raw_edits),
+            diff=Diff(**data.get("diff", {})),
             languages=languages,
         )
 
@@ -414,6 +452,12 @@ lsp_max_retries = 3
 command = "pyright"
 check_args = ["--outputjson"]
 output_format = "pyright"
+
+# [diff]
+# narrative = true          # LLM narrative at the top of each digest entry (falls back to raw evidence without an API key)
+# write_path = "TRIE_DIFF.md"  # root symlink pointing at the latest digest file
+# diffs_dir = "triefacts/triediffs"  # one immutable digest file per commit lives here
+# max_entries = 20          # keep at most this many digest files; oldest pruned
 
 [debug]
 # Append-only JSONL telemetry for trie's own operations. Off by default; flip on

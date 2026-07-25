@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/config.py
-file_fingerprint: aa428506be60bf77477d7305da1dd328f03f35f572948c9ab811e1222dcf4c6e
-last_synced_at: '2026-07-20T09:53:41Z'
+file_fingerprint: 559243496c87d379e6c7b335bfac87588ecff5cdefc52329337bba5e55fba8da
+last_synced_at: '2026-07-25T00:40:36Z'
 defines:
 - kind: module
   qualified_name: trie/config:__module__
-  lines: 1-429
+  lines: 1-473
 - kind: class
   qualified_name: trie/config:TrieMeta
   lines: 9-10
@@ -27,38 +27,41 @@ defines:
   lines: 57-73
 - kind: class
   qualified_name: trie/config:Edits
-  lines: 77-111
+  lines: 77-116
 - kind: class
   qualified_name: trie/config:LanguageConfig
-  lines: 115-123
+  lines: 120-128
 - kind: class
   qualified_name: trie/config:Sync
-  lines: 127-165
+  lines: 132-170
 - kind: class
   qualified_name: trie/config:Debug
-  lines: 169-188
+  lines: 174-193
 - kind: class
   qualified_name: trie/config:Mcp
-  lines: 192-248
+  lines: 197-253
+- kind: class
+  qualified_name: trie/config:Diff
+  lines: 257-284
 - kind: class
   qualified_name: trie/config:Config
-  lines: 252-310
+  lines: 288-348
 - kind: method
   qualified_name: trie/config:Config.from_dict
-  lines: 265-288
+  lines: 302-326
 - kind: method
   qualified_name: trie/config:Config.load
-  lines: 291-294
+  lines: 329-332
 - kind: method
   qualified_name: trie/config:Config.find_and_load
-  lines: 297-310
+  lines: 335-348
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
-  lines: 313-314
+  lines: 351-352
 - kind: constant
   qualified_name: trie/config:DEFAULT_CONFIG_TOML
-  lines: 317-428
-incoming_refs: 210
+  lines: 355-472
+incoming_refs: 216
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/config:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=73508aef5ccf98a204e6bf0fa288e0420baac8315fc2fb1aa7e8d1bf91d72a01 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
@@ -113,16 +116,8 @@ Configures a language server backend for diagnostics during patch application.
 - `output_format`: determines stdout parsing format - "pyright" or "ruff"
 - `exit_ok_codes`: exit codes interpreted as "no diagnostics found"
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Edits fingerprint=a36dfe52ee715aae6c469e703a0098d9e87c9452bd686375f6932169ecfa2f44 body_fp=305a226f919f868170ed95083ddd81df4fcc8e780a88db6a3deba4c3fa715400 source_ref=e5bb60aaf967f6b8135d506ffb1eab58da9b1e53 role=config -->
-Configures patch-apply pipeline and LSP backend settings for code editing operations.
-
-- `lsp_max_retries`: maximum retry attempts when LSP diagnostics fail
-- `lsp_backends`: ordered list of language server configurations, first available backend is used
-- `backend`: edit generation backend, either "llm" or "opencode"
-- `commit_mode`: partial failure handling, one of "all_or_nothing", "per_item", or "per_group"
-- `compile_retry_cap`: maximum regeneration attempts for symbols with compilation errors
-- `output_retries`: max times pydantic-ai re-prompts the model on structured output parse failure
-- `max_output_tokens`: token ceiling for a single code-generation call; defaults to 16384
+<!-- trie:section symbol=trie/config:Edits fingerprint=a36dfe52ee715aae6c469e703a0098d9e87c9452bd686375f6932169ecfa2f44 body_fp=4b127f4d46af4f4af3cb65ca4219f797062affd2c614dc38963e63baebdbb27c role=config-management -->
+Configures the patch-apply pipeline and LSP backend settings for code editing operations, including retry limits, LSP backend definitions, commit failure handling, and the edit generation backend (`"llm"`, `"opencode"`, or `"agent"`), where `"agent"` causes patch apply to return an agent-executable worklist instead of performing inline code generation.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:LanguageConfig fingerprint=53c630a38d44498a9e194e86c35198bb9a6d7eec5f7143a19503cfb475db89f8 body_fp=7ea5116333d3272467cb2cc54cd3c40fdc54b238da538ff650de7611b481d532 source_ref=64675d426ee121ee07f6aca6b23643e1d1ad5991 role=config -->
 Dataclass holding per-language config overrides, keyed by backend name (e.g. `"typescript"`).
@@ -162,16 +157,19 @@ Configuration dataclass for MCP agent tool behaviors including grep, read and tr
 - `trace_hub_threshold`: Node count threshold for hub skipping in trace (default 50)
 - `trace_max_nodes`: Maximum nodes returned by trace operations (default 200)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Config fingerprint=48842b9448593bcb03ffc3f2ba0279ef3a04947c24fcdbe8cc940bd965375c4a body_fp=f7ddb114e0990726fadc5639a7872624bcf0f5c3d0f35c744fb392fc10359839 source_ref=64675d426ee121ee07f6aca6b23643e1d1ad5991 role=config -->
-Root configuration dataclass aggregating all trie settings with TOML loading and file discovery methods.
+<!-- trie:section symbol=trie/config:Diff fingerprint=02d7b7c4a34c801654ba7e7ba0c3ee31d29e464c963c3cb640a04f17864788fb body_fp=747554c26372c258e537318bfc51b807c9efe899851acdf68fe92327964fd2fb source_ref=18c0228ab22574981e4c5031db011c5783d28510 role=config -->
+Dataclass holding configuration for the per-commit digest system, where each commit produces one immutable file under `diffs_dir` and `write_path` is a symlink to the latest.
 
-- `from_dict`: creates Config from parsed TOML data, handling nested `LspBackend` and `LanguageConfig` instantiation
-- `load`: reads and parses TOML file at given path
-- `find_and_load`: walks up directory tree to locate trie.toml, returns config and project root
-- `languages`: per-language overrides, keyed by backend name
+- `narrative`: when `True`, prepends an LLM-generated summary; falls back to raw evidence if no API key is available.
+- `write_path`: symlink at project root pointing at the latest digest file; changing it also requires updating the pre-commit hook.
+- `diffs_dir`: defaults to `"triefacts/triediffs"`; directory holding one immutable digest file per commit; lives inside the triefact tree, explicitly excluded from evidence collection to avoid feedback loops.
+- `max_entries`: oldest digest files are pruned from `diffs_dir` when this cap is exceeded.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Config.from_dict fingerprint=bb472e16d220b4d85d957a6bead6092ddb77bc5546ba5250ff594344cc874693 body_fp=818310cd7ff30c0c2e3fce053fd600a2304c45d73afa55caadc8f855876fc4f0 source_ref=64675d426ee121ee07f6aca6b23643e1d1ad5991 role=config -->
-Creates a `Config` instance from a dictionary, deserializing `LspBackend` objects in edits and per-language `LanguageConfig` entries from the `languages` section.
+<!-- trie:section symbol=trie/config:Config fingerprint=bd03893efd146b7e3cae17bf6c86c1cc07e9115f2d9d65d1f2606be347c473ac body_fp=a2248608c74549bf774cae231f316786139ed9358c20f2a01e748e1e07d377b0 role=config-management -->
+Root configuration dataclass aggregating all trie settings — including trie metadata, scope, triefacts, models, cascade, sync, MCP, debug, edits, diff, and per-language overrides — with TOML loading via `load`, upward directory-tree discovery via `find_and_load`, and structured deserialization from raw dictionaries via `from_dict`, which handles nested `LspBackend` and `LanguageConfig` instantiation as well as the new `[diff]` section.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/config:Config.from_dict fingerprint=079ecac63c0bb42bb3272ed19038c26921a7a73a721c2d25d053f3c5cddf65b0 body_fp=f0a76767909d8d06244fc6aed85734b31fea3472b4f2e8a606814cab9d63fd6b source_ref=b09697b8931aaceed5b512251de7a0608042367e role=config -->
+Creates a `Config` instance from a dictionary, deserializing `LspBackend` objects in edits and per-language `LanguageConfig` entries from the `languages` section, and populating `diff` from `data["diff"]`.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:Config.load fingerprint=5365299d7ecf0cdb6ae8bfad33855d997debd906c3d769b616f66b3f625a0f2b body_fp=77e4ce7fa1e8c65f89b23d443add922c44475b46ec65cdd9049ff7b2960fc2e8 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
 Config.load parses a TOML file at the given path and returns a Config instance.
@@ -185,6 +183,6 @@ Config classmethod walks up directory tree from start path to find and load trie
 <!-- trie:section symbol=trie/config:ConfigNotFoundError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=f6e3f032efc4f68f4c9873696ebed4665095050944f2bd0a1764c6ba230f4219 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
 Exception raised when Config.find_and_load cannot locate a trie.toml file in the directory tree.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:DEFAULT_CONFIG_TOML fingerprint=426323ff65b0749777c80398d4edf83a217cb91dd0f74a5eff4d84de9b0e4441 body_fp=b42d949487ff91589ee223e4dc92306a5b14caaa4c01ca7233593f01345255d5 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
-Default TOML configuration template string used to generate initial `trie.toml` files.
+<!-- trie:section symbol=trie/config:DEFAULT_CONFIG_TOML fingerprint=426323ff65b0749777c80398d4edf83a217cb91dd0f74a5eff4d84de9b0e4441 body_fp=588d0afe84fba88f4a2e835266d9b7764728d5b0011f27ed48f85ddcd1f6a4f7 role=config-management -->
+Default TOML configuration template string used to generate initial `trie.toml` files, covering all configurable sections — scope, triefacts, models, cascade, sync, mcp, edits, diff, and debug — with inline documentation for each knob. The `[diff]` section is included as a commented-out block to document the digest knobs (`narrative`, `write_path`, and `max_entries`) that control how `trie diff --write` maintains the `TRIE_DIFF.md` session digest, making these options discoverable without activating them by default.
 <!-- trie:end -->

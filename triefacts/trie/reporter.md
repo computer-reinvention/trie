@@ -1,12 +1,12 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/reporter.py
-file_fingerprint: 5f09dde7f78ebe9c4f4bd6aa94bf86456f49c99139d87fdffc586554611b4fc0
-last_synced_at: '2026-06-09T10:02:49Z'
+file_fingerprint: 5a1111786624b62a769deef2b827c3abc4e5744ecd33c72f38041239ab44acfe
+last_synced_at: '2026-07-20T13:09:01Z'
 defines:
 - kind: module
   qualified_name: trie/reporter:__module__
-  lines: 1-293
+  lines: 1-304
 - kind: class
   qualified_name: trie/reporter:_OverallOnlyBar
   lines: 33-37
@@ -30,71 +30,71 @@ defines:
   lines: 71-74
 - kind: class
   qualified_name: trie/reporter:Reporter
-  lines: 77-122
+  lines: 77-133
 - kind: method
   qualified_name: trie/reporter:Reporter.__init__
-  lines: 85-88
+  lines: 85-97
 - kind: method
   qualified_name: trie/reporter:Reporter.info
-  lines: 90-92
+  lines: 99-101
 - kind: method
   qualified_name: trie/reporter:Reporter.detail
-  lines: 94-96
+  lines: 103-105
 - kind: method
   qualified_name: trie/reporter:Reporter.success
-  lines: 98-100
+  lines: 107-109
 - kind: method
   qualified_name: trie/reporter:Reporter.warn
-  lines: 102-105
+  lines: 111-114
 - kind: method
   qualified_name: trie/reporter:Reporter.error
-  lines: 107-108
-- kind: method
-  qualified_name: trie/reporter:Reporter.status
-  lines: 110-114
-- kind: method
-  qualified_name: trie/reporter:Reporter.elapsed
   lines: 116-119
 - kind: method
+  qualified_name: trie/reporter:Reporter.status
+  lines: 121-125
+- kind: method
+  qualified_name: trie/reporter:Reporter.elapsed
+  lines: 127-130
+- kind: method
   qualified_name: trie/reporter:Reporter.start_progress
-  lines: 121-122
+  lines: 132-133
 - kind: class
   qualified_name: trie/reporter:_NullContext
-  lines: 125-130
+  lines: 136-141
 - kind: method
   qualified_name: trie/reporter:_NullContext.__enter__
-  lines: 126-127
+  lines: 137-138
 - kind: method
   qualified_name: trie/reporter:_NullContext.__exit__
-  lines: 129-130
+  lines: 140-141
 - kind: class
   qualified_name: trie/reporter:ProgressHandle
-  lines: 133-292
+  lines: 144-303
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.__init__
-  lines: 152-162
+  lines: 163-173
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.__enter__
-  lines: 164-188
+  lines: 175-199
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.__exit__
-  lines: 190-212
+  lines: 201-223
 - kind: method
   qualified_name: trie/reporter:ProgressHandle._print
-  lines: 214-220
+  lines: 225-231
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.start_file
-  lines: 222-240
+  lines: 233-251
 - kind: method
   qualified_name: trie/reporter:ProgressHandle._end_file_task
-  lines: 242-250
+  lines: 253-261
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.finish_file
-  lines: 252-286
+  lines: 263-297
 - kind: method
   qualified_name: trie/reporter:ProgressHandle.skip_file
-  lines: 288-292
-incoming_refs: 18
+  lines: 299-303
+incoming_refs: 25
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/reporter:__module__ fingerprint=07290628d1de53b4706aea1dc1f836f538577d35dc30a41a16720a177edab4df body_fp=37df5d1ba79a59a9b669823577300a1026d9e66b729f96885fac6f36a7ac5234 source_ref=5d5181cfe117f8d9faaf106bc52b54cb076eec58 role=io -->
@@ -139,21 +139,23 @@ Defines integer enum levels for controlling Reporter output verbosity.
 - `MEDIUM`: Standard info, success, and warning messages 
 - `VERBOSE`: All messages plus detailed progress information
 <!-- trie:end -->
-<!-- trie:section symbol=trie/reporter:Reporter fingerprint=f2f9eb0d0db812c01986aa8de45e8112145fc59fb1d1c249d40a0b3bf10e0f6c body_fp=87bc9c4ddc03966ab4fbe502c8a28fa2b9c4af3f45599208494bf5a8906ae40f source_ref=28f57b77c1af9ed66d987b41f89a42b11a006e0e role=cli-interface -->
+<!-- trie:section symbol=trie/reporter:Reporter fingerprint=58f465091a581227e152c3de33154e238659a16640df7d728384785a40fab785 body_fp=6afc7478e923fd2111dc3d277e4beba3402fef763c5e27568d75e048056834c5 source_ref=58bb4ba240999c95abf285c660d76632710fef41 role=api -->
 Verbosity-gated console wrapper for CLI output with Rich formatting and progress tracking.
 
 - `verbosity`: Controls which messages are displayed based on level
-- `console`: Rich Console instance for formatted output
-- `info()`, `detail()`: Print messages at MEDIUM/VERBOSE levels respectively  
+- `console`: Rich Console instance for stdout formatted output
+- `err_console`: Separate stderr Console; `error()` routes here unconditionally regardless of verbosity
+- `info()`, `detail()`: Print messages at MEDIUM/VERBOSE levels respectively
 - `success()`, `warn()`, `error()`: Print styled status messages with icons
 - `status()`: Returns context manager for spinner during operations
 - `elapsed()`: Returns formatted wall-clock time since Reporter creation
 <!-- trie:end -->
-<!-- trie:section symbol=trie/reporter:Reporter.__init__ fingerprint=4cde0d3d19c674bce9d5999617edd36f6c1991fac11b08f19a6ddba17b0f59ce body_fp=198a7e0d04d274b35e0584a7e7be32a7863ca99772f85f89217392b154ef9a34 source_ref=28f57b77c1af9ed66d987b41f89a42b11a006e0e role=cli-interface -->
-Initializes Reporter with verbosity level and console instance, recording creation timestamp.
+<!-- trie:section symbol=trie/reporter:Reporter.__init__ fingerprint=3e8630975130be40881601ab19ac933adaf54c9c9c013ae93791bb9b538cbe33 body_fp=9ff932c9230690cf04ef07cc0d36d1b4751a6d9caf1ccf0a80cc26e254e9a953 source_ref=58bb4ba240999c95abf285c660d76632710fef41 role=domain -->
+Initializes `Reporter` with verbosity level, stdout console, and stderr error console, recording creation timestamp.
 
-- `verbosity`: Controls output filtering level, defaults to MEDIUM
-- `console`: Rich Console instance, creates new one if None
+- `verbosity`: Controls output filtering level, defaults to `MEDIUM`
+- `console`: Rich `Console` instance for stdout; creates new one if `None`
+- `err_console`: Rich `Console` instance for stderr; creates a `stderr=True` console if `None`
 <!-- trie:end -->
 <!-- trie:section symbol=trie/reporter:Reporter.info fingerprint=c360aff5e763c039038842e46cffcdf806016693b8a32a9024ba31ed85535328 body_fp=85ec5108f23658acd661fdf5a95302714893d02b1139f95ab96f4513106fb725 source_ref=28f57b77c1af9ed66d987b41f89a42b11a006e0e role=cli-interface -->
 Reporter method that prints informational messages if verbosity is MEDIUM or higher.
@@ -167,8 +169,8 @@ Prints a success message with green checkmark prefix to Reporter console if verb
 <!-- trie:section symbol=trie/reporter:Reporter.warn fingerprint=2fe62f1d72c6acf6e6770afee5f9b3964fd5fc4d5bff48f9eab88d0a5e088e3a body_fp=468c8fb2db11ee920f4944dc83a8bb5531c04cb542af5b7ae06bb3a0c292bc31 source_ref=28f57b77c1af9ed66d987b41f89a42b11a006e0e role=cli-interface -->
 Prints a warning message to the Reporter console with yellow formatting if verbosity is MEDIUM or higher.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/reporter:Reporter.error fingerprint=ea5624fd1f2b32eb63d048435076a064359cac7a8c910f24d88533142f203feb body_fp=8934823778ebe9b35c15cc496239cc17b422b297a6150ed6656498905dd10881 source_ref=28f57b77c1af9ed66d987b41f89a42b11a006e0e role=cli-interface -->
-Prints an error message to Reporter's console with red formatting, bypassing verbosity checks.
+<!-- trie:section symbol=trie/reporter:Reporter.error fingerprint=4e62ed6871c5808b410086267accbfc1df2a3c10e68abd30c445d854d826cefc body_fp=c6fa19bc96c52bb4eeebfc28971d1caa9a041eec9d9a69e4d99511b51b8b1127 source_ref=58bb4ba240999c95abf285c660d76632710fef41 role=util -->
+Prints an error message to `Reporter`'s `err_console` (stderr) with red formatting, bypassing verbosity checks.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/reporter:Reporter.status fingerprint=1ce7a4b2274ea11bda01d7bafb2195d03be906e09dc394540a996384bb481c77 body_fp=03e1b99b4e88a82ff299a74fe8152ae63a3faa12422f2c6fb700f3de55935db9 source_ref=28f57b77c1af9ed66d987b41f89a42b11a006e0e role=cli-interface -->
 Returns a context manager that displays a transient spinner with the given message during execution if Reporter verbosity is MEDIUM or higher.

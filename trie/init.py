@@ -21,11 +21,33 @@ PRE_COMMIT_HOOK_END_MARKER = "# end trie-verify"
 #      have drifted from source.
 # Both are wrapped in `command -v trie` so the hook degrades cleanly if trie
 # isn't on PATH (uninstalled, fresh clone before `uv tool install`, etc.).
+# Shell script block embedded in the project's .git/hooks/pre-commit file.
+# Wrapped in marker comments for idempotent installation and performs three
+# advisory/blocking steps when trie is available on PATH:
+#
+#   1. lock-check  — blocks the commit if an ongoing write holds the lock,
+#                    preventing partial-state commits.
+#   2. verify      — blocks the commit on drift detection, ensuring the
+#                    triefact file is consistent with the working tree.
+#   3. diff --write — writes an intent-level digest entry (patch notes +
+#                    before/after symbol deltas, with an optional LLM
+#                    narrative when [diff] config enables it) as a new
+#                    immutable file under triefacts/triediffs/ and repoints the
+#                    TRIE_DIFF.md symlink at it, then stages both so every
+#                    commit — and therefore every PR — carries its digest as
+#                    a brand-new file (pure additions, never a diff-of-a-diff).
+#                    The names are hardcoded to the default diff.write_path /
+#                    diff.diffs_dir; users who change those config keys must
+#                    edit their hook accordingly. This step is purely
+#                    advisory: failure never blocks the commit.
 PRE_COMMIT_HOOK_BLOCK = (
     f"{PRE_COMMIT_HOOK_MARKER}\n"
     "if command -v trie >/dev/null 2>&1; then\n"
     "    trie -q lock-check || exit $?\n"
     "    trie -q verify || exit $?\n"
+    "    if trie -q diff --write >/dev/null 2>&1; then\n"
+    "        git add TRIE_DIFF.md triefacts/triediffs >/dev/null 2>&1 || true\n"
+    "    fi\n"
     "fi\n"
     f"{PRE_COMMIT_HOOK_END_MARKER}\n"
 )
@@ -101,14 +123,16 @@ def _ensure_gitignore_entry(gitignore: Path, line: str) -> bool:
 
 
 def install_pre_commit_hook(project_root: Path) -> tuple[bool, PreCommitStrategy, Path | None]:
-    """Install a pre-commit hook that runs `trie verify --quiet`.
+    """Install a pre-commit hook that runs lock-check, verify, and digest refresh.
 
     Strategies:
       - "framework": project already uses the pre-commit framework
         (`.pre-commit-config.yaml` present). We don't touch user-owned YAML; the
         caller should print a manual snippet. Returns (False, "framework", None).
       - "git_hook": write/append a marker-fenced block to `.git/hooks/pre-commit`,
-        idempotent. Returns (True, "git_hook", hook_path) on first install,
+        idempotent. The block runs `trie lock-check`, `trie verify --quiet`, and
+        `trie diff --write` (digest refresh) as advisory steps on each commit.
+        Returns (True, "git_hook", hook_path) on first install,
         (False, "git_hook", hook_path) when the marker is already present.
       - "none": no `.git` directory; nothing to do. Returns (False, "none", None).
     """

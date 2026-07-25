@@ -1,29 +1,38 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/git_helpers.py
-file_fingerprint: 0ad427dd3e70edd0d2451be9e7c18fe1d93af86f8c3a2e0b3efba8ba83e39840
-last_synced_at: '2026-06-03T21:11:44Z'
+file_fingerprint: b8085054d60b993d8ada6ae5210ee923616f8a90852ed4e353d7546a8a138470
+last_synced_at: '2026-07-25T00:07:02Z'
 description: Quiet, narrowly-scoped git operations for diff-aware regen.
 defines:
 - kind: module
   qualified_name: trie/git_helpers:__module__
-  lines: 1-143
+  lines: 1-210
 - kind: function
   qualified_name: trie/git_helpers:_run_git
-  lines: 32-56
+  lines: 32-59
 - kind: function
   qualified_name: trie/git_helpers:is_git_repo
-  lines: 59-62
+  lines: 62-65
 - kind: function
   qualified_name: trie/git_helpers:current_head
-  lines: 65-79
+  lines: 68-82
+- kind: function
+  qualified_name: trie/git_helpers:commit_timestamp
+  lines: 85-96
+- kind: function
+  qualified_name: trie/git_helpers:show_file_at_ref
+  lines: 99-104
 - kind: function
   qualified_name: trie/git_helpers:compute_blob_hash
-  lines: 82-121
+  lines: 107-146
 - kind: function
   qualified_name: trie/git_helpers:retrieve_blob
-  lines: 124-142
-incoming_refs: 17
+  lines: 149-167
+- kind: function
+  qualified_name: trie/git_helpers:diff_paths
+  lines: 170-209
+incoming_refs: 4
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/git_helpers:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=88ea6f10aafbe5eec4426e9e74f9ab2198af7878d28571842c4f7b0a33d1db60 source_ref=a120f6a20e8bfca8afcb22b8c56ed8d56778c96f role=change-detection -->
@@ -35,13 +44,8 @@ Provides quiet git operations for diff-aware regeneration using content-addresse
 - `compute_blob_hash()` - computes git blob hash for working tree files
 - `retrieve_blob()` - reads blob content by hash from git object store
 <!-- trie:end -->
-<!-- trie:section symbol=trie/git_helpers:_run_git fingerprint=f24bcb15562c359a607a98f1f189a2041a915a24878e60ce8bb1715db27d4d56 body_fp=f61fb35b2bfd9974da0859634303bea65ce77c4dd6555dd23bc9fe0912a9cc41 source_ref=a120f6a20e8bfca8afcb22b8c56ed8d56778c96f role=change-detection -->
-Execute git command with arguments in specified directory, returning stdout bytes or None on failure.
-
-- `args`: git subcommand and flags to execute
-- `cwd`: directory to run git from
-- `input_bytes`: optional stdin data to pass to git process
-- Returns None for any error: missing git binary, timeout after 5s, or non-zero exit
+<!-- trie:section symbol=trie/git_helpers:_run_git fingerprint=203e2dbc07911476b9cf29b75127a109387b8225fae8f03904d6d186f351f289 body_fp=afeae39aa2a5695734d5054d5958f8dcf50a473d148091e2d10c09795f3e34e4 role=change-detection -->
+Execute a git command with the given arguments in the specified directory, returning the captured stdout bytes on success or None on any failure. Failures include a missing git binary, a timeout after 5 seconds, any OS-level error, or a process exit code not present in `ok_returncodes` (which defaults to `(0,)`, preserving existing behaviour while allowing callers such as `diff_paths` to widen acceptance to additional exit codes like 1 for `git diff --no-index`).
 <!-- trie:end -->
 <!-- trie:section symbol=trie/git_helpers:is_git_repo fingerprint=675fb860d9da412270ab09ed63e85801dd9f4b3cdba59b53ef8e5ab821a7cf5f body_fp=d14c0fd0b049d942635cbcdb77326e765af0dac2835e7828fecb8552ea3d8728 source_ref=a120f6a20e8bfca8afcb22b8c56ed8d56778c96f role=change-detection -->
 Checks if `path` is inside a git working tree by running `git rev-parse --is-inside-work-tree`.
@@ -51,6 +55,14 @@ Returns the commit SHA at HEAD from the given repository root, or None if the lo
 
 - Returns None for empty repositories, detached states, or any git failure
 - Used by trie's freshness gate to compare working tree HEAD against regeneration stamps
+<!-- trie:end -->
+<!-- trie:section symbol=trie/git_helpers:commit_timestamp fingerprint=d400ee6b65d5c7b294677323179a42796f574fc7856b2e99b72a6fec29538508 body_fp=7341928b0349e4b571515579a6a8568547f35eda0c08221e6e19b0324fbe2b9e source_ref=f91fe734e1682c0cc6b4975661a46c30a5c4d228 role=io -->
+Return the committer unix timestamp of `ref` as a float, or `None` on any git failure or empty output.
+
+- `ref`: any git revision string; defaults to `HEAD`
+<!-- trie:end -->
+<!-- trie:section symbol=trie/git_helpers:show_file_at_ref fingerprint=9e79e5544c25e730d0c76d7fd574de063cfc72a39b4268f381624aa1423366fa body_fp=20bc6ed1c2dfa7c6cd3ef433bb75c9b49b1f44be08d2344d02972c1f478ece77 source_ref=e50fc73699fd073532fbbebf68ec2c680ae8870e role=io -->
+Return the UTF-8 content of `relpath` at the given git `ref`, or `None` on any failure.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/git_helpers:compute_blob_hash fingerprint=afcadc5bcb6bfdf267b316dd72280d4ca940d06468c430a28dee2d9a0e494747 body_fp=7192cccf5f80c78a99dce6a72f2f61d82d82cb667bc17fee9a6835ca20353a27 source_ref=a120f6a20e8bfca8afcb22b8c56ed8d56778c96f role=change-detection -->
 Computes git blob hash for working-tree file content without staging the file.
@@ -63,4 +75,7 @@ Retrieves git blob content by hash from the specified repository root.
 
 - Returns None if blob is unreachable, hash is malformed, or repo is invalid
 - Binary content decoded with UTF-8 replacement on errors
+<!-- trie:end -->
+<!-- trie:section symbol=trie/git_helpers:diff_paths fingerprint=60562938743d7aca9692e67827d6149177d7fb9d60d67e75c7c6cb8d323f0dae body_fp=ba61edb0f21ce52a94f88a9ff4a4ed611c7437019ba6163a7715708679c41243 role=change-detection -->
+Return a unified `--no-color` diff of `paths` against `base` in `repo_root`, including both tracked changes (via `git diff`) and untracked files under `paths` (each diffed as an add against `/dev/null`), so that brand-new files created during a session appear in the output. Returns `None` only when the initial tracked `git diff` fails; returns `""` when there are no changes anywhere; degrades quietly if the untracked-file listing fails, in which case only the tracked diff is returned. The per-file `git diff --no-index` invocation correctly accepts exit code 1 as a success indicator, since diffing a new file against `/dev/null` always produces differences and a non-zero exit.
 <!-- trie:end -->

@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: tests/test_edits_structural.py
-file_fingerprint: 22e48a83114b15e23cfadf3a7af16cf9ab5be58c141ee2b30ae31089d23a9261
-last_synced_at: '2026-07-20T09:53:35Z'
+file_fingerprint: e8332ae1082b9044a9f3d3ac570bd7dd1092f4fcc03c0985bdf210aa804e9159
+last_synced_at: '2026-07-20T23:25:37Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_structural:__module__
-  lines: 1-418
+  lines: 1-454
 - kind: constant
   qualified_name: tests/test_edits_structural:PROJECT_TOML
   lines: 16-24
@@ -42,7 +42,7 @@ defines:
   lines: 133-144
 - kind: class
   qualified_name: tests/test_edits_structural:TestCreate
-  lines: 147-288
+  lines: 147-324
 - kind: method
   qualified_name: tests/test_edits_structural:TestCreate.test_create_adds_new_symbol
   lines: 148-167
@@ -64,29 +64,32 @@ defines:
 - kind: method
   qualified_name: tests/test_edits_structural:TestCreate.test_create_broken_source_unresolved
   lines: 274-288
+- kind: method
+  qualified_name: tests/test_edits_structural:TestCreate.test_one_broken_create_does_not_poison_siblings
+  lines: 290-324
 - kind: class
   qualified_name: tests/test_edits_structural:TestSameFileMultiLane
-  lines: 291-346
+  lines: 327-382
 - kind: method
   qualified_name: tests/test_edits_structural:TestSameFileMultiLane.test_modify_and_create_same_file_both_land
-  lines: 300-322
+  lines: 336-358
 - kind: method
   qualified_name: tests/test_edits_structural:TestSameFileMultiLane.test_rename_and_create_same_file_both_land
-  lines: 324-346
+  lines: 360-382
 - kind: function
   qualified_name: tests/test_edits_structural:two_file_project
-  lines: 350-372
+  lines: 386-408
 - kind: class
   qualified_name: tests/test_edits_structural:TestStructuralCascade
-  lines: 375-417
+  lines: 411-453
 - kind: method
   qualified_name: tests/test_edits_structural:TestStructuralCascade.test_delete_cascades_to_caller
-  lines: 378-397
+  lines: 414-433
 - kind: method
   qualified_name: tests/test_edits_structural:TestStructuralCascade.test_rename_cascades_to_caller
-  lines: 399-417
+  lines: 435-453
 incoming_refs: 0
-outgoing_refs: 57
+outgoing_refs: 59
 ---
 <!-- trie:section symbol=tests/test_edits_structural:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=ec4390bf15b62b6613a0fe71e4d18d40ff73d943dbe459bd79fd9fcc22ef1ea5 source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
 Tests structural edit operations (delete, rename, create) and their cascading effects on dependent symbols.
@@ -103,13 +106,13 @@ TOML configuration string used to create test project files with trie settings.
 
 - Contains project metadata, file scope, triefacts root, model configurations, and cascade parameters
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_structural:FakeTriefactClient fingerprint=c22c1583950633f73a49f72533e33f452437ffe5aee920b7029a55345ae38703 body_fp=9c8baad9c45962ae43b28d29c8fb15fa3a126ebc6630e465f9ae4cf582bfbd6d source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
+<!-- trie:section symbol=tests/test_edits_structural:FakeTriefactClient fingerprint=eb21c1c8e78d2dfbdaa15ef552db52c7f8e034d8a0e48c02c7d739e2f9ea2007 body_fp=9c8baad9c45962ae43b28d29c8fb15fa3a126ebc6630e465f9ae4cf582bfbd6d source_ref=e5ac16e397973bd3b23fa3dbece8648e8e5b21d9 role=test -->
 Mock triefact client that returns fixed SectionBody output with minimal token usage for testing.
 
 - `full_model_id`: Always returns "fake/fake"
 - `run()`: Returns ModelResult with hardcoded "fake prose." body and 1 input/output token usage
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_structural:FakeTriefactClient.run fingerprint=ddf5f4d5a413797c8ae0c5853e9d1be123cf1571583cd546aead0c3037ad7075 body_fp=f1f667bb1c44fd8cc7ea44d1a7da7aaaffba3738dd2ff6507f9224481de9f7c7 source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
+<!-- trie:section symbol=tests/test_edits_structural:FakeTriefactClient.run fingerprint=245921977f71d8c42c7796c61eaf884795f199a0f58fd762bbeb242de7e54a6b body_fp=f1f667bb1c44fd8cc7ea44d1a7da7aaaffba3738dd2ff6507f9224481de9f7c7 source_ref=e5ac16e397973bd3b23fa3dbece8648e8e5b21d9 role=test -->
 FakeTriefactClient.run returns a fake ModelResult with hardcoded SectionBody and minimal Usage for testing.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_structural:project fingerprint=454ba7d4fb51d84562aa6b26ddbe62b83dd544935bc4f7d0a049e3dffac6c82b body_fp=b141eef4f01e37f9e57370b09fa5121a37b77bbee77a82537bd958f30e212b96 source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
@@ -144,7 +147,7 @@ Tests that TestRename.test_rename_updates_definition successfully renames a symb
 <!-- trie:section symbol=tests/test_edits_structural:TestRename.test_rename_invalid_identifier_refused fingerprint=57e59f916770158d6ba6b634fc811e72798f0dd348a236e3096c1d60d30b56d9 body_fp=c9e93069edc8f50f12c417057de0e779a8a7051a1df1f52d62aaa714b5520ad2 source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
 Tests that TestRename rejects rename operations with invalid Python identifiers and leaves source unchanged.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_structural:TestCreate fingerprint=bd70770626e39b61c6b9d96ea1c12433f0a45a9eb62bd707353a9f5986121255 body_fp=8b71580526b85148c3cf3e1580e58a67ed25b9ee63e71238c067a6278ff29046 source_ref=3105a5fed65ee67fcfa8304d60b02f219c503b9a role=test -->
+<!-- trie:section symbol=tests/test_edits_structural:TestCreate fingerprint=f569c02184cd2205c1d2dfd4b8aac22f5a4969d9ae8573813171eae391d6071d body_fp=88a25fc72fe52133d0f3afe6db9c424c9922207c046bac8c68c1d3b93f9b8b26 source_ref=01fd81b7592a75ad72d9df519738f35a592ec6b7 role=test -->
 Tests the create symbol pipeline functionality for adding new code symbols to project files.
 
 - `test_create_adds_new_symbol`: verifies successful symbol creation and graph absorption
@@ -154,6 +157,7 @@ Tests the create symbol pipeline functionality for adding new code symbols to pr
 - `test_create_method_into_class`: verifies class-method qnames land indented inside the class body
 - `test_modify_and_create_method_same_file`: verifies same-file modify+create batch both land and remain valid Python
 - `test_create_broken_source_unresolved`: validates broken source generation fails gracefully
+- `test_one_broken_create_does_not_poison_siblings`: verifies a broken create in a batch (per-item mode) does not block sibling creates in the same file
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_structural:TestCreate.test_create_adds_new_symbol fingerprint=ce45f65576c6133efc3cc120623a8732f17d1e2a86e4c8fb9d07f91ff6d23bc7 body_fp=4de79f7fee80af0db5807a12621a55335e2abfa68b74d7af301a3d81eca45109 source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
 Tests that TestCreate successfully stages and commits a create patch, adding a new symbol to source.
@@ -175,6 +179,9 @@ Verify that a same-file batch combining a method modify and a method create both
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_structural:TestCreate.test_create_broken_source_unresolved fingerprint=edb4eda89216f719f240104fb4339537d1fed662a7f3bc41a3ba3e0ba06a3715 body_fp=3846918c836b6bccdcbfdb7dbd9c438fc0f04003d9efee0419146e012d4f1327 source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
 TestCreate.test_create_broken_source_unresolved tests that create patches fail gracefully when backend generates broken code, leaving source unchanged.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_edits_structural:TestCreate.test_one_broken_create_does_not_poison_siblings fingerprint=cf9343fe16434441cfccc71f06336eee56d2fc80353a47104713ed0c986a126b body_fp=c0faae60e66dae6806423d0b1c63875c934d8a9efed01b19f45fa8a4799e56a2 source_ref=01fd81b7592a75ad72d9df519738f35a592ec6b7 role=test -->
+Assert that a compile-failing create patch in `TestCreate` does not prevent a sibling create patch in the same file from being committed.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_structural:TestSameFileMultiLane fingerprint=ac56c203e373f07bac8a2d74a1a58a00235b88779d064c93afc3e70c2d1156bd body_fp=2505185dd0228673814047ba26ed16b41e67b7d54b49d6b9299506cdf440f572 source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->
 Tests that multiple edit operations on the same file don't overwrite each other's changes.

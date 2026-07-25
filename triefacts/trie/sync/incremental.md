@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/sync/incremental.py
 file_fingerprint: 15a45b1e239e298ae6d2aaa809707ec6779cdcf4e4f7467501bb7807be8094fe
-last_synced_at: '2026-07-20T09:55:21Z'
+last_synced_at: '2026-07-20T13:09:49Z'
 defines:
 - kind: module
   qualified_name: trie/sync/incremental:__module__

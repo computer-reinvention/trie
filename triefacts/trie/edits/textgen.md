@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: trie/edits/textgen.py
-file_fingerprint: d10e5e347265afb023469852bc00062503f7630e8192de033fa58a329d239b5b
-last_synced_at: '2026-07-20T09:54:47Z'
+file_fingerprint: 2d5d4e609970d3964e42caec9dd5842854402816fa88b6aa8f5929f64fa0eb84
+last_synced_at: '2026-07-20T23:25:33Z'
 description: Plaintext code-generation protocol + parser.
 defines:
 - kind: module
   qualified_name: trie/edits/textgen:__module__
-  lines: 1-212
+  lines: 1-223
 - kind: constant
   qualified_name: trie/edits/textgen:PROSE_OPEN
   lines: 46-46
@@ -31,50 +31,50 @@ defines:
   lines: 64-64
 - kind: constant
   qualified_name: trie/edits/textgen:_FENCE_RE
-  lines: 67-67
+  lines: 73-73
 - kind: constant
   qualified_name: trie/edits/textgen:_SINGLE_PROSE_RE
-  lines: 69-72
+  lines: 75-78
 - kind: constant
   qualified_name: trie/edits/textgen:_QNAME_PROSE_RE
-  lines: 74-79
+  lines: 80-85
 - kind: constant
   qualified_name: trie/edits/textgen:_REMARKS_RE
-  lines: 81-84
+  lines: 87-90
 - kind: constant
   qualified_name: trie/edits/textgen:_NEW_DEPS_RE
-  lines: 86-89
+  lines: 92-95
 - kind: function
   qualified_name: trie/edits/textgen:code_block_instructions
-  lines: 92-101
+  lines: 98-107
 - kind: function
   qualified_name: trie/edits/textgen:single_prose_instructions
-  lines: 104-111
+  lines: 110-117
 - kind: function
   qualified_name: trie/edits/textgen:new_deps_instructions
-  lines: 114-124
+  lines: 120-130
 - kind: function
   qualified_name: trie/edits/textgen:module_remarks_instructions
-  lines: 127-144
+  lines: 133-150
 - kind: function
   qualified_name: trie/edits/textgen:multi_prose_instructions
-  lines: 147-153
+  lines: 153-159
 - kind: function
   qualified_name: trie/edits/textgen:parse_code
-  lines: 156-173
+  lines: 162-184
 - kind: function
   qualified_name: trie/edits/textgen:parse_single_prose
-  lines: 176-179
+  lines: 187-190
 - kind: function
   qualified_name: trie/edits/textgen:parse_qname_prose
-  lines: 182-187
+  lines: 193-198
 - kind: function
   qualified_name: trie/edits/textgen:parse_module_remarks
-  lines: 190-193
+  lines: 201-204
 - kind: function
   qualified_name: trie/edits/textgen:parse_new_deps
-  lines: 196-211
-incoming_refs: 35
+  lines: 207-222
+incoming_refs: 36
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/edits/textgen:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=3d9167f853fc8efdd7add6f03110966f3ebc42800a8837cde659d28da829ccd7 source_ref=389ffb471cd812fe38fc8fd8bbc66a3c3516cd24 role=parsing -->
@@ -101,8 +101,8 @@ Opening delimiter string marking the start of the new-dependencies section in mo
 <!-- trie:section symbol=trie/edits/textgen:NEW_DEPS_END fingerprint=2b39c539b7bac8c3b3294a92dacce0e46a109f26acbb1ee08af51e39c64f7e00 body_fp=60080a649fb676858f7809da361a85c88a9fdc108a659948d354545d22708978 source_ref=389ffb471cd812fe38fc8fd8bbc66a3c3516cd24 role=config -->
 Closing delimiter string marking the end of a `<<<NEW-DEPS>>>` section in model output.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/textgen:_FENCE_RE fingerprint=f506db2baa1685153bb24d57d0e2d0ae9267105eadf4be29002d45610f12489e body_fp=278d4bc1a92d316205bdd1a13ce2422b534241fb6088a13daef5e40f23904581 source_ref=389ffb471cd812fe38fc8fd8bbc66a3c3516cd24 role=parsing -->
-Compiled regex matching a fenced code block, capturing the body in group 1 via a non-greedy DOTALL pattern.
+<!-- trie:section symbol=trie/edits/textgen:_FENCE_RE fingerprint=b7a0a1d1e0b7e6f915adeec9b560f5d040f73ddeef8420cc2bf9452844eb5b4c body_fp=f82cbbf1e8ff4ec9db6e0db55b6927497d71bd889c88e0a2c6dd04b8ccfe5713 source_ref=2920ec6006972c7096f62c8d592bc70268fd37ba role=parsing -->
+Compiled regex matching a fenced code block, capturing the body in group 1; closing fence must start at column 0, allowing trailing spaces/tabs, so mid-line triple-backticks in the code body do not terminate the match early.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/textgen:_SINGLE_PROSE_RE fingerprint=5939b8c408399ff054462c5d30bad5117c980b3ebb01562bd89524ba54028c76 body_fp=0796a568427f693ea4259e5f5b4053e12fcb1bdd03d30857bf24a3a20269e94b source_ref=389ffb471cd812fe38fc8fd8bbc66a3c3516cd24 role=parsing -->
 Compiled regex matching a single `<<<PROSE>>>` … `<<<END>>>` block, capturing the prose body in group 1.
@@ -133,7 +133,7 @@ Return an instruction string containing one `<<<PROSE qname=...>>>` delimited te
 
 - `qnames`: qualified symbol names to include verbatim in each prose-section delimiter.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/textgen:parse_code fingerprint=6b041fb5d03cbf737d57ad9c181fd773f1f0b68a5a55bcd238e18f97e2921aba body_fp=a42892ebf1e31687ad3bab30d44b5ec4d83520d933ec295e6b451480f6754ebb source_ref=389ffb471cd812fe38fc8fd8bbc66a3c3516cd24 role=parsing -->
+<!-- trie:section symbol=trie/edits/textgen:parse_code fingerprint=3c8a1bd42ec496bf1c7de4de13bd50edf0d11bb491242bdba30f8795be0124d9 body_fp=a42892ebf1e31687ad3bab30d44b5ec4d83520d933ec295e6b451480f6754ebb source_ref=2920ec6006972c7096f62c8d592bc70268fd37ba role=parsing -->
 Extract the first fenced code block from `text`, stripping trailing prose sections if no fence is present.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/edits/textgen:parse_single_prose fingerprint=6cd31057b458853b19052473b7154a1cbf4ab3b93095af3cefa99ec88ab4140e body_fp=57f84c61189cd12dc7f0527949d09190971fba724f2ee75b6da4371bc451fd78 source_ref=389ffb471cd812fe38fc8fd8bbc66a3c3516cd24 role=parsing -->

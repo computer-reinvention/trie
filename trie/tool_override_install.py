@@ -234,7 +234,7 @@ export default tool({
       return stdout || "(empty response from trie)"
     }
     throw new Error(
-      `trie grep failed (exit ${code}): ${stderr.trim() || "no stderr"}`,
+      `trie grep failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`,
     )
   },
 })
@@ -478,7 +478,7 @@ async function shellOutToTrie(
   if (code === 0 || code === 1) {
     return stdout || "(empty response from trie)"
   }
-  throw new Error(`trie failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+  throw new Error(`trie failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
 }
 
 function resolveAbsolutePath(cwd: string, path: string): string {
@@ -1045,7 +1045,7 @@ export default tool({
       return stdout || "(empty response from trie)"
     }
     throw new Error(
-      `trie trace failed (exit ${code}): ${stderr.trim() || "no stderr"}`,
+      `trie trace failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`,
     )
   },
 })
@@ -1087,7 +1087,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0 || code === 1) return stdout || "(no matches)"
-    throw new Error(`trie grep-str failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+    throw new Error(`trie grep-str failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
   },
 })
 """
@@ -1122,7 +1122,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0 || code === 1) return stdout || "(no entry points found)"
-    throw new Error(`trie grep-entry-points failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+    throw new Error(`trie grep-entry-points failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
   },
 })
 """
@@ -1157,7 +1157,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0 || code === 1) return stdout || "(no match)"
-    throw new Error(`trie grep-symbol failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+    throw new Error(`trie grep-symbol failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
   },
 })
 """
@@ -1193,7 +1193,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0 || code === 1) return stdout || "(no match)"
-    throw new Error(`trie grep-symbol-neighbours failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+    throw new Error(`trie grep-symbol-neighbours failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
   },
 })
 """
@@ -1229,7 +1229,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0 || code === 1) return stdout || "(no prose)"
-    throw new Error(`trie explain-symbol failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+    throw new Error(`trie explain-symbol failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
   },
 })
 """
@@ -1264,7 +1264,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0 || code === 1) return stdout || "(no callers)"
-    throw new Error(`trie explain-symbol-refs failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+    throw new Error(`trie explain-symbol-refs failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
   },
 })
 """
@@ -1303,7 +1303,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0 || code === 1) return stdout || "(no path found)"
-    throw new Error(`trie trace-flow failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+    throw new Error(`trie trace-flow failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
   },
 })
 """
@@ -1342,7 +1342,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0 || code === 1) return stdout || "(no path found)"
-    throw new Error(`trie explain-flow failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+    throw new Error(`trie explain-flow failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
   },
 })
 """
@@ -1395,7 +1395,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0) return stdout.trim() || "patch posted"
-    throw new Error(`trie patch create failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+    throw new Error(`trie patch create failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
   },
 })
 """
@@ -1439,7 +1439,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0) return stdout.trim() || "patches dropped"
-    throw new Error(`trie patch drop failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+    throw new Error(`trie patch drop failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
   },
 })
 """
@@ -1469,7 +1469,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0) return stdout.trim() || "(no pending patches)"
-    throw new Error(`trie patch list failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+    throw new Error(`trie patch list failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
   },
 })
 """
@@ -1486,8 +1486,33 @@ export default tool({
   description:
     "Apply all pending patches: merge notes, generate source+prose via LLM, " +
     "cascade to neighbour symbols, run LSP fixup, sync triefact metadata, " +
-    "and verify project consistency. Pass --verbose for per-symbol detail.",
+    "and verify project consistency. Multi-symbol applies REQUIRE a " +
+    "session_note describing the unifying intent. Pass verbose for " +
+    "per-symbol detail.",
   args: {
+    session_note: tool.schema
+      .string()
+      .optional()
+      .describe(
+        "The unifying intent behind this batch of patches. Required when " +
+          "more than one symbol is being applied; ignored for single-symbol " +
+          "applies.",
+      ),
+    backend: tool.schema
+      .string()
+      .optional()
+      .describe(
+        "Override the configured edit backend for this apply: 'llm' runs " +
+          "trie's own generation pipeline; 'agent' returns a workorder for " +
+          "the calling agent to execute instead of generating.",
+      ),
+    commit_mode: tool.schema
+      .string()
+      .optional()
+      .describe(
+        "Failure policy: 'all_or_nothing' (default), 'per_item', or " +
+          "'per_group'.",
+      ),
     verbose: tool.schema
       .boolean()
       .optional()
@@ -1495,6 +1520,9 @@ export default tool({
   },
   async execute(args, context) {
     const flags: string[] = ["patch", "apply"]
+    if (args.session_note) flags.push("--note", args.session_note)
+    if (args.backend) flags.push("--backend", args.backend)
+    if (args.commit_mode) flags.push("--commit-mode", args.commit_mode)
     if (args.verbose) flags.push("--verbose")
 
     const proc = Bun.spawn(["trie", ...flags], {
@@ -1508,7 +1536,207 @@ export default tool({
       proc.exited,
     ])
     if (code === 0) return stdout.trim() || "patches applied"
-    throw new Error(`trie patch apply failed (exit ${code}): ${stderr.trim() || "no stderr"}`)
+    throw new Error(`trie patch apply failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+  },
+})
+"""
+    )
+
+
+def _render_opencode_create_symbol(_project_root: Path) -> str:
+    return (
+        _GENERATED_HEADER
+        + """
+import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description:
+    "Stage creation of a NEW symbol that doesn't exist in the graph yet. " +
+    "The symbol is generated and written when `patch_apply` runs. Use this " +
+    "instead of `patch` when the target qname doesn't exist — `patch` only " +
+    "accepts existing symbols.",
+  args: {
+    qname: tool.schema
+      .string()
+      .describe(
+        "Intended qualified name for the new symbol, e.g. 'pkg/mod:new_fn'. " +
+          "The module part may name a file that doesn't exist yet.",
+      ),
+    note: tool.schema
+      .string()
+      .describe("What the new symbol should do — signature, behaviour, contracts."),
+    file: tool.schema
+      .string()
+      .optional()
+      .describe("Target source file (derived from the qname when omitted)."),
+    anchor: tool.schema
+      .string()
+      .optional()
+      .describe("Place the new symbol after this existing qname in the file."),
+    reason: tool.schema
+      .string()
+      .optional()
+      .describe("Why this symbol is needed."),
+  },
+  async execute(args, context) {
+    const flags: string[] = ["patch", "create-symbol", args.qname, "--note", args.note]
+    if (args.file) flags.push("--file", args.file)
+    if (args.anchor) flags.push("--anchor", args.anchor)
+    if (args.reason) flags.push("--reason", args.reason)
+
+    const proc = Bun.spawn(["trie", ...flags], {
+      cwd: context.directory,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+    if (code === 0) return stdout.trim() || "create staged"
+    throw new Error(`trie patch create-symbol failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+  },
+})
+"""
+    )
+
+
+def _render_opencode_rename_symbol(_project_root: Path) -> str:
+    return (
+        _GENERATED_HEADER
+        + """
+import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description:
+    "Stage a rename of an existing symbol. Callers are cascade-updated when " +
+    "`patch_apply` runs. `new_name` is the bare local identifier, not a qname.",
+  args: {
+    qname: tool.schema
+      .string()
+      .describe("Qualified name of the symbol to rename."),
+    new_name: tool.schema
+      .string()
+      .describe("New local name (identifier only, e.g. 'compute_totals')."),
+    reason: tool.schema
+      .string()
+      .optional()
+      .describe("Why it's being renamed."),
+  },
+  async execute(args, context) {
+    const flags: string[] = ["patch", "rename-symbol", args.qname, args.new_name]
+    if (args.reason) flags.push("--reason", args.reason)
+
+    const proc = Bun.spawn(["trie", ...flags], {
+      cwd: context.directory,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+    if (code === 0) return stdout.trim() || "rename staged"
+    throw new Error(`trie patch rename-symbol failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+  },
+})
+"""
+    )
+
+
+def _render_opencode_delete_symbol(_project_root: Path) -> str:
+    return (
+        _GENERATED_HEADER
+        + """
+import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description:
+    "Stage deletion of an existing symbol. Dependent callers are reported at " +
+    "staging time and cascade-updated when `patch_apply` runs.",
+  args: {
+    qname: tool.schema
+      .string()
+      .describe("Qualified name of the symbol to delete."),
+    reason: tool.schema
+      .string()
+      .optional()
+      .describe("Why it's being removed."),
+  },
+  async execute(args, context) {
+    const flags: string[] = ["patch", "delete-symbol", args.qname]
+    if (args.reason) flags.push("--reason", args.reason)
+
+    const proc = Bun.spawn(["trie", ...flags], {
+      cwd: context.directory,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+    if (code === 0) return stdout.trim() || "delete staged"
+    throw new Error(`trie patch delete-symbol failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+  },
+})
+"""
+    )
+
+
+def _render_opencode_batch_patch(_project_root: Path) -> str:
+    return (
+        _GENERATED_HEADER
+        + """
+import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description:
+    "Stage MANY patches and creates in one call instead of N separate " +
+    "`patch`/`create_symbol` round trips. Items are processed independently: " +
+    "a bad item is reported in the summary but does not abort the rest. " +
+    "Returns a JSON summary {staged, failed, results}.",
+  args: {
+    items: tool.schema
+      .array(
+        tool.schema.object({
+          op: tool.schema
+            .string()
+            .optional()
+            .describe("'patch' (default, existing symbol) or 'create' (new symbol)."),
+          qname: tool.schema.string().describe("Qualified name of the target symbol."),
+          note: tool.schema.string().describe("Implementation note for this item."),
+          file: tool.schema
+            .string()
+            .optional()
+            .describe("Target file for creates (derived from qname when omitted)."),
+          anchor: tool.schema
+            .string()
+            .optional()
+            .describe("For creates: place the new symbol after this existing qname."),
+          reason: tool.schema.string().optional().describe("Why this change is needed."),
+        }),
+      )
+      .describe("The patch/create items to stage."),
+  },
+  async execute(args, context) {
+    const payload = JSON.stringify(args.items)
+    const proc = Bun.spawn(["trie", "patch", "create-batch"], {
+      cwd: context.directory,
+      stdin: new TextEncoder().encode(payload),
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+    if (code === 0) return stdout.trim() || "batch staged"
+    throw new Error(`trie patch create-batch failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
   },
 })
 """
@@ -1591,14 +1819,18 @@ TARGETS: dict[str, ToolOverrideTarget] = {
         display_name="opencode",
         summary=(
             "Override built-in `grep` and `read`, add `trace`, and install "
-            "12 extended tools: `grep_str` (regex over source), "
+            "16 extended tools: `grep_str` (regex over source), "
             "`grep_entry_points` (hub discovery by topic), `grep_symbol` "
             "(fuzzy name lookup), `grep_symbol_neighbours` (symbol + "
             "neighbourhood), `explain_symbol` (full prose + narrative), "
             "`explain_symbol_refs` (usage story), `trace_flow` (call chain "
             "between two symbols), `explain_flow` (narrated execution path), "
-            "`patch` (post implementation notes), `patch_drop` (remove "
-            "patches), `patch_list` (list patches), `patch_apply` (apply all)."
+            "`patch` (post implementation notes), `batch_patch` (stage many "
+            "patches/creates at once), `create_symbol` (stage new symbols), "
+            "`rename_symbol` / `delete_symbol` (structural edits), "
+            "`patch_drop` (remove patches), `patch_list` (list patches), "
+            "`patch_apply` (apply all, with session note / backend / "
+            "commit-mode control)."
         ),
         files=(
             FileToWrite(
@@ -1679,6 +1911,26 @@ TARGETS: dict[str, ToolOverrideTarget] = {
                 render=_render_opencode_patch_apply,
                 description="add `patch_apply` (execute all pending patches)",
             ),
+            FileToWrite(
+                relative_path=(".opencode", "tools", "create_symbol.ts"),
+                render=_render_opencode_create_symbol,
+                description="add `create_symbol` (stage creation of a new symbol)",
+            ),
+            FileToWrite(
+                relative_path=(".opencode", "tools", "rename_symbol.ts"),
+                render=_render_opencode_rename_symbol,
+                description="add `rename_symbol` (stage a symbol rename)",
+            ),
+            FileToWrite(
+                relative_path=(".opencode", "tools", "delete_symbol.ts"),
+                render=_render_opencode_delete_symbol,
+                description="add `delete_symbol` (stage a symbol deletion)",
+            ),
+            FileToWrite(
+                relative_path=(".opencode", "tools", "batch_patch.ts"),
+                render=_render_opencode_batch_patch,
+                description="add `batch_patch` (stage many patches/creates in one call)",
+            ),
         ),
         # Earlier versions of `trie setup --override-builtins` shipped a
         # separate `trie_read.ts` add-on (the new `read.ts` override
@@ -1689,6 +1941,9 @@ TARGETS: dict[str, ToolOverrideTarget] = {
         obsolete_files=(
             (".opencode", "tools", "trie_read.ts"),
             (".opencode", "tools", "trie_trace.ts"),
+            # Briefly shipped as `patch_batch` before being renamed to match
+            # the MCP server's `batch_patch` tool name.
+            (".opencode", "tools", "patch_batch.ts"),
         ),
     ),
     "claude-code": ToolOverrideTarget(
