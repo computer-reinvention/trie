@@ -62,7 +62,11 @@ def read_entries(
                         ts = float(entry.get("ts", 0) or 0)
                     except (ValueError, TypeError):
                         ts = 0.0
-                    if ts < since:
+                    # Exclusive boundary: the digest cursor's `covered` equals the
+                    # max ts it consumed, so the next window must start strictly
+                    # after it — `<=` here, or the previous window's last row
+                    # leaks into every subsequent digest.
+                    if ts <= since:
                         continue
                 collected.append(entry)
     except OSError:

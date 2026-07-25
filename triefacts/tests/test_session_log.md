@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_session_log.py
 file_fingerprint: f1462fd162de34a0176f606df924905dd4117476f107c7d70f3c3c1b21f76daa
-last_synced_at: '2026-07-25T00:40:34Z'
+last_synced_at: '2026-07-25T01:02:06Z'
 defines:
 - kind: module
   qualified_name: tests/test_session_log:__module__

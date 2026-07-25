@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/session_log.py
-file_fingerprint: 09ba52d64747d9b36e6f68ea4defb80051d52c1ad124258e2bdcb2cf022cf6c0
-last_synced_at: '2026-07-25T00:24:02Z'
+file_fingerprint: da860a0f328894ead3de52a60e0111338e701ae3854afd9c8fcd86fe1b9d7950
+last_synced_at: '2026-07-25T01:02:02Z'
 defines:
 - kind: module
   qualified_name: trie/session_log:__module__
-  lines: 1-130
+  lines: 1-134
 - kind: function
   qualified_name: trie/session_log:log_path
   lines: 8-10
@@ -15,16 +15,16 @@ defines:
   lines: 13-32
 - kind: function
   qualified_name: trie/session_log:read_entries
-  lines: 35-70
+  lines: 35-74
 - kind: function
   qualified_name: trie/session_log:read_digest_cursor
-  lines: 73-84
+  lines: 77-88
 - kind: function
   qualified_name: trie/session_log:save_digest_cursor
-  lines: 87-112
+  lines: 91-116
 - kind: function
   qualified_name: trie/session_log:resolve_digest_window
-  lines: 115-129
+  lines: 119-133
 incoming_refs: 14
 outgoing_refs: 0
 ---
@@ -39,11 +39,11 @@ Append applied-patch `entries` as JSONL rows to the session log, silently swallo
 
 - `entries`: list of dicts; each gains a `ts` (epoch float) if not already set.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/session_log:read_entries fingerprint=f31ffaa9429a9250b06757beb44f1832f4b3e985470748f96b2e86c6b9ab1241 body_fp=866bcca0f2d41a08b4921cb70ae68512e0f60b70ee666eef9f36d9084d6e5fae source_ref=a01edbcf00331fadfea67f6ef0636e71f4f1cfb7 role=persistence -->
+<!-- trie:section symbol=trie/session_log:read_entries fingerprint=1643adf3dcd2becb0b493cc491175b74264235302c5257bfe7de1ce323e00535 body_fp=b566083707907568413f2ff329d7b6c793fc1c3474fbae3b93b5d99eebb7ede8 source_ref=f8a69ba53b4235ea183816cdd6b7f03c02e7b589 role=persistence -->
 Read and return applied-patch records from the session log JSONL file, with optional filtering.
 
 - `session_id`: when set, only records with a matching `session_id` field are included.
-- `since`: Unix timestamp; records whose `ts` is strictly less than this value are excluded.
+- `since`: Unix timestamp; records whose `ts` is less than or equal to this value are excluded.
 - Returns an empty list if the log file does not exist or an `OSError` occurs before any records are collected; returns partial results if `OSError` occurs mid-read.
 - Silently skips malformed or non-dict JSONL lines.
 <!-- trie:end -->
