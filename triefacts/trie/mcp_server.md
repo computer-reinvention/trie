@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: trie/mcp_server.py
-file_fingerprint: f2541b946b4d1e1dd13141490efc00261301f5b9bbfb8c8a45172994dd8b8c50
-last_synced_at: '2026-07-25T01:43:37Z'
+file_fingerprint: 3e369f76ada46e79dabf8ec43ccec81777d568c23f754e307520185a240a1ba0
+last_synced_at: '2026-07-25T01:46:20Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
 - kind: module
   qualified_name: trie/mcp_server:__module__
-  lines: 1-3347
+  lines: 1-3350
 - kind: class
   qualified_name: trie/mcp_server:RipgrepNotFoundError
   lines: 77-89
@@ -52,7 +52,7 @@ defines:
   lines: 247-266
 - kind: class
   qualified_name: trie/mcp_server:TrieTools
-  lines: 269-3257
+  lines: 269-3260
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.__init__
   lines: 283-312
@@ -175,64 +175,64 @@ defines:
   lines: 2015-2033
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._staleness_notes
-  lines: 2035-2071
+  lines: 2035-2074
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._prose_for
-  lines: 2073-2110
+  lines: 2076-2113
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._neighbour_summaries
-  lines: 2112-2137
+  lines: 2115-2140
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.trace
-  lines: 2141-2295
+  lines: 2144-2298
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_str
-  lines: 2299-2458
+  lines: 2302-2461
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_str_all
-  lines: 2460-2573
+  lines: 2463-2576
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.read_source
-  lines: 2575-2633
+  lines: 2578-2636
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.write_file
-  lines: 2635-2695
+  lines: 2638-2698
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.find_files
-  lines: 2697-2768
+  lines: 2700-2771
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_entry_points
-  lines: 2770-2853
+  lines: 2773-2856
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_symbol
-  lines: 2855-2956
+  lines: 2858-2959
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_symbol_and_neighbours
-  lines: 2958-2984
+  lines: 2961-2987
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_symbol
-  lines: 2986-3068
+  lines: 2989-3071
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_symbol_references
-  lines: 3070-3131
+  lines: 3073-3134
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.trace_flow
-  lines: 3133-3191
+  lines: 3136-3194
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_flow
-  lines: 3193-3237
+  lines: 3196-3240
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._suggest_for_qname
-  lines: 3241-3257
+  lines: 3244-3260
 - kind: function
   qualified_name: trie/mcp_server:build_server
-  lines: 3263-3316
+  lines: 3266-3319
 - kind: function
   qualified_name: trie/mcp_server:run_stdio
-  lines: 3319-3326
+  lines: 3322-3329
 - kind: function
   qualified_name: trie/mcp_server:main
-  lines: 3329-3346
+  lines: 3332-3349
 incoming_refs: 12
 outgoing_refs: 68
 ---
@@ -327,7 +327,7 @@ Find the qname of the symbol whose line range contains `lineno`, preferring nest
 
 Iterates through the ordered list, updating `enclosing` with each symbol that brackets `lineno`. Since symbols are start-ordered, the last matching symbol is the most deeply nested one.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=a92b621a1891f873cdb45465663c5a375794d833002f8ee42252e4860b703561 body_fp=c8c478423367d4da470389bdda3417263570554082e002bbe64dae513fce57e0 source_ref=df7c277d94a9a29198067812a2a9243331b67c81 role=orchestration -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=80db22a4e6bf16a7564ad188f1691fc965407d9bb9e0b1a89e17f3e9c7c8b0cf body_fp=c8c478423367d4da470389bdda3417263570554082e002bbe64dae513fce57e0 source_ref=31ea5773e72df0b09ea019dcab835d5205588818 role=api -->
 Core interface for MCP tools as plain methods, testable without transport.
 
 Owns the Store and project config for process lifetime. Implements patch tools (patch, batch_patch, create_symbol, delete_symbol, rename_symbol, blast_radius, patch_drop, patch_list, preview, commit), desktop app helpers (all_symbols, all_edges, system_model, summary, record_attention_event, attention, set_investigation, activity, symbols_by_file, file_triefact), three core operations (`grep`, `read`, `trace`), and extended wrappers (grep_str, grep_str_all, read_source, write_file, find_files, grep_entry_points, grep_symbol, grep_symbol_and_neighbours, explain_symbol, explain_symbol_references, trace_flow, explain_flow). All methods return structured dicts with error envelopes; telemetry is captured on each call with configurable event names to distinguish MCP vs CLI usage. `commit` short-circuits to return an executable worklist immediately when the effective backend is `"agent"`, without acquiring the apply lock. `_triefact_view` now prepends a staleness banner when any section's fingerprint predates the current source; `_read_symbol` now prepends staleness notes via `_staleness_notes`; `explain_symbol` likewise folds staleness notes into the response.
@@ -622,7 +622,7 @@ Return the source fingerprint stamped in `detail`'s triefact section sentinel, o
 
 - Returns `""` (empty string) when the section exists but carries no fingerprint field.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools._staleness_notes fingerprint=e63ab37d757edf87417d8380888a74e9378c216775918c955d85446ca3ff1c8e body_fp=3b0d8b4bfdd512f463ddb02a31993dd4d09144513296be193ad91b3a14f685d1 source_ref=df7c277d94a9a29198067812a2a9243331b67c81 role=domain -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools._staleness_notes fingerprint=5695d37af3bf4b52df506c5d654b465335054c6e03d32386fad2b1cd09f9d671 body_fp=3b0d8b4bfdd512f463ddb02a31993dd4d09144513296be193ad91b3a14f685d1 source_ref=31ea5773e72df0b09ea019dcab835d5205588818 role=domain -->
 Return warning strings when `TrieTools` detects that prose being served no longer reflects the current source.
 
 - Checks section-level staleness first: sentinel fingerprint vs last-scan fingerprint; returns early if stale.
