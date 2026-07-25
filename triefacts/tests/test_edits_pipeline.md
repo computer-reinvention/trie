@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: tests/test_edits_pipeline.py
-file_fingerprint: 457ee9e4356b48b2453c127873360db375f95fe92aef4293f268cd3767040fbd
-last_synced_at: '2026-07-25T10:43:54Z'
+file_fingerprint: 6da00772820db89c8c36ebe00ec491ce183ce9e84ff00d0c702eea551b6b7cb0
+last_synced_at: '2026-07-25T11:30:52Z'
 description: 'Spec for the slimmed patch pipeline: an intent store, not a code generator.'
 defines:
 - kind: module
   qualified_name: tests/test_edits_pipeline:__module__
-  lines: 1-111
+  lines: 1-114
 - kind: class
   qualified_name: tests/test_edits_pipeline:TestSessionNoteQuality
   lines: 15-21
@@ -22,16 +22,16 @@ defines:
   lines: 24-41
 - kind: function
   qualified_name: tests/test_edits_pipeline:test_record_intent_archives_notes_without_generation
-  lines: 44-75
+  lines: 44-78
 - kind: function
   qualified_name: tests/test_edits_pipeline:test_record_intent_preserves_structural_ops
-  lines: 78-87
+  lines: 81-90
 - kind: function
   qualified_name: tests/test_edits_pipeline:test_single_symbol_needs_no_session_note
-  lines: 90-97
+  lines: 93-100
 - kind: function
   qualified_name: tests/test_edits_pipeline:test_preview_patches_reports_pending_and_blast_radius
-  lines: 100-110
+  lines: 103-113
 incoming_refs: 0
 outgoing_refs: 12
 ---
@@ -61,10 +61,10 @@ Build a minimal in-`tmp_path` git repo with a two-symbol `m.py`, a populated `St
 
 - Returns a `(Config, Store)` tuple ready for pipeline test use.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_pipeline:test_record_intent_archives_notes_without_generation fingerprint=75eb27baa00b436816347649d1920a3375da4e813998b815bc9e05f9c87f616e body_fp=d8c55eef8ef3188d52e85675c8618f15d78e21733ba1c0eebb5677ff450d3761 source_ref=216da440140e9e9a0724eb58e004820fb538cdc8 role=test -->
-Verify that `record_intent` archives patches to the session log, clears the queue, and leaves source files unmodified without generating code.
+<!-- trie:section symbol=tests/test_edits_pipeline:test_record_intent_archives_notes_without_generation fingerprint=d94a343ec87fff80dc27beb1da714578b10c91999a427535d5f67e7bff9e7525 body_fp=5fdcf0b361538bc3f132e19f53bafcb82a3fa67e6fc4a0544d2a5fe547e04533 source_ref=49409b33c5ccf4cea1f24c71912b3228b77ed1dd role=test -->
+Verify that `record_intent` archives patches to the session log, clears the queue, leaves source files unmodified without generating code, and writes a `.pending.md` file inside the digest archive directory.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_pipeline:test_record_intent_preserves_structural_ops fingerprint=328aa829fa1778f2b246c18a347b0b71e3dc03b894578da0e4d6c36b5ec079c2 body_fp=2282d1555d30de0363b84d41fb0c9b21591c733e3738c8b7b6f11f15d42aff20 source_ref=216da440140e9e9a0724eb58e004820fb538cdc8 role=test -->
+<!-- trie:section symbol=tests/test_edits_pipeline:test_record_intent_preserves_structural_ops fingerprint=27f7c440e37ffa5890f4755e3d4412359aa9ee99b47adb168e7f88dc145997b0 body_fp=2282d1555d30de0363b84d41fb0c9b21591c733e3738c8b7b6f11f15d42aff20 source_ref=49409b33c5ccf4cea1f24c71912b3228b77ed1dd role=test -->
 Verify that `record_intent` archives a `delete`-kind patch without requiring a session note and records the correct op.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_pipeline:test_single_symbol_needs_no_session_note fingerprint=7e06b4b7d7dd1a429364f560a6fe63f89833872fe544bdbf22eca4ec403bb181 body_fp=46343806dd31be8d9de4c43548a50e6452ed52eb2b733e3d0a5bc9b875886271 source_ref=216da440140e9e9a0724eb58e004820fb538cdc8 role=test -->

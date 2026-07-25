@@ -1,31 +1,31 @@
 ---
 trie_version: 0.1.9
 source: trie/edits/pipeline.py
-file_fingerprint: a9bc4da648df0417510c1b627331dd4b2c402ce8b3683ab9c492844e998c1766
-last_synced_at: '2026-07-25T10:43:54Z'
+file_fingerprint: fc055cb38cf9ccb0dd83f3c418bfe54561dc1f32b8687935aba5375bb249637b
+last_synced_at: '2026-07-25T11:30:47Z'
 description: 'The patch pipeline: an intent store, not a code generator.'
 defines:
 - kind: module
   qualified_name: trie/edits/pipeline:__module__
-  lines: 1-202
+  lines: 1-196
 - kind: constant
   qualified_name: trie/edits/pipeline:_SESSION_NOTE_STOPLIST
-  lines: 31-31
+  lines: 30-30
 - kind: constant
   qualified_name: trie/edits/pipeline:_SESSION_NOTE_MIN_CHARS
-  lines: 32-32
+  lines: 31-31
 - kind: function
   qualified_name: trie/edits/pipeline:session_note_ok
-  lines: 35-44
+  lines: 34-43
 - kind: function
   qualified_name: trie/edits/pipeline:_expand_callers
-  lines: 47-78
+  lines: 46-77
 - kind: function
   qualified_name: trie/edits/pipeline:preview_patches
-  lines: 81-114
+  lines: 80-113
 - kind: function
   qualified_name: trie/edits/pipeline:record_intent
-  lines: 117-201
+  lines: 116-195
 incoming_refs: 8
 outgoing_refs: 0
 ---
@@ -63,8 +63,8 @@ Return a read-only summary of pending patch notes and the call-graph blast radiu
 - `cascade_symbols` / `patched_symbols`: integer counts of each list
 - `total_patches`: total note count across all patched symbols
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:record_intent fingerprint=3cd5d6b04f553c0f7b4248833ec6526fb4e534fe63078d81a22d163c3c3977ac body_fp=5a2523947cb699c5ffa4e925efcb1f2aa0498cefb70ba09733e105fb2a980bf4 source_ref=93562620aac7b790c8dabcf8f01990451e22c9c3 role=orchestration -->
-Archive all pending patch notes to the session log and clear the queue, without generating any code.
+<!-- trie:section symbol=trie/edits/pipeline:record_intent fingerprint=110189dcc8f8ce48fd064eba0bf569f2f46fa66bc842259f2a417e12f522cd10 body_fp=be7bec2fd40c6a79de4ccc6aa6a713629e866033878da2ffea3c714a532a7686 source_ref=ef4f1b1179dd23102fa3d38c760a5c10b26767c5 role=orchestration -->
+Write pending patch notes to the pending-intent file (`<diffs_dir>/.pending.md`) via `append_intent` and clear the staging queue, without generating any code.
 
 - `session_note`: required when `total > 1`; validated via `session_note_ok` (rejects empty, too-short, and stoplist words); returns `ok=False` with `"session_note_required"` otherwise.
 - Returns a dict with `ok`, `recorded` count, `symbols` list, and a `next` advisory string.

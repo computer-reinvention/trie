@@ -7,7 +7,7 @@ from trie.config import Config
 from trie.graph.store import Store
 from trie.intent_gate import evaluate, touched_symbols
 from trie.parse.python import extract_symbols
-from trie.session_log import record_applied
+from trie.pending_intent import append_intent
 
 
 def _repo(tmp_path: Path) -> tuple[Config, Path]:
@@ -81,9 +81,10 @@ def test_evaluate_coverage_from_pending_and_session_log(tmp_path: Path) -> None:
         report = evaluate(repo, config, store)
         assert {t.qname for t in report.uncovered} == {"mod:beta"}
 
-        # Applied session-log row (post-HEAD) covers beta.
-        record_applied(
+        # A row already applied into the pending-intent file covers beta.
+        append_intent(
             repo,
+            config,
             [{"qname": "mod:beta", "op": "modify", "notes": ["beta 99"], "reasons": []}],
         )
         report = evaluate(repo, config, store)

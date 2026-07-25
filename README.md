@@ -252,7 +252,7 @@ Supported setup targets: `opencode`, `claude-code`, `claude-desktop`, `cursor`, 
 | Command | What | LLM? |
 | --- | --- | --- |
 | `trie init` | Write `trie.toml`, scan the graph, offer setup | no |
-| `trie setup` | Wire an agent: hook + overrides + docs (+ `--with-mcp`, `--with-sync-bot`) | no |
+| `trie setup` | Wire an agent: hook + overrides + docs (+ `--with-mcp`) | no |
 | `trie plan` | Drift report + cost preview (`--offline` skips the token counts) | free calls |
 | `trie sync` | Regenerate stale prose + cascade (`--budget` / `--limit` cap spend) | yes |
 | `trie gate` | The whole commit guard: lock + verify + intent + digest (what the hook runs; run explicitly in CI) | digest only |
@@ -312,16 +312,15 @@ What to know:
 
 - **`trie gate` is the whole contract** — lock + verify + intent + digest, identical to the hook. Exit 1 output is copy-pasteable fix commands, so a gated agent can self-correct.
 - **Order matters on a cold runner**: `trie refresh` first (notes can only be recorded against symbols the graph knows), work, then `sync` → `gate` → commit.
-- **Intent notes live in the runner's `.trie/`** — record and commit within the same job; they don't survive across jobs.
+- **Intent travels with the tree**: recorded notes live in `triefacts/triediffs/.pending.md` (inside the triefact tree, not in `.trie/` cache) until the digest write consumes them at commit — nothing is lost between steps or stashed in runner-local state.
 - **No key?** `trie gate --no-digest` still enforces verify + intent; keyless `trie sync` fails loudly rather than pretending.
-- The `trie setup --with-sync-bot` workflow already follows this pattern, including running `trie gate` before its own push — bot commits carry digests too.
 
 ## Adopting trie in a team
 
 **Who pays for sync (pick one):**
 
 1. **Everyone has a key.** Each committer regenerates the prose their own edits stale; `trie plan` keeps costs visible. Keyless teammates hit the verify gate with a loud, accurate error (never a silent green).
-2. **One payer / sync bot.** `trie setup --with-sync-bot` installs a CI workflow that regenerates stale triefacts on PR branches with the org's `ANTHROPIC_API_KEY` secret and pushes the sync commit — fork-guarded, spend-capped per run.
+2. **One payer.** A single maintainer (or a scheduled job you own) runs `trie sync` for branches that need it, following the CI recipe above. A hosted, CodeRabbit-style service that does this centrally is a direction we're exploring — not something trie installs into your repo today.
 
 **Merge conflicts in triefacts: regenerate, don't hand-merge.** Two branches regenerating the same file produce textually different prose. Take either side wholesale and re-sync — drifted sections regenerate from the merged *source*, which is the only truth that matters:
 

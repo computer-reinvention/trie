@@ -18,7 +18,6 @@ future design wants to resurrect the experiment.
 
 from __future__ import annotations
 
-import time
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -123,11 +122,13 @@ def record_intent(
 ) -> dict:
     """Commit pending patch notes as intent — no code generation.
 
-    Archives pending modify/delete/rename/create notes as applied session-log
-    rows and clears the queue; the source tree is never touched. More than one
+    Moves pending modify/delete/rename/create notes from the staging queue
+    into the pending-intent file inside the digest archive
+    (`<diffs_dir>/.pending.md`) — where `trie gate` consumes them into the
+    commit's digest entry. The source tree is never touched. More than one
     symbol requires a real unifying `session_note` (see `session_note_ok`).
     """
-    from trie.session_log import record_applied
+    from trie.pending_intent import append_intent
 
     modify_qnames = store.get_patched_qnames()
     creates_by_file = store.get_create_patches_grouped()
@@ -147,7 +148,6 @@ def record_intent(
             ),
         }
 
-    now = time.time()
     rows: list[dict] = []
     for qname in modify_qnames:
         patches = store.get_patches_for_qname(qname)
@@ -158,16 +158,12 @@ def record_intent(
             (p.get("kind") for p in patches if p.get("kind") in ("delete", "rename")),
             "modify",
         )
-        session_id = next((p.get("session_id") for p in patches if p.get("session_id")), "")
         rows.append(
             {
                 "qname": qname,
                 "op": kind,
                 "notes": [p.get("note", "") for p in patches if p.get("note")],
                 "reasons": [p.get("reason", "") for p in patches if p.get("reason")],
-                "session_id": session_id,
-                "session_note": session_note,
-                "ts": now,
             }
         )
     for _file, creates in creates_by_file.items():
@@ -178,13 +174,10 @@ def record_intent(
                     "op": "create",
                     "notes": [c.get("note", "")] if c.get("note") else [],
                     "reasons": [c.get("reason", "")] if c.get("reason") else [],
-                    "session_id": c.get("session_id", ""),
-                    "session_note": session_note,
-                    "ts": now,
                 }
             )
 
-    record_applied(project_root, rows)
+    append_intent(project_root, config, rows, session_note=session_note)
     store.delete_patches(all=True)
     store.delete_create_patches(all=True)
 
@@ -195,7 +188,8 @@ def record_intent(
         "symbols": [r["qname"] for r in rows],
         "session_note": session_note,
         "next": (
-            "Intent recorded to the session log. The pre-commit digest will carry it; "
-            "no code was generated — source changes are yours."
+            "Intent recorded to the pending-intent file in the digest archive; "
+            "the commit digest will consume it. No code was generated — source "
+            "changes are yours."
         ),
     }

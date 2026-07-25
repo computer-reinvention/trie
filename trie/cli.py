@@ -4,6 +4,7 @@ import sys
 import threading
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -1305,12 +1306,6 @@ def index_cmd(ctx: typer.Context) -> None:
 @app.command("diff")
 def diff_cmd(
     ctx: typer.Context,
-    session: str | None = typer.Option(
-        None,
-        "--session",
-        "-s",
-        help="Restrict to one session id (defaults to all recorded activity).",
-    ),
     base: str = typer.Option("HEAD", "--base", help="Git ref to diff the triefact tree against."),
     raw: bool = typer.Option(
         False,
@@ -1366,7 +1361,6 @@ def diff_cmd(
             reporter,
             config,
             project_root,
-            session=session,
             base=base,
             raw=raw,
             model=model,
@@ -1379,14 +1373,7 @@ def diff_cmd(
 
     store = Store(project_root / ".trie" / "graph.db")
     try:
-        data = collect_session_diff(
-            project_root,
-            config,
-            store,
-            session_id=session,
-            base=base,
-            since=None,
-        )
+        data = collect_session_diff(project_root, config, store, base=base)
     finally:
         store.close()
 
@@ -1457,7 +1444,6 @@ def _run_digest_write(
     config: Config,
     project_root: Path,
     *,
-    session: str | None = None,
     base: str = "HEAD",
     raw: bool = False,
     model: str | None = None,
@@ -1466,27 +1452,33 @@ def _run_digest_write(
     """Write this session's digest entry (the `trie diff --write` body).
 
     Shared by `diff_cmd` and `trie gate` so hook-driven and hook-less (CI)
-    environments run identical logic. Advisory by design: returns True when a
-    digest was written or there was nothing to record, False only on hard
-    failure. `stage=True` additionally `git add`s the digest file and the
-    latest-symlink so an in-flight commit picks them up.
+    environments run identical logic. Evidence is consumption-based — the
+    pending-intent file plus the staging queue — so there are no timestamp
+    windows and no cursor state. On success the pending-intent file is
+    consumed (its rows now live in the digest entry, which is committed).
+
+    Amend/retry: if a digest file for the same parent commit already exists,
+    its recorded rows are folded back into the evidence and the file is
+    rewritten in place rather than duplicated.
+
+    Advisory by design: returns True when a digest was written or there was
+    nothing to record, False only on hard failure. `stage=True` additionally
+    `git add`s the archive dir and the latest-symlink so an in-flight commit
+    picks up both the new digest and the consumed pending file.
     """
-    import time
     from datetime import datetime
 
-    from trie.git_helpers import commit_timestamp, current_head
+    from trie.git_helpers import current_head
+    from trie.pending_intent import consume_intent
     from trie.session_diff import (
         _one_line,
         collect_session_diff,
         collect_symbol_deltas,
+        iter_digest_entries,
         render_digest_section,
+        rows_from_digest_entry,
         synthesize_narrative,
         write_digest,
-    )
-    from trie.session_log import (
-        read_digest_cursor,
-        resolve_digest_window,
-        save_digest_cursor,
     )
 
     # 1. Resolve parent commit identity
@@ -1495,29 +1487,25 @@ def _run_digest_write(
         parent_sha = base
     parent_short = parent_sha[:12]
 
-    # 2. Determine the evidence window via the persistent digest cursor,
-    #    and pick up the same-commit digest file for amend/retry rewrites.
-    since = resolve_digest_window(
-        project_root,
-        parent_sha,
-        fallback_since=commit_timestamp(project_root, base),
-    )
-    cursor = read_digest_cursor(project_root)
-    reuse_file = cursor.get("file") if cursor and cursor.get("parent") == parent_sha else None
+    # 2. Amend/retry detection: an existing digest entry for the same parent
+    #    is rewritten in place, with its rows folded back into the evidence.
+    reuse_file: str | None = None
+    prior_rows: list[dict] = []
+    for entry in iter_digest_entries(project_root, diffs_dir=config.diff.diffs_dir):
+        if entry.get("parent", "").startswith(parent_short):
+            reuse_file = f"{config.diff.diffs_dir}/{entry['name']}"
+            prior_rows = rows_from_digest_entry(entry)
+            break
 
     # 3. Collect session evidence
     store = Store(project_root / ".trie" / "graph.db")
     try:
-        data = collect_session_diff(
-            project_root,
-            config,
-            store,
-            session_id=session,
-            base=base,
-            since=since,
-        )
+        data = collect_session_diff(project_root, config, store, base=base)
     finally:
         store.close()
+
+    if prior_rows:
+        data = replace(data, applied=prior_rows + data.applied)
 
     if data.is_empty():
         reporter.info("no session changes; digest not updated")
@@ -1570,6 +1558,9 @@ def _run_digest_write(
         reporter.error(f"digest write failed: {exc}")
         return False
 
+    # 8. The pending rows now live in a digest entry — consume the file.
+    consume_intent(project_root, config)
+
     backed_by = "narrative" if narrative else "raw evidence"
     reporter.info(
         f"digest written to {written_file} ({backed_by}); {config.diff.write_path} -> latest"
@@ -1579,29 +1570,9 @@ def _run_digest_write(
         from trie.git_helpers import _run_git
 
         _run_git(
-            ["add", config.diff.write_path, config.diff.diffs_dir],
+            ["add", "-A", "--", config.diff.write_path, config.diff.diffs_dir],
             cwd=project_root,
         )
-
-    # 8. Persist the digest cursor so the next run anchors correctly
-    covered_ts: float = 0.0
-    for entry in data.applied:
-        try:
-            ts = float(entry.get("ts", 0) or 0)
-        except (TypeError, ValueError):
-            ts = 0.0
-        if ts > covered_ts:
-            covered_ts = ts
-    if covered_ts == 0.0:
-        covered_ts = time.time()
-
-    save_digest_cursor(
-        project_root,
-        parent=parent_sha,
-        since=since if since is not None else 0.0,
-        covered=covered_ts,
-        file=written_file,
-    )
     return True
 
 
@@ -2340,16 +2311,6 @@ def setup_cmd(
             "install hook + docs only and leave the agent's built-ins alone."
         ),
     ),
-    with_sync_bot: bool = typer.Option(
-        False,
-        "--with-sync-bot",
-        help=(
-            "Also install a CI sync-bot workflow that regenerates stale "
-            "triefacts on PR branches using the ANTHROPIC_API_KEY repository "
-            "secret and pushes the sync commit. Opt-in because it spends the "
-            "org's API budget and pushes to branches."
-        ),
-    ),
     with_mcp: bool = typer.Option(
         False,
         "--with-mcp",
@@ -2475,30 +2436,18 @@ def setup_cmd(
     # GitHub workflow install: comments the latest session digest on PRs.
     # Skipped for non-git dirs; user-owned files (no managed-by marker) are
     # never touched. Inert off GitHub, so no remote detection is needed.
-    from trie.workflow_install import install_sync_bot_workflow, install_triediff_workflow
+    from trie.workflow_install import install_triediff_workflow
 
     workflow_result = install_triediff_workflow(
         project_root,
         diffs_dir=setup_config.diff.diffs_dir,
         dry_run=dry_run or print_only,
     )
-    sync_bot_result = None
-    if with_sync_bot:
-        sync_bot_result = install_sync_bot_workflow(
-            project_root,
-            dry_run=dry_run or print_only,
-        )
 
     _render_setup_plan(reporter, mcp_plan, hook_plan, docs_plan, override_plan)
     wf_path = workflow_result.path or Path(".github/workflows/triediff-comment.yml")
     wf_note = f" ({workflow_result.note})" if workflow_result.note else ""
     reporter.info(f"pr digest workflow: {workflow_result.action} {wf_path}{wf_note}")
-    if sync_bot_result is not None:
-        sb_path = sync_bot_result.path or Path(".github/workflows/trie-sync-bot.yml")
-        sb_note = f" ({sync_bot_result.note})" if sync_bot_result.note else ""
-        reporter.info(f"sync-bot workflow: {sync_bot_result.action} {sb_path}{sb_note}")
-        reporter.info("  remember: the sync bot needs the ANTHROPIC_API_KEY repository secret")
-
     # Surface a non-zero exit if any step hit an error so CI/scripts react.
     mcp_errors = any(r.action == "error" for r in mcp_plan.results) if mcp_plan else False
     hook_errors = any(r.action == "error" for r in hook_plan.results)
@@ -2512,7 +2461,6 @@ def setup_cmd(
         or docs_errors
         or override_errors
         or (workflow_result.action == "error")
-        or (sync_bot_result is not None and sync_bot_result.action == "error")
     ):
         raise typer.Exit(code=1)
 
@@ -3713,23 +3661,24 @@ def patch_create_cmd(
         raise typer.Exit(code=1) from exc
 
     if gone:
-        # Removed symbols have no graph row to queue against — archive the
-        # intent directly so the gate (and the digest) still get it.
-        from trie.session_log import record_applied
+        # Removed symbols have no graph row to queue against — record the
+        # intent straight into the pending-intent file so the gate (and the
+        # commit digest) still get it.
+        from trie.pending_intent import append_intent
 
-        record_applied(
+        append_intent(
             project_root,
+            _config,
             [
                 {
                     "qname": qname,
                     "op": "delete",
                     "notes": [note],
                     "reasons": [reason] if reason else [],
-                    "session_id": _cli_session_id(project_root),
                 }
             ],
         )
-        reporter.success(f"removal note recorded for {qname} (session log)")
+        reporter.success(f"removal note recorded for {qname} (pending intent)")
         return
 
     store = Store(project_root / ".trie" / "graph.db")
