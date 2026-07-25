@@ -1,14 +1,14 @@
 ---
 trie_version: 0.1.9
 source: tests/test_session_diff.py
-file_fingerprint: aebe04e68ba9cb3727e9bf46fc598eb9c3b84d760be4d92b1fc3b4153878e4ca
-last_synced_at: '2026-07-25T01:52:25Z'
+file_fingerprint: bcbea371415b765f56558c510340925082eced78400d561781b45372de1c561e
+last_synced_at: '2026-07-25T02:06:42Z'
 description: Tests for the session log archive and the `trie diff` evidence collection/prompt
   assembly.
 defines:
 - kind: module
   qualified_name: tests/test_session_diff:__module__
-  lines: 1-727
+  lines: 1-732
 - kind: function
   qualified_name: tests/test_session_diff:test_record_and_read_entries_roundtrip
   lines: 24-61
@@ -26,25 +26,25 @@ defines:
   lines: 230-278
 - kind: function
   qualified_name: tests/test_session_diff:test_synthesize_narrative_uses_cache_prefix
-  lines: 281-340
+  lines: 281-345
 - kind: function
   qualified_name: tests/test_session_diff:test_collect_session_diff_since_filters_applied
-  lines: 343-410
+  lines: 348-415
 - kind: function
   qualified_name: tests/test_session_diff:test_render_digest_section_shape
-  lines: 413-543
+  lines: 418-548
 - kind: function
   qualified_name: tests/test_session_diff:test_write_digest_files_symlink_and_prune
-  lines: 546-607
+  lines: 551-612
 - kind: function
   qualified_name: tests/test_session_diff:test_one_line_flattens_and_truncates
-  lines: 610-637
+  lines: 615-642
 - kind: function
   qualified_name: tests/test_session_diff:test_collect_symbol_deltas_before_after
-  lines: 640-702
+  lines: 645-707
 - kind: function
   qualified_name: tests/test_session_diff:test_merge_applied_by_symbol_first_note_wins
-  lines: 705-726
+  lines: 710-731
 incoming_refs: 0
 outgoing_refs: 25
 ---
@@ -66,8 +66,8 @@ Test `collect_session_diff` against a real git repo, verifying triefact diff con
 <!-- trie:section symbol=tests/test_session_diff:test_collect_session_diff_includes_new_triefacts fingerprint=1c8f6b894cfb45576c6cdcf42ce71b213efaf3a7e307fcb041108fc82401e0af body_fp=7cfc1ad6e85ed5c97ed11f5b9323ac777fb66f15a8f60024b089842cfce18b6c source_ref=c981fd16a4af08aa07186b13567aabbfcb9a0871 role=test -->
 Verify that `collect_session_diff` includes untracked new triefact files in `triefact_diff`, not only modified tracked files.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_synthesize_narrative_uses_cache_prefix fingerprint=3113936385b8e907635ec1cc07bc23f9af2f841653adac1596f60d2559caaf85 body_fp=e86c163a4104695f2ea87721079357be8a9a69c45de450c623ca09c09cee010a source_ref=c981fd16a4af08aa07186b13567aabbfcb9a0871 role=test -->
-Verify that `synthesize_narrative` passes the triefact diff as `cache_prefix` when the client supports it, and falls back to embedding it in the user prompt when the client lacks `cache_prefix`.
+<!-- trie:section symbol=tests/test_session_diff:test_synthesize_narrative_uses_cache_prefix fingerprint=4e3948647dcaca3e817614b7a09851a35a6f20ee9b139ed861ee7b4442cb7de2 body_fp=ba6a3b5193f2743db024f4b9c90042bdb7de6545dac14e9483d8d4ce5a7b7557 source_ref=ca97156d4bcc88214b7efcbf5dca8888bf605bdb role=test -->
+Verify that `synthesize_narrative` passes the triefact diff as `cache_prefix` when the client supports it, and falls back to embedding it in the user prompt when the client lacks `cache_prefix`; also asserts `max_tokens >= 512` to guard against runaway truncation.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_session_diff:test_collect_session_diff_since_filters_applied fingerprint=b8ad21187f0eed1369e497ac9b88cb62c894ddac513da36a098c170d0ffcfb7f body_fp=09b8b6feab2de3dcc762b79fe352bda9af2ba3b5238603bae54f6436ceec6f9f source_ref=c981fd16a4af08aa07186b13567aabbfcb9a0871 role=test -->
 Verify that `collect_session_diff` filters applied session log entries by the `since` timestamp, excluding entries older than the cutoff while retaining newer ones.

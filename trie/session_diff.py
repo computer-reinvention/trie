@@ -205,16 +205,20 @@ Rules you must follow without exception:
 
 
 def synthesize_narrative(
-    data: SessionDiff, client: Any, *, max_diff_chars: int = 24000, max_tokens: int = 180
+    data: SessionDiff, client: Any, *, max_diff_chars: int = 24000, max_tokens: int = 1024
 ) -> str:
     """Synthesise a concise intent-level session narrative from the collected evidence via the LLM.
 
     The evidence prompt assembled by ``build_narrative_prompt`` is sent to the client as a
     ``cache_prefix`` so that repeated ``trie diff`` runs within the Anthropic cache TTL reuse the
     cached evidence block instead of re-billing it on every call.  A short instruction message
-    is used as the actual user turn to stay within the strict word budget imposed by the system
-    prompt.  Clients that do not support ``cache_prefix`` (e.g. test fakes) fall back
-    transparently to the original single-prompt call.
+    is used as the actual user turn.  Clients that do not support ``cache_prefix`` (e.g. test
+    fakes) fall back transparently to the original single-prompt call.
+
+    ``max_tokens`` is a runaway guard, NOT the length target — the system prompt's word budget
+    governs length. Setting it near the budget (~180 tokens for 120 words) hard-truncates
+    budget-respecting narratives mid-sentence, which shipped cut-off digests twice before this
+    was caught (telemetry showed output_tokens == max_tokens exactly).
 
     Returns markdown text.
     """
