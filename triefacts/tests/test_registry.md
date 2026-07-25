@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_registry.py
 file_fingerprint: a29fa8656a110e6078dc7d7ed4a357d67312278da609535c57db08cf95078dff
-last_synced_at: '2026-07-20T09:55:17Z'
+last_synced_at: '2026-07-25T10:44:12Z'
 defines:
 - kind: module
   qualified_name: tests/test_registry:__module__

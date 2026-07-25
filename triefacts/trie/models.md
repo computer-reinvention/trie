@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/models.py
-file_fingerprint: 0145d7f983e16008587c5599dc5d933a815d9dd830e57990db6493eb91295acb
-last_synced_at: '2026-07-25T08:08:02Z'
+file_fingerprint: 5e1ff92834dd0c08961f384abe4d713306bc9042f72728e62a66740e93eabf64
+last_synced_at: '2026-07-25T10:43:52Z'
 defines:
 - kind: module
   qualified_name: trie/models:__module__
-  lines: 1-729
+  lines: 1-725
 - kind: class
   qualified_name: trie/models:_LoopHolder
   lines: 63-89
@@ -120,7 +120,7 @@ defines:
   lines: 506-510
 - kind: class
   qualified_name: trie/models:TrieClient
-  lines: 513-712
+  lines: 513-708
 - kind: method
   qualified_name: trie/models:TrieClient.__init__
   lines: 526-547
@@ -132,14 +132,14 @@ defines:
   lines: 566-655
 - kind: method
   qualified_name: trie/models:TrieClient.run_text
-  lines: 657-687
+  lines: 657-683
 - kind: method
   qualified_name: trie/models:TrieClient.count_tokens
-  lines: 689-712
+  lines: 685-708
 - kind: function
   qualified_name: trie/models:make_client
-  lines: 715-728
-incoming_refs: 97
+  lines: 711-724
+incoming_refs: 48
 outgoing_refs: 6
 ---
 <!-- trie:section symbol=trie/models:__module__ fingerprint=040dd73062f452f0be03d3b12bd0034fbdf69902b59a94606a29415a8bde56d9 body_fp=9b387fda13f0c60ba17cbe1d813fca36e81accdb48ac1477cbbc51fd87ee73ba source_ref=8f45f466ffa9b5cb61224b64456ad3d91e218ec8 role=orchestration -->
@@ -322,7 +322,7 @@ Converts trie's provider/model format to pydantic_ai's provider:model format usi
 <!-- trie:section symbol=trie/models:_anthropic_model_name fingerprint=3c87d22ca61cada7c6dd2721cf27ba2000942a7010fc3dac57aeb0cd6ca74261 body_fp=9f60ebe4d744a72dcf3f42d216efade5c4613aa01f6d939ef3729a3781e6bf20 source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
 Extract the bare Anthropic model name from a full trie model ID by stripping the provider prefix.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:TrieClient fingerprint=0718f8b901193e0a54803cf1d16c21bc9c4d11d9ad7d63597d9c4e6e29072331 body_fp=dac333d9d56bde67a681063506e3985ae3c0f0353b5a4a02960cbb928e90ddcf source_ref=54db09acbc4744575e7989226c07b6e81210a833 role=io -->
+<!-- trie:section symbol=trie/models:TrieClient fingerprint=c0f838ab828c034ac30343bc636eef172bf3173ffc2deb0b47f84bca4f228e47 body_fp=dac333d9d56bde67a681063506e3985ae3c0f0353b5a4a02960cbb928e90ddcf source_ref=eac7d606b20c417f983eb8e133fd62c5dcf7aa6a role=io -->
 Wraps Pydantic AI agent creation and execution with structured output, prompt caching, and retry logic.
 
 - `run`: Creates one-shot agent; accepts `output_type=str` for plain-text mode or a `BaseModel` subclass for structured output; supports configurable `output_retries` for pydantic-ai's internal validation retries
@@ -356,7 +356,7 @@ TrieClient.run creates a pydantic-ai Agent with structured or plain-text output 
 - `output_retries`: pydantic-ai-level output validation retries passed to `Agent` (default 3)
 - Returns `ModelResult` containing structured output and token usage counters
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:TrieClient.run_text fingerprint=5868f11dcd4ae4664d1ac35943b2e22127cd50d9420d652bf3af4098771f29fb body_fp=41e73cbc24fc72942ffdfaab859de3eadfd40ab8cf06404b62386a7f9be765e2 source_ref=cf43f636b926264d14e4819c6c4e6e236424e130 role=io -->
+<!-- trie:section symbol=trie/models:TrieClient.run_text fingerprint=5fb414109bd7f5773dca61e8e058cb84f27fb4ee079479d0063b660eb78eb4a0 body_fp=41e73cbc24fc72942ffdfaab859de3eadfd40ab8cf06404b62386a7f9be765e2 source_ref=eac7d606b20c417f983eb8e133fd62c5dcf7aa6a role=io -->
 Invoke `TrieClient.run` with `output_type=str`, returning a `ModelResult` whose `output` is the raw model text instead of a structured Pydantic object.
 
 - `cache_prefix`: forwarded to `run`; cached as a leading user content block before `user_prompt`.

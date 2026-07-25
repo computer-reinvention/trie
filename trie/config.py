@@ -40,96 +40,16 @@ class Triefacts:
 class Models:
     bootstrap: str = "anthropic/claude-sonnet-4-6"
     cascade: str = "anthropic/claude-sonnet-4-6"
-    edits: str = "anthropic/claude-sonnet-4-6"
 
 
 @dataclass
 class Cascade:
     default_depth: int = 1
     hub_symbol_threshold: int = 20
-    max_judgments: int = 50  # hard cap on pre_filter_cascade calls per apply run
+    max_judgments: int = 50  # hard cap on pre_filter_cascade calls per sync run
     # Surface second-order cascade (a caller edit that itself changed a signature)
-    # as ApplyReport.unresolved rather than chasing it in-pipeline. Single sweep.
+    # rather than chasing it in-pipeline. Single sweep.
     surface_unresolved: bool = True
-
-
-@dataclass
-class LspBackend:
-    """A language server / checker invoked for diagnostics during patch apply.
-
-    `command` is the binary name (resolved via shutil.which).
-    `check_args` are CLI flags passed before the file path.
-    `output_format` is one of "pyright" or "ruff" — determines how
-    stdout is parsed into our normalised diagnostic format:
-      {line, column, code, message}[]
-    `exit_ok_codes` — list of exit codes that mean "no diagnostics."
-    Pyright exits 0 even with diagnostics when it's just warnings;
-    we always read stdout regardless of exit code.
-    """
-
-    command: str
-    check_args: list[str] = field(default_factory=list)
-    output_format: str = "pyright"
-    exit_ok_codes: list[int] = field(default_factory=lambda: [0])
-
-
-@dataclass
-class Edits:
-    """Settings for the patch-apply pipeline and LSP diagnostics."""
-
-    lsp_max_retries: int = 3
-    lsp_backends: list[LspBackend] = field(
-        default_factory=lambda: [
-            LspBackend(command="pyright", check_args=["--outputjson"], output_format="pyright"),
-        ]
-    )
-    # Patch-apply backend:
-    #   "record"   (default) — the patch pipeline is an intent store, not a code
-    #                generator: agents edit source natively, notes describe why,
-    #                and apply archives the notes to the session log (feeding the
-    #                digest archive and the `trie intent` pre-commit gate). trie
-    #                generates no code on this path.
-    #   "agent"    — patch apply returns an agent-executable worklist (workorder).
-    #   "llm"      — legacy in-process LLM code generation (context-starved;
-    #                kept for experiments).
-    #   "opencode" — one targeted opencode instance per symbol (Phase 2).
-    # See trie/edits/backends.
-    backend: str = "record"
-    # How a multi-item apply commits on partial failure:
-    #   "all_or_nothing" (default) — any item failing aborts the whole commit
-    #   "per_item"   — commit items that passed; failed items go to unresolved
-    #   "per_group"  — commit coherent groups that fully pass
-    commit_mode: str = "all_or_nothing"
-    # Max regeneration attempts for a symbol whose generated source won't compile,
-    # before surfacing it in ApplyReport.unresolved with the failed source verbatim.
-    compile_retry_cap: int = 2
-    # How many times pydantic-ai may re-ask the model when its STRUCTURED output
-    # fails to parse/validate (separate from network retries). The library
-    # defaults to 1, which makes a single malformed structured response abort the
-    # whole apply ("Exceeded maximum output retries"). Large symbols (e.g. a long
-    # React component regenerated as one source string) trip this; give the model
-    # a few chances to return well-formed output before failing the symbol.
-    output_retries: int = 3
-    # Max output tokens for a code-generation call (per-symbol body, whole-file
-    # regeneration, or LSP fixup). The model supports far more (Sonnet 4.x: 64K);
-    # a low cap silently TRUNCATES the structured tool-call JSON mid-string on any
-    # non-trivial symbol, which surfaces as "Exceeded maximum output retries" and
-    # aborts the apply. Set generously so regenerating a large file/component fits
-    # in one response. You pay only for tokens actually produced, so a high ceiling
-    # costs nothing on small symbols.
-    max_output_tokens: int = 16384
-
-
-@dataclass
-class LanguageConfig:
-    """Per-language overrides, keyed by backend name (e.g. "typescript").
-
-    `lsp_backends`, when non-empty, replaces the language backend's built-in
-    default checkers for the edit pipeline. Other per-language knobs can be
-    added here without touching the global config shape.
-    """
-
-    lsp_backends: list[LspBackend] = field(default_factory=list)
 
 
 @dataclass
@@ -304,35 +224,24 @@ class Config:
     sync: Sync = field(default_factory=Sync)
     mcp: Mcp = field(default_factory=Mcp)
     debug: Debug = field(default_factory=Debug)
-    edits: Edits = field(default_factory=Edits)
     diff: Diff = field(default_factory=Diff)
-    languages: dict[str, LanguageConfig] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: dict) -> Config:
-        raw_edits = dict(data.get("edits", {}))
-        backends_raw = raw_edits.pop("lsp_backends", None)
-        if backends_raw is not None:
-            raw_edits["lsp_backends"] = [LspBackend(**b) for b in backends_raw]
-        languages: dict[str, LanguageConfig] = {}
-        for name, raw in (data.get("languages", {}) or {}).items():
-            raw = dict(raw)
-            lb = raw.pop("lsp_backends", None)
-            languages[name] = LanguageConfig(
-                lsp_backends=[LspBackend(**b) for b in lb] if lb else [],
-            )
+        # NOTE: [edits] and [languages] sections (and models.edits) in existing
+        # trie.toml files are silently ignored — they configured the removed
+        # code-generation pipeline (the patch pipeline is an intent store now).
+        models_raw = {k: v for k, v in dict(data.get("models", {})).items() if k != "edits"}
         return cls(
             trie=TrieMeta(**data.get("trie", {})),
             scope=Scope(**data.get("scope", {})),
             triefacts=Triefacts(**data.get("triefacts", {})),
-            models=Models(**data.get("models", {})),
+            models=Models(**models_raw),
             cascade=Cascade(**data.get("cascade", {})),
             sync=Sync(**data.get("sync", {})),
             mcp=Mcp(**data.get("mcp", {})),
             debug=Debug(**data.get("debug", {})),
-            edits=Edits(**raw_edits),
             diff=Diff(**data.get("diff", {})),
-            languages=languages,
         )
 
     @classmethod
@@ -399,7 +308,6 @@ source_root = "."
 # DEEPSEEK_API_BASE / OPENAI_API_KEY env vars set, or use --model on the CLI.
 bootstrap = "anthropic/claude-sonnet-4-6"
 cascade = "anthropic/claude-sonnet-4-6"
-edits = "anthropic/claude-sonnet-4-6"
 
 [cascade]
 # Default reference-graph traversal depth on incremental sync.
@@ -451,20 +359,6 @@ trace_hub_threshold = 50                       # skip hubs >50 inbound in trace/
 trace_max_nodes = 200
 trace_prose_at_depth = 0                       # 0 = no prose on trace
 trace_prose_budget = 10
-
-[edits]
-# Patch-apply pipeline settings.
-lsp_max_retries = 3
-
-# Ordered list of LSP backends for source diagnostics during apply.
-# The first backend on PATH wins; its diagnostics are fed to the fixup loop.
-# Each entry: {command, check_args?, output_format?, exit_ok_codes?}.
-# Supported output_formats: "pyright" (--outputjson), "ruff" (--output-format json).
-# Add more backends (or replace pyright with ruff) by editing this list.
-[[edits.lsp_backends]]
-command = "pyright"
-check_args = ["--outputjson"]
-output_format = "pyright"
 
 # [diff]
 # narrative = true          # LLM narrative at the top of each digest entry (falls back to raw evidence without an API key)

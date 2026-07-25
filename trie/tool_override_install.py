@@ -1484,46 +1484,24 @@ import { tool } from "@opencode-ai/plugin"
 
 export default tool({
   description:
-    "Apply all pending patches: merge notes, generate source+prose via LLM, " +
-    "cascade to neighbour symbols, run LSP fixup, sync triefact metadata, " +
-    "and verify project consistency. Multi-symbol applies REQUIRE a " +
-    "session_note describing the unifying intent. Pass verbose for " +
-    "per-symbol detail.",
+    "Commit all pending patch notes as intent — trie generates NO code. " +
+    "Archives every pending note to the session log (feeding the per-commit " +
+    "digest, read --history, and the `trie intent` pre-commit gate) and " +
+    "clears the queue. Multi-symbol applies REQUIRE a session_note " +
+    "describing the unifying intent.",
   args: {
     session_note: tool.schema
       .string()
       .optional()
       .describe(
         "The unifying intent behind this batch of patches. Required when " +
-          "more than one symbol is being applied; ignored for single-symbol " +
+          "more than one symbol is being recorded; ignored for single-symbol " +
           "applies.",
       ),
-    backend: tool.schema
-      .string()
-      .optional()
-      .describe(
-        "Override the configured edit backend for this apply: 'llm' runs " +
-          "trie's own generation pipeline; 'agent' returns a workorder for " +
-          "the calling agent to execute instead of generating.",
-      ),
-    commit_mode: tool.schema
-      .string()
-      .optional()
-      .describe(
-        "Failure policy: 'all_or_nothing' (default), 'per_item', or " +
-          "'per_group'.",
-      ),
-    verbose: tool.schema
-      .boolean()
-      .optional()
-      .describe("Show per-symbol notes and prose updates during apply."),
   },
   async execute(args, context) {
     const flags: string[] = ["patch", "apply"]
     if (args.session_note) flags.push("--note", args.session_note)
-    if (args.backend) flags.push("--backend", args.backend)
-    if (args.commit_mode) flags.push("--commit-mode", args.commit_mode)
-    if (args.verbose) flags.push("--verbose")
 
     const proc = Bun.spawn(["trie", ...flags], {
       cwd: context.directory,
@@ -1829,8 +1807,8 @@ TARGETS: dict[str, ToolOverrideTarget] = {
             "patches/creates at once), `create_symbol` (stage new symbols), "
             "`rename_symbol` / `delete_symbol` (structural edits), "
             "`patch_drop` (remove patches), `patch_list` (list patches), "
-            "`patch_apply` (apply all, with session note / backend / "
-            "commit-mode control)."
+            "`patch_apply` (record all pending notes to the session log — "
+            "no code generation)."
         ),
         files=(
             FileToWrite(

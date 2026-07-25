@@ -46,10 +46,6 @@ line shifts never gate — and lists any touched symbol without a note,
 with copy-pasteable `trie patch <qname> -n "…"` commands. Synthetic
 `__module__` symbols are exempt.
 
-Backends other than the default `record` exist for experiments
-(`agent` returns a workorder; `llm` is trie's legacy code generation)
-via `edits.backend` in `trie.toml` or `--backend` per apply.
-
 Patches accumulate across turns and across agents; drop stale ones with
 `«patch_drop»`.
 
@@ -144,8 +140,7 @@ trie patch delete-symbol <qname> [--reason STR]
 trie patch preview
 trie patch list
 trie patch drop          [--qname QNAME | --all]
-trie patch apply         [--note STR] [--model MODEL] [--backend llm|agent]
-                         [--commit-mode all_or_nothing|per_item|per_group]
+trie patch apply         [--note STR]   (records notes; generates no code)
 ```
 
 CLI-specific behaviour:

@@ -664,14 +664,10 @@ class TrieClient:
     ) -> ModelResult:
         """Run the model in plain-text mode and return its raw TEXT output.
 
-        This is the code-generation path. Routing code through a pydantic
-        structured-output schema forces the model to emit a large body as an
-        escaped JSON string field; under load that JSON malforms or truncates and
-        pydantic-ai exhausts its output retries with ``UnexpectedModelBehavior``
-        — a ~100s dead end on big files. Instead we use pydantic-ai's first-class
-        plain-text output mode (``output_type=str``): the model replies with free
-        text (a fenced code block the caller parses via ``trie.edits.textgen``),
-        with no JSON schema that a long code body could fail to satisfy.
+        Free-text output mode (``output_type=str``): the model replies with
+        plain text and ``result.output`` is the raw string. Used by callers
+        that want prose (e.g. the digest narrative) rather than structured
+        output — no JSON schema that a long body could fail to satisfy.
 
         Delegates to ``run`` so prompt caching, the per-thread loop/client, the
         in-flight governor, and network retries are all shared with the
