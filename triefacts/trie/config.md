@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/config.py
-file_fingerprint: 559243496c87d379e6c7b335bfac87588ecff5cdefc52329337bba5e55fba8da
-last_synced_at: '2026-07-25T00:40:36Z'
+file_fingerprint: f9d241cde408b238e3e7f5bab4000a0a1c5201985a4d168900b6901c179d5643
+last_synced_at: '2026-07-25T06:05:53Z'
 defines:
 - kind: module
   qualified_name: trie/config:__module__
-  lines: 1-473
+  lines: 1-482
 - kind: class
   qualified_name: trie/config:TrieMeta
   lines: 9-10
@@ -33,35 +33,35 @@ defines:
   lines: 120-128
 - kind: class
   qualified_name: trie/config:Sync
-  lines: 132-170
+  lines: 132-176
 - kind: class
   qualified_name: trie/config:Debug
-  lines: 174-193
+  lines: 180-199
 - kind: class
   qualified_name: trie/config:Mcp
-  lines: 197-253
+  lines: 203-259
 - kind: class
   qualified_name: trie/config:Diff
-  lines: 257-284
+  lines: 263-290
 - kind: class
   qualified_name: trie/config:Config
-  lines: 288-348
+  lines: 294-354
 - kind: method
   qualified_name: trie/config:Config.from_dict
-  lines: 302-326
+  lines: 308-332
 - kind: method
   qualified_name: trie/config:Config.load
-  lines: 329-332
+  lines: 335-338
 - kind: method
   qualified_name: trie/config:Config.find_and_load
-  lines: 335-348
+  lines: 341-354
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
-  lines: 351-352
+  lines: 357-358
 - kind: constant
   qualified_name: trie/config:DEFAULT_CONFIG_TOML
-  lines: 355-472
-incoming_refs: 216
+  lines: 361-481
+incoming_refs: 223
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/config:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=73508aef5ccf98a204e6bf0fa288e0420baac8315fc2fb1aa7e8d1bf91d72a01 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
@@ -124,15 +124,16 @@ Dataclass holding per-language config overrides, keyed by backend name (e.g. `"t
 
 - `lsp_backends`: replaces the language backend's default checkers when non-empty.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Sync fingerprint=145b67fe3f9927dfe07d022dff970948b52f75f39e0a75e7205bb41bc0342194 body_fp=d43260d5f28576ed9d9929528505a0188171cd8ba73717a25787ec56a55bc745 source_ref=e8748bf615390b49a070b57441667942f68436a5 role=config -->
+<!-- trie:section symbol=trie/config:Sync fingerprint=a93ade6800fe0ee90ea2e067bb805b9d35056a5197ebda7f91e37178abd868a8 body_fp=2013801001ddde408edcac871ea3d7fca942f2015fe17bb0eafaaf5ae6d96af4 source_ref=073d45150b29b0a304f40de8e0d78addf413edcc role=config -->
 Configuration dataclass for controlling parallelism and retry behavior during sync operations.
 
 - `concurrency`: parallel per-symbol LLM calls within a single file (default 4)
-- `file_workers`: concurrent files being processed (default 8)  
+- `file_workers`: concurrent files being processed (default 8)
 - `max_inflight_requests`: global cap on total concurrent LLM calls (default 8)
 - `max_retries`: retry attempts before propagating rate-limit errors (default 8)
 - `retry_base_delay_seconds`: base exponential backoff delay (default 1.0)
 - `retry_cap_seconds`: maximum backoff delay (default 60.0)
+- `retry_total_seconds`: total wall-clock budget for one call's retry loop; 0 = unbounded (default 300.0)
 - `request_timeout_seconds`: per-request timeout preventing indefinite hangs (default 120.0)
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:Debug fingerprint=74eb562287f2d40b4d10de5eeca4500a9792b9df3b3037d4e875d64dc1bcd8cc body_fp=2667f14db51f0ee544a4a8580493f37ecbb1d507cde52c75f16c447bcff567c8 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->

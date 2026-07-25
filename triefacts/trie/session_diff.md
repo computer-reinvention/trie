@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/session_diff.py
-file_fingerprint: fcee19fbaac693e19eb5b7ccca451efba5519ab5d95d4eced688af839bb2f304
-last_synced_at: '2026-07-25T00:40:40Z'
+file_fingerprint: 71c4e2e7f76d268db5a6ea6f5ed60a1e6798ce92631706fec5cff50b5ace4f8e
+last_synced_at: '2026-07-25T02:06:42Z'
 defines:
 - kind: module
   qualified_name: trie/session_diff:__module__
-  lines: 1-604
+  lines: 1-610
 - kind: class
   qualified_name: trie/session_diff:SessionDiff
   lines: 8-27
@@ -18,43 +18,43 @@ defines:
   lines: 20-27
 - kind: function
   qualified_name: trie/session_diff:_triefact_pathspecs
-  lines: 30-41
+  lines: 30-43
 - kind: function
   qualified_name: trie/session_diff:collect_session_diff
-  lines: 44-77
+  lines: 46-79
 - kind: function
   qualified_name: trie/session_diff:_one_line
-  lines: 80-112
+  lines: 82-114
 - kind: constant
   qualified_name: trie/session_diff:_FENCE
-  lines: 115-115
+  lines: 117-117
 - kind: function
   qualified_name: trie/session_diff:build_narrative_prompt
-  lines: 118-190
+  lines: 120-192
 - kind: constant
   qualified_name: trie/session_diff:_NARRATIVE_SYSTEM_PROMPT
-  lines: 193-202
+  lines: 195-204
 - kind: function
   qualified_name: trie/session_diff:synthesize_narrative
-  lines: 205-233
+  lines: 207-239
 - kind: function
   qualified_name: trie/session_diff:render_digest_section
-  lines: 236-375
+  lines: 242-381
 - kind: constant
   qualified_name: trie/session_diff:DIGEST_FILE_HEADER
-  lines: 378-382
+  lines: 384-388
 - kind: function
   qualified_name: trie/session_diff:_new_digest_filename
-  lines: 385-396
+  lines: 391-402
 - kind: function
   qualified_name: trie/session_diff:write_digest
-  lines: 399-472
+  lines: 405-478
 - kind: function
   qualified_name: trie/session_diff:collect_symbol_deltas
-  lines: 475-582
+  lines: 481-588
 - kind: function
   qualified_name: trie/session_diff:merge_applied_by_symbol
-  lines: 585-603
+  lines: 591-609
 incoming_refs: 7
 outgoing_refs: 0
 ---
@@ -70,8 +70,8 @@ Return `True` when `SessionDiff` has no diff text, no applied entries, and no pe
 <!-- trie:section symbol=trie/session_diff:SessionDiff.session_ids fingerprint=f8703e92cc108bac529c20bce6b83766f976d0424f7683d4e60f831b962e00f2 body_fp=a965b48afc59b753e1813be79724b80ffd65d52960bca31c9e3774495446941a source_ref=2fd24a66abd87a87819892d8d61ea7471cee29cb role=domain -->
 Return distinct, non-empty session IDs from `SessionDiff.applied` and `SessionDiff.pending`, preserving insertion order.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/session_diff:_triefact_pathspecs fingerprint=3568ac1bd7c9bb97bf5381b4a6f23bfdded8133fdc861827492ac664b54d5608 body_fp=3df403bc2b091b54f3fb6b1881d44ffdfe64e29f6c0e0c9fbfcb721b0cecd844 source_ref=4c4e91c3c881299bbd6cbb84617acdafd0760205 role=util -->
-Return git pathspecs covering the triefact root while excluding `config.diff.diffs_dir` to prevent digest files from polluting evidence collection.
+<!-- trie:section symbol=trie/session_diff:_triefact_pathspecs fingerprint=c1584da79e5bd71fa3f6f87e83e878f6710c3c911a9e94b7a15582a62f005dbe body_fp=4af57e3caf077f952f1548210fa3349f41121a72c02b8a9580ca95eb157fcc7c source_ref=876ccb9eaba2478453b69c9d3923da1f51105118 role=util -->
+Return git pathspecs covering the triefact root while excluding `config.diff.diffs_dir` and the root `README.md` to prevent digest files and the generated index from polluting evidence collection.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/session_diff:collect_session_diff fingerprint=c890a4f48029ac679e66239a6d6522bc61572276a1a52cc2da911309cdb1ecf2 body_fp=a559ab9075f3b849a287b0bb954b2f5622db71a9fad5d5d02f26a30d95011351 source_ref=4c4e91c3c881299bbd6cbb84617acdafd0760205 role=orchestration -->
 Gather one session's evidence into a `SessionDiff`: git diff of the triefact tree vs `base`, applied patch notes from the session log, and pending patch notes from the store.
@@ -96,11 +96,12 @@ Assemble the LLM user prompt from a `SessionDiff`, ordering session intents, app
 <!-- trie:section symbol=trie/session_diff:_NARRATIVE_SYSTEM_PROMPT fingerprint=94f4e4216e8a9d9fc06825bafedd1bc8ae49d871919761f6fe9d2b579baa8d7f body_fp=07b82799f6257750ff5cb583288729e2f27720d65cac7e0fd9b15446d3f73ecf source_ref=b52fb7d875efc22b57e789d47535774fa98128e8 role=config -->
 System prompt string passed to the LLM in `synthesize_narrative`, instructing it to produce a ≤120-word plain-markdown PR change digest from patch-note and triefact-diff evidence.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/session_diff:synthesize_narrative fingerprint=6fce00f5e91562cd9f5469fd3086084b1875dc517acbd71920a6f1fbb590217a body_fp=087844e6f141b58f246e002987af61b63be0febf0172142e9324810f22d663c4 source_ref=b52fb7d875efc22b57e789d47535774fa98128e8 role=io -->
+<!-- trie:section symbol=trie/session_diff:synthesize_narrative fingerprint=77ff2de89049ab7e817394e55f1f3689da3660a22b84c046012771269e8540e7 body_fp=8e0a95b09fe11e5c6a84aff1bc75d9180ca290f2915184de244eb21ca04e61d4 source_ref=ead1a373e664710d47366cbb46a8ee56ee0ff28e role=io -->
 Send `SessionDiff` evidence to an LLM client and return a concise markdown session narrative.
 
 - `client`: must expose `run_text`; `cache_prefix` kwarg is used when supported, otherwise falls back to a single-prompt call.
 - `max_diff_chars`: forwarded to `build_narrative_prompt` to cap diff size before sending.
+- `max_tokens`: runaway guard only; default raised to 1024 to avoid mid-sentence truncation.
 - Returns stripped markdown text from `result.output`.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/session_diff:render_digest_section fingerprint=f10f6e53343eafd65a948ead2e37a63c1b0601e432cdec6c33e732e787fac7ca body_fp=019a5dfbae1a48a62cf17db686254b0ee9b73d94725ecfdc7d56bd932318835d source_ref=b52fb7d875efc22b57e789d47535774fa98128e8 role=domain -->

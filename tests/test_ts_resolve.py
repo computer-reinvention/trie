@@ -55,3 +55,51 @@ def test_resolution_is_memoized(resolver: TsResolver):
     first = resolver.resolve("@/util", from_file)
     assert ("@/util", str(from_file)) in resolver._cache
     assert resolver.resolve("@/util", from_file) == first
+
+
+# --- performance regression guards ------------------------------------------
+#
+# Scan on a React Native project once took 43s because (a) config-file
+# discovery rglob'd through all of node_modules and (b) a fresh resolver was
+# built for every parsed file. These tests pin the behavioural fixes; timing
+# assertions would flake, so we assert traversal and construction counts.
+
+
+def test_config_discovery_never_descends_into_vendor_dirs(tmp_path):
+    from trie.parse.ts_resolve import _iter_config_files
+
+    (tmp_path / "tsconfig.json").write_text("{}")
+    nested = tmp_path / "packages" / "app"
+    nested.mkdir(parents=True)
+    (nested / "package.json").write_text('{"name": "app"}')
+
+    # Vendor + hidden trees that must never be traversed, let alone matched.
+    for bad in ("node_modules/dep", ".git/objects", "build/out", "dist/js"):
+        d = tmp_path / bad
+        d.mkdir(parents=True)
+        (d / "package.json").write_text('{"name": "vendored"}')
+        (d / "tsconfig.json").write_text("{}")
+
+    tsconfigs = _iter_config_files(tmp_path, "tsconfig*.json")
+    pkgs = _iter_config_files(tmp_path, "package.json")
+
+    assert tsconfigs == [tmp_path / "tsconfig.json"]
+    assert pkgs == [nested / "package.json"]
+
+
+def test_extract_file_data_builds_one_resolver_per_source_root(tmp_path, mocker):
+    import trie.parse.typescript_refs as tsr
+    from trie.parse.ts_resolve import TsResolver
+
+    for name in ("a", "b", "c"):
+        (tmp_path / f"{name}.ts").write_text(f"export const {name} = 1;\n")
+
+    tsr._RESOLVER_CACHE.clear()
+    spy = mocker.spy(TsResolver, "build")
+    for name in ("a", "b", "c"):
+        tsr.extract_file_data(tmp_path / f"{name}.ts", source_root=tmp_path)
+
+    assert spy.call_count == 1, (
+        f"TsResolver.build ran {spy.call_count}x for one source root — the "
+        "per-scan sharing contract regressed (43s scan bug)"
+    )

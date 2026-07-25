@@ -921,3 +921,73 @@ def test_batch_patch_empty_list_errors(tools: TrieTools):
     result = tools.batch_patch([])
     assert "error" in result
     assert result["error"]["code"] == "invalid_argument"
+
+
+# --- staleness honesty ------------------------------------------------------
+
+
+def test_read_warns_when_prose_is_stale(populated_project: Path):
+    """The trust fix: prose generated before a source change must carry a
+    STALE warning on symbol reads — a wiki that serves outdated prose
+    silently is worse than no wiki."""
+    # Edit the source and re-scan so the graph knows the new fingerprint but
+    # the triefact prose still predates it.
+    (populated_project / "lib.py").write_text(
+        "def slugify(text: str) -> str:\n"
+        '    """Lowercase + underscore-separate (changed!)."""\n'
+        '    return text.lower().replace(" ", "_")\n'
+        "\n\n"
+        "def capitalize(text: str) -> str:\n"
+        '    """Capitalize first letter of each word."""\n'
+        "    return text.title()\n"
+    )
+    config, _ = Config.find_and_load(populated_project)
+    from trie.graph.store import Store
+
+    with Store(populated_project / ".trie" / "graph.db") as store:
+        scan_project(project_root=populated_project, config=config, store=store)
+
+    t = TrieTools(populated_project)
+    try:
+        out = t.read("lib:slugify")
+        notes = out.get("notes") or []
+        assert any("STALE" in n for n in notes), f"expected stale warning, got notes={notes}"
+        # capitalize untouched prose-wise, but same file: only per-section
+        # fingerprints count, so slugify's warning must not bleed onto it...
+        # (capitalize has no section in this fixture, so just assert the read
+        # envelope stays well-formed.)
+        file_view = t.read("lib.py")
+        assert "STALE PROSE" in str(file_view.get("output", "")), (
+            "compact file view must carry the stale banner"
+        )
+    finally:
+        t.close()
+
+
+def test_read_warns_when_graph_itself_is_stale(populated_project: Path):
+    """Layer 2: source edited but NOT re-scanned — the graph can't vouch for
+    anything, so the read must flag that prose may be stale."""
+    (populated_project / "lib.py").write_text(
+        'def slugify(text: str) -> str:\n    """Totally rewritten."""\n    return "x"\n'
+    )
+    t = TrieTools(populated_project)
+    try:
+        out = t.read("lib:slugify")
+        notes = out.get("notes") or []
+        assert any("changed since the last graph refresh" in n for n in notes), (
+            f"expected graph-stale warning, got notes={notes}"
+        )
+    finally:
+        t.close()
+
+
+def test_read_has_no_stale_warning_when_fresh(populated_project: Path):
+    t = TrieTools(populated_project)
+    try:
+        out = t.read("lib:slugify")
+        notes = out.get("notes") or []
+        assert not any("STALE" in n or "stale" in n for n in notes), (
+            f"fresh prose must carry no stale warnings, got {notes}"
+        )
+    finally:
+        t.close()

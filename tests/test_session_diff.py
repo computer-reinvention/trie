@@ -313,6 +313,11 @@ def test_synthesize_narrative_uses_cache_prefix() -> None:
     assert result == "narrative md"
     assert client_with_cache.recorded_cache_prefix is not None
     assert "## Raw triefact diff" in client_with_cache.recorded_cache_prefix
+    # max_tokens is a runaway guard, not the length target: a cap near the
+    # ~180-token word budget hard-truncated narratives mid-word (shipped in
+    # several digests before being caught — output_tokens == max_tokens).
+    assert client_with_cache.recorded_max_tokens is not None
+    assert client_with_cache.recorded_max_tokens >= 512
     recorded_user = client_with_cache.recorded_user or ""
     assert "## Raw triefact diff" not in recorded_user
 

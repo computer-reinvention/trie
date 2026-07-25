@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: tests/test_check.py
-file_fingerprint: 7c580b8c9143a2b2172cb5cc809adee8dfd121d71bda42e370ba4ac8b02b7b3e
-last_synced_at: '2026-06-17T16:42:51Z'
+file_fingerprint: e15bc328b0061088438e35ef3f6d2525dbdeacc17cfdbaeed2d978ac887eb031
+last_synced_at: '2026-07-25T01:48:18Z'
 defines:
 - kind: module
   qualified_name: tests/test_check:__module__
-  lines: 1-213
+  lines: 1-216
 - kind: function
   qualified_name: tests/test_check:project
   lines: 16-28
@@ -48,13 +48,13 @@ defines:
   lines: 146-157
 - kind: function
   qualified_name: tests/test_check:test_cli_verify_detects_tampered_body
-  lines: 160-174
+  lines: 160-177
 - kind: function
   qualified_name: tests/test_check:test_check_project_detects_tampered_body
-  lines: 177-191
+  lines: 180-194
 - kind: function
   qualified_name: tests/test_check:test_check_project_detects_legacy_section
-  lines: 194-212
+  lines: 197-215
 incoming_refs: 0
 outgoing_refs: 34
 ---
@@ -116,8 +116,8 @@ Tests that CLI verify command exits with code 1 when triefacts are out of sync w
 <!-- trie:section symbol=tests/test_check:test_cli_verify_quiet_mode fingerprint=10e216c8132777b1f979db57b6c06e1b7243d2eb4597bd4e8198003dee828443 body_fp=b458aa54e6c5cd81226589e3d5bccdfeb6590ac81d26640d707d2f1bbfc52497 source_ref=647efc202801e8ab3384c135027857bcb77efcb4 role=test-infrastructure -->
 Tests that CLI verify command with --quiet flag suppresses per-symbol details while preserving error summary.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_check:test_cli_verify_detects_tampered_body fingerprint=1dbf23489cb261c47fd1656de1b75154589a3dc4fe22bc186249539be86a15f1 body_fp=29144214a932e322de74fe0a27a358e465dc9dba4abbf7c44b8e5e68d42f9a06 source_ref=647efc202801e8ab3384c135027857bcb77efcb4 role=test-infrastructure -->
-Tests that CLI verify command detects when triefact section body content has been manually edited and reports tampered body error.
+<!-- trie:section symbol=tests/test_check:test_cli_verify_detects_tampered_body fingerprint=6d40d4f48e4430cd05b03f35a5184d65e3235d8a0b8ef65353ea5507a42fc0a0 body_fp=46736cf117ee5ba9e9ef95cfd444cbf098742e85c78373938c8bf1470bab8e57 source_ref=30105b810f8b90b700150c01e3775337b5f88dda role=test -->
+Tests that the CLI `verify` command detects manually edited triefact section bodies and outputs "hand-edited", "outside", and the affected symbol name.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_check:test_check_project_detects_tampered_body fingerprint=73497d814b012250d67621e3dd5ff6075add11f22f4e6c837fbdb9b4c4e0ef38 body_fp=884442ebc008a1d7d851005b2c5386aef553da10358bff334de2d3feba595bc3 source_ref=647efc202801e8ab3384c135027857bcb77efcb4 role=test -->
 Tests that `check_project` detects manually edited content within triefact section sentinels via body fingerprint validation.

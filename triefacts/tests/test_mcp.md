@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: tests/test_mcp.py
-file_fingerprint: f8dccd04c8178419f0b993789ffd1a28f20b4e6b31d5847df31967eb945d4f91
-last_synced_at: '2026-07-20T13:09:27Z'
+file_fingerprint: a689eb7fca20de68abf33a10bd230217cfaea54aeb870c7be97cdab6e59442d6
+last_synced_at: '2026-07-25T01:46:28Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: module
   qualified_name: tests/test_mcp:__module__
-  lines: 1-924
+  lines: 1-994
 - kind: constant
   qualified_name: tests/test_mcp:PROJECT_TOML
   lines: 21-30
@@ -239,8 +239,17 @@ defines:
 - kind: function
   qualified_name: tests/test_mcp:test_batch_patch_empty_list_errors
   lines: 920-923
+- kind: function
+  qualified_name: tests/test_mcp:test_read_warns_when_prose_is_stale
+  lines: 929-964
+- kind: function
+  qualified_name: tests/test_mcp:test_read_warns_when_graph_itself_is_stale
+  lines: 967-981
+- kind: function
+  qualified_name: tests/test_mcp:test_read_has_no_stale_warning_when_fresh
+  lines: 984-993
 incoming_refs: 0
-outgoing_refs: 12
+outgoing_refs: 17
 ---
 <!-- trie:section symbol=tests/test_mcp:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8aae9c0160792068985e2d8f76d0fb26134f6f6b03e5f03d32d39b128db471ad source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests for MCP tool surface (grep, read, trace) via direct TrieTools invocation.
@@ -273,10 +282,10 @@ Creates a test project fixture with scanned symbols and generated triefacts for 
 - Syncs `lib.py` and `app.py` using FakeTrieClient to generate documentation
 - Returns the project path with `.trie/graph.db` containing queryable data
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:tools fingerprint=b89f3ca1611ed5226f820d82ffc6f4d3db27942f64390976744c1fbf0d5e67de body_fp=03851a485a0bfaf6da9ce7379e6be9bbf9d979aecffc4d8f0ba33a8ec4d47b67 source_ref=34ac800409ea7e9fc313a6fa636048bec513d2b2 role=test -->
+<!-- trie:section symbol=tests/test_mcp:tools fingerprint=b89f3ca1611ed5226f820d82ffc6f4d3db27942f64390976744c1fbf0d5e67de body_fp=03851a485a0bfaf6da9ce7379e6be9bbf9d979aecffc4d8f0ba33a8ec4d47b67 source_ref=f17367d9a6796ee0b95f53fa75132bfa3ac23171 role=test -->
 Creates a TrieTools fixture for the populated test project and ensures cleanup after use.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing fingerprint=2ea97d1b02ea695fbca32b81cfd8377a7e1da3159c9b30a1815fe2099d25638b body_fp=4df7c8bf2d3fc78317a7bf684cf1bca16d55c1971b6168ee2217d647e9423267 source_ref=34ac800409ea7e9fc313a6fa636048bec513d2b2 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing fingerprint=2ea97d1b02ea695fbca32b81cfd8377a7e1da3159c9b30a1815fe2099d25638b body_fp=4df7c8bf2d3fc78317a7bf684cf1bca16d55c1971b6168ee2217d647e9423267 source_ref=f17367d9a6796ee0b95f53fa75132bfa3ac23171 role=test -->
 Tests that TrieTools initialization fails with clear error message when ripgrep binary is missing.
 
 - Simulates missing `rg` by stubbing `shutil.which` to return `None`
@@ -473,7 +482,7 @@ Creates test project with two auth symbols ranked by inbound count for fuzzy mat
 - Both symbols contain "auth" for equal text relevance but different centrality scores
 - Tests sorting behavior where niche symbols rank before hubs at equal relevance
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_niche_ranks_before_hub fingerprint=a5bf02d8993e8282336d29b02cec7ebb34624737bcbad9c62cbda7acad54290e body_fp=5cf31bb5473fa0a0eca8dcd6199277e19d4abd1e61a76ed4f2d5d93228875539 source_ref=34ac800409ea7e9fc313a6fa636048bec513d2b2 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_niche_ranks_before_hub fingerprint=a5bf02d8993e8282336d29b02cec7ebb34624737bcbad9c62cbda7acad54290e body_fp=5cf31bb5473fa0a0eca8dcd6199277e19d4abd1e61a76ed4f2d5d93228875539 source_ref=f17367d9a6796ee0b95f53fa75132bfa3ac23171 role=test -->
 Verifies `grep_entry_points` ranks niche symbols before hubs when relevance scores are equal.
 
 - Uses `dual_rank_project` fixture with `auth_check` (2 inbound) and `hub_authenticate` (3 inbound)
@@ -481,7 +490,7 @@ Verifies `grep_entry_points` ranks niche symbols before hubs when relevance scor
 - Asserts `auth_check` appears before `hub_authenticate` in results
 - Tests the sort key: score DESC, inbound_count ASC
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_hits_carry_score fingerprint=bf76df08b996d67ba20379770a38f838d8fe1c762948d49445555df41368cc37 body_fp=249bc8f0cd416cd5944a6883261bdef30bb3eeacddb4863ef73ff7af41c2adb8 source_ref=34ac800409ea7e9fc313a6fa636048bec513d2b2 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_hits_carry_score fingerprint=bf76df08b996d67ba20379770a38f838d8fe1c762948d49445555df41368cc37 body_fp=249bc8f0cd416cd5944a6883261bdef30bb3eeacddb4863ef73ff7af41c2adb8 source_ref=f17367d9a6796ee0b95f53fa75132bfa3ac23171 role=test -->
 Verifies that grep_entry_points results include a numeric score field for ranking.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp:test_grep_symbol_typo_tolerance fingerprint=998a77d9bbc63dc7fa9771cbe44d66c7262382670d46446093a4c0102cb98e51 body_fp=ba9922e48ca93082d1577f0aabfc32b42abc69ada104d608576ddc406a05d3e4 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=mcp-server -->
@@ -614,4 +623,13 @@ Assert that `batch_patch` reports per-item failures for a missing symbol and an 
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp:test_batch_patch_empty_list_errors fingerprint=fcc2566ebf71c33e9a5308d9357a7fa63ae48b40444578b6c6a0a1241780390f body_fp=58ebc6287f6237ffa8c27c546de0f125ba83dd7cbfdbbc6635521c6640bdcaf0 source_ref=34ac800409ea7e9fc313a6fa636048bec513d2b2 role=test -->
 Assert that `TrieTools.batch_patch` returns an `invalid_argument` error when called with an empty list.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_warns_when_prose_is_stale fingerprint=354d1b9012fc3069a29ddd84391ffd87f628ae9dcc8b7548a06000e65dfc7fb6 body_fp=65d8cdcf5ba3134e50113251a914f9a0bba42b3bd2f096fc8617026d3d239256 source_ref=f17367d9a6796ee0b95f53fa75132bfa3ac23171 role=test -->
+Assert that `TrieTools.read` attaches a `STALE` note to a symbol whose prose predates a source edit followed by a re-scan, and that the compact file view also carries a `STALE PROSE` banner.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_warns_when_graph_itself_is_stale fingerprint=b73cd9b61ae0d89dba0ba5f3552d6856997e6654f5e2ed7c7bb876086ff76964 body_fp=b4eff3a2290d41b9440b540a3ccb0c03b8bc722f2cc0ceb516db5b085883a0a8 source_ref=f17367d9a6796ee0b95f53fa75132bfa3ac23171 role=test -->
+Assert that `TrieTools.read` includes a graph-stale warning when source is edited without a subsequent re-scan.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_has_no_stale_warning_when_fresh fingerprint=3a3f1a75d8300ad70c423063a319bb7366e2b6f86c1d3a1f4af6472a216317c6 body_fp=fcf25f720c36eba73ecc63f85f0cf36c2aaea5f7c7b3b2b9e6fdf6d1ff5dc91f source_ref=f17367d9a6796ee0b95f53fa75132bfa3ac23171 role=test -->
+Assert that `TrieTools.read` emits no stale warnings when prose and graph are both current.
 <!-- trie:end -->
