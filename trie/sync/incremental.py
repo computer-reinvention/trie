@@ -63,6 +63,9 @@ class IncrementalResult:
     actual_cost_usd: float
     orphan_triefacts_removed: list[Path] = field(default_factory=list)
     sync_results: list[FileSyncResult] = field(default_factory=list)
+    # (rel_path, error) per file whose generation raised — kept distinct from
+    # skip counters so the CLI can exit non-zero instead of green-lying.
+    file_errors: list[tuple[str, str]] = field(default_factory=list)
 
 
 def compute_incremental_worklist(
@@ -325,4 +328,5 @@ def run_incremental(
         actual_cost_usd=actual_cost,
         orphan_triefacts_removed=orphan_triefacts,
         sync_results=sync_results,
+        file_errors=sched.errors,
     )

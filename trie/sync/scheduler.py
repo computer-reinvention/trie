@@ -32,7 +32,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from trie import telemetry
 from trie.sync.progress import NULL_PROGRESS, ProgressCallback, emit_section
@@ -55,6 +55,11 @@ class SchedulerResult:
     results: list[FileSyncResult]
     skipped_budget: int
     skipped_other: int
+    # (rel_path, error message) for every file whose processing raised.
+    # Kept separate from `skipped_other` (files legitimately skipped for
+    # having no symbols) so callers can fail loudly instead of reporting a
+    # green "synced 0 file(s)" when every file actually errored.
+    errors: list[tuple[str, str]] = field(default_factory=list)
 
 
 def run_waves(
@@ -142,6 +147,7 @@ def run_waves(
         results=state.results,
         skipped_budget=state.skipped_budget,
         skipped_other=state.skipped_other,
+        errors=state.errors,
     )
 
 
@@ -175,6 +181,7 @@ class _RunState:
         self.results: list[FileSyncResult] = []
         self.skipped_budget = 0
         self.skipped_other = 0
+        self.errors: list[tuple[str, str]] = []
         self.actual_cost = 0.0
         self.submitted = 0
         self.stop = False
@@ -228,7 +235,7 @@ class _RunState:
         try:
             result = fut.result()
         except Exception as exc:  # one file failing must not sink the wave
-            self.skipped_other += 1
+            self.errors.append((task.rel_path, str(exc)))
             self.cb.on_skip(task.rel_path, f"error: {exc}")
             telemetry.emit("sync_file_error", path=task.rel_path, error=str(exc))
             return
