@@ -4,13 +4,19 @@
 
 A guide for coding agents working in a project that has trie installed.
 
-trie indexes source code into a graph of symbols and references, attaches
-prose to each public symbol, and exposes that graph through a set of
-tools (an MCP server, the `trie` CLI, and — on some harnesses — overrides
-of the built-in file tools). The tools are self-describing: each one's
-schema and description tell you what it does and how to call it. This
-document covers only what the tool surface can't: the concepts, the edit
-workflow, and the sharp edges.
+trie is this project's **context layer**: an index of meaning (prose
+attached to every public symbol, joined by the code's own reference
+graph) and an index of intent (a recorded note for every symbol change,
+enforced at commit time). You read the first instead of grepping code
+under context pressure; you write to the second as you work — the
+pre-commit gate makes intent recording guaranteed, not optional.
+
+The layer is exposed through a set of tools (an MCP server, the `trie`
+CLI, and — on some harnesses — overrides of the built-in file tools).
+The tools are self-describing: each one's schema and description tell
+you what it does and how to call it. This document covers only what the
+tool surface can't: the concepts, the edit workflow, and the sharp
+edges.
 
 If you take one thing from this guide: **`grep` is the right tool for
 every code-side search.** Reach for it before the shell's `rg`/grep,
@@ -45,7 +51,7 @@ note, so the record is enforced, not aspirational.
 The gate (`trie intent`, runs in the pre-commit hook): compares the
 working tree to HEAD at the normalized-body level — formatting and
 line shifts never gate — and lists any touched symbol without a note,
-with copy-pasteable `trie patch <qname> -n "…"` commands. Synthetic
+with copy-pasteable `trie patch create <qname> -n "…"` commands. Synthetic
 `__module__` symbols are exempt.
 
 Patches accumulate across turns and across agents; drop stale ones with

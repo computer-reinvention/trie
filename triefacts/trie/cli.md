@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/cli.py
 file_fingerprint: 52c53e032d7dbe333d37e2b814e706bbbb7d989ac2e77c24c47bc8967d6089bb
-last_synced_at: '2026-07-25T10:43:45Z'
+last_synced_at: '2026-07-25T11:02:26Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
@@ -746,7 +746,7 @@ Execute an incremental sync that regenerates only stale triefacts and their casc
 - Calls `_report_sync_errors` after syncing; exits code 1 if all files failed or any file errored
 - Honors budget/limit constraints and reports any files skipped due to those caps
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:setup_cmd fingerprint=615d05779419134debda9155f1be7e507d600b96d3a99aaff53e9c4ed96d6526 body_fp=bc02fe45b2a47cd34ee4fc2fac3ba0d90d9e7d51ee0b00496e3cad9a1a594d88 source_ref=e160f005ddde01cab739588c10c28e97402e1152 role=api -->
+<!-- trie:section symbol=trie/cli:setup_cmd fingerprint=615d05779419134debda9155f1be7e507d600b96d3a99aaff53e9c4ed96d6526 body_fp=bc02fe45b2a47cd34ee4fc2fac3ba0d90d9e7d51ee0b00496e3cad9a1a594d88 source_ref=b07b41bd042a833a471ca6cd324eb62f95c2d4ea role=api -->
 Integrates trie into coding agents by installing hooks, tool overrides, documentation, and GitHub workflows.
 
 Orchestrates multiple install steps in sequence:
@@ -785,7 +785,7 @@ Formats an installation action result as a display string with optional path suf
 - Returns `action` alone when `path` is None, otherwise `"action → path"`
 - Used by setup command renderers for consistent MCP and hook line formatting
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_open_tools fingerprint=9ff890870c2306ffd8bde89af77920adb349e44244a0688aa15babc3e845bd9b body_fp=21c17059efeb9d659493f91f06cd3aea63b05d387ef3446792e9d5aa97a2a34e source_ref=531556cb2ca369f928920ff2e8a5af396c7dd9ee role=util -->
+<!-- trie:section symbol=trie/cli:_open_tools fingerprint=9ff890870c2306ffd8bde89af77920adb349e44244a0688aa15babc3e845bd9b body_fp=21c17059efeb9d659493f91f06cd3aea63b05d387ef3446792e9d5aa97a2a34e source_ref=b07b41bd042a833a471ca6cd324eb62f95c2d4ea role=util -->
 Resolves project root from trie.toml and returns TrieTools instance configured for CLI telemetry.
 
 • Returns TrieTools with event_name="cli_call" to distinguish CLI usage from MCP calls in audit logs
@@ -1134,7 +1134,7 @@ Run the trie MCP server over stdio as a Typer command.
 
 Delegates to `_run_mcp_serve()` for the actual server implementation.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_run_mcp_serve fingerprint=ae7533faa0329509290b89496e7a1965bcac67339cfb61c9d2092872d3505fb6 body_fp=73c11dc03b04976bf9a2fc8e80637299abc238437977e34a37ba8ed763f61b6e source_ref=531556cb2ca369f928920ff2e8a5af396c7dd9ee role=entrypoint -->
+<!-- trie:section symbol=trie/cli:_run_mcp_serve fingerprint=ae7533faa0329509290b89496e7a1965bcac67339cfb61c9d2092872d3505fb6 body_fp=73c11dc03b04976bf9a2fc8e80637299abc238437977e34a37ba8ed763f61b6e source_ref=b07b41bd042a833a471ca6cd324eb62f95c2d4ea role=io -->
 Starts the MCP server over stdio after validating the project configuration.
 
 - Locates trie.toml and validates config structure without using its contents
