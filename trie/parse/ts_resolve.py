@@ -19,13 +19,39 @@ type-checker calls.
 
 from __future__ import annotations
 
+import fnmatch
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
 _SOURCE_EXTS = (".ts", ".tsx", ".d.ts")
 _INDEX_BASENAMES = ("index.ts", "index.tsx", "index.d.ts")
+
+# Directories never descended into when discovering tsconfig/package.json
+# files. `rglob` cannot prune, so a naive walk pays for every file inside
+# node_modules (tens of thousands of stat calls) — observed at ~0.9s per
+# resolver build on a React Native project, multiplied per parsed file.
+_PRUNE_DIR_NAMES = {"node_modules", "__pycache__", "build", "dist"}
+
+
+def _iter_config_files(source_root: Path, name_pattern: str) -> list[Path]:
+    """Find `name_pattern` files under `source_root` with vendor dirs pruned.
+
+    Equivalent to `source_root.rglob(name_pattern)` minus hidden directories
+    and `_PRUNE_DIR_NAMES` subtrees — pruned *during* the walk, so huge
+    vendored trees are never traversed at all.
+    """
+    hits: list[Path] = []
+    for dirpath, dirnames, filenames in os.walk(source_root):
+        dirnames[:] = [
+            d for d in dirnames if d not in _PRUNE_DIR_NAMES and not d.startswith(".")
+        ]
+        for fname in filenames:
+            if fnmatch.fnmatch(fname, name_pattern):
+                hits.append(Path(dirpath) / fname)
+    return sorted(hits)
 
 
 def _strip_jsonc(text: str) -> str:
@@ -199,9 +225,7 @@ def _collect_tsconfigs(source_root: Path) -> list[TsConfig]:
     Returns inner (more specific) configs first so their aliases win.
     """
     configs: list[TsConfig] = []
-    for path in sorted(source_root.rglob("tsconfig*.json")):
-        if "node_modules" in path.parts:
-            continue
+    for path in _iter_config_files(source_root, "tsconfig*.json"):
         merged = _resolve_tsconfig_chain(path, seen=set())
         if merged is None:
             continue
@@ -255,9 +279,7 @@ def _collect_workspace_entries(source_root: Path) -> dict[str, Path]:
     a bare `import "@scope/pkg"` produces a resolvable target.
     """
     entries: dict[str, Path] = {}
-    for path in sorted(source_root.rglob("package.json")):
-        if "node_modules" in path.parts:
-            continue
+    for path in _iter_config_files(source_root, "package.json"):
         data = _load_jsonc(path)
         if not data or not isinstance(data.get("name"), str):
             continue

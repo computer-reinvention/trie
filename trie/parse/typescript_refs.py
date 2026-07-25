@@ -242,6 +242,24 @@ def _heritage(class_node: Node, source: bytes) -> tuple[list[str], list[str]]:
     return extends, implements
 
 
+# One resolver per source root per process. TsResolver is "built once per
+# scan" by contract, but callers like scan_project invoke extract_file_data
+# once per file without threading a resolver through — which rebuilt the
+# resolver (two full config-file walks) for EVERY file. Long-lived processes
+# (MCP server) may serve slightly stale tsconfig/package.json alias maps until
+# restart; scans are short-lived so in practice this is a per-scan cache.
+_RESOLVER_CACHE: dict[str, TsResolver] = {}
+
+
+def _shared_resolver(source_root: Path) -> TsResolver:
+    key = str(source_root)
+    cached = _RESOLVER_CACHE.get(key)
+    if cached is None:
+        cached = TsResolver.build(source_root)
+        _RESOLVER_CACHE[key] = cached
+    return cached
+
+
 def extract_file_data(
     file_path: Path,
     source_root: Path | None = None,
@@ -256,7 +274,7 @@ def extract_file_data(
     root = tree.root_node
 
     if resolver is None:
-        resolver = TsResolver.build(source_root)
+        resolver = _shared_resolver(source_root)
 
     symbols = extract_symbols(file_path, source_root=source_root)
     bindings = _collect_imports(root, source, from_file=file_path, resolver=resolver)
