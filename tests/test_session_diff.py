@@ -17,54 +17,70 @@ except ImportError:  # pragma: no cover
 from trie.config import Config
 from trie.graph.store import Store
 from trie.parse.python import extract_symbols
+from trie.pending_intent import append_intent, consume_intent, pending_path, read_intent
 from trie.session_diff import SessionDiff, build_narrative_prompt, collect_session_diff
-from trie.session_log import log_path, read_entries, record_applied
 
 
-def test_record_and_read_entries_roundtrip(tmp_path: Path) -> None:
-    record_applied(
+def test_pending_intent_roundtrip(tmp_path: Path) -> None:
+    """Intent lives in the triefact tree — a readable markdown file inside the
+    digest archive, appended by apply and consumed by the digest write."""
+    config = Config.from_dict({})
+    append_intent(
         tmp_path,
+        config,
         [
-            {
-                "session_id": "s1",
-                "qname": "a/b:f",
-                "op": "modify",
-                "notes": ["add flag"],
-                "reasons": [],
-            },
-            {
-                "session_id": "s2",
-                "qname": "a/b:g",
-                "op": "create",
-                "notes": ["new helper"],
-                "reasons": ["needed by f"],
-            },
+            {"qname": "m:f", "op": "modify", "notes": ["change f"], "reasons": ["spec"]},
+            {"qname": "m:g", "op": "create", "notes": ["add g"], "reasons": []},
         ],
+        session_note="ship the widget",
+    )
+    append_intent(
+        tmp_path,
+        config,
+        [{"qname": "m:h", "op": "delete", "notes": ["h is gone"], "reasons": []}],
     )
 
-    assert log_path(tmp_path).exists()
+    path = pending_path(tmp_path, config)
+    assert path.is_file()
+    assert path.name == ".pending.md", "dot-prefixed so *.md archive globs never see it"
+    assert str(path.parent).endswith("triediffs"), "state lives in triefacts, not .trie"
+    text = path.read_text()
+    assert "## ship the widget" in text
+    assert "- modify m:f — change f (reason: spec)" in text
 
-    all_entries = read_entries(tmp_path)
-    assert len(all_entries) == 2
-    assert all(isinstance(e["ts"], float) for e in all_entries)
-    assert all_entries[0]["qname"] == "a/b:f"
-    assert all_entries[1]["qname"] == "a/b:g"
+    rows = read_intent(tmp_path, config)
+    assert [(r["qname"], r["op"]) for r in rows] == [
+        ("m:f", "modify"),
+        ("m:g", "create"),
+        ("m:h", "delete"),
+    ]
+    assert rows[0]["session_note"] == "ship the widget"
+    assert rows[2]["session_note"] == ""  # second block had no session note
 
-    s1_entries = read_entries(tmp_path, session_id="s1")
-    assert len(s1_entries) == 1
-    assert s1_entries[0]["qname"] == "a/b:f"
-
-    with log_path(tmp_path).open("a") as fh:
-        fh.write("not json\n")
-
-    entries_after_corrupt = read_entries(tmp_path)
-    assert len(entries_after_corrupt) == 2
+    consume_intent(tmp_path, config)
+    assert not path.exists()
+    assert read_intent(tmp_path, config) == []
 
 
-def test_record_applied_empty_and_missing_log(tmp_path: Path) -> None:
-    record_applied(tmp_path, [])
-    assert not log_path(tmp_path).exists()
-    assert read_entries(tmp_path) == []
+def test_pending_intent_flattens_multiline_notes(tmp_path: Path) -> None:
+    config = Config.from_dict({})
+    append_intent(
+        tmp_path,
+        config,
+        [
+            {
+                "qname": "m:f",
+                "op": "modify",
+                "notes": ["line one\nline two\n# not a heading"],
+                "reasons": [],
+            }
+        ],
+    )
+    rows = read_intent(tmp_path, config)
+    assert rows[0]["notes"] == ["line one line two # not a heading"]
+    # No line in the file outside the header can start with '#' structure-breakers.
+    body = pending_path(tmp_path, config).read_text().splitlines()
+    assert all(not ln.startswith("# ") for ln in body[2:])
 
 
 def test_build_narrative_prompt_sections_and_truncation() -> None:
@@ -141,10 +157,12 @@ def test_collect_session_diff_gathers_all_evidence(tmp_path: Path, mocker) -> No
     # Uncommitted working-tree change
     mod_md.write_text("new prose\n")
 
-    # --- Arrange: session log ---
-    record_applied(
+    # --- Arrange: applied intent (pending file inside the digest archive) ---
+    append_intent(
         tmp_path,
-        [{"session_id": "s1", "qname": "m:f", "op": "modify", "notes": ["n1"], "reasons": []}],
+        Config.from_dict({}),
+        [{"qname": "m:f", "op": "modify", "notes": ["n1"], "reasons": []}],
+        session_note="s1 work",
     )
 
     # --- Arrange: store with pending patches ---
@@ -169,7 +187,7 @@ def test_collect_session_diff_gathers_all_evidence(tmp_path: Path, mocker) -> No
         config = Config.from_dict({})
 
         # --- Act ---
-        data = collect_session_diff(tmp_path, config, store, session_id=None, base="HEAD")
+        data = collect_session_diff(tmp_path, config, store, base="HEAD")
 
         # --- Assert: triefact diff ---
         assert "old prose" in data.triefact_diff
@@ -189,39 +207,6 @@ def test_collect_session_diff_gathers_all_evidence(tmp_path: Path, mocker) -> No
         assert "m:new" in pending_qnames
         assert pending_ops["m:new"] == "create"
         assert pending_notes["m:new"] == "make new"
-
-        # --- Assert: session ids ---
-        assert data.session_ids() == ["s1"]
-
-        # --- Assert: filtering by a different session_id yields empty lists ---
-        data_other = collect_session_diff(tmp_path, config, store, session_id="other", base="HEAD")
-        assert data_other.applied == []
-        assert data_other.pending == []
-
-        # --- Assert: `since` parameter is forwarded to read_entries ---
-        # A future timestamp should exclude the already-recorded entry
-        import time
-
-        future_ts = time.time() + 3600
-
-        from trie import session_log as _session_log
-
-        original_read_entries = _session_log.read_entries
-        captured_since = []
-
-        def capturing_read_entries(project_root, *, session_id=None, since=None):  # type: ignore[no-untyped-def]
-            captured_since.append(since)
-            return original_read_entries(project_root, session_id=session_id, since=since)
-
-        mocker.patch.object(_session_log, "read_entries", side_effect=capturing_read_entries)
-        data_since = collect_session_diff(
-            tmp_path, config, store, session_id=None, base="HEAD", since=future_ts
-        )
-
-        # Confirm since was forwarded
-        assert captured_since == [future_ts]
-        # No applied entries should exist after a future timestamp
-        assert data_since.applied == []
 
     finally:
         store.close()
@@ -345,76 +330,6 @@ def test_synthesize_narrative_uses_cache_prefix() -> None:
     assert "## Raw triefact diff" in recorded_user_no_cache
 
 
-def test_collect_session_diff_since_filters_applied(tmp_path: Path) -> None:
-    import shutil
-
-    from trie.session_diff import collect_session_diff as _collect_session_diff
-
-    if not shutil.which("git"):
-        if pytest is not None:
-            pytest.skip("git not available")
-        return
-
-    # Set up a minimal git repo so triefact diff doesn't fail
-    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
-    subprocess.run(["git", "config", "user.email", "t@t"], cwd=tmp_path, check=True)
-    subprocess.run(["git", "config", "user.name", "t"], cwd=tmp_path, check=True)
-    subprocess.run(["git", "commit", "-q", "--allow-empty", "-m", "init"], cwd=tmp_path, check=True)
-
-    # Set up session log with two entries at explicit, distinct timestamps
-    record_applied(
-        tmp_path,
-        [
-            {
-                "session_id": "s1",
-                "qname": "pkg.early",
-                "op": "modify",
-                "notes": [],
-                "reasons": [],
-                "ts": 100.0,
-            }
-        ],
-    )
-    record_applied(
-        tmp_path,
-        [
-            {
-                "session_id": "s1",
-                "qname": "pkg.late",
-                "op": "modify",
-                "notes": [],
-                "reasons": [],
-                "ts": 200.0,
-            }
-        ],
-    )
-
-    # Build a minimal Store
-    db_dir = tmp_path / ".trie"
-    db_dir.mkdir(parents=True, exist_ok=True)
-    db_path = db_dir / "graph.db"
-    config = Config.from_dict({})
-    store = Store(db_path)
-    try:
-        # Sanity check: both entries recorded
-        all_entries = read_entries(tmp_path)
-        assert len(all_entries) == 2
-
-        # since=150.0 is between early (100.0) and late (200.0) — only the late entry should appear
-        data_filtered = _collect_session_diff(tmp_path, config, store, since=150.0, base="HEAD")
-        applied_qnames_filtered = [e["qname"] for e in data_filtered.applied]
-        assert "pkg.late" in applied_qnames_filtered
-        assert "pkg.early" not in applied_qnames_filtered
-
-        # since=None — both entries should appear
-        data_all = _collect_session_diff(tmp_path, config, store, since=None, base="HEAD")
-        applied_qnames_all = [e["qname"] for e in data_all.applied]
-        assert "pkg.early" in applied_qnames_all
-        assert "pkg.late" in applied_qnames_all
-    finally:
-        store.close()
-
-
 def test_render_digest_section_shape() -> None:
     from trie.session_diff import SessionDiff, render_digest_section
 
@@ -536,13 +451,25 @@ def test_render_digest_section_shape() -> None:
     )
     # Only the Changes section counts: bullets after '### Changes', before the next '###'
     changes_body = output_limited.split("### Changes", 1)[1].split("###", 1)[0]
-    bullets = [ln for ln in changes_body.splitlines() if ln.startswith("- ")]
-    symbol_bullets = [ln for ln in bullets if not ln.startswith("- … and")]
-    overflow = [ln for ln in bullets if ln.startswith("- … and")]
+    visible, hidden, in_comment = [], [], False
+    for ln in changes_body.splitlines():
+        if ln.strip() == "<!-- trie:changes-overflow":
+            in_comment = True
+            continue
+        if in_comment and ln.strip() == "-->":
+            in_comment = False
+            continue
+        if ln.startswith("- "):
+            (hidden if in_comment else visible).append(ln)
+    symbol_bullets = [ln for ln in visible if not ln.startswith("- … and")]
+    overflow_marker = [ln for ln in visible if ln.startswith("- … and")]
     assert len(symbol_bullets) == 1, (
-        f"With max_changes=1 expected exactly 1 change bullet; got {symbol_bullets}"
+        f"With max_changes=1 expected exactly 1 visible bullet; got {symbol_bullets}"
     )
-    assert len(overflow) == 1, f"Expected one overflow marker line; got {bullets}"
+    assert len(overflow_marker) == 1
+    # The record is lossless: the capped-out row survives in the overflow
+    # comment so gate coverage and amend folding never lose symbols.
+    assert len(hidden) == 1 and "m:new_sym" in hidden[0]
     assert any("more" in ln for ln in output_limited.splitlines()), (
         "'… and N more' line missing when max_changes=1"
     )

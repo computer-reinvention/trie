@@ -9,7 +9,7 @@ from trie.config import Config
 from trie.edits.pipeline import preview_patches, record_intent, session_note_ok
 from trie.graph.store import Store
 from trie.parse.python import extract_symbols
-from trie.session_log import read_entries
+from trie.pending_intent import read_intent
 
 
 class TestSessionNoteQuality:
@@ -59,9 +59,12 @@ def test_record_intent_archives_notes_without_generation(tmp_path: Path) -> None
         assert result["recorded"] == 2
         assert set(result["symbols"]) == {"m:f", "m:new"}
 
-        rows = read_entries(tmp_path)
+        rows = read_intent(tmp_path, config)
         assert {r["qname"]: r["op"] for r in rows} == {"m:f": "modify", "m:new": "create"}
         assert all(r["session_note"] == "ship the m module rework" for r in rows)
+        # The pending file lives INSIDE the digest archive — triefacts, not .trie.
+        pending = tmp_path / config.diff.diffs_dir / ".pending.md"
+        assert pending.is_file()
 
         # Queue cleared; source byte-identical (no generation, ever).
         assert store.get_patched_qnames() == []
@@ -81,7 +84,7 @@ def test_record_intent_preserves_structural_ops(tmp_path: Path) -> None:
         store.add_patch("m:f", "f is superseded", "", "s1", kind="delete")
         result = record_intent(store, config, tmp_path, session_note="")
         assert result["ok"] is True and result["recorded"] == 1
-        rows = read_entries(tmp_path)
+        rows = read_intent(tmp_path, config)
         assert rows[0]["qname"] == "m:f" and rows[0]["op"] == "delete"
     finally:
         store.close()

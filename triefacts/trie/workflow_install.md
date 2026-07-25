@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: trie/workflow_install.py
-file_fingerprint: 030b58e8ed76cd9cc0a2f2e48ffc0d5f3ba648c7ecd376d72ad998bdeb0b7a74
-last_synced_at: '2026-07-25T06:06:00Z'
+file_fingerprint: e5dc768b153d67a04da2fc1c96da4fbaeb35e4377b7abdae6c21b3229407fc0d
+last_synced_at: '2026-07-25T11:30:46Z'
 description: Install the triediff-comment GitHub workflow into a project.
 defines:
 - kind: module
   qualified_name: trie/workflow_install:__module__
-  lines: 1-253
+  lines: 1-171
 - kind: constant
   qualified_name: trie/workflow_install:WORKFLOW_RELPATH
   lines: 27-27
@@ -29,21 +29,6 @@ defines:
 - kind: function
   qualified_name: trie/workflow_install:install_triediff_workflow
   lines: 153-170
-- kind: constant
-  qualified_name: trie/workflow_install:SYNC_BOT_RELPATH
-  lines: 173-173
-- kind: constant
-  qualified_name: trie/workflow_install:SYNC_BOT_MARKER
-  lines: 175-175
-- kind: constant
-  qualified_name: trie/workflow_install:_SYNC_BOT_TEMPLATE
-  lines: 177-228
-- kind: function
-  qualified_name: trie/workflow_install:render_sync_bot_workflow
-  lines: 231-233
-- kind: function
-  qualified_name: trie/workflow_install:install_sync_bot_workflow
-  lines: 236-252
 incoming_refs: 12
 outgoing_refs: 0
 ---
@@ -89,24 +74,4 @@ Idempotently install the triediff-comment GitHub Actions workflow file into `pro
 - `dry_run`: reports the would-be action without writing or creating any files.
 - Returns a `WorkflowInstallResult` with action `created`, `updated`, `unchanged`, `skipped`, or `error`.
 - Skips if no `.git` directory exists or if the file lacks `WORKFLOW_MARKER` (user-owned).
-<!-- trie:end -->
-<!-- trie:section symbol=trie/workflow_install:SYNC_BOT_RELPATH fingerprint=a7269a859e1e0e350b4f8f0f7efecf421aa5f2d1c1278ccbaeaa041cc36c9f15 body_fp=de1682a2584a551416ac6a67666571c08e55775f98f1b96d0d13de73f2bb01d0 source_ref=3ea919f5f84ed0ee6a6c19ac2e68c5afcc2cad37 role=config -->
-Filesystem path constant for the sync-bot workflow file relative to the project root.
-<!-- trie:end -->
-<!-- trie:section symbol=trie/workflow_install:SYNC_BOT_MARKER fingerprint=75195f80ed4192f8f9095f50ba1c827c50c3c462dc66ae7d0d50212b21ee9c68 body_fp=dd3367e2c10a09ed6b71210a1497692d8abacc12ef27eede4cf8fb5e1be719e0 source_ref=3ea919f5f84ed0ee6a6c19ac2e68c5afcc2cad37 role=config -->
-Marker string written as the first comment line of the sync-bot workflow file to identify it as trie-managed.
-<!-- trie:end -->
-<!-- trie:section symbol=trie/workflow_install:_SYNC_BOT_TEMPLATE fingerprint=9fa87285cd3e9b0746120e31af0bf49f289aeb6c88722fa5b02dca3f2caaf367 body_fp=105f9ad88295f56bd8102fad00f0985011d9f79eb674f8658ef4225955129bd1 source_ref=3ea919f5f84ed0ee6a6c19ac2e68c5afcc2cad37 role=config -->
-Template string for the trie-sync-bot GitHub Actions workflow YAML, parameterised by `{marker}` and `{budget}`.
-<!-- trie:end -->
-<!-- trie:section symbol=trie/workflow_install:render_sync_bot_workflow fingerprint=6543d320079a3cad5144b35ce768961b1d0fdac56213b617599b0e6da2b91bb4 body_fp=71a3fe45bace834f421c8f671648bbd968dd8d66dbc52d6b8814f9900d1c835f source_ref=3ea919f5f84ed0ee6a6c19ac2e68c5afcc2cad37 role=domain -->
-Render the sync-bot workflow YAML string with `budget` substituted as the per-run spend cap.
-
-- `budget`: maximum USD spend per CI run; defaults to `5.0`.
-<!-- trie:end -->
-<!-- trie:section symbol=trie/workflow_install:install_sync_bot_workflow fingerprint=6ca0d4286c8db93c993c2491ead36f58e7d5456ebef697f419bd895bf634adbd body_fp=a13a286e879a1806b5dea899612ba5cf3af509489708e4e61bf5373b2b59f4cb source_ref=3ea919f5f84ed0ee6a6c19ac2e68c5afcc2cad37 role=io -->
-Idempotently install the `trie-sync-bot` GitHub Actions workflow into `project_root` using marker-fenced ownership semantics.
-
-- `budget`: per-run API spend cap baked into the rendered YAML; defaults to `5.0`
-- `dry_run`: reports the action that would be taken without writing any files
 <!-- trie:end -->
