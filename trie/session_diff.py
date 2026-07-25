@@ -86,9 +86,14 @@ def _one_line(text: str, max_chars: int = 160) -> str:
     if dot_space != -1 and dot_space + 1 <= max_chars:
         return collapsed[: dot_space + 1]  # include the period
 
-    # Otherwise truncate at max_chars with trailing ellipsis
+    # Otherwise truncate at max_chars with trailing ellipsis, preferring
+    # the last word boundary so cuts never land mid-word.
     if len(collapsed) > max_chars:
-        return collapsed[:max_chars] + "…"
+        cut = collapsed[:max_chars]
+        space = cut.rfind(" ")
+        if space > max_chars // 2:
+            cut = cut[:space]
+        return cut.rstrip() + "…"
 
     return collapsed
 

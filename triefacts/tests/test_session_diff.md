@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_session_diff.py
 file_fingerprint: 0233efa88dec1e083501d8a6aaf0bb941ba63147eaf8252c9532979cf7d18cad
-last_synced_at: '2026-07-25T00:07:06Z'
+last_synced_at: '2026-07-25T00:11:40Z'
 description: Tests for the session log archive and the `trie diff` evidence collection/prompt
   assembly.
 defines:
@@ -57,19 +57,19 @@ Verify that `record_applied` writes entries readable by `read_entries`, session 
 <!-- trie:section symbol=tests/test_session_diff:test_record_applied_empty_and_missing_log fingerprint=efc1090ce789e94dae0ed8c06180da043b2076a88688360f3a2ffde98cdca236 body_fp=a898c1b6d78aa9f131d096932df5487e0da026a5d5a6c8a8c40105c71f6dddc4 source_ref=77eeca2410531f4fea3afc8dc004b3087f592ed5 role=test -->
 Assert that `record_applied` with an empty list creates no log file and `read_entries` returns an empty list.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_build_narrative_prompt_sections_and_truncation fingerprint=6446fd1cae84e737cb1b09ef79389e50b0648ad9f14d949905a4d413dd3c5263 body_fp=3faa4bd644f96a5fa15fed548664fe0c6a7fc87b9930d1bb2e0e5b27b5375f09 source_ref=77eeca2410531f4fea3afc8dc004b3087f592ed5 role=test -->
-Verify `build_narrative_prompt` emits correct sections, formats entries, truncates diffs, and handles the empty-`SessionDiff` case.
+<!-- trie:section symbol=tests/test_session_diff:test_build_narrative_prompt_sections_and_truncation fingerprint=6446fd1cae84e737cb1b09ef79389e50b0648ad9f14d949905a4d413dd3c5263 body_fp=eea9a0dcc6b45f3e2fc0e3ad348aafecd880e63dd17c26c8eff4c60b49cca4c2 source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
+Verify `build_narrative_prompt` emits correct sections, formats applied/pending entries, truncates `triefact_diff` to `max_diff_chars`, and handles an empty `SessionDiff`.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_collect_session_diff_gathers_all_evidence fingerprint=54fe703e6478eef4a305c53c647c2d5374348f6c10de5bff50f5810fce7a06ea body_fp=9570f7e786b7b60eb43e3a38c9d17ad6e46ce73f7f7e99ba12e12f1284654bed role=monitoring-telemetry -->
-Integration test for `collect_session_diff` that verifies the full evidence-gathering pipeline against a real git repository and store: it checks that triefact file diffs are captured, applied session-log entries are returned, pending modify and create patches are included with correct metadata, `session_ids()` aggregation works, session-scoped filtering (via `session_id`) correctly excludes unrelated entries, and — critically — that the `since` parameter (a float Unix timestamp) is forwarded to `read_entries` and correctly narrows the set of applied entries returned, using pytest-mock's `mocker` fixture to intercept and inspect the call.
+<!-- trie:section symbol=tests/test_session_diff:test_collect_session_diff_gathers_all_evidence fingerprint=54fe703e6478eef4a305c53c647c2d5374348f6c10de5bff50f5810fce7a06ea body_fp=9c7182427ae7c876f2cf56b1f9de326c15a3fb32f2bca413083d1d9a599d1889 source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
+Test `collect_session_diff` against a real git repo, verifying triefact diff content, applied/pending patch assembly, session-id filtering, and `since` timestamp forwarding.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_collect_session_diff_includes_new_triefacts fingerprint=1c8f6b894cfb45576c6cdcf42ce71b213efaf3a7e307fcb041108fc82401e0af body_fp=7cfc1ad6e85ed5c97ed11f5b9323ac777fb66f15a8f60024b089842cfce18b6c source_ref=17faca7a18030ef384494b789fa37a1b8d11cd20 role=test -->
+<!-- trie:section symbol=tests/test_session_diff:test_collect_session_diff_includes_new_triefacts fingerprint=1c8f6b894cfb45576c6cdcf42ce71b213efaf3a7e307fcb041108fc82401e0af body_fp=7cfc1ad6e85ed5c97ed11f5b9323ac777fb66f15a8f60024b089842cfce18b6c source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
 Verify that `collect_session_diff` includes untracked new triefact files in `triefact_diff`, not only modified tracked files.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_synthesize_narrative_uses_cache_prefix fingerprint=3113936385b8e907635ec1cc07bc23f9af2f841653adac1596f60d2559caaf85 body_fp=e86c163a4104695f2ea87721079357be8a9a69c45de450c623ca09c09cee010a source_ref=17faca7a18030ef384494b789fa37a1b8d11cd20 role=test -->
+<!-- trie:section symbol=tests/test_session_diff:test_synthesize_narrative_uses_cache_prefix fingerprint=3113936385b8e907635ec1cc07bc23f9af2f841653adac1596f60d2559caaf85 body_fp=e86c163a4104695f2ea87721079357be8a9a69c45de450c623ca09c09cee010a source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
 Verify that `synthesize_narrative` passes the triefact diff as `cache_prefix` when the client supports it, and falls back to embedding it in the user prompt when the client lacks `cache_prefix`.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_collect_session_diff_since_filters_applied fingerprint=b8ad21187f0eed1369e497ac9b88cb62c894ddac513da36a098c170d0ffcfb7f body_fp=09b8b6feab2de3dcc762b79fe352bda9af2ba3b5238603bae54f6436ceec6f9f source_ref=17faca7a18030ef384494b789fa37a1b8d11cd20 role=test -->
+<!-- trie:section symbol=tests/test_session_diff:test_collect_session_diff_since_filters_applied fingerprint=b8ad21187f0eed1369e497ac9b88cb62c894ddac513da36a098c170d0ffcfb7f body_fp=09b8b6feab2de3dcc762b79fe352bda9af2ba3b5238603bae54f6436ceec6f9f source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
 Verify that `collect_session_diff` filters applied session log entries by the `since` timestamp, excluding entries older than the cutoff while retaining newer ones.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_session_diff:test_render_digest_section_shape fingerprint=ce6e87b909a2e788f61327f21e9292f2470b06f81fc09d7ac35c79f85cfdd36d body_fp=b86e5fb0cd2f50c47b7fc4135264f2494231f9a983ad9e9f540c7b47ae44618e source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
