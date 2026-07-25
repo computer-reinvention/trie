@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/sync/bootstrap.py
-file_fingerprint: 105fe37ce7e9a65807dd40aa6193665e29f553863feaa622b9b628ac32125617
-last_synced_at: '2026-07-20T13:09:41Z'
+file_fingerprint: 3bc374880d5785934f4c89da315b1c63c82799a144cfe4b9844418ca0524acc4
+last_synced_at: '2026-07-25T01:36:51Z'
 defines:
 - kind: module
   qualified_name: trie/sync/bootstrap:__module__
-  lines: 1-212
+  lines: 1-215
 - kind: class
   qualified_name: trie/sync/bootstrap:PlanItem
   lines: 24-28
@@ -15,13 +15,13 @@ defines:
   lines: 32-35
 - kind: class
   qualified_name: trie/sync/bootstrap:BootstrapResult
-  lines: 39-44
+  lines: 39-46
 - kind: function
   qualified_name: trie/sync/bootstrap:build_plan
-  lines: 47-133
+  lines: 49-135
 - kind: function
   qualified_name: trie/sync/bootstrap:run_bootstrap
-  lines: 136-211
+  lines: 138-214
 incoming_refs: 18
 outgoing_refs: 16
 ---
@@ -48,11 +48,12 @@ Represents a ranked worklist of files to sync with cost estimates.
 - `pricing_known`: false when model pricing unavailable, making cost estimates zero
 - `total_estimated_cost`: sum of all item cost estimates in USD
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/bootstrap:BootstrapResult fingerprint=3f3fd17f4bf3bb39691a228e43cfd2570d8f5faf3fec4a81808e46a8a00268f5 body_fp=f0132e66ba35b1cd486a3e5458feb1da04024660f80e9705e58cab8c3378129a source_ref=b80e775bf813db8e4b4937c29c968d95eb993902 role=model -->
+<!-- trie:section symbol=trie/sync/bootstrap:BootstrapResult fingerprint=1f3ac61615c5ec3114ca93134c52f14f7107ed01005898274148e16a790861cd body_fp=562e4ae4aaa8bb34ef56ee7d06e8aa5f22a6ab02005d3858a634c317ef0910e3 source_ref=6fc0e2ec51a63066191561d40114cf8ce9ec15ec role=model -->
 Holds the outcome of a bootstrap run, tracking files processed and associated costs.
 
 - `files_skipped_no_budget`: files skipped due to budget or limit constraints
 - `sync_results`: detailed results from each file that was actually processed
+- `file_errors`: `(rel_path, error)` pairs for files whose generation raised an exception
 <!-- trie:end -->
 <!-- trie:section symbol=trie/sync/bootstrap:build_plan fingerprint=639d2e91a91763f78e779d228bd86933d3afdd6d622048322fc763f83a59f463 body_fp=5eaec87f0272b7ed482e79ec419592b6125725bc99a92b6ca894eba5ba4f10f2 source_ref=b80e775bf813db8e4b4937c29c968d95eb993902 role=domain -->
 Ranks files by LOC × documented symbol count and produces per-file cost estimates for documentation generation.
@@ -61,10 +62,10 @@ Ranks files by LOC × documented symbol count and produces per-file cost estimat
 - `regen_count_by_file`: Maps file paths to symbol counts; absence means regen all symbols
 - Returns items sorted by score (descending) then file path
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/bootstrap:run_bootstrap fingerprint=11bd45794e77d1213647079430ac27dd28d19447ea49bb02b7c9d351a5bdd74c body_fp=14afdf47ed3dd66a3118e0e8720e2c6cce732a062b239a7ffd53c32d16f25c10 source_ref=b80e775bf813db8e4b4937c29c968d95eb993902 role=orchestration -->
+<!-- trie:section symbol=trie/sync/bootstrap:run_bootstrap fingerprint=016f16dbcde5466224d6943611254b47a158e272b18a71a61df640feae56baa4 body_fp=a08063cf82953adf74ef0c76bbdbcd6f1c0c1b3bcbf8df7280fca253ee2e0388 source_ref=6fc0e2ec51a63066191561d40114cf8ce9ec15ec role=orchestration -->
 Executes planned file syncs in parallel waves using a scheduler for budget and limit constraints.
 
 - Configures global inflight request limit for concurrent processing
 - Creates tasks for existing files, delegates execution to run_waves scheduler
-- Returns actual vs estimated costs and per-file sync results
+- Returns actual vs estimated costs, per-file sync results, and per-file generation errors
 <!-- trie:end -->

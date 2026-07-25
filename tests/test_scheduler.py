@@ -72,7 +72,26 @@ def test_exception_in_one_file_does_not_sink_wave():
     tasks = [FileTask(rel_path="ok1.py"), FileTask(rel_path="boom.py"), FileTask(rel_path="ok2.py")]
     sched = run_waves(tasks, process_file=process, file_workers=4)
     assert len(sched.results) == 2
-    assert sched.skipped_other == 1
+    # Errors are first-class, NOT conflated with "no symbols" skips — callers
+    # must be able to fail loudly when files errored.
+    assert sched.skipped_other == 0
+    assert sched.errors == [("boom.py", "kaboom")]
+
+
+def test_all_files_erroring_is_not_a_silent_success():
+    """Regression: a keyless/whole-run failure must be distinguishable from
+    'nothing to do' — previously every error landed in skipped_other and the
+    CLI reported a green 'synced 0 file(s)'."""
+
+    def process(task: FileTask) -> FileSyncResult:
+        raise RuntimeError("Could not resolve authentication method (missing api_key)")
+
+    tasks = [FileTask(rel_path="a.py"), FileTask(rel_path="b.py")]
+    sched = run_waves(tasks, process_file=process, file_workers=2)
+    assert sched.results == []
+    assert sched.skipped_other == 0
+    assert len(sched.errors) == 2
+    assert all("api_key" in err for _, err in sched.errors)
 
 
 def test_limit_caps_and_reports_skips():

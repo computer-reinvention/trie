@@ -1781,6 +1781,7 @@ def _run_full_pass(
                 store=store,
             )
 
+    had_errors = _report_sync_errors(reporter, result.file_errors)
     reporter.success(
         f"synced {result.files_synced} files "
         f"(skipped {result.files_skipped_no_budget} due to budget/limit)"
@@ -1788,6 +1789,33 @@ def _run_full_pass(
     reporter.info(
         f"  estimated ${result.estimated_cost_usd:.4f} · actual ${result.actual_cost_usd:.4f}"
     )
+    if had_errors:
+        raise typer.Exit(code=1)
+
+
+
+def _report_sync_errors(reporter: Reporter, file_errors: list[tuple[str, str]]) -> bool:
+    """Report per-file generation failures. Returns True when any occurred.
+
+    Sync must never green-lie: a run where files errored (missing API key,
+    network failure, provider errors) is not a success even though the wave
+    scheduler correctly kept going. Shows up to 5 errors plus a count, and a
+    targeted hint when the failure smells like missing credentials.
+    """
+    if not file_errors:
+        return False
+    shown = file_errors[:5]
+    for rel, err in shown:
+        reporter.error(f"✗ {rel}: {err}")
+    if len(file_errors) > len(shown):
+        reporter.error(f"  … and {len(file_errors) - len(shown)} more file(s) failed")
+    blob = " ".join(err.lower() for _, err in file_errors)
+    if "api_key" in blob or "api key" in blob or "authentication" in blob or "x-api-key" in blob:
+        reporter.info(
+            "hint: no usable model credentials — set ANTHROPIC_API_KEY (or the key for "
+            "your configured provider) and re-run `trie sync`"
+        )
+    return True
 
 
 def _run_dry_run_diff(
@@ -2021,6 +2049,14 @@ def _run_incremental_sync(
             reporter.success("triefact tree is coherent — nothing to sync")
         return
 
+    had_errors = _report_sync_errors(reporter, result.file_errors)
+    if had_errors and result.files_synced == 0:
+        reporter.error(
+            f"synced 0 of {len(result.file_errors)} file(s) — every file failed; "
+            "the triefact tree was NOT refreshed"
+        )
+        raise typer.Exit(code=1)
+
     reporter.success(
         f"synced {result.files_synced} file(s) "
         f"({result.directly_stale_count} directly stale, "
@@ -2029,6 +2065,8 @@ def _run_incremental_sync(
     if result.files_skipped_no_budget:
         reporter.info(f"  skipped {result.files_skipped_no_budget} due to budget/limit")
     reporter.info(f"  actual cost: ${result.actual_cost_usd:.4f}")
+    if had_errors:
+        raise typer.Exit(code=1)
 
 
 @app.command("setup")
