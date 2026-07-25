@@ -146,9 +146,9 @@ def _covered_qnames(project_root: Path, config: Config, store: Store) -> set[str
     """Qnames with intent on record for the upcoming commit.
 
     Coverage comes from either side of the apply boundary:
-    - still-staged patch notes (modify/delete/rename + creates) in the queue, or
-    - already-applied rows in the pending-intent file inside the digest
-      archive (consumed into the digest at commit time).
+    - staged or sealed patch notes (modify/delete/rename + creates) in the
+      qname-keyed patches tables, or
+    - rows already consumed into this parent's digest entry.
 
     No timestamps anywhere: intent is staged, pending, recorded in this
     parent's digest entry (the digest write consumes pending BEFORE the commit
@@ -156,20 +156,16 @@ def _covered_qnames(project_root: Path, config: Config, store: Store) -> set[str
     part of HEAD and not gating at all.
     """
     from trie.git_helpers import current_head
-    from trie.pending_intent import read_intent
     from trie.session_diff import iter_digest_entries, rows_from_digest_entry
 
+    # Staged AND sealed rows both cover: the applied flag is a lifecycle
+    # marker, not a coverage boundary.
     covered: set[str] = set(store.get_patched_qnames())
     for _file, rows in store.get_create_patches_grouped().items():
         for row in rows:
             q = row.get("target_qname")
             if q:
                 covered.add(q)
-
-    for entry in read_intent(project_root, config):
-        q = entry.get("qname")
-        if q:
-            covered.add(q)
 
     # The uncommitted digest entry for the current parent: pending rows that
     # were already consumed into it still cover their symbols.

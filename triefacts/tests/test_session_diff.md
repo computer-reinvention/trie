@@ -1,67 +1,61 @@
 ---
 trie_version: 0.1.9
 source: tests/test_session_diff.py
-file_fingerprint: a12acf1dbda509370ed1466a588a538d6a70db18d45155a3c59366ededf1e98d
-last_synced_at: '2026-07-25T11:36:21Z'
+file_fingerprint: c5fddf5da1aea9cebdd944feb04d4b7a46db1a4512b8fe20026c035c8eef267a
+last_synced_at: '2026-07-25T11:48:34Z'
 description: Tests for the session log archive and the `trie diff` evidence collection/prompt
   assembly.
 defines:
 - kind: module
   qualified_name: tests/test_session_diff:__module__
-  lines: 1-713
+  lines: 1-676
 - kind: function
-  qualified_name: tests/test_session_diff:test_pending_intent_roundtrip
-  lines: 24-62
-- kind: function
-  qualified_name: tests/test_session_diff:test_pending_intent_flattens_multiline_notes
-  lines: 65-83
+  qualified_name: tests/test_session_diff:test_intent_lifecycle_in_the_patches_table
+  lines: 23-48
 - kind: function
   qualified_name: tests/test_session_diff:test_build_narrative_prompt_sections_and_truncation
-  lines: 86-133
+  lines: 51-98
 - kind: function
   qualified_name: tests/test_session_diff:test_collect_session_diff_gathers_all_evidence
-  lines: 136-212
+  lines: 101-175
 - kind: function
   qualified_name: tests/test_session_diff:test_collect_session_diff_includes_new_triefacts
-  lines: 215-263
+  lines: 178-226
 - kind: function
   qualified_name: tests/test_session_diff:test_synthesize_narrative_uses_cache_prefix
-  lines: 266-330
+  lines: 229-293
 - kind: function
   qualified_name: tests/test_session_diff:test_render_digest_section_shape
-  lines: 333-475
+  lines: 296-438
 - kind: function
   qualified_name: tests/test_session_diff:test_write_digest_files_symlink_and_prune
-  lines: 478-539
+  lines: 441-502
 - kind: function
   qualified_name: tests/test_session_diff:test_one_line_flattens_and_truncates
-  lines: 542-569
+  lines: 505-532
 - kind: function
   qualified_name: tests/test_session_diff:test_collect_symbol_deltas_before_after
-  lines: 572-634
+  lines: 535-597
 - kind: function
   qualified_name: tests/test_session_diff:test_merge_applied_by_symbol_first_note_wins
-  lines: 637-658
+  lines: 600-621
 - kind: function
   qualified_name: tests/test_session_diff:test_symbol_and_file_history_from_digest_archive
-  lines: 661-712
+  lines: 624-675
 incoming_refs: 0
-outgoing_refs: 22
+outgoing_refs: 13
 ---
 <!-- trie:section symbol=tests/test_session_diff:__module__ fingerprint=efba484e3aa652464eff4bb42149f2f8ad21e69db80743152ed50083f36a38f2 body_fp=1104a778ce390fa56813958cd8c63c2c3c38548adf128fd9b73f2b057fbc791e source_ref=17faca7a18030ef384494b789fa37a1b8d11cd20 role=test -->
 Test module for session log archive and `trie diff` evidence collection and prompt assembly.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_pending_intent_roundtrip fingerprint=6681624fa2fe930bae3753def916c5ebddd34b872fbbb3fbfb0bbd95db70261f body_fp=9bd1f28f33cb9f92a70b3bdc7f7cce74986e49a08345f39d35d2f9f71b16095e source_ref=6f97b6fdd7ee1e1b25a6a61330c44c4c5230bae9 role=test -->
-Verify that `append_intent`, `read_intent`, and `consume_intent` correctly write, parse, and delete the `.pending.md` file across two appended batches.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_pending_intent_flattens_multiline_notes fingerprint=57693e3ee76cd5a6dabf18022c0c4cca17440b6153e841a7ba8d85a96701cd5f body_fp=c482cf2a73f1645645a894f76b16ba4f541c245082c16860498dae1f40696396 source_ref=6f97b6fdd7ee1e1b25a6a61330c44c4c5230bae9 role=test -->
-Verify that multiline note strings are collapsed to a single line and that no body line starts with `#` after writing pending intent.
+<!-- trie:section symbol=tests/test_session_diff:test_intent_lifecycle_in_the_patches_table fingerprint=1ea69d213793fddcd179296becc22e7a8aaea1a65b8426c86689a7be06c488b2 body_fp=7dd039331350bf007080e1f52c63fdf7dd931b4dc01196360315294d6230ab6c source_ref=c2c03df2e8430ddba4a03c023d0926e01ed2e600 role=test -->
+Verify that `Store` patch staging, sealing via `mark_patches_applied`, and consumption via `delete_applied_patches` operate correctly on the qname-keyed patches table without symbol FK requirements.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_session_diff:test_build_narrative_prompt_sections_and_truncation fingerprint=6446fd1cae84e737cb1b09ef79389e50b0648ad9f14d949905a4d413dd3c5263 body_fp=eea9a0dcc6b45f3e2fc0e3ad348aafecd880e63dd17c26c8eff4c60b49cca4c2 source_ref=d975eae36aecf24fcccb49ac5032cd7a805d1e02 role=test -->
 Verify `build_narrative_prompt` emits correct sections, formats applied/pending entries, truncates `triefact_diff` to `max_diff_chars`, and handles an empty `SessionDiff`.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_collect_session_diff_gathers_all_evidence fingerprint=46a4d44aa3b1e3f1d4f921e0c6c2ec2db59c04b3b756b4e02d0aa3b3bdaebea3 body_fp=9998e4986e5dcdd77c0158784f3084040c7373e750c12ccf914f2e0ba5e727f8 source_ref=6f97b6fdd7ee1e1b25a6a61330c44c4c5230bae9 role=test -->
-Test `collect_session_diff` against a real git repo, verifying triefact diff content and applied/pending patch assembly via `append_intent` and store patches.
+<!-- trie:section symbol=tests/test_session_diff:test_collect_session_diff_gathers_all_evidence fingerprint=0b749d0514dc8ee9cb364b32f45f11b121d37aa4c9b946dbb3d476ef87310cba body_fp=74e0034c1ddc1559b3771623f4fe2be9d07ded645594cb03cc35c5db63b09104 source_ref=c2c03df2e8430ddba4a03c023d0926e01ed2e600 role=test -->
+Test `collect_session_diff` against a real git repo, verifying triefact diff content and applied/pending patch assembly via sealed/unsealed store patches.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_session_diff:test_collect_session_diff_includes_new_triefacts fingerprint=1c8f6b894cfb45576c6cdcf42ce71b213efaf3a7e307fcb041108fc82401e0af body_fp=7cfc1ad6e85ed5c97ed11f5b9323ac777fb66f15a8f60024b089842cfce18b6c source_ref=d975eae36aecf24fcccb49ac5032cd7a805d1e02 role=test -->
 Verify that `collect_session_diff` includes untracked new triefact files in `triefact_diff`, not only modified tracked files.

@@ -84,16 +84,9 @@ def preview_patches(store: Store, config: Config) -> dict[str, Any]:
     tool: which symbols carry notes, and which callers a reviewer might want
     to look at. No writes, no LLM.
     """
-    grouped = store.get_all_patches_grouped()
-    patches_by_qname: dict[str, list[dict]] = {}
-    for sym_id, patch_list in grouped.items():
-        row = store._conn.execute(
-            "SELECT qualified_name FROM symbols WHERE id = ?", (sym_id,)
-        ).fetchone()
-        if row is None:
-            continue
-        patches_by_qname[str(row[0])] = patch_list
-
+    # Unapplied only: sealed rows are on their way into a digest and are no
+    # longer reviewable staging.
+    patches_by_qname = store.get_all_patches_grouped(applied=False)
     patched_qnames = list(patches_by_qname.keys())
 
     working = _expand_callers(
@@ -120,20 +113,19 @@ def record_intent(
     *,
     session_note: str = "",
 ) -> dict:
-    """Commit pending patch notes as intent — no code generation.
+    """Seal pending patch notes as applied intent — no code generation.
 
-    Moves pending modify/delete/rename/create notes from the staging queue
-    into the pending-intent file inside the digest archive
-    (`<diffs_dir>/.pending.md`) — where `trie gate` consumes them into the
-    commit's digest entry. The source tree is never touched. More than one
-    symbol requires a real unifying `session_note` (see `session_note_ok`).
+    Staging and sealing both live in the patches tables (qname-keyed, so
+    graph refreshes can't destroy them): apply stamps every unapplied row
+    with `applied=1` and the unifying `session_note`. The rows stay put until
+    `trie gate` / `trie diff --write` consumes them into the commit's digest
+    entry — the durable record, in the triefact tree. More than one symbol
+    requires a real `session_note` (see `session_note_ok`).
     """
-    from trie.pending_intent import append_intent
-
-    modify_qnames = store.get_patched_qnames()
-    creates_by_file = store.get_create_patches_grouped()
+    unapplied = store.get_all_patches_grouped(applied=False)
+    creates_by_file = store.get_create_patches_grouped(applied=False)
     create_count = sum(len(rows) for rows in creates_by_file.values())
-    total = len(modify_qnames) + create_count
+    total = len(unapplied) + create_count
 
     if total == 0:
         return {"ok": True, "mode": "record", "recorded": 0, "symbols": []}
@@ -148,48 +140,20 @@ def record_intent(
             ),
         }
 
-    rows: list[dict] = []
-    for qname in modify_qnames:
-        patches = store.get_patches_for_qname(qname)
-        if not patches:
-            continue
-        # Structural kinds keep their op; plain notes are modifies.
-        kind = next(
-            (p.get("kind") for p in patches if p.get("kind") in ("delete", "rename")),
-            "modify",
-        )
-        rows.append(
-            {
-                "qname": qname,
-                "op": kind,
-                "notes": [p.get("note", "") for p in patches if p.get("note")],
-                "reasons": [p.get("reason", "") for p in patches if p.get("reason")],
-            }
-        )
-    for _file, creates in creates_by_file.items():
-        for c in creates:
-            rows.append(
-                {
-                    "qname": c.get("target_qname", ""),
-                    "op": "create",
-                    "notes": [c.get("note", "")] if c.get("note") else [],
-                    "reasons": [c.get("reason", "")] if c.get("reason") else [],
-                }
-            )
-
-    append_intent(project_root, config, rows, session_note=session_note)
-    store.delete_patches(all=True)
-    store.delete_create_patches(all=True)
+    symbols = sorted(
+        set(unapplied.keys())
+        | {c.get("target_qname", "") for rows in creates_by_file.values() for c in rows}
+    )
+    store.mark_patches_applied(session_note)
 
     return {
         "ok": True,
         "mode": "record",
-        "recorded": len(rows),
-        "symbols": [r["qname"] for r in rows],
+        "recorded": len(symbols),
+        "symbols": symbols,
         "session_note": session_note,
         "next": (
-            "Intent recorded to the pending-intent file in the digest archive; "
-            "the commit digest will consume it. No code was generated — source "
-            "changes are yours."
+            "Intent sealed; the commit digest will consume it. No code was "
+            "generated — source changes are yours."
         ),
     }

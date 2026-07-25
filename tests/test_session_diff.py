@@ -17,70 +17,35 @@ except ImportError:  # pragma: no cover
 from trie.config import Config
 from trie.graph.store import Store
 from trie.parse.python import extract_symbols
-from trie.pending_intent import append_intent, consume_intent, pending_path, read_intent
 from trie.session_diff import SessionDiff, build_narrative_prompt, collect_session_diff
 
 
-def test_pending_intent_roundtrip(tmp_path: Path) -> None:
-    """Intent lives in the triefact tree — a readable markdown file inside the
-    digest archive, appended by apply and consumed by the digest write."""
-    config = Config.from_dict({})
-    append_intent(
-        tmp_path,
-        config,
-        [
-            {"qname": "m:f", "op": "modify", "notes": ["change f"], "reasons": ["spec"]},
-            {"qname": "m:g", "op": "create", "notes": ["add g"], "reasons": []},
-        ],
-        session_note="ship the widget",
-    )
-    append_intent(
-        tmp_path,
-        config,
-        [{"qname": "m:h", "op": "delete", "notes": ["h is gone"], "reasons": []}],
-    )
+def test_intent_lifecycle_in_the_patches_table(tmp_path: Path) -> None:
+    """Staging, sealing, and consumption all live in the qname-keyed patches
+    table — no state files. The committed digest is the only durable record."""
+    store = Store(tmp_path / ".trie" / "graph.db")
+    try:
+        # qname keys mean rows need no symbol FK: removal notes (--gone) and
+        # graph refreshes can't destroy staged intent.
+        store.add_patch("m:f", "change f", "spec", "s1", require_symbol=False)
+        store.add_patch("m:gone", "was removed", "", "s1", kind="delete", require_symbol=False)
 
-    path = pending_path(tmp_path, config)
-    assert path.is_file()
-    assert path.name == ".pending.md", "dot-prefixed so *.md archive globs never see it"
-    assert str(path.parent).endswith("triediffs"), "state lives in triefacts, not .trie"
-    text = path.read_text()
-    assert "## ship the widget" in text
-    assert "- modify m:f — change f (reason: spec)" in text
+        sealed = store.mark_patches_applied("ship the widget")
+        assert sealed == 2
+        rows = store.get_all_patches_grouped(applied=True)
+        assert set(rows) == {"m:f", "m:gone"}
+        assert rows["m:f"][0]["session_note"] == "ship the widget"
+        assert rows["m:gone"][0]["kind"] == "delete"
 
-    rows = read_intent(tmp_path, config)
-    assert [(r["qname"], r["op"]) for r in rows] == [
-        ("m:f", "modify"),
-        ("m:g", "create"),
-        ("m:h", "delete"),
-    ]
-    assert rows[0]["session_note"] == "ship the widget"
-    assert rows[2]["session_note"] == ""  # second block had no session note
+        # New staging after a seal stays unsealed and separate.
+        store.add_patch("m:g", "add g later", "", "s2", require_symbol=False)
+        assert store.get_patched_qnames(applied=False) == ["m:g"]
 
-    consume_intent(tmp_path, config)
-    assert not path.exists()
-    assert read_intent(tmp_path, config) == []
-
-
-def test_pending_intent_flattens_multiline_notes(tmp_path: Path) -> None:
-    config = Config.from_dict({})
-    append_intent(
-        tmp_path,
-        config,
-        [
-            {
-                "qname": "m:f",
-                "op": "modify",
-                "notes": ["line one\nline two\n# not a heading"],
-                "reasons": [],
-            }
-        ],
-    )
-    rows = read_intent(tmp_path, config)
-    assert rows[0]["notes"] == ["line one line two # not a heading"]
-    # No line in the file outside the header can start with '#' structure-breakers.
-    body = pending_path(tmp_path, config).read_text().splitlines()
-    assert all(not ln.startswith("# ") for ln in body[2:])
+        # Consumption deletes only the sealed rows.
+        assert store.delete_applied_patches() == 2
+        assert store.get_patched_qnames() == ["m:g"]
+    finally:
+        store.close()
 
 
 def test_build_narrative_prompt_sections_and_truncation() -> None:
@@ -157,13 +122,7 @@ def test_collect_session_diff_gathers_all_evidence(tmp_path: Path, mocker) -> No
     # Uncommitted working-tree change
     mod_md.write_text("new prose\n")
 
-    # --- Arrange: applied intent (pending file inside the digest archive) ---
-    append_intent(
-        tmp_path,
-        Config.from_dict({}),
-        [{"qname": "m:f", "op": "modify", "notes": ["n1"], "reasons": []}],
-        session_note="s1 work",
-    )
+    # (applied intent is arranged below, once the store exists)
 
     # --- Arrange: store with pending patches ---
     db_path = tmp_path / ".trie" / "graph.db"
@@ -174,6 +133,10 @@ def test_collect_session_diff_gathers_all_evidence(tmp_path: Path, mocker) -> No
         src_py.write_text("def f():\n    return 1\n")
         store.upsert_file(path="m.py", fingerprint="fp")
         store.replace_file_symbols("m.py", extract_symbols(src_py, tmp_path))
+        # Sealed row: applied intent awaiting consumption into a digest.
+        store.add_patch("m:f", "n1", "", "s1")
+        store.mark_patches_applied("s1 work")
+        # Unsealed row: still-staged note.
         store.add_patch("m:f", note="pending note", reason="r", session_id="s1")
         store.add_create_patch(
             target_file="m.py",

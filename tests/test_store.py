@@ -194,7 +194,7 @@ def test_get_all_patches_grouped(store: Store, tmp_path: Path):
     assert set(all_notes) == {"note1", "note2"}
 
 
-def test_patch_count_for_symbol(store: Store, tmp_path: Path):
+def test_patch_rows_are_qname_keyed(store: Store, tmp_path: Path):
     src = tmp_path / "a.py"
     src.write_text("def greet():\n    return 'hello'\n")
     syms = extract_symbols(src)
@@ -202,10 +202,14 @@ def test_patch_count_for_symbol(store: Store, tmp_path: Path):
     store.replace_file_symbols("a.py", syms)
 
     store.add_patch("a:greet", "n1", "r1", "s1")
-    sym_id = store._conn.execute(
-        "SELECT id FROM symbols WHERE qualified_name = ?", ("a:greet",)
-    ).fetchone()[0]
-    assert store.patch_count_for_symbol(sym_id) == 1
+    assert len(store.get_patches_for_qname("a:greet")) == 1
+    # Unknown qnames are typo-guarded by default, but --gone bypasses:
+    import pytest
+
+    with pytest.raises(KeyError):
+        store.add_patch("a:nope", "n", "", "s1")
+    store.add_patch("a:nope", "was removed", "", "s1", kind="delete", require_symbol=False)
+    assert store.get_patches_for_qname("a:nope")[0]["kind"] == "delete"
 
 
 def test_delete_patches_by_qname(store: Store, tmp_path: Path):
@@ -297,7 +301,10 @@ def test_grep_symbols_includes_patch_count(store: Store, tmp_path: Path):
     assert hits[0].pending_patch_count == 1
 
 
-def test_patches_cascaded_on_symbol_delete(store: Store, tmp_path: Path):
+def test_patches_survive_symbol_replacement(store: Store, tmp_path: Path):
+    """The old symbol_id FK + ON DELETE CASCADE silently destroyed staged
+    intent whenever a graph refresh recycled symbol rows — the long-standing
+    loss bug. qname keys make staged notes refresh-proof."""
     src = tmp_path / "a.py"
     src.write_text("def greet():\n    return 'hello'\n")
     syms = extract_symbols(src)
@@ -305,9 +312,10 @@ def test_patches_cascaded_on_symbol_delete(store: Store, tmp_path: Path):
     store.replace_file_symbols("a.py", syms)
 
     store.add_patch("a:greet", "n1", "r1", "s1")
-    store.replace_file_symbols("a.py", [])  # Remove the symbol
+    store.replace_file_symbols("a.py", [])  # graph refresh removes the symbol
     remaining = store.get_patches_for_qname("a:greet")
-    assert remaining == []
+    assert len(remaining) == 1, "staged intent must survive graph refreshes"
+    assert remaining[0]["note"] == "n1"
 
 
 # --- WS6: structural patch kinds + create_patches ---------------------------

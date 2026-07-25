@@ -15,7 +15,7 @@ from trie.parse.references import Reference
 # v8: extended symbol-kind vocabulary (interface/type/enum/enum_member/property)
 # for multi-language indexing. The `kind` column is free-text so no schema change
 # is needed — the bump forces a clean cache rebuild so TS files index cleanly.
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 # All schema is created if not present. The DB is a regenerable cache under .trie/;
 # bumping SCHEMA_VERSION blows it away and triggers a re-scan on next connect.
@@ -73,18 +73,29 @@ CREATE INDEX IF NOT EXISTS idx_sections_symbol ON triefact_sections(symbol_id);
 CREATE INDEX IF NOT EXISTS idx_sections_role ON triefact_sections(role);
 CREATE INDEX IF NOT EXISTS idx_sections_boundary ON triefact_sections(boundary);
 
+-- Patch notes are keyed by qname TEXT, deliberately NOT by symbol_id FK:
+-- a graph refresh recycles symbol rows, and an ON DELETE CASCADE here silently
+-- destroyed staged intent (the long-standing loss bug). qname keys also let
+-- removal notes (--gone) exist for symbols no longer in the graph.
+-- `applied` + `session_note` are the apply seal: apply stamps rows in place;
+-- the digest write consumes applied rows into the committed digest and deletes
+-- them. No state files anywhere — staging lives here, the record lives in
+-- triefacts.
 CREATE TABLE IF NOT EXISTS patches (
     id INTEGER PRIMARY KEY,
-    symbol_id INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
+    qname TEXT NOT NULL,
     note TEXT NOT NULL,
     reason TEXT NOT NULL,
     session_id TEXT NOT NULL,
     created_at INTEGER NOT NULL,
     kind TEXT NOT NULL DEFAULT 'modify',
-    rename_to TEXT
+    rename_to TEXT,
+    applied INTEGER NOT NULL DEFAULT 0,
+    session_note TEXT NOT NULL DEFAULT ''
 );
-CREATE INDEX IF NOT EXISTS idx_patches_symbol ON patches(symbol_id);
+CREATE INDEX IF NOT EXISTS idx_patches_qname ON patches(qname);
 CREATE INDEX IF NOT EXISTS idx_patches_session ON patches(session_id);
+CREATE INDEX IF NOT EXISTS idx_patches_applied ON patches(applied);
 
 -- Create patches target a symbol that does NOT yet exist, so they cannot key on
 -- symbol_id (which is NOT NULL elsewhere). Kept in their own table to avoid
@@ -98,7 +109,9 @@ CREATE TABLE IF NOT EXISTS create_patches (
     note TEXT NOT NULL,
     reason TEXT NOT NULL,
     session_id TEXT NOT NULL,
-    created_at INTEGER NOT NULL
+    created_at INTEGER NOT NULL,
+    applied INTEGER NOT NULL DEFAULT 0,
+    session_note TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_create_patches_file ON create_patches(target_file);
 CREATE INDEX IF NOT EXISTS idx_create_patches_session ON create_patches(session_id);
@@ -761,26 +774,30 @@ class Store:
         *,
         kind: str = "modify",
         rename_to: str | None = None,
+        require_symbol: bool = True,
     ) -> int:
-        """Add a new patch row for the given (existing) symbol qname.
+        """Add a new patch (intent note) row keyed by qname.
 
         `kind` is one of 'modify' | 'delete' | 'rename'. `rename_to` is the new
-        local name, required when kind == 'rename'. Returns the new patch id, or
-        raises KeyError if qname is not found.
+        local name, required when kind == 'rename'. With `require_symbol`
+        (default) a KeyError is raised when the qname isn't in the graph —
+        typo protection; pass False for removal notes (`--gone`), whose
+        symbols are gone from the graph by definition. Rows survive graph
+        refreshes: they carry no FK into the symbols table.
         """
-        row = self._conn.execute(
-            "SELECT id FROM symbols WHERE qualified_name = ? LIMIT 1",
-            (qname,),
-        ).fetchone()
-        if row is None:
-            raise KeyError(f"qname {qname!r} has no symbol_id; symbol may not exist")
-        symbol_id = int(row[0])
+        if require_symbol:
+            row = self._conn.execute(
+                "SELECT id FROM symbols WHERE qualified_name = ? LIMIT 1",
+                (qname,),
+            ).fetchone()
+            if row is None:
+                raise KeyError(f"qname {qname!r} not found in the graph")
         now = int(time.time())
         cur = self._conn.execute(
             """INSERT INTO patches
-               (symbol_id, note, reason, session_id, created_at, kind, rename_to)
+               (qname, note, reason, session_id, created_at, kind, rename_to)
                VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (symbol_id, note, reason, session_id, now, kind, rename_to),
+            (qname, note, reason, session_id, now, kind, rename_to),
         )
         self._conn.commit()
         assert cur.lastrowid is not None, "INSERT of patch should produce a rowid"
@@ -822,13 +839,16 @@ class Store:
         assert cur.lastrowid is not None, "INSERT of create_patch should produce a rowid"
         return int(cur.lastrowid)
 
-    def get_create_patches_grouped(self) -> dict[str, list[dict]]:
-        """Return all pending create patches grouped by target_file."""
-        rows = self._conn.execute(
-            """SELECT id, target_file, target_qname, anchor_qname, parent_class,
-                      note, reason, session_id, created_at
-               FROM create_patches ORDER BY target_file, id"""
-        ).fetchall()
+    def get_create_patches_grouped(self, *, applied: bool | None = None) -> dict[str, list[dict]]:
+        """Create patches grouped by target_file; `applied` filters the seal state."""
+        sql = """SELECT id, target_file, target_qname, anchor_qname, parent_class,
+                      note, reason, session_id, created_at, applied, session_note
+               FROM create_patches"""
+        params: list = []
+        if applied is not None:
+            sql += " WHERE applied = ?"
+            params.append(1 if applied else 0)
+        rows = self._conn.execute(sql + " ORDER BY target_file, id", params).fetchall()
         result: dict[str, list[dict]] = {}
         for r in rows:
             result.setdefault(str(r[1]), []).append(
@@ -842,6 +862,8 @@ class Store:
                     "reason": r[6],
                     "session_id": r[7],
                     "created_at": int(r[8]),
+                    "applied": bool(r[9]),
+                    "session_note": r[10] or "",
                 }
             )
         return result
@@ -872,60 +894,68 @@ class Store:
             return count
         return 0
 
-    def get_patches_for_qname(self, qname: str) -> list[dict]:
-        """Return all pending patches for the given symbol as dicts."""
-        row = self._conn.execute(
-            "SELECT id FROM symbols WHERE qualified_name = ? LIMIT 1",
-            (qname,),
-        ).fetchone()
-        if row is None:
-            return []
-        symbol_id = int(row[0])
-        return self._get_patches_by_symbol_id(symbol_id)
+    @staticmethod
+    def _patch_row_to_dict(r) -> dict:
+        return {
+            "id": int(r[0]),
+            "note": r[1],
+            "reason": r[2],
+            "session_id": r[3],
+            "created_at": int(r[4]),
+            "kind": r[5] or "modify",
+            "rename_to": r[6],
+            "applied": bool(r[7]),
+            "session_note": r[8] or "",
+        }
 
-    def _get_patches_by_symbol_id(self, symbol_id: int) -> list[dict]:
-        rows = self._conn.execute(
-            """SELECT id, note, reason, session_id, created_at, kind, rename_to
-               FROM patches WHERE symbol_id = ? ORDER BY id""",
-            (symbol_id,),
-        ).fetchall()
-        return [
-            {
-                "id": int(r[0]),
-                "note": r[1],
-                "reason": r[2],
-                "session_id": r[3],
-                "created_at": int(r[4]),
-                "kind": r[5] or "modify",
-                "rename_to": r[6],
-            }
-            for r in rows
-        ]
+    _PATCH_COLS = "id, note, reason, session_id, created_at, kind, rename_to, applied, session_note"
 
-    def get_all_patches_grouped(self) -> dict[int, list[dict]]:
-        """Return all pending patches grouped by symbol_id.
+    def get_patches_for_qname(self, qname: str, *, applied: bool | None = None) -> list[dict]:
+        """Patches for one qname; `applied` filters the seal state (None = all)."""
+        sql = f"SELECT {self._PATCH_COLS} FROM patches WHERE qname = ?"
+        params: list = [qname]
+        if applied is not None:
+            sql += " AND applied = ?"
+            params.append(1 if applied else 0)
+        rows = self._conn.execute(sql + " ORDER BY id", params).fetchall()
+        return [self._patch_row_to_dict(r) for r in rows]
 
-        Result maps symbol_id -> list of patch dicts.
-        """
-        rows = self._conn.execute(
-            """SELECT id, symbol_id, note, reason, session_id, created_at, kind, rename_to
-               FROM patches ORDER BY symbol_id, id"""
-        ).fetchall()
-        result: dict[int, list[dict]] = {}
+    def get_all_patches_grouped(self, *, applied: bool | None = None) -> dict[str, list[dict]]:
+        """All patches grouped by qname; `applied` filters the seal state."""
+        sql = f"SELECT qname, {self._PATCH_COLS} FROM patches"
+        params: list = []
+        if applied is not None:
+            sql += " WHERE applied = ?"
+            params.append(1 if applied else 0)
+        rows = self._conn.execute(sql + " ORDER BY qname, id", params).fetchall()
+        result: dict[str, list[dict]] = {}
         for r in rows:
-            sid = int(r[1])
-            result.setdefault(sid, []).append(
-                {
-                    "id": int(r[0]),
-                    "note": r[2],
-                    "reason": r[3],
-                    "session_id": r[4],
-                    "created_at": int(r[5]),
-                    "kind": r[6] or "modify",
-                    "rename_to": r[7],
-                }
-            )
+            result.setdefault(str(r[0]), []).append(self._patch_row_to_dict(r[1:]))
         return result
+
+    def mark_patches_applied(self, session_note: str) -> int:
+        """Seal every unapplied row (patches + creates) with the session note.
+
+        The apply step: rows stay in the table until the digest write consumes
+        them into the committed digest. Returns the number of rows sealed.
+        """
+        n = self._conn.execute(
+            "UPDATE patches SET applied = 1, session_note = ? WHERE applied = 0",
+            (session_note,),
+        ).rowcount
+        n += self._conn.execute(
+            "UPDATE create_patches SET applied = 1, session_note = ? WHERE applied = 0",
+            (session_note,),
+        ).rowcount
+        self._conn.commit()
+        return n
+
+    def delete_applied_patches(self) -> int:
+        """Consume sealed rows — their content now lives in a committed digest."""
+        n = self._conn.execute("DELETE FROM patches WHERE applied = 1").rowcount
+        n += self._conn.execute("DELETE FROM create_patches WHERE applied = 1").rowcount
+        self._conn.commit()
+        return n
 
     def delete_patches(
         self,
@@ -943,16 +973,7 @@ class Store:
             self._conn.commit()
             return count
         if qname is not None:
-            row = self._conn.execute(
-                "SELECT id FROM symbols WHERE qualified_name = ? LIMIT 1",
-                (qname,),
-            ).fetchone()
-            if row is None:
-                return 0
-            symbol_id = int(row[0])
-            count = self._conn.execute(
-                "DELETE FROM patches WHERE symbol_id = ?", (symbol_id,)
-            ).rowcount
+            count = self._conn.execute("DELETE FROM patches WHERE qname = ?", (qname,)).rowcount
             self._conn.commit()
             return count
         if session_id is not None:
@@ -963,23 +984,15 @@ class Store:
             return count
         return 0
 
-    def get_patched_qnames(self) -> list[str]:
-        """Return all qnames that have at least one pending patch."""
-        rows = self._conn.execute(
-            """SELECT DISTINCT s.qualified_name
-               FROM patches p
-               JOIN symbols s ON s.id = p.symbol_id
-               ORDER BY s.qualified_name"""
-        ).fetchall()
+    def get_patched_qnames(self, *, applied: bool | None = None) -> list[str]:
+        """Qnames with at least one patch row; `applied` filters the seal state."""
+        sql = "SELECT DISTINCT qname FROM patches"
+        params: list = []
+        if applied is not None:
+            sql += " WHERE applied = ?"
+            params.append(1 if applied else 0)
+        rows = self._conn.execute(sql + " ORDER BY qname", params).fetchall()
         return [r[0] for r in rows]
-
-    def patch_count_for_symbol(self, symbol_id: int) -> int:
-        """Return the number of pending patches for the given symbol_id."""
-        row = self._conn.execute(
-            "SELECT COUNT(*) FROM patches WHERE symbol_id = ?",
-            (symbol_id,),
-        ).fetchone()
-        return int(row[0]) if row else 0
 
     def patch_summary(self) -> dict[str, object]:
         """Aggregate pending-patch state — the single shared reader for status /
@@ -988,10 +1001,7 @@ class Store:
         Returns {total_patches, symbol_count, create_count, by_origin, qnames}.
         `by_origin` buckets symbols by patch session origin (agent/cascade/mixed).
         """
-        patch_rows = self._conn.execute(
-            """SELECT s.qualified_name, p.session_id
-               FROM patches p JOIN symbols s ON s.id = p.symbol_id"""
-        ).fetchall()
+        patch_rows = self._conn.execute("SELECT qname, session_id FROM patches").fetchall()
         sessions_by_qname: dict[str, set[str]] = {}
         for qname, sid in patch_rows:
             sessions_by_qname.setdefault(qname, set()).add(sid)
@@ -1123,7 +1133,7 @@ class Store:
             order = "s.is_public DESC, s.qualified_name"
 
         where_sql = ("WHERE " + " AND ".join(clauses)) if clauses else ""
-        patch_subq = "(SELECT COUNT(*) FROM patches WHERE symbol_id = s.id)"
+        patch_subq = "(SELECT COUNT(*) FROM patches WHERE qname = s.qualified_name)"
         sql = f"""
             SELECT
                 s.qualified_name, s.name, s.kind, s.file_path,
