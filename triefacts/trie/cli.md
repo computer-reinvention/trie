@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/cli.py
-file_fingerprint: b22d5fdbf12ab12a5846a00a70fe3542b3828953abe601908a6d936d6205175e
-last_synced_at: '2026-07-25T01:56:18Z'
+file_fingerprint: 05d63fbe526acfad5d322d78f37b4099442fb65e751c2382a853cdb7f06c2820
+last_synced_at: '2026-07-25T06:06:00Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
-  lines: 1-4330
+  lines: 1-4352
 - kind: constant
   qualified_name: trie/cli:app
   lines: 77-80
@@ -183,184 +183,184 @@ defines:
   lines: 2064-2128
 - kind: function
   qualified_name: trie/cli:setup_cmd
-  lines: 2132-2326
+  lines: 2132-2348
 - kind: function
   qualified_name: trie/cli:_render_setup_plan
-  lines: 2329-2399
+  lines: 2351-2421
 - kind: function
   qualified_name: trie/cli:_render_override_target_block
-  lines: 2402-2428
+  lines: 2424-2450
 - kind: function
   qualified_name: trie/cli:_format_action
-  lines: 2431-2435
+  lines: 2453-2457
 - kind: function
   qualified_name: trie/cli:_open_tools
-  lines: 2450-2468
+  lines: 2472-2490
 - kind: function
   qualified_name: trie/cli:_emit_envelope
-  lines: 2471-2495
+  lines: 2493-2517
 - kind: function
   qualified_name: trie/cli:_patched_tag
-  lines: 2498-2502
+  lines: 2520-2524
 - kind: function
   qualified_name: trie/cli:_render_grep
-  lines: 2505-2575
+  lines: 2527-2597
 - kind: function
   qualified_name: trie/cli:_render_read
-  lines: 2578-2651
+  lines: 2600-2673
 - kind: function
   qualified_name: trie/cli:_render_trace
-  lines: 2654-2706
+  lines: 2676-2728
 - kind: function
   qualified_name: trie/cli:_render_error_envelope
-  lines: 2709-2721
+  lines: 2731-2743
 - kind: function
   qualified_name: trie/cli:_build_grep_predicate
-  lines: 2724-2786
+  lines: 2746-2808
 - kind: function
   qualified_name: trie/cli:grep_cmd
-  lines: 2790-2893
+  lines: 2812-2915
 - kind: function
   qualified_name: trie/cli:read_cmd
-  lines: 2897-2953
+  lines: 2919-2975
 - kind: function
   qualified_name: trie/cli:_render_read_dispatch
-  lines: 2956-2969
+  lines: 2978-2991
 - kind: function
   qualified_name: trie/cli:_render_read_source
-  lines: 2972-2981
+  lines: 2994-3003
 - kind: function
   qualified_name: trie/cli:trace_cmd
-  lines: 2985-3027
+  lines: 3007-3049
 - kind: function
   qualified_name: trie/cli:blast_radius_cmd
-  lines: 3031-3061
+  lines: 3053-3083
 - kind: function
   qualified_name: trie/cli:_render_blast_radius
-  lines: 3064-3094
+  lines: 3086-3116
 - kind: function
   qualified_name: trie/cli:_print_plain
-  lines: 3104-3118
+  lines: 3126-3140
 - kind: function
   qualified_name: trie/cli:grep_str_cmd
-  lines: 3122-3148
+  lines: 3144-3170
 - kind: function
   qualified_name: trie/cli:find_cmd
-  lines: 3152-3181
+  lines: 3174-3203
 - kind: function
   qualified_name: trie/cli:write_cmd
-  lines: 3185-3225
+  lines: 3207-3247
 - kind: function
   qualified_name: trie/cli:_render_write
-  lines: 3228-3237
+  lines: 3250-3259
 - kind: function
   qualified_name: trie/cli:_render_find
-  lines: 3240-3255
+  lines: 3262-3277
 - kind: function
   qualified_name: trie/cli:grep_entry_points_cmd
-  lines: 3259-3274
+  lines: 3281-3296
 - kind: function
   qualified_name: trie/cli:grep_symbol_cmd
-  lines: 3278-3293
+  lines: 3300-3315
 - kind: function
   qualified_name: trie/cli:grep_symbol_neighbours_cmd
-  lines: 3297-3312
+  lines: 3319-3334
 - kind: function
   qualified_name: trie/cli:explain_symbol_cmd
-  lines: 3316-3331
+  lines: 3338-3353
 - kind: function
   qualified_name: trie/cli:explain_symbol_refs_cmd
-  lines: 3335-3350
+  lines: 3357-3372
 - kind: function
   qualified_name: trie/cli:trace_flow_cmd
-  lines: 3354-3370
+  lines: 3376-3392
 - kind: function
   qualified_name: trie/cli:explain_flow_cmd
-  lines: 3374-3390
+  lines: 3396-3412
 - kind: constant
   qualified_name: trie/cli:patch_app
-  lines: 3398-3402
+  lines: 3420-3424
 - kind: class
   qualified_name: trie/cli:_RichApplyProgress
-  lines: 3406-3458
+  lines: 3428-3480
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.__init__
-  lines: 3416-3418
+  lines: 3438-3440
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.stage
-  lines: 3420-3421
+  lines: 3442-3443
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_start
-  lines: 3423-3424
+  lines: 3445-3446
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_symbol
-  lines: 3426-3432
+  lines: 3448-3454
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_generate
-  lines: 3434-3436
+  lines: 3456-3458
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_fixup
-  lines: 3438-3441
+  lines: 3460-3463
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_prose
-  lines: 3443-3446
+  lines: 3465-3468
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_done
-  lines: 3448-3452
+  lines: 3470-3474
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.refresh
-  lines: 3454-3455
+  lines: 3476-3477
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.verify
-  lines: 3457-3458
+  lines: 3479-3480
 - kind: function
   qualified_name: trie/cli:patch_create_cmd
-  lines: 3462-3488
+  lines: 3484-3510
 - kind: function
   qualified_name: trie/cli:patch_create_batch_cmd
-  lines: 3492-3606
+  lines: 3514-3628
 - kind: function
   qualified_name: trie/cli:patch_create_symbol_cmd
-  lines: 3610-3652
+  lines: 3632-3674
 - kind: function
   qualified_name: trie/cli:patch_delete_symbol_cmd
-  lines: 3656-3683
+  lines: 3678-3705
 - kind: function
   qualified_name: trie/cli:patch_rename_symbol_cmd
-  lines: 3687-3716
+  lines: 3709-3738
 - kind: function
   qualified_name: trie/cli:patch_apply_cmd
-  lines: 3720-3962
+  lines: 3742-3984
 - kind: function
   qualified_name: trie/cli:patch_preview_cmd
-  lines: 3966-4009
+  lines: 3988-4031
 - kind: function
   qualified_name: trie/cli:patch_list_cmd
-  lines: 4013-4055
+  lines: 4035-4077
 - kind: function
   qualified_name: trie/cli:patch_drop_cmd
-  lines: 4059-4097
+  lines: 4081-4119
 - kind: constant
   qualified_name: trie/cli:mcp_app
-  lines: 4105-4112
+  lines: 4127-4134
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 4117-4119
+  lines: 4139-4141
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 4122-4132
+  lines: 4144-4154
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 4136-4205
+  lines: 4158-4227
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 4208-4223
+  lines: 4230-4245
 - kind: function
   qualified_name: trie/cli:mcp_uninstall_cmd
-  lines: 4227-4302
+  lines: 4249-4324
 - kind: function
   qualified_name: trie/cli:_render_uninstall_plan
-  lines: 4305-4325
+  lines: 4327-4347
 incoming_refs: 91
 outgoing_refs: 157
 ---
@@ -740,8 +740,8 @@ Execute an incremental sync that regenerates only stale triefacts and their casc
 - Calls `_report_sync_errors` after syncing; exits code 1 if all files failed or any file errored
 - Honors budget/limit constraints and reports any files skipped due to those caps
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:setup_cmd fingerprint=a3ba873589b254e393dc1ad5d0d749f9347c6979ff5793bd080a0802d81f9bc3 body_fp=603688fcf2af1181b8a8a56e0451175fbd3dfb58a6bfaf5ca1a3bf1d2cfe820c source_ref=48e23051b4852b3e6db747fc7a964a8e41b76849 role=api -->
-Integrates trie into coding agents by installing hooks, tool overrides, documentation, and a GitHub PR workflow.
+<!-- trie:section symbol=trie/cli:setup_cmd fingerprint=615d05779419134debda9155f1be7e507d600b96d3a99aaff53e9c4ed96d6526 body_fp=bc02fe45b2a47cd34ee4fc2fac3ba0d90d9e7d51ee0b00496e3cad9a1a594d88 source_ref=e160f005ddde01cab739588c10c28e97402e1152 role=api -->
+Integrates trie into coding agents by installing hooks, tool overrides, documentation, and GitHub workflows.
 
 Orchestrates multiple install steps in sequence:
 - MCP server registration (optional, via `--with-mcp`)
@@ -749,12 +749,14 @@ Orchestrates multiple install steps in sequence:
 - Tool wrapper overrides that replace agent built-in `grep`/`read` with trie equivalents
 - Agent-facing documentation (TRIE.md and pointer updates)
 - GitHub Actions workflow that comments the latest session digest on PRs
+- Optional CI sync-bot workflow (opt-in via `--with-sync-bot`) that regenerates stale triefacts on PR branches
 
-Target auto-detection resolves which agents to configure; `--target` or `--all` override this. The process is idempotent - re-running safely overwrites existing configurations. Agents without automation support emit manual setup instructions. Exits with code 1 if any install step errors, including the workflow install.
+Target auto-detection resolves which agents to configure; `--target` or `--all` override this. The process is idempotent - re-running safely overwrites existing configurations. Agents without automation support emit manual setup instructions. Exits with code 1 if any install step errors, including either workflow install.
 
 - `--no-overrides`: Skip tool wrapper installation, leave agent built-ins unchanged
 - `--scope`: Install in project directory or user agent configs
 - `--dry-run`/`--print-only`: Preview mode without file modifications
+- `--with-sync-bot`: Also install a sync-bot CI workflow (spends API budget; opt-in)
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:_render_setup_plan fingerprint=9c0c752d54c3dcfa921629d39973d8145b811fdd047a21cf7002c9a974f78517 body_fp=00d3d6b6fe11ea59d9146ce4c158ed543a0cdce62c72547fc54a4a6c833a62d5 source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
 Renders a combined setup plan report grouping MCP, hook, and override results by target with a separate docs section.
