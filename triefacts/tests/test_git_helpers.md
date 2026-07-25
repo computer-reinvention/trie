@@ -1,65 +1,23 @@
 ---
 trie_version: 0.1.9
 source: tests/test_git_helpers.py
-file_fingerprint: 1c555bca51f12de5fd262ce289da6c6835aeb1d9dc7b36fb409a7742a75458be
-last_synced_at: '2026-07-23T16:52:06Z'
+file_fingerprint: f9b0feea8faa5462a9150bae40b56ac5d09e613f63fbcf4d7083712702cb57ff
+last_synced_at: '2026-07-25T00:07:04Z'
 description: Tests for the narrow git helpers used by diff-aware regen.
 defines:
 - kind: module
   qualified_name: tests/test_git_helpers:__module__
-  lines: 1-267
+  lines: 1-306
 - kind: function
   qualified_name: tests/test_git_helpers:_git
-  lines: 19-21
+  lines: 22-24
 - kind: function
   qualified_name: tests/test_git_helpers:_init_repo
-  lines: 24-27
-- kind: function
-  qualified_name: tests/test_git_helpers:repo
-  lines: 31-33
-- kind: function
-  qualified_name: tests/test_git_helpers:test_is_git_repo_true_inside_repo
-  lines: 36-37
-- kind: function
-  qualified_name: tests/test_git_helpers:test_is_git_repo_false_outside_repo
-  lines: 40-42
-- kind: function
-  qualified_name: tests/test_git_helpers:test_compute_blob_hash_matches_git_hash_object
-  lines: 45-56
-- kind: function
-  qualified_name: tests/test_git_helpers:test_compute_blob_hash_is_content_addressed
-  lines: 59-65
-- kind: function
-  qualified_name: tests/test_git_helpers:test_compute_blob_hash_changes_when_content_changes
-  lines: 68-74
-- kind: function
-  qualified_name: tests/test_git_helpers:test_compute_blob_hash_missing_file_returns_none
-  lines: 77-78
-- kind: function
-  qualified_name: tests/test_git_helpers:test_retrieve_blob_round_trips_committed_content
-  lines: 81-91
-- kind: function
-  qualified_name: tests/test_git_helpers:test_retrieve_blob_unreachable_blob_returns_none
-  lines: 94-103
-- kind: function
-  qualified_name: tests/test_git_helpers:test_retrieve_blob_malformed_hash_returns_none
-  lines: 106-109
-- kind: function
-  qualified_name: tests/test_git_helpers:test_retrieve_blob_outside_repo_returns_none
-  lines: 112-115
-- kind: function
-  qualified_name: tests/test_git_helpers:test_compute_blob_hash_outside_repo_returns_none
-  lines: 118-127
-- kind: function
-  qualified_name: tests/test_git_helpers:test_diff_paths_includes_untracked_files
-  lines: 130-209
-- kind: function
-  qualified_name: tests/test_git_helpers:test_commit_timestamp_returns_head_time
-  lines: 212-266
+  lines: 27-30
 incoming_refs: 0
-outgoing_refs: 13
+outgoing_refs: 0
 ---
-<!-- trie:section symbol=tests/test_git_helpers:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=935d7c8fc588b21c6a3a3e1213076dd69f0a3a086d3e2bd10e46daefd31e9d23 source_ref=6922d330926218a78e65a95d706a8038d95a55da role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_git_helpers:__module__ fingerprint=7b508a0b69ba2077d06ed36962951d03e1b5de35b9270c9f620fcc497fcb4334 body_fp=935d7c8fc588b21c6a3a3e1213076dd69f0a3a086d3e2bd10e46daefd31e9d23 source_ref=1c54b4516222789ca66b19532c3dbee32df14674 role=test -->
 Tests for narrow git helpers used by diff-aware regen, constructing real git repos to exercise subprocess interactions.
 
 - Functions use real git commands in temporary directories rather than mocking subprocess
@@ -74,50 +32,4 @@ Runs git commands in the specified directory with error checking and output capt
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_git_helpers:_init_repo fingerprint=e6a8e59044cd4691a616ada677408e96c9c856caafae13744c548e08d2b462be body_fp=aaf70ef95d1b8cb5b95b856419a49382ff73e58b47a072c10d48aa45aafb6198 source_ref=6922d330926218a78e65a95d706a8038d95a55da role=test-infrastructure -->
 Creates a git repository with test identity configuration at the specified path.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_git_helpers:repo fingerprint=4866fbf9d304dab9bd4a33e890792c1ea71ef903933d6ab04a99b24be8e16e6a body_fp=8292ec1999740e52a96f739b7780c48aace1af321d1eb9c1f6c866b492f080d6 source_ref=6922d330926218a78e65a95d706a8038d95a55da role=test-infrastructure -->
-Creates a pytest fixture that initializes a temporary git repository for testing.
-
-- Returns the path to the initialized git repository
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_git_helpers:test_is_git_repo_true_inside_repo fingerprint=f035a2b1b05f9fa589c471a17deda0407412bdece3ae9d9306befd237d7c68c6 body_fp=47e1cbe7917229ecf228a4d83a60c43f7ca1245c201592a3bac1871014e5395e source_ref=6922d330926218a78e65a95d706a8038d95a55da role=test -->
-Verifies that `is_git_repo` returns `True` when called on a valid git repository path.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_git_helpers:test_is_git_repo_false_outside_repo fingerprint=f54ca20403df43eb511e5fb327df27e05c5956233df94c420661ad82896587be body_fp=fc292cc4516732a7cb175d7a9a9f2339285f8f259bcd77a2cb9f791bbc8917bd source_ref=6922d330926218a78e65a95d706a8038d95a55da role=test -->
-Verifies that `is_git_repo` returns False when called on a non-git directory.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_git_helpers:test_compute_blob_hash_matches_git_hash_object fingerprint=67962e536e0bd0e5414bcdd9f7e62ccf0edcbce0cf210de021f08d7746b929ab body_fp=3b221cb27f3f2a00ad648554a14e78663503caa387c7783f24aedfa86ebc6e04 source_ref=6922d330926218a78e65a95d706a8038d95a55da role=test -->
-Verifies that `compute_blob_hash` produces identical output to `git hash-object` for the same file content.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_git_helpers:test_compute_blob_hash_is_content_addressed fingerprint=5dd5554fabeaaa27a592e21bc8c03037ae0e53a6489d66592e68c5b4af5913a5 body_fp=6bda29c8a970f494c4820f3414962e9ae2aa67fb256d1c63e86049deb8b46575 source_ref=6922d330926218a78e65a95d706a8038d95a55da role=test -->
-Verifies that `compute_blob_hash` produces identical hashes for files with identical content in different paths.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_git_helpers:test_compute_blob_hash_changes_when_content_changes fingerprint=81ca6ef8125cd827240e4d95d46d06acb5bbb43c955b39e7eb4ba517fca124d6 body_fp=9bb66da1e9b3d1c851245ce45b037812ca5f3486a4200c854ce53506a96ec9bc source_ref=6922d330926218a78e65a95d706a8038d95a55da role=test -->
-Verifies that compute_blob_hash produces different hashes when file content changes.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_git_helpers:test_compute_blob_hash_missing_file_returns_none fingerprint=4d866d334bbc0886d1d94d2b532be64b0f0d6975d5ff1cf65f741151a28d5714 body_fp=7102b12360b60a82cb64d717a98c7e2e06d888930574d5fda12b381a4a26ef00 source_ref=6922d330926218a78e65a95d706a8038d95a55da role=test -->
-Verifies compute_blob_hash returns None for non-existent files.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_git_helpers:test_retrieve_blob_round_trips_committed_content fingerprint=11ab68f853fc1dd92cfa558f5e000db888c572c2a12480b076f30c023fa33cbe body_fp=106d93d365a5441d2f9d0b0a26cbb7b681eb46612207e6d220fb833ca2604db1 source_ref=6922d330926218a78e65a95d706a8038d95a55da role=test -->
-Tests that `retrieve_blob` returns the original content when given a blob hash from a committed file.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_git_helpers:test_retrieve_blob_unreachable_blob_returns_none fingerprint=a18a17d15a7d40ddf94db570112ce8404555d716cadc8093d64e4c81f5ded047 body_fp=dd66f4ab9f8b01341fd43b84cfb1afef729f52b5223abfe0b7afedb374a8ce78 source_ref=6922d330926218a78e65a95d706a8038d95a55da role=test -->
-Tests that `retrieve_blob` returns `None` when given a valid hash for content that was never committed to the git object database.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_git_helpers:test_retrieve_blob_malformed_hash_returns_none fingerprint=2d4a160e495f72e3921f579fd83cec0aaf2d7cd150f75a3b7afbdf477ea20bf5 body_fp=9352aad5732f833b1d75d1c96d7af2d3454390f3c50d910735d0ec91f52d6ae8 source_ref=6922d330926218a78e65a95d706a8038d95a55da role=test -->
-Verifies that `retrieve_blob` returns `None` when given malformed git blob hashes.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_git_helpers:test_retrieve_blob_outside_repo_returns_none fingerprint=8a94fd40b788ea22ff0e2768dbb5fe50bfc5a11997f7e70f235204839dff3195 body_fp=b98c977a5fc7a6ce2ec5cfb538a359524e48ebc8d4d686de65122ec88b1f87a5 source_ref=6922d330926218a78e65a95d706a8038d95a55da role=test -->
-Tests that `retrieve_blob` returns None when called outside a git repository.
-
-- Creates a valid 40-character SHA-1 hash format but uses a non-repository path
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_git_helpers:test_compute_blob_hash_outside_repo_returns_none fingerprint=e0c44ccc0765e2f01a9db5b7f7472eaf49d1e437d43767b50938a19402f8c317 body_fp=a8f51767eb8ada0034e1bbdeb622731922f75ec8b84d02075257bfdfcb5efdda source_ref=6922d330926218a78e65a95d706a8038d95a55da role=test -->
-Verifies that `compute_blob_hash` returns None when called outside a git repository.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_git_helpers:test_diff_paths_includes_untracked_files fingerprint=36bd29be1119b469acd5757f3016ac7ae0595d11513e49c877196796d086d333 body_fp=695c7a6f4b7c485ab3aa18793e8c456627f8859427c64ad9380422a65e3ded55 source_ref=e762d13c3fb2a4f90993208de222061d724757a6 role=test -->
-Verify that `diff_paths` includes both tracked modifications and untracked new files in its output, and returns `""` when no changes exist.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_git_helpers:test_commit_timestamp_returns_head_time fingerprint=bd4d7671c93ff0e0ed8d0052c52cb0e4e864373a35932cef2e288bc3deed39e3 body_fp=7af43b6ac10d7396922dacbacc37956fb4a014968ffdcb5a0a28032e6618f996 role=change-detection -->
-Tests that `commit_timestamp` returns a recent float timestamp for HEAD of a freshly-created git repository, returns the same value when explicitly passing "HEAD", returns `None` for a nonexistent ref, and returns `None` when given a directory that is not inside any git repository. The git repo is initialised in a `repo` subdirectory of `tmp_path` so that the "not a repo" probe directory — created as a sibling under `tmp_path` itself — is genuinely outside any git work tree.
 <!-- trie:end -->

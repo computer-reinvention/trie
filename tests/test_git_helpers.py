@@ -11,7 +11,10 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-import pytest
+try:
+    import pytest
+except ImportError:  # pragma: no cover
+    pytest = None  # type: ignore[assignment]
 
 from trie.git_helpers import compute_blob_hash, is_git_repo, retrieve_blob
 
@@ -27,240 +30,276 @@ def _init_repo(path: Path) -> None:
     _git(["config", "user.name", "trie test"], path)
 
 
-@pytest.fixture
-def repo(tmp_path: Path) -> Path:
-    _init_repo(tmp_path)
-    return tmp_path
+if pytest is not None:
 
+    @pytest.fixture
+    def repo(tmp_path: Path) -> Path:
+        _init_repo(tmp_path)
+        return tmp_path
 
-def test_is_git_repo_true_inside_repo(repo: Path):
-    assert is_git_repo(repo) is True
+    def test_is_git_repo_true_inside_repo(repo: Path):
+        assert is_git_repo(repo) is True
 
+    def test_is_git_repo_false_outside_repo(tmp_path: Path):
+        # tmp_path itself isn't a repo when no _init_repo ran.
+        assert is_git_repo(tmp_path) is False
 
-def test_is_git_repo_false_outside_repo(tmp_path: Path):
-    # tmp_path itself isn't a repo when no _init_repo ran.
-    assert is_git_repo(tmp_path) is False
+    def test_compute_blob_hash_matches_git_hash_object(repo: Path):
+        """The hash we record must equal what git would compute on `git add`."""
+        f = repo / "foo.py"
+        f.write_text("print('hello')\n")
+        got = compute_blob_hash(f)
+        assert got is not None
+        # Independently compute via git for comparison.
+        result = subprocess.run(
+            ["git", "hash-object", "--", str(f)], cwd=repo, capture_output=True, check=True
+        )
+        expected = result.stdout.decode().strip()
+        assert got == expected
 
+    def test_compute_blob_hash_is_content_addressed(repo: Path):
+        """Identical content in different paths produces the same blob hash."""
+        a = repo / "a.py"
+        b = repo / "b.py"
+        a.write_text("same content\n")
+        b.write_text("same content\n")
+        assert compute_blob_hash(a) == compute_blob_hash(b)
 
-def test_compute_blob_hash_matches_git_hash_object(repo: Path):
-    """The hash we record must equal what git would compute on `git add`."""
-    f = repo / "foo.py"
-    f.write_text("print('hello')\n")
-    got = compute_blob_hash(f)
-    assert got is not None
-    # Independently compute via git for comparison.
-    result = subprocess.run(
-        ["git", "hash-object", "--", str(f)], cwd=repo, capture_output=True, check=True
-    )
-    expected = result.stdout.decode().strip()
-    assert got == expected
+    def test_compute_blob_hash_changes_when_content_changes(repo: Path):
+        f = repo / "foo.py"
+        f.write_text("version one\n")
+        h1 = compute_blob_hash(f)
+        f.write_text("version two\n")
+        h2 = compute_blob_hash(f)
+        assert h1 != h2
 
+    def test_compute_blob_hash_missing_file_returns_none(repo: Path):
+        assert compute_blob_hash(repo / "does-not-exist.py") is None
 
-def test_compute_blob_hash_is_content_addressed(repo: Path):
-    """Identical content in different paths produces the same blob hash."""
-    a = repo / "a.py"
-    b = repo / "b.py"
-    a.write_text("same content\n")
-    b.write_text("same content\n")
-    assert compute_blob_hash(a) == compute_blob_hash(b)
+    def test_retrieve_blob_round_trips_committed_content(repo: Path):
+        """A committed blob is retrievable by hash."""
+        f = repo / "foo.py"
+        content = "def foo():\n    return 42\n"
+        f.write_text(content)
+        blob_hash = compute_blob_hash(f)
+        assert blob_hash is not None
+        _git(["add", "foo.py"], repo)
+        _git(["commit", "-q", "-m", "add foo"], repo)
+        got = retrieve_blob(repo, blob_hash)
+        assert got == content
 
+    def test_retrieve_blob_unreachable_blob_returns_none(repo: Path):
+        """A blob whose content was never written into .git/objects is unreachable."""
+        f = repo / "foo.py"
+        f.write_text("ephemeral\n")
+        blob_hash = compute_blob_hash(f)
+        assert blob_hash is not None
+        # We computed the hash without `-w`, then deleted the file. The blob doesn't
+        # exist in the object database, so cat-file fails and we return None.
+        f.unlink()
+        assert retrieve_blob(repo, blob_hash) is None
 
-def test_compute_blob_hash_changes_when_content_changes(repo: Path):
-    f = repo / "foo.py"
-    f.write_text("version one\n")
-    h1 = compute_blob_hash(f)
-    f.write_text("version two\n")
-    h2 = compute_blob_hash(f)
-    assert h1 != h2
+    def test_retrieve_blob_malformed_hash_returns_none(repo: Path):
+        assert retrieve_blob(repo, "not-a-hash") is None
+        assert retrieve_blob(repo, "") is None
+        assert retrieve_blob(repo, "deadbeef") is None  # too short to be SHA-1
 
+    def test_retrieve_blob_outside_repo_returns_none(tmp_path: Path):
+        """A valid-shaped hash but no repo to consult → None."""
+        fake_hash = "a" * 40
+        assert retrieve_blob(tmp_path, fake_hash) is None
 
-def test_compute_blob_hash_missing_file_returns_none(repo: Path):
-    assert compute_blob_hash(repo / "does-not-exist.py") is None
+    def test_compute_blob_hash_outside_repo_returns_none(tmp_path: Path):
+        """Outside a git repo, compute_blob_hash returns None deliberately.
 
+        `git hash-object` does technically work without a repo, but stamping a hash
+        that can never be retrieved is dead weight in the sentinel. We require an
+        enclosing repo so the contract is "a non-None hash is theoretically resolvable."
+        """
+        f = tmp_path / "foo.py"
+        f.write_text("content\n")
+        assert compute_blob_hash(f) is None
 
-def test_retrieve_blob_round_trips_committed_content(repo: Path):
-    """A committed blob is retrievable by hash."""
-    f = repo / "foo.py"
-    content = "def foo():\n    return 42\n"
-    f.write_text(content)
-    blob_hash = compute_blob_hash(f)
-    assert blob_hash is not None
-    _git(["add", "foo.py"], repo)
-    _git(["commit", "-q", "-m", "add foo"], repo)
-    got = retrieve_blob(repo, blob_hash)
-    assert got == content
+    def test_diff_paths_includes_untracked_files(tmp_path: Path):
+        """diff_paths returns add-diffs for untracked files alongside tracked modifications."""
+        from trie.git_helpers import diff_paths
 
+        repo = tmp_path / "repo"
+        repo.mkdir()
 
-def test_retrieve_blob_unreachable_blob_returns_none(repo: Path):
-    """A blob whose content was never written into .git/objects is unreachable."""
-    f = repo / "foo.py"
-    f.write_text("ephemeral\n")
-    blob_hash = compute_blob_hash(f)
-    assert blob_hash is not None
-    # We computed the hash without `-w`, then deleted the file. The blob doesn't
-    # exist in the object database, so cat-file fails and we return None.
-    f.unlink()
-    assert retrieve_blob(repo, blob_hash) is None
+        # Initialise a git repo with a committed triefacts file
+        subprocess.run(["git", "init", str(repo)], check=True, capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@example.com"],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Test User"],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+        )
 
+        triefacts_dir = repo / "triefacts"
+        triefacts_dir.mkdir()
 
-def test_retrieve_blob_malformed_hash_returns_none(repo: Path):
-    assert retrieve_blob(repo, "not-a-hash") is None
-    assert retrieve_blob(repo, "") is None
-    assert retrieve_blob(repo, "deadbeef") is None  # too short to be SHA-1
+        mod_file = triefacts_dir / "mod.md"
+        mod_file.write_text("old prose")
+        subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "initial commit"],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+        )
 
+        # Tracked modification
+        mod_file.write_text("new prose")
 
-def test_retrieve_blob_outside_repo_returns_none(tmp_path: Path):
-    """A valid-shaped hash but no repo to consult → None."""
-    fake_hash = "a" * 40
-    assert retrieve_blob(tmp_path, fake_hash) is None
+        # Untracked new file
+        new_file = triefacts_dir / "new_feature.md"
+        new_file.write_text("brand new prose")
 
+        result = diff_paths(repo, ["triefacts"], base="HEAD")
 
-def test_compute_blob_hash_outside_repo_returns_none(tmp_path: Path):
-    """Outside a git repo, compute_blob_hash returns None deliberately.
+        assert result is not None, "diff_paths should return a non-None result"
+        assert "old prose" in result, "result should contain the removed 'old prose'"
+        assert "new prose" in result, "result should contain the added 'new prose'"
+        assert "brand new prose" in result, "result should contain untracked file content"
+        assert "new_feature.md" in result, "result should mention the untracked filename"
 
-    `git hash-object` does technically work without a repo, but stamping a hash
-    that can never be retrieved is dead weight in the sentinel. We require an
-    enclosing repo so the contract is "a non-None hash is theoretically resolvable."
-    """
-    f = tmp_path / "foo.py"
-    f.write_text("content\n")
-    assert compute_blob_hash(f) is None
+        # Also verify that a repo with no pending changes returns an empty string
+        # Commit the current changes first to produce a clean state
+        clean_repo = tmp_path / "clean_repo"
+        clean_repo.mkdir()
+        subprocess.run(["git", "init", str(clean_repo)], check=True, capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@example.com"],
+            cwd=clean_repo,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Test User"],
+            cwd=clean_repo,
+            check=True,
+            capture_output=True,
+        )
+        clean_triefacts = clean_repo / "triefacts"
+        clean_triefacts.mkdir()
+        (clean_triefacts / "stable.md").write_text("stable prose")
+        subprocess.run(["git", "add", "."], cwd=clean_repo, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "stable commit"],
+            cwd=clean_repo,
+            check=True,
+            capture_output=True,
+        )
 
+        clean_result = diff_paths(clean_repo, ["triefacts"], base="HEAD")
+        assert clean_result == "", "diff_paths should return '' when there are no changes"
 
-def test_diff_paths_includes_untracked_files(tmp_path: Path):
-    """diff_paths returns add-diffs for untracked files alongside tracked modifications."""
-    from trie.git_helpers import diff_paths
+    def test_commit_timestamp_returns_head_time(tmp_path: Path):
+        import shutil
+        import time
 
-    repo = tmp_path / "repo"
-    repo.mkdir()
+        from trie.git_helpers import commit_timestamp
 
-    # Initialise a git repo with a committed triefacts file
-    subprocess.run(["git", "init", str(repo)], check=True, capture_output=True)
-    subprocess.run(
-        ["git", "config", "user.email", "test@example.com"],
-        cwd=repo,
-        check=True,
-        capture_output=True,
-    )
-    subprocess.run(
-        ["git", "config", "user.name", "Test User"],
-        cwd=repo,
-        check=True,
-        capture_output=True,
-    )
+        if not shutil.which("git"):
+            pytest.skip("git not available")
 
-    triefacts_dir = repo / "triefacts"
-    triefacts_dir.mkdir()
+        repo = tmp_path / "repo"
+        repo.mkdir()
 
-    mod_file = triefacts_dir / "mod.md"
-    mod_file.write_text("old prose")
-    subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
-    subprocess.run(
-        ["git", "commit", "-m", "initial commit"],
-        cwd=repo,
-        check=True,
-        capture_output=True,
-    )
+        subprocess.run(["git", "init", str(repo)], check=True, capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@test.com"],
+            check=True,
+            capture_output=True,
+            cwd=repo,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Test User"],
+            check=True,
+            capture_output=True,
+            cwd=repo,
+        )
+        test_file = repo / "README.md"
+        test_file.write_text("hello")
+        subprocess.run(
+            ["git", "add", "README.md"],
+            check=True,
+            capture_output=True,
+            cwd=repo,
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "initial commit"],
+            check=True,
+            capture_output=True,
+            cwd=repo,
+        )
 
-    # Tracked modification
-    mod_file.write_text("new prose")
+        ts = commit_timestamp(repo)
+        assert ts is not None
+        assert isinstance(ts, float)
+        assert abs(ts - time.time()) < 86400
 
-    # Untracked new file
-    new_file = triefacts_dir / "new_feature.md"
-    new_file.write_text("brand new prose")
+        ts_head = commit_timestamp(repo, "HEAD")
+        assert ts_head == ts
 
-    result = diff_paths(repo, ["triefacts"], base="HEAD")
+        ts_missing = commit_timestamp(repo, "deadbeef")
+        assert ts_missing is None
 
-    assert result is not None, "diff_paths should return a non-None result"
-    assert "old prose" in result, "result should contain the removed 'old prose'"
-    assert "new prose" in result, "result should contain the added 'new prose'"
-    assert "brand new prose" in result, "result should contain untracked file content"
-    assert "new_feature.md" in result, "result should mention the untracked filename"
+        not_a_repo = tmp_path / "not_a_repo"
+        not_a_repo.mkdir()
+        ts_no_repo = commit_timestamp(not_a_repo)
+        assert ts_no_repo is None
 
-    # Also verify that a repo with no pending changes returns an empty string
-    # Commit the current changes first to produce a clean state
-    clean_repo = tmp_path / "clean_repo"
-    clean_repo.mkdir()
-    subprocess.run(["git", "init", str(clean_repo)], check=True, capture_output=True)
-    subprocess.run(
-        ["git", "config", "user.email", "test@example.com"],
-        cwd=clean_repo,
-        check=True,
-        capture_output=True,
-    )
-    subprocess.run(
-        ["git", "config", "user.name", "Test User"],
-        cwd=clean_repo,
-        check=True,
-        capture_output=True,
-    )
-    clean_triefacts = clean_repo / "triefacts"
-    clean_triefacts.mkdir()
-    (clean_triefacts / "stable.md").write_text("stable prose")
-    subprocess.run(["git", "add", "."], cwd=clean_repo, check=True, capture_output=True)
-    subprocess.run(
-        ["git", "commit", "-m", "stable commit"],
-        cwd=clean_repo,
-        check=True,
-        capture_output=True,
-    )
+    def test_show_file_at_ref(tmp_path: Path):
+        import shutil
+        import subprocess as _subprocess
 
-    clean_result = diff_paths(clean_repo, ["triefacts"], base="HEAD")
-    assert clean_result == "", "diff_paths should return '' when there are no changes"
+        if not shutil.which("git"):
+            pytest.skip("git not available")
 
+        repo = tmp_path / "repo"
+        repo.mkdir()
 
-def test_commit_timestamp_returns_head_time(tmp_path: Path):
-    import shutil
-    import time
+        def git(*args: str, **kwargs: object) -> subprocess.CompletedProcess:  # type: ignore[type-arg]
+            return _subprocess.run(
+                ["git", *args],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+                check=bool(kwargs.get("check", True)),
+            )
 
-    from trie.git_helpers import commit_timestamp
+        git("init")
+        git("config", "user.email", "test@example.com")
+        git("config", "user.name", "Test")
 
-    if not shutil.which("git"):
-        pytest.skip("git not available")
+        docs = repo / "docs"
+        docs.mkdir()
+        file_path = docs / "a.md"
+        file_path.write_text("v1 content")
+        git("add", ".")
+        git("commit", "-m", "initial")
 
-    repo = tmp_path / "repo"
-    repo.mkdir()
+        # Modify working tree without committing
+        file_path.write_text("v2 content")
 
-    subprocess.run(["git", "init", str(repo)], check=True, capture_output=True)
-    subprocess.run(
-        ["git", "config", "user.email", "test@test.com"],
-        check=True,
-        capture_output=True,
-        cwd=repo,
-    )
-    subprocess.run(
-        ["git", "config", "user.name", "Test User"],
-        check=True,
-        capture_output=True,
-        cwd=repo,
-    )
-    test_file = repo / "README.md"
-    test_file.write_text("hello")
-    subprocess.run(
-        ["git", "add", "README.md"],
-        check=True,
-        capture_output=True,
-        cwd=repo,
-    )
-    subprocess.run(
-        ["git", "commit", "-m", "initial commit"],
-        check=True,
-        capture_output=True,
-        cwd=repo,
-    )
+        from trie.git_helpers import show_file_at_ref  # type: ignore[attr-defined]
 
-    ts = commit_timestamp(repo)
-    assert ts is not None
-    assert isinstance(ts, float)
-    assert abs(ts - time.time()) < 86400
+        # Should return the committed version, not the working-tree version
+        result = show_file_at_ref(repo, "HEAD", "docs/a.md")
+        assert result == "v1 content"
 
-    ts_head = commit_timestamp(repo, "HEAD")
-    assert ts_head == ts
+        # Non-existent path in the commit should return None
+        result_missing = show_file_at_ref(repo, "HEAD", "docs/nonexistent.md")
+        assert result_missing is None
 
-    ts_missing = commit_timestamp(repo, "deadbeef")
-    assert ts_missing is None
-
-    not_a_repo = tmp_path / "not_a_repo"
-    not_a_repo.mkdir()
-    ts_no_repo = commit_timestamp(not_a_repo)
-    assert ts_no_repo is None
+        # Bad ref should return None
+        result_bad_ref = show_file_at_ref(repo, "BADREF123", "docs/a.md")
+        assert result_bad_ref is None

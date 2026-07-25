@@ -96,6 +96,14 @@ def commit_timestamp(repo_root: Path, ref: str = "HEAD") -> float | None:
         return None
 
 
+def show_file_at_ref(repo_root: Path, ref: str, relpath: str) -> str | None:
+    """Return the UTF-8 content of *relpath* at *ref*, or None on any failure."""
+    result = _run_git(["show", f"{ref}:{relpath}"], cwd=repo_root)
+    if result is None:
+        return None
+    return result.decode("utf-8", errors="replace")
+
+
 def compute_blob_hash(file_path: Path, *, max_bytes: int | None = None) -> str | None:
     """Compute the git blob hash for the working-tree content of `file_path`.
 

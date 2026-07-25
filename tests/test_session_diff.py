@@ -413,122 +413,143 @@ def test_collect_session_diff_since_filters_applied(tmp_path: Path) -> None:
 def test_render_digest_section_shape() -> None:
     from trie.session_diff import SessionDiff, render_digest_section
 
-    triefact_diff = (
-        "diff --git a/triefacts/x.md b/triefacts/x.md\n"
-        "--- a/triefacts/x.md\n"
-        "+++ b/triefacts/x.md\n"
-        "@@ -1,2 +1,2 @@\n"
-        "-old line\n"
-        "+new line\n"
-        " unchanged\n"
-        "diff --git a/dev/null b/triefacts/y.md\n"
-        "new file mode 100644\n"
-        "--- /dev/null\n"
-        "+++ b/triefacts/y.md\n"
-        "@@ -0,0 +1,1 @@\n"
-        "+brand new file\n"
-    )
+    multiline_note = "# heading inside note\n1. item one\n2. item two\nActual first sentence."
 
     data = SessionDiff(
-        triefact_diff=triefact_diff,
+        triefact_diff="",
         applied=[
             {
                 "op": "modify",
                 "qname": "m:f",
-                "notes": ["did x"],
-                "reasons": ["because"],
-                "session_note": "ship feature",
-            }
+                "notes": [multiline_note, "Follow-up clarification."],
+                "churn": 5,
+            },
+            {
+                "op": "create",
+                "qname": "m:new_sym",
+                "notes": ["Fresh symbol created."],
+                "churn": 3,
+            },
         ],
         pending=[
             {
                 "op": "create",
-                "qname": "m:new",
-                "note": "make new",
+                "qname": "m:pending_sym",
+                "note": "Not yet applied.",
                 "reason": "",
             }
         ],
     )
 
+    deltas = [
+        {
+            "qname": "m:f",
+            "status": "changed",
+            "before": "Old meaning.",
+            "after": "New meaning.",
+        },
+        {
+            "qname": "m:new_sym",
+            "status": "added",
+            "after": "Fresh symbol.",
+        },
+    ]
+
     output = render_digest_section(
         data,
-        base_short="abc123def456",
-        date_str="2026-07-23 10:00",
-        narrative="The narrative.",
+        title="Ship the widget",
+        date_str="2026-07-24",
+        parent_short="abc123def456",
+        narrative="## Bad H2\nBody.",
+        deltas=deltas,
     )
 
-    assert output.startswith("## 2026-07-23 10:00 · base abc123def456"), (
-        f"Header not found at start; got: {output[:80]!r}"
+    # Header shape
+    assert output.startswith("## Ship the widget — 2026-07-24 (parent abc123def456)"), (
+        f"Header not found at start; got: {output[:120]!r}"
     )
-    assert "The narrative." in output, "Narrative text missing"
-    assert "### Intent" in output, "Intent section missing"
-    assert "ship feature" in output, "Intent session_note missing"
-    assert "### Applied" in output, "Applied section missing"
-    assert "[modify] m:f" in output, "Applied entry missing"
-    assert "did x" in output, "Applied note missing"
-    assert "### Pending" in output, "Pending section missing"
-    assert "[create] m:new" in output, "Pending entry missing"
-    assert "### Triefact changes" in output, "Triefact changes section missing"
-    assert "triefacts/x.md (+1/-1)" in output, "Triefact diff summary for x.md missing"
 
-    output_no_narrative = render_digest_section(
+    # Narrative demotion: '## Bad H2' becomes '### Bad H2'
+    assert "### Bad H2" in output, "H2 inside narrative should be demoted to ### Bad H2"
+    assert (
+        "## Bad H2"
+        not in output.split("## Ship the widget — 2026-07-24 (parent abc123def456)", 1)[
+            1
+        ].splitlines()[0]
+    ), "Raw '## Bad H2' should not appear after demotion"
+    # More thorough: no line '## Bad H2' anywhere in output
+    for line in output.splitlines():
+        assert line.strip() != "## Bad H2", f"Undemotion line found: {line!r}"
+
+    # Changes section
+    assert "### Changes" in output, "### Changes section missing"
+    assert '~ m:f — "Old meaning." → "New meaning."' in output, "Changed symbol delta line missing"
+    assert "+ m:new_sym" in output, "Added symbol line missing"
+
+    # follow-ups suffix for doubly-noted symbol
+    assert "(+1 follow-up" in output or "follow-up" in output, (
+        "Follow-ups suffix missing for doubly-noted symbol"
+    )
+
+    # Markdown injection guarantee: every line is either a renderer heading or does not start with '#'
+    renderer_heading_prefixes = ("## ", "### ")
+    for line in output.splitlines():
+        if line.startswith("#"):
+            assert any(line.startswith(p) for p in renderer_heading_prefixes), (
+                f"Raw '#' line leaked into output (injection): {line!r}"
+            )
+
+    # Raw '# heading inside note' must never appear as a '#'-prefixed line
+    for line in output.splitlines():
+        assert line.rstrip() != "# heading inside note", (
+            "Raw '# heading' from note text leaked into output"
+        )
+
+    # Forbidden old-format artifacts
+    assert "(reason:" not in output, "Old '(reason:' format must not appear"
+    assert "### Intent" not in output, "Old ### Intent section must not appear"
+    assert "### Applied" not in output, "Old ### Applied section must not appear"
+    assert "### Triefact changes" not in output, "Old ### Triefact changes must not appear"
+
+    # Staged (not applied) section
+    assert "### Staged (not applied)" in output, "### Staged (not applied) section missing"
+    # pending entry appears on one line
+    pending_lines = [ln for ln in output.splitlines() if "m:pending_sym" in ln]
+    assert len(pending_lines) == 1, (
+        f"Pending symbol should appear on exactly one line; got: {pending_lines}"
+    )
+
+    # max_changes=1: exactly one change bullet plus '… and N more'
+    output_limited = render_digest_section(
         data,
-        base_short="abc123def456",
-        date_str="2026-07-23 10:00",
-        narrative="",
+        title="Ship the widget",
+        date_str="2026-07-24",
+        parent_short="abc123def456",
+        narrative="## Bad H2\nBody.",
+        deltas=deltas,
+        max_changes=1,
     )
-
-    assert "The narrative." not in output_no_narrative, (
-        "Narrative paragraph should be absent when narrative=''"
+    # Only the Changes section counts: bullets after '### Changes', before the next '###'
+    changes_body = output_limited.split("### Changes", 1)[1].split("###", 1)[0]
+    bullets = [ln for ln in changes_body.splitlines() if ln.startswith("- ")]
+    symbol_bullets = [ln for ln in bullets if not ln.startswith("- … and")]
+    overflow = [ln for ln in bullets if ln.startswith("- … and")]
+    assert len(symbol_bullets) == 1, (
+        f"With max_changes=1 expected exactly 1 change bullet; got {symbol_bullets}"
     )
-    assert "### Intent" in output_no_narrative, "Intent section missing without narrative"
-    assert "### Applied" in output_no_narrative, "Applied section missing without narrative"
-    assert "### Pending" in output_no_narrative, "Pending section missing without narrative"
-    assert "### Triefact changes" in output_no_narrative, (
-        "Triefact changes section missing without narrative"
+    assert len(overflow) == 1, f"Expected one overflow marker line; got {bullets}"
+    assert any("more" in ln for ln in output_limited.splitlines()), (
+        "'… and N more' line missing when max_changes=1"
     )
-    assert "[modify] m:f" in output_no_narrative, "Applied entry missing without narrative"
-    assert "[create] m:new" in output_no_narrative, "Pending entry missing without narrative"
-    assert "triefacts/x.md (+1/-1)" in output_no_narrative, (
-        "Triefact diff summary missing without narrative"
-    )
-
-    # Heading-demotion: H2 headings inside the narrative are demoted to H3,
-    # but H2 headings inside fenced code blocks are left untouched.
-    narrative_with_headings = "## Summary\n\nBody text.\n\n```\n## not a heading\n```\n"
-    output_demoted = render_digest_section(
-        data,
-        base_short="abc123def456",
-        date_str="2026-07-23 10:00",
-        narrative=narrative_with_headings,
-    )
-
-    # The H2 heading in the narrative must be demoted to H3
-    assert "### Summary" in output_demoted, (
-        "H2 heading inside narrative should be demoted to ### Summary"
-    )
-    # No bare H2 '## Summary' line should survive outside the entry header or fenced blocks
-    lines = output_demoted.splitlines()
-    in_fence = False
-    h2_lines = []
-    for ln in lines:
-        if ln.startswith("```"):
-            in_fence = not in_fence
-        if not in_fence and ln.startswith("## ") and "base abc123def456" not in ln:
-            h2_lines.append(ln)
-    assert not h2_lines, f"Unexpected H2 lines after demotion (outside fences): {h2_lines}"
-
-    # The fenced '## not a heading' line must survive unmodified
-    assert "## not a heading" in output_demoted, "H2 inside fenced code block must not be demoted"
 
 
 def test_upsert_digest_prepend_replace_trim() -> None:
     from trie.session_diff import DIGEST_HEADER, upsert_digest
 
-    section_a = "## 2024-01-01 00:00:00 · base aaaa\n\nContent for section A.\n"
-    section_b = "## 2024-01-02 00:00:00 · base bbbb\n\nContent for section B.\n"
-    section_b2 = "## 2024-01-02 01:00:00 · base bbbb\n\nReplaced content for section B2.\n"
-    section_c = "## 2024-01-03 00:00:00 · base cccc\n\nContent for section C.\n"
+    section_a = "## Some title A — 2024-01-01 (parent aaaa)\n\nContent for section A.\n"
+    section_b = "## Some title B — 2024-01-02 (parent bbbb)\n\nContent for section B.\n"
+    section_b2 = "## Some title B2 — 2024-01-02 (parent bbbb)\n\nReplaced content for section B2.\n"
+    section_c = "## Some title C — 2024-01-03 (parent cccc)\n\nContent for section C.\n"
 
     # 1. Fresh file: result starts with DIGEST_HEADER and contains section_a
     result1 = upsert_digest("", section_a, base_short="aaaa")
@@ -576,7 +597,7 @@ def test_upsert_digest_prepend_replace_trim() -> None:
     #    Build a section for base 'cccc' whose body legitimately contains an inner
     #    '## ' line (as an LLM narrative might produce before heading demotion).
     section_cccc_with_inner = (
-        "## 2024-01-03 00:00:00 · base cccc\n\n"
+        "## Some title cccc — 2024-01-03 (parent cccc)\n\n"
         "Narrative before inner heading.\n\n"
         "## Inner heading that is narrative, not an entry\n\n"
         "More narrative text after inner heading.\n"
@@ -589,7 +610,9 @@ def test_upsert_digest_prepend_replace_trim() -> None:
     with_inner = upsert_digest(base_digest, section_cccc_with_inner, base_short="cccc")
 
     # Now replace cccc with a clean new body
-    section_cccc_replacement = "## 2024-01-03 01:00:00 · base cccc\n\nClean replacement for cccc.\n"
+    section_cccc_replacement = (
+        "## Some title cccc2 — 2024-01-03 (parent cccc)\n\nClean replacement for cccc.\n"
+    )
     replaced = upsert_digest(with_inner, section_cccc_replacement, base_short="cccc")
 
     # The replacement body must be present
@@ -615,3 +638,108 @@ def test_upsert_digest_prepend_replace_trim() -> None:
     assert replaced.count("Clean replacement for cccc.") == 1, (
         "Replacement body should appear exactly once — no phantom duplicates"
     )
+
+
+def test_one_line_flattens_and_truncates():
+    from trie.session_diff import _one_line
+
+    # (1) multi-line text returns only the first non-empty line content
+    assert _one_line("hello\nworld\nfoo") == "hello"
+
+    # (2) whitespace runs collapse to single spaces
+    assert _one_line("foo   bar\tbaz") == "foo bar baz"
+
+    # (3) text with an early sentence boundary cuts at the sentence
+    result = _one_line("Fix the bug. More details follow here.")
+    assert result == "Fix the bug."
+
+    # (4) a 400-char single sentence truncates to max_chars with trailing '…'
+    long_text = "x" * 400
+    result = _one_line(long_text)
+    assert result.endswith("…")
+    assert len(result) <= 200  # default max_chars
+
+    # (5) result never contains a newline even for pathological inputs
+    pathological = "\n\n# raw heading\ncode"
+    result = _one_line(pathological)
+    assert "\n" not in result
+    assert result == "# raw heading"
+
+    # (6) empty/whitespace-only input returns ''
+    assert _one_line("") == ""
+    assert _one_line("   \n\t\n  ") == ""
+
+
+def test_collect_symbol_deltas_before_after(tmp_path):
+    import shutil
+    import subprocess as sp
+
+    if not shutil.which("git"):
+        if pytest is not None:
+            pytest.skip("git not available")
+        return
+
+    from trie.config import Config
+    from trie.session_diff import collect_symbol_deltas
+    from trie.sync.writer import TriefactFile
+
+    repo = tmp_path
+    sp.run(["git", "init", "-q"], cwd=repo, check=True)
+    sp.run(["git", "config", "user.email", "t@t"], cwd=repo, check=True)
+    sp.run(["git", "config", "user.name", "t"], cwd=repo, check=True)
+
+    triefacts_dir = repo / "triefacts"
+    triefacts_dir.mkdir()
+    mod_file = triefacts_dir / "mod.md"
+
+    # Initial triefact with two sections, committed at HEAD
+    tf = TriefactFile.empty()
+    tf.upsert_section(qualified_name="m:f", fingerprint="fp-f1", body="Old meaning of f.")
+    tf.upsert_section(qualified_name="m:g", fingerprint="fp-g1", body="Stable meaning of g.")
+    mod_file.write_text(tf.render())
+
+    sp.run(["git", "add", "-A"], cwd=repo, check=True, capture_output=True)
+    sp.run(["git", "commit", "-q", "-m", "initial"], cwd=repo, check=True, capture_output=True)
+
+    # Working tree: change f's meaning, leave g byte-identical, add h
+    tf2 = TriefactFile.parse(mod_file.read_text())
+    tf2.upsert_section(qualified_name="m:f", fingerprint="fp-f2", body="New meaning of f.")
+    tf2.upsert_section(qualified_name="m:h", fingerprint="fp-h1", body="Brand new h.")
+    mod_file.write_text(tf2.render())
+
+    config = Config.from_dict({})
+    deltas = collect_symbol_deltas(repo, config, base="HEAD")
+
+    changed_f = [d for d in deltas if d.get("qname") == "m:f" and d.get("status") == "changed"]
+    added_h = [d for d in deltas if d.get("qname") == "m:h" and d.get("status") == "added"]
+    rows_g = [d for d in deltas if d.get("qname") == "m:g"]
+
+    assert len(changed_f) == 1, f"Expected one 'changed' row for m:f, got: {deltas}"
+    assert "Old meaning" in changed_f[0].get("before", "")
+    assert "New meaning" in changed_f[0].get("after", "")
+    assert len(added_h) == 1, f"Expected one 'added' row for m:h, got: {deltas}"
+    assert rows_g == [], f"Expected no row for churn-gated m:g, got: {rows_g}"
+
+
+def test_merge_applied_by_symbol_first_note_wins():
+    from trie.session_diff import merge_applied_by_symbol
+
+    entries = [
+        {"qname": "m:x", "op": "create", "notes": ["Make x."]},
+        {"qname": "m:x", "op": "modify", "notes": ["Fix bug in x."]},
+        {"qname": "m:y", "op": "modify", "notes": ["Tweak y."]},
+    ]
+
+    result = merge_applied_by_symbol(entries)
+
+    assert [row["qname"] for row in result] == ["m:x", "m:y"]
+
+    x_row = result[0]
+    assert x_row["op"] == "create"
+    assert x_row["note"] == "Make x."
+    assert x_row["followups"] == 1
+
+    y_row = result[1]
+    assert y_row["op"] == "modify"
+    assert y_row["note"] == "Tweak y."
+    assert y_row["followups"] == 0

@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: trie/git_helpers.py
-file_fingerprint: ecc4ef6db83aabad83753eb6aacc070995781f82bdd24de9bbab6c705dbd0044
-last_synced_at: '2026-07-23T16:52:06Z'
+file_fingerprint: b8085054d60b993d8ada6ae5210ee923616f8a90852ed4e353d7546a8a138470
+last_synced_at: '2026-07-25T00:07:02Z'
 description: Quiet, narrowly-scoped git operations for diff-aware regen.
 defines:
 - kind: module
   qualified_name: trie/git_helpers:__module__
-  lines: 1-202
+  lines: 1-210
 - kind: function
   qualified_name: trie/git_helpers:_run_git
   lines: 32-59
@@ -21,15 +21,18 @@ defines:
   qualified_name: trie/git_helpers:commit_timestamp
   lines: 85-96
 - kind: function
+  qualified_name: trie/git_helpers:show_file_at_ref
+  lines: 99-104
+- kind: function
   qualified_name: trie/git_helpers:compute_blob_hash
-  lines: 99-138
+  lines: 107-146
 - kind: function
   qualified_name: trie/git_helpers:retrieve_blob
-  lines: 141-159
+  lines: 149-167
 - kind: function
   qualified_name: trie/git_helpers:diff_paths
-  lines: 162-201
-incoming_refs: 17
+  lines: 170-209
+incoming_refs: 4
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/git_helpers:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=88ea6f10aafbe5eec4426e9e74f9ab2198af7878d28571842c4f7b0a33d1db60 source_ref=a120f6a20e8bfca8afcb22b8c56ed8d56778c96f role=change-detection -->
@@ -57,6 +60,9 @@ Returns the commit SHA at HEAD from the given repository root, or None if the lo
 Return the committer unix timestamp of `ref` as a float, or `None` on any git failure or empty output.
 
 - `ref`: any git revision string; defaults to `HEAD`
+<!-- trie:end -->
+<!-- trie:section symbol=trie/git_helpers:show_file_at_ref fingerprint=9e79e5544c25e730d0c76d7fd574de063cfc72a39b4268f381624aa1423366fa body_fp=20bc6ed1c2dfa7c6cd3ef433bb75c9b49b1f44be08d2344d02972c1f478ece77 source_ref=e50fc73699fd073532fbbebf68ec2c680ae8870e role=io -->
+Return the UTF-8 content of `relpath` at the given git `ref`, or `None` on any failure.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/git_helpers:compute_blob_hash fingerprint=afcadc5bcb6bfdf267b316dd72280d4ca940d06468c430a28dee2d9a0e494747 body_fp=7192cccf5f80c78a99dce6a72f2f61d82d82cb667bc17fee9a6835ca20353a27 source_ref=a120f6a20e8bfca8afcb22b8c56ed8d56778c96f role=change-detection -->
 Computes git blob hash for working-tree file content without staging the file.

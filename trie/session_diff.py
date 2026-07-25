@@ -63,73 +63,34 @@ def collect_session_diff(
     return SessionDiff(triefact_diff=diff, applied=applied, pending=pending, base=base)
 
 
-def _diff_stat(diff_text: str) -> list[tuple[str, int, int]]:
-    results: list[tuple[str, int, int]] = []
-    current_path: str | None = None
-    added = 0
-    removed = 0
+def _one_line(text: str, max_chars: int = 160) -> str:
+    """Flatten arbitrary multi-line text to a single safe line for markdown embedding."""
+    # Find the first non-empty line
+    first_line = ""
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped:
+            first_line = stripped
+            break
 
-    for line in diff_text.splitlines():
-        if line.startswith("diff --git "):
-            if current_path is not None:
-                results.append((current_path, added, removed))
-            added = 0
-            removed = 0
-            current_path = None
+    if not first_line:
+        return ""
 
-            # Parse path from "diff --git a/... b/..."
-            line[len("diff --git ") :].split(" ")
-            # Find the b/ side: last token starting with "b/"
-            # For no-index diffs the format may differ slightly
-            a_side = None
-            b_side = None
-            # Rebuild splitting on ' b/' to handle spaces in paths
-            rest = line[len("diff --git ") :]
-            # Try to split on ' b/' boundary
-            mid = rest.find(" b/")
-            if mid != -1:
-                a_side_raw = rest[:mid]
-                b_side_raw = rest[mid + 1 :]
-                a_side = a_side_raw[2:] if a_side_raw.startswith("a/") else a_side_raw
-                b_side = b_side_raw[2:] if b_side_raw.startswith("b/") else b_side_raw
-            else:
-                # Fall back: last space-separated token
-                tokens = rest.split(" ")
-                raw = tokens[-1]
-                b_side = raw[2:] if raw.startswith("b/") else raw
-                if len(tokens) >= 2:
-                    raw_a = tokens[0]
-                    a_side = raw_a[2:] if raw_a.startswith("a/") else raw_a
+    # Collapse all whitespace runs to single spaces
+    import re
 
-            # Prefer non-/dev/null side
-            if b_side and b_side != "/dev/null":
-                current_path = b_side
-            elif a_side and a_side != "/dev/null":
-                current_path = a_side
-            else:
-                current_path = b_side or a_side or ""
+    collapsed = re.sub(r"\s+", " ", first_line).strip()
 
-            # Strip any leading absolute-path prefix, keep relative form
-            if current_path and current_path.startswith("/"):
-                # Try to find a/ or b/ marker within the path
-                for marker in ("/a/", "/b/"):
-                    idx = current_path.find(marker)
-                    if idx != -1:
-                        current_path = current_path[idx + len(marker) :]
-                        break
-                else:
-                    current_path = current_path.lstrip("/")
+    # Cut at the first sentence boundary if one occurs within the budget
+    dot_space = collapsed.find(". ")
+    if dot_space != -1 and dot_space + 1 <= max_chars:
+        return collapsed[: dot_space + 1]  # include the period
 
-        elif current_path is not None:
-            if line.startswith("+") and not line.startswith("+++"):
-                added += 1
-            elif line.startswith("-") and not line.startswith("---"):
-                removed += 1
+    # Otherwise truncate at max_chars with trailing ellipsis
+    if len(collapsed) > max_chars:
+        return collapsed[:max_chars] + "…"
 
-    if current_path is not None:
-        results.append((current_path, added, removed))
-
-    return results
+    return collapsed
 
 
 _FENCE = "`" * 3
@@ -210,27 +171,41 @@ def build_narrative_prompt(data: SessionDiff, *, max_diff_chars: int = 24000) ->
     return "\n\n".join(sections)
 
 
-_NARRATIVE_SYSTEM_PROMPT: str = """You are summarising one working session on a codebase. You receive two kinds of evidence: (1) patch notes the coding agent recorded when staging edits — the stated intent — and (2) the raw unified diff of the project's triefact documentation tree — the observed effect. Triefacts are per-file markdown descriptions of source symbols, so their diff reflects behavioural changes in the code. Write a coherent, intent-level description of what changed this session: start with a one-or-two-sentence summary, then short bullet groups organised by theme or subsystem, naming the key symbols touched. Clearly separate applied changes from still-pending (staged) ones when both exist. Describe intent and effect; do not mechanically restate the diff. If the evidence conflicts (a note claims X but the diff shows Y), say so. Output plain markdown with no preamble. Important: this narrative will be embedded inside a larger markdown document beneath an H2 (##) entry heading, so use heading levels ### or deeper only — never # or ## — for any sub-headings you introduce."""
+_NARRATIVE_SYSTEM_PROMPT: str = """You are writing the summary paragraph of a change digest that reviewers read inside a pull request. Audience: a reviewer deciding what this commit did and why.
+
+You receive two kinds of evidence: (1) patch notes the coding agent recorded when staging edits — the stated intent — and (2) the raw unified diff of the project's triefact documentation tree — the observed effect. Triefacts are per-file markdown descriptions of source symbols, so their diff reflects behavioural changes in the code.
+
+Rules you must follow without exception:
+- Length: at most 120 words total.
+- Format: plain paragraphs and simple '-' bullets only. NO headings of any level whatsoever. No preamble, no sign-off.
+- Describe the NET change as if it had been made cleanly in one pass. NEVER narrate process: do not mention bugs found and fixed within code that was itself created this session, do not describe a test-fix chronology, do not use phrases like 'a follow-up fix', do not mention line-number shifts, and do not narrate updates to triefact descriptions or documentation-of-documentation.
+- Name the key symbols affected.
+- If the evidence conflicts (a note claims X but the diff shows Y), state that conflict in one sentence — that is the one process observation permitted."""
 
 
 def synthesize_narrative(
-    data: SessionDiff, client: Any, *, max_diff_chars: int = 24000, max_tokens: int = 1500
+    data: SessionDiff, client: Any, *, max_diff_chars: int = 24000, max_tokens: int = 180
 ) -> str:
-    """Synthesise a coherent intent-level session narrative from the collected evidence via the LLM.
+    """Synthesise a concise intent-level session narrative from the collected evidence via the LLM.
 
     The evidence prompt assembled by ``build_narrative_prompt`` is sent to the client as a
     ``cache_prefix`` so that repeated ``trie diff`` runs within the Anthropic cache TTL reuse the
-    cached ~10k-token evidence block instead of re-billing it on every call.  A short instruction
-    message is then used as the actual user turn.  Clients that do not support ``cache_prefix``
-    (e.g. test fakes) fall back transparently to the original single-prompt call.
+    cached evidence block instead of re-billing it on every call.  A short instruction message
+    is used as the actual user turn to stay within the strict word budget imposed by the system
+    prompt.  Clients that do not support ``cache_prefix`` (e.g. test fakes) fall back
+    transparently to the original single-prompt call.
 
     Returns markdown text.
     """
     prompt = build_narrative_prompt(data, max_diff_chars=max_diff_chars)
+    instruction = (
+        "Write the session narrative now, following the system instructions exactly. "
+        "Stay within the word limit and do not use any headings."
+    )
     try:
         result = client.run_text(
             _NARRATIVE_SYSTEM_PROMPT,
-            "Write the session narrative now, following the system instructions.",
+            instruction,
             cache_prefix=prompt,
             max_tokens=max_tokens,
         )
@@ -242,24 +217,24 @@ def synthesize_narrative(
 def render_digest_section(
     data: SessionDiff,
     *,
-    base_short: str,
+    title: str,
     date_str: str,
+    parent_short: str,
     narrative: str = "",
+    deltas: list[dict] | None = None,
+    max_changes: int = 20,
 ) -> str:
     """Render one digest entry as a markdown section string."""
 
     def _demote_narrative_headings(text: str) -> str:
-        """Demote H1/H2 headings in narrative to H3+, skipping fenced code blocks."""
         result: list[str] = []
         in_fence = False
         for line in text.splitlines():
-            # Track fenced code block boundaries
             if line.startswith("```"):
                 in_fence = not in_fence
                 result.append(line)
                 continue
             if not in_fence:
-                # Demote '# ' → '### ' and '## ' → '### '
                 if line.startswith("## "):
                     line = "### " + line[3:]
                 elif line.startswith("# "):
@@ -269,73 +244,114 @@ def render_digest_section(
 
     lines: list[str] = []
 
-    # Entry heading — parse anchor for upsert_digest
-    lines.append(f"## {date_str} · base {base_short}")
+    # 1. Entry heading — parse anchor for upsert_digest
+    lines.append(f"## {title} — {date_str} (parent {parent_short})")
     lines.append("")
 
-    # Optional narrative paragraph (headings demoted so they don't compete with entry heading)
+    # 2. Optional narrative paragraph (headings demoted for defence in depth)
     if narrative:
         demoted = _demote_narrative_headings(narrative.strip())
         lines.append(demoted)
         lines.append("")
 
-    # ### Intent — deduped, insertion-ordered session_note values
-    seen_notes: list[str] = []
-    seen_set: set[str] = set()
-    for entry in data.applied:
-        note = entry.get("session_note")
-        if note and note not in seen_set:
-            seen_notes.append(note)
-            seen_set.add(note)
-    if seen_notes:
-        lines.append("### Intent")
-        lines.append("")
-        for note in seen_notes:
-            lines.append(f"- {note}")
-        lines.append("")
+    # 3. ### Changes — one line per symbol
+    lines.append("### Changes")
+    lines.append("")
 
-    # ### Applied
-    if data.applied:
-        lines.append("### Applied")
-        lines.append("")
-        for entry in data.applied:
-            entry_notes = entry.get("notes") or []
-            notes_str = "; ".join(entry_notes) if entry_notes else ""
-            bullet = f"- [{entry.get('op', '')}] {entry.get('qname', '')}"
-            if notes_str:
-                bullet += f" — {notes_str}"
-            reasons = entry.get("reasons")
-            if reasons:
-                reasons_str = "; ".join(reasons)
-                bullet += f" (reason: {reasons_str})"
-            lines.append(bullet)
-        lines.append("")
+    # Build delta index keyed by qname (first-entry-wins for same qname)
+    delta_index: dict[str, dict] = {}
+    for d in deltas or []:
+        qname = d.get("qname", "")
+        if qname and qname not in delta_index:
+            delta_index[qname] = d
 
-    # ### Pending (staged, not applied)
+    # Build applied index keyed by qname (first-note-wins merging + follow-up counts)
+    applied_index: dict[str, dict] = {
+        row["qname"]: row for row in merge_applied_by_symbol(data.applied or [])
+    }
+
+    # Union of all qnames, preserving encounter order
+    seen_qnames: list[str] = []
+    seen_qnames_set: set[str] = set()
+    for entry in data.applied or []:
+        q = entry.get("qname", "")
+        if q and q not in seen_qnames_set:
+            seen_qnames.append(q)
+            seen_qnames_set.add(q)
+    for d in deltas or []:
+        q = d.get("qname", "")
+        if q and q not in seen_qnames_set:
+            seen_qnames.append(q)
+            seen_qnames_set.add(q)
+
+    change_bullets: list[str] = []
+    for qname in seen_qnames:
+        delta = delta_index.get(qname)
+        applied = applied_index.get(qname)
+
+        # Collect followups from whichever source reports them
+        followups = 0
+        if delta:
+            followups = delta.get("followups", 0) or 0
+        if followups == 0 and applied:
+            followups = applied.get("followups", 0) or 0
+
+        if delta:
+            status = delta.get("status", "changed")
+            if status == "added":
+                after = _one_line(delta.get("after", ""))
+                bullet = f'- + {qname} — "{after}"'
+            elif status == "removed":
+                bullet = f"- − {qname}"  # noqa: RUF001 — U+2212 distinguishes marker from bullet hyphen
+            else:
+                before = _one_line(delta.get("before", ""))
+                after = _one_line(delta.get("after", ""))
+                bullet = f'- ~ {qname} — "{before}" → "{after}"'
+        elif applied:
+            op = applied.get("op", "")
+            note_line = _one_line(applied.get("note", ""))
+            if op in ("create", "add"):
+                marker = "+"
+            elif op in ("delete", "remove"):
+                marker = "−"  # noqa: RUF001 — U+2212 distinguishes marker from bullet hyphen
+            else:
+                marker = "~"
+            bullet = f"- {marker} {qname} — {note_line}" if note_line else f"- {marker} {qname}"
+        else:
+            continue
+
+        if followups > 0:
+            suffix = "follow-up" if followups == 1 else "follow-ups"
+            bullet += f" (+{followups} {suffix})"
+
+        change_bullets.append(bullet)
+
+    if not change_bullets:
+        lines.append("- (no symbol-level changes)")
+    else:
+        shown = change_bullets[:max_changes]
+        for b in shown:
+            lines.append(b)
+        remainder = len(change_bullets) - len(shown)
+        if remainder > 0:
+            lines.append(f"- … and {remainder} more")
+
+    lines.append("")
+
+    # 4. ### Staged (not applied) — only when pending is non-empty
     if data.pending:
-        lines.append("### Pending (staged, not applied)")
+        lines.append("### Staged (not applied)")
         lines.append("")
         for entry in data.pending:
-            note_str = entry.get("note", "")
-            bullet = f"- [{entry.get('op', '')}] {entry.get('qname', '')}"
-            if note_str:
-                bullet += f" — {note_str}"
-            reason = entry.get("reason")
-            if reason:
-                bullet += f" (reason: {reason})"
+            op = entry.get("op", "")
+            qname = entry.get("qname", "")
+            note_text = entry.get("note", "")
+            note_line = _one_line(note_text)
+            bullet = f"- {op} {qname}"
+            if note_line:
+                bullet += f" — {note_line}"
             lines.append(bullet)
         lines.append("")
-
-    # ### Triefact changes
-    lines.append("### Triefact changes")
-    lines.append("")
-    stat = _diff_stat(data.triefact_diff)
-    if not stat:
-        lines.append("- (no triefact changes)")
-    else:
-        for path, adds, dels in stat:
-            lines.append(f"- {path} (+{adds}/-{dels})")
-    lines.append("")
 
     return "\n".join(lines)
 
@@ -363,24 +379,35 @@ def upsert_digest(
     retry scenario) it is replaced in-place; otherwise the new *section* is
     prepended.  The result is truncated to *max_entries* and always begins
     with the canonical DIGEST_HEADER so that header evolution is self-healing.
+
+    Entry boundaries are lines matching the shape::
+
+        ## <title> — <date> (parent <sha>)
+
+    Narrative content that legally contains bare ``##`` headings is never
+    mistaken for entry delimiters because those lines cannot carry the
+    ``(parent <hex>)`` suffix that the boundary regex requires.
     """
     import re
 
-    # Only lines that match the strict entry-heading shape count as boundaries.
-    # This prevents LLM narrative content containing bare '## ' headings from
-    # being mis-parsed as entry delimiters.
-    ENTRY_HEADING = re.compile(r"(?m)(?=^## \d{4}-\d{2}-\d{2}.* · base [0-9a-fA-F]+)")
+    # Only lines whose heading carries the '(parent <hex>)' suffix are treated
+    # as entry boundaries.  Arbitrary '## ' lines inside narrative bodies do
+    # not match this shape, so injection via LLM-generated markdown is
+    # structurally impossible.
+    ENTRY_HEADING = re.compile(r"(?m)(?=^## .+\(parent [0-9a-fA-F]{4,40}\)\s*$)")
+    HEADING_LINE = re.compile(r"^## .+\(parent [0-9a-fA-F]{4,40}\)\s*$", re.MULTILINE)
 
     raw_entries = re.split(ENTRY_HEADING, existing_text)
-    entries = [
-        e.rstrip("\n")
-        for e in raw_entries
-        if re.match(r"^## \d{4}-\d{2}-\d{2}.* · base [0-9a-fA-F]+", e)
-    ]
+    entries = [e.rstrip("\n") for e in raw_entries if HEADING_LINE.match(e)]
 
     new_section = section.rstrip("\n")
 
-    if entries and f"base {base_short}" in entries[0]:
+    # Same-commit deduplication: check whether the newest entry's heading line
+    # ends with '(parent <base_short>)'.
+    if entries and re.search(
+        rf"\(parent {re.escape(base_short)}\)\s*$",
+        entries[0].splitlines()[0],
+    ):
         # Replace the newest entry — same commit, amend/retry.
         entries[0] = new_section
     else:
@@ -390,3 +417,134 @@ def upsert_digest(
 
     body = "\n\n".join(entries)
     return DIGEST_HEADER + "\n" + body + "\n"
+
+
+def collect_symbol_deltas(project_root, config, base: str = "HEAD") -> list:
+    """Compute per-symbol one-liner deltas between the working tree and *base*."""
+    from trie import git_helpers
+    from trie.sync.writer import Section, TriefactFile, extract_one_liner
+
+    triefacts_root = config.triefacts.root
+
+    # Collect changed tracked files
+    changed_files = []
+    tracked_output = git_helpers._run_git(
+        ["diff", "--name-only", base, "--", triefacts_root],
+        cwd=project_root,
+    )
+    if tracked_output:
+        changed_files.extend(
+            line.strip()
+            for line in tracked_output.decode("utf-8", errors="replace").splitlines()
+            if line.strip()
+        )
+
+    # Collect untracked files
+    untracked_output = git_helpers._run_git(
+        ["ls-files", "--others", "--exclude-standard", "--", triefacts_root],
+        cwd=project_root,
+    )
+    if untracked_output:
+        for line in untracked_output.decode("utf-8", errors="replace").splitlines():
+            line = line.strip()
+            if line and line not in changed_files:
+                changed_files.append(line)
+
+    rows = []
+
+    for rel_path in changed_files:
+        try:
+            # Before: content at base ref (None if the file is new)
+            before_text = git_helpers.show_file_at_ref(project_root, base, rel_path)
+
+            # After: working-tree content (None if deleted)
+            import os
+
+            abs_path = os.path.join(project_root, rel_path)
+            if os.path.exists(abs_path):
+                with open(abs_path, encoding="utf-8") as fh:
+                    after_text = fh.read()
+            else:
+                after_text = None
+
+            # Build {qname: one_liner} maps for each side
+            def build_map(text):
+                if text is None:
+                    return {}
+                try:
+                    tf = TriefactFile.parse(text)
+                    return {
+                        chunk.qualified_name: extract_one_liner(chunk.body)
+                        for chunk in tf.chunks
+                        if isinstance(chunk, Section)
+                    }
+                except Exception:
+                    return {}
+
+            before_map = build_map(before_text)
+            after_map = build_map(after_text)
+
+            all_qnames = sorted(set(before_map) | set(after_map))
+
+            for qname in all_qnames:
+                in_before = qname in before_map
+                in_after = qname in after_map
+
+                if in_after and not in_before:
+                    rows.append(
+                        {
+                            "file": rel_path,
+                            "qname": qname,
+                            "status": "added",
+                            "after": after_map[qname],
+                        }
+                    )
+                elif in_before and not in_after:
+                    rows.append(
+                        {
+                            "file": rel_path,
+                            "qname": qname,
+                            "status": "removed",
+                            "before": before_map[qname],
+                        }
+                    )
+                elif in_before and in_after and before_map[qname] != after_map[qname]:
+                    # Identical one-liners never produce a row (churn gate).
+                    rows.append(
+                        {
+                            "file": rel_path,
+                            "qname": qname,
+                            "status": "changed",
+                            "before": before_map[qname],
+                            "after": after_map[qname],
+                        }
+                    )
+
+        except Exception:
+            # Quiet degradation: skip any file that fails
+            continue
+
+    # Sort by file then qname
+    rows.sort(key=lambda r: (r.get("file", ""), r.get("qname", "")))
+    return rows
+
+
+def merge_applied_by_symbol(applied: list[dict]) -> list[dict]:
+    seen: dict[str, dict] = {}
+    order: list[str] = []
+    for entry in applied:
+        qname = entry.get("qname", "")
+        notes = entry.get("notes") or ([entry["note"]] if entry.get("note") else [])
+        if qname not in seen:
+            seen[qname] = {
+                "qname": qname,
+                "op": entry.get("op", ""),
+                "note": notes[0] if notes else "",
+                # Extra notes within the first entry are follow-ups too.
+                "followups": max(len(notes) - 1, 0),
+            }
+            order.append(qname)
+        else:
+            # Every note in a subsequent entry is a follow-up (min 1 per entry).
+            seen[qname]["followups"] += max(len(notes), 1)
+    return [seen[qname] for qname in order]
