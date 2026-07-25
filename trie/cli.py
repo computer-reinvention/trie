@@ -1136,6 +1136,34 @@ def _resolve_audit_log_path(log: Path | None, reporter: Reporter) -> Path:
     return cfg_path
 
 
+@app.command("index")
+def index_cmd(ctx: typer.Context) -> None:
+    """Regenerate the triefact-tree index (<triefacts.root>/README.md).
+
+    Deterministic and LLM-free: entry points ranked by inbound references plus
+    a per-directory table of contents with file descriptions. Runs automatically
+    at the end of every sync; this command exists for manual refreshes.
+    """
+    reporter = _get_reporter(ctx)
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    from trie.index import write_index
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        path = write_index(store=store, config=config, project_root=project_root)
+    finally:
+        store.close()
+    if path is None:
+        reporter.info("no triefact tree yet — run `trie sync` first")
+        return
+    reporter.success(f"index written to {path.relative_to(project_root)}")
+
+
 @app.command("diff")
 def diff_cmd(
     ctx: typer.Context,
@@ -1780,6 +1808,8 @@ def _run_full_pass(
                 progress=cb,
                 store=store,
             )
+        if result.files_synced:
+            _refresh_index_quietly(config, project_root, store)
 
     had_errors = _report_sync_errors(reporter, result.file_errors)
     reporter.success(
@@ -1791,6 +1821,16 @@ def _run_full_pass(
     )
     if had_errors:
         raise typer.Exit(code=1)
+
+
+def _refresh_index_quietly(config: Config, project_root: Path, store: Store) -> None:
+    """Regenerate the triefact index after a sync; advisory, never fails the run."""
+    try:
+        from trie.index import write_index
+
+        write_index(store=store, config=config, project_root=project_root)
+    except Exception:
+        pass
 
 
 def _report_sync_errors(reporter: Reporter, file_errors: list[tuple[str, str]]) -> bool:
@@ -2031,6 +2071,8 @@ def _run_incremental_sync(
             limit=limit,
             progress=cb,
         )
+        if result.files_synced:
+            _refresh_index_quietly(config, project_root, store)
 
     if result.orphan_triefacts_removed:
         for triefact in result.orphan_triefacts_removed:

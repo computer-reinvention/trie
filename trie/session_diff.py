@@ -38,6 +38,8 @@ def _triefact_pathspecs(config: Any) -> list[str]:
     diffs_dir = getattr(getattr(config, "diff", None), "diffs_dir", "")
     if diffs_dir:
         specs.append(f":(exclude){diffs_dir}")
+    # The generated index is derived data — churn in it is never evidence.
+    specs.append(f":(exclude){config.triefacts.root}/README.md")
     return specs
 
 
