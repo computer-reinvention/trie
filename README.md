@@ -15,7 +15,10 @@ trie maintains two indexes alongside your source tree and keeps both honest with
 
 2. **The index of intent** — a one-line note per changed symbol, recorded *when the change is made*, enforced at commit time (a changed symbol with no note blocks the commit), and archived per commit as a digest that shows up in your PRs. Six months later, `trie read <symbol> --history` tells you why the code is the way it is.
 
-Agents read the meaning index instead of re-deriving everything from source under context pressure; humans browse it as a wiki that can't silently rot. Both record into the intent index; reviewers read it as the story of each commit.
+Humans browse the meaning index as a wiki that can't silently rot, and read the intent index as the story of each commit. For coding agents, the two indexes are the working context layer — `trie setup` wires them in:
+
+- **Reading:** the agent's built-in `grep` and `read` are overridden to hit the indexes first. `grep` searches the symbol graph and returns matches *with one-liners*; `read <qname>` returns a symbol's prose plus one-liners for every caller and callee; `trace` walks the reference graph; `read --history` replays the intent trail. A question like "what happens when an unauthenticated request hits /admin?" resolves in two or three round-trips of prose instead of a dozen speculative file reads.
+- **Writing:** the agent edits source with its normal tools — then records a one-line note per changed symbol (`patch`, or `batch_patch` for many) and archives them with `patch_apply`. The pre-commit `trie intent` gate blocks the commit until every changed symbol carries its note, so the context layer the *next* session reads is guaranteed to include why this one did what it did.
 
 trie does **not** generate or edit your source code. You (or your agent) own every code change; trie owns the record of what it means and why it happened.
 
