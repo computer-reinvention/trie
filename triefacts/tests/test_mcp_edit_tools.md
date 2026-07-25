@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_mcp_edit_tools.py
 file_fingerprint: 9edd924a31a2a7bf05903aa4b7ed50d898d6fb31fd5488703f3767383ee2078a
-last_synced_at: '2026-07-20T13:09:23Z'
+last_synced_at: '2026-07-25T01:43:42Z'
 description: 'Tests for the MCP edit tool surface: patch/create/delete/rename/preview/list.'
 defines:
 - kind: module

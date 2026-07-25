@@ -1815,8 +1815,22 @@ class TrieTools:
             return None
 
         text = triefact_path.read_text()
+
+        # Staleness banner: sections whose sentinel fingerprint no longer matches
+        # the symbol's last-scan fingerprint are being served from outdated prose.
+        # Prefixed into the output text so every renderer surfaces it verbatim.
+        stale_qnames = self._stale_qnames_for_file(rel, text)
+        banner = ""
+        if stale_qnames:
+            listed = ", ".join(sorted(stale_qnames)[:5])
+            more = f" (+{len(stale_qnames) - 5} more)" if len(stale_qnames) > 5 else ""
+            banner = (
+                f"⚠ STALE PROSE: {len(stale_qnames)} section(s) predate the current "
+                f"source — {listed}{more}. Run `trie sync` to refresh.\n\n"
+            )
+
         if full:
-            output = render_for_agent(text)
+            output = banner + render_for_agent(text)
             mode = "triefact_full"
         else:
             lines_by_qname: dict[str, str] = {}
@@ -1827,7 +1841,7 @@ class TrieTools:
             ).fetchall():
                 lines_by_qname[row[0]] = f"{row[1]}-{row[2]}"
                 kind_by_qname[row[0]] = row[3]
-            output = compact_triefact_view(
+            output = banner + compact_triefact_view(
                 text, rel, lines_by_qname=lines_by_qname, kind_by_qname=kind_by_qname
             )
             mode = "triefact_compact"
@@ -1922,6 +1936,7 @@ class TrieTools:
                 return err
 
             prose, prose_notes = self._prose_for(detail)
+            prose_notes = self._staleness_notes(detail) + prose_notes
 
             callers_raw = self.store.references_in(qname)
             callees_raw = self.store.references_out(qname)
@@ -1972,6 +1987,88 @@ class TrieTools:
             if telemetry.capture_responses():
                 tele_ctx["response"] = out
             return out
+
+    def _stale_qnames_for_file(self, rel: str, triefact_text: str) -> set[str]:
+        """Qnames in `rel` whose section fingerprint predates the last scan.
+
+        Compares each sentinel's generation-time fingerprint against the symbols
+        table (kept current by scan/refresh). Sections for symbols the graph no
+        longer knows are ignored here — verify reports orphans separately.
+        """
+        from trie.sync.writer import SECTION_OPEN_RE
+
+        current: dict[str, str] = {
+            row[0]: row[1] or ""
+            for row in self.store._conn.execute(
+                "SELECT qualified_name, body_normalized_hash FROM symbols WHERE file_path = ?",
+                (rel,),
+            ).fetchall()
+        }
+        stale: set[str] = set()
+        for match in SECTION_OPEN_RE.finditer(triefact_text):
+            qname = match.group("symbol")
+            fp_now = current.get(qname)
+            if fp_now and (match.group("fp") or "") != fp_now:
+                stale.add(qname)
+        return stale
+
+    def _section_fingerprint(self, detail: SymbolDetail) -> str | None:
+        """Sentinel fingerprint of `detail`'s triefact section, or None when absent.
+
+        This is the source fingerprint at prose-generation time; comparing it to
+        `detail.fingerprint` (the last-scan fingerprint) detects stale prose.
+        """
+        from trie.sync.writer import SECTION_OPEN_RE
+
+        triefact_path = self.triefacts_root / Path(detail.file_path).with_suffix(".md")
+        if not triefact_path.exists():
+            return None
+        try:
+            text = triefact_path.read_text()
+        except OSError:
+            return None
+        for match in SECTION_OPEN_RE.finditer(text):
+            if match.group("symbol") == detail.qualified_name:
+                return match.group("fp") or ""
+        return None
+
+    def _staleness_notes(self, detail: SymbolDetail) -> list[str]:
+        """Warnings when the prose being served no longer reflects the source.
+
+        Two layers, cheapest first:
+
+        1. Section-level: the sentinel fingerprint (stamped at generation time)
+           differs from the symbol's last-scan fingerprint — the graph knows the
+           source moved but the prose was never regenerated.
+        2. File-level: the source file's current content hash differs from the
+           store's file fingerprint — the *graph itself* is stale (no scan since
+           the edit), so even a matching section fingerprint proves nothing.
+
+        A read that serves stale prose without saying so is the worst failure a
+        live wiki can have; these notes are the honesty layer.
+        """
+        notes: list[str] = []
+        sec_fp = self._section_fingerprint(detail)
+        if sec_fp is not None and detail.fingerprint and sec_fp != detail.fingerprint:
+            notes.append(
+                f"⚠ STALE PROSE: the source of {detail.qualified_name} changed after "
+                "this prose was generated — run `trie sync` to refresh it."
+            )
+            return notes
+        try:
+            from trie.scan import file_fingerprint
+
+            src = self.root / detail.file_path
+            record = self.store.get_file(detail.file_path)
+            if record is not None and src.is_file():
+                if file_fingerprint(src.read_text()) != record.fingerprint:
+                    notes.append(
+                        f"⚠ {detail.file_path} changed since the last graph refresh; "
+                        "this prose may be stale — run `trie refresh`."
+                    )
+        except OSError:
+            pass
+        return notes
 
     def _prose_for(self, detail: SymbolDetail) -> tuple[str, list[str]]:
         """Pull the section body verbatim from the triefact tree.
@@ -2919,6 +3016,7 @@ class TrieTools:
                     )
 
             prose, prose_notes = self._prose_for(detail)
+            prose_notes = self._staleness_notes(detail) + prose_notes
             callers_raw = self.store.references_in(detail.qualified_name)
             callees_raw = self.store.references_out(detail.qualified_name)
             callers, _ = self._neighbour_summaries(callers_raw)
