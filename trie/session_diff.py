@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -386,6 +387,131 @@ DIGEST_FILE_HEADER = """\
      one immutable digest file per commit; TRIE_DIFF.md at the project root
      is a symlink to the latest one; do not edit by hand -->
 """
+
+
+# Matches the entry heading emitted by render_digest_section:
+#   ## <title> — <date> (parent <sha>)
+# Title is matched non-greedily so an em-dash inside it can't swallow the date.
+DIGEST_HEADING_RE = re.compile(
+    r"^## (?P<title>.+?) — (?P<date>\d{4}-\d{2}-\d{2}(?:[ T][\d:]+)?) "
+    r"\(parent (?P<parent>[0-9a-fA-F]{4,40})\)\s*$",
+    re.MULTILINE,
+)
+
+
+def _parse_digest_file(path: Any) -> dict | None:
+    """Parse one digest file into {name, title, date, parent, changes}.
+
+    `changes` is the list of per-symbol lines from the `### Changes` section
+    (without the leading `- `). Returns None for files that don't carry a
+    parseable entry heading (foreign files in the archive dir)."""
+    try:
+        text = path.read_text()
+    except OSError:
+        return None
+    m = DIGEST_HEADING_RE.search(text)
+    if m is None:
+        return None
+    changes: list[str] = []
+    in_changes = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped == "### Changes":
+            in_changes = True
+            continue
+        if in_changes:
+            if stripped.startswith("### "):  # next section (e.g. Staged)
+                break
+            if stripped.startswith("- ") and not stripped.startswith("- … and "):
+                changes.append(stripped[2:])
+    return {
+        "name": path.name,
+        "title": m.group("title"),
+        "date": m.group("date"),
+        "parent": m.group("parent"),
+        "changes": changes,
+    }
+
+
+def iter_digest_entries(project_root: Any, *, diffs_dir: str = "triefacts/triediffs") -> list[dict]:
+    """Parsed digest entries, newest first (timestamp-prefixed names sort chronologically)."""
+    from pathlib import Path
+
+    archive = Path(project_root) / diffs_dir
+    if not archive.is_dir():
+        return []
+    entries: list[dict] = []
+    for path in sorted(archive.glob("*.md"), reverse=True):
+        entry = _parse_digest_file(path)
+        if entry is not None:
+            entries.append(entry)
+    return entries
+
+
+def symbol_history(
+    project_root: Any,
+    qname: str,
+    *,
+    diffs_dir: str = "triefacts/triediffs",
+    limit: int = 5,
+) -> list[dict]:
+    """Chronological intent trail for one symbol, newest first.
+
+    The digest archive stores every commit's intent keyed by qname in its
+    `### Changes` lines — a wiki that knows not just what a symbol is but why
+    it is that way. Returns up to `limit` rows:
+    `{date, title, change, digest}` where `change` is the digest's change line
+    for this symbol (marker included: `~` modified, `+` added, U+2212 removed).
+    """
+    # Change lines: `~ <qname> — ...` / `+ <qname> — ...` / U+2212-marked removals.
+    line_re = re.compile(rf"^[~+\u2212] {re.escape(qname)}(?=$|[\s,])")
+    rows: list[dict] = []
+    for entry in iter_digest_entries(project_root, diffs_dir=diffs_dir):
+        for change in entry["changes"]:
+            if line_re.match(change):
+                rows.append(
+                    {
+                        "date": entry["date"],
+                        "title": entry["title"],
+                        "change": change,
+                        "digest": entry["name"],
+                    }
+                )
+                break  # one line per symbol per digest by construction
+        if len(rows) >= limit:
+            break
+    return rows
+
+
+def file_history(
+    project_root: Any,
+    module_prefix: str,
+    *,
+    diffs_dir: str = "triefacts/triediffs",
+    limit: int = 5,
+) -> list[dict]:
+    """Intent trail for every symbol in one module, newest first.
+
+    `module_prefix` is the qname module part (source path minus extension,
+    e.g. 'trie/session_diff'); matches change lines for `<module_prefix>:*`.
+    Returns up to `limit` rows shaped like `symbol_history` rows.
+    """
+    line_re = re.compile(rf"^[~+\u2212] {re.escape(module_prefix)}:\S+")
+    rows: list[dict] = []
+    for entry in iter_digest_entries(project_root, diffs_dir=diffs_dir):
+        for change in entry["changes"]:
+            if line_re.match(change):
+                rows.append(
+                    {
+                        "date": entry["date"],
+                        "title": entry["title"],
+                        "change": change,
+                        "digest": entry["name"],
+                    }
+                )
+                if len(rows) >= limit:
+                    return rows
+    return rows
 
 
 def _new_digest_filename() -> str:

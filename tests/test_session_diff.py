@@ -729,3 +729,57 @@ def test_merge_applied_by_symbol_first_note_wins():
     assert y_row["op"] == "modify"
     assert y_row["note"] == "Tweak y."
     assert y_row["followups"] == 0
+
+
+def test_symbol_and_file_history_from_digest_archive(tmp_path: Path) -> None:
+    from trie.session_diff import file_history, iter_digest_entries, symbol_history
+
+    archive = tmp_path / "triefacts" / "triediffs"
+    archive.mkdir(parents=True)
+
+    archive.joinpath("20260101T000000Z-aaaa.md").write_text(
+        "<!-- header -->\n\n"
+        "## Ship the widget — 2026-01-01 (parent aaaa11112222)\n\n"
+        "Narrative one.\n\n"
+        "### Changes\n\n"
+        '- + m:widget — "Fresh widget."\n'
+        "- ~ m:helper — tweaked for widget\n"
+    )
+    archive.joinpath("20260102T000000Z-bbbb.md").write_text(
+        "<!-- header -->\n\n"
+        "## Fix the widget — 2026-01-02 (parent bbbb11112222)\n\n"
+        "Narrative two.\n\n"
+        "### Changes\n\n"
+        '- ~ m:widget — "Fresh widget." → "Fixed widget." (+1 follow-up)\n'
+        "- … and 3 more\n\n"
+        "### Staged (not applied)\n\n"
+        "- create m:widget — staged noise that must not count\n"
+    )
+    # Foreign file without a parseable heading: ignored.
+    archive.joinpath("20260103T000000Z-junk.md").write_text("# not a digest\n")
+
+    entries = iter_digest_entries(tmp_path)
+    assert [e["title"] for e in entries] == ["Fix the widget", "Ship the widget"]
+    assert entries[0]["parent"].startswith("bbbb")
+    # Overflow markers and Staged-section lines never leak into changes.
+    assert all("… and" not in c for e in entries for c in e["changes"])
+    assert all("staged noise" not in c for e in entries for c in e["changes"])
+
+    # Symbol trail: newest first, one row per digest, marker preserved.
+    rows = symbol_history(tmp_path, "m:widget")
+    assert [r["date"] for r in rows] == ["2026-01-02", "2026-01-01"]
+    assert rows[0]["change"].startswith("~ m:widget")
+    assert rows[1]["change"].startswith("+ m:widget")
+    assert rows[0]["title"] == "Fix the widget"
+
+    # No substring collisions: m:widge / m:widget2 don't match m:widget rows.
+    assert symbol_history(tmp_path, "m:widge") == []
+    assert symbol_history(tmp_path, "m:widget2") == []
+
+    # limit honoured
+    assert len(symbol_history(tmp_path, "m:widget", limit=1)) == 1
+
+    # File trail: module prefix matches all its symbols.
+    frows = file_history(tmp_path, "m")
+    assert len(frows) == 3  # widget x2 + helper
+    assert file_history(tmp_path, "nomodule") == []

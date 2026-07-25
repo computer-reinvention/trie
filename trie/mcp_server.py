@@ -661,7 +661,7 @@ class TrieTools:
         ready_to_commit}. Call before commit to see the blast radius and any
         blockers (e.g. a missing session note for a multi-symbol apply).
         """
-        from trie.edits.apply import preview_patches
+        from trie.edits.pipeline import preview_patches
 
         pv = preview_patches(self.store, self.config)
         creates = self.store.get_create_patches_grouped()
@@ -680,67 +680,31 @@ class TrieTools:
             "needs_session_note": total > 1,
         }
 
-    def commit(self, session_note: str = "", backend: str = "") -> dict[str, Any]:
-        """Stage + apply all pending patches and creates; return the ApplyReport.
+    def commit(self, session_note: str = "") -> dict[str, Any]:
+        """Commit pending patch notes as intent — trie generates no code.
 
-        `session_note` is required for multi-symbol applies (the unifying intent).
-        `backend` overrides the configured edit backend ('llm' default). Uses an
-        exclusive lock to prevent concurrent applies.
-
-        When the effective backend is 'agent', returns an executable worklist
-        immediately without acquiring the apply lock or performing any generation.
+        Archives every pending note to the session log (feeding the per-commit
+        digest, `read --history`, and the `trie intent` pre-commit gate) and
+        clears the queue. `session_note` (the unifying intent) is required when
+        more than one symbol is pending. Source changes are yours; this records
+        why they happened.
         """
-        import concurrent.futures
+        from trie.edits.pipeline import record_intent
 
-        from trie.edits.backends import make_backend
-        from trie.edits.pipeline import stage_and_commit
-        from trie.models import make_client
-        from trie.refresh_lock import try_acquire
-
-        effective_backend = backend if backend else self.config.edits.backend
-        if effective_backend == "agent":
-            from trie.edits.pipeline import build_workorder
-
-            return build_workorder(
+        try:
+            return record_intent(
                 self.store,
                 self.config,
                 self.root,
-                client=None,
                 session_note=session_note,
             )
-
-        with try_acquire(self.root, name="apply") as holder:
-            if not holder.acquired:
-                return _error(
-                    "conflict",
-                    "another patch apply is already in progress",
-                    "retry when the current apply finishes.",
-                )
-            try:
-                client = make_client(self.config.models.edits, sync_cfg=self.config.sync)
-                edit_backend = make_backend(self.config, backend=backend or None, client=client)
-
-                def _run() -> dict[str, Any]:
-                    report = stage_and_commit(
-                        self.store,
-                        self.config,
-                        edit_backend,
-                        self.root,
-                        client=client,
-                        session_note=session_note,
-                    )
-                    return report.to_dict()
-
-                # Run off the event-loop thread (sync-over-async generation path).
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                    return pool.submit(_run).result()
-            except Exception as exc:
-                return _error("internal", f"commit failed: {exc}")
+        except Exception as exc:
+            return _error("internal", f"commit failed: {exc}")
 
     # Back-compat alias for the older tool name.
-    def patch_apply(self) -> dict[str, Any]:
-        """Deprecated alias for commit() with no session note (single-symbol use)."""
-        return self.commit(session_note="")
+    def patch_apply(self, session_note: str = "") -> dict[str, Any]:
+        """Alias for commit(): record pending notes as intent (no code generation)."""
+        return self.commit(session_note=session_note)
 
     # --- desktop app helpers -----------------------------------------------
 
@@ -1716,6 +1680,7 @@ class TrieTools:
         show_source: bool = False,
         offset: int | None = None,
         limit: int | None = None,
+        history: bool = False,
     ) -> dict[str, Any]:
         """Read source code or trie's synthesised description of it — triefact-first.
 
@@ -1732,6 +1697,10 @@ class TrieTools:
 
         Use `grep`/`grep_symbol` to resolve a qname rather than hand-building one;
         a guessed qname returns `not_found` even when the source contains the symbol.
+
+        `history=True` additionally surfaces the symbol's (or file's) intent
+        trail from the session-digest archive — the chronological "why it
+        changed" lines recorded at each commit. Ignored for raw source reads.
         """
         force_source = show_source or offset is not None or limit is not None
 
@@ -1749,7 +1718,7 @@ class TrieTools:
         file_exists = file_target is not None and file_target.exists() and file_target.is_file()
 
         if is_qname and not file_exists:
-            return self._read_symbol(path)
+            return self._read_symbol(path, history=history)
 
         # A `:LINE` (or `:START-END`) suffix on a real file → source window.
         if file_exists and line_offset is not None:
@@ -1759,14 +1728,14 @@ class TrieTools:
         # non-indexed files (configs, markdown, freshly added files).
         if file_exists or self._resolve_in_root(path) is not None:
             rel = candidate if file_exists else path
-            view = self._triefact_view(rel, full=full)
+            view = self._triefact_view(rel, full=full, history=history)
             if view is not None:
                 return view
             return self.read_source(rel if file_exists else path)
 
         # Neither a known file nor resolvable: treat as a qname so the agent
         # gets a structured not_found with a suggestion.
-        return self._read_symbol(path)
+        return self._read_symbol(path, history=history)
 
     @staticmethod
     def _strip_line_ref(path: str) -> tuple[str, int | None, int | None]:
@@ -1794,7 +1763,9 @@ class TrieTools:
             return target
         return None
 
-    def _triefact_view(self, file_path: str, *, full: bool) -> dict[str, Any] | None:
+    def _triefact_view(
+        self, file_path: str, *, full: bool, history: bool = False
+    ) -> dict[str, Any] | None:
         """Render a file's triefact as compact (default) or full prose.
 
         Returns None when no triefact exists for the file (caller falls back to
@@ -1845,6 +1816,16 @@ class TrieTools:
                 text, rel, lines_by_qname=lines_by_qname, kind_by_qname=kind_by_qname
             )
             mode = "triefact_compact"
+
+        if history:
+            module_prefix = rel.rsplit(".", 1)[0]
+            rows = self._digest_history(module_prefix=module_prefix)
+            if rows:
+                lines = ["", "## Recent changes (intent trail from the digest archive)", ""]
+                for r in rows:
+                    lines.append(f"- {r['date']} · {r['change']}")
+                    lines.append(f"  ({r['title']})")
+                output = output + "\n".join(lines) + "\n"
 
         tele_args = {"path": rel} if telemetry.capture_args() else {}
         with telemetry.timed(self.event_name, tool="read", args=tele_args) as tele_ctx:
@@ -1915,7 +1896,7 @@ class TrieTools:
         except Exception:
             return []
 
-    def _read_symbol(self, qname: str) -> dict[str, Any]:
+    def _read_symbol(self, qname: str, *, history: bool = False) -> dict[str, Any]:
         """Read a symbol's prose plus one-liners for every immediate caller and callee.
 
         Returns `{qname, signature, prose, source_pointer, callers, callees, notes?}`.
@@ -1964,6 +1945,8 @@ class TrieTools:
                 "callers": callers,
                 "callees": callees,
             }
+            if history:
+                out["history"] = self._digest_history(qname=detail.qualified_name)
             if detail.pending_patches:
                 # Add origin tag to each patch (derived from session_id)
                 tagged_patches = []
@@ -1987,6 +1970,29 @@ class TrieTools:
             if telemetry.capture_responses():
                 tele_ctx["response"] = out
             return out
+
+    def _digest_history(
+        self, *, qname: str | None = None, module_prefix: str | None = None
+    ) -> list[dict]:
+        """Intent trail from the session-digest archive (newest first, capped).
+
+        The archive stores every commit's intent keyed by qname; this is the
+        wiki's "why is it like this" dimension, opt-in via `history=True` on
+        the read/explain surfaces so the default token cost is unchanged.
+        """
+        from trie.session_diff import file_history, symbol_history
+
+        diffs_dir = getattr(getattr(self.config, "diff", None), "diffs_dir", "") or (
+            "triefacts/triediffs"
+        )
+        try:
+            if qname is not None:
+                return symbol_history(self.root, qname, diffs_dir=diffs_dir, limit=5)
+            if module_prefix is not None:
+                return file_history(self.root, module_prefix, diffs_dir=diffs_dir, limit=8)
+        except Exception:
+            return []
+        return []
 
     def _stale_qnames_for_file(self, rel: str, triefact_text: str) -> set[str]:
         """Qnames in `rel` whose section fingerprint predates the last scan.
@@ -2986,7 +2992,7 @@ class TrieTools:
             tele_ctx["result_count"] = 1
             return result
 
-    def explain_symbol(self, sym: str) -> dict[str, Any]:
+    def explain_symbol(self, sym: str, history: bool = False) -> dict[str, Any]:
         """Full prose for a symbol plus a joined narrative story that weaves together
         the prose of its callers and callees into a single readable explanation.
 
@@ -3063,6 +3069,8 @@ class TrieTools:
                 "callers": callers,
                 "callees": callees,
             }
+            if history:
+                out["history"] = self._digest_history(qname=detail.qualified_name)
             if prose_notes:
                 out["notes"] = prose_notes
             tele_ctx["result_kind"] = "ok"
@@ -3070,7 +3078,7 @@ class TrieTools:
             tele_ctx["story_chars"] = len(story)
             return out
 
-    def explain_symbol_references(self, sym: str) -> dict[str, Any]:
+    def explain_symbol_references(self, sym: str, history: bool = False) -> dict[str, Any]:
         """Explain how a symbol is used — callers only, with their prose.
 
         Use when you want to understand the call sites of a symbol: who uses it,
@@ -3129,6 +3137,8 @@ class TrieTools:
                 "usage_story": usage_story,
                 "callers": callers,
             }
+            if history:
+                result["history"] = self._digest_history(qname=detail.qualified_name)
             tele_ctx["result_kind"] = "ok"
             tele_ctx["callers_count"] = len(callers)
             return result

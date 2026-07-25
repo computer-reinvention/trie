@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/sync/taxonomy.py
 file_fingerprint: d3527d467b1f6425152def101ac74e20134e50463b409924616b4766de39edd3
-last_synced_at: '2026-07-25T01:56:34Z'
+last_synced_at: '2026-07-25T10:44:33Z'
 description: 'Role taxonomy: the project-specific role vocabulary that constrains
   role tagging.'
 defines:

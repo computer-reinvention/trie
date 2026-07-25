@@ -29,7 +29,12 @@ PRE_COMMIT_HOOK_END_MARKER = "# end trie-verify"
 #                    preventing partial-state commits.
 #   2. verify      — blocks the commit on drift detection, ensuring the
 #                    triefact file is consistent with the working tree.
-#   3. diff --write — writes an intent-level digest entry (patch notes +
+#   3. intent      — blocks the commit when a changed symbol carries no patch
+#                    note. The patch pipeline is an intent store: agents edit
+#                    source natively and record why per symbol; this gate is
+#                    what makes the record reliable rather than aspirational.
+#                    (Not -q: its worklist output IS the fix instructions.)
+#   4. diff --write — writes an intent-level digest entry (patch notes +
 #                    before/after symbol deltas, with an optional LLM
 #                    narrative when [diff] config enables it) as a new
 #                    immutable file under triefacts/triediffs/ and repoints the
@@ -45,6 +50,7 @@ PRE_COMMIT_HOOK_BLOCK = (
     "if command -v trie >/dev/null 2>&1; then\n"
     "    trie -q lock-check || exit $?\n"
     "    trie -q verify || exit $?\n"
+    "    trie intent || exit $?\n"
     "    if trie -q diff --write >/dev/null 2>&1; then\n"
     "        git add TRIE_DIFF.md triefacts/triediffs >/dev/null 2>&1 || true\n"
     "    fi\n"
