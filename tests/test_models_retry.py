@@ -323,3 +323,55 @@ def test_trie_client_disables_sdk_internal_retries(monkeypatch: pytest.MonkeyPat
     TrieClient("anthropic/claude-sonnet-4-6")
 
     assert captured["kwargs"].get("max_retries") == 0
+
+
+def test_retry_total_seconds_bounds_the_loop(monkeypatch):
+    """A wedged connection must not retry past the wall-clock budget even when
+    attempts remain — 8 x 120s-timeout attempts looked like a 20-minute hang."""
+    from trie.config import Sync
+    from trie.models import _run_with_retry
+
+    cfg = Sync(max_retries=100, retry_base_delay_seconds=0.0, retry_total_seconds=10.0)
+
+    clock = {"now": 0.0}
+    monkeypatch.setattr("trie.models.time.monotonic", lambda: clock["now"])
+
+    calls = {"n": 0}
+
+    def always_connection_error():
+        calls["n"] += 1
+        clock["now"] += 6.0  # each attempt burns 6s of wall clock
+        raise APITimeoutError(request=httpx.Request("POST", "https://x"))
+
+    with pytest.raises(APITimeoutError):
+        _run_with_retry(
+            always_connection_error,
+            cfg=cfg,
+            kind="generate",
+            model_id="m",
+            sleep=lambda _s: None,
+        )
+    # 6s, 12s -> budget (10s) exceeded on the second failure: exactly 2 calls.
+    assert calls["n"] == 2
+
+
+def test_retry_total_seconds_zero_is_unbounded(monkeypatch):
+    from trie.config import Sync
+    from trie.models import _run_with_retry
+
+    cfg = Sync(max_retries=3, retry_base_delay_seconds=0.0, retry_total_seconds=0.0)
+    calls = {"n": 0}
+
+    def fail_then_succeed():
+        calls["n"] += 1
+        if calls["n"] < 4:
+            raise APITimeoutError(request=httpx.Request("POST", "https://x"))
+        return "ok"
+
+    assert (
+        _run_with_retry(
+            fail_then_succeed, cfg=cfg, kind="generate", model_id="m", sleep=lambda _s: None
+        )
+        == "ok"
+    )
+    assert calls["n"] == 4

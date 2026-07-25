@@ -349,7 +349,7 @@ This prose lives between sentinels and is preserved across regeneration.
 ```
 
 - The `fingerprint=` field is a SHA-256 of the symbol's body with whitespace and comments normalized away — formatting churn doesn't trip staleness, but real changes do.
-- The `body_fp=` field is a SHA-256 of the section body itself, so the check catches manual tampering with the Markdown between sentinels.
+- The `body_fp=` field is a SHA-256 of the section body itself, so the check catches hand-edits *inside* a generated section. **This is the wiki contract: generated sections are trie's; everything else in the file is yours.** Write notes, warnings, diagrams, ADR links — anywhere outside the sentinel pairs — and regeneration preserves them byte-for-byte. If `verify` reports a hand-edit inside a section, cut your prose and paste it above or below the section instead.
 - The front-matter `defines` list, ref counts, and description are agent-navigation metadata: they let an agent decide whether to open a triefact at all without parsing every section. Symbol kinds are `function`, `class`, `method`, `constant` (module-level `NAME = value` bindings, including dunders like `__version__` and framework instantiations like `app = FastAPI()`), and `module` (a synthetic per-file symbol carrying any residual module-level behaviour — top-level calls, `if __name__ == "__main__":` blocks, etc.).
 - `trie sync` regenerates only the sections whose source fingerprint has drifted; everything between sentinels is preserved byte-for-byte.
 - `trie verify` compares stored fingerprints — fast, deterministic, no LLM in the loop, exits non-zero on drift.
@@ -524,6 +524,30 @@ The freshness gate has four states. Costs are bounded and predictable:
 The LLM path only fires for `mtimes_moved`. Trie does **not** auto-spend on fresh clones or after `git pull`. Run `trie sync` explicitly when you want prose regen beyond what edits warrant.
 
 Agents read the graph freely. Writes are explicit and gated: an agent stages symbol-level edits and they only become real source changes on an apply — which regenerates the affected prose in the same step and surfaces for review first. `trie sync` (run by you, or by the post-turn hook for files the agent edited) keeps the triefact tree current with any changes made outside that path.
+
+## Adopting trie in a team
+
+trie works out of the box for the person who installed it; these are the patterns that make it work for everyone *else* in the repo.
+
+**Who pays for sync (pick one):**
+
+1. **Everyone has a key.** Each committer sets `ANTHROPIC_API_KEY` (or your configured provider's key); the pre-commit `verify` gate keeps everyone honest and each person regenerates the prose their own edits stale. Costs are small and visible (`trie plan` previews them), but this needs per-seat key provisioning.
+2. **One payer / sync bot.** Committers without keys still get the `verify` gate; when it blocks them, they push anyway with the triefacts stale on the branch and a CI job with the org's key runs `trie sync` and pushes the regeneration commit onto the PR branch. Keyless `trie sync` fails loudly and tells the user what's happening — nobody is left staring at a green lie.
+
+**Merge conflicts in triefacts: regenerate, don't hand-merge.** Two branches regenerating the same file will produce textually different prose (LLM output is not deterministic), and hand-merging the halves puts you inside generated sections — which `verify` will flag. The rule is:
+
+```
+# .gitattributes — take either side wholesale, then regenerate
+triefacts/** merge=ours
+```
+
+After the merge, run `trie sync` once; drifted sections regenerate from the merged *source*, which is the only truth that matters. Never resolve a triefact conflict token-by-token.
+
+**What leaves your machine, and what doesn't:**
+
+- `trie sync` sends the *changed symbols' source code* (plus neighbouring one-liners for context) to your configured model provider (Anthropic or OpenAI-compatible). If parts of your codebase must never leave the building, exclude them via `[scope]` — out-of-scope files are never parsed, never sent, and get no triefacts.
+- Telemetry (`debug.jsonl`) is local-only, off by default, and never uploaded anywhere by trie.
+- The graph databases under `.trie/` are local caches, gitignored, and reconstructible from source at any time.
 
 ## Reducing PR noise from generated triefacts
 

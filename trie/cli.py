@@ -541,6 +541,14 @@ def plan_cmd(
             "an established one."
         ),
     ),
+    offline: bool = typer.Option(
+        False,
+        "--offline",
+        help=(
+            "Skip the count_tokens cost preview (the only network calls plan makes). "
+            "Shows the worklist with symbol counts; estimates read $0."
+        ),
+    ),
 ) -> None:
     """Scan the project, surface drift, and show the worklist + estimated cost.
 
@@ -567,7 +575,17 @@ def plan_cmd(
         raise typer.Exit(code=1) from exc
 
     model_id = model or config.models.bootstrap
-    client = make_client(model_id, sync_cfg=config.sync)
+    if offline:
+        # count_tokens is plan's only network dependency; a zero-token stub
+        # keeps the worklist available with no key and no connectivity.
+        class _OfflineTokenStub:
+            def count_tokens(self, *args: object, **kwargs: object) -> int:
+                return 0
+
+        client = _OfflineTokenStub()  # type: ignore[assignment]
+        reporter.info("[dim]--offline: cost estimates skipped (worklist only)[/dim]")
+    else:
+        client = make_client(model_id, sync_cfg=config.sync)
     db_path = project_root / ".trie" / "graph.db"
     triefacts_root = project_root / config.triefacts.root
     use_incremental = not all_ and _has_existing_triefacts(triefacts_root)
@@ -635,7 +653,7 @@ def verify_cmd(ctx: typer.Context) -> None:
 
     Bidirectional: catches both Code → Triefact drift (source changed but section
     wasn't regenerated, or a public symbol has no section) and Triefact → Code drift
-    (section body was tampered with, or section refers to a deleted symbol).
+    (section body was hand-edited between sentinels, or section refers to a deleted symbol).
 
     No LLM, no scan, no DB writes — designed for pre-commit hooks. The same drift
     detection runs as the first step of `trie plan` and `trie sync`; `verify` exists
@@ -1136,6 +1154,34 @@ def _resolve_audit_log_path(log: Path | None, reporter: Reporter) -> Path:
     return cfg_path
 
 
+@app.command("index")
+def index_cmd(ctx: typer.Context) -> None:
+    """Regenerate the triefact-tree index (<triefacts.root>/README.md).
+
+    Deterministic and LLM-free: entry points ranked by inbound references plus
+    a per-directory table of contents with file descriptions. Runs automatically
+    at the end of every sync; this command exists for manual refreshes.
+    """
+    reporter = _get_reporter(ctx)
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    from trie.index import write_index
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        path = write_index(store=store, config=config, project_root=project_root)
+    finally:
+        store.close()
+    if path is None:
+        reporter.info("no triefact tree yet — run `trie sync` first")
+        return
+    reporter.success(f"index written to {path.relative_to(project_root)}")
+
+
 @app.command("diff")
 def diff_cmd(
     ctx: typer.Context,
@@ -1498,7 +1544,7 @@ _REASON_LABELS: dict[StaleReason, str] = {
     StaleReason.MISSING_SECTION: "missing section",
     StaleReason.STALE_SECTION: "stale (source changed)",
     StaleReason.ORPHAN_SECTION: "orphan (symbol gone)",
-    StaleReason.TAMPERED_BODY: "tampered body",
+    StaleReason.TAMPERED_BODY: "hand-edited inside a generated section — move your prose OUTSIDE the sentinels (trie preserves it there), then run `trie sync`",
     StaleReason.LEGACY_SECTION: "legacy (no body fingerprint)",
 }
 
@@ -1780,7 +1826,10 @@ def _run_full_pass(
                 progress=cb,
                 store=store,
             )
+        if result.files_synced:
+            _refresh_index_quietly(config, project_root, store)
 
+    had_errors = _report_sync_errors(reporter, result.file_errors)
     reporter.success(
         f"synced {result.files_synced} files "
         f"(skipped {result.files_skipped_no_budget} due to budget/limit)"
@@ -1788,6 +1837,42 @@ def _run_full_pass(
     reporter.info(
         f"  estimated ${result.estimated_cost_usd:.4f} · actual ${result.actual_cost_usd:.4f}"
     )
+    if had_errors:
+        raise typer.Exit(code=1)
+
+
+def _refresh_index_quietly(config: Config, project_root: Path, store: Store) -> None:
+    """Regenerate the triefact index after a sync; advisory, never fails the run."""
+    try:
+        from trie.index import write_index
+
+        write_index(store=store, config=config, project_root=project_root)
+    except Exception:
+        pass
+
+
+def _report_sync_errors(reporter: Reporter, file_errors: list[tuple[str, str]]) -> bool:
+    """Report per-file generation failures. Returns True when any occurred.
+
+    Sync must never green-lie: a run where files errored (missing API key,
+    network failure, provider errors) is not a success even though the wave
+    scheduler correctly kept going. Shows up to 5 errors plus a count, and a
+    targeted hint when the failure smells like missing credentials.
+    """
+    if not file_errors:
+        return False
+    shown = file_errors[:5]
+    for rel, err in shown:
+        reporter.error(f"✗ {rel}: {err}")
+    if len(file_errors) > len(shown):
+        reporter.error(f"  … and {len(file_errors) - len(shown)} more file(s) failed")
+    blob = " ".join(err.lower() for _, err in file_errors)
+    if "api_key" in blob or "api key" in blob or "authentication" in blob or "x-api-key" in blob:
+        reporter.info(
+            "hint: no usable model credentials — set ANTHROPIC_API_KEY (or the key for "
+            "your configured provider) and re-run `trie sync`"
+        )
+    return True
 
 
 def _run_dry_run_diff(
@@ -2004,6 +2089,8 @@ def _run_incremental_sync(
             limit=limit,
             progress=cb,
         )
+        if result.files_synced:
+            _refresh_index_quietly(config, project_root, store)
 
     if result.orphan_triefacts_removed:
         for triefact in result.orphan_triefacts_removed:
@@ -2021,6 +2108,14 @@ def _run_incremental_sync(
             reporter.success("triefact tree is coherent — nothing to sync")
         return
 
+    had_errors = _report_sync_errors(reporter, result.file_errors)
+    if had_errors and result.files_synced == 0:
+        reporter.error(
+            f"synced 0 of {len(result.file_errors)} file(s) — every file failed; "
+            "the triefact tree was NOT refreshed"
+        )
+        raise typer.Exit(code=1)
+
     reporter.success(
         f"synced {result.files_synced} file(s) "
         f"({result.directly_stale_count} directly stale, "
@@ -2029,6 +2124,8 @@ def _run_incremental_sync(
     if result.files_skipped_no_budget:
         reporter.info(f"  skipped {result.files_skipped_no_budget} due to budget/limit")
     reporter.info(f"  actual cost: ${result.actual_cost_usd:.4f}")
+    if had_errors:
+        raise typer.Exit(code=1)
 
 
 @app.command("setup")
@@ -2072,6 +2169,16 @@ def setup_cmd(
             "agent's built-in `grep` and `read` with wrappers that route "
             "through trie (and adds `trace`). Pass --no-overrides to "
             "install hook + docs only and leave the agent's built-ins alone."
+        ),
+    ),
+    with_sync_bot: bool = typer.Option(
+        False,
+        "--with-sync-bot",
+        help=(
+            "Also install a CI sync-bot workflow that regenerates stale "
+            "triefacts on PR branches using the ANTHROPIC_API_KEY repository "
+            "secret and pushes the sync commit. Opt-in because it spends the "
+            "org's API budget and pushes to branches."
         ),
     ),
     with_mcp: bool = typer.Option(
@@ -2199,18 +2306,29 @@ def setup_cmd(
     # GitHub workflow install: comments the latest session digest on PRs.
     # Skipped for non-git dirs; user-owned files (no managed-by marker) are
     # never touched. Inert off GitHub, so no remote detection is needed.
-    from trie.workflow_install import install_triediff_workflow
+    from trie.workflow_install import install_sync_bot_workflow, install_triediff_workflow
 
     workflow_result = install_triediff_workflow(
         project_root,
         diffs_dir=setup_config.diff.diffs_dir,
         dry_run=dry_run or print_only,
     )
+    sync_bot_result = None
+    if with_sync_bot:
+        sync_bot_result = install_sync_bot_workflow(
+            project_root,
+            dry_run=dry_run or print_only,
+        )
 
     _render_setup_plan(reporter, mcp_plan, hook_plan, docs_plan, override_plan)
     wf_path = workflow_result.path or Path(".github/workflows/triediff-comment.yml")
     wf_note = f" ({workflow_result.note})" if workflow_result.note else ""
     reporter.info(f"pr digest workflow: {workflow_result.action} {wf_path}{wf_note}")
+    if sync_bot_result is not None:
+        sb_path = sync_bot_result.path or Path(".github/workflows/trie-sync-bot.yml")
+        sb_note = f" ({sync_bot_result.note})" if sync_bot_result.note else ""
+        reporter.info(f"sync-bot workflow: {sync_bot_result.action} {sb_path}{sb_note}")
+        reporter.info("  remember: the sync bot needs the ANTHROPIC_API_KEY repository secret")
 
     # Surface a non-zero exit if any step hit an error so CI/scripts react.
     mcp_errors = any(r.action == "error" for r in mcp_plan.results) if mcp_plan else False
@@ -2225,6 +2343,7 @@ def setup_cmd(
         or docs_errors
         or override_errors
         or (workflow_result.action == "error")
+        or (sync_bot_result is not None and sync_bot_result.action == "error")
     ):
         raise typer.Exit(code=1)
 
@@ -2497,6 +2616,17 @@ def _render_read(envelope: dict[str, object], reporter: Reporter) -> None:
         reporter.console.print(f"  [dim]{signature}[/dim]")
     if source_pointer:
         reporter.console.print(f"  [dim]→ {source_pointer}[/dim]")
+
+    # Notes carry the honesty layer (stale-prose warnings, missing-triefact
+    # hints, hub truncation). Stale warnings especially must never be dropped:
+    # a read that serves outdated prose silently is a lying wiki.
+    notes = envelope.get("notes")
+    if isinstance(notes, list) and notes:
+        reporter.console.print()
+        for note in notes:
+            text = str(note)
+            style = "bold yellow" if text.startswith("⚠") else "dim"
+            reporter.console.print(f"[{style}]{text}[/{style}]")
 
     prose = envelope.get("prose") or ""
     if isinstance(prose, str) and prose.strip():

@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_edits_structural.py
 file_fingerprint: e8332ae1082b9044a9f3d3ac570bd7dd1092f4fcc03c0985bdf210aa804e9159
-last_synced_at: '2026-07-20T23:25:37Z'
+last_synced_at: '2026-07-25T01:56:25Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_structural:__module__
@@ -106,13 +106,13 @@ TOML configuration string used to create test project files with trie settings.
 
 - Contains project metadata, file scope, triefacts root, model configurations, and cascade parameters
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_structural:FakeTriefactClient fingerprint=eb21c1c8e78d2dfbdaa15ef552db52c7f8e034d8a0e48c02c7d739e2f9ea2007 body_fp=9c8baad9c45962ae43b28d29c8fb15fa3a126ebc6630e465f9ae4cf582bfbd6d source_ref=e5ac16e397973bd3b23fa3dbece8648e8e5b21d9 role=test -->
+<!-- trie:section symbol=tests/test_edits_structural:FakeTriefactClient fingerprint=eb21c1c8e78d2dfbdaa15ef552db52c7f8e034d8a0e48c02c7d739e2f9ea2007 body_fp=9c8baad9c45962ae43b28d29c8fb15fa3a126ebc6630e465f9ae4cf582bfbd6d source_ref=01fd81b7592a75ad72d9df519738f35a592ec6b7 role=test -->
 Mock triefact client that returns fixed SectionBody output with minimal token usage for testing.
 
 - `full_model_id`: Always returns "fake/fake"
 - `run()`: Returns ModelResult with hardcoded "fake prose." body and 1 input/output token usage
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_structural:FakeTriefactClient.run fingerprint=245921977f71d8c42c7796c61eaf884795f199a0f58fd762bbeb242de7e54a6b body_fp=f1f667bb1c44fd8cc7ea44d1a7da7aaaffba3738dd2ff6507f9224481de9f7c7 source_ref=e5ac16e397973bd3b23fa3dbece8648e8e5b21d9 role=test -->
+<!-- trie:section symbol=tests/test_edits_structural:FakeTriefactClient.run fingerprint=245921977f71d8c42c7796c61eaf884795f199a0f58fd762bbeb242de7e54a6b body_fp=f1f667bb1c44fd8cc7ea44d1a7da7aaaffba3738dd2ff6507f9224481de9f7c7 source_ref=01fd81b7592a75ad72d9df519738f35a592ec6b7 role=test -->
 FakeTriefactClient.run returns a fake ModelResult with hardcoded SectionBody and minimal Usage for testing.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_structural:project fingerprint=454ba7d4fb51d84562aa6b26ddbe62b83dd544935bc4f7d0a049e3dffac6c82b body_fp=b141eef4f01e37f9e57370b09fa5121a37b77bbee77a82537bd958f30e212b96 source_ref=7ec0dea07e040aeeb4ffb2574d8059b351722a41 role=test -->

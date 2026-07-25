@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: tests/test_scheduler.py
-file_fingerprint: ea31ca96dcead1aeded8f5022d514a7a1a73ec23b51abbe8451f834c263ba0f9
-last_synced_at: '2026-06-17T16:43:09Z'
+file_fingerprint: 3901e6f9692033cf9b9caef42545c389dc13594086a02657233d1c0450fc2ee9
+last_synced_at: '2026-07-25T01:36:51Z'
 description: Tests for the wave-based file scheduler (trie/sync/scheduler.py).
 defines:
 - kind: module
   qualified_name: tests/test_scheduler:__module__
-  lines: 1-162
+  lines: 1-181
 - kind: function
   qualified_name: tests/test_scheduler:_result
   lines: 13-23
@@ -22,21 +22,24 @@ defines:
   lines: 55-63
 - kind: function
   qualified_name: tests/test_scheduler:test_exception_in_one_file_does_not_sink_wave
-  lines: 66-75
+  lines: 66-78
+- kind: function
+  qualified_name: tests/test_scheduler:test_all_files_erroring_is_not_a_silent_success
+  lines: 81-94
 - kind: function
   qualified_name: tests/test_scheduler:test_limit_caps_and_reports_skips
-  lines: 78-97
+  lines: 97-116
 - kind: function
   qualified_name: tests/test_scheduler:test_budget_caps_run
-  lines: 100-110
+  lines: 119-129
 - kind: function
   qualified_name: tests/test_scheduler:test_depth_banded_ordering_band0_before_band1
-  lines: 113-133
+  lines: 132-152
 - kind: function
   qualified_name: tests/test_scheduler:test_global_inflight_semaphore_caps_concurrency
-  lines: 136-161
+  lines: 155-180
 incoming_refs: 0
-outgoing_refs: 18
+outgoing_refs: 21
 ---
 <!-- trie:section symbol=tests/test_scheduler:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a55feab9fddb09dc00f6570ef7eae5f4addd2d1e6a0580ef7dfc0d4162c7e964 source_ref=49d06a80c655d6743830a8fe1d3623699c10a995 role=test -->
 Tests for the wave-based file scheduler functionality in `trie.sync.scheduler`.
@@ -68,11 +71,14 @@ Verifies that `run_waves` executes file processing tasks in parallel using multi
 <!-- trie:section symbol=tests/test_scheduler:test_none_result_counts_as_skip fingerprint=8834bf3bc0f18a1776ebdb715c86f5cba189c8921f243fa1d06d009714bf34e2 body_fp=83d9dd1fea793b4c39eeac837cf73ac197bb05d42115801caab280f32a81916e source_ref=2d0a6dfc259f5e05467859318304860c4dd2bbc5 role=test -->
 Tests that files returning None from process_file are counted as skipped rather than processed.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_scheduler:test_exception_in_one_file_does_not_sink_wave fingerprint=e9d1ea60163d3d68ff7ffecbd6d8bc4d63af16f9ec0e238fe46a8d90f17f7a44 body_fp=69dfc1bedd729fcdd60ec643d9be7cce811cc94cb8ffbcf8157193aa94d3ddf1 source_ref=2d0a6dfc259f5e05467859318304860c4dd2bbc5 role=test -->
+<!-- trie:section symbol=tests/test_scheduler:test_exception_in_one_file_does_not_sink_wave fingerprint=397d99f38378f6a4911f73206fa077712b9996de4929b29ea1dc56024692eb25 body_fp=d8b2f398f1f811990fd46d3a3932c8f5f4ab0c9a32d4a08108688c1cd60d0702 source_ref=305d54f16a70c75809170cdbff2cb12756d99675 role=test -->
 Verifies that `run_waves` continues processing other tasks when one task's processor function raises an exception.
 
 - Creates three tasks where the middle one triggers a RuntimeError
-- Confirms two successful results are recorded and one failure is counted as skipped
+- Confirms two successful results are recorded, the error is stored in `sched.errors`, and `skipped_other` remains 0
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_scheduler:test_all_files_erroring_is_not_a_silent_success fingerprint=9582e4bde37e1b76e988f328d43744e474f8d9def63f50c752fdafc71ebc1730 body_fp=678e1c802e5e04857c791dc6fa6fd725c95839e0931eb743301f8f90ab97dc8f source_ref=305d54f16a70c75809170cdbff2cb12756d99675 role=test -->
+Regression test asserting that all-file errors populate `errors`, not `skipped_other`, so callers cannot silently interpret a total failure as "nothing to do".
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_scheduler:test_limit_caps_and_reports_skips fingerprint=e24eaabaf0a2811872cadfa157bb69f7e1ff97cbc74e4910af35bcd1be867741 body_fp=508ab48807ea019fc3e3f26b0f2bdc23ce6ba2ac794713c8d66f81c3b9b83816 source_ref=2d0a6dfc259f5e05467859318304860c4dd2bbc5 role=test -->
 Tests that run_waves respects file limit and reports skip reasons via progress callback.
