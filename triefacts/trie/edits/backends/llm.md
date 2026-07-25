@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/edits/backends/llm.py
 file_fingerprint: 71f1cb8ce78d68e982f84d72c8c75c95fc88dde7651d0ee93766500143d37e78
-last_synced_at: '2026-07-20T23:25:52Z'
+last_synced_at: '2026-07-25T01:56:30Z'
 description: "In-process LLM edit backend \u2014 the default `SymbolEditBackend`."
 defines:
 - kind: module
@@ -83,7 +83,7 @@ Renders an `EditRequest` into the user prompt for the LLM.
 - Adds special handling for "create" operations to indicate new symbol creation
 - Returns structured prompt with symbol info, prose, notes, source code, and output-format instructions
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/backends/llm:InProcessLLMBackend fingerprint=ca68aaeafd5210c27b250ff5aea88d6e9dd29778f855ed41b89c610ac0f080f9 body_fp=c7e8e2a5ae0ff951d200bcf0274c5c25c6239da9576a1df5d3bdb126aa161e40 source_ref=b57a11233c1cdb0e62472879a35ccc265849f415 role=io -->
+<!-- trie:section symbol=trie/edits/backends/llm:InProcessLLMBackend fingerprint=ca68aaeafd5210c27b250ff5aea88d6e9dd29778f855ed41b89c610ac0f080f9 body_fp=c7e8e2a5ae0ff951d200bcf0274c5c25c6239da9576a1df5d3bdb126aa161e40 source_ref=b57a11233c1cdb0e62472879a35ccc265849f415 role=domain -->
 Generates new source code and prose for symbols by calling an LLM via `TrieClient` using plaintext output parsing.
 
 - `max_tokens`: Maximum tokens for LLM responses, defaults to 16384
