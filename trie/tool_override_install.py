@@ -1362,9 +1362,12 @@ import { tool } from "@opencode-ai/plugin"
 
 export default tool({
   description:
-    "Post an implementation note against a named symbol in the trie graph " +
-    "store. Patches accumulate until `patch_apply` is called to merge, " +
-    "generate source, and cascade through the call graph.",
+    "Record WHY a symbol changed (or is about to change): post an intent " +
+    "note against a named symbol. You make the code change yourself with " +
+    "your normal tools; notes accumulate until `patch_apply` archives them " +
+    "to the session log. The pre-commit `trie intent` gate requires a note " +
+    "for every changed symbol, and the notes feed the commit digest and " +
+    "`read --history`.",
   args: {
     qname: tool.schema
       .string()
@@ -1529,10 +1532,11 @@ import { tool } from "@opencode-ai/plugin"
 
 export default tool({
   description:
-    "Stage creation of a NEW symbol that doesn't exist in the graph yet. " +
-    "The symbol is generated and written when `patch_apply` runs. Use this " +
-    "instead of `patch` when the target qname doesn't exist — `patch` only " +
-    "accepts existing symbols.",
+    "Record the intent behind a NEW symbol that isn't in the graph yet " +
+    "(you write the code yourself; trie stores the why). Use this instead " +
+    "of `patch` when the target qname doesn't exist — `patch` only accepts " +
+    "existing symbols. The note is archived on `patch_apply` and satisfies " +
+    "the `trie intent` gate for the added symbol.",
   args: {
     qname: tool.schema
       .string()
@@ -1588,8 +1592,9 @@ import { tool } from "@opencode-ai/plugin"
 
 export default tool({
   description:
-    "Stage a rename of an existing symbol. Callers are cascade-updated when " +
-    "`patch_apply` runs. `new_name` is the bare local identifier, not a qname.",
+    "Record a rename of an existing symbol (you perform the rename in " +
+    "source yourself). The note is archived as rename intent on " +
+    "`patch_apply`. `new_name` is the bare local identifier, not a qname.",
   args: {
     qname: tool.schema
       .string()
@@ -1632,8 +1637,11 @@ import { tool } from "@opencode-ai/plugin"
 
 export default tool({
   description:
-    "Stage deletion of an existing symbol. Dependent callers are reported at " +
-    "staging time and cascade-updated when `patch_apply` runs.",
+    "Record the intent behind deleting an existing symbol (you remove the " +
+    "code yourself). Dependent callers are reported so you can review the " +
+    "blast radius; the note is archived as delete intent on `patch_apply`. " +
+    "For symbols already gone from the graph, use the CLI form: " +
+    "`trie patch create <qname> -n \"...\" --gone`.",
   args: {
     qname: tool.schema
       .string()
@@ -1673,10 +1681,11 @@ import { tool } from "@opencode-ai/plugin"
 
 export default tool({
   description:
-    "Stage MANY patches and creates in one call instead of N separate " +
-    "`patch`/`create_symbol` round trips. Items are processed independently: " +
-    "a bad item is reported in the summary but does not abort the rest. " +
-    "Returns a JSON summary {staged, failed, results}.",
+    "Record intent notes for MANY symbols in one call instead of N separate " +
+    "`patch`/`create_symbol` round trips — the usual way to clear the " +
+    "`trie intent` gate after a multi-symbol change. Items are processed " +
+    "independently: a bad item is reported in the summary but does not " +
+    "abort the rest. Returns a JSON summary {staged, failed, results}.",
   args: {
     items: tool.schema
       .array(

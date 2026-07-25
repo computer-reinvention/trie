@@ -323,12 +323,15 @@ class TrieTools:
         source: str = "",
         reason: str = "",
     ) -> dict[str, Any]:
-        """Stage a change to an existing symbol's body.
+        """Record WHY an existing symbol changed (or is about to change).
 
-        Provide exactly one of `note` (let the model generate the change) or
-        `source` (supply the exact new body — deterministic, no inference). Returns
-        {patch_id, qname, pending_patch_count, blast_radius}. Fire-and-forget; the
-        change is generated + applied later by commit().
+        You make the code change yourself with your normal editing tools; this
+        posts the intent note that the pre-commit `trie intent` gate requires
+        for every changed symbol. Provide `note` (why, not what — one or two
+        sentences written for the reviewer reading the commit digest later);
+        `source` is accepted as a verbatim-payload alternative. Returns
+        {patch_id, qname, pending_patch_count, blast_radius}. Notes accumulate
+        until commit() archives them to the session log.
         """
         if bool(note.strip()) == bool(source.strip()):
             return _error(
@@ -359,16 +362,17 @@ class TrieTools:
         }
 
     def batch_patch(self, items: list[dict[str, Any]]) -> dict[str, Any]:
-        """Stage MANY patches/creates in ONE call — the batch staging entrypoint.
+        """Record intent notes for MANY symbols in ONE call.
 
-        `items` is a list of objects, each:
+        The usual way to clear the `trie intent` gate after a multi-symbol
+        change. `items` is a list of objects, each:
           {"op": "patch",  "qname": "src/foo:bar", "note": "...", "reason": "..."}
           {"op": "create", "qname": "src/foo:baz", "note": "...",
            "file_path": "...", "anchor_qname": "...", "reason": "..."}
-        `op` defaults to "patch". Staging is a cheap DB write; batching collapses
-        what would be N separate tool calls (N agent turns) into one. Items are
-        independent — a bad item is reported in `results` but does not abort the
-        rest. Returns {staged, failed, results, pending_patch_count}.
+        `op` defaults to "patch". Recording is a cheap DB write; batching
+        collapses what would be N separate tool calls into one. Items are
+        independent — a bad item is reported in `results` but does not abort
+        the rest. Returns {staged, failed, results, pending_patch_count}.
         """
         if not isinstance(items, list) or not items:
             return _error("invalid_argument", "items must be a non-empty list of patch objects.")
@@ -461,12 +465,15 @@ class TrieTools:
         anchor_qname: str = "",
         reason: str = "",
     ) -> dict[str, Any]:
-        """Stage creation of a NEW symbol (does not yet exist in the graph).
+        """Record the intent behind a NEW symbol (not yet in the graph).
 
-        `qname` is the intended qualified name (e.g. 'src/foo:helper'); `note`
-        describes what it should do; `file_path` is the target source file
-        (derived from qname's module part when omitted); `anchor_qname` optionally
-        places it after an existing symbol. Returns {create_patch_id, qname}.
+        You write the code yourself; this stores the why so the added symbol
+        passes the `trie intent` gate and its purpose lands in the commit
+        digest. `qname` is the intended qualified name (e.g. 'src/foo:helper');
+        `note` describes what it is for; `file_path` is the target source file
+        (derived from qname's module part when omitted); `anchor_qname`
+        optionally names an existing neighbour. Returns
+        {create_patch_id, qname}.
         """
         if not note.strip():
             return _error("invalid_argument", "note must describe the new symbol.")
@@ -503,11 +510,13 @@ class TrieTools:
         return registry.resolve_create_target(self.src_root, qname)
 
     def delete_symbol(self, qname: str, reason: str = "") -> dict[str, Any]:
-        """Stage deletion of an existing symbol. Returns {patch_id, qname, dependents}.
+        """Record the intent behind deleting an existing symbol.
 
-        `dependents` lists symbols that reference this one — they will reference a
-        deleted symbol unless you also patch them. commit proceeds regardless; the
-        agent owns deciding whether the dependents need updating.
+        You remove the code yourself; this notes why. Returns
+        {patch_id, qname, dependents}. `dependents` lists symbols that
+        reference this one — review them, and note the ones you also change.
+        For symbols already gone from the graph, use the CLI form:
+        `trie patch create <qname> -n "..." --gone`.
         """
         try:
             pid = self.store.add_delete_patch(qname, reason, self._session_id)
@@ -525,11 +534,11 @@ class TrieTools:
         return {"patch_id": int(pid), "qname": qname, "dependents": dependents}
 
     def rename_symbol(self, qname: str, new_name: str, reason: str = "") -> dict[str, Any]:
-        """Stage a rename of an existing symbol to `new_name` (the local name).
+        """Record a rename of an existing symbol to `new_name` (the local name).
 
-        Returns {patch_id, qname, new_name, references}. References are the callers
-        whose call sites trie can see; rename refuses at commit if it cannot rewrite
-        the definition unambiguously.
+        You perform the rename in source yourself; this notes the intent.
+        Returns {patch_id, qname, new_name, references} — references are the
+        call sites trie can see, so you can verify you updated them all.
         """
         if not new_name.isidentifier():
             return _error(
@@ -655,11 +664,12 @@ class TrieTools:
         }
 
     def preview(self) -> dict[str, Any]:
-        """Show what commit would do, without writing or paying for generation.
+        """Review pending intent notes and their call-graph blast radius.
 
-        Free, idempotent. Returns {pending, creates, cascade, totals,
-        ready_to_commit}. Call before commit to see the blast radius and any
-        blockers (e.g. a missing session note for a multi-symbol apply).
+        Free, offline, idempotent. Returns {pending, creates, cascade, totals,
+        ready_to_commit}. Call before commit() to see which symbols carry
+        notes, which callers a reviewer might want to look at, and any blockers
+        (e.g. a missing session note for a multi-symbol apply).
         """
         from trie.edits.pipeline import preview_patches
 
