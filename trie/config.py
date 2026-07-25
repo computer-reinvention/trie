@@ -273,7 +273,7 @@ class Diff:
     `diffs_dir`. The pre-commit hook block hardcodes the default names, so
     changing these requires editing the hook."""
 
-    diffs_dir: str = "triediffs"
+    diffs_dir: str = "trie/triediffs"
     """Directory (relative to project root) holding one digest file per
     commit. Lives outside the triefact tree so previous digests never feed
     back into new digest evidence."""
@@ -455,7 +455,7 @@ output_format = "pyright"
 # [diff]
 # narrative = true          # LLM narrative at the top of each digest entry (falls back to raw evidence without an API key)
 # write_path = "TRIE_DIFF.md"  # root symlink pointing at the latest digest file
-# diffs_dir = "triediffs"    # one immutable digest file per commit lives here
+# diffs_dir = "trie/triediffs"  # one immutable digest file per commit lives here
 # max_entries = 20          # keep at most this many digest files; oldest pruned
 
 [debug]

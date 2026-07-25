@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.9
 source: tests/test_init.py
-file_fingerprint: 38dd348242eea118a3307f734b60263edca9591ac74f687152ecadc46209c008
-last_synced_at: '2026-07-25T00:24:00Z'
+file_fingerprint: 9627b21f60e1653288bdbf7408ab41ec57944ef0921b9533fced384b2e678a54
+last_synced_at: '2026-07-25T00:28:19Z'
 defines:
 - kind: module
   qualified_name: tests/test_init:__module__
@@ -285,6 +285,6 @@ Tests that the `trie init` command automatically runs `trie setup` when user acc
 <!-- trie:section symbol=tests/test_init:test_cli_init_does_not_run_setup_when_user_declines_prompt fingerprint=2b88a1a18da864f17d833277406db5bf219c9e374d807aafa36d720cb4263986 body_fp=40c757ce965b70c083f760acd74cb81ec53dc3bbeb4285e8fdd8082be1c3a71a source_ref=0f97acda485ff7a046c788feb9cbfd63ccd9448a role=test-infrastructure -->
 Tests that declining the setup prompt in `trie init` skips auto-setup while preserving manual instruction.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_init:test_hook_block_includes_diff_write fingerprint=bc9f4d7d98243a3ec2077e4aa65b23d319d34b3b1ef75cec532ed1a14ff75a77 body_fp=14f9abe11e16b5a534fed521c39fb291c886a8d09f8c5a869c41b32fe59032d1 source_ref=62122c53380f7912b9b35093f36c531b681820bb role=test -->
-Assert that `PRE_COMMIT_HOOK_BLOCK` contains `trie -q diff --write` and `git add TRIE_DIFF.md triediffs`, that the diff-write command appears after `trie -q verify`, and that the diff-write line is non-blocking (no `|| exit`).
+<!-- trie:section symbol=tests/test_init:test_hook_block_includes_diff_write fingerprint=18a1a371f1a05721da97529a4010edb64445ae72a8d6e2ae7db7990e32310010 body_fp=297f3e32d3399646b8b87d619f1bba52ee419d7bb3e132fdc6fa7884e839a608 source_ref=31c2dfb426cf5c01f8dfffd4c9d2b10e170f7946 role=test -->
+Assert that `PRE_COMMIT_HOOK_BLOCK` contains `trie -q diff --write` and `git add TRIE_DIFF.md trie/triediffs`, that the diff-write command appears after `trie -q verify`, and that the diff-write line is non-blocking (no `|| exit`).
 <!-- trie:end -->

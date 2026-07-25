@@ -32,7 +32,7 @@ PRE_COMMIT_HOOK_END_MARKER = "# end trie-verify"
 #   3. diff --write — writes an intent-level digest entry (patch notes +
 #                    before/after symbol deltas, with an optional LLM
 #                    narrative when [diff] config enables it) as a new
-#                    immutable file under triediffs/ and repoints the
+#                    immutable file under trie/triediffs/ and repoints the
 #                    TRIE_DIFF.md symlink at it, then stages both so every
 #                    commit — and therefore every PR — carries its digest as
 #                    a brand-new file (pure additions, never a diff-of-a-diff).
@@ -46,7 +46,7 @@ PRE_COMMIT_HOOK_BLOCK = (
     "    trie -q lock-check || exit $?\n"
     "    trie -q verify || exit $?\n"
     "    if trie -q diff --write >/dev/null 2>&1; then\n"
-    "        git add TRIE_DIFF.md triediffs >/dev/null 2>&1 || true\n"
+    "        git add TRIE_DIFF.md trie/triediffs >/dev/null 2>&1 || true\n"
     "    fi\n"
     "fi\n"
     f"{PRE_COMMIT_HOOK_END_MARKER}\n"

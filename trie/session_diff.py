@@ -386,7 +386,7 @@ def write_digest(
     project_root: Any,
     section: str,
     *,
-    diffs_dir: str = "triediffs",
+    diffs_dir: str = "trie/triediffs",
     symlink_path: str = "TRIE_DIFF.md",
     max_entries: int = 20,
     reuse_file: str | None = None,

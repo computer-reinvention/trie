@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_models_retry.py
 file_fingerprint: a5309de55fd03bd05db3a25c39f8ebd73bbfe3cc202e811b6f822520a663ba29
-last_synced_at: '2026-07-25T00:24:17Z'
+last_synced_at: '2026-07-25T00:28:30Z'
 description: Retry-on-rate-limit behaviour of `AnthropicClient`.
 defines:
 - kind: module

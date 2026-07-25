@@ -14,11 +14,11 @@ def test_digest_cursor_roundtrip_and_window(tmp_path: pathlib.Path) -> None:
     assert resolve_digest_window(tmp_path, "aaa", fallback_since=None) is None
 
     # (3) After saving a cursor entry
-    save_digest_cursor(tmp_path, parent="aaa", since=10.0, covered=20.0, file="triediffs/x.md")
+    save_digest_cursor(tmp_path, parent="aaa", since=10.0, covered=20.0, file="trie/triediffs/x.md")
 
     # The digest file path rides along for same-commit rewrites
     cursor = read_digest_cursor(tmp_path)
-    assert cursor is not None and cursor.get("file") == "triediffs/x.md"
+    assert cursor is not None and cursor.get("file") == "trie/triediffs/x.md"
 
     # Same parent: resume from where this commit started (since), not after covered
     assert resolve_digest_window(tmp_path, "aaa", fallback_since=99.0) == 10.0
