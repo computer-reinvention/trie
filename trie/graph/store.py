@@ -152,6 +152,9 @@ class SymbolDetail:
     role: str = ""  # LLM-inferred architectural role; "" when unknown
     boundary: str = ""  # LLM-inferred boundary class: entry/exit/internal; "" unknown
     decorators: str = ""  # newline-joined decorator lines; "" when none
+    fingerprint: str = ""  # body_normalized_hash from the last scan — the same value
+    # stamped into section sentinels at generation time, so sentinel != this
+    # means the prose predates the current source ("" when unavailable).
     pending_patches: list[dict] = field(default_factory=list)
     pending_patch_count: int = 0
 
@@ -1032,7 +1035,8 @@ class Store:
                     (SELECT boundary FROM triefact_sections WHERE symbol_id = s.id LIMIT 1),
                     ''
                 ) AS boundary,
-                COALESCE(s.decorators, '') AS decorators
+                COALESCE(s.decorators, '') AS decorators,
+                COALESCE(s.body_normalized_hash, '') AS fingerprint
             FROM symbols s
             WHERE s.qualified_name = ?
             LIMIT 1
@@ -1057,6 +1061,7 @@ class Store:
             role=row[11] or "",
             boundary=row[12] or "",
             decorators=row[13] or "",
+            fingerprint=row[14] or "",
             pending_patches=patches,
             pending_patch_count=len(patches),
         )

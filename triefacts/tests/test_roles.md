@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_roles.py
 file_fingerprint: ff86cc085fcd8cb0287a107ab29a87127a6330b72afa35c176e26f4d9c1e8e1c
-last_synced_at: '2026-06-17T16:43:12Z'
+last_synced_at: '2026-07-25T01:36:57Z'
 description: 'Tests for role tagging: durable persistence, derived taxonomy, and the'
 defines:
 - kind: module

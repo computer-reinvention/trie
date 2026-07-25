@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: tests/test_ts_resolve.py
-file_fingerprint: 9e72105cf525ec878b50c655514edd58ec8cf00f3d0c403e64d38452216f2826
-last_synced_at: '2026-07-25T00:55:43Z'
+file_fingerprint: 3b869d0aa5fcb2d5a5511ef5813aebfe10c603dde2ed90c4ce7c8a8d57cfeabb
+last_synced_at: '2026-07-25T01:56:18Z'
 defines:
 - kind: module
   qualified_name: tests/test_ts_resolve:__module__
-  lines: 1-58
+  lines: 1-106
 - kind: constant
   qualified_name: tests/test_ts_resolve:FIXTURE
   lines: 9-9
@@ -34,8 +34,14 @@ defines:
 - kind: function
   qualified_name: tests/test_ts_resolve:test_resolution_is_memoized
   lines: 53-57
+- kind: function
+  qualified_name: tests/test_ts_resolve:test_config_discovery_never_descends_into_vendor_dirs
+  lines: 68-87
+- kind: function
+  qualified_name: tests/test_ts_resolve:test_extract_file_data_builds_one_resolver_per_source_root
+  lines: 90-105
 incoming_refs: 0
-outgoing_refs: 1
+outgoing_refs: 2
 ---
 <!-- trie:section symbol=tests/test_ts_resolve:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=e173ccd0f6f6d642c49aae6eb7d686a06ca67766db44ffe732a1bd90bdeab55b source_ref=4529f2f412cbb9efba25cb814d5ce3cedeb26e1a role=test -->
 Tests for `TsResolver` covering relative imports, tsconfig path aliases, barrel index resolution, workspace packages, ambient `.d.ts` specifiers, unresolvable externals, and cache memoization.
@@ -66,4 +72,10 @@ Assert that `TsResolver.resolve` returns `None` for unknown external packages an
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_ts_resolve:test_resolution_is_memoized fingerprint=87303a5278abe6b5e191d8259fffdcca850c7ab56b03a5254e287b3e028ab4ca body_fp=8e28cba64e5e411c6ab3505f1947142e5795a22565cf9eb0b26cfc6a98590151 source_ref=4529f2f412cbb9efba25cb814d5ce3cedeb26e1a role=test -->
 Verify that `TsResolver.resolve` caches results in `resolver._cache` keyed by `(specifier, str(from_file))`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_ts_resolve:test_config_discovery_never_descends_into_vendor_dirs fingerprint=7a41720aa10df70a0760d84658409f7a92ff217b9999b2e21b3b4937fe2e83a0 body_fp=ce5a55e8a95f3ba7e7fd68bbafe35b7e78d6470c69221b29d57e9ce32741aa28 source_ref=675aecdf2fb23da1290b41b56bdea0acf34e84f9 role=test -->
+Assert that `_iter_config_files` never traverses `node_modules`, `.git`, `build`, or `dist` vendor/hidden directories.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_ts_resolve:test_extract_file_data_builds_one_resolver_per_source_root fingerprint=730d743e35048229daa440a922e00041b45ccb69e0eeedbc2ef11a1e48826c1d body_fp=7648b99dced3557ebfe3a1688a855aa0197e7013b6c3a8d688db148f62195ab4 source_ref=675aecdf2fb23da1290b41b56bdea0acf34e84f9 role=test -->
+Assert that `TsResolver.build` is called exactly once when `extract_file_data` processes multiple files sharing a single source root.
 <!-- trie:end -->

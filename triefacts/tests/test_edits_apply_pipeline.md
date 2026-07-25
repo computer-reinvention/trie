@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_edits_apply_pipeline.py
 file_fingerprint: d64dc7c59f7e1b053381c3696fa00f910a3a99f031adb1920166c878f767228b
-last_synced_at: '2026-07-20T13:09:41Z'
+last_synced_at: '2026-07-25T01:56:31Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_apply_pipeline:__module__

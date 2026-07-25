@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_session_note_gate.py
 file_fingerprint: 93283c3e5a7deef50d5ed581a1704426ae035061409f468aded1e3f68d2a992e
-last_synced_at: '2026-07-20T13:08:58Z'
+last_synced_at: '2026-07-25T01:56:31Z'
 defines:
 - kind: module
   qualified_name: tests/test_session_note_gate:__module__

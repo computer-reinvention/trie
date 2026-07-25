@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/graph/store.py
-file_fingerprint: e5b70b34734d5d9668e4fea9abfb14f3b04eb93947f6dd31421ab180c5f47fa4
-last_synced_at: '2026-06-17T16:41:22Z'
+file_fingerprint: f7e05fb8e6bcf0d704980574d7fa619d259c3dbf0c3e2b4aeb3371fd5013389d
+last_synced_at: '2026-07-25T01:43:26Z'
 defines:
 - kind: module
   qualified_name: trie/graph/store:__module__
-  lines: 1-1276
+  lines: 1-1281
 - kind: constant
   qualified_name: trie/graph/store:SCHEMA_VERSION
   lines: 18-18
@@ -24,164 +24,164 @@ defines:
   lines: 123-130
 - kind: class
   qualified_name: trie/graph/store:SymbolDetail
-  lines: 134-156
+  lines: 134-159
 - kind: class
   qualified_name: trie/graph/store:GrepPredicate
-  lines: 160-182
+  lines: 163-185
 - kind: function
   qualified_name: trie/graph/store:_synchronized
-  lines: 185-202
+  lines: 188-205
 - kind: function
   qualified_name: trie/graph/store:_synchronize_store
-  lines: 205-222
+  lines: 208-225
 - kind: class
   qualified_name: trie/graph/store:Store
-  lines: 226-1275
+  lines: 229-1280
 - kind: method
   qualified_name: trie/graph/store:Store.__init__
-  lines: 235-248
+  lines: 238-251
 - kind: method
   qualified_name: trie/graph/store:Store._open
-  lines: 250-276
+  lines: 253-279
 - kind: method
   qualified_name: trie/graph/store:Store.close
-  lines: 278-279
-- kind: method
-  qualified_name: trie/graph/store:Store.__enter__
   lines: 281-282
 - kind: method
-  qualified_name: trie/graph/store:Store.__exit__
+  qualified_name: trie/graph/store:Store.__enter__
   lines: 284-285
 - kind: method
+  qualified_name: trie/graph/store:Store.__exit__
+  lines: 287-288
+- kind: method
   qualified_name: trie/graph/store:Store.transaction
-  lines: 288-294
+  lines: 291-297
 - kind: method
   qualified_name: trie/graph/store:Store.get_file
-  lines: 298-303
+  lines: 301-306
 - kind: method
   qualified_name: trie/graph/store:Store.upsert_file
-  lines: 305-316
+  lines: 308-319
 - kind: method
   qualified_name: trie/graph/store:Store.delete_file
-  lines: 318-320
+  lines: 321-323
 - kind: method
   qualified_name: trie/graph/store:Store.list_files
-  lines: 322-328
+  lines: 325-331
 - kind: method
   qualified_name: trie/graph/store:Store.replace_file_symbols
-  lines: 332-361
+  lines: 335-364
 - kind: method
   qualified_name: trie/graph/store:Store.count_symbols
-  lines: 363-374
+  lines: 366-377
 - kind: method
   qualified_name: trie/graph/store:Store.count_section_records
-  lines: 376-378
+  lines: 379-381
 - kind: method
   qualified_name: trie/graph/store:Store.count_symbols_missing_role
-  lines: 380-397
+  lines: 383-400
 - kind: method
   qualified_name: trie/graph/store:Store.replace_all_edges
-  lines: 401-432
+  lines: 404-435
 - kind: method
   qualified_name: trie/graph/store:Store.references_in
-  lines: 434-446
+  lines: 437-449
 - kind: method
   qualified_name: trie/graph/store:Store.references_in_with_files
-  lines: 448-460
+  lines: 451-463
 - kind: method
   qualified_name: trie/graph/store:Store.qnames_in_file
-  lines: 462-468
+  lines: 465-471
 - kind: method
   qualified_name: trie/graph/store:Store.symbols_in_file_with_lines
-  lines: 470-489
+  lines: 473-492
 - kind: method
   qualified_name: trie/graph/store:Store.search_symbols
-  lines: 491-518
+  lines: 494-521
 - kind: method
   qualified_name: trie/graph/store:Store.references_out
-  lines: 520-532
+  lines: 523-535
 - kind: method
   qualified_name: trie/graph/store:Store.count_edges
-  lines: 534-535
+  lines: 537-538
 - kind: method
   qualified_name: trie/graph/store:Store.inbound_count_per_symbol
-  lines: 537-546
+  lines: 540-549
 - kind: method
   qualified_name: trie/graph/store:Store.file_ref_counts
-  lines: 548-579
+  lines: 551-582
 - kind: method
   qualified_name: trie/graph/store:Store.file_stats
-  lines: 581-603
+  lines: 584-606
 - kind: method
   qualified_name: trie/graph/store:Store.upsert_section_record
-  lines: 607-685
+  lines: 610-688
 - kind: method
   qualified_name: trie/graph/store:Store.one_liner_for
-  lines: 687-700
+  lines: 690-703
 - kind: method
   qualified_name: trie/graph/store:Store.one_liners_for
-  lines: 702-715
+  lines: 705-718
 - kind: method
   qualified_name: trie/graph/store:Store.historical_mass_all
-  lines: 717-748
+  lines: 720-751
 - kind: method
   qualified_name: trie/graph/store:Store.add_patch
-  lines: 752-784
+  lines: 755-787
 - kind: method
   qualified_name: trie/graph/store:Store.add_delete_patch
-  lines: 786-788
+  lines: 789-791
 - kind: method
   qualified_name: trie/graph/store:Store.add_rename_patch
-  lines: 790-792
+  lines: 793-795
 - kind: method
   qualified_name: trie/graph/store:Store.add_create_patch
-  lines: 794-820
+  lines: 797-823
 - kind: method
   qualified_name: trie/graph/store:Store.get_create_patches_grouped
-  lines: 822-844
+  lines: 825-847
 - kind: method
   qualified_name: trie/graph/store:Store.delete_create_patches
-  lines: 846-870
+  lines: 849-873
 - kind: method
   qualified_name: trie/graph/store:Store.get_patches_for_qname
-  lines: 872-881
+  lines: 875-884
 - kind: method
   qualified_name: trie/graph/store:Store._get_patches_by_symbol_id
-  lines: 883-900
+  lines: 886-903
 - kind: method
   qualified_name: trie/graph/store:Store.get_all_patches_grouped
-  lines: 902-925
+  lines: 905-928
 - kind: method
   qualified_name: trie/graph/store:Store.delete_patches
-  lines: 927-961
+  lines: 930-964
 - kind: method
   qualified_name: trie/graph/store:Store.get_patched_qnames
-  lines: 963-971
+  lines: 966-974
 - kind: method
   qualified_name: trie/graph/store:Store.patch_count_for_symbol
-  lines: 973-979
+  lines: 976-982
 - kind: method
   qualified_name: trie/graph/store:Store.patch_summary
-  lines: 981-1010
+  lines: 984-1013
 - kind: method
   qualified_name: trie/graph/store:Store.get_symbol_detail
-  lines: 1014-1062
+  lines: 1017-1067
 - kind: method
   qualified_name: trie/graph/store:Store.grep_symbols
-  lines: 1064-1168
+  lines: 1069-1173
 - kind: method
   qualified_name: trie/graph/store:Store.all_symbol_names
-  lines: 1170-1173
-- kind: method
-  qualified_name: trie/graph/store:Store.all_qualified_names
   lines: 1175-1178
 - kind: method
+  qualified_name: trie/graph/store:Store.all_qualified_names
+  lines: 1180-1183
+- kind: method
   qualified_name: trie/graph/store:Store.survey_symbols
-  lines: 1180-1199
+  lines: 1185-1204
 - kind: method
   qualified_name: trie/graph/store:Store.find_paths
-  lines: 1201-1275
-incoming_refs: 123
+  lines: 1206-1280
+incoming_refs: 133
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/graph/store:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=6f905ee5b88763bc3efda571c4cc279538d18efe8ee96eddcd1224a9d34490e2 source_ref=c7ae3282b7daa8851d972e12a49a88b5b44a3638 role=persistence -->
@@ -224,13 +224,14 @@ Immutable data record for symbol search results returned by `Store.search_symbol
 - `qualified_name`: Full dotted path including module/class hierarchy
 - `signature`: Function/method signature string; `None` for non-callable symbols
 <!-- trie:end -->
-<!-- trie:section symbol=trie/graph/store:SymbolDetail fingerprint=1e515ecffc52bd585a648f1bb56ec9457c55025ee03662bbb8207af081253cc1 body_fp=57c2000e6c177d1fd27ca8c3d789b10d4f340ba3b440e6aef3aa104b0e7452be source_ref=c7ae3282b7daa8851d972e12a49a88b5b44a3638 role=model -->
+<!-- trie:section symbol=trie/graph/store:SymbolDetail fingerprint=434842c012b192c81334be8234403afc16f625ca71260f2296d77e12059eb78a body_fp=e2302bf298866037f79300635a4d122c4217ceebec4beaa225c43c969d7ff8d6 source_ref=6b17f7c7cdeef9470455fb704935cf18a7bdd3d0 role=model -->
 Full per-symbol record with graph counts and cached one-liner for MCP tools.
 
 - `one_liner`: empty string when no triefact section exists
 - `role`: LLM-inferred architectural role tag, empty when unknown
 - `boundary`: LLM-inferred boundary class (entry/exit/internal), empty when unknown
 - `decorators`: newline-joined decorator lines, empty when none
+- `fingerprint`: `body_normalized_hash` from the last scan; empty when unavailable; differs from sentinel fingerprint when prose predates current source
 - `pending_patches`: list of patch dictionaries for this symbol
 - `pending_patch_count`: number of pending patches
 <!-- trie:end -->
@@ -255,7 +256,7 @@ Decorates a class to apply `_synchronized` to all public methods for thread-safe
 - Skips dunder methods and the `transaction` contextmanager to avoid lock conflicts
 - Only wraps callable instance methods, not static or class methods
 <!-- trie:end -->
-<!-- trie:section symbol=trie/graph/store:Store fingerprint=2cc3d98f8059d719ff97cc35e1ecebb8bcf5f457626c068f54bb9227c792d2ac body_fp=1a89d9d8f6785e81b845ceeabd1f91c94e4f88c27f45f5a975b09ff0a72231f7 source_ref=dd47f824faeb09b6106e6961b05962e87fe03c05 role=persistence -->
+<!-- trie:section symbol=trie/graph/store:Store fingerprint=ac7163cdaacec99d3d156441484240a18b18a8f35d8890b2e2323e20a543d1db body_fp=1a89d9d8f6785e81b845ceeabd1f91c94e4f88c27f45f5a975b09ff0a72231f7 source_ref=6b17f7c7cdeef9470455fb704935cf18a7bdd3d0 role=persistence -->
 SQLite-backed persistence for trie's symbol graph and file fingerprints.
 
 Store provides thread-safe access to a SQLite database containing files, symbols, reference edges, triefact sections, and patches. All schema is auto-created and version-bumped when stale. The connection uses a re-entrant lock to guard concurrent access from worker threads during wave-based sync.
@@ -505,11 +506,11 @@ Store.patch_summary aggregates pending-patch state into counts and classificatio
 - `by_origin`: symbols bucketed by patch session type (agent/cascade/mixed)
 - `qnames`: sorted list of qualified names having pending patches
 <!-- trie:end -->
-<!-- trie:section symbol=trie/graph/store:Store.get_symbol_detail fingerprint=36a84ec98936b9f4f1c0523d443824942263414e0a24746ded84d93e76f5eff1 body_fp=258c4b6e8b4537931875e26ee2b61909ebd989793870ce2bc7859b247328b4f8 source_ref=c7ae3282b7daa8851d972e12a49a88b5b44a3638 role=domain -->
+<!-- trie:section symbol=trie/graph/store:Store.get_symbol_detail fingerprint=4810eb0c5b83545ed08d9625075a3a9b7715fcbe1c52ef4d28c2d2c79dbc394b body_fp=60fffd80a93b3d0307075e101470487e5be660b7ce547df6ea920c257c39916e source_ref=6b17f7c7cdeef9470455fb704935cf18a7bdd3d0 role=persistence -->
 Store.get_symbol_detail retrieves complete symbol metadata and graph metrics for an agent query in one roundtrip.
 
 - Returns None if qualified_name is not found
-- Includes inbound/outbound edge counts, cached one-liner, role/boundary tags, decorators, and pending patches
+- Includes inbound/outbound edge counts, cached one-liner, role/boundary tags, decorators, fingerprint, and pending patches
 <!-- trie:end -->
 <!-- trie:section symbol=trie/graph/store:Store.grep_symbols fingerprint=e78b8da8b52fe6745f7650acdc19da820d8037915bd2cbb2c50c4550cbf71e49 body_fp=2e7cb2886ec3b5ae6d2ac3a2f016fefedbfcdbc51192b9aaaa9c89500f88de88 source_ref=c7ae3282b7daa8851d972e12a49a88b5b44a3638 role=persistence -->
 Store.grep_symbols searches symbols using predicate filters, returning SymbolDetail objects sorted by rank_by.

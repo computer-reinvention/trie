@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from trie.config import Config
@@ -42,6 +42,8 @@ class BootstrapResult:
     actual_cost_usd: float
     estimated_cost_usd: float
     sync_results: list[FileSyncResult]
+    # (rel_path, error) per file whose generation raised.
+    file_errors: list[tuple[str, str]] = field(default_factory=list)
 
 
 def build_plan(
@@ -208,4 +210,5 @@ def run_bootstrap(
         actual_cost_usd=actual_cost,
         estimated_cost_usd=estimated_cost,
         sync_results=sync_results,
+        file_errors=sched.errors,
     )
