@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.9
 source: trie/session_diff.py
-file_fingerprint: ead7ba0f209fbee299d7959a6cd2b91274b720f8e25aed6d41dba52a5cc088ff
-last_synced_at: '2026-07-25T06:16:56Z'
+file_fingerprint: 9dd1c3a41cbe2190d4db5224768ba6b368654c81a80999e714ed6510788beffd
+last_synced_at: '2026-07-25T06:18:14Z'
 defines:
 - kind: module
   qualified_name: trie/session_diff:__module__
@@ -144,7 +144,7 @@ Return all parsed digest entries from `diffs_dir` under `project_root`, sorted n
 
 - `diffs_dir`: project-relative path to the digest archive directory.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/session_diff:symbol_history fingerprint=e94f76d7328dd5e1d8acb477845029a4f5e22488d0ea6e74a17f36a72208ad8f body_fp=dba8315cd8bd867fe02323655ed01a8ec7cac7bb0d49c2f47d89ff4469a877cd source_ref=459a1931fb6798e400cf363764b2fffec3a75d2f role=persistence -->
+<!-- trie:section symbol=trie/session_diff:symbol_history fingerprint=866363c246d6d7467522638ef1dcbb489f4a703d73b3e6fb4ddde5b0789babaa body_fp=dba8315cd8bd867fe02323655ed01a8ec7cac7bb0d49c2f47d89ff4469a877cd source_ref=a021884853c1a66689d9c27f6e4993acb4201cf5 role=domain -->
 Search the digest archive for all entries mentioning `qname` and return up to `limit` rows newest-first.
 
 - `qname`: exact qualified name matched against change-line markers (`~`, `+`, `−`).
