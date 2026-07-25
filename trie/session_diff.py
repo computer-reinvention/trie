@@ -461,9 +461,9 @@ def symbol_history(
     `### Changes` lines — a wiki that knows not just what a symbol is but why
     it is that way. Returns up to `limit` rows:
     `{date, title, change, digest}` where `change` is the digest's change line
-    for this symbol (marker included: `~` modified, `+` added, `−` removed).
+    for this symbol (marker included: `~` modified, `+` added, U+2212 removed).
     """
-    # Change lines look like `~ <qname> — ...` / `+ <qname> — ...` / `− <qname>`.
+    # Change lines: `~ <qname> — ...` / `+ <qname> — ...` / U+2212-marked removals.
     line_re = re.compile(rf"^[~+\u2212] {re.escape(qname)}(?=$|[\s,])")
     rows: list[dict] = []
     for entry in iter_digest_entries(project_root, diffs_dir=diffs_dir):
