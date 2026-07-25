@@ -2666,6 +2666,20 @@ def _render_read(envelope: dict[str, object], reporter: Reporter) -> None:
     _print_neighbours("callers", envelope.get("callers"))
     _print_neighbours("callees", envelope.get("callees"))
 
+    hist = envelope.get("history")
+    if isinstance(hist, list):
+        reporter.console.print()
+        reporter.console.print(f"[bold]history[/bold] ({len(hist)})")
+        if not hist:
+            reporter.console.print("  [dim](no digest entries mention this symbol)[/dim]")
+        for h in hist:
+            if not isinstance(h, dict):
+                continue
+            reporter.console.print(f"  {h.get('date', '?')} · {h.get('change', '')}")
+            title = h.get("title", "")
+            if title:
+                reporter.console.print(f"    [dim]{title}[/dim]")
+
     notes = envelope.get("notes") or []
     if isinstance(notes, list) and notes:
         reporter.console.print()
@@ -2942,6 +2956,15 @@ def read_cmd(
         "--limit",
         help="With a file path: maximum number of lines to return from offset (implies --source).",
     ),
+    history: bool = typer.Option(
+        False,
+        "--history",
+        "-H",
+        help=(
+            "Also show the symbol's (or file's) intent trail from the session-digest "
+            "archive: the chronological 'why it changed' lines recorded at each commit."
+        ),
+    ),
     as_json: bool = typer.Option(
         False,
         "--json",
@@ -2969,7 +2992,9 @@ def read_cmd(
     reporter = _get_reporter(ctx)
     tools = _open_tools(reporter)
     try:
-        envelope = tools.read(path, full=full, show_source=source, offset=offset, limit=limit)
+        envelope = tools.read(
+            path, full=full, show_source=source, offset=offset, limit=limit, history=history
+        )
     finally:
         tools.close()
     _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_read_dispatch)
@@ -3338,6 +3363,12 @@ def grep_symbol_neighbours_cmd(
 def explain_symbol_cmd(
     ctx: typer.Context,
     sym: str = typer.Argument(..., help="Symbol qname or name fragment to explain."),
+    history: bool = typer.Option(
+        False,
+        "--history",
+        "-H",
+        help="Also show the symbol's intent trail from the digest archive.",
+    ),
 ) -> None:
     """Full prose + joined narrative story of a symbol's references.
 
@@ -3347,7 +3378,7 @@ def explain_symbol_cmd(
     reporter = _get_reporter(ctx)
     tools = _open_tools(reporter)
     try:
-        envelope = tools.explain_symbol(sym)
+        envelope = tools.explain_symbol(sym, history=history)
     finally:
         tools.close()
     _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
@@ -3357,6 +3388,12 @@ def explain_symbol_cmd(
 def explain_symbol_refs_cmd(
     ctx: typer.Context,
     sym: str = typer.Argument(..., help="Symbol qname or name fragment."),
+    history: bool = typer.Option(
+        False,
+        "--history",
+        "-H",
+        help="Also show the symbol's intent trail from the digest archive.",
+    ),
 ) -> None:
     """Explain how a symbol is used — callers only, with their prose.
 
@@ -3366,7 +3403,7 @@ def explain_symbol_refs_cmd(
     reporter = _get_reporter(ctx)
     tools = _open_tools(reporter)
     try:
-        envelope = tools.explain_symbol_references(sym)
+        envelope = tools.explain_symbol_references(sym, history=history)
     finally:
         tools.close()
     _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)

@@ -1,60 +1,75 @@
 ---
 trie_version: 0.1.9
 source: trie/session_diff.py
-file_fingerprint: 71c4e2e7f76d268db5a6ea6f5ed60a1e6798ce92631706fec5cff50b5ace4f8e
-last_synced_at: '2026-07-25T02:06:42Z'
+file_fingerprint: ead7ba0f209fbee299d7959a6cd2b91274b720f8e25aed6d41dba52a5cc088ff
+last_synced_at: '2026-07-25T06:16:56Z'
 defines:
 - kind: module
   qualified_name: trie/session_diff:__module__
-  lines: 1-610
+  lines: 1-736
 - kind: class
   qualified_name: trie/session_diff:SessionDiff
-  lines: 8-27
+  lines: 9-28
 - kind: method
   qualified_name: trie/session_diff:SessionDiff.is_empty
-  lines: 16-18
+  lines: 17-19
 - kind: method
   qualified_name: trie/session_diff:SessionDiff.session_ids
-  lines: 20-27
+  lines: 21-28
 - kind: function
   qualified_name: trie/session_diff:_triefact_pathspecs
-  lines: 30-43
+  lines: 31-44
 - kind: function
   qualified_name: trie/session_diff:collect_session_diff
-  lines: 46-79
+  lines: 47-80
 - kind: function
   qualified_name: trie/session_diff:_one_line
-  lines: 82-114
+  lines: 83-115
 - kind: constant
   qualified_name: trie/session_diff:_FENCE
-  lines: 117-117
+  lines: 118-118
 - kind: function
   qualified_name: trie/session_diff:build_narrative_prompt
-  lines: 120-192
+  lines: 121-193
 - kind: constant
   qualified_name: trie/session_diff:_NARRATIVE_SYSTEM_PROMPT
-  lines: 195-204
+  lines: 196-205
 - kind: function
   qualified_name: trie/session_diff:synthesize_narrative
-  lines: 207-239
+  lines: 208-240
 - kind: function
   qualified_name: trie/session_diff:render_digest_section
-  lines: 242-381
+  lines: 243-382
 - kind: constant
   qualified_name: trie/session_diff:DIGEST_FILE_HEADER
-  lines: 384-388
+  lines: 385-389
+- kind: constant
+  qualified_name: trie/session_diff:DIGEST_HEADING_RE
+  lines: 395-399
+- kind: function
+  qualified_name: trie/session_diff:_parse_digest_file
+  lines: 402-433
+- kind: function
+  qualified_name: trie/session_diff:iter_digest_entries
+  lines: 436-448
+- kind: function
+  qualified_name: trie/session_diff:symbol_history
+  lines: 451-483
+- kind: function
+  qualified_name: trie/session_diff:file_history
+  lines: 486-514
 - kind: function
   qualified_name: trie/session_diff:_new_digest_filename
-  lines: 391-402
+  lines: 517-528
 - kind: function
   qualified_name: trie/session_diff:write_digest
-  lines: 405-478
+  lines: 531-604
 - kind: function
   qualified_name: trie/session_diff:collect_symbol_deltas
-  lines: 481-588
+  lines: 607-714
 - kind: function
   qualified_name: trie/session_diff:merge_applied_by_symbol
-  lines: 591-609
+  lines: 717-735
 incoming_refs: 7
 outgoing_refs: 0
 ---
@@ -114,6 +129,32 @@ Render a `SessionDiff` as a single markdown digest-entry string with heading, op
 <!-- trie:end -->
 <!-- trie:section symbol=trie/session_diff:DIGEST_FILE_HEADER fingerprint=953f1e9f7f8034daa19d5deb0c1e678442b7f17daadb9e7f5b87b94d13a32ebe body_fp=f688decefb16ed2e9df6e61b9b495e64c77ef53ec2a17f8192758caf7f24f7ed source_ref=7fd2d148e339b19fb869f262ffbed20d2c29c036 role=config -->
 HTML comment prepended to every digest file warning that it is auto-generated and should not be edited by hand.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/session_diff:DIGEST_HEADING_RE fingerprint=78c13b203259b9f5a435357b2341c22b26861c234924d85fa49293455be166f1 body_fp=2b8b72fff0cdc57f0f3141515c2aaf5a5770c5957a3177ca57f69d843f83022d source_ref=459a1931fb6798e400cf363764b2fffec3a75d2f role=parsing -->
+Compiled multiline regex matching digest entry headings emitted by `render_digest_section`, capturing `title`, `date`, and `parent` SHA groups.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/session_diff:_parse_digest_file fingerprint=3cc1ac97a1f1ea777a0a30293d7d0bfacd9957e4c1cfbf9f08ab52abfc8db80e body_fp=30f9f2800800f122170bd55e5ef41d8017ba854f1da6045fcfc3f81f2425f4b4 source_ref=459a1931fb6798e400cf363764b2fffec3a75d2f role=parsing -->
+Parse a single digest file into `{name, title, date, parent, changes}`, returning `None` if no parseable entry heading is found.
+
+- `changes`: per-symbol bullet lines from `### Changes`, stripped of leading `- `; overflow lines (`… and N more`) are excluded.
+- Returns `None` on `OSError` or missing `DIGEST_HEADING_RE` match (foreign files in archive dir).
+<!-- trie:end -->
+<!-- trie:section symbol=trie/session_diff:iter_digest_entries fingerprint=e1af40bb6403df2afd47800cd71d614eddcf6d5de125bf0e863d91ddcbf4f31e body_fp=14bcfc7841084b792135d2f7b68e130ba761abde6d371e5dd7b137a00e8369c9 source_ref=459a1931fb6798e400cf363764b2fffec3a75d2f role=persistence -->
+Return all parsed digest entries from `diffs_dir` under `project_root`, sorted newest first by filename.
+
+- `diffs_dir`: project-relative path to the digest archive directory.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/session_diff:symbol_history fingerprint=e94f76d7328dd5e1d8acb477845029a4f5e22488d0ea6e74a17f36a72208ad8f body_fp=dba8315cd8bd867fe02323655ed01a8ec7cac7bb0d49c2f47d89ff4469a877cd source_ref=459a1931fb6798e400cf363764b2fffec3a75d2f role=persistence -->
+Search the digest archive for all entries mentioning `qname` and return up to `limit` rows newest-first.
+
+- `qname`: exact qualified name matched against change-line markers (`~`, `+`, `−`).
+- Returns `{date, title, change, digest}` per matching digest entry; at most one row per entry.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/session_diff:file_history fingerprint=75e0ea8e87f82472ab1936c8e7467b3db68fabc8efe981bdf65da783899a419a body_fp=90b8fa73296d5f7718b8997eb6c45f2dce907e0b4072e4cdf01edfe7990024ff source_ref=459a1931fb6798e400cf363764b2fffec3a75d2f role=persistence -->
+Return up to `limit` digest entries touching any symbol in a module, newest first.
+
+- `module_prefix`: qname module part without extension (e.g. `trie/session_diff`); matches `<prefix>:*` change lines.
+- Each row contains `date`, `title`, `change` (marker + qname + description), and `digest` (filename).
 <!-- trie:end -->
 <!-- trie:section symbol=trie/session_diff:_new_digest_filename fingerprint=1a7047bc70cbdc55046a26f41bb89c15ef3b774b5027bc3e5a524bfb3420f10c body_fp=881d2bdb34fc83bd71a476a4664058f046e54bb233f494554827c6e990b0d0fa source_ref=7fd2d148e339b19fb869f262ffbed20d2c29c036 role=util -->
 Generate a digest filename combining a UTC timestamp and a UUID4 hex suffix, formatted as `<YYYYMMDDTHHMMSSz>-<uuid4hex>.md`.
