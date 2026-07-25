@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/cli.py
-file_fingerprint: aa8fe009565774128718fe030f692a9b74b292769cf7e10119ef4612f0af3d4e
-last_synced_at: '2026-07-25T08:07:33Z'
+file_fingerprint: 52c53e032d7dbe333d37e2b814e706bbbb7d989ac2e77c24c47bc8967d6089bb
+last_synced_at: '2026-07-25T10:43:45Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
-  lines: 1-4501
+  lines: 1-4283
 - kind: constant
   qualified_name: trie/cli:app
   lines: 77-80
@@ -333,39 +333,39 @@ defines:
   lines: 3832-3861
 - kind: function
   qualified_name: trie/cli:patch_apply_cmd
-  lines: 3865-4133
+  lines: 3865-3915
 - kind: function
   qualified_name: trie/cli:patch_preview_cmd
-  lines: 4137-4180
+  lines: 3919-3962
 - kind: function
   qualified_name: trie/cli:patch_list_cmd
-  lines: 4184-4226
+  lines: 3966-4008
 - kind: function
   qualified_name: trie/cli:patch_drop_cmd
-  lines: 4230-4268
+  lines: 4012-4050
 - kind: constant
   qualified_name: trie/cli:mcp_app
-  lines: 4276-4283
+  lines: 4058-4065
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 4288-4290
+  lines: 4070-4072
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 4293-4303
+  lines: 4075-4085
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 4307-4376
+  lines: 4089-4158
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 4379-4394
+  lines: 4161-4176
 - kind: function
   qualified_name: trie/cli:mcp_uninstall_cmd
-  lines: 4398-4473
+  lines: 4180-4255
 - kind: function
   qualified_name: trie/cli:_render_uninstall_plan
-  lines: 4476-4496
+  lines: 4258-4278
 incoming_refs: 91
-outgoing_refs: 160
+outgoing_refs: 159
 ---
 <!-- trie:section symbol=trie/cli:__module__ fingerprint=d16be5917b98ff58f36f3487c349d240fc53396bc24bb9e0d8903c2f9e48f690 body_fp=10f0e1573012e0fc76e1358d4da306bc2ba6e70254a41da3bf25ef8b26e41199 source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
 Main CLI module for trie providing comprehensive project management, triefact synchronization, and agent integration commands.
@@ -1097,14 +1097,12 @@ Stage a rename of an existing symbol for later application by `trie patch apply`
 - Creates a rename patch in the graph database with optional reason
 - Reports the number of existing references that will need updating
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:patch_apply_cmd fingerprint=33e480bd03d8bd2c4c402d668ed6bf969dc8cb9300e17c6ef4bec5bbd5a3c046 body_fp=491d148047d3074362da4e5133588c7474602f5c6aca0725288e4d5dcc77d576 source_ref=3e9be5f9b264b622f8cbeaac1f07240bdf8e1aa9 role=api -->
-Execute all pending patches via the cascade-editing pipeline, dispatching to the `record` (default), `agent` (workorder), `llm`, or other configured backend.
+<!-- trie:section symbol=trie/cli:patch_apply_cmd fingerprint=1f700192a89ef28464c7d0b52feb85fc8654bf0d8874a12d7c22994320c90447 body_fp=6396bc861e0a215761511ad811550f6cbaa4fa264ed6b6a8766bc3ad50c6dcea source_ref=b07b41bd042a833a471ca6cd324eb62f95c2d4ea role=api -->
+Archive pending patch notes as intent via `record_intent` — always the `record` path, no code generation.
 
-- `--note`: required for multi-symbol applies; names the unifying intent.
-- `--backend`: overrides config; `record` commits notes as intent with no codegen; `agent` emits a workorder envelope; `llm` and others run full generation.
-- `--commit-mode`: controls atomicity — `all_or_nothing` (default), `per_item`, or `per_group`.
-- `--json`: dumps the raw result envelope to stdout; useful for agent consumers parsing output.
-- Exits 1 on blocking unresolved items or when `session_note_required` is signalled.
+- `--note`: session-level unifying intent for the apply run.
+- `--json`: dumps raw envelope to stdout and exits 1 if `ok` is falsy; non-JSON path exits 1 on failure or prints a per-symbol success list.
+- Removed: `--model`, `--backend`, `--commit-mode` options and all `agent`/`llm` backend dispatch paths.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:patch_preview_cmd fingerprint=bb43bb71a6141343c63226fcf7e8bf42a7bb400eedccecc762509629daa934f7 body_fp=e03e8a69221f0c07d9d3b8e4b3642f5e8c1ab04e8e8c08bd1c7333d523df64a7 source_ref=28797ad23f63ab76a0d693ea640c1de9c59f6c50 role=api -->
 Previews what `trie patch apply` would execute without running it.

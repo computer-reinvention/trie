@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/sync/single_file.py
 file_fingerprint: 3b3d84bdcaf28dc782d5cca46e1a9c3446d1ca41a80a1e1c62f38b11300c5d0b
-last_synced_at: '2026-07-25T00:07:21Z'
+last_synced_at: '2026-07-25T10:44:33Z'
 defines:
 - kind: module
   qualified_name: trie/sync/single_file:__module__
@@ -40,7 +40,7 @@ defines:
 - kind: function
   qualified_name: trie/sync/single_file:sync_single_file
   lines: 301-617
-incoming_refs: 73
+incoming_refs: 68
 outgoing_refs: 24
 ---
 <!-- trie:section symbol=trie/sync/single_file:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=962cb42fd231e6a72fa197d03a93bef26647d2e4f96f38d6e53a0c5332b417c1 source_ref=da91ee7ba7df534c772bf0cfb02b2cfcdb8bce67 role=documentation-sync -->

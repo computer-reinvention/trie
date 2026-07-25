@@ -661,7 +661,7 @@ class TrieTools:
         ready_to_commit}. Call before commit to see the blast radius and any
         blockers (e.g. a missing session note for a multi-symbol apply).
         """
-        from trie.edits.apply import preview_patches
+        from trie.edits.pipeline import preview_patches
 
         pv = preview_patches(self.store, self.config)
         creates = self.store.get_create_patches_grouped()
@@ -680,80 +680,31 @@ class TrieTools:
             "needs_session_note": total > 1,
         }
 
-    def commit(self, session_note: str = "", backend: str = "") -> dict[str, Any]:
-        """Stage + apply all pending patches and creates; return the ApplyReport.
+    def commit(self, session_note: str = "") -> dict[str, Any]:
+        """Commit pending patch notes as intent — trie generates no code.
 
-        `session_note` is required for multi-symbol applies (the unifying intent).
-        `backend` overrides the configured edit backend ('record' default:
-        commit notes as intent to the session log, no code generation).
-        Generating backends use an exclusive lock to prevent concurrent applies.
-
-        When the effective backend is 'agent', returns an executable worklist
-        immediately without acquiring the apply lock or performing any generation.
+        Archives every pending note to the session log (feeding the per-commit
+        digest, `read --history`, and the `trie intent` pre-commit gate) and
+        clears the queue. `session_note` (the unifying intent) is required when
+        more than one symbol is pending. Source changes are yours; this records
+        why they happened.
         """
-        import concurrent.futures
+        from trie.edits.pipeline import record_intent
 
-        from trie.edits.backends import make_backend
-        from trie.edits.pipeline import stage_and_commit
-        from trie.models import make_client
-        from trie.refresh_lock import try_acquire
-
-        effective_backend = backend if backend else self.config.edits.backend
-        if effective_backend == "record":
-            # Default path: the patch pipeline is an intent store. Notes are
-            # archived to the session log (digest evidence + intent gate
-            # coverage); no code generation, no client, no apply lock.
-            from trie.edits.pipeline import record_intent
-
+        try:
             return record_intent(
                 self.store,
                 self.config,
                 self.root,
                 session_note=session_note,
             )
-        if effective_backend == "agent":
-            from trie.edits.pipeline import build_workorder
-
-            return build_workorder(
-                self.store,
-                self.config,
-                self.root,
-                client=None,
-                session_note=session_note,
-            )
-
-        with try_acquire(self.root, name="apply") as holder:
-            if not holder.acquired:
-                return _error(
-                    "conflict",
-                    "another patch apply is already in progress",
-                    "retry when the current apply finishes.",
-                )
-            try:
-                client = make_client(self.config.models.edits, sync_cfg=self.config.sync)
-                edit_backend = make_backend(self.config, backend=backend or None, client=client)
-
-                def _run() -> dict[str, Any]:
-                    report = stage_and_commit(
-                        self.store,
-                        self.config,
-                        edit_backend,
-                        self.root,
-                        client=client,
-                        session_note=session_note,
-                    )
-                    return report.to_dict()
-
-                # Run off the event-loop thread (sync-over-async generation path).
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                    return pool.submit(_run).result()
-            except Exception as exc:
-                return _error("internal", f"commit failed: {exc}")
+        except Exception as exc:
+            return _error("internal", f"commit failed: {exc}")
 
     # Back-compat alias for the older tool name.
-    def patch_apply(self) -> dict[str, Any]:
-        """Deprecated alias for commit() with no session note (single-symbol use)."""
-        return self.commit(session_note="")
+    def patch_apply(self, session_note: str = "") -> dict[str, Any]:
+        """Alias for commit(): record pending notes as intent (no code generation)."""
+        return self.commit(session_note=session_note)
 
     # --- desktop app helpers -----------------------------------------------
 

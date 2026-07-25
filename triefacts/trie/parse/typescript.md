@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: trie/parse/typescript.py
-file_fingerprint: d0100d47e0b99faf24a035c94ac6a753421377d89b433b822d7a7a6b636b05bd
-last_synced_at: '2026-07-20T09:54:34Z'
+file_fingerprint: 8ed78333715704973c2af03310ca7683007b5ed9b9054cba7f383b326b21c015
+last_synced_at: '2026-07-25T10:43:52Z'
 description: TypeScript / TSX symbol extraction via tree-sitter.
 defines:
 - kind: module
   qualified_name: trie/parse/typescript:__module__
-  lines: 1-840
+  lines: 1-729
 - kind: constant
   qualified_name: trie/parse/typescript:_TS_LANGUAGE
   lines: 26-26
@@ -92,43 +92,22 @@ defines:
 - kind: constant
   qualified_name: trie/parse/typescript:TS_SYSTEM_PROMPT
   lines: 685-704
-- kind: function
-  qualified_name: trie/parse/typescript:_find_tsc
-  lines: 707-729
 - kind: class
   qualified_name: trie/parse/typescript:TypeScriptBackend
-  lines: 732-839
+  lines: 707-728
 - kind: method
   qualified_name: trie/parse/typescript:TypeScriptBackend.extract_file_data
-  lines: 739-744
+  lines: 714-719
 - kind: method
   qualified_name: trie/parse/typescript:TypeScriptBackend.extract_symbols
-  lines: 746-747
+  lines: 721-722
 - kind: method
   qualified_name: trie/parse/typescript:TypeScriptBackend.source_suffix
-  lines: 749-750
-- kind: method
-  qualified_name: trie/parse/typescript:TypeScriptBackend.lsp_backends
-  lines: 752-765
-- kind: method
-  qualified_name: trie/parse/typescript:TypeScriptBackend.overlay_globs
-  lines: 767-768
-- kind: method
-  qualified_name: trie/parse/typescript:TypeScriptBackend.overlay_extra_files
-  lines: 770-771
+  lines: 724-725
 - kind: method
   qualified_name: trie/parse/typescript:TypeScriptBackend.system_prompt
-  lines: 773-774
-- kind: method
-  qualified_name: trie/parse/typescript:TypeScriptBackend.edit_system_prompt
-  lines: 776-792
-- kind: method
-  qualified_name: trie/parse/typescript:TypeScriptBackend.code_fence
-  lines: 794-795
-- kind: method
-  qualified_name: trie/parse/typescript:TypeScriptBackend.validate_syntax
-  lines: 797-839
-incoming_refs: 21
+  lines: 727-728
+incoming_refs: 18
 outgoing_refs: 9
 ---
 <!-- trie:section symbol=trie/parse/typescript:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=0884fe89300ed585eedac902eed5534fbc69a62ad5892cc6501dc12b4cf4826d source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=parsing -->
@@ -241,19 +220,11 @@ Return the first named child of `node` whose type equals `type_name`, or `None`.
 <!-- trie:section symbol=trie/parse/typescript:TS_SYSTEM_PROMPT fingerprint=523395e0a833b64879f69133b4728bcddd9ad2d969d17af2dcbd23988ae67be2 body_fp=627b38ffd1b0dcc3119dae55d61a1e680ded005416cd0c7a89c57f13c9d0270a source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=config -->
 System prompt string passed to the LLM when generating documentation for TypeScript symbols.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:_find_tsc fingerprint=a5b72af5cd5d32fd45781f0d61e8c19e5a380ee72d7d9dc4648490fd179788a8 body_fp=187ec3e64cedc97d8f465313efb561b0dafabd91130cf4090239dc8a7c541bb9 source_ref=3db5cd656fec3aca8ba38519337ff5f385932076 role=util -->
-Locate an executable `tsc` binary, preferring a project-local `node_modules/.bin/tsc` (walking up from `file_path`, then cwd) before falling back to PATH.
-
-- Returns an argv prefix list (e.g. `["/path/to/tsc"]`), or `None` if not found.
-<!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend fingerprint=5a56191afee626aa4d47e8afa1fe7057dd43c3c6ce3b2f328393ca8c59d09c0f body_fp=1b55efb02f37690207c4b9d0f82d962fb7f0161a78f5347899ea40115c58e384 source_ref=3db5cd656fec3aca8ba38519337ff5f385932076 role=api -->
-Implements `LanguageBackend` for `.ts`, `.tsx`, and `.d.ts` files, wiring symbol extraction, LSP diagnostics via `tsc`, overlay configuration, and syntax validation.
+<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend fingerprint=bdebdbb304dc488f98b7b904a05b0a987275fb1027e530b653a5221cc6e428ff body_fp=78861056292be5228a8c1ea573916f3c7899dcea854c3b8ab2f5430740794559 source_ref=d880c8b49d280136d0173df964ea2ad6ed2dc33e role=api -->
+Implements `LanguageBackend` for `.ts`, `.tsx`, and `.d.ts` files, wiring symbol extraction and the system prompt; LSP, overlay, syntax-validation, and edit-prompt methods have been removed.
 
 - `extensions`: ordered longest-first so `.d.ts` resolves before `.ts`
-- `lsp_backends`: runs `tsc --noEmit --pretty false`; pretty-print disabled for stable parsing
 - `extract_file_data`: delegates to `typescript_refs`; does not support `source_text` override
-- `overlay_extra_files`: includes `tsconfig.json` and `package.json` alongside source files
-- `validate_syntax`: invokes `tsc --noEmit --noResolve`; rejects only TS1xxx syntax errors; returns `True` on timeout, missing `tsc`, or any exception
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend.extract_file_data fingerprint=391eb76e61c9467ec91b49e809631bccc557aa9a77908063b4683637c4bd5490 body_fp=a1a358e9c4ee05c68fbdef3abf58d6af238bbfea6d14a663d628721e0f077688 source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=parsing -->
 Delegate `TypeScriptBackend` file-data extraction to `trie.parse.typescript_refs.extract_file_data`, raising `NotImplementedError` if `source_text` is supplied.
@@ -264,30 +235,6 @@ Delegate `TypeScriptBackend.extract_symbols` to the module-level `extract_symbol
 <!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend.source_suffix fingerprint=bf61bb997784ff6713e45a76a5457a002dd12cc7b8a0a2a6a054575fb2fdd368 body_fp=bd42ad83b15c990aa0a01eab4bbf4b521db872a2c6f86c0276229b3287ecb667 source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=util -->
 `TypeScriptBackend.source_suffix` returns the canonical source file extension `".ts"`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend.lsp_backends fingerprint=0f1e34439c4e489b652d1532ad5a211a65c4ffe5bbefc3851ad37659e8136220 body_fp=f9dc982415bf6c087fcc2fd2cff5d16e0b48a1855c998dd60f5827e76229b3fb source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=config -->
-Return a single `LspBackend` configured to run `tsc --noEmit --pretty false` for `TypeScriptBackend`.
-
-- `output_format="tsc"`: consumed by the edit pipeline's tsc output parser.
-- `--pretty false`: disables ANSI colour for stable diagnostic parsing.
-<!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend.overlay_globs fingerprint=124bb1279aabff18c22c33ac234cd05a5b0227dab8bd7f1e75f032d491152e39 body_fp=6063a62090363dae242088365899b7d2d08a5639525529b2e50b1cd766fb8f3f source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=config -->
-`TypeScriptBackend.overlay_globs` returns the glob patterns covering TypeScript source files for overlay diffing.
-<!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend.overlay_extra_files fingerprint=ef7ede958148eb283eeacdd1d4d8d6328e3c1341a9c2f54fc74364c43f311608 body_fp=205f99b047761d3b24d25122a89f0a160b13427f3b33bfc2f6e0d0a090fea046 source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=config -->
-Return the extra project-level files `TypeScriptBackend` includes in the overlay alongside TypeScript source files.
-<!-- trie:end -->
 <!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend.system_prompt fingerprint=4a9cf48bef1c51973826ab0b4182de46d91cdb98cee34a2fc01a12e68369f30a body_fp=77fed3c1e333fdeed04723e2f7a6b6a9d827037581383564c020f6820f386fef source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=config -->
 Return the `TypeScriptBackend`'s documentation-generation system prompt string.
-<!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend.edit_system_prompt fingerprint=b1c4bd67519f85a78d36b378cf0ff02926ee6c8872d5f088bc699ba304079268 body_fp=e34547956c940770421b77566baa954777293977f5c6eca9aa88549b7cf2c1ba source_ref=3db5cd656fec3aca8ba38519337ff5f385932076 role=config -->
-Return the system prompt instructing the edit LLM to emit only the target symbol's definition, no imports or extra declarations.
-<!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend.code_fence fingerprint=154b167fb88380c3f4b51ea5628d62baff710fa25279e1e87fc81708dc319dc7 body_fp=efc1a60f2b82dc97784d30de28564f5aa42dce30fcf5c110e60a4441c95dcdbd source_ref=3db5cd656fec3aca8ba38519337ff5f385932076 role=util -->
-Return the code fence language tag used by `TypeScriptBackend` for Markdown code blocks.
-<!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend.validate_syntax fingerprint=88aa04830b4f0cada8dc527c55bcbafaa0b1efa110ec115a41e4b1e6c8bf8a07 body_fp=7463a64feba016f55f3bab87a232ee774cae1c4861823455fb6647565a5efe73 source_ref=3db5cd656fec3aca8ba38519337ff5f385932076 role=io -->
-Write `source` to a temp file and run `tsc --noEmit --noResolve`, returning `False` only when TS1xxx (syntax) errors are found.
-
-- Returns `True` (accept) when `tsc` is unavailable, times out, or raises.
-- TS2xxx resolution/type errors are intentionally ignored; only parse failures block.
 <!-- trie:end -->
