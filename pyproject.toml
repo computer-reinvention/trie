@@ -60,6 +60,7 @@ exclude = [
     "tmp/",
     "dist/",
     "*.spec",
+    "trie/triediffs/",
 ]
 
 [tool.hatch.build.targets.sdist]
@@ -69,6 +70,7 @@ exclude = [
     "tmp/",
     "dist/",
     "*.spec",
+    "trie/triediffs/",
 ]
 
 # Bundle the agent-facing usage guide as package data. `trie setup` copies it

@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_config.py
 file_fingerprint: 19135655e050e0adc481d5f9f16a2abda87e78960cec4031673abec7cf184454
-last_synced_at: '2026-07-25T00:24:10Z'
+last_synced_at: '2026-07-25T00:28:25Z'
 defines:
 - kind: module
   qualified_name: tests/test_config:__module__

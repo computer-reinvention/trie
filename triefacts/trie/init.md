@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.9
 source: trie/init.py
-file_fingerprint: 1812342c8201011acff8aa57ab0da6d0608f3395403b74d52de9c8bb02a5be9c
-last_synced_at: '2026-07-25T00:24:09Z'
+file_fingerprint: 898a6a3e017e8fc29a17e6d5a7d98d1d3fbd4408cbad6257e21e4bf2dc14b22f
+last_synced_at: '2026-07-25T00:28:23Z'
 defines:
 - kind: module
   qualified_name: trie/init:__module__
@@ -100,7 +100,7 @@ Append `line` to `gitignore` if not already present, returning True if file chan
 <!-- trie:section symbol=trie/init:install_pre_commit_hook fingerprint=d7786183af45b0f0b1c62bad0d5ceb58d2d2c31149d77e585959170621d8fc52 body_fp=a0892debce8a2515a37bff3a76083fe5ef9258108785318f82bab9d892b4517a role=agent-integration -->
 Installs a trie-managed pre-commit hook into a project's `.git/hooks/pre-commit` file using one of three strategies: skipping silently when a pre-commit framework configuration is already present ("framework"), appending a marker-fenced shell block that runs lock-check, verify, and digest refresh steps when a `.git` directory exists ("git_hook", idempotent on repeated calls), or doing nothing when no `.git` directory is found ("none"). Returns a tuple of (installed, strategy, hook_path) describing the outcome.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/init:init_project fingerprint=8d32d68da2ffa430f2ff755cfab94b08979379fa9364f896a299dffdecad2d3a body_fp=c78d28169d578562f2d155bda18154c1168c5fbe27698161ceb7009d773c282d source_ref=918fb5eae4800878be064ad505efe0253a66f46d role=orchestration -->
+<!-- trie:section symbol=trie/init:init_project fingerprint=8d32d68da2ffa430f2ff755cfab94b08979379fa9364f896a299dffdecad2d3a body_fp=c78d28169d578562f2d155bda18154c1168c5fbe27698161ceb7009d773c282d source_ref=20609c65839d72c2b7b4664d9e829f5549e86a46 role=orchestration -->
 Initialise trie in a directory, creating configuration and optionally scanning for symbols.
 
 - `force`: bypass supported-project detection and overwrite existing configuration

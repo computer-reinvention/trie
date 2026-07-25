@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.9
 source: tests/test_session_diff.py
-file_fingerprint: aabe3f767c958130a472a6842a8217a45ced8aff9e47e0e689d47976c3fc693b
-last_synced_at: '2026-07-25T00:24:01Z'
+file_fingerprint: e35e0dd16c6bd7d7a0bedc3ab0863a881d5d3a1513c06f11028283a04607a763
+last_synced_at: '2026-07-25T00:28:19Z'
 description: Tests for the session log archive and the `trie diff` evidence collection/prompt
   assembly.
 defines:
@@ -75,8 +75,8 @@ Verify that `collect_session_diff` filters applied session log entries by the `s
 <!-- trie:section symbol=tests/test_session_diff:test_render_digest_section_shape fingerprint=ce6e87b909a2e788f61327f21e9292f2470b06f81fc09d7ac35c79f85cfdd36d body_fp=b86e5fb0cd2f50c47b7fc4135264f2494231f9a983ad9e9f540c7b47ae44618e source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
 Verify `render_digest_section` output structure: header shape, H2-heading demotion in narratives, `### Changes` delta bullets, follow-up suffix, markdown-injection prevention, forbidden old-format artifacts, `### Staged (not applied)` section, and `max_changes` overflow truncation.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_write_digest_files_symlink_and_prune fingerprint=501396ff485be0aae4c06cb7b21e7a0e7c641d51b795a34aada8f1528687e4a7 body_fp=181661d70d10260be803979c4108082d4dcf215c12907a1219877864142a2843 source_ref=55400788aacfd1c4f96bd9596013a66782d59228 role=test -->
-Test `write_digest` for filesystem contract: timestamped file creation, `TRIE_DIFF.md` symlink management, in-place rewrite via `reuse_file`, legacy regular-file replacement, and `max_entries` retention pruning.
+<!-- trie:section symbol=tests/test_session_diff:test_write_digest_files_symlink_and_prune fingerprint=7541c51593781a5752f2c4691a0316f164f89b7764b7a086245328f5a99572d4 body_fp=1694e781125f3a78d20d6d49c893de9fa0ec2e49eff90deeb372ee48198cbdc1 source_ref=f8b0180101afeca9a2fa48a819f778e1642a5e49 role=test -->
+Test `write_digest` for filesystem contract: timestamped file creation under `trie/triediffs/`, `TRIE_DIFF.md` symlink management, in-place rewrite via `reuse_file`, legacy regular-file replacement, and `max_entries` retention pruning.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_session_diff:test_one_line_flattens_and_truncates fingerprint=2f0ba482c18eb7978c4e4724a58f3a1e674200782e5d3f29c4a862a8f082989c body_fp=b0b2db762e1f94b4d614e613fd8aca35ce2348fe5a6f7b11e5ea5bb7d4203c80 source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
 Verify `_one_line` flattens multiline text, collapses whitespace, cuts at sentence boundaries, truncates long input to ≤200 chars with `…`, and returns `""` for empty input.

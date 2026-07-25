@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.9
 source: trie/config.py
-file_fingerprint: 471e6bc53b6511afe05fa9f2d55393dc88ddc427fed71d0321256900b8ac9df2
-last_synced_at: '2026-07-25T00:24:02Z'
+file_fingerprint: 9f980d179bfd083eff51d414e67cfd7bf6c06e0a50366ccd1372346be423001d
+last_synced_at: '2026-07-25T00:28:20Z'
 defines:
 - kind: module
   qualified_name: trie/config:__module__
@@ -157,12 +157,12 @@ Configuration dataclass for MCP agent tool behaviors including grep, read and tr
 - `trace_hub_threshold`: Node count threshold for hub skipping in trace (default 50)
 - `trace_max_nodes`: Maximum nodes returned by trace operations (default 200)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Diff fingerprint=97a6b96263ed6f54cc33495e6fbd9e0314b7a785c07f7bd75aef4fe39872645b body_fp=10c5b50572a3250ee986b95c49f3653b1551bcd66a5609cfcbb7396f3db7395b source_ref=0c845325d441b051829bcab95bac541954c1dc82 role=config -->
+<!-- trie:section symbol=trie/config:Diff fingerprint=df0f5c43cd733bb3d89d36c29fbc3b97bbe0b24994fd7068ae38a2738829330f body_fp=7ec7fa5d32c86be17d27bae24674bfe6c6da16e7133325b0ab5f0895b53e87cb source_ref=29b3cb4587afd59acc3ba824ba7874f60c0e74d2 role=config -->
 Dataclass holding configuration for the per-commit digest system, where each commit produces one immutable file under `diffs_dir` and `write_path` is a symlink to the latest.
 
 - `narrative`: when `True`, prepends an LLM-generated summary; falls back to raw evidence if no API key is available.
 - `write_path`: symlink at project root pointing at the latest digest file; changing it also requires updating the pre-commit hook.
-- `diffs_dir`: directory holding one immutable digest file per commit; kept outside the triefact tree to avoid evidence feedback loops.
+- `diffs_dir`: defaults to `"trie/triediffs"`; directory holding one immutable digest file per commit; kept outside the triefact tree to avoid evidence feedback loops.
 - `max_entries`: oldest digest files are pruned from `diffs_dir` when this cap is exceeded.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:Config fingerprint=bd03893efd146b7e3cae17bf6c86c1cc07e9115f2d9d65d1f2606be347c473ac body_fp=a2248608c74549bf774cae231f316786139ed9358c20f2a01e748e1e07d377b0 role=config-management -->
