@@ -25,7 +25,7 @@ from trie.docs_install import (
 from trie.docs_install import (
     install as docs_run_install,
 )
-from trie.edits.apply import preview_patches
+from trie.edits.pipeline import preview_patches
 from trie.freshness import (
     FreshnessResult,
     NotAGitRepoError,
@@ -1152,6 +1152,60 @@ def _resolve_audit_log_path(log: Path | None, reporter: Reporter) -> Path:
     if not cfg_path.is_absolute():
         cfg_path = (project_root / cfg_path).resolve()
     return cfg_path
+
+
+@app.command("intent")
+def intent_cmd(ctx: typer.Context) -> None:
+    """Gate: every changed symbol must carry a patch note (its intent).
+
+    Compares the working tree against HEAD at the normalized-body level (so
+    formatting and line shifts never gate), then checks each touched symbol
+    has intent on record — a pending patch note or an applied session-log row
+    from this commit window. Exits 1 with a copy-pasteable worklist when
+    coverage is missing. Runs in the pre-commit hook between `verify` and the
+    digest write; agents clear it with `trie patch create <qname> -n "<why>"`.
+    """
+    reporter = _get_reporter(ctx)
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    from trie.intent_gate import evaluate
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        report = evaluate(project_root, config, store)
+    finally:
+        store.close()
+
+    if not report.touched:
+        reporter.success("intent gate: no symbol-level changes vs HEAD")
+        return
+    if report.ok:
+        reporter.success(
+            f"intent gate: all {len(report.touched)} touched symbol(s) have notes on record"
+        )
+        return
+
+    reporter.error(
+        f"intent gate: {len(report.uncovered)} of {len(report.touched)} touched "
+        "symbol(s) have no patch note — every change must record its intent"
+    )
+    for t in report.uncovered:
+        reporter.console.print(f"  [yellow]{t.status:<8}[/yellow] {t.qname}")
+    reporter.console.print()
+    reporter.console.print("stage a note per symbol, then re-run:")
+    for t in report.uncovered[:3]:
+        suffix = " --gone" if t.status == "removed" else ""
+        reporter.console.print(f'  trie patch create {t.qname} -n "<why this changed>"{suffix}')
+    if len(report.uncovered) > 3:
+        reporter.console.print(f"  … and {len(report.uncovered) - 3} more")
+    reporter.console.print(
+        'then: trie patch apply -N "<session intent>"   (records notes; no code generation)'
+    )
+    raise typer.Exit(code=1)
 
 
 @app.command("index")
@@ -2666,6 +2720,20 @@ def _render_read(envelope: dict[str, object], reporter: Reporter) -> None:
     _print_neighbours("callers", envelope.get("callers"))
     _print_neighbours("callees", envelope.get("callees"))
 
+    hist = envelope.get("history")
+    if isinstance(hist, list):
+        reporter.console.print()
+        reporter.console.print(f"[bold]history[/bold] ({len(hist)})")
+        if not hist:
+            reporter.console.print("  [dim](no digest entries mention this symbol)[/dim]")
+        for h in hist:
+            if not isinstance(h, dict):
+                continue
+            reporter.console.print(f"  {h.get('date', '?')} · {h.get('change', '')}")
+            title = h.get("title", "")
+            if title:
+                reporter.console.print(f"    [dim]{title}[/dim]")
+
     notes = envelope.get("notes") or []
     if isinstance(notes, list) and notes:
         reporter.console.print()
@@ -2942,6 +3010,15 @@ def read_cmd(
         "--limit",
         help="With a file path: maximum number of lines to return from offset (implies --source).",
     ),
+    history: bool = typer.Option(
+        False,
+        "--history",
+        "-H",
+        help=(
+            "Also show the symbol's (or file's) intent trail from the session-digest "
+            "archive: the chronological 'why it changed' lines recorded at each commit."
+        ),
+    ),
     as_json: bool = typer.Option(
         False,
         "--json",
@@ -2969,7 +3046,9 @@ def read_cmd(
     reporter = _get_reporter(ctx)
     tools = _open_tools(reporter)
     try:
-        envelope = tools.read(path, full=full, show_source=source, offset=offset, limit=limit)
+        envelope = tools.read(
+            path, full=full, show_source=source, offset=offset, limit=limit, history=history
+        )
     finally:
         tools.close()
     _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_render_read_dispatch)
@@ -3338,6 +3417,12 @@ def grep_symbol_neighbours_cmd(
 def explain_symbol_cmd(
     ctx: typer.Context,
     sym: str = typer.Argument(..., help="Symbol qname or name fragment to explain."),
+    history: bool = typer.Option(
+        False,
+        "--history",
+        "-H",
+        help="Also show the symbol's intent trail from the digest archive.",
+    ),
 ) -> None:
     """Full prose + joined narrative story of a symbol's references.
 
@@ -3347,7 +3432,7 @@ def explain_symbol_cmd(
     reporter = _get_reporter(ctx)
     tools = _open_tools(reporter)
     try:
-        envelope = tools.explain_symbol(sym)
+        envelope = tools.explain_symbol(sym, history=history)
     finally:
         tools.close()
     _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
@@ -3357,6 +3442,12 @@ def explain_symbol_cmd(
 def explain_symbol_refs_cmd(
     ctx: typer.Context,
     sym: str = typer.Argument(..., help="Symbol qname or name fragment."),
+    history: bool = typer.Option(
+        False,
+        "--history",
+        "-H",
+        help="Also show the symbol's intent trail from the digest archive.",
+    ),
 ) -> None:
     """Explain how a symbol is used — callers only, with their prose.
 
@@ -3366,7 +3457,7 @@ def explain_symbol_refs_cmd(
     reporter = _get_reporter(ctx)
     tools = _open_tools(reporter)
     try:
-        envelope = tools.explain_symbol_references(sym)
+        envelope = tools.explain_symbol_references(sym, history=history)
     finally:
         tools.close()
     _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
@@ -3488,6 +3579,15 @@ def patch_create_cmd(
     reason: str = typer.Option(
         "", "--reason", "-r", help="Why the cascade needs to know about this change."
     ),
+    gone: bool = typer.Option(
+        False,
+        "--gone",
+        help=(
+            "The symbol was REMOVED (no longer in the graph): record the note "
+            "straight to the session log as a delete instead of queueing a patch. "
+            "This is how removals satisfy the `trie intent` gate."
+        ),
+    ),
 ) -> None:
     """Post a fire-and-forget edit patch against a symbol."""
     reporter = _get_reporter(ctx)
@@ -3497,12 +3597,35 @@ def patch_create_cmd(
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
+    if gone:
+        # Removed symbols have no graph row to queue against — archive the
+        # intent directly so the gate (and the digest) still get it.
+        from trie.session_log import record_applied
+
+        record_applied(
+            project_root,
+            [
+                {
+                    "qname": qname,
+                    "op": "delete",
+                    "notes": [note],
+                    "reasons": [reason] if reason else [],
+                    "session_id": _cli_session_id(project_root),
+                }
+            ],
+        )
+        reporter.success(f"removal note recorded for {qname} (session log)")
+        return
+
     store = Store(project_root / ".trie" / "graph.db")
     try:
         session_id = _cli_session_id(project_root)
         patch_id = store.add_patch(qname, note, reason, session_id)
     except KeyError:
-        reporter.error(f"symbol {qname!r} not found in the graph")
+        reporter.error(
+            f"symbol {qname!r} not found in the graph"
+            " — if it was removed, use --gone to record the note directly"
+        )
         raise typer.Exit(code=1) from None
     finally:
         store.close()
@@ -3747,28 +3870,18 @@ def patch_apply_cmd(
         "-N",
         help="Session note: the unifying intent (required for multi-symbol applies).",
     ),
-    model: str | None = typer.Option(
-        None,
-        "--model",
-        help="Override the configured edit model for this apply run.",
-    ),
-    backend: str | None = typer.Option(
-        None,
-        "--backend",
-        help="Override the edit backend ('llm' default; 'opencode' is Phase 2).",
-    ),
-    commit_mode: str | None = typer.Option(
-        None,
-        "--commit-mode",
-        help="all_or_nothing (default) | per_item | per_group.",
-    ),
     json_output: bool = typer.Option(
         False,
         "--json",
         help="Emit raw JSON output (useful for agent consumers).",
     ),
 ) -> None:
-    """Stage + commit all pending patches via the cascade-editing pipeline."""
+    """Commit pending patch notes as intent — trie generates no code.
+
+    Archives every pending note to the session log (feeding the per-commit
+    digest, `read --history`, and the `trie intent` gate) and clears the
+    queue. Source changes are yours; this records why they happened.
+    """
     reporter = _get_reporter(ctx)
     try:
         config, project_root = Config.find_and_load(Path.cwd())
@@ -3776,212 +3889,30 @@ def patch_apply_cmd(
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
-    # Determine the effective backend before any generation machinery is
-    # touched.  The CLI option takes precedence; otherwise fall back to the
-    # project configuration, then to 'llm'.
-    effective_backend = (
-        backend
-        or getattr(getattr(config, "edits", None), "backend", None)
-        or getattr(config, "backend", None)
-        or "llm"
-    )
-
-    def _build_location(item: dict) -> str:
-        """Construct a file:start_line-end_line string from envelope item keys."""
-        file_path = item.get("file_path") or item.get("file") or ""
-        start = item.get("start_line") if item.get("start_line") is not None else item.get("start")
-        end = item.get("end_line") if item.get("end_line") is not None else item.get("end")
-        start_str = str(start) if start is not None else ""
-        end_str = str(end) if end is not None else ""
-        if file_path and start_str and end_str:
-            return f"{file_path}:{start_str}-{end_str}"
-        elif file_path and start_str:
-            return f"{file_path}:{start_str}"
-        else:
-            return file_path
-
-    # --- agent / workorder path (no generation, no client, no lock) ----------
-    if effective_backend == "agent":
-        from trie.edits.pipeline import build_workorder
-
-        store = Store(project_root / ".trie" / "graph.db")
-        try:
-            envelope = build_workorder(
-                store,
-                config,
-                project_root,
-                client=None,
-                session_note=note,
-            )
-        finally:
-            store.close()
-
-        if json_output:
-            import json as _json
-
-            console.print_json(_json.dumps(envelope))
-        else:
-            from rich.table import Table
-
-            session_note_val = envelope.get("session_note") or note or "(no session note)"
-            console.print(f"\n[bold]Worklist[/bold] — {session_note_val}\n")
-
-            items = envelope.get("items") or []
-            if items:
-                tbl = Table(show_header=True, header_style="bold cyan")
-                tbl.add_column("qname")
-                tbl.add_column("op")
-                tbl.add_column("location")
-                tbl.add_column("note")
-                for item in items:
-                    location = _build_location(item)
-                    notes = item.get("notes") or []
-                    first_note = str(notes[0]) if notes else ""
-                    if len(first_note) > 60:
-                        first_note = first_note[:57] + "..."
-                    tbl.add_row(
-                        item.get("qname", ""),
-                        item.get("op", ""),
-                        location,
-                        first_note,
-                    )
-                console.print(tbl)
-
-            creates = envelope.get("creates") or []
-            if creates:
-                console.print("\n[bold]Creates[/bold]")
-                ctbl = Table(show_header=True, header_style="bold magenta")
-                ctbl.add_column("target_qname")
-                ctbl.add_column("target_file")
-                ctbl.add_column("anchor")
-                for c in creates:
-                    ctbl.add_row(
-                        c.get("target_qname", ""),
-                        c.get("target_file", ""),
-                        c.get("anchor", ""),
-                    )
-                console.print(ctbl)
-
-            next_instruction = envelope.get("next")
-            if next_instruction:
-                console.print(f"\n[dim]{next_instruction}[/dim]")
-
-        return
-
-    # --- all other backends: run the full generative pipeline ----------------
-    from trie.edits.backends import make_backend
-    from trie.edits.pipeline import stage_and_commit
-
-    client = make_client(model or config.models.edits, sync_cfg=config.sync)
-
-    try:
-        edit_backend = make_backend(config, backend=effective_backend, client=client)
-    except (ValueError, NotImplementedError) as exc:
-        reporter.error(str(exc))
-        raise typer.Exit(code=1) from exc
+    from trie.edits.pipeline import record_intent
 
     store = Store(project_root / ".trie" / "graph.db")
     try:
-        result = stage_and_commit(
-            store,
-            config,
-            edit_backend,
-            project_root,
-            client=client,
-            session_note=note,
-            commit_mode=commit_mode,
-        )
+        envelope = record_intent(store, config, project_root, session_note=note)
     finally:
         store.close()
 
-    # A non-agent backend might still return a workorder envelope in some
-    # configurations; handle it gracefully here too.
-    envelope = result if isinstance(result, dict) else getattr(result, "_envelope", None)
-    if envelope is not None and envelope.get("mode") == "workorder":
-        if json_output:
-            import json as _json
+    if json_output:
+        import json as _json
 
-            console.print_json(_json.dumps(envelope))
-        else:
-            from rich.table import Table
-
-            session_note_val = envelope.get("session_note") or note or "(no session note)"
-            console.print(f"\n[bold]Worklist[/bold] — {session_note_val}\n")
-
-            items = envelope.get("items") or []
-            if items:
-                tbl = Table(show_header=True, header_style="bold cyan")
-                tbl.add_column("qname")
-                tbl.add_column("op")
-                tbl.add_column("location")
-                tbl.add_column("note")
-                for item in items:
-                    location = _build_location(item)
-                    notes = item.get("notes") or []
-                    first_note = str(notes[0]) if notes else ""
-                    if len(first_note) > 60:
-                        first_note = first_note[:57] + "..."
-                    tbl.add_row(
-                        item.get("qname", ""),
-                        item.get("op", ""),
-                        location,
-                        first_note,
-                    )
-                console.print(tbl)
-
-            creates = envelope.get("creates") or []
-            if creates:
-                console.print("\n[bold]Creates[/bold]")
-                ctbl = Table(show_header=True, header_style="bold magenta")
-                ctbl.add_column("target_qname")
-                ctbl.add_column("target_file")
-                ctbl.add_column("anchor")
-                for c in creates:
-                    ctbl.add_row(
-                        c.get("target_qname", ""),
-                        c.get("target_file", ""),
-                        c.get("anchor", ""),
-                    )
-                console.print(ctbl)
-
-            next_instruction = envelope.get("next")
-            if next_instruction:
-                console.print(f"\n[dim]{next_instruction}[/dim]")
-
+        console.print_json(_json.dumps(envelope))
+        if not envelope.get("ok"):
+            raise typer.Exit(code=1)
         return
-
-    # --- normal (LLM-generated) report path ---------------------------------
-    report = result
-    d = report.to_dict()
-    if report.committed and report.ok:
-        reporter.success(
-            f"applied {d['totals']['applied']} symbol(s) across {d['applied']['files']} file(s)"
-        )
-    elif report.error == "session_note_required":
-        reporter.error(
-            "multi-symbol apply requires --note (the unifying intent). "
-            "Suggested: "
-            + (report.unresolved[0].repatch or {}).get("args", {}).get("session_note", "")
-        )
+    if not envelope.get("ok"):
+        reporter.error(envelope.get("message", "record failed"))
         raise typer.Exit(code=1)
-    else:
-        reporter.error(f"apply incomplete: {report.error or 'see unresolved items'}")
-
-    # Render unresolved residue (blocking first, then advisory).
-    blocking = [u for u in report.unresolved if u.blocking]
-    advisory = [u for u in report.unresolved if not u.blocking]
-    if blocking:
-        reporter.console.print(f"\n[red]{len(blocking)} need attention:[/red]")
-        for u in blocking:
-            reporter.console.print(f"  [red]✗[/red] {u.qname} [dim]({u.code})[/dim] — {u.message}")
-    if advisory:
-        reporter.console.print(f"\n[yellow]{len(advisory)} advisory (cascade):[/yellow]")
-        for u in advisory[:10]:
-            reporter.console.print(f"  [yellow]~[/yellow] {u.qname} [dim]({u.code})[/dim]")
-
-    reporter.info(reporter.elapsed())
-    if blocking:
-        raise typer.Exit(code=1)
+    if envelope.get("recorded", 0) == 0:
+        reporter.info("no pending patches to record")
+        return
+    reporter.success(f"recorded intent for {envelope['recorded']} symbol(s) to the session log")
+    for q in envelope.get("symbols", []):
+        reporter.console.print(f"  [cyan]{q}[/cyan]")
 
 
 @patch_app.command("preview")

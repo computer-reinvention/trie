@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/cli.py
-file_fingerprint: 05d63fbe526acfad5d322d78f37b4099442fb65e751c2382a853cdb7f06c2820
-last_synced_at: '2026-07-25T06:06:00Z'
+file_fingerprint: 52c53e032d7dbe333d37e2b814e706bbbb7d989ac2e77c24c47bc8967d6089bb
+last_synced_at: '2026-07-25T10:43:45Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
-  lines: 1-4352
+  lines: 1-4283
 - kind: constant
   qualified_name: trie/cli:app
   lines: 77-80
@@ -128,241 +128,244 @@ defines:
   qualified_name: trie/cli:_resolve_audit_log_path
   lines: 1138-1154
 - kind: function
+  qualified_name: trie/cli:intent_cmd
+  lines: 1158-1208
+- kind: function
   qualified_name: trie/cli:index_cmd
-  lines: 1158-1182
+  lines: 1212-1236
 - kind: function
   qualified_name: trie/cli:diff_cmd
-  lines: 1186-1436
+  lines: 1240-1490
 - kind: function
   qualified_name: trie/cli:_print_scan_breakdown
-  lines: 1439-1456
+  lines: 1493-1510
 - kind: function
   qualified_name: trie/cli:_print_plan
-  lines: 1459-1470
+  lines: 1513-1524
 - kind: function
   qualified_name: trie/cli:_print_incremental_plan
-  lines: 1473-1539
+  lines: 1527-1593
 - kind: constant
   qualified_name: trie/cli:_REASON_LABELS
-  lines: 1542-1549
+  lines: 1596-1603
 - kind: function
   qualified_name: trie/cli:_print_drift_detail
-  lines: 1552-1563
+  lines: 1606-1617
 - kind: function
   qualified_name: trie/cli:_verify_drift
-  lines: 1566-1597
+  lines: 1620-1651
 - kind: function
   qualified_name: trie/cli:sync_cmd
-  lines: 1601-1758
+  lines: 1655-1812
 - kind: function
   qualified_name: trie/cli:_has_existing_triefacts
-  lines: 1761-1767
+  lines: 1815-1821
 - kind: function
   qualified_name: trie/cli:_run_full_pass
-  lines: 1770-1841
+  lines: 1824-1895
 - kind: function
   qualified_name: trie/cli:_refresh_index_quietly
-  lines: 1844-1851
+  lines: 1898-1905
 - kind: function
   qualified_name: trie/cli:_report_sync_errors
-  lines: 1854-1875
+  lines: 1908-1929
 - kind: function
   qualified_name: trie/cli:_run_dry_run_diff
-  lines: 1878-1923
+  lines: 1932-1977
 - kind: function
   qualified_name: trie/cli:_run_single_file_sync
-  lines: 1926-1959
+  lines: 1980-2013
 - kind: function
   qualified_name: trie/cli:_run_metadata_only_refresh
-  lines: 1962-2019
+  lines: 2016-2073
 - kind: function
   qualified_name: trie/cli:_run_roles_only_sync
-  lines: 2022-2061
+  lines: 2076-2115
 - kind: function
   qualified_name: trie/cli:_run_incremental_sync
-  lines: 2064-2128
+  lines: 2118-2182
 - kind: function
   qualified_name: trie/cli:setup_cmd
-  lines: 2132-2348
+  lines: 2186-2402
 - kind: function
   qualified_name: trie/cli:_render_setup_plan
-  lines: 2351-2421
+  lines: 2405-2475
 - kind: function
   qualified_name: trie/cli:_render_override_target_block
-  lines: 2424-2450
+  lines: 2478-2504
 - kind: function
   qualified_name: trie/cli:_format_action
-  lines: 2453-2457
+  lines: 2507-2511
 - kind: function
   qualified_name: trie/cli:_open_tools
-  lines: 2472-2490
+  lines: 2526-2544
 - kind: function
   qualified_name: trie/cli:_emit_envelope
-  lines: 2493-2517
+  lines: 2547-2571
 - kind: function
   qualified_name: trie/cli:_patched_tag
-  lines: 2520-2524
+  lines: 2574-2578
 - kind: function
   qualified_name: trie/cli:_render_grep
-  lines: 2527-2597
+  lines: 2581-2651
 - kind: function
   qualified_name: trie/cli:_render_read
-  lines: 2600-2673
+  lines: 2654-2741
 - kind: function
   qualified_name: trie/cli:_render_trace
-  lines: 2676-2728
+  lines: 2744-2796
 - kind: function
   qualified_name: trie/cli:_render_error_envelope
-  lines: 2731-2743
+  lines: 2799-2811
 - kind: function
   qualified_name: trie/cli:_build_grep_predicate
-  lines: 2746-2808
+  lines: 2814-2876
 - kind: function
   qualified_name: trie/cli:grep_cmd
-  lines: 2812-2915
+  lines: 2880-2983
 - kind: function
   qualified_name: trie/cli:read_cmd
-  lines: 2919-2975
+  lines: 2987-3054
 - kind: function
   qualified_name: trie/cli:_render_read_dispatch
-  lines: 2978-2991
+  lines: 3057-3070
 - kind: function
   qualified_name: trie/cli:_render_read_source
-  lines: 2994-3003
+  lines: 3073-3082
 - kind: function
   qualified_name: trie/cli:trace_cmd
-  lines: 3007-3049
+  lines: 3086-3128
 - kind: function
   qualified_name: trie/cli:blast_radius_cmd
-  lines: 3053-3083
+  lines: 3132-3162
 - kind: function
   qualified_name: trie/cli:_render_blast_radius
-  lines: 3086-3116
+  lines: 3165-3195
 - kind: function
   qualified_name: trie/cli:_print_plain
-  lines: 3126-3140
+  lines: 3205-3219
 - kind: function
   qualified_name: trie/cli:grep_str_cmd
-  lines: 3144-3170
+  lines: 3223-3249
 - kind: function
   qualified_name: trie/cli:find_cmd
-  lines: 3174-3203
+  lines: 3253-3282
 - kind: function
   qualified_name: trie/cli:write_cmd
-  lines: 3207-3247
+  lines: 3286-3326
 - kind: function
   qualified_name: trie/cli:_render_write
-  lines: 3250-3259
+  lines: 3329-3338
 - kind: function
   qualified_name: trie/cli:_render_find
-  lines: 3262-3277
+  lines: 3341-3356
 - kind: function
   qualified_name: trie/cli:grep_entry_points_cmd
-  lines: 3281-3296
+  lines: 3360-3375
 - kind: function
   qualified_name: trie/cli:grep_symbol_cmd
-  lines: 3300-3315
+  lines: 3379-3394
 - kind: function
   qualified_name: trie/cli:grep_symbol_neighbours_cmd
-  lines: 3319-3334
+  lines: 3398-3413
 - kind: function
   qualified_name: trie/cli:explain_symbol_cmd
-  lines: 3338-3353
+  lines: 3417-3438
 - kind: function
   qualified_name: trie/cli:explain_symbol_refs_cmd
-  lines: 3357-3372
+  lines: 3442-3463
 - kind: function
   qualified_name: trie/cli:trace_flow_cmd
-  lines: 3376-3392
+  lines: 3467-3483
 - kind: function
   qualified_name: trie/cli:explain_flow_cmd
-  lines: 3396-3412
+  lines: 3487-3503
 - kind: constant
   qualified_name: trie/cli:patch_app
-  lines: 3420-3424
+  lines: 3511-3515
 - kind: class
   qualified_name: trie/cli:_RichApplyProgress
-  lines: 3428-3480
+  lines: 3519-3571
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.__init__
-  lines: 3438-3440
+  lines: 3529-3531
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.stage
-  lines: 3442-3443
+  lines: 3533-3534
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_start
-  lines: 3445-3446
+  lines: 3536-3537
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_symbol
-  lines: 3448-3454
+  lines: 3539-3545
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_generate
-  lines: 3456-3458
+  lines: 3547-3549
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_fixup
-  lines: 3460-3463
+  lines: 3551-3554
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_prose
-  lines: 3465-3468
+  lines: 3556-3559
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_done
-  lines: 3470-3474
+  lines: 3561-3565
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.refresh
-  lines: 3476-3477
+  lines: 3567-3568
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.verify
-  lines: 3479-3480
+  lines: 3570-3571
 - kind: function
   qualified_name: trie/cli:patch_create_cmd
-  lines: 3484-3510
+  lines: 3575-3633
 - kind: function
   qualified_name: trie/cli:patch_create_batch_cmd
-  lines: 3514-3628
+  lines: 3637-3751
 - kind: function
   qualified_name: trie/cli:patch_create_symbol_cmd
-  lines: 3632-3674
+  lines: 3755-3797
 - kind: function
   qualified_name: trie/cli:patch_delete_symbol_cmd
-  lines: 3678-3705
+  lines: 3801-3828
 - kind: function
   qualified_name: trie/cli:patch_rename_symbol_cmd
-  lines: 3709-3738
+  lines: 3832-3861
 - kind: function
   qualified_name: trie/cli:patch_apply_cmd
-  lines: 3742-3984
+  lines: 3865-3915
 - kind: function
   qualified_name: trie/cli:patch_preview_cmd
-  lines: 3988-4031
+  lines: 3919-3962
 - kind: function
   qualified_name: trie/cli:patch_list_cmd
-  lines: 4035-4077
+  lines: 3966-4008
 - kind: function
   qualified_name: trie/cli:patch_drop_cmd
-  lines: 4081-4119
+  lines: 4012-4050
 - kind: constant
   qualified_name: trie/cli:mcp_app
-  lines: 4127-4134
+  lines: 4058-4065
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 4139-4141
+  lines: 4070-4072
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 4144-4154
+  lines: 4075-4085
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 4158-4227
+  lines: 4089-4158
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 4230-4245
+  lines: 4161-4176
 - kind: function
   qualified_name: trie/cli:mcp_uninstall_cmd
-  lines: 4249-4324
+  lines: 4180-4255
 - kind: function
   qualified_name: trie/cli:_render_uninstall_plan
-  lines: 4327-4347
+  lines: 4258-4278
 incoming_refs: 91
-outgoing_refs: 157
+outgoing_refs: 159
 ---
 <!-- trie:section symbol=trie/cli:__module__ fingerprint=d16be5917b98ff58f36f3487c349d240fc53396bc24bb9e0d8903c2f9e48f690 body_fp=10f0e1573012e0fc76e1358d4da306bc2ba6e70254a41da3bf25ef8b26e41199 source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
 Main CLI module for trie providing comprehensive project management, triefact synchronization, and agent integration commands.
@@ -619,6 +622,9 @@ Resolves the audit log path for `trie audit` command.
 • Returns absolute paths, resolving relative config paths against project root
 • Allows cross-project audit by not requiring trie.toml when explicit path given
 <!-- trie:end -->
+<!-- trie:section symbol=trie/cli:intent_cmd fingerprint=d9a80927ea8581340ec7555b4e174afeed3d4aea28c0ec0db8e37050a1040f5b body_fp=173050fdb17d406d2dc6ca566b85533ba3498d0eb2a06758e443c668057ab815 source_ref=3e9be5f9b264b622f8cbeaac1f07240bdf8e1aa9 role=api -->
+Enforce that every symbol changed vs HEAD has a patch note on record; exits 1 with a copy-pasteable worklist when coverage is missing.
+<!-- trie:end -->
 <!-- trie:section symbol=trie/cli:index_cmd fingerprint=03be3ee88a8f66b5d0fcb774638b5784f0ff798428a46ca21c6d844027dd6ab2 body_fp=8d3aba6f7dd4eb53e26e97a40b98242febf33e4be4b24044ab45b1a13661414e source_ref=94ab54ce4fed9d45419aed45facacce5dc1f37cc role=api -->
 Regenerate the triefact-tree index (`<triefacts.root>/README.md`) from the live graph store without calling the LLM.
 <!-- trie:end -->
@@ -806,13 +812,13 @@ Renders human-readable output for `trie grep` command results.
 - Shows pending patch counts as yellow tags on qnames
 - Routes errors to `_render_error_envelope` for consistent error formatting
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_render_read fingerprint=cfe798f21faa946232fcab2f347e71f2ef40a92a2283bdf212e34718475656aa body_fp=df83cf507322f41b92ff07e6497de9248e5ab1f82ebcadba2fea7c48d455c621 source_ref=1f6f77028bb23024fc872fe4180748eaa22416ca role=util -->
-Renders human-readable output for `trie read` command responses, displaying symbol metadata, notes (before prose), prose, pending patches, and caller/callee relationships.
+<!-- trie:section symbol=trie/cli:_render_read fingerprint=2b10e36d759a5d0ea615a7db338822b6231723a2963b138ff8997b4262a3a179 body_fp=3db1c6f1a65ef2556ff8fb722d590775f841997ccd4986e572e2cb470af0c10d source_ref=981512fbf7d02046ab79dbef03cb3cae1db948c0 role=util -->
+Renders human-readable output for `trie read` command responses, displaying symbol metadata, notes (before prose), prose, pending patches, caller/callee relationships, and a history block.
 
-- **envelope**: MCP response dict containing qname, signature, source_pointer, prose, callers, callees, pending_patches, and notes
+- **envelope**: MCP response dict containing qname, signature, source_pointer, prose, callers, callees, pending_patches, history, and notes
 - **reporter**: Console output handler for styled text rendering
 
-Formats the symbol's qualified name and signature at the top, then prints any `notes` entries early (⚠-prefixed notes in bold yellow, others in dim) before the prose block, followed by pending patches with their origins and notes, then caller and callee lists with one-liners, and finally notes again as yellow-banged lines. Error responses are delegated to `_render_error_envelope`.
+Formats the symbol's qualified name and signature at the top, then prints any `notes` entries early (⚠-prefixed notes in bold yellow, others in dim) before the prose block, followed by pending patches with their origins and notes, then caller and callee lists with one-liners, then a `history` block (date · change lines with optional title), and finally notes again as yellow-banged lines. Error responses are delegated to `_render_error_envelope`.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:_render_trace fingerprint=1af973f434ca837af6bd3bf7f5f4a14871b62746089ef1d6845c6f30cd474b15 body_fp=08321fb0893b819f18aa414844c848fb130b915d9321331e40e4d9e000bc7bc8 source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
 Renders human-readable output for `trie trace` command responses.
@@ -850,12 +856,13 @@ CLI command that finds symbols matching predicates through the TrieTools.grep me
 - **limit**: maximum hits to return (default 10)
 - **as_json**: emit raw MCP envelope instead of human-readable table
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:read_cmd fingerprint=f157c62cefb20c5ee457408324931e4371a70d0ee371d50341364671b409d5ac body_fp=c2c90731c33d1fb462e4ebd4612e5d4211fda99d429c0433c9d12f7cff795612 source_ref=b325efc3edba660c5ed59d60e141bf03e531c2cd role=api -->
+<!-- trie:section symbol=trie/cli:read_cmd fingerprint=658656804167b1ab001b1fae44c199006876251ce97e55828ca5821527066a70 body_fp=2a35bd35ab6d0ab332683838e820dc2e69799093a40ec2279e8192f1ce2fd81e source_ref=981512fbf7d02046ab79dbef03cb3cae1db948c0 role=api -->
 CLI command that reads source code or trie's synthesised description — dispatches via a single `tools.read()` call.
 
 - Accepts a symbol qname **or** a file path as the positional argument
 - `--full`: for file paths, returns every section's full prose instead of the compact triefact view
 - `--source` / `--offset` / `--limit`: force raw line-numbered source with optional windowing
+- `--history` (`-H`): also retrieves the symbol's or file's intent trail from the session-digest archive
 - Delegates rendering to `_render_read_dispatch`, which fans out to `_render_read_source`, plain output, or `_render_read` based on envelope shape
 - `--json` emits the raw MCP envelope verbatim; mirrors the MCP `read` tool wire response
 <!-- trie:end -->
@@ -956,15 +963,18 @@ Implements `trie grep-symbol-neighbours` CLI command that performs fuzzy symbol 
 - Renders output in plain text format via `_print_plain`
 - Example: `trie grep-symbol-neighbours sync_single_file`
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:explain_symbol_cmd fingerprint=7c4c47493a79b82df8d4b2885616ef105d670c38c1e9e0ffa5b822b1973066a8 body_fp=bd3a5aaf5b8a40edcb9e36b25463ffde7536321d2ed6e3c14d7c1426568e75be source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
+<!-- trie:section symbol=trie/cli:explain_symbol_cmd fingerprint=5ac54530f72257c5d11086cb8329c87c18e4854c936ee61b8eda9aa13a67ab57 body_fp=945defb7ddf655ed721c1762b7e993a9a78b94867b5fa0ed24395a7e233581ec source_ref=981512fbf7d02046ab79dbef03cb3cae1db948c0 role=api -->
 Provide detailed explanation of a symbol including its prose and reference narrative via CLI.
 
 CLI command that wraps the MCP `explain_symbol` tool for terminal use. Takes a symbol qname or name fragment, opens a TrieTools session, calls the explain method, and renders the result in human-readable format. Always uses plain text output rather than JSON.
+
+- `history`: when `True`, also passes the flag to `tools.explain_symbol` to include the symbol's intent trail from the digest archive.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:explain_symbol_refs_cmd fingerprint=0ac13e0a39fbbaba07077fa05a176cf6ff226f8514f824c702183d9adf388565 body_fp=60ca4e736ae7a3d5c74b1de6715f7bb1c002287675b35a5e08a4673fc252d227 source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
+<!-- trie:section symbol=trie/cli:explain_symbol_refs_cmd fingerprint=144754c21e109b2a9de843dc793483768c61aaf9518bd86db72f4d79b556927a body_fp=17070190e6f4012461c8b6a7735c43e968f47d6ca689a1fccda75d2cb415d2a7 source_ref=981512fbf7d02046ab79dbef03cb3cae1db948c0 role=api -->
 Typer command that explains how a symbol is used by its callers with their prose.
 
-- Calls `TrieTools.explain_symbol_references()` with the provided symbol name or fragment
+- Accepts `--history`/`-H` to also include the symbol's intent trail from the digest archive
+- Calls `TrieTools.explain_symbol_references()` with the symbol name/fragment and `history` flag
 - Always outputs human-readable format (no JSON option unlike other commands)
 - Uses generic `_print_plain` renderer for output formatting
 <!-- trie:end -->
@@ -1046,12 +1056,13 @@ Prints a refresh indicator for the given file path during patch apply progress r
 <!-- trie:section symbol=trie/cli:_RichApplyProgress.verify fingerprint=9bb6073c0083b530e9d8a61ec3fe90bde21961bdcbb397e39268aa6d65db357c body_fp=88843d1669232469dd7a92f0b73d40fc967e947a1c92e8d576021241cb8f1664 source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=code-editing -->
 Prints a green checkmark indicating the project is consistent after patch application. Called by `apply_patches` at the end of its verification phase.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:patch_create_cmd fingerprint=709d77870ab77ddad4342918087899ea1756220d65ae42ac948fb5c3f9ed4988 body_fp=f615e1e9d212b6c8ba842eda6e5e4305110e35bbb74401ba3978fbd346bee154 source_ref=28797ad23f63ab76a0d693ea640c1de9c59f6c50 role=api -->
+<!-- trie:section symbol=trie/cli:patch_create_cmd fingerprint=72662c0d688f65a55be9ca8b56e205d87ae1b075cad1fdb6e7e5aff80b4eced5 body_fp=9d614697375f678fc968641bafbfce01900e627adaf2625e4fb4bdaa6a89854c source_ref=3e9be5f9b264b622f8cbeaac1f07240bdf8e1aa9 role=api -->
 Creates a fire-and-forget edit patch against a symbol in the trie graph store.
 
-- Validates that the symbol exists in the graph database before creating the patch
+- `--gone`: bypasses the graph store entirely; records the note directly to the session log as a `delete` op instead of queueing a patch
+- Validates that the symbol exists in the graph database before creating the patch (non-`--gone` path)
 - Uses a stable CLI session ID for tracking related patches together
-- Returns the patch ID after successful creation
+- Returns the patch ID after successful creation (non-`--gone` path)
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:patch_create_batch_cmd fingerprint=e8e49da442695fe76c0d074020c7390caae868f905570564bc9678a174304a88 body_fp=f2b2c9232877c2aee649df8fdb2a4200e6b7666b107dac2ca4683917d156861a source_ref=85e57bbb035420774c33a2c6594da614a72f3d47 role=api -->
 Stage multiple `patch` or `create` operations in one call, reading a JSON array from `--json-file` or stdin.
@@ -1086,14 +1097,12 @@ Stage a rename of an existing symbol for later application by `trie patch apply`
 - Creates a rename patch in the graph database with optional reason
 - Reports the number of existing references that will need updating
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:patch_apply_cmd fingerprint=fa8a2665139aeeaca22782601bda1177fdf3b59f7f5e7a3737f1d28fbcdf7ca9 body_fp=79c5b5d0bdb0ba2833f1edabddd8295392d7567c70ff0e89781e4e148cc5468d source_ref=531556cb2ca369f928920ff2e8a5af396c7dd9ee role=api -->
-Execute all pending patches via the cascade-editing pipeline, dispatching to the `agent` (workorder), `llm`, or other configured backend.
+<!-- trie:section symbol=trie/cli:patch_apply_cmd fingerprint=1f700192a89ef28464c7d0b52feb85fc8654bf0d8874a12d7c22994320c90447 body_fp=6396bc861e0a215761511ad811550f6cbaa4fa264ed6b6a8766bc3ad50c6dcea source_ref=b07b41bd042a833a471ca6cd324eb62f95c2d4ea role=api -->
+Archive pending patch notes as intent via `record_intent` — always the `record` path, no code generation.
 
-- `--note`: required for multi-symbol applies; names the unifying intent.
-- `--backend`: overrides config; `agent` emits a workorder envelope instead of generating code.
-- `--commit-mode`: controls atomicity — `all_or_nothing` (default), `per_item`, or `per_group`.
-- `--json`: dumps the raw result envelope to stdout; useful for agent consumers parsing output.
-- Exits 1 on blocking unresolved items or when `session_note_required` is signalled.
+- `--note`: session-level unifying intent for the apply run.
+- `--json`: dumps raw envelope to stdout and exits 1 if `ok` is falsy; non-JSON path exits 1 on failure or prints a per-symbol success list.
+- Removed: `--model`, `--backend`, `--commit-mode` options and all `agent`/`llm` backend dispatch paths.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:patch_preview_cmd fingerprint=bb43bb71a6141343c63226fcf7e8bf42a7bb400eedccecc762509629daa934f7 body_fp=e03e8a69221f0c07d9d3b8e4b3642f5e8c1ab04e8e8c08bd1c7333d523df64a7 source_ref=28797ad23f63ab76a0d693ea640c1de9c59f6c50 role=api -->
 Previews what `trie patch apply` would execute without running it.

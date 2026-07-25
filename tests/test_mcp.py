@@ -991,3 +991,35 @@ def test_read_has_no_stale_warning_when_fresh(populated_project: Path):
         )
     finally:
         t.close()
+
+
+def test_read_history_flag_surfaces_intent_trail(populated_project: Path):
+    """`history=True` attaches the digest-archive intent trail to symbol reads;
+    the flag is opt-in so the default envelope (and token cost) is unchanged."""
+    archive = populated_project / "triefacts" / "triediffs"
+    archive.mkdir(parents=True)
+    archive.joinpath("20260101T000000Z-aaaa.md").write_text(
+        "## Make slugs — 2026-01-01 (parent abcd12345678)\n\n"
+        "N.\n\n### Changes\n\n- ~ lib:slugify — dash-separate instead of underscores\n"
+    )
+    t = TrieTools(populated_project)
+    try:
+        plain = t.read("lib:slugify")
+        assert "history" not in plain, "history must be opt-in"
+
+        out = t.read("lib:slugify", history=True)
+        hist = out.get("history")
+        assert isinstance(hist, list) and len(hist) == 1
+        assert hist[0]["change"].startswith("~ lib:slugify")
+        assert hist[0]["title"] == "Make slugs"
+
+        # File view: history renders as an appended text section.
+        fview = t.read("lib.py", history=True)
+        assert "Recent changes" in str(fview.get("output", ""))
+        assert "dash-separate instead of underscores" in str(fview.get("output", ""))
+
+        # Explain surfaces share the same trail.
+        exp = t.explain_symbol("lib:slugify", history=True)
+        assert exp.get("history") and exp["history"][0]["title"] == "Make slugs"
+    finally:
+        t.close()
