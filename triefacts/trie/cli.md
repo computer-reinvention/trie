@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/cli.py
-file_fingerprint: 642205d62e3df4b586a6b1726d52a16160c3cc70210291994a8757e47ff0cec9
-last_synced_at: '2026-07-25T01:46:09Z'
+file_fingerprint: f2d80a043bf4db92cca2ea9e816cc6caae6632cd2925f3427545fa3a3ee1c839
+last_synced_at: '2026-07-25T01:52:15Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
-  lines: 1-4270
+  lines: 1-4312
 - kind: constant
   qualified_name: trie/cli:app
   lines: 77-80
@@ -128,235 +128,241 @@ defines:
   qualified_name: trie/cli:_resolve_audit_log_path
   lines: 1120-1136
 - kind: function
+  qualified_name: trie/cli:index_cmd
+  lines: 1140-1164
+- kind: function
   qualified_name: trie/cli:diff_cmd
-  lines: 1140-1390
+  lines: 1168-1418
 - kind: function
   qualified_name: trie/cli:_print_scan_breakdown
-  lines: 1393-1410
+  lines: 1421-1438
 - kind: function
   qualified_name: trie/cli:_print_plan
-  lines: 1413-1424
+  lines: 1441-1452
 - kind: function
   qualified_name: trie/cli:_print_incremental_plan
-  lines: 1427-1493
+  lines: 1455-1521
 - kind: constant
   qualified_name: trie/cli:_REASON_LABELS
-  lines: 1496-1503
+  lines: 1524-1531
 - kind: function
   qualified_name: trie/cli:_print_drift_detail
-  lines: 1506-1517
+  lines: 1534-1545
 - kind: function
   qualified_name: trie/cli:_verify_drift
-  lines: 1520-1551
+  lines: 1548-1579
 - kind: function
   qualified_name: trie/cli:sync_cmd
-  lines: 1555-1712
+  lines: 1583-1740
 - kind: function
   qualified_name: trie/cli:_has_existing_triefacts
-  lines: 1715-1721
+  lines: 1743-1749
 - kind: function
   qualified_name: trie/cli:_run_full_pass
-  lines: 1724-1793
+  lines: 1752-1823
+- kind: function
+  qualified_name: trie/cli:_refresh_index_quietly
+  lines: 1826-1833
 - kind: function
   qualified_name: trie/cli:_report_sync_errors
-  lines: 1796-1817
+  lines: 1836-1857
 - kind: function
   qualified_name: trie/cli:_run_dry_run_diff
-  lines: 1820-1865
+  lines: 1860-1905
 - kind: function
   qualified_name: trie/cli:_run_single_file_sync
-  lines: 1868-1901
+  lines: 1908-1941
 - kind: function
   qualified_name: trie/cli:_run_metadata_only_refresh
-  lines: 1904-1961
+  lines: 1944-2001
 - kind: function
   qualified_name: trie/cli:_run_roles_only_sync
-  lines: 1964-2003
+  lines: 2004-2043
 - kind: function
   qualified_name: trie/cli:_run_incremental_sync
-  lines: 2006-2068
+  lines: 2046-2110
 - kind: function
   qualified_name: trie/cli:setup_cmd
-  lines: 2072-2266
+  lines: 2114-2308
 - kind: function
   qualified_name: trie/cli:_render_setup_plan
-  lines: 2269-2339
+  lines: 2311-2381
 - kind: function
   qualified_name: trie/cli:_render_override_target_block
-  lines: 2342-2368
+  lines: 2384-2410
 - kind: function
   qualified_name: trie/cli:_format_action
-  lines: 2371-2375
+  lines: 2413-2417
 - kind: function
   qualified_name: trie/cli:_open_tools
-  lines: 2390-2408
+  lines: 2432-2450
 - kind: function
   qualified_name: trie/cli:_emit_envelope
-  lines: 2411-2435
+  lines: 2453-2477
 - kind: function
   qualified_name: trie/cli:_patched_tag
-  lines: 2438-2442
+  lines: 2480-2484
 - kind: function
   qualified_name: trie/cli:_render_grep
-  lines: 2445-2515
+  lines: 2487-2557
 - kind: function
   qualified_name: trie/cli:_render_read
-  lines: 2518-2591
+  lines: 2560-2633
 - kind: function
   qualified_name: trie/cli:_render_trace
-  lines: 2594-2646
+  lines: 2636-2688
 - kind: function
   qualified_name: trie/cli:_render_error_envelope
-  lines: 2649-2661
+  lines: 2691-2703
 - kind: function
   qualified_name: trie/cli:_build_grep_predicate
-  lines: 2664-2726
+  lines: 2706-2768
 - kind: function
   qualified_name: trie/cli:grep_cmd
-  lines: 2730-2833
+  lines: 2772-2875
 - kind: function
   qualified_name: trie/cli:read_cmd
-  lines: 2837-2893
+  lines: 2879-2935
 - kind: function
   qualified_name: trie/cli:_render_read_dispatch
-  lines: 2896-2909
+  lines: 2938-2951
 - kind: function
   qualified_name: trie/cli:_render_read_source
-  lines: 2912-2921
+  lines: 2954-2963
 - kind: function
   qualified_name: trie/cli:trace_cmd
-  lines: 2925-2967
+  lines: 2967-3009
 - kind: function
   qualified_name: trie/cli:blast_radius_cmd
-  lines: 2971-3001
+  lines: 3013-3043
 - kind: function
   qualified_name: trie/cli:_render_blast_radius
-  lines: 3004-3034
+  lines: 3046-3076
 - kind: function
   qualified_name: trie/cli:_print_plain
-  lines: 3044-3058
+  lines: 3086-3100
 - kind: function
   qualified_name: trie/cli:grep_str_cmd
-  lines: 3062-3088
+  lines: 3104-3130
 - kind: function
   qualified_name: trie/cli:find_cmd
-  lines: 3092-3121
+  lines: 3134-3163
 - kind: function
   qualified_name: trie/cli:write_cmd
-  lines: 3125-3165
+  lines: 3167-3207
 - kind: function
   qualified_name: trie/cli:_render_write
-  lines: 3168-3177
+  lines: 3210-3219
 - kind: function
   qualified_name: trie/cli:_render_find
-  lines: 3180-3195
+  lines: 3222-3237
 - kind: function
   qualified_name: trie/cli:grep_entry_points_cmd
-  lines: 3199-3214
+  lines: 3241-3256
 - kind: function
   qualified_name: trie/cli:grep_symbol_cmd
-  lines: 3218-3233
+  lines: 3260-3275
 - kind: function
   qualified_name: trie/cli:grep_symbol_neighbours_cmd
-  lines: 3237-3252
+  lines: 3279-3294
 - kind: function
   qualified_name: trie/cli:explain_symbol_cmd
-  lines: 3256-3271
+  lines: 3298-3313
 - kind: function
   qualified_name: trie/cli:explain_symbol_refs_cmd
-  lines: 3275-3290
+  lines: 3317-3332
 - kind: function
   qualified_name: trie/cli:trace_flow_cmd
-  lines: 3294-3310
+  lines: 3336-3352
 - kind: function
   qualified_name: trie/cli:explain_flow_cmd
-  lines: 3314-3330
+  lines: 3356-3372
 - kind: constant
   qualified_name: trie/cli:patch_app
-  lines: 3338-3342
+  lines: 3380-3384
 - kind: class
   qualified_name: trie/cli:_RichApplyProgress
-  lines: 3346-3398
+  lines: 3388-3440
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.__init__
-  lines: 3356-3358
+  lines: 3398-3400
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.stage
-  lines: 3360-3361
+  lines: 3402-3403
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_start
-  lines: 3363-3364
+  lines: 3405-3406
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_symbol
-  lines: 3366-3372
+  lines: 3408-3414
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_generate
-  lines: 3374-3376
+  lines: 3416-3418
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_fixup
-  lines: 3378-3381
+  lines: 3420-3423
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_prose
-  lines: 3383-3386
+  lines: 3425-3428
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_done
-  lines: 3388-3392
+  lines: 3430-3434
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.refresh
-  lines: 3394-3395
+  lines: 3436-3437
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.verify
-  lines: 3397-3398
+  lines: 3439-3440
 - kind: function
   qualified_name: trie/cli:patch_create_cmd
-  lines: 3402-3428
+  lines: 3444-3470
 - kind: function
   qualified_name: trie/cli:patch_create_batch_cmd
-  lines: 3432-3546
+  lines: 3474-3588
 - kind: function
   qualified_name: trie/cli:patch_create_symbol_cmd
-  lines: 3550-3592
+  lines: 3592-3634
 - kind: function
   qualified_name: trie/cli:patch_delete_symbol_cmd
-  lines: 3596-3623
+  lines: 3638-3665
 - kind: function
   qualified_name: trie/cli:patch_rename_symbol_cmd
-  lines: 3627-3656
+  lines: 3669-3698
 - kind: function
   qualified_name: trie/cli:patch_apply_cmd
-  lines: 3660-3902
+  lines: 3702-3944
 - kind: function
   qualified_name: trie/cli:patch_preview_cmd
-  lines: 3906-3949
+  lines: 3948-3991
 - kind: function
   qualified_name: trie/cli:patch_list_cmd
-  lines: 3953-3995
+  lines: 3995-4037
 - kind: function
   qualified_name: trie/cli:patch_drop_cmd
-  lines: 3999-4037
+  lines: 4041-4079
 - kind: constant
   qualified_name: trie/cli:mcp_app
-  lines: 4045-4052
+  lines: 4087-4094
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 4057-4059
+  lines: 4099-4101
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 4062-4072
+  lines: 4104-4114
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 4076-4145
+  lines: 4118-4187
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 4148-4163
+  lines: 4190-4205
 - kind: function
   qualified_name: trie/cli:mcp_uninstall_cmd
-  lines: 4167-4242
+  lines: 4209-4284
 - kind: function
   qualified_name: trie/cli:_render_uninstall_plan
-  lines: 4245-4265
+  lines: 4287-4307
 incoming_refs: 91
-outgoing_refs: 154
+outgoing_refs: 157
 ---
 <!-- trie:section symbol=trie/cli:__module__ fingerprint=d16be5917b98ff58f36f3487c349d240fc53396bc24bb9e0d8903c2f9e48f690 body_fp=10f0e1573012e0fc76e1358d4da306bc2ba6e70254a41da3bf25ef8b26e41199 source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
 Main CLI module for trie providing comprehensive project management, triefact synchronization, and agent integration commands.
@@ -613,6 +619,9 @@ Resolves the audit log path for `trie audit` command.
 • Returns absolute paths, resolving relative config paths against project root
 • Allows cross-project audit by not requiring trie.toml when explicit path given
 <!-- trie:end -->
+<!-- trie:section symbol=trie/cli:index_cmd fingerprint=03be3ee88a8f66b5d0fcb774638b5784f0ff798428a46ca21c6d844027dd6ab2 body_fp=8d3aba6f7dd4eb53e26e97a40b98242febf33e4be4b24044ab45b1a13661414e source_ref=94ab54ce4fed9d45419aed45facacce5dc1f37cc role=api -->
+Regenerate the triefact-tree index (`<triefacts.root>/README.md`) from the live graph store without calling the LLM.
+<!-- trie:end -->
 <!-- trie:section symbol=trie/cli:diff_cmd fingerprint=8717e8f40f14f3cbce8b5f33b7db58fc53991bd573216967d830218e124c3051 body_fp=08b0ec3f23536af41bc1612fa3e7c18d42ee269ebbf51c4664ce111a34fd06bf source_ref=803982f6e9b4a09af5ec33e6a15eb99bf222e510 role=api -->
 Typer `diff` command that collects session evidence (triefact git diff + patch notes) and either synthesises an LLM narrative, dumps raw evidence, emits JSON, or writes a digest entry to the configured `diff.write_path`.
 
@@ -672,13 +681,17 @@ Supports single-file sync, dry-run preview, metadata-only refresh, roles-only cl
 <!-- trie:section symbol=trie/cli:_has_existing_triefacts fingerprint=e3127b5904f703ca364034223353af7b38d3aa9ec4c1fa155e0f4f69852c6b1c body_fp=0a62d5928c91a171e378bd5fab17ad701335a6b91b910ea6c795000ccad9b267 source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
 Returns True if the triefacts directory exists and contains at least one markdown file.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_run_full_pass fingerprint=bb79698970f6bf03939cc8f4e978a27a8f069bf88b46988e3643853429bbc785 body_fp=b652071c36cc27d10dc8a56d4394cca9a2959858cb060a4d90f2c85949c41206 source_ref=4f0622786b51d5b9394fc2a9e83adfb56969c440 role=orchestration -->
-Executes first-run bootstrap sync: scans project, builds plan, prompts for confirmation, then generates triefacts.
+<!-- trie:section symbol=trie/cli:_run_full_pass fingerprint=310d9b9367e302ff3c3768ed538bc8587b16f09cbab1873b014d1ae7e79b7e8e body_fp=66cee14485bb66797beb5c1db2aad70e333562e341f5eb5b9bd1c06e6296fd6b source_ref=94ab54ce4fed9d45419aed45facacce5dc1f37cc role=orchestration -->
+Executes first-run bootstrap sync: scans project, builds plan, prompts for confirmation, then generates triefacts and refreshes the index.
 
 - Requires budget/limit or interactive confirmation when no cap is set
 - Scans project and builds token estimation plan before proceeding
+- Calls `_refresh_index_quietly` after a successful sync if any files were synced
 - Reports per-file errors via `_report_sync_errors`; exits with code 1 if any occurred
 - Reports final cost comparison (estimated vs actual) and files processed
+<!-- trie:end -->
+<!-- trie:section symbol=trie/cli:_refresh_index_quietly fingerprint=d529f7105e01e70c95ec0edde7ecd5d69d83d6a4b700b9586c39ec54c6ad83d6 body_fp=157f92062beabea3f06f4d4fb44d43034a1b6fdc4bb0eed344927dec5d9dbe30 source_ref=94ab54ce4fed9d45419aed45facacce5dc1f37cc role=util -->
+Regenerate the triefact index after a sync, silently swallowing all exceptions.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:_report_sync_errors fingerprint=728c6f436fd1675b4a5e8b61b79f8776946aa9129a1e2634405f94b84d5323ba body_fp=dfd62a66da3f7a3aaa2ed6f59513040657558f6b4af2e41c5de6ac6e8d04adc7 source_ref=4f0622786b51d5b9394fc2a9e83adfb56969c440 role=util -->
 Report per-file sync failures to `reporter`, printing up to 5 errors plus a credential hint when error text suggests a missing API key.
@@ -718,11 +731,11 @@ Runs the roles-only sync mode: derives/loads role taxonomy then classifies every
 - Uses cascade model (or override) for role classification
 - Reports taxonomy derivation, symbols classified, and role changes
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_run_incremental_sync fingerprint=e5df6c749968095f74965bc63f2c3ebcb9c356069c258aa421b8771b51565cf7 body_fp=4d791113fc3c338ce177f865e870a135d4c1d67582d6b9f2cf8711828f46458b source_ref=4f0622786b51d5b9394fc2a9e83adfb56969c440 role=orchestration -->
+<!-- trie:section symbol=trie/cli:_run_incremental_sync fingerprint=5a229490f92f265dce89d7500267a7ea9a086deb87d637dfd006a782d18a5d31 body_fp=752def5710f8f5918529e99aedbf64da038f3be66e8ef1e30c94b40a11f39205 source_ref=94ab54ce4fed9d45419aed45facacce5dc1f37cc role=orchestration -->
 Execute an incremental sync that regenerates only stale triefacts and their cascade dependencies.
 
 - Loads project config and opens the SQLite store with activity progress tracking
-- Calls `run_incremental` to sync directly stale files and their cascade neighbors
+- Calls `run_incremental` to sync directly stale files and their cascade neighbors; calls `_refresh_index_quietly` when any files were synced
 - Reports orphan triefact removals and sync statistics to the user
 - Calls `_report_sync_errors` after syncing; exits code 1 if all files failed or any file errored
 - Honors budget/limit constraints and reports any files skipped due to those caps

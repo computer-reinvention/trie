@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/session_diff.py
-file_fingerprint: fcee19fbaac693e19eb5b7ccca451efba5519ab5d95d4eced688af839bb2f304
-last_synced_at: '2026-07-25T00:40:40Z'
+file_fingerprint: ff21966379c1c0c5993158671f9f42013c27c371072d60fd26e633a57b70c563
+last_synced_at: '2026-07-25T01:52:10Z'
 defines:
 - kind: module
   qualified_name: trie/session_diff:__module__
-  lines: 1-604
+  lines: 1-606
 - kind: class
   qualified_name: trie/session_diff:SessionDiff
   lines: 8-27
@@ -18,43 +18,43 @@ defines:
   lines: 20-27
 - kind: function
   qualified_name: trie/session_diff:_triefact_pathspecs
-  lines: 30-41
+  lines: 30-43
 - kind: function
   qualified_name: trie/session_diff:collect_session_diff
-  lines: 44-77
+  lines: 46-79
 - kind: function
   qualified_name: trie/session_diff:_one_line
-  lines: 80-112
+  lines: 82-114
 - kind: constant
   qualified_name: trie/session_diff:_FENCE
-  lines: 115-115
+  lines: 117-117
 - kind: function
   qualified_name: trie/session_diff:build_narrative_prompt
-  lines: 118-190
+  lines: 120-192
 - kind: constant
   qualified_name: trie/session_diff:_NARRATIVE_SYSTEM_PROMPT
-  lines: 193-202
+  lines: 195-204
 - kind: function
   qualified_name: trie/session_diff:synthesize_narrative
-  lines: 205-233
+  lines: 207-235
 - kind: function
   qualified_name: trie/session_diff:render_digest_section
-  lines: 236-375
+  lines: 238-377
 - kind: constant
   qualified_name: trie/session_diff:DIGEST_FILE_HEADER
-  lines: 378-382
+  lines: 380-384
 - kind: function
   qualified_name: trie/session_diff:_new_digest_filename
-  lines: 385-396
+  lines: 387-398
 - kind: function
   qualified_name: trie/session_diff:write_digest
-  lines: 399-472
+  lines: 401-474
 - kind: function
   qualified_name: trie/session_diff:collect_symbol_deltas
-  lines: 475-582
+  lines: 477-584
 - kind: function
   qualified_name: trie/session_diff:merge_applied_by_symbol
-  lines: 585-603
+  lines: 587-605
 incoming_refs: 7
 outgoing_refs: 0
 ---
@@ -70,8 +70,8 @@ Return `True` when `SessionDiff` has no diff text, no applied entries, and no pe
 <!-- trie:section symbol=trie/session_diff:SessionDiff.session_ids fingerprint=f8703e92cc108bac529c20bce6b83766f976d0424f7683d4e60f831b962e00f2 body_fp=a965b48afc59b753e1813be79724b80ffd65d52960bca31c9e3774495446941a source_ref=2fd24a66abd87a87819892d8d61ea7471cee29cb role=domain -->
 Return distinct, non-empty session IDs from `SessionDiff.applied` and `SessionDiff.pending`, preserving insertion order.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/session_diff:_triefact_pathspecs fingerprint=3568ac1bd7c9bb97bf5381b4a6f23bfdded8133fdc861827492ac664b54d5608 body_fp=3df403bc2b091b54f3fb6b1881d44ffdfe64e29f6c0e0c9fbfcb721b0cecd844 source_ref=4c4e91c3c881299bbd6cbb84617acdafd0760205 role=util -->
-Return git pathspecs covering the triefact root while excluding `config.diff.diffs_dir` to prevent digest files from polluting evidence collection.
+<!-- trie:section symbol=trie/session_diff:_triefact_pathspecs fingerprint=c1584da79e5bd71fa3f6f87e83e878f6710c3c911a9e94b7a15582a62f005dbe body_fp=4af57e3caf077f952f1548210fa3349f41121a72c02b8a9580ca95eb157fcc7c source_ref=876ccb9eaba2478453b69c9d3923da1f51105118 role=util -->
+Return git pathspecs covering the triefact root while excluding `config.diff.diffs_dir` and the root `README.md` to prevent digest files and the generated index from polluting evidence collection.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/session_diff:collect_session_diff fingerprint=c890a4f48029ac679e66239a6d6522bc61572276a1a52cc2da911309cdb1ecf2 body_fp=a559ab9075f3b849a287b0bb954b2f5622db71a9fad5d5d02f26a30d95011351 source_ref=4c4e91c3c881299bbd6cbb84617acdafd0760205 role=orchestration -->
 Gather one session's evidence into a `SessionDiff`: git diff of the triefact tree vs `base`, applied patch notes from the session log, and pending patch notes from the store.
