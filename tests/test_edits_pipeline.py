@@ -9,7 +9,6 @@ from trie.config import Config
 from trie.edits.pipeline import preview_patches, record_intent, session_note_ok
 from trie.graph.store import Store
 from trie.parse.python import extract_symbols
-from trie.session_log import read_entries
 
 
 class TestSessionNoteQuality:
@@ -59,14 +58,23 @@ def test_record_intent_archives_notes_without_generation(tmp_path: Path) -> None
         assert result["recorded"] == 2
         assert set(result["symbols"]) == {"m:f", "m:new"}
 
-        rows = read_entries(tmp_path)
-        assert {r["qname"]: r["op"] for r in rows} == {"m:f": "modify", "m:new": "create"}
-        assert all(r["session_note"] == "ship the m module rework" for r in rows)
+        # Sealed in place: rows stay in the qname-keyed table, stamped with
+        # the session note, until the digest write consumes them.
+        sealed = store.get_all_patches_grouped(applied=True)
+        assert set(sealed) == {"m:f"}
+        assert sealed["m:f"][0]["session_note"] == "ship the m module rework"
+        creates = store.get_create_patches_grouped(applied=True)
+        assert [c["target_qname"] for rows_ in creates.values() for c in rows_] == ["m:new"]
 
-        # Queue cleared; source byte-identical (no generation, ever).
+        # Nothing left UNSEALED; source byte-identical (no generation, ever).
+        assert store.get_patched_qnames(applied=False) == []
+        assert store.get_create_patches_grouped(applied=False) == {}
+        assert (tmp_path / "m.py").read_text() == src_before
+
+        # Consumption (what the digest write does) empties the tables.
+        store.delete_applied_patches()
         assert store.get_patched_qnames() == []
         assert store.get_create_patches_grouped() == {}
-        assert (tmp_path / "m.py").read_text() == src_before
 
         # Empty queue re-run is a no-op success.
         again = record_intent(store, config, tmp_path, session_note="")
@@ -81,8 +89,8 @@ def test_record_intent_preserves_structural_ops(tmp_path: Path) -> None:
         store.add_patch("m:f", "f is superseded", "", "s1", kind="delete")
         result = record_intent(store, config, tmp_path, session_note="")
         assert result["ok"] is True and result["recorded"] == 1
-        rows = read_entries(tmp_path)
-        assert rows[0]["qname"] == "m:f" and rows[0]["op"] == "delete"
+        sealed = store.get_all_patches_grouped(applied=True)
+        assert sealed["m:f"][0]["kind"] == "delete"
     finally:
         store.close()
 

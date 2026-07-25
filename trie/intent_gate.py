@@ -142,16 +142,24 @@ def touched_symbols(project_root: Path, config: Config) -> list[TouchedSymbol]:
     return touched
 
 
-def _covered_qnames(project_root: Path, store: Store) -> set[str]:
-    """Qnames with intent on record for this commit window.
+def _covered_qnames(project_root: Path, config: Config, store: Store) -> set[str]:
+    """Qnames with intent on record for the upcoming commit.
 
     Coverage comes from either side of the apply boundary:
-    - still-pending patch notes (modify/delete/rename + creates), or
-    - applied session-log rows recorded since HEAD's commit time.
-    """
-    from trie.git_helpers import commit_timestamp
-    from trie.session_log import read_entries
+    - staged or sealed patch notes (modify/delete/rename + creates) in the
+      qname-keyed patches tables, or
+    - rows already consumed into this parent's digest entry.
 
+    No timestamps anywhere: intent is staged, pending, recorded in this
+    parent's digest entry (the digest write consumes pending BEFORE the commit
+    lands, so a second gate run must see the digest as coverage), or already
+    part of HEAD and not gating at all.
+    """
+    from trie.git_helpers import current_head
+    from trie.session_diff import iter_digest_entries, rows_from_digest_entry
+
+    # Staged AND sealed rows both cover: the applied flag is a lifecycle
+    # marker, not a coverage boundary.
     covered: set[str] = set(store.get_patched_qnames())
     for _file, rows in store.get_create_patches_grouped().items():
         for row in rows:
@@ -159,11 +167,17 @@ def _covered_qnames(project_root: Path, store: Store) -> set[str]:
             if q:
                 covered.add(q)
 
-    since = commit_timestamp(project_root, "HEAD")
-    for entry in read_entries(project_root, since=since):
-        q = entry.get("qname")
-        if q:
-            covered.add(q)
+    # The uncommitted digest entry for the current parent: pending rows that
+    # were already consumed into it still cover their symbols.
+    head = current_head(project_root)
+    if head:
+        diffs_dir = getattr(getattr(config, "diff", None), "diffs_dir", "triefacts/triediffs")
+        for entry in iter_digest_entries(project_root, diffs_dir=diffs_dir):
+            if head.startswith(entry.get("parent", "\x00")):
+                for row in rows_from_digest_entry(entry):
+                    if row.get("qname"):
+                        covered.add(row["qname"])
+                break
     return covered
 
 
@@ -172,6 +186,6 @@ def evaluate(project_root: Path, config: Config, store: Store) -> IntentReport:
     touched = touched_symbols(project_root, config)
     if not touched:
         return IntentReport()
-    covered = _covered_qnames(project_root, store)
+    covered = _covered_qnames(project_root, config, store)
     uncovered = [t for t in touched if t.qname not in covered]
     return IntentReport(touched=touched, uncovered=uncovered)

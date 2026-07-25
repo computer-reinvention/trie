@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: tests/test_init.py
-file_fingerprint: bde2802eed11bb346b58ca1dd7f9b967ea013e279ae2d78b4c902faa4cde363f
-last_synced_at: '2026-07-25T08:07:22Z'
+file_fingerprint: 5736826df42f8be2f947fcbe12980a078586f161eeb76316166dc3c5d846b138
+last_synced_at: '2026-07-25T11:18:12Z'
 defines:
 - kind: module
   qualified_name: tests/test_init:__module__
-  lines: 1-424
+  lines: 1-398
 - kind: function
   qualified_name: tests/test_init:python_project
   lines: 21-23
@@ -72,55 +72,55 @@ defines:
   lines: 167-171
 - kind: function
   qualified_name: tests/test_init:test_install_hook_writes_new_pre_commit_when_git_repo
-  lines: 177-195
+  lines: 177-191
 - kind: function
   qualified_name: tests/test_init:test_install_hook_appends_to_existing_pre_commit
-  lines: 198-209
+  lines: 194-205
 - kind: function
   qualified_name: tests/test_init:test_install_hook_idempotent
-  lines: 212-217
+  lines: 208-213
 - kind: function
   qualified_name: tests/test_init:test_install_hook_skips_when_pre_commit_framework_present
-  lines: 220-226
+  lines: 216-222
 - kind: function
   qualified_name: tests/test_init:test_install_hook_skips_when_not_a_git_repo
-  lines: 229-233
+  lines: 225-229
 - kind: function
   qualified_name: tests/test_init:test_init_project_install_hooks_in_git_repo
-  lines: 239-244
+  lines: 235-240
 - kind: function
   qualified_name: tests/test_init:test_init_project_default_does_not_install_hooks
-  lines: 247-251
+  lines: 243-247
 - kind: function
   qualified_name: tests/test_init:test_cli_init_install_hooks_flag_in_git_repo
-  lines: 257-263
+  lines: 253-259
 - kind: function
   qualified_name: tests/test_init:test_cli_init_no_install_hooks_flag_skips
-  lines: 266-271
+  lines: 262-267
 - kind: function
   qualified_name: tests/test_init:test_cli_init_framework_path_prints_snippet
-  lines: 274-281
+  lines: 270-277
 - kind: function
   qualified_name: tests/test_init:test_cli_init_non_interactive_skips_prompt
-  lines: 284-288
+  lines: 280-284
 - kind: function
   qualified_name: tests/test_init:test_cli_init_prints_scan_summary
-  lines: 291-297
+  lines: 287-293
 - kind: function
   qualified_name: tests/test_init:test_cli_init_prints_setup_instruction_in_next_steps
-  lines: 305-314
+  lines: 301-310
 - kind: function
   qualified_name: tests/test_init:test_cli_init_does_not_run_setup_in_non_interactive_env
-  lines: 317-332
+  lines: 313-328
 - kind: function
   qualified_name: tests/test_init:test_cli_init_runs_setup_when_user_accepts_prompt
-  lines: 335-365
+  lines: 331-361
 - kind: function
   qualified_name: tests/test_init:test_cli_init_does_not_run_setup_when_user_declines_prompt
-  lines: 368-387
+  lines: 364-383
 - kind: function
-  qualified_name: tests/test_init:test_hook_block_includes_diff_write
-  lines: 390-423
+  qualified_name: tests/test_init:test_hook_block_is_one_gate_command
+  lines: 386-397
 incoming_refs: 0
 outgoing_refs: 46
 ---
@@ -217,10 +217,10 @@ Tests that init_project runs a scan by default and creates graph database.
 <!-- trie:section symbol=tests/test_init:test_init_no_scan_skips_graph_db fingerprint=8a43923d811342cd52c6745b26f45fe229f5ef19c7f24d1f2de59b0c7fdfc80d body_fp=5ad10d8236b34348a85c707fc1aa26c9fde49d686a910f6459efd8686e5f0492 source_ref=0f97acda485ff7a046c788feb9cbfd63ccd9448a role=test-infrastructure -->
 Tests that `init_project` skips graph database creation when `run_scan=False`.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_init:test_install_hook_writes_new_pre_commit_when_git_repo fingerprint=b18c0c04fcf836bcab6ffd1e5ab09560a6380646800a7832ec95a5287ec39fdf body_fp=d59ba76a04edc78688b27178a9e665c4beb17bf96f4446a430dee09c70a43d73 source_ref=0f97acda485ff7a046c788feb9cbfd63ccd9448a role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_init:test_install_hook_writes_new_pre_commit_when_git_repo fingerprint=64a9a95f7c69c270f1385333fb2570b86c968cff3a4761f8382c6d14296f1bb2 body_fp=eb99c144c4cd4b8654558358d19138dfd1f3d2e246c496effc3d805a971498bc source_ref=3818b67c25669f0bbec2cc0497ecfcf056639ec1 role=test -->
 Tests that `install_pre_commit_hook` creates a new git pre-commit hook in a git repository.
 
-- Verifies hook contains `PRE_COMMIT_HOOK_MARKER`, runs `trie -q lock-check` before `trie -q verify`, and is executable
+- Verifies hook contains `PRE_COMMIT_HOOK_MARKER`, delegates to `trie gate || exit $?`, and is executable
 - Returns `installed=True`, `strategy="git_hook"`, and valid `hook_path`
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_init:test_install_hook_appends_to_existing_pre_commit fingerprint=ab1aa18038215b7dde8e92f583a36876384f058fd046a737eb33efc13757f132 body_fp=ad070b5c2a3523a8c21bc937ba43ce7d8802b00bdf2ee370c025a346a455b118 source_ref=0f97acda485ff7a046c788feb9cbfd63ccd9448a role=test-infrastructure -->
@@ -285,6 +285,6 @@ Tests that the `trie init` command automatically runs `trie setup` when user acc
 <!-- trie:section symbol=tests/test_init:test_cli_init_does_not_run_setup_when_user_declines_prompt fingerprint=2b88a1a18da864f17d833277406db5bf219c9e374d807aafa36d720cb4263986 body_fp=40c757ce965b70c083f760acd74cb81ec53dc3bbeb4285e8fdd8082be1c3a71a source_ref=0f97acda485ff7a046c788feb9cbfd63ccd9448a role=test-infrastructure -->
 Tests that declining the setup prompt in `trie init` skips auto-setup while preserving manual instruction.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_init:test_hook_block_includes_diff_write fingerprint=388f0f3645fc4f5093d86d93e5ffcae9aa4ba9e680748fda429ff7d04491a3e8 body_fp=486ca689dedc6838212b817293419c87eaa92b39a6439739eb30ede188922211 source_ref=60d1c5f220cbf4d9589d8b16aafa2717ef6eac76 role=test -->
-Assert that `PRE_COMMIT_HOOK_BLOCK` contains `trie -q diff --write` and `git add TRIE_DIFF.md triefacts/triediffs`, that commands follow the order `verify → intent gate → diff-write`, that the `trie intent` line is blocking (`|| exit`) and non-quiet, and that the diff-write line is non-blocking (no `|| exit`).
+<!-- trie:section symbol=tests/test_init:test_hook_block_is_one_gate_command fingerprint=d46d254549348d0e35f3a9b624ff6c7b9d945d97cfac5ffa32de6be8deba2fcd body_fp=c55f914972cb40fca46a16d831158bf64a420b60331babaed810e6a604d19c80 source_ref=3818b67c25669f0bbec2cc0497ecfcf056639ec1 role=test -->
+Assert that `PRE_COMMIT_HOOK_BLOCK` delegates entirely to `trie gate || exit $?` and embeds no stale individual gate steps.
 <!-- trie:end -->

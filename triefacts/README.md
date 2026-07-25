@@ -9,17 +9,17 @@ Prose descriptions of every in-scope source file and symbol, kept in sync with t
 The most-referenced public symbols — start reading here.
 
 - [`trie/config:Config`](trie/config.md) (142 refs) `config` — Root configuration dataclass aggregating all subsection configs, with classmethods to construct from a dict, a TOML file path, or by walking up the directory tree.
-- [`trie/cli:app`](trie/cli.md) (91 refs) `cli-interface` — Top-level Typer application instance that defines the trie CLI interface.
+- [`trie/cli:app`](trie/cli.md) (95 refs) `cli-interface` — Top-level Typer application instance that defines the trie CLI interface.
 - [`tests/fake_client:FakeTrieClient`](tests/fake_client.md) (79 refs) `test` — Test double for `TrieClient` that returns preconfigured structured outputs and records call parameters for verification.
+- [`trie/graph/store:Store`](trie/graph/store.md) (68 refs) `persistence` — SQLite-backed persistence for trie's symbol graph and file fingerprints.
 - [`tests/test_mcp:tools`](tests/test_mcp.md) (67 refs) `test` — Creates a TrieTools fixture for the populated test project and ensures cleanup after use.
-- [`trie/graph/store:Store`](trie/graph/store.md) (67 refs) `persistence` — SQLite-backed persistence for trie's symbol graph and file fingerprints.
 - [`trie/parse/python:extract_symbols`](trie/parse/python.md) (66 refs) `source-parsing` — Parse Python file and extract its top-level symbols: functions, classes, methods, constants, and module residuals.
 - [`trie/sync/writer:TriefactFile`](trie/sync/writer.md) (52 refs) `persistence` — Parses, manipulates, and renders triefact files containing YAML frontmatter and trie-managed documentation sections.
 - [`trie/cli:console`](trie/cli.md) (37 refs) `cli-interface` — Creates a Rich Console instance for styled terminal output across CLI commands.
 - [`trie/sync/single_file:sync_single_file`](trie/sync/single_file.md) (37 refs) `orchestration` — Generate or refresh the triefact file for a single Python source file using LLM calls.
 - [`tests/test_mcp_install:project`](tests/test_mcp_install.md) (34 refs) `test-infrastructure` — Creates temporary project directory with trie.toml configuration file and cleans up MCP installation artifacts after test completion.
+- [`trie/config:ConfigNotFoundError`](trie/config.md) (34 refs) `config-management` — Exception raised when Config.find_and_load cannot locate a trie.toml file in the directory tree.
 - [`tests/test_store:store`](tests/test_store.md) (33 refs) `test-infrastructure` — Pytest fixture that creates a temporary Store instance and ensures cleanup after test completion.
-- [`trie/config:ConfigNotFoundError`](trie/config.md) (33 refs) `config-management` — Exception raised when Config.find_and_load cannot locate a trie.toml file in the directory tree.
 - [`trie/reporter:Verbosity`](trie/reporter.md) (28 refs) `cli-interface` — Defines integer enum levels for controlling Reporter output verbosity.
 - [`trie/telemetry:timed`](trie/telemetry.md) (28 refs) `monitoring-telemetry` — Context manager that times a block and emits a telemetry event with duration on exit.
 - [`trie/tool_override_install:install`](trie/tool_override_install.md) (27 refs) `agent-integration` — Apply tool-override files for one or more targets.
@@ -43,6 +43,7 @@ The most-referenced public symbols — start reading here.
 - [test_e2e_sync.md](tests/test_e2e_sync.md) — End-to-end test for `trie sync --file` against the tiny fixture repo.
 - [test_edits_pipeline.md](tests/test_edits_pipeline.md) — Spec for the slimmed patch pipeline: an intent store, not a code generator.
 - [test_freshness.md](tests/test_freshness.md) — Tests for the turn-boundary freshness gate.
+- [test_gate.md](tests/test_gate.md) — Spec for `trie gate` — the commit guard as one command.
 - [test_generator.md](tests/test_generator.md)
 - [test_git_helpers.md](tests/test_git_helpers.md) — Tests for the narrow git helpers used by diff-aware regen.
 - [test_incremental.md](tests/test_incremental.md)
@@ -69,7 +70,6 @@ The most-referenced public symbols — start reading here.
 - [test_scheduler.md](tests/test_scheduler.md) — Tests for the wave-based file scheduler (trie/sync/scheduler.py).
 - [test_scope.md](tests/test_scope.md)
 - [test_session_diff.md](tests/test_session_diff.md) — Tests for the session log archive and the `trie diff` evidence collection/prompt assembly.
-- [test_session_log.md](tests/test_session_log.md)
 - [test_setup.md](tests/test_setup.md) — End-to-end tests for `trie setup` and the underlying hook installer.
 - [test_store.md](tests/test_store.md)
 - [test_symbol_level_sync.md](tests/test_symbol_level_sync.md) — Symbol-level sync: regenerate only the symbols actually asked for.
@@ -130,7 +130,6 @@ The most-referenced public symbols — start reading here.
 - [scan.md](trie/scan.md)
 - [scope.md](trie/scope.md)
 - [session_diff.md](trie/session_diff.md)
-- [session_log.md](trie/session_log.md)
 - [telemetry.md](trie/telemetry.md) — Append-only JSONL telemetry for trie's own operations.
 - [tool_override_install.md](trie/tool_override_install.md) — Tool-override installation: replace an agent's built-in tools with trie wrappers.
 - [workflow_install.md](trie/workflow_install.md) — Install the triediff-comment GitHub workflow into a project.

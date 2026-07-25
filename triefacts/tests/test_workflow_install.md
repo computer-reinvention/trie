@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: tests/test_workflow_install.py
-file_fingerprint: 98cdafbdd0c5952e16b1e95d92e4ce5c9225df482fb611b854c5834f9b2a5d51
-last_synced_at: '2026-07-25T06:05:59Z'
+file_fingerprint: 972d03637e97293d6ab0b344e43229c88ede3749c4d1ff2abf70d82a94f80581
+last_synced_at: '2026-07-25T11:30:43Z'
 defines:
 - kind: module
   qualified_name: tests/test_workflow_install:__module__
-  lines: 1-122
+  lines: 1-91
 - kind: function
   qualified_name: tests/test_workflow_install:_git_repo
   lines: 13-15
@@ -17,23 +17,17 @@ defines:
   qualified_name: tests/test_workflow_install:test_render_comments_every_pr_digest_not_just_latest
   lines: 30-44
 - kind: function
-  qualified_name: tests/test_workflow_install:test_render_sync_bot_budget_and_guards
-  lines: 47-57
-- kind: function
-  qualified_name: tests/test_workflow_install:test_install_sync_bot_same_ownership_contract
-  lines: 60-75
-- kind: function
   qualified_name: tests/test_workflow_install:test_install_creates_updates_unchanged
-  lines: 78-94
+  lines: 47-63
 - kind: function
   qualified_name: tests/test_workflow_install:test_install_never_touches_user_owned_file
-  lines: 97-106
+  lines: 66-75
 - kind: function
   qualified_name: tests/test_workflow_install:test_install_skips_outside_git_repo
-  lines: 109-113
+  lines: 78-82
 - kind: function
   qualified_name: tests/test_workflow_install:test_install_dry_run_writes_nothing
-  lines: 116-121
+  lines: 85-90
 incoming_refs: 0
 outgoing_refs: 12
 ---
@@ -48,12 +42,6 @@ Verify that `render_triediff_workflow` embeds the diffs dir, the workflow marker
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_workflow_install:test_render_comments_every_pr_digest_not_just_latest fingerprint=17a4d8af547a745a795b346cba9aa1acf79d5bfc94195aee9c1ed7898f12171e body_fp=c3f50cbb6315f6a3bf2907c3e578c8caf832d40d1cd2ebf3fb46fc05f7c3c694 source_ref=627f061096890d85cce4ef5f799c85e105f99a79 role=test -->
 Assert that `render_triediff_workflow` emits a workflow that enumerates every PR-added digest file and comments each one, not only the newest.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_workflow_install:test_render_sync_bot_budget_and_guards fingerprint=2bd9be406013fe0f455387dd891abc6f904ef3ddb4ccb86fc15269ceac6f6db6 body_fp=630a9622511229c671ceb65796ab7c9dd3fce66e0a1553b8b858210ddb84809e source_ref=627f061096890d85cce4ef5f799c85e105f99a79 role=test -->
-Verify that `render_sync_bot_workflow` bakes in the budget, API key secret, fork-safety guard, and `trie -q verify` gate.
-<!-- trie:end -->
-<!-- trie:section symbol=tests/test_workflow_install:test_install_sync_bot_same_ownership_contract fingerprint=c33b1192184a691f626107e502d50cf3f8bc35aff46093631a482c59827d5347 body_fp=299ac6c5364099fd6a5a3d9996cec657cde334d2dcf26b6afb479d83207a2a80 source_ref=627f061096890d85cce4ef5f799c85e105f99a79 role=test -->
-Verify `install_sync_bot_workflow` follows the same create/unchanged/updated/skipped ownership contract as the triediff installer.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_workflow_install:test_install_creates_updates_unchanged fingerprint=5ed1532cf5d64694f2368632acc0558fd1878c9369c8b8db7cd0f7d8cfa98fe3 body_fp=00e5962c10480652d08fc6072dc81eb64a5ce14eeb836819c230d4b5af79f168 source_ref=1114060328a6896c14caf5ac33d5cf5b58fbfef8 role=test -->
 Verify `install_triediff_workflow` returns `"created"` on first run, `"unchanged"` on idempotent rerun, and `"updated"` when `diffs_dir` changes.

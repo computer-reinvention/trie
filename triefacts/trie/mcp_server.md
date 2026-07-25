@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/mcp_server.py
 file_fingerprint: 7329f07dcbafa8779ab3806f60785b6fb0a7a941e82a11b5953237ec8ce13cec
-last_synced_at: '2026-07-25T11:02:11Z'
+last_synced_at: '2026-07-25T11:49:36Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
 - kind: module
@@ -437,7 +437,7 @@ Archive all pending patch notes as intent via `record_intent`; no code is genera
 <!-- trie:section symbol=trie/mcp_server:TrieTools.patch_apply fingerprint=024a0904ecda7d9180f99812c988ecdbacfd6a753be4dfca14b95fdde5164453 body_fp=43930a6144854de6e6143dfb9822a12bf664a28d827de60b14b7c4c8abc77a1a source_ref=c921b380767d3408daed50f993e502b6ddb15ca3 role=api -->
 Back-compat alias for `TrieTools.commit()`; now accepts and forwards an optional `session_note` instead of always passing an empty string.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.all_symbols fingerprint=acced3bb257297d000ce63a4915aebd229274ba022dc35993e41f4906e0673ec body_fp=55d00a3a67706f204e48c5585f9a383cfc1a19e7acce6a4178bf7f6d3baa5daf source_ref=31da51020b7add0a40187e2904d7841c0e4651f1 role=api -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.all_symbols fingerprint=acced3bb257297d000ce63a4915aebd229274ba022dc35993e41f4906e0673ec body_fp=55d00a3a67706f204e48c5585f9a383cfc1a19e7acce6a4178bf7f6d3baa5daf source_ref=77098c0a1179a2a9ecd9ad8b5616de5b457df217 role=api -->
 TrieTools.all_symbols returns all project symbols sorted by rank_by, bypassing grep's empty predicate guard.
 
 - `rank_by`: sorting criterion, defaults to "inbound_count"
@@ -528,7 +528,7 @@ Searches the symbol database using a structured predicate with optional text-mat
 - Fallback attempts text search via ripgrep when SQL finds nothing, then fuzzy scoring against names/prose
 - SQL hits re-ranked by fuzzy relevance when `name_contains` present to surface closest matches first
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools._maybe_text_match_fallback fingerprint=d061850ff6487e0fde601e72500b697bd58b06916a488948f0a25a680f2e9e67 body_fp=74e61a3470a6a1434f35ad665bb7c372ed2a55c2c69619823afb363e29b16b16 source_ref=b002a84e4f30d22b29fa6bf9f2f5d71998be7d82 role=api -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools._maybe_text_match_fallback fingerprint=d061850ff6487e0fde601e72500b697bd58b06916a488948f0a25a680f2e9e67 body_fp=74e61a3470a6a1434f35ad665bb7c372ed2a55c2c69619823afb363e29b16b16 source_ref=77098c0a1179a2a9ecd9ad8b5616de5b457df217 role=domain -->
 Build fallback response envelope when grep predicate matches no symbols.
 
 Returns a dict with `kind` field indicating why the search failed:
@@ -540,7 +540,7 @@ Returns a dict with `kind` field indicating why the search failed:
 
 When text matches are found, applies predicate filters (scope_prefix, public_only, etc.) and caps results at configured limit. Always returns something actionable rather than "too noisy" refusal.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools._fuzzy_prose_fallback fingerprint=0c1e0782658f14fba532c4353851b382fdd0e24428fd65598839f72fbc87215c body_fp=ba5d77ddc0c42666f70b6e3efe40ec3a4df4dd3f445be6cf48c7b12f63835bf1 source_ref=b002a84e4f30d22b29fa6bf9f2f5d71998be7d82 role=util -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools._fuzzy_prose_fallback fingerprint=0c1e0782658f14fba532c4353851b382fdd0e24428fd65598839f72fbc87215c body_fp=ba5d77ddc0c42666f70b6e3efe40ec3a4df4dd3f445be6cf48c7b12f63835bf1 source_ref=77098c0a1179a2a9ecd9ad8b5616de5b457df217 role=domain -->
 Fuzzy-score all symbols against `query` using name, one_liner, and prose when exact searches fail.
 
 Returns a `fuzzy_prose` fallback envelope or `None` when no candidates clear `fuzzy_cutoff`. Applies predicate filters before scoring for efficiency. Uses lazy prose loading — only reads triefact bodies for symbols passing the `pre_filter` threshold.
@@ -570,7 +570,7 @@ Checks whether TrieTools fallback candidate symbol passes all non-name predicate
 - Ignores `name_contains` since fallback exists because name didn't match
 - Applies scope, visibility, kind, and edge count constraints from original predicate
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools._parse_predicate fingerprint=932563e4410469cd038ad9bb8ad1223403b3250aaf122efb34a712cc2be608d9 body_fp=97df960141315f3662c693ed7cc98d19a7302fbbc49bff518607eb8e83dd629c source_ref=387016dec2af121a411a78de8ef480a933c24894 role=domain -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools._parse_predicate fingerprint=932563e4410469cd038ad9bb8ad1223403b3250aaf122efb34a712cc2be608d9 body_fp=97df960141315f3662c693ed7cc98d19a7302fbbc49bff518607eb8e83dd629c source_ref=77098c0a1179a2a9ecd9ad8b5616de5b457df217 role=parsing -->
 Parses TrieTools agent predicate dict into GrepPredicate object or returns error envelope.
 
 - Validates field types and value ranges for all grep filter parameters
@@ -662,7 +662,7 @@ TrieTools._neighbour_summaries resolves qnames to compact symbol records with op
 - Skips deleted symbols that no longer exist in the store
 - Each record includes qname, signature, and truncated one-liner via `_symbol_summary`
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.trace fingerprint=73eb9bec13d74bd5ae45e72a5b691b87e3520de766924c3208b26e7bdcf3ed26 body_fp=ad9fa708eb8c34825e81fdb739a1452e9e22922199ce69f7033beab26d6cc436 source_ref=b002a84e4f30d22b29fa6bf9f2f5d71998be7d82 role=api -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.trace fingerprint=73eb9bec13d74bd5ae45e72a5b691b87e3520de766924c3208b26e7bdcf3ed26 body_fp=ad9fa708eb8c34825e81fdb739a1452e9e22922199ce69f7033beab26d6cc436 source_ref=77098c0a1179a2a9ecd9ad8b5616de5b457df217 role=api -->
 TrieTools.trace traverses the call graph from a starting symbol using breadth-first search.
 
 - `direction`: "callers", "callees", or "both" to control expansion direction
@@ -673,7 +673,7 @@ TrieTools.trace traverses the call graph from a starting symbol using breadth-fi
 - Edges tagged "in" (caller-side) or "out" (callee-side) relative to starting symbol
 - `truncated_at` lists hub symbols where expansion was blocked
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.grep_str fingerprint=7c92736236e6ccc5c8d906b78b97bcf545f2f54c2e218635cb1851d8a07888ab body_fp=e780d2e19c5809c8f4f5d93a264d3244075db7ff30058f72fe97e6189bff3061 source_ref=b002a84e4f30d22b29fa6bf9f2f5d71998be7d82 role=api -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.grep_str fingerprint=7c92736236e6ccc5c8d906b78b97bcf545f2f54c2e218635cb1851d8a07888ab body_fp=e780d2e19c5809c8f4f5d93a264d3244075db7ff30058f72fe97e6189bff3061 source_ref=77098c0a1179a2a9ecd9ad8b5616de5b457df217 role=api -->
 TrieTools.grep_str searches source bodies with regex using ripgrep and maps matched lines to enclosing symbols.
 
 - `regexp`: regex pattern to search for in source files
@@ -715,7 +715,7 @@ TrieTools.find_files searches for files matching a glob pattern with optional sc
 - `limit=100`: maximum results returned, mtime-sorted newest first
 - Returns dict with `matches` (relative paths), `match_count`, and `truncated` flag
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.grep_entry_points fingerprint=a40b453a3358e2fb289e16ffa988fa7300da361d6366c30d5b035811b7564545 body_fp=970b2c0833f34c63bdd7d323641a092da64ecf7a7a283fdb28742a7096e70f30 source_ref=b002a84e4f30d22b29fa6bf9f2f5d71998be7d82 role=api -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.grep_entry_points fingerprint=a40b453a3358e2fb289e16ffa988fa7300da361d6366c30d5b035811b7564545 body_fp=970b2c0833f34c63bdd7d323641a092da64ecf7a7a283fdb28742a7096e70f30 source_ref=77098c0a1179a2a9ecd9ad8b5616de5b457df217 role=api -->
 Finds high-traffic public symbols whose triefact prose fuzzy-matches the query string.
 
 - Filters to public symbols with `inbound_count >= 2` as candidate pool
@@ -723,7 +723,7 @@ Finds high-traffic public symbols whose triefact prose fuzzy-matches the query s
 - Sorts by relevance score descending, then inbound count ascending
 - Returns hits with qname, signature, inbound count, prose snippet, and relevance score
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.grep_symbol fingerprint=8f3e4bf4c648a9d74203d23ce3e4dd811c1954895663a4a1dca66d22e49bae91 body_fp=56a42702de7918e0cdfd7ad82c112097ea73e418d33fab84ba7749a72b30aa5f source_ref=b002a84e4f30d22b29fa6bf9f2f5d71998be7d82 role=api -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.grep_symbol fingerprint=8f3e4bf4c648a9d74203d23ce3e4dd811c1954895663a4a1dca66d22e49bae91 body_fp=56a42702de7918e0cdfd7ad82c112097ea73e418d33fab84ba7749a72b30aa5f source_ref=77098c0a1179a2a9ecd9ad8b5616de5b457df217 role=api -->
 Fuzzy symbol name lookup returning the best match plus similar symbols with relevance scores.
 
 TrieTools.grep_symbol performs three-phase matching: SQL substring search for fast candidates, rapidfuzz fallback against all symbol names when SQL finds nothing, then name/one_liner/prose scoring with lazy prose reads. Returns the highest-scoring match with up to 9 similar alternatives, each carrying a 0-100 relevance score. Better than grep for typo tolerance and discovering related symbols in one call.

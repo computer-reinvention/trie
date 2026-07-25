@@ -101,6 +101,11 @@ hand-built qname won't fix that.
 - **Don't worry about whether a triefact exists.** If a symbol has no
   prose yet, `«read»` still returns signature, callers, and callees;
   `prose` is empty and `notes` says so.
+- **In CI runners there are no git hooks.** If you are committing from
+  an Actions runner (or any automation), the guard does not run by
+  itself: run `trie refresh` once after checkout (cold graph, no LLM),
+  and run `trie gate` before `git commit` — it is exactly what the
+  pre-commit hook runs, and its failure output tells you what to fix.
 - **Every source change needs a patch note.** Edit natively, then
   record why: `«patch»` per touched symbol (CLI: `trie patch create <qname> -n "<why>"`). The
   pre-commit `trie intent` gate blocks commits with unexplained
