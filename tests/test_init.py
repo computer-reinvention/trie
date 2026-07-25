@@ -182,13 +182,9 @@ def test_install_hook_writes_new_pre_commit_when_git_repo(python_project: Path):
     assert hook_path is not None
     text = hook_path.read_text()
     assert PRE_COMMIT_HOOK_MARKER in text
-    # The hook runs lock-check before verify so a commit during a refresh/sync
-    # fails fast with a clear message rather than racing the writer.
-    assert "trie -q lock-check" in text
-    assert "trie -q verify" in text
-    # Order matters: lock-check must precede verify so the commit fails on
-    # contention before spending cycles on the offline drift check.
-    assert text.index("trie -q lock-check") < text.index("trie -q verify")
+    # The hook delegates the whole guard (lock + verify + intent + digest) to
+    # one command so installed hooks never go stale as the guard evolves.
+    assert "trie gate || exit $?" in text
     # Must be executable.
     import stat
 
@@ -387,37 +383,15 @@ def test_cli_init_does_not_run_setup_when_user_declines_prompt(
     assert "trie setup" in result.output
 
 
-def test_hook_block_includes_diff_write():
+def test_hook_block_is_one_gate_command():
+    """The hook body must be a single `trie gate` call: embedding individual
+    gate steps in the shell block made installed hooks go stale whenever the
+    guard evolved (observed in the field). `trie gate` owns the logic."""
     from trie.init import PRE_COMMIT_HOOK_BLOCK
 
-    assert "trie -q diff --write" in PRE_COMMIT_HOOK_BLOCK, (
-        "Hook block must contain 'trie -q diff --write' to maintain the digest file"
-    )
-    assert "git add TRIE_DIFF.md triefacts/triediffs" in PRE_COMMIT_HOOK_BLOCK, (
-        "Hook block must stage the TRIE_DIFF.md symlink and the triediffs dir "
-        "after writing the digest"
-    )
-
-    verify_index = PRE_COMMIT_HOOK_BLOCK.index("trie -q verify")
-    intent_index = PRE_COMMIT_HOOK_BLOCK.index("trie intent")
-    diff_write_index = PRE_COMMIT_HOOK_BLOCK.index("trie -q diff --write")
-    assert verify_index < intent_index < diff_write_index, (
-        "hook order must be verify -> intent gate -> digest write: the gate "
-        "blocks unexplained changes before the digest archives their intent"
-    )
-    intent_line = next(ln for ln in PRE_COMMIT_HOOK_BLOCK.splitlines() if "trie intent" in ln)
-    assert "|| exit" in intent_line, "the intent gate must BLOCK the commit"
-    assert "-q intent" not in intent_line, (
-        "intent must not run quiet — its worklist output is the fix instructions"
-    )
-
-    diff_write_line_start = PRE_COMMIT_HOOK_BLOCK.rfind("\n", 0, diff_write_index) + 1
-    diff_write_line_end = PRE_COMMIT_HOOK_BLOCK.find("\n", diff_write_index)
-    if diff_write_line_end == -1:
-        diff_write_line_end = len(PRE_COMMIT_HOOK_BLOCK)
-    diff_write_line = PRE_COMMIT_HOOK_BLOCK[diff_write_line_start:diff_write_line_end]
-
-    assert "|| exit" not in diff_write_line, (
-        "The 'trie -q diff --write' line must NOT contain '|| exit' — "
-        "digest write is advisory and must never block the commit"
-    )
+    assert "trie gate || exit $?" in PRE_COMMIT_HOOK_BLOCK
+    # No step logic lives in the shell anymore.
+    for stale in ("trie -q verify", "trie intent", "diff --write", "git add"):
+        assert stale not in PRE_COMMIT_HOOK_BLOCK, f"hook must not embed {stale!r}"
+    # Degrades cleanly without trie on PATH.
+    assert "command -v trie" in PRE_COMMIT_HOOK_BLOCK

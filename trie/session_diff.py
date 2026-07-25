@@ -49,21 +49,49 @@ def collect_session_diff(
     config: Any,
     store: Any,
     *,
-    session_id: str | None = None,
     base: str = "HEAD",
-    since: float | None = None,
 ) -> SessionDiff:
-    """Gather one session's evidence: git diff of the triefact tree vs `base`, applied patch notes from the session log, and still-pending patch notes from the store. `session_id=None` means 'everything available'. `since` restricts applied log entries to those recorded after the given timestamp."""
+    """Gather one session's evidence: the git diff of the triefact tree vs
+    `base`, sealed (applied) intent rows awaiting consumption into a digest,
+    and still-unsealed staged notes. Everything comes from the qname-keyed
+    patches tables; the committed digest is the only durable record."""
     from trie.git_helpers import diff_paths
-    from trie.session_log import read_entries
 
     diff = diff_paths(project_root, _triefact_pathspecs(config), base=base) or ""
-    applied = read_entries(project_root, session_id=session_id, since=since)
+
+    applied: list[dict[str, Any]] = []
+    for qname, rows in store.get_all_patches_grouped(applied=True).items():
+        applied.append(
+            {
+                "qname": qname,
+                "op": next(
+                    (r.get("kind") for r in rows if r.get("kind") in ("delete", "rename")),
+                    "modify",
+                ),
+                "notes": [r.get("note", "") for r in rows if r.get("note")],
+                "reasons": [r.get("reason", "") for r in rows if r.get("reason")],
+                "session_note": next(
+                    (r.get("session_note") for r in rows if r.get("session_note")), ""
+                ),
+            }
+        )
+    for _file, rows in store.get_create_patches_grouped(applied=True).items():
+        for r in rows:
+            applied.append(
+                {
+                    "qname": r.get("target_qname", ""),
+                    "op": "create",
+                    "notes": [r.get("note", "")] if r.get("note") else [],
+                    "reasons": [r.get("reason", "")] if r.get("reason") else [],
+                    "session_note": r.get("session_note", ""),
+                }
+            )
+
     pending: list[dict[str, Any]] = []
-    for qname in store.get_patched_qnames():
-        for row in store.get_patches_for_qname(qname):
+    for qname, rows in store.get_all_patches_grouped(applied=False).items():
+        for row in rows:
             pending.append({**row, "qname": qname, "op": row.get("kind", "modify")})
-    for target_file, rows in store.get_create_patches_grouped().items():
+    for target_file, rows in store.get_create_patches_grouped(applied=False).items():
         for row in rows:
             pending.append(
                 {
@@ -75,8 +103,6 @@ def collect_session_diff(
                     "file_path": target_file,
                 }
             )
-    if session_id is not None:
-        pending = [r for r in pending if r.get("session_id") == session_id]
     return SessionDiff(triefact_diff=diff, applied=applied, pending=pending, base=base)
 
 
@@ -361,6 +387,14 @@ def render_digest_section(
         remainder = len(change_bullets) - len(shown)
         if remainder > 0:
             lines.append(f"- … and {remainder} more")
+            # The display is capped; the RECORD must not be. Overflow rows ride
+            # in an HTML comment (invisible rendered, parsed by
+            # _parse_digest_file) so intent-gate coverage and amend folding
+            # never lose symbols past the cap.
+            lines.append("<!-- trie:changes-overflow")
+            for b in change_bullets[max_changes:]:
+                lines.append(b)
+            lines.append("-->")
 
     lines.append("")
 
@@ -414,12 +448,19 @@ def _parse_digest_file(path: Any) -> dict | None:
         return None
     changes: list[str] = []
     in_changes = False
+    in_overflow = False
     for line in text.splitlines():
         stripped = line.strip()
         if stripped == "### Changes":
             in_changes = True
             continue
         if in_changes:
+            if stripped == "<!-- trie:changes-overflow":
+                in_overflow = True
+                continue
+            if in_overflow and stripped == "-->":
+                in_overflow = False
+                continue
             if stripped.startswith("### "):  # next section (e.g. Staged)
                 break
             if stripped.startswith("- ") and not stripped.startswith("- … and "):
@@ -511,6 +552,36 @@ def file_history(
                 )
                 if len(rows) >= limit:
                     return rows
+    return rows
+
+
+def rows_from_digest_entry(entry: dict) -> list[dict]:
+    """Fold a parsed digest entry's Changes lines back into applied-row shape.
+
+    Used on amend/retry: the previous digest for the same parent already
+    consumed that session's pending intent, so its rows are recovered from the
+    entry itself (the digest IS the record) and merged with any new pending
+    rows before the entry is rewritten in place.
+    """
+    marker_to_op = {"~": "modify", "+": "create", "\u2212": "delete"}
+    rows: list[dict] = []
+    for change in entry.get("changes", []):
+        parts = change.split(" ", 2)
+        if len(parts) < 2 or parts[0] not in marker_to_op:
+            continue
+        qname = parts[1]
+        text = ""
+        if len(parts) == 3 and parts[2].startswith("— "):
+            text = parts[2][2:]
+        rows.append(
+            {
+                "qname": qname,
+                "op": marker_to_op[parts[0]],
+                "notes": [text] if text else [],
+                "reasons": [],
+                "session_note": entry.get("title", ""),
+            }
+        )
     return rows
 
 

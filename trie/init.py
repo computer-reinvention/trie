@@ -12,48 +12,18 @@ PreCommitStrategy = Literal["git_hook", "framework", "none", "skipped"]
 
 PRE_COMMIT_HOOK_MARKER = "# trie-verify (added by `trie init`)"
 PRE_COMMIT_HOOK_END_MARKER = "# end trie-verify"
-# The hook runs two checks in order:
-#   1. `trie lock-check` — refuses the commit if a `trie refresh` or `trie sync`
-#      is in flight. Committing during a write would capture a half-updated
-#      triefact tree; better to fail loudly and let the user retry once the
-#      writer finishes.
-#   2. `trie verify` — the standard drift gate. Refuses commits when triefacts
-#      have drifted from source.
-# Both are wrapped in `command -v trie` so the hook degrades cleanly if trie
-# isn't on PATH (uninstalled, fresh clone before `uv tool install`, etc.).
-# Shell script block embedded in the project's .git/hooks/pre-commit file.
-# Wrapped in marker comments for idempotent installation and performs three
-# advisory/blocking steps when trie is available on PATH:
-#
-#   1. lock-check  — blocks the commit if an ongoing write holds the lock,
-#                    preventing partial-state commits.
-#   2. verify      — blocks the commit on drift detection, ensuring the
-#                    triefact file is consistent with the working tree.
-#   3. intent      — blocks the commit when a changed symbol carries no patch
-#                    note. The patch pipeline is an intent store: agents edit
-#                    source natively and record why per symbol; this gate is
-#                    what makes the record reliable rather than aspirational.
-#                    (Not -q: its worklist output IS the fix instructions.)
-#   4. diff --write — writes an intent-level digest entry (patch notes +
-#                    before/after symbol deltas, with an optional LLM
-#                    narrative when [diff] config enables it) as a new
-#                    immutable file under triefacts/triediffs/ and repoints the
-#                    TRIE_DIFF.md symlink at it, then stages both so every
-#                    commit — and therefore every PR — carries its digest as
-#                    a brand-new file (pure additions, never a diff-of-a-diff).
-#                    The names are hardcoded to the default diff.write_path /
-#                    diff.diffs_dir; users who change those config keys must
-#                    edit their hook accordingly. This step is purely
-#                    advisory: failure never blocks the commit.
+# The hook body is deliberately ONE command: `trie gate` runs lock-check,
+# verify (prose matches source), the intent gate (every changed symbol carries
+# a note), and the advisory digest write + stage. Keeping the logic inside trie
+# instead of this shell block means installed hooks don't go stale when the
+# guard evolves — the block itself should never need to change again. `trie
+# gate` is also the command to run explicitly where git hooks don't exist
+# (CI runners, agents in GitHub Actions). Wrapped in `command -v trie` so the
+# hook degrades cleanly if trie isn't on PATH.
 PRE_COMMIT_HOOK_BLOCK = (
     f"{PRE_COMMIT_HOOK_MARKER}\n"
     "if command -v trie >/dev/null 2>&1; then\n"
-    "    trie -q lock-check || exit $?\n"
-    "    trie -q verify || exit $?\n"
-    "    trie intent || exit $?\n"
-    "    if trie -q diff --write >/dev/null 2>&1; then\n"
-    "        git add TRIE_DIFF.md triefacts/triediffs >/dev/null 2>&1 || true\n"
-    "    fi\n"
+    "    trie gate || exit $?\n"
     "fi\n"
     f"{PRE_COMMIT_HOOK_END_MARKER}\n"
 )

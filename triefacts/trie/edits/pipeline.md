@@ -1,31 +1,31 @@
 ---
 trie_version: 0.1.9
 source: trie/edits/pipeline.py
-file_fingerprint: a9bc4da648df0417510c1b627331dd4b2c402ce8b3683ab9c492844e998c1766
-last_synced_at: '2026-07-25T10:43:54Z'
+file_fingerprint: e4ce1947f4debbcdbd358685daecd8bd8dbf2a1fd724692d8d89a8d3fc0c3cc4
+last_synced_at: '2026-07-25T11:48:33Z'
 description: 'The patch pipeline: an intent store, not a code generator.'
 defines:
 - kind: module
   qualified_name: trie/edits/pipeline:__module__
-  lines: 1-202
+  lines: 1-160
 - kind: constant
   qualified_name: trie/edits/pipeline:_SESSION_NOTE_STOPLIST
-  lines: 31-31
+  lines: 30-30
 - kind: constant
   qualified_name: trie/edits/pipeline:_SESSION_NOTE_MIN_CHARS
-  lines: 32-32
+  lines: 31-31
 - kind: function
   qualified_name: trie/edits/pipeline:session_note_ok
-  lines: 35-44
+  lines: 34-43
 - kind: function
   qualified_name: trie/edits/pipeline:_expand_callers
-  lines: 47-78
+  lines: 46-77
 - kind: function
   qualified_name: trie/edits/pipeline:preview_patches
-  lines: 81-114
+  lines: 80-106
 - kind: function
   qualified_name: trie/edits/pipeline:record_intent
-  lines: 117-201
+  lines: 109-159
 incoming_refs: 8
 outgoing_refs: 0
 ---
@@ -55,16 +55,16 @@ Expand callers of `seed_qnames` up to `cascade_depth` BFS levels, skipping hub s
 - `hub_threshold`: symbols with more incoming edges than this are not traversed.
 - Returns callers discovered beyond the seed set.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:preview_patches fingerprint=ed0ad870a7b008a2e2727be93c6bce0c9840e2e9dae58ae1d0398094c0172da6 body_fp=b84fcc72bbb9d635b1d3e88ab77dbae29f5a1e011cb1215aea1e014f544dd1a1 source_ref=93562620aac7b790c8dabcf8f01990451e22c9c3 role=domain -->
+<!-- trie:section symbol=trie/edits/pipeline:preview_patches fingerprint=1a7d82a23c520c63f7790504ba706aedb20733855251d5e4062f8d352d18ae9c body_fp=a65bf5267b23a4c69816835656f26bd0025865dcbca1c66514f0aa8d400530e3 source_ref=c360ff8f7df2b3e6b0a8cda993262c2aeead5962 role=domain -->
 Return a read-only summary of pending patch notes and the call-graph blast radius of the symbols they touch.
 
-- `patched_list`: sorted qualified names of symbols carrying pending notes
+- `patched_list`: sorted qualified names of symbols carrying unapplied (unsealed) notes
 - `cascade_list`: sorted qualified names of upstream callers within cascade depth, excluding patched symbols
 - `cascade_symbols` / `patched_symbols`: integer counts of each list
 - `total_patches`: total note count across all patched symbols
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:record_intent fingerprint=3cd5d6b04f553c0f7b4248833ec6526fb4e534fe63078d81a22d163c3c3977ac body_fp=5a2523947cb699c5ffa4e925efcb1f2aa0498cefb70ba09733e105fb2a980bf4 source_ref=93562620aac7b790c8dabcf8f01990451e22c9c3 role=orchestration -->
-Archive all pending patch notes to the session log and clear the queue, without generating any code.
+<!-- trie:section symbol=trie/edits/pipeline:record_intent fingerprint=4dd357a5776e518df25638789b44869d2584c02817b3d13688f6bf511139d00c body_fp=b4a1f289e1fecad1e96e885f8e2bfedbb3feab6fedf7807c88d3614f2b1e44ea source_ref=c360ff8f7df2b3e6b0a8cda993262c2aeead5962 role=orchestration -->
+Seal pending patch notes in-place via `store.mark_patches_applied` (stamps `applied=1`), without writing to any external file or clearing rows from the patches tables.
 
 - `session_note`: required when `total > 1`; validated via `session_note_ok` (rejects empty, too-short, and stoplist words); returns `ok=False` with `"session_note_required"` otherwise.
 - Returns a dict with `ok`, `recorded` count, `symbols` list, and a `next` advisory string.

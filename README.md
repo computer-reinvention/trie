@@ -76,12 +76,15 @@ trie trace src/graph/store:Store.replace_all_edges --direction callers
 Once the hook is installed, every commit passes through:
 
 ```
-git commit
-  ├─ trie verify      blocks if prose drifted from source        (offline)
-  ├─ trie intent      blocks if a changed symbol has no note     (offline)
-  └─ trie diff        writes the commit's digest, stages it      (LLM narrative,
-                      → triefacts/triediffs/<timestamp>-<id>.md   degrades gracefully)
+git commit  →  trie gate
+                 ├─ lock-check    blocks if a trie writer is mid-flight       (offline)
+                 ├─ verify        blocks if prose drifted from source         (offline)
+                 ├─ intent        blocks if a changed symbol has no note      (offline)
+                 └─ diff --write  writes + stages the commit's digest         (LLM narrative,
+                                  → triefacts/triediffs/<timestamp>-<id>.md    degrades gracefully)
 ```
+
+The hook body is exactly one command — `trie gate` — so the guard logic lives in trie and installed hooks never go stale. Where git hooks don't exist (CI runners), run `trie gate` yourself before committing.
 
 Fix a `verify` failure with `trie sync`. Fix an `intent` failure by recording the note it asks for — the error output is copy-pasteable commands.
 
@@ -249,9 +252,10 @@ Supported setup targets: `opencode`, `claude-code`, `claude-desktop`, `cursor`, 
 | Command | What | LLM? |
 | --- | --- | --- |
 | `trie init` | Write `trie.toml`, scan the graph, offer setup | no |
-| `trie setup` | Wire an agent: hook + overrides + docs (+ `--with-mcp`, `--with-sync-bot`) | no |
+| `trie setup` | Wire an agent: hook + overrides + docs (+ `--with-mcp`) | no |
 | `trie plan` | Drift report + cost preview (`--offline` skips the token counts) | free calls |
 | `trie sync` | Regenerate stale prose + cascade (`--budget` / `--limit` cap spend) | yes |
+| `trie gate` | The whole commit guard: lock + verify + intent + digest (what the hook runs; run explicitly in CI) | digest only |
 | `trie verify` | Bidirectional drift gate | no |
 | `trie intent` | Changed-symbols-need-notes gate | no |
 | `trie patch create <qname> -n "…"` | Record why a symbol changed (`--gone` for removals) | no |
@@ -283,12 +287,40 @@ Everything lives in `trie.toml` (written by `trie init`, all knobs commented):
 - First bootstrap is the big one (roughly proportional to symbols in scope — use `--limit` to sample quality first). Day-to-day syncs touch only what changed: cents, not dollars.
 - The diff-aware regeneration rubric keeps cosmetic edits cheap, and normalized fingerprints mean formatting passes cost nothing.
 
+## Running in CI (GitHub Actions)
+
+Runners have no `.git/hooks`, no turn hooks, and a cold `.trie/` cache — the guard has to be explicit. The pattern for an agent (or any automation) committing from a workflow:
+
+```yaml
+- uses: actions/checkout@v4
+- run: |
+    pipx install uv
+    uv tool install git+https://github.com/computer-reinvention/trie
+    trie refresh                  # cold start: rebuild the symbol graph (no LLM)
+
+# ... the agent works: edits code, records notes via the patch tools ...
+
+- env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # digest narrative + any sync
+  run: |
+    trie sync                     # regenerate prose the edits staled
+    trie gate                     # the same guard the pre-commit hook runs
+    git add -A && git commit -m "..." && git push
+```
+
+What to know:
+
+- **`trie gate` is the whole contract** — lock + verify + intent + digest, identical to the hook. Exit 1 output is copy-pasteable fix commands, so a gated agent can self-correct.
+- **Order matters on a cold runner**: `trie refresh` first (notes can only be recorded against symbols the graph knows), work, then `sync` → `gate` → commit.
+- **Intent travels with the tree**: recorded notes live in `triefacts/triediffs/.pending.md` (inside the triefact tree, not in `.trie/` cache) until the digest write consumes them at commit — nothing is lost between steps or stashed in runner-local state.
+- **No key?** `trie gate --no-digest` still enforces verify + intent; keyless `trie sync` fails loudly rather than pretending.
+
 ## Adopting trie in a team
 
 **Who pays for sync (pick one):**
 
 1. **Everyone has a key.** Each committer regenerates the prose their own edits stale; `trie plan` keeps costs visible. Keyless teammates hit the verify gate with a loud, accurate error (never a silent green).
-2. **One payer / sync bot.** `trie setup --with-sync-bot` installs a CI workflow that regenerates stale triefacts on PR branches with the org's `ANTHROPIC_API_KEY` secret and pushes the sync commit — fork-guarded, spend-capped per run.
+2. **One payer.** A single maintainer (or a scheduled job you own) runs `trie sync` for branches that need it, following the CI recipe above. A hosted, CodeRabbit-style service that does this centrally is a direction we're exploring — not something trie installs into your repo today.
 
 **Merge conflicts in triefacts: regenerate, don't hand-merge.** Two branches regenerating the same file produce textually different prose. Take either side wholesale and re-sync — drifted sections regenerate from the merged *source*, which is the only truth that matters:
 
