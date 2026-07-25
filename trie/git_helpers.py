@@ -34,11 +34,14 @@ def _run_git(
     *,
     cwd: Path,
     input_bytes: bytes | None = None,
+    ok_returncodes: tuple[int, ...] = (0,),
 ) -> bytes | None:
     """Run `git <args>` from `cwd`. Return stdout bytes on success, None on any failure.
 
     Captures stderr to suppress noise. Times out after 5s as a defensive guard against
-    a hung git invocation blocking sync.
+    a hung git invocation blocking sync. Callers may widen the accepted return codes via
+    `ok_returncodes` (e.g. `git diff --no-index` exits 1 when files differ but is still
+    considered a successful invocation).
     """
     try:
         result = subprocess.run(
@@ -51,7 +54,7 @@ def _run_git(
         )
     except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
         return None
-    if result.returncode != 0:
+    if result.returncode not in ok_returncodes:
         return None
     return result.stdout
 
@@ -77,6 +80,28 @@ def current_head(repo_root: Path) -> str | None:
         return None
     text = out.decode("utf-8", errors="replace").strip()
     return text or None
+
+
+def commit_timestamp(repo_root: Path, ref: str = "HEAD") -> float | None:
+    """Return the committer unix timestamp of *ref* as a float, or None on any failure."""
+    result = _run_git(["show", "-s", "--format=%ct", ref], cwd=repo_root)
+    if result is None:
+        return None
+    raw = result.decode("utf-8", errors="replace").strip()
+    if not raw:
+        return None
+    try:
+        return float(raw.splitlines()[0].strip())
+    except (ValueError, IndexError):
+        return None
+
+
+def show_file_at_ref(repo_root: Path, ref: str, relpath: str) -> str | None:
+    """Return the UTF-8 content of *relpath* at *ref*, or None on any failure."""
+    result = _run_git(["show", f"{ref}:{relpath}"], cwd=repo_root)
+    if result is None:
+        return None
+    return result.decode("utf-8", errors="replace")
 
 
 def compute_blob_hash(file_path: Path, *, max_bytes: int | None = None) -> str | None:
@@ -140,3 +165,45 @@ def retrieve_blob(repo_root: Path, blob_hash: str) -> str | None:
     if out is None:
         return None
     return out.decode("utf-8", errors="replace")
+
+
+def diff_paths(repo_root: Path, paths: list[str], base: str = "HEAD") -> str | None:
+    """Unified working-tree diff against `base` restricted to `paths`.
+
+    Uses ``--no-color`` so output is machine-consumable.  Returns ``None``
+    (not ``''``) when git itself fails, so callers can distinguish 'no
+    changes' from 'no git'.  An empty string means the paths are unchanged
+    relative to ``base``.
+
+    Untracked files under ``paths`` are also included as add-diffs against
+    ``/dev/null``, so brand-new files (e.g. freshly created triefacts) appear
+    in the returned diff even before they have been staged or committed.
+    """
+    out = _run_git(["diff", "--no-color", base, "--", *paths], cwd=repo_root)
+    if out is None:
+        return None
+    tracked_diff = out.decode("utf-8", errors="replace")
+
+    untracked_out = _run_git(
+        ["ls-files", "--others", "--exclude-standard", "--", *paths],
+        cwd=repo_root,
+    )
+    if untracked_out is None:
+        return tracked_diff
+
+    parts = [tracked_diff]
+    for raw_path in untracked_out.decode("utf-8", errors="replace").splitlines():
+        raw_path = raw_path.strip()
+        if not raw_path:
+            continue
+        abs_path = str(repo_root / raw_path)
+        no_index_out = _run_git(
+            ["diff", "--no-color", "--no-index", "--", "/dev/null", abs_path],
+            cwd=repo_root,
+            ok_returncodes=(0, 1),
+        )
+        if no_index_out is None:
+            continue
+        parts.append(no_index_out.decode("utf-8", errors="replace"))
+
+    return "".join(parts)

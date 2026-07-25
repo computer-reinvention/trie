@@ -385,3 +385,33 @@ def test_cli_init_does_not_run_setup_when_user_declines_prompt(
     assert "Running `trie setup`" not in result.output
     # The instruction line in Next steps still appeared.
     assert "trie setup" in result.output
+
+
+def test_hook_block_includes_diff_write():
+    from trie.init import PRE_COMMIT_HOOK_BLOCK
+
+    assert "trie -q diff --write" in PRE_COMMIT_HOOK_BLOCK, (
+        "Hook block must contain 'trie -q diff --write' to maintain the digest file"
+    )
+    assert "git add TRIE_DIFF.md triefacts/triediffs" in PRE_COMMIT_HOOK_BLOCK, (
+        "Hook block must stage the TRIE_DIFF.md symlink and the triediffs dir "
+        "after writing the digest"
+    )
+
+    verify_index = PRE_COMMIT_HOOK_BLOCK.index("trie -q verify")
+    diff_write_index = PRE_COMMIT_HOOK_BLOCK.index("trie -q diff --write")
+    assert diff_write_index > verify_index, (
+        "'trie -q diff --write' must appear AFTER 'trie -q verify' so that "
+        "verify gates the commit before the advisory digest write runs"
+    )
+
+    diff_write_line_start = PRE_COMMIT_HOOK_BLOCK.rfind("\n", 0, diff_write_index) + 1
+    diff_write_line_end = PRE_COMMIT_HOOK_BLOCK.find("\n", diff_write_index)
+    if diff_write_line_end == -1:
+        diff_write_line_end = len(PRE_COMMIT_HOOK_BLOCK)
+    diff_write_line = PRE_COMMIT_HOOK_BLOCK[diff_write_line_start:diff_write_line_end]
+
+    assert "|| exit" not in diff_write_line, (
+        "The 'trie -q diff --write' line must NOT contain '|| exit' — "
+        "digest write is advisory and must never block the commit"
+    )

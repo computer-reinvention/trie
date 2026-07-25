@@ -1,148 +1,148 @@
 ---
 trie_version: 0.1.9
 source: trie/models.py
-file_fingerprint: dc2d930447f50fa871f8a514c4d4c9b2654e8e20b71fff1a5be47540788c6436
-last_synced_at: '2026-07-20T09:54:39Z'
+file_fingerprint: 4551e2c3692b9295337b6653dd03e5a8e5486e381aadb9c53f47b71c2e92a67b
+last_synced_at: '2026-07-25T00:40:52Z'
 defines:
 - kind: module
   qualified_name: trie/models:__module__
-  lines: 1-705
+  lines: 1-712
 - kind: class
   qualified_name: trie/models:_LoopHolder
-  lines: 55-81
+  lines: 62-88
 - kind: method
   qualified_name: trie/models:_LoopHolder.__init__
-  lines: 58-69
+  lines: 65-76
 - kind: method
   qualified_name: trie/models:_LoopHolder.__del__
-  lines: 71-81
+  lines: 78-88
 - kind: constant
   qualified_name: trie/models:_thread_local
-  lines: 84-84
+  lines: 91-91
 - kind: function
   qualified_name: trie/models:_thread_holder
-  lines: 87-103
+  lines: 94-110
 - kind: constant
   qualified_name: trie/models:_inflight_lock
-  lines: 118-118
+  lines: 125-125
 - kind: constant
   qualified_name: trie/models:_inflight_sem
-  lines: 119-119
+  lines: 126-126
 - kind: constant
   qualified_name: trie/models:_inflight_bound
-  lines: 120-120
+  lines: 127-127
 - kind: function
   qualified_name: trie/models:configure_inflight_limit
-  lines: 123-134
+  lines: 130-141
 - kind: function
   qualified_name: trie/models:_inflight_slot
-  lines: 138-148
+  lines: 145-155
 - kind: class
   qualified_name: trie/models:SectionBody
-  lines: 157-194
+  lines: 164-201
 - kind: class
   qualified_name: trie/models:ProposedRole
-  lines: 197-212
+  lines: 204-219
 - kind: class
   qualified_name: trie/models:RoleTaxonomy
-  lines: 215-232
+  lines: 222-239
 - kind: class
   qualified_name: trie/models:RoleTag
-  lines: 235-254
+  lines: 242-261
 - kind: class
   qualified_name: trie/models:MergeNotesOutput
-  lines: 257-261
-- kind: class
-  qualified_name: trie/models:SymbolEdit
   lines: 264-268
 - kind: class
-  qualified_name: trie/models:SymbolProse
+  qualified_name: trie/models:SymbolEdit
   lines: 271-275
 - kind: class
-  qualified_name: trie/models:FileEdit
+  qualified_name: trie/models:SymbolProse
   lines: 278-282
 - kind: class
+  qualified_name: trie/models:FileEdit
+  lines: 285-289
+- kind: class
   qualified_name: trie/models:CallerDecision
-  lines: 285-291
+  lines: 292-298
 - kind: class
   qualified_name: trie/models:BatchFilterOutput
-  lines: 294-304
+  lines: 301-311
 - kind: class
   qualified_name: trie/models:FixupOutput
-  lines: 307-310
+  lines: 314-317
 - kind: class
   qualified_name: trie/models:ModelResult
-  lines: 318-349
+  lines: 325-356
 - kind: method
   qualified_name: trie/models:ModelResult.__init__
-  lines: 325-327
+  lines: 332-334
 - kind: method
   qualified_name: trie/models:ModelResult.output
-  lines: 330-331
+  lines: 337-338
 - kind: method
   qualified_name: trie/models:ModelResult.input_tokens
-  lines: 334-335
+  lines: 341-342
 - kind: method
   qualified_name: trie/models:ModelResult.output_tokens
-  lines: 338-339
+  lines: 345-346
 - kind: method
   qualified_name: trie/models:ModelResult.cache_creation_input_tokens
-  lines: 342-344
+  lines: 349-351
 - kind: method
   qualified_name: trie/models:ModelResult.cache_read_input_tokens
-  lines: 347-349
+  lines: 354-356
 - kind: function
   qualified_name: trie/models:_retry_after_seconds
-  lines: 358-368
+  lines: 365-375
 - kind: constant
   qualified_name: trie/models:_RETRYABLE_ANTHROPIC
-  lines: 371-371
+  lines: 378-378
 - kind: function
   qualified_name: trie/models:_is_retryable
-  lines: 374-397
+  lines: 381-404
 - kind: function
   qualified_name: trie/models:_backoff_delay
-  lines: 400-402
+  lines: 407-409
 - kind: function
   qualified_name: trie/models:_run_with_retry
-  lines: 405-459
+  lines: 412-466
 - kind: constant
   qualified_name: trie/models:T
-  lines: 462-462
+  lines: 469-469
 - kind: constant
   qualified_name: trie/models:_MODEL_ID_ALIASES
-  lines: 474-474
+  lines: 481-481
 - kind: function
   qualified_name: trie/models:_pydantic_ai_model_id
-  lines: 477-479
+  lines: 484-486
 - kind: function
   qualified_name: trie/models:_anthropic_model_name
-  lines: 482-486
+  lines: 489-493
 - kind: class
   qualified_name: trie/models:TrieClient
-  lines: 489-688
+  lines: 496-695
 - kind: method
   qualified_name: trie/models:TrieClient.__init__
-  lines: 502-523
+  lines: 509-530
 - kind: method
   qualified_name: trie/models:TrieClient._make_thread_model
-  lines: 525-540
+  lines: 532-547
 - kind: method
   qualified_name: trie/models:TrieClient.run
-  lines: 542-631
+  lines: 549-638
 - kind: method
   qualified_name: trie/models:TrieClient.run_text
-  lines: 633-663
+  lines: 640-670
 - kind: method
   qualified_name: trie/models:TrieClient.count_tokens
-  lines: 665-688
+  lines: 672-695
 - kind: function
   qualified_name: trie/models:make_client
-  lines: 691-704
-incoming_refs: 94
+  lines: 698-711
+incoming_refs: 95
 outgoing_refs: 6
 ---
-<!-- trie:section symbol=trie/models:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=9b387fda13f0c60ba17cbe1d813fca36e81accdb48ac1477cbbc51fd87ee73ba source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
+<!-- trie:section symbol=trie/models:__module__ fingerprint=040dd73062f452f0be03d3b12bd0034fbdf69902b59a94606a29415a8bde56d9 body_fp=9b387fda13f0c60ba17cbe1d813fca36e81accdb48ac1477cbbc51fd87ee73ba source_ref=8f45f466ffa9b5cb61224b64456ad3d91e218ec8 role=orchestration -->
 Provides LLM client infrastructure with structured output models and retry logic for trie documentation generation.
 
 - SectionBody, SymbolEdit, FileEdit: Pydantic models for structured LLM outputs
@@ -321,7 +321,7 @@ Converts trie's provider/model format to pydantic_ai's provider:model format usi
 <!-- trie:section symbol=trie/models:_anthropic_model_name fingerprint=3c87d22ca61cada7c6dd2721cf27ba2000942a7010fc3dac57aeb0cd6ca74261 body_fp=9f60ebe4d744a72dcf3f42d216efade5c4613aa01f6d939ef3729a3781e6bf20 source_ref=1a9fb4f4e7b12424d36509260b65dcfc94171e79 role=llm-client -->
 Extract the bare Anthropic model name from a full trie model ID by stripping the provider prefix.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:TrieClient fingerprint=0718f8b901193e0a54803cf1d16c21bc9c4d11d9ad7d63597d9c4e6e29072331 body_fp=dac333d9d56bde67a681063506e3985ae3c0f0353b5a4a02960cbb928e90ddcf source_ref=cf43f636b926264d14e4819c6c4e6e236424e130 role=io -->
+<!-- trie:section symbol=trie/models:TrieClient fingerprint=0718f8b901193e0a54803cf1d16c21bc9c4d11d9ad7d63597d9c4e6e29072331 body_fp=dac333d9d56bde67a681063506e3985ae3c0f0353b5a4a02960cbb928e90ddcf source_ref=8f45f466ffa9b5cb61224b64456ad3d91e218ec8 role=io -->
 Wraps Pydantic AI agent creation and execution with structured output, prompt caching, and retry logic.
 
 - `run`: Creates one-shot agent; accepts `output_type=str` for plain-text mode or a `BaseModel` subclass for structured output; supports configurable `output_retries` for pydantic-ai's internal validation retries
@@ -331,7 +331,7 @@ Wraps Pydantic AI agent creation and execution with structured output, prompt ca
 - Applies exponential backoff retry on rate limits and server errors
 - Configures request timeouts to prevent hung connections from blocking worker threads indefinitely
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:TrieClient.__init__ fingerprint=5ea067cab1ad71d37698daec406cb31c07a5b9df936a7ce4902ac6f4796b706c body_fp=dfe7c5ca5571689413f666f132f5f10e054e51d4fc49bb10b2ef084f0db137a6 source_ref=ed7528610d689f316f521122951d852adcfc8a59 role=model -->
+<!-- trie:section symbol=trie/models:TrieClient.__init__ fingerprint=5ea067cab1ad71d37698daec406cb31c07a5b9df936a7ce4902ac6f4796b706c body_fp=dfe7c5ca5571689413f666f132f5f10e054e51d4fc49bb10b2ef084f0db137a6 source_ref=8f45f466ffa9b5cb61224b64456ad3d91e218ec8 role=domain -->
 Initializes TrieClient with model ID conversion, timeout configuration, and raw Anthropic client.
 
 - `full_model_id`: trie's provider/model format (e.g., "anthropic/claude-sonnet-4-6")

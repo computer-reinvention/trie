@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_references_typescript.py
 file_fingerprint: 90d2d784bce8c13b080a3c66da948bb2fc2b32651e9cd830377c0e4812b9e93e
-last_synced_at: '2026-06-17T16:41:22Z'
+last_synced_at: '2026-07-25T00:55:45Z'
 defines:
 - kind: module
   qualified_name: tests/test_references_typescript:__module__
@@ -52,7 +52,7 @@ Resolve the absolute path to the `tiny_ts_repo` fixture directory relative to th
 <!-- trie:section symbol=tests/test_references_typescript:resolver fingerprint=e8a0cd88c003e249ecd284e7c5f80b987fd3a8b4f5ea5182804ba94c284b539b body_fp=c1398e900627451e8c6c6f3054c185d54877fc281a517f286582184c1f788c88 source_ref=209154e5a359935b1903b13d1ce16920d39b6a44 role=test -->
 Pytest fixture that builds and returns a `TsResolver` rooted at the `FIXTURE` directory.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_references_typescript:_edges fingerprint=044beb56d1617660c18dfbc98d5b3e707788ab743447415384ad5639d5611c88 body_fp=8598a8442ac8c997615fa894b4bbfd21b2aecccd79d978fd73757bba416cbfd6 source_ref=209154e5a359935b1903b13d1ce16920d39b6a44 role=test -->
+<!-- trie:section symbol=tests/test_references_typescript:_edges fingerprint=044beb56d1617660c18dfbc98d5b3e707788ab743447415384ad5639d5611c88 body_fp=8598a8442ac8c997615fa894b4bbfd21b2aecccd79d978fd73757bba416cbfd6 source_ref=209154e5a359935b1903b13d1ce16920d39b6a44 role=util -->
 Extract all reference edges from a TypeScript file as `(src_qname, kind, target_qname)` triples.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_references_typescript:test_alias_import_edge fingerprint=93a29111322058140848b411aae2e99c2e029693b4a67cdeed837e2b0ff6e6cc body_fp=abb26cd04c1d70238596c613a53dda78a052b6e33da6ee2d52a3498201851fd2 source_ref=209154e5a359935b1903b13d1ce16920d39b6a44 role=test -->

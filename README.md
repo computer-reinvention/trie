@@ -382,6 +382,49 @@ repos:
 
 `trie verify` exits non-zero on any of: a source symbol whose fingerprint no longer matches its section, a public symbol with no section, a section whose body was edited between sentinels (`tampered_body`), a section pointing at a deleted symbol (`orphan`), or a missing triefact file. Failures point at the specific symbol, so you know exactly what regenerated and why.
 
+## Session digests (`trie diff`)
+
+Agent sessions produce two kinds of evidence that normally die with the session: the **stated intent** (the patch notes recorded when edits were staged) and the **observed effect** (how the triefact tree's prose changed). `trie diff` fuses both into an intent-level digest — and the pre-commit hook commits it, so every PR carries a reviewer-readable account of what each commit meant to do.
+
+```
+$ trie diff              # narrative to the terminal (LLM synthesis)
+$ trie diff --raw        # deterministic evidence only, no LLM call
+$ trie diff --write      # write the digest entry (what the hook runs)
+```
+
+**Storage.** Each `--write` produces one immutable file: `triefacts/triediffs/<utc-timestamp>-<uuid>.md`. `TRIE_DIFF.md` at the repo root is a relative symlink to the latest one, atomically repointed after every write. One file per commit means the digest always appears in a PR as a brand-new file — pure additions, never a diff of a diff. (GitHub renders the symlink itself as a one-line path; read it locally, or open the newest file under `triefacts/triediffs/`.)
+
+**Entry anatomy.** The renderer owns the structure; evidence text can only enter through a single-line flattening gate, so a patch note can never break the document:
+
+```markdown
+## Fix digest window boundary leak — 2026-07-25 (parent bdadb2275eeb)
+
+<LLM narrative: ≤120 words, net change only, no headings>
+
+### Changes
+- ~ trie/session_log:read_entries — "old one-liner" → "new one-liner"
+- + trie/git_helpers:show_file_at_ref — "Return file content at a git ref."
+- − trie/session_diff:_diff_stat
+```
+
+The heading title is the session note (the unifying intent behind the apply), anchored on the **parent** commit — at pre-commit time the commit's own SHA doesn't exist yet. `### Changes` shows one line per symbol: before→after one-liner deltas parsed from the triefact tree at the base ref vs the working tree, churn-gated so regenerated-but-semantically-identical prose produces nothing. Repeated same-session notes against one symbol collapse to the first note plus a `(+N follow-ups)` count.
+
+**Windowing.** Applied-note windows are anchored on a persistent cursor (`.trie/digest_cursor.json`), not wall-clock arithmetic: a normal commit starts exactly after what the previous entry consumed; an amend or retry of the same commit rewrites that commit's existing file instead of spawning a duplicate.
+
+**Hook integration.** The `trie init` pre-commit block runs `trie -q diff --write` after `verify` passes and stages the symlink plus the digest file — the digest lands inside the very commit it describes. The step is advisory: no API key, no network, no problem — it degrades to deterministic evidence, and outright failure never blocks a commit.
+
+**Config** (`[diff]` in `trie.toml`):
+
+```toml
+[diff]
+narrative = true                   # LLM narrative at the top of each entry
+write_path = "TRIE_DIFF.md"        # root symlink pointing at the latest digest
+diffs_dir = "triefacts/triediffs"  # one immutable digest file per commit
+max_entries = 20                   # retention cap; oldest files pruned
+```
+
+Digest evidence collection excludes `diffs_dir` via git pathspec, so previous digests never feed back into new ones.
+
 ## Agent integration (MCP + CLI + turn hooks + tool overrides)
 
 trie ships an MCP server so coding agents read your codebase's prose self-description as a separate, durable context layer — not chat memory, not retrieved chunks, but a structured tree they can navigate _and edit_. The read verbs match how agents reason about a codebase — _find it_, _understand it_, _trace it_ — and the write verbs let them act on it without ever doing a blind line-range patch.

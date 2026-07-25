@@ -1136,6 +1136,260 @@ def _resolve_audit_log_path(log: Path | None, reporter: Reporter) -> Path:
     return cfg_path
 
 
+@app.command("diff")
+def diff_cmd(
+    ctx: typer.Context,
+    session: str | None = typer.Option(
+        None,
+        "--session",
+        "-s",
+        help="Restrict to one session id (defaults to all recorded activity).",
+    ),
+    base: str = typer.Option("HEAD", "--base", help="Git ref to diff the triefact tree against."),
+    raw: bool = typer.Option(
+        False,
+        "--raw",
+        help="Skip LLM synthesis; print patch notes and the raw triefact diff.",
+    ),
+    as_json: bool = typer.Option(
+        False,
+        "--json",
+        help="Emit the collected evidence as JSON (no LLM call). Mutually exclusive with --raw.",
+    ),
+    model: str | None = typer.Option(
+        None, "--model", help="Override the model used for narrative synthesis."
+    ),
+    write: bool = typer.Option(
+        False,
+        "--write",
+        help="Prepend a digest entry to the TRIE_DIFF file (config diff.write_path) and exit; used by the pre-commit hook.",
+    ),
+) -> None:
+    """Describe what changed in a session at the intent level.
+
+    Combines the raw git diff of the triefact tree with the patch notes recorded
+    when edits were staged (applied notes from the session log, pending notes from
+    the patch queue) and synthesises a coherent narrative via the LLM.  Use --raw
+    or --json to inspect the underlying evidence without paying for synthesis.
+    Pass --write to prepend a digest entry to the configured TRIE_DIFF file instead
+    of rendering to the terminal; this is the mode used by the pre-commit hook.
+    """
+    reporter = _get_reporter(ctx)
+
+    if raw and as_json:
+        reporter.error("--raw and --json are mutually exclusive")
+        raise typer.Exit(code=1)
+
+    if write and as_json:
+        reporter.error("--write and --json are mutually exclusive")
+        raise typer.Exit(code=1)
+
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError as exc:
+        reporter.error(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    from trie.session_diff import (
+        _one_line,
+        collect_session_diff,
+        collect_symbol_deltas,
+        render_digest_section,
+        synthesize_narrative,
+        write_digest,
+    )
+
+    if write:
+        import time
+        from datetime import datetime
+
+        from trie.git_helpers import commit_timestamp, current_head
+        from trie.session_log import resolve_digest_window, save_digest_cursor
+
+        # 1. Resolve parent commit identity
+        parent_sha = current_head(project_root)
+        if parent_sha is None:
+            parent_sha = base
+        parent_short = parent_sha[:12]
+
+        # 2. Determine the evidence window via the persistent digest cursor,
+        #    and pick up the same-commit digest file for amend/retry rewrites.
+        from trie.session_log import read_digest_cursor
+
+        since = resolve_digest_window(
+            project_root,
+            parent_sha,
+            fallback_since=commit_timestamp(project_root, base),
+        )
+        cursor = read_digest_cursor(project_root)
+        reuse_file = cursor.get("file") if cursor and cursor.get("parent") == parent_sha else None
+
+        # 3. Collect session evidence
+        store = Store(project_root / ".trie" / "graph.db")
+        try:
+            data = collect_session_diff(
+                project_root,
+                config,
+                store,
+                session_id=session,
+                base=base,
+                since=since,
+            )
+        finally:
+            store.close()
+
+        if data.is_empty():
+            reporter.info("no session changes; digest not updated")
+            return
+
+        # 4. Collect semantic symbol deltas
+        deltas = collect_symbol_deltas(project_root, config, base=base)
+
+        # 5. Derive a human title from the first non-empty session note
+        # (the per-apply unifying intent — NOT the per-symbol patch notes)
+        title: str | None = None
+        for entry in data.applied:
+            candidate = _one_line(entry.get("session_note", ""), max_chars=80)
+            if candidate:
+                title = candidate
+                break
+        if not title:
+            title = "Session changes"
+
+        # 6. Optionally synthesize an LLM narrative
+        narrative = ""
+        if getattr(config.diff, "narrative", True) and not raw:
+            try:
+                client = make_client(model or config.models.cascade, sync_cfg=config.sync)
+                narrative = synthesize_narrative(data, client)
+            except Exception:
+                narrative = ""
+
+        # 7. Render and write the digest section
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        section = render_digest_section(
+            data,
+            title=title,
+            date_str=date_str,
+            parent_short=parent_short,
+            narrative=narrative,
+            deltas=deltas,
+        )
+
+        written_file = write_digest(
+            project_root,
+            section,
+            diffs_dir=config.diff.diffs_dir,
+            symlink_path=config.diff.write_path,
+            max_entries=config.diff.max_entries,
+            reuse_file=reuse_file,
+        )
+
+        backed_by = "narrative" if narrative else "raw evidence"
+        reporter.info(
+            f"digest written to {written_file} ({backed_by}); {config.diff.write_path} -> latest"
+        )
+
+        # 8. Persist the digest cursor so the next run anchors correctly
+        covered_ts: float = 0.0
+        for entry in data.applied:
+            try:
+                ts = float(entry.get("ts", 0) or 0)
+            except (TypeError, ValueError):
+                ts = 0.0
+            if ts > covered_ts:
+                covered_ts = ts
+        if covered_ts == 0.0:
+            covered_ts = time.time()
+
+        save_digest_cursor(
+            project_root,
+            parent=parent_sha,
+            since=since if since is not None else 0.0,
+            covered=covered_ts,
+            file=written_file,
+        )
+        return
+
+    # ------------------------------------------------------------------ #
+    # Terminal rendering modes                                             #
+    # ------------------------------------------------------------------ #
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        data = collect_session_diff(
+            project_root,
+            config,
+            store,
+            session_id=session,
+            base=base,
+            since=None,
+        )
+    finally:
+        store.close()
+
+    if data.is_empty():
+        reporter.info("no session changes detected (no triefact diff, no patch notes)")
+        return
+
+    console = reporter.console
+
+    if as_json:
+        import json as _json
+
+        typer.echo(
+            _json.dumps(
+                {
+                    "base": data.base,
+                    "session_ids": data.session_ids(),
+                    "triefact_diff": data.triefact_diff,
+                    "applied": data.applied,
+                    "pending": data.pending,
+                },
+                indent=2,
+                default=str,
+            )
+        )
+        return
+
+    if raw:
+        console.print("[bold]Applied patch notes[/bold]")
+        for entry in data.applied:
+            notes_text = (
+                "; ".join(entry.get("notes") or []) if entry.get("notes") else "[dim](none)[/dim]"
+            )
+            op = entry.get("op", "?")
+            qname = entry.get("qname", "?")
+            console.print(f"  [green]✓[/green] [{op}] {qname} — {notes_text}")
+
+        console.print("[bold]Pending patch notes[/bold]")
+        for entry in data.pending:
+            note_val = entry.get("note", "")
+            notes_text = note_val if note_val else "[dim](none)[/dim]"
+            op = entry.get("op", "?")
+            qname = entry.get("qname", "?")
+            console.print(f"  [yellow]○[/yellow] [{op}] {qname} — {notes_text}")
+
+        if data.triefact_diff.strip():
+            console.print("[bold]Raw triefact diff[/bold]")
+            console.print(data.triefact_diff, highlight=False, markup=False)
+
+        return
+
+    # Default path: LLM narrative synthesis
+    client = make_client(model or config.models.cascade, sync_cfg=config.sync)
+    with console.status("synthesising session narrative..."):
+        narrative = synthesize_narrative(data, client)
+
+    from rich.markdown import Markdown
+
+    console.print(Markdown(narrative))
+    console.print(
+        f"[dim]{len(data.applied)} applied, {len(data.pending)} pending patch note(s);"
+        f" diff vs {data.base}[/dim]"
+    )
+
+
 def _print_scan_breakdown(
     reporter: Reporter, scan_result, db_path: Path, project_root: Path
 ) -> None:
@@ -1864,7 +2118,7 @@ def setup_cmd(
         raise typer.Exit(code=1)
 
     try:
-        _, project_root = Config.find_and_load(Path.cwd())
+        setup_config, project_root = Config.find_and_load(Path.cwd())
     except ConfigNotFoundError as exc:
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
@@ -1942,7 +2196,21 @@ def setup_cmd(
             reporter.error(str(exc))
             raise typer.Exit(code=1) from exc
 
+    # GitHub workflow install: comments the latest session digest on PRs.
+    # Skipped for non-git dirs; user-owned files (no managed-by marker) are
+    # never touched. Inert off GitHub, so no remote detection is needed.
+    from trie.workflow_install import install_triediff_workflow
+
+    workflow_result = install_triediff_workflow(
+        project_root,
+        diffs_dir=setup_config.diff.diffs_dir,
+        dry_run=dry_run or print_only,
+    )
+
     _render_setup_plan(reporter, mcp_plan, hook_plan, docs_plan, override_plan)
+    wf_path = workflow_result.path or Path(".github/workflows/triediff-comment.yml")
+    wf_note = f" ({workflow_result.note})" if workflow_result.note else ""
+    reporter.info(f"pr digest workflow: {workflow_result.action} {wf_path}{wf_note}")
 
     # Surface a non-zero exit if any step hit an error so CI/scripts react.
     mcp_errors = any(r.action == "error" for r in mcp_plan.results) if mcp_plan else False
@@ -1951,7 +2219,13 @@ def setup_cmd(
     override_errors = (
         any(r.action == "error" for r in override_plan.results) if override_plan else False
     )
-    if mcp_errors or hook_errors or docs_errors or override_errors:
+    if (
+        mcp_errors
+        or hook_errors
+        or docs_errors
+        or override_errors
+        or (workflow_result.action == "error")
+    ):
         raise typer.Exit(code=1)
 
 
@@ -3358,6 +3632,11 @@ def patch_apply_cmd(
         "--commit-mode",
         help="all_or_nothing (default) | per_item | per_group.",
     ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Emit raw JSON output (useful for agent consumers).",
+    ),
 ) -> None:
     """Stage + commit all pending patches via the cascade-editing pipeline."""
     reporter = _get_reporter(ctx)
@@ -3367,19 +3646,113 @@ def patch_apply_cmd(
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
+    # Determine the effective backend before any generation machinery is
+    # touched.  The CLI option takes precedence; otherwise fall back to the
+    # project configuration, then to 'llm'.
+    effective_backend = (
+        backend
+        or getattr(getattr(config, "edits", None), "backend", None)
+        or getattr(config, "backend", None)
+        or "llm"
+    )
+
+    def _build_location(item: dict) -> str:
+        """Construct a file:start_line-end_line string from envelope item keys."""
+        file_path = item.get("file_path") or item.get("file") or ""
+        start = item.get("start_line") if item.get("start_line") is not None else item.get("start")
+        end = item.get("end_line") if item.get("end_line") is not None else item.get("end")
+        start_str = str(start) if start is not None else ""
+        end_str = str(end) if end is not None else ""
+        if file_path and start_str and end_str:
+            return f"{file_path}:{start_str}-{end_str}"
+        elif file_path and start_str:
+            return f"{file_path}:{start_str}"
+        else:
+            return file_path
+
+    # --- agent / workorder path (no generation, no client, no lock) ----------
+    if effective_backend == "agent":
+        from trie.edits.pipeline import build_workorder
+
+        store = Store(project_root / ".trie" / "graph.db")
+        try:
+            envelope = build_workorder(
+                store,
+                config,
+                project_root,
+                client=None,
+                session_note=note,
+            )
+        finally:
+            store.close()
+
+        if json_output:
+            import json as _json
+
+            console.print_json(_json.dumps(envelope))
+        else:
+            from rich.table import Table
+
+            session_note_val = envelope.get("session_note") or note or "(no session note)"
+            console.print(f"\n[bold]Worklist[/bold] — {session_note_val}\n")
+
+            items = envelope.get("items") or []
+            if items:
+                tbl = Table(show_header=True, header_style="bold cyan")
+                tbl.add_column("qname")
+                tbl.add_column("op")
+                tbl.add_column("location")
+                tbl.add_column("note")
+                for item in items:
+                    location = _build_location(item)
+                    notes = item.get("notes") or []
+                    first_note = str(notes[0]) if notes else ""
+                    if len(first_note) > 60:
+                        first_note = first_note[:57] + "..."
+                    tbl.add_row(
+                        item.get("qname", ""),
+                        item.get("op", ""),
+                        location,
+                        first_note,
+                    )
+                console.print(tbl)
+
+            creates = envelope.get("creates") or []
+            if creates:
+                console.print("\n[bold]Creates[/bold]")
+                ctbl = Table(show_header=True, header_style="bold magenta")
+                ctbl.add_column("target_qname")
+                ctbl.add_column("target_file")
+                ctbl.add_column("anchor")
+                for c in creates:
+                    ctbl.add_row(
+                        c.get("target_qname", ""),
+                        c.get("target_file", ""),
+                        c.get("anchor", ""),
+                    )
+                console.print(ctbl)
+
+            next_instruction = envelope.get("next")
+            if next_instruction:
+                console.print(f"\n[dim]{next_instruction}[/dim]")
+
+        return
+
+    # --- all other backends: run the full generative pipeline ----------------
     from trie.edits.backends import make_backend
     from trie.edits.pipeline import stage_and_commit
 
     client = make_client(model or config.models.edits, sync_cfg=config.sync)
+
     try:
-        edit_backend = make_backend(config, backend=backend, client=client)
+        edit_backend = make_backend(config, backend=effective_backend, client=client)
     except (ValueError, NotImplementedError) as exc:
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
     store = Store(project_root / ".trie" / "graph.db")
     try:
-        report = stage_and_commit(
+        result = stage_and_commit(
             store,
             config,
             edit_backend,
@@ -3391,6 +3764,64 @@ def patch_apply_cmd(
     finally:
         store.close()
 
+    # A non-agent backend might still return a workorder envelope in some
+    # configurations; handle it gracefully here too.
+    envelope = result if isinstance(result, dict) else getattr(result, "_envelope", None)
+    if envelope is not None and envelope.get("mode") == "workorder":
+        if json_output:
+            import json as _json
+
+            console.print_json(_json.dumps(envelope))
+        else:
+            from rich.table import Table
+
+            session_note_val = envelope.get("session_note") or note or "(no session note)"
+            console.print(f"\n[bold]Worklist[/bold] — {session_note_val}\n")
+
+            items = envelope.get("items") or []
+            if items:
+                tbl = Table(show_header=True, header_style="bold cyan")
+                tbl.add_column("qname")
+                tbl.add_column("op")
+                tbl.add_column("location")
+                tbl.add_column("note")
+                for item in items:
+                    location = _build_location(item)
+                    notes = item.get("notes") or []
+                    first_note = str(notes[0]) if notes else ""
+                    if len(first_note) > 60:
+                        first_note = first_note[:57] + "..."
+                    tbl.add_row(
+                        item.get("qname", ""),
+                        item.get("op", ""),
+                        location,
+                        first_note,
+                    )
+                console.print(tbl)
+
+            creates = envelope.get("creates") or []
+            if creates:
+                console.print("\n[bold]Creates[/bold]")
+                ctbl = Table(show_header=True, header_style="bold magenta")
+                ctbl.add_column("target_qname")
+                ctbl.add_column("target_file")
+                ctbl.add_column("anchor")
+                for c in creates:
+                    ctbl.add_row(
+                        c.get("target_qname", ""),
+                        c.get("target_file", ""),
+                        c.get("anchor", ""),
+                    )
+                console.print(ctbl)
+
+            next_instruction = envelope.get("next")
+            if next_instruction:
+                console.print(f"\n[dim]{next_instruction}[/dim]")
+
+        return
+
+    # --- normal (LLM-generated) report path ---------------------------------
+    report = result
     d = report.to_dict()
     if report.committed and report.ok:
         reporter.success(

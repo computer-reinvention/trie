@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: trie/parse/typescript_refs.py
-file_fingerprint: 2cd2fb5108edf6da41ba75d347deb20420291f51ab2165aef1e969e155aeea2b
-last_synced_at: '2026-07-20T09:55:31Z'
+file_fingerprint: 26c7bf67784e8f254ffeea4190afc1490099c7c90f5f4a8f31f3b4fe8648f443
+last_synced_at: '2026-07-25T00:55:40Z'
 description: TypeScript reference (edge) extraction via tree-sitter.
 defines:
 - kind: module
   qualified_name: trie/parse/typescript_refs:__module__
-  lines: 1-335
+  lines: 1-353
 - kind: constant
   qualified_name: trie/parse/typescript_refs:_KIND_RANK
   lines: 25-32
@@ -47,12 +47,18 @@ defines:
 - kind: function
   qualified_name: trie/parse/typescript_refs:_heritage
   lines: 223-242
+- kind: constant
+  qualified_name: trie/parse/typescript_refs:_RESOLVER_CACHE
+  lines: 251-251
+- kind: function
+  qualified_name: trie/parse/typescript_refs:_shared_resolver
+  lines: 254-260
 - kind: function
   qualified_name: trie/parse/typescript_refs:extract_file_data
-  lines: 245-326
+  lines: 263-344
 - kind: function
   qualified_name: trie/parse/typescript_refs:_resolve_name
-  lines: 329-334
+  lines: 347-352
 incoming_refs: 1
 outgoing_refs: 12
 ---
@@ -113,11 +119,17 @@ Extract `extends` and `implements` base-name lists from a class node's heritage 
 
 - **returns** — `(extends_names, implements_names)` as lists of identifier strings
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript_refs:extract_file_data fingerprint=850b1372e59be662c3a355621ee27f3b85ab478d645d6d621f54b9b3f42b4ffc body_fp=a1f6620caefa774694d3bf126da48b8021308ec71e3dc9a71b81ee1bf8260217 source_ref=151b3686cf9470200bf8e00b72977ed3ea4702e5 role=parsing -->
+<!-- trie:section symbol=trie/parse/typescript_refs:_RESOLVER_CACHE fingerprint=275ce029b1b0a1d0fb0460c648bd8d08630cda29ebb25c16f9bd91a50cf1974d body_fp=603dd5181cb83043f67ab405d74eb4adef3c8fcdb7d51114132ef372ce02f5ef source_ref=1ed998c56ddb9bb463465902e353473ed681fce0 role=config -->
+Module-level cache mapping source-root path strings to their `TsResolver` instances, avoiding redundant config-file walks per scan.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/parse/typescript_refs:_shared_resolver fingerprint=af1e399dd37e68ba689d0bb594a0c8ad440da5e27709b7927f798c8e93aea62d body_fp=2e5f97b24f44aac3d13aefdc758abf6cac486df5e9066dde5d3cf1ded0edb773 source_ref=1ed998c56ddb9bb463465902e353473ed681fce0 role=util -->
+Return a cached `TsResolver` for `source_root`, building and storing one on first access.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/parse/typescript_refs:extract_file_data fingerprint=926f2de4caf04acb2f1d8662bc28560a00323a389c505f92e3c3b702c3ffb116 body_fp=b020263c642db93c46977931ccf1b62d60cc32c13d925e377dc596a118f47d0e source_ref=1ed998c56ddb9bb463465902e353473ed681fce0 role=parsing -->
 Parse a single TypeScript file into a `FileData` containing extracted symbols and resolved outbound references.
 
 - `source_root`: defaults to the file's parent directory if omitted.
-- `resolver`: built from `source_root` via `TsResolver.build` if not supplied.
+- `resolver`: obtained from a process-level cache via `_shared_resolver` if not supplied (previously built fresh via `TsResolver.build` each call).
 - Deduplicates edges, keeping the highest-ranked `kind` per `(src, target)` pair.
 - Returns `FileData` with `references` covering `calls`, `references`, `inherits`, `implements`, and `contains` edges.
 <!-- trie:end -->
