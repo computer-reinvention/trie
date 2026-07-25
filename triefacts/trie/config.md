@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/config.py
-file_fingerprint: 81cfb63028e8a8830229ea188e2179652933afed959d5e293a7792309a1d7897
-last_synced_at: '2026-07-23T16:52:10Z'
+file_fingerprint: 471e6bc53b6511afe05fa9f2d55393dc88ddc427fed71d0321256900b8ac9df2
+last_synced_at: '2026-07-25T00:24:02Z'
 defines:
 - kind: module
   qualified_name: trie/config:__module__
-  lines: 1-465
+  lines: 1-472
 - kind: class
   qualified_name: trie/config:TrieMeta
   lines: 9-10
@@ -42,26 +42,26 @@ defines:
   lines: 197-253
 - kind: class
   qualified_name: trie/config:Diff
-  lines: 257-276
+  lines: 257-283
 - kind: class
   qualified_name: trie/config:Config
-  lines: 281-341
+  lines: 287-347
 - kind: method
   qualified_name: trie/config:Config.from_dict
-  lines: 295-319
+  lines: 301-325
 - kind: method
   qualified_name: trie/config:Config.load
-  lines: 322-325
+  lines: 328-331
 - kind: method
   qualified_name: trie/config:Config.find_and_load
-  lines: 328-341
+  lines: 334-347
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
-  lines: 344-345
+  lines: 350-351
 - kind: constant
   qualified_name: trie/config:DEFAULT_CONFIG_TOML
-  lines: 348-464
-incoming_refs: 215
+  lines: 354-471
+incoming_refs: 216
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/config:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=73508aef5ccf98a204e6bf0fa288e0420baac8315fc2fb1aa7e8d1bf91d72a01 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
@@ -157,12 +157,13 @@ Configuration dataclass for MCP agent tool behaviors including grep, read and tr
 - `trace_hub_threshold`: Node count threshold for hub skipping in trace (default 50)
 - `trace_max_nodes`: Maximum nodes returned by trace operations (default 200)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Diff fingerprint=c02be5ed95f16dee7091c8d5d4c280de2056816480cae1a7e1f3cb85f461abc4 body_fp=1522c7f2dad27a33696fdec0289370fe73980aad751b4f16267c471a33d4c326 source_ref=b09697b8931aaceed5b512251de7a0608042367e role=config -->
-Dataclass holding configuration for the `TRIE_DIFF.md` prepend-only commit digest system.
+<!-- trie:section symbol=trie/config:Diff fingerprint=97a6b96263ed6f54cc33495e6fbd9e0314b7a785c07f7bd75aef4fe39872645b body_fp=10c5b50572a3250ee986b95c49f3653b1551bcd66a5609cfcbb7396f3db7395b source_ref=0c845325d441b051829bcab95bac541954c1dc82 role=config -->
+Dataclass holding configuration for the per-commit digest system, where each commit produces one immutable file under `diffs_dir` and `write_path` is a symlink to the latest.
 
 - `narrative`: when `True`, prepends an LLM-generated summary; falls back to raw evidence if no API key is available.
-- `write_path`: path relative to project root; changing it also requires updating the pre-commit hook.
-- `max_entries`: oldest entries are dropped when the digest exceeds this count.
+- `write_path`: symlink at project root pointing at the latest digest file; changing it also requires updating the pre-commit hook.
+- `diffs_dir`: directory holding one immutable digest file per commit; kept outside the triefact tree to avoid evidence feedback loops.
+- `max_entries`: oldest digest files are pruned from `diffs_dir` when this cap is exceeded.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:Config fingerprint=bd03893efd146b7e3cae17bf6c86c1cc07e9115f2d9d65d1f2606be347c473ac body_fp=a2248608c74549bf774cae231f316786139ed9358c20f2a01e748e1e07d377b0 role=config-management -->
 Root configuration dataclass aggregating all trie settings — including trie metadata, scope, triefacts, models, cascade, sync, MCP, debug, edits, diff, and per-language overrides — with TOML loading via `load`, upward directory-tree discovery via `find_and_load`, and structured deserialization from raw dictionaries via `from_dict`, which handles nested `LspBackend` and `LanguageConfig` instantiation as well as the new `[diff]` section.

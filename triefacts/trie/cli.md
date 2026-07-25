@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/cli.py
-file_fingerprint: 08d0a14811da61ec15b60be27c093be1a7832bcc9196698f18432555280d6ae3
-last_synced_at: '2026-07-25T00:11:31Z'
+file_fingerprint: 0ba203a1698c7ff7f0dcff408192e91090ab677cee304862f177a8c2755a623a
+last_synced_at: '2026-07-25T00:24:06Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
-  lines: 1-4200
+  lines: 1-4202
 - kind: constant
   qualified_name: trie/cli:app
   lines: 77-80
@@ -129,229 +129,229 @@ defines:
   lines: 1120-1136
 - kind: function
   qualified_name: trie/cli:diff_cmd
-  lines: 1140-1388
+  lines: 1140-1390
 - kind: function
   qualified_name: trie/cli:_print_scan_breakdown
-  lines: 1391-1408
+  lines: 1393-1410
 - kind: function
   qualified_name: trie/cli:_print_plan
-  lines: 1411-1422
+  lines: 1413-1424
 - kind: function
   qualified_name: trie/cli:_print_incremental_plan
-  lines: 1425-1491
+  lines: 1427-1493
 - kind: constant
   qualified_name: trie/cli:_REASON_LABELS
-  lines: 1494-1501
+  lines: 1496-1503
 - kind: function
   qualified_name: trie/cli:_print_drift_detail
-  lines: 1504-1515
+  lines: 1506-1517
 - kind: function
   qualified_name: trie/cli:_verify_drift
-  lines: 1518-1549
+  lines: 1520-1551
 - kind: function
   qualified_name: trie/cli:sync_cmd
-  lines: 1553-1710
+  lines: 1555-1712
 - kind: function
   qualified_name: trie/cli:_has_existing_triefacts
-  lines: 1713-1719
+  lines: 1715-1721
 - kind: function
   qualified_name: trie/cli:_run_full_pass
-  lines: 1722-1788
+  lines: 1724-1790
 - kind: function
   qualified_name: trie/cli:_run_dry_run_diff
-  lines: 1791-1836
+  lines: 1793-1838
 - kind: function
   qualified_name: trie/cli:_run_single_file_sync
-  lines: 1839-1872
+  lines: 1841-1874
 - kind: function
   qualified_name: trie/cli:_run_metadata_only_refresh
-  lines: 1875-1932
+  lines: 1877-1934
 - kind: function
   qualified_name: trie/cli:_run_roles_only_sync
-  lines: 1935-1974
+  lines: 1937-1976
 - kind: function
   qualified_name: trie/cli:_run_incremental_sync
-  lines: 1977-2029
+  lines: 1979-2031
 - kind: function
   qualified_name: trie/cli:setup_cmd
-  lines: 2033-2207
+  lines: 2035-2209
 - kind: function
   qualified_name: trie/cli:_render_setup_plan
-  lines: 2210-2280
+  lines: 2212-2282
 - kind: function
   qualified_name: trie/cli:_render_override_target_block
-  lines: 2283-2309
+  lines: 2285-2311
 - kind: function
   qualified_name: trie/cli:_format_action
-  lines: 2312-2316
+  lines: 2314-2318
 - kind: function
   qualified_name: trie/cli:_open_tools
-  lines: 2331-2349
+  lines: 2333-2351
 - kind: function
   qualified_name: trie/cli:_emit_envelope
-  lines: 2352-2376
+  lines: 2354-2378
 - kind: function
   qualified_name: trie/cli:_patched_tag
-  lines: 2379-2383
+  lines: 2381-2385
 - kind: function
   qualified_name: trie/cli:_render_grep
-  lines: 2386-2456
+  lines: 2388-2458
 - kind: function
   qualified_name: trie/cli:_render_read
-  lines: 2459-2521
+  lines: 2461-2523
 - kind: function
   qualified_name: trie/cli:_render_trace
-  lines: 2524-2576
+  lines: 2526-2578
 - kind: function
   qualified_name: trie/cli:_render_error_envelope
-  lines: 2579-2591
+  lines: 2581-2593
 - kind: function
   qualified_name: trie/cli:_build_grep_predicate
-  lines: 2594-2656
+  lines: 2596-2658
 - kind: function
   qualified_name: trie/cli:grep_cmd
-  lines: 2660-2763
+  lines: 2662-2765
 - kind: function
   qualified_name: trie/cli:read_cmd
-  lines: 2767-2823
+  lines: 2769-2825
 - kind: function
   qualified_name: trie/cli:_render_read_dispatch
-  lines: 2826-2839
+  lines: 2828-2841
 - kind: function
   qualified_name: trie/cli:_render_read_source
-  lines: 2842-2851
+  lines: 2844-2853
 - kind: function
   qualified_name: trie/cli:trace_cmd
-  lines: 2855-2897
+  lines: 2857-2899
 - kind: function
   qualified_name: trie/cli:blast_radius_cmd
-  lines: 2901-2931
+  lines: 2903-2933
 - kind: function
   qualified_name: trie/cli:_render_blast_radius
-  lines: 2934-2964
+  lines: 2936-2966
 - kind: function
   qualified_name: trie/cli:_print_plain
-  lines: 2974-2988
+  lines: 2976-2990
 - kind: function
   qualified_name: trie/cli:grep_str_cmd
-  lines: 2992-3018
+  lines: 2994-3020
 - kind: function
   qualified_name: trie/cli:find_cmd
-  lines: 3022-3051
+  lines: 3024-3053
 - kind: function
   qualified_name: trie/cli:write_cmd
-  lines: 3055-3095
+  lines: 3057-3097
 - kind: function
   qualified_name: trie/cli:_render_write
-  lines: 3098-3107
+  lines: 3100-3109
 - kind: function
   qualified_name: trie/cli:_render_find
-  lines: 3110-3125
+  lines: 3112-3127
 - kind: function
   qualified_name: trie/cli:grep_entry_points_cmd
-  lines: 3129-3144
+  lines: 3131-3146
 - kind: function
   qualified_name: trie/cli:grep_symbol_cmd
-  lines: 3148-3163
+  lines: 3150-3165
 - kind: function
   qualified_name: trie/cli:grep_symbol_neighbours_cmd
-  lines: 3167-3182
+  lines: 3169-3184
 - kind: function
   qualified_name: trie/cli:explain_symbol_cmd
-  lines: 3186-3201
+  lines: 3188-3203
 - kind: function
   qualified_name: trie/cli:explain_symbol_refs_cmd
-  lines: 3205-3220
+  lines: 3207-3222
 - kind: function
   qualified_name: trie/cli:trace_flow_cmd
-  lines: 3224-3240
+  lines: 3226-3242
 - kind: function
   qualified_name: trie/cli:explain_flow_cmd
-  lines: 3244-3260
+  lines: 3246-3262
 - kind: constant
   qualified_name: trie/cli:patch_app
-  lines: 3268-3272
+  lines: 3270-3274
 - kind: class
   qualified_name: trie/cli:_RichApplyProgress
-  lines: 3276-3328
+  lines: 3278-3330
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.__init__
-  lines: 3286-3288
+  lines: 3288-3290
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.stage
-  lines: 3290-3291
+  lines: 3292-3293
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_start
-  lines: 3293-3294
+  lines: 3295-3296
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_symbol
-  lines: 3296-3302
+  lines: 3298-3304
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_generate
-  lines: 3304-3306
+  lines: 3306-3308
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_fixup
-  lines: 3308-3311
+  lines: 3310-3313
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_prose
-  lines: 3313-3316
+  lines: 3315-3318
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_done
-  lines: 3318-3322
+  lines: 3320-3324
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.refresh
-  lines: 3324-3325
+  lines: 3326-3327
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.verify
-  lines: 3327-3328
+  lines: 3329-3330
 - kind: function
   qualified_name: trie/cli:patch_create_cmd
-  lines: 3332-3358
+  lines: 3334-3360
 - kind: function
   qualified_name: trie/cli:patch_create_batch_cmd
-  lines: 3362-3476
+  lines: 3364-3478
 - kind: function
   qualified_name: trie/cli:patch_create_symbol_cmd
-  lines: 3480-3522
+  lines: 3482-3524
 - kind: function
   qualified_name: trie/cli:patch_delete_symbol_cmd
-  lines: 3526-3553
+  lines: 3528-3555
 - kind: function
   qualified_name: trie/cli:patch_rename_symbol_cmd
-  lines: 3557-3586
+  lines: 3559-3588
 - kind: function
   qualified_name: trie/cli:patch_apply_cmd
-  lines: 3590-3832
+  lines: 3592-3834
 - kind: function
   qualified_name: trie/cli:patch_preview_cmd
-  lines: 3836-3879
+  lines: 3838-3881
 - kind: function
   qualified_name: trie/cli:patch_list_cmd
-  lines: 3883-3925
+  lines: 3885-3927
 - kind: function
   qualified_name: trie/cli:patch_drop_cmd
-  lines: 3929-3967
+  lines: 3931-3969
 - kind: constant
   qualified_name: trie/cli:mcp_app
-  lines: 3975-3982
+  lines: 3977-3984
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 3987-3989
+  lines: 3989-3991
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 3992-4002
+  lines: 3994-4004
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 4006-4075
+  lines: 4008-4077
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 4078-4093
+  lines: 4080-4095
 - kind: function
   qualified_name: trie/cli:mcp_uninstall_cmd
-  lines: 4097-4172
+  lines: 4099-4174
 - kind: function
   qualified_name: trie/cli:_render_uninstall_plan
-  lines: 4175-4195
+  lines: 4177-4197
 incoming_refs: 91
 outgoing_refs: 154
 ---
@@ -610,13 +610,13 @@ Resolves the audit log path for `trie audit` command.
 • Returns absolute paths, resolving relative config paths against project root
 • Allows cross-project audit by not requiring trie.toml when explicit path given
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:diff_cmd fingerprint=d688f704de73819954a293f3708a225868f02c492c688f78794f1a0a3d6077a2 body_fp=fac0d8a38c5724a2117720e87adb13f42ec19613b07a0a0b4fa76e68a54cc792 source_ref=4c65ee4ee9b4eae62c0a083d786e11ac67787a73 role=api -->
+<!-- trie:section symbol=trie/cli:diff_cmd fingerprint=8717e8f40f14f3cbce8b5f33b7db58fc53991bd573216967d830218e124c3051 body_fp=08b0ec3f23536af41bc1612fa3e7c18d42ee269ebbf51c4664ce111a34fd06bf source_ref=803982f6e9b4a09af5ec33e6a15eb99bf222e510 role=api -->
 Typer `diff` command that collects session evidence (triefact git diff + patch notes) and either synthesises an LLM narrative, dumps raw evidence, emits JSON, or writes a digest entry to the configured `diff.write_path`.
 
 - `--session`: restrict evidence collection to one session id; defaults to all activity
 - `--base`: git ref used as the diff baseline; defaults to `HEAD`
 - `--raw` / `--json`: mutually exclusive; skip LLM and print raw notes or JSON envelope
-- `--write`: pre-commit hook mode — prepends a digest section to `config.diff.write_path` and advances the digest cursor; mutually exclusive with `--json`
+- `--write`: pre-commit hook mode — calls `write_digest` (routing output through a per-commit file under `config.diff.diffs_dir` with a symlink at `config.diff.write_path`, reusing the same file when re-running on the same parent commit) and advances the digest cursor with `file=written_file`; mutually exclusive with `--json`
 - `--model`: overrides `config.models.cascade` for narrative synthesis only
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:_print_scan_breakdown fingerprint=2e73f73d6b381e6f0d1a30836e44644e8628a03f8aeee95872bda7faa8fcc1d3 body_fp=34ad2b8e98bf414eaf8a533a8b75ac271dbae3edca2b2d73052de585e4b60969 source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->

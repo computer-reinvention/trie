@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/init.py
-file_fingerprint: c2dbf10325ceef76bfe6cce72e04144b734a9778c740ccd2e63116938601ec1e
-last_synced_at: '2026-07-23T16:52:16Z'
+file_fingerprint: 1812342c8201011acff8aa57ab0da6d0608f3395403b74d52de9c8bb02a5be9c
+last_synced_at: '2026-07-25T00:24:09Z'
 defines:
 - kind: module
   qualified_name: trie/init:__module__
-  lines: 1-220
+  lines: 1-221
 - kind: constant
   qualified_name: trie/init:GITIGNORE_LINE
   lines: 9-9
@@ -21,28 +21,28 @@ defines:
   lines: 14-14
 - kind: constant
   qualified_name: trie/init:PRE_COMMIT_HOOK_BLOCK
-  lines: 42-52
+  lines: 43-53
 - kind: class
   qualified_name: trie/init:InitResult
-  lines: 56-66
+  lines: 57-67
 - kind: class
   qualified_name: trie/init:InitError
-  lines: 69-70
+  lines: 70-71
 - kind: function
   qualified_name: trie/init:_detect_supported_project
-  lines: 73-101
+  lines: 74-102
 - kind: constant
   qualified_name: trie/init:_detect_python_project
-  lines: 105-105
+  lines: 106-106
 - kind: function
   qualified_name: trie/init:_ensure_gitignore_entry
-  lines: 108-121
+  lines: 109-122
 - kind: function
   qualified_name: trie/init:install_pre_commit_hook
-  lines: 124-155
+  lines: 125-156
 - kind: function
   qualified_name: trie/init:init_project
-  lines: 158-219
+  lines: 159-220
 incoming_refs: 36
 outgoing_refs: 1
 ---
@@ -100,7 +100,7 @@ Append `line` to `gitignore` if not already present, returning True if file chan
 <!-- trie:section symbol=trie/init:install_pre_commit_hook fingerprint=d7786183af45b0f0b1c62bad0d5ceb58d2d2c31149d77e585959170621d8fc52 body_fp=a0892debce8a2515a37bff3a76083fe5ef9258108785318f82bab9d892b4517a role=agent-integration -->
 Installs a trie-managed pre-commit hook into a project's `.git/hooks/pre-commit` file using one of three strategies: skipping silently when a pre-commit framework configuration is already present ("framework"), appending a marker-fenced shell block that runs lock-check, verify, and digest refresh steps when a `.git` directory exists ("git_hook", idempotent on repeated calls), or doing nothing when no `.git` directory is found ("none"). Returns a tuple of (installed, strategy, hook_path) describing the outcome.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/init:init_project fingerprint=8d32d68da2ffa430f2ff755cfab94b08979379fa9364f896a299dffdecad2d3a body_fp=c78d28169d578562f2d155bda18154c1168c5fbe27698161ceb7009d773c282d source_ref=874e50f276e3538d4a7a3c230ff737dbb8a542dc role=orchestration -->
+<!-- trie:section symbol=trie/init:init_project fingerprint=8d32d68da2ffa430f2ff755cfab94b08979379fa9364f896a299dffdecad2d3a body_fp=c78d28169d578562f2d155bda18154c1168c5fbe27698161ceb7009d773c282d source_ref=918fb5eae4800878be064ad505efe0253a66f46d role=orchestration -->
 Initialise trie in a directory, creating configuration and optionally scanning for symbols.
 
 - `force`: bypass supported-project detection and overwrite existing configuration

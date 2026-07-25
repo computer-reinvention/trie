@@ -1196,7 +1196,7 @@ def diff_cmd(
         collect_symbol_deltas,
         render_digest_section,
         synthesize_narrative,
-        upsert_digest,
+        write_digest,
     )
 
     if write:
@@ -1212,12 +1212,17 @@ def diff_cmd(
             parent_sha = base
         parent_short = parent_sha[:12]
 
-        # 2. Determine the evidence window via the persistent digest cursor
+        # 2. Determine the evidence window via the persistent digest cursor,
+        #    and pick up the same-commit digest file for amend/retry rewrites.
+        from trie.session_log import read_digest_cursor
+
         since = resolve_digest_window(
             project_root,
             parent_sha,
             fallback_since=commit_timestamp(project_root, base),
         )
+        cursor = read_digest_cursor(project_root)
+        reuse_file = cursor.get("file") if cursor and cursor.get("parent") == parent_sha else None
 
         # 3. Collect session evidence
         store = Store(project_root / ".trie" / "graph.db")
@@ -1271,23 +1276,19 @@ def diff_cmd(
             deltas=deltas,
         )
 
-        digest_path = project_root / config.diff.write_path
-        existing = digest_path.read_text() if digest_path.exists() else ""
-        digest_path.write_text(
-            upsert_digest(
-                existing,
-                section,
-                base_short=parent_short,
-                max_entries=config.diff.max_entries,
-            )
+        written_file = write_digest(
+            project_root,
+            section,
+            diffs_dir=config.diff.diffs_dir,
+            symlink_path=config.diff.write_path,
+            max_entries=config.diff.max_entries,
+            reuse_file=reuse_file,
         )
 
         backed_by = "narrative" if narrative else "raw evidence"
-        try:
-            display_path = digest_path.relative_to(project_root)
-        except ValueError:
-            display_path = digest_path
-        reporter.info(f"digest written to {display_path} ({backed_by})")
+        reporter.info(
+            f"digest written to {written_file} ({backed_by}); {config.diff.write_path} -> latest"
+        )
 
         # 8. Persist the digest cursor so the next run anchors correctly
         covered_ts: float = 0.0
@@ -1306,6 +1307,7 @@ def diff_cmd(
             parent=parent_sha,
             since=since if since is not None else 0.0,
             covered=covered_ts,
+            file=written_file,
         )
         return
 

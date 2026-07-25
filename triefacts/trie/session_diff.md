@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/session_diff.py
-file_fingerprint: 79b863090a71f76de28537d6bda370081f251724fabc2fa769534d7bedc7f856
-last_synced_at: '2026-07-25T00:11:27Z'
+file_fingerprint: f25f68734ea9b5c42372fd54b4208636d45616771e83e71bf3c913309e768e01
+last_synced_at: '2026-07-25T00:24:06Z'
 defines:
 - kind: module
   qualified_name: trie/session_diff:__module__
-  lines: 1-556
+  lines: 1-590
 - kind: class
   qualified_name: trie/session_diff:SessionDiff
   lines: 8-27
@@ -38,17 +38,20 @@ defines:
   qualified_name: trie/session_diff:render_digest_section
   lines: 222-361
 - kind: constant
-  qualified_name: trie/session_diff:DIGEST_HEADER
-  lines: 364-370
+  qualified_name: trie/session_diff:DIGEST_FILE_HEADER
+  lines: 364-368
 - kind: function
-  qualified_name: trie/session_diff:upsert_digest
-  lines: 373-424
+  qualified_name: trie/session_diff:_new_digest_filename
+  lines: 371-382
+- kind: function
+  qualified_name: trie/session_diff:write_digest
+  lines: 385-458
 - kind: function
   qualified_name: trie/session_diff:collect_symbol_deltas
-  lines: 427-534
+  lines: 461-568
 - kind: function
   qualified_name: trie/session_diff:merge_applied_by_symbol
-  lines: 537-555
+  lines: 571-589
 incoming_refs: 7
 outgoing_refs: 0
 ---
@@ -98,14 +101,22 @@ Render a `SessionDiff` as a single markdown digest-entry string with heading, op
 - `deltas`: precomputed per-symbol diff rows; merged with `data.applied` by qname, applied-order first.
 - `max_changes`: caps change bullets; overflow becomes a `… and N more` line.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/session_diff:DIGEST_HEADER fingerprint=2489ada105087413e2d4eefcdb9e77dd574da2f5bd807a6667d71648801a55fe body_fp=85e5c4957d7e11c32ad8c0bf267b06034c8ddd71ad0de2c81852b931990343f2 source_ref=ae02b502c9f8e807253f03fc80f434a5d367070a role=model -->
-Module-level constant holding the canonical header prepended to every `TRIE_DIFF.md` file.
+<!-- trie:section symbol=trie/session_diff:DIGEST_FILE_HEADER fingerprint=953f1e9f7f8034daa19d5deb0c1e678442b7f17daadb9e7f5b87b94d13a32ebe body_fp=f688decefb16ed2e9df6e61b9b495e64c77ef53ec2a17f8192758caf7f24f7ed source_ref=7fd2d148e339b19fb869f262ffbed20d2c29c036 role=config -->
+HTML comment prepended to every digest file warning that it is auto-generated and should not be edited by hand.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/session_diff:upsert_digest fingerprint=92c66f0f740c669184bb161f51ab96a9103453e9d4e9def877b4441990c9d76b body_fp=d353ac8def4653336cfb63c30860af8bad5458c4c58bb89a9829dacd9a53e7ba source_ref=b52fb7d875efc22b57e789d47535774fa98128e8 role=domain -->
-Prepend a new digest `section` into `existing_text`, replacing the head entry if it already references `base_short`, then truncate to `max_entries` and prefix with `DIGEST_HEADER`.
+<!-- trie:section symbol=trie/session_diff:_new_digest_filename fingerprint=1a7047bc70cbdc55046a26f41bb89c15ef3b774b5027bc3e5a524bfb3420f10c body_fp=881d2bdb34fc83bd71a476a4664058f046e54bb233f494554827c6e990b0d0fa source_ref=7fd2d148e339b19fb869f262ffbed20d2c29c036 role=util -->
+Generate a digest filename combining a UTC timestamp and a UUID4 hex suffix, formatted as `<YYYYMMDDTHHMMSSz>-<uuid4hex>.md`.
 
-- `base_short`: short commit SHA used to detect same-commit amend/retry deduplication.
-- `max_entries`: caps the total number of retained entries after insertion.
+- Timestamp prefix ensures lexicographic order equals chronological order.
+- UUID suffix guarantees uniqueness within the same second.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/session_diff:write_digest fingerprint=2d481309d53c9a983e4c6b2d320a4671331d48505f4a11a19574929799f2afc7 body_fp=7837b717eb63e71d8930f5718739b6c80ad077179db24c6681e4be191e5f6a2d source_ref=7fd2d148e339b19fb869f262ffbed20d2c29c036 role=io -->
+Write a rendered digest section to a timestamped file under `diffs_dir`, atomically repoint the latest-symlink, and prune old entries.
+
+- `reuse_file`: project-relative path to overwrite in place (amend/retry); creates a new file if absent or outside `diffs_dir`.
+- `symlink_path`: relative symlink at project root pointing to the latest digest file; falls back to a plain text pointer on symlink-unsupported filesystems.
+- `max_entries`: files beyond this count (by mtime, newest first) are unlinked from disk but retained in git history.
+- Returns the project-relative path of the file written.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/session_diff:collect_symbol_deltas fingerprint=4f4b5cd8cbc111c29c6acd141697747586d76b8e5c7c29089fcfc07505967883 body_fp=7358074bbb75e94a5f7e447dd356b7339d69a794f24eaf4b593f214cf7d2d1be source_ref=b52fb7d875efc22b57e789d47535774fa98128e8 role=domain -->
 Diff the triefact tree against `base`, parse each changed file into `{qname: one_liner}` maps, and return a sorted list of per-symbol delta dicts.

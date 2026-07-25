@@ -1,14 +1,14 @@
 ---
 trie_version: 0.1.9
 source: tests/test_session_diff.py
-file_fingerprint: 0233efa88dec1e083501d8a6aaf0bb941ba63147eaf8252c9532979cf7d18cad
-last_synced_at: '2026-07-25T00:11:40Z'
+file_fingerprint: aabe3f767c958130a472a6842a8217a45ced8aff9e47e0e689d47976c3fc693b
+last_synced_at: '2026-07-25T00:24:01Z'
 description: Tests for the session log archive and the `trie diff` evidence collection/prompt
   assembly.
 defines:
 - kind: module
   qualified_name: tests/test_session_diff:__module__
-  lines: 1-746
+  lines: 1-713
 - kind: function
   qualified_name: tests/test_session_diff:test_record_and_read_entries_roundtrip
   lines: 24-61
@@ -34,17 +34,17 @@ defines:
   qualified_name: tests/test_session_diff:test_render_digest_section_shape
   lines: 413-543
 - kind: function
-  qualified_name: tests/test_session_diff:test_upsert_digest_prepend_replace_trim
-  lines: 546-640
+  qualified_name: tests/test_session_diff:test_write_digest_files_symlink_and_prune
+  lines: 546-607
 - kind: function
   qualified_name: tests/test_session_diff:test_one_line_flattens_and_truncates
-  lines: 643-670
+  lines: 610-637
 - kind: function
   qualified_name: tests/test_session_diff:test_collect_symbol_deltas_before_after
-  lines: 673-721
+  lines: 640-688
 - kind: function
   qualified_name: tests/test_session_diff:test_merge_applied_by_symbol_first_note_wins
-  lines: 724-745
+  lines: 691-712
 incoming_refs: 0
 outgoing_refs: 25
 ---
@@ -75,8 +75,8 @@ Verify that `collect_session_diff` filters applied session log entries by the `s
 <!-- trie:section symbol=tests/test_session_diff:test_render_digest_section_shape fingerprint=ce6e87b909a2e788f61327f21e9292f2470b06f81fc09d7ac35c79f85cfdd36d body_fp=b86e5fb0cd2f50c47b7fc4135264f2494231f9a983ad9e9f540c7b47ae44618e source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
 Verify `render_digest_section` output structure: header shape, H2-heading demotion in narratives, `### Changes` delta bullets, follow-up suffix, markdown-injection prevention, forbidden old-format artifacts, `### Staged (not applied)` section, and `max_changes` overflow truncation.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_upsert_digest_prepend_replace_trim fingerprint=bcf5fa0868f43a522d120217e2e471f8645a9170974963cac33a5d64a26ad23d body_fp=77b241f48d2830479573e2cbfbfbc9aec3a3f69c7036507f03a86aeec0d5760f source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
-Test `upsert_digest` for fresh-file creation, new-entry prepend, same-base replace, oldest-entry trimming, and correct handling of inner `##` headings inside narrative bodies.
+<!-- trie:section symbol=tests/test_session_diff:test_write_digest_files_symlink_and_prune fingerprint=501396ff485be0aae4c06cb7b21e7a0e7c641d51b795a34aada8f1528687e4a7 body_fp=181661d70d10260be803979c4108082d4dcf215c12907a1219877864142a2843 source_ref=55400788aacfd1c4f96bd9596013a66782d59228 role=test -->
+Test `write_digest` for filesystem contract: timestamped file creation, `TRIE_DIFF.md` symlink management, in-place rewrite via `reuse_file`, legacy regular-file replacement, and `max_entries` retention pruning.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_session_diff:test_one_line_flattens_and_truncates fingerprint=2f0ba482c18eb7978c4e4724a58f3a1e674200782e5d3f29c4a862a8f082989c body_fp=b0b2db762e1f94b4d614e613fd8aca35ce2348fe5a6f7b11e5ea5bb7d4203c80 source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
 Verify `_one_line` flattens multiline text, collapses whitespace, cuts at sentence boundaries, truncates long input to ≤200 chars with `…`, and returns `""` for empty input.
