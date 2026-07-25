@@ -1,14 +1,14 @@
 ---
 trie_version: 0.1.9
 source: trie/intent_gate.py
-file_fingerprint: 6c441064d43908bcbd1c1fe13c82250cb83db7b8931a51f497ba3443f743041a
-last_synced_at: '2026-07-25T11:36:19Z'
+file_fingerprint: da9fc12eca0eda8238923359cc145943e46714bb8ddba3eb8b98981c53dcf9b8
+last_synced_at: '2026-07-25T11:48:28Z'
 description: 'The intent gate: refuse commits when changed symbols carry no patch
   notes.'
 defines:
 - kind: module
   qualified_name: trie/intent_gate:__module__
-  lines: 1-196
+  lines: 1-192
 - kind: constant
   qualified_name: trie/intent_gate:MODIFIED
   lines: 36-36
@@ -35,10 +35,10 @@ defines:
   lines: 79-142
 - kind: function
   qualified_name: trie/intent_gate:_covered_qnames
-  lines: 145-185
+  lines: 145-181
 - kind: function
   qualified_name: trie/intent_gate:evaluate
-  lines: 188-195
+  lines: 184-191
 incoming_refs: 4
 outgoing_refs: 0
 ---
@@ -85,10 +85,10 @@ Return all `TouchedSymbol` entries whose `body_normalized_hash` differs between 
 - Only files both indexable by the parse registry and within the configured scope are evaluated.
 - Removed symbols (absent from working tree) are included with status `REMOVED`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/intent_gate:_covered_qnames fingerprint=614c2a6b9308331d37c0aecec651f713f3ce0b42a9c3ed01f081931e8339e057 body_fp=88d3a733f659ea0c5d1e2d1fb035843835feaf93a84542e1782236c58491773e source_ref=0268fb7fb24afd449df3058006ee435c29aa178c role=domain -->
-Return the set of qnames that have intent recorded for the upcoming commit, drawn from pending patch notes, applied entries in the pending-intent file, and rows already consumed into the current HEAD's uncommitted digest entry.
+<!-- trie:section symbol=trie/intent_gate:_covered_qnames fingerprint=5dd3d8624b2ff31cce83f62ca45993c310624c36b8b83b1622f94e853332d95d body_fp=2ea03e5a8621a70e87f3098d961e1c39b00c6bd1aedcb344dc6032984db344e9 source_ref=fb27ca1add22435480f62d8a4c69ac79f56f752e role=domain -->
+Return the set of qnames that have intent recorded for the upcoming commit, drawn from pending patch notes in the store and rows already consumed into the current HEAD's uncommitted digest entry.
 
-- `config`: used to locate the pending-intent store and the diffs directory for digest lookup.
+- `config`: used to locate the diffs directory for digest lookup.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/intent_gate:evaluate fingerprint=0ad9d38cfd26450c75c548b56ae70ac95c0dbc370be4fc595f187146ff5973bf body_fp=86516846e89b64b4caad6e5e242b4824e0ab36841f71e500f8cef65158562572 source_ref=0c60adcffc4cd3b694a3fe16398c634c7803ca05 role=domain -->
 Compute an `IntentReport` by diffing touched symbols against covered qnames for the current commit window.

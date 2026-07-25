@@ -8,11 +8,11 @@ Prose descriptions of every in-scope source file and symbol, kept in sync with t
 
 The most-referenced public symbols — start reading here.
 
-- [`trie/config:Config`](trie/config.md) (144 refs) `config` — Root configuration dataclass aggregating all subsection configs, with classmethods to construct from a dict, a TOML file path, or by walking up the directory tree.
+- [`trie/config:Config`](trie/config.md) (142 refs) `config` — Root configuration dataclass aggregating all subsection configs, with classmethods to construct from a dict, a TOML file path, or by walking up the directory tree.
 - [`trie/cli:app`](trie/cli.md) (95 refs) `cli-interface` — Top-level Typer application instance that defines the trie CLI interface.
 - [`tests/fake_client:FakeTrieClient`](tests/fake_client.md) (79 refs) `test` — Test double for `TrieClient` that returns preconfigured structured outputs and records call parameters for verification.
+- [`trie/graph/store:Store`](trie/graph/store.md) (68 refs) `persistence` — SQLite-backed persistence for trie's symbol graph and file fingerprints.
 - [`tests/test_mcp:tools`](tests/test_mcp.md) (67 refs) `test` — Creates a TrieTools fixture for the populated test project and ensures cleanup after use.
-- [`trie/graph/store:Store`](trie/graph/store.md) (67 refs) `persistence` — SQLite-backed persistence for trie's symbol graph and file fingerprints.
 - [`trie/parse/python:extract_symbols`](trie/parse/python.md) (66 refs) `source-parsing` — Parse Python file and extract its top-level symbols: functions, classes, methods, constants, and module residuals.
 - [`trie/sync/writer:TriefactFile`](trie/sync/writer.md) (52 refs) `persistence` — Parses, manipulates, and renders triefact files containing YAML frontmatter and trie-managed documentation sections.
 - [`trie/cli:console`](trie/cli.md) (37 refs) `cli-interface` — Creates a Rich Console instance for styled terminal output across CLI commands.
@@ -125,7 +125,6 @@ The most-referenced public symbols — start reading here.
 - [mcp_install.md](trie/mcp_install.md)
 - [mcp_server.md](trie/mcp_server.md) — MCP server exposing the trie triefact tree + symbol graph to coding agents.
 - [models.md](trie/models.md)
-- [pending_intent.md](trie/pending_intent.md) — Pending intent: the between-apply-and-commit half of the intent ledger.
 - [refresh_lock.md](trie/refresh_lock.md) — Mutual exclusion + coalescing queue for `trie refresh`.
 - [reporter.md](trie/reporter.md)
 - [scan.md](trie/scan.md)

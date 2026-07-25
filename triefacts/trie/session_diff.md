@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/session_diff.py
-file_fingerprint: a662e359c60119e9655f6ddf5773ef0ed392e89838952c3cb48d7152fc1845a9
-last_synced_at: '2026-07-25T11:36:38Z'
+file_fingerprint: 50d528e8391e68dac94e5fbe7802eebf8c084ae881ee38b726a663296791e4ad
+last_synced_at: '2026-07-25T11:48:36Z'
 defines:
 - kind: module
   qualified_name: trie/session_diff:__module__
-  lines: 1-781
+  lines: 1-807
 - kind: class
   qualified_name: trie/session_diff:SessionDiff
   lines: 9-28
@@ -21,58 +21,58 @@ defines:
   lines: 31-44
 - kind: function
   qualified_name: trie/session_diff:collect_session_diff
-  lines: 47-80
+  lines: 47-106
 - kind: function
   qualified_name: trie/session_diff:_one_line
-  lines: 83-115
+  lines: 109-141
 - kind: constant
   qualified_name: trie/session_diff:_FENCE
-  lines: 118-118
+  lines: 144-144
 - kind: function
   qualified_name: trie/session_diff:build_narrative_prompt
-  lines: 121-193
+  lines: 147-219
 - kind: constant
   qualified_name: trie/session_diff:_NARRATIVE_SYSTEM_PROMPT
-  lines: 196-205
+  lines: 222-231
 - kind: function
   qualified_name: trie/session_diff:synthesize_narrative
-  lines: 208-240
+  lines: 234-266
 - kind: function
   qualified_name: trie/session_diff:render_digest_section
-  lines: 243-390
+  lines: 269-416
 - kind: constant
   qualified_name: trie/session_diff:DIGEST_FILE_HEADER
-  lines: 393-397
+  lines: 419-423
 - kind: constant
   qualified_name: trie/session_diff:DIGEST_HEADING_RE
-  lines: 403-407
+  lines: 429-433
 - kind: function
   qualified_name: trie/session_diff:_parse_digest_file
-  lines: 410-448
+  lines: 436-474
 - kind: function
   qualified_name: trie/session_diff:iter_digest_entries
-  lines: 451-463
+  lines: 477-489
 - kind: function
   qualified_name: trie/session_diff:symbol_history
-  lines: 466-498
+  lines: 492-524
 - kind: function
   qualified_name: trie/session_diff:file_history
-  lines: 501-529
+  lines: 527-555
 - kind: function
   qualified_name: trie/session_diff:rows_from_digest_entry
-  lines: 532-559
+  lines: 558-585
 - kind: function
   qualified_name: trie/session_diff:_new_digest_filename
-  lines: 562-573
+  lines: 588-599
 - kind: function
   qualified_name: trie/session_diff:write_digest
-  lines: 576-649
+  lines: 602-675
 - kind: function
   qualified_name: trie/session_diff:collect_symbol_deltas
-  lines: 652-759
+  lines: 678-785
 - kind: function
   qualified_name: trie/session_diff:merge_applied_by_symbol
-  lines: 762-780
+  lines: 788-806
 incoming_refs: 6
 outgoing_refs: 0
 ---
@@ -91,11 +91,12 @@ Return distinct, non-empty session IDs from `SessionDiff.applied` and `SessionDi
 <!-- trie:section symbol=trie/session_diff:_triefact_pathspecs fingerprint=c1584da79e5bd71fa3f6f87e83e878f6710c3c911a9e94b7a15582a62f005dbe body_fp=4af57e3caf077f952f1548210fa3349f41121a72c02b8a9580ca95eb157fcc7c source_ref=876ccb9eaba2478453b69c9d3923da1f51105118 role=util -->
 Return git pathspecs covering the triefact root while excluding `config.diff.diffs_dir` and the root `README.md` to prevent digest files and the generated index from polluting evidence collection.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/session_diff:collect_session_diff fingerprint=7066e9618941fdd48837f7bc5b0b6723a2e29eaa754be9f46494ac2766f7db61 body_fp=8c6df4a76f4dc9576ae779ac4541e10bb0c06abb4ead450b0239689b7cd5e1a4 source_ref=2bcab58837e39d237397da7a240841e4a71ec1e3 role=orchestration -->
-Gather one session's evidence into a `SessionDiff`: git diff of the triefact tree vs `base`, applied intent rows from the pending-intent file via `read_intent`, and staged patch notes from the store.
+<!-- trie:section symbol=trie/session_diff:collect_session_diff fingerprint=d5deda25aae97134ae780ee9e44af1419dbb22867ec644b8d2956e99746fb618 body_fp=abf373bc162527627c1859123535971f98ae883b744d8006ef10d7c897169cec source_ref=9d3f6839f5f1e19cdd7672898e510768b4025192 role=orchestration -->
+Gather one session's evidence into a `SessionDiff`: git diff of the triefact tree vs `base`, applied and pending rows built from the store's qname-keyed patches tables (no longer from a pending-intent file).
 
+- `applied`: built via `store.get_all_patches_grouped(applied=True)` and `store.get_create_patches_grouped(applied=True)`; each entry carries `notes`, `reasons`, `session_note`, and `op`.
+- `pending`: built via the same store methods with `applied=False`.
 - `base`: git ref used as the diff baseline; defaults to `"HEAD"`.
-- `session_id` and `since` parameters have been removed; evidence is always the full unconsumed set.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/session_diff:_one_line fingerprint=c9d246ecf903076038d2359f4e58b3377b6bf54c959c1b6eba19d30ac55795a3 body_fp=841114585aa8684f0cd69efb0b04199fe309daf2a83c450788450b07d7182c36 source_ref=6496768f11e8dbbd9f62de10da624109491b7be3 role=util -->
 Extract the first non-empty line of `text`, collapse whitespace, truncate at the first sentence boundary or `max_chars`, appending `…` if hard-truncated.

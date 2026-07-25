@@ -52,20 +52,46 @@ def collect_session_diff(
     base: str = "HEAD",
 ) -> SessionDiff:
     """Gather one session's evidence: the git diff of the triefact tree vs
-    `base`, applied intent rows from the pending-intent file (recorded by
-    `patch apply`, not yet consumed into a digest), and still-staged patch
-    notes from the queue. No timestamps: evidence is whatever hasn't been
-    consumed yet."""
+    `base`, sealed (applied) intent rows awaiting consumption into a digest,
+    and still-unsealed staged notes. Everything comes from the qname-keyed
+    patches tables; the committed digest is the only durable record."""
     from trie.git_helpers import diff_paths
-    from trie.pending_intent import read_intent
 
     diff = diff_paths(project_root, _triefact_pathspecs(config), base=base) or ""
-    applied = read_intent(project_root, config)
+
+    applied: list[dict[str, Any]] = []
+    for qname, rows in store.get_all_patches_grouped(applied=True).items():
+        applied.append(
+            {
+                "qname": qname,
+                "op": next(
+                    (r.get("kind") for r in rows if r.get("kind") in ("delete", "rename")),
+                    "modify",
+                ),
+                "notes": [r.get("note", "") for r in rows if r.get("note")],
+                "reasons": [r.get("reason", "") for r in rows if r.get("reason")],
+                "session_note": next(
+                    (r.get("session_note") for r in rows if r.get("session_note")), ""
+                ),
+            }
+        )
+    for _file, rows in store.get_create_patches_grouped(applied=True).items():
+        for r in rows:
+            applied.append(
+                {
+                    "qname": r.get("target_qname", ""),
+                    "op": "create",
+                    "notes": [r.get("note", "")] if r.get("note") else [],
+                    "reasons": [r.get("reason", "")] if r.get("reason") else [],
+                    "session_note": r.get("session_note", ""),
+                }
+            )
+
     pending: list[dict[str, Any]] = []
-    for qname in store.get_patched_qnames():
-        for row in store.get_patches_for_qname(qname):
+    for qname, rows in store.get_all_patches_grouped(applied=False).items():
+        for row in rows:
             pending.append({**row, "qname": qname, "op": row.get("kind", "modify")})
-    for target_file, rows in store.get_create_patches_grouped().items():
+    for target_file, rows in store.get_create_patches_grouped(applied=False).items():
         for row in rows:
             pending.append(
                 {

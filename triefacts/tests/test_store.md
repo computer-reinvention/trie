@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: tests/test_store.py
-file_fingerprint: e545ba31c90987f93a7e73415a9fdee3e2ea4b13839b609bf2bf4e14ddbb0f19
-last_synced_at: '2026-07-25T01:43:41Z'
+file_fingerprint: b0d162b7d83596ac1c2445e7f7a8d17745c628306b1d506ab293c1d419874245
+last_synced_at: '2026-07-25T11:48:31Z'
 defines:
 - kind: module
   qualified_name: tests/test_store:__module__
-  lines: 1-435
+  lines: 1-443
 - kind: function
   qualified_name: tests/test_store:store
   lines: 13-16
@@ -59,59 +59,59 @@ defines:
   qualified_name: tests/test_store:test_get_all_patches_grouped
   lines: 181-194
 - kind: function
-  qualified_name: tests/test_store:test_patch_count_for_symbol
-  lines: 197-208
+  qualified_name: tests/test_store:test_patch_rows_are_qname_keyed
+  lines: 197-212
 - kind: function
   qualified_name: tests/test_store:test_delete_patches_by_qname
-  lines: 211-221
+  lines: 215-225
 - kind: function
   qualified_name: tests/test_store:test_delete_patches_all
-  lines: 224-234
+  lines: 228-238
 - kind: function
   qualified_name: tests/test_store:test_delete_patches_by_session
-  lines: 237-250
+  lines: 241-254
 - kind: function
   qualified_name: tests/test_store:test_get_patched_qnames
-  lines: 253-262
+  lines: 257-266
 - kind: function
   qualified_name: tests/test_store:test_get_symbol_detail_includes_patches
-  lines: 265-282
+  lines: 269-286
 - kind: function
   qualified_name: tests/test_store:test_grep_symbols_includes_patch_count
-  lines: 285-297
+  lines: 289-301
 - kind: function
-  qualified_name: tests/test_store:test_patches_cascaded_on_symbol_delete
-  lines: 300-310
+  qualified_name: tests/test_store:test_patches_survive_symbol_replacement
+  lines: 304-318
 - kind: function
   qualified_name: tests/test_store:_seed_greet
-  lines: 316-320
+  lines: 324-328
 - kind: function
   qualified_name: tests/test_store:test_add_patch_defaults_to_modify_kind
-  lines: 323-328
+  lines: 331-336
 - kind: function
   qualified_name: tests/test_store:test_add_delete_patch
-  lines: 331-335
+  lines: 339-343
 - kind: function
   qualified_name: tests/test_store:test_add_rename_patch_carries_new_name
-  lines: 338-343
+  lines: 346-351
 - kind: function
   qualified_name: tests/test_store:test_delete_and_rename_patches_require_existing_symbol
-  lines: 346-350
+  lines: 354-358
 - kind: function
   qualified_name: tests/test_store:test_grouped_patches_include_kind
-  lines: 353-359
+  lines: 361-367
 - kind: function
   qualified_name: tests/test_store:test_add_and_group_create_patches
-  lines: 362-376
+  lines: 370-384
 - kind: function
   qualified_name: tests/test_store:test_delete_create_patches_by_target
-  lines: 379-388
+  lines: 387-396
 - kind: function
   qualified_name: tests/test_store:test_delete_create_patches_by_session_and_all
-  lines: 391-400
+  lines: 399-408
 - kind: function
   qualified_name: tests/test_store:test_concurrent_access_does_not_raise
-  lines: 403-434
+  lines: 411-442
 incoming_refs: 0
 outgoing_refs: 20
 ---
@@ -169,8 +169,8 @@ Verifies that Store.get_patches_for_qname returns an empty list for non-existent
 <!-- trie:section symbol=tests/test_store:test_get_all_patches_grouped fingerprint=139f996fd76951ad17c9c62f541783e5f82a92a8395be9f8582a15e879519bc8 body_fp=d7ab242a9ac110f263d811a9568e491338a559642d5b3684be9a559e77372c5a source_ref=a95486d535aed1c6b87b5026c7d31274c719666f role=graph-database -->
 Verifies that Store.get_all_patches_grouped returns patches organized by qualified name.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_store:test_patch_count_for_symbol fingerprint=37e26e2eba0a6cdb1440a0bb6613cc1c86d8bcae92fab1b59b12c4b0a4b852c9 body_fp=488a29efdef1f0ddedc0d8d1f0652083b801e845ccf3e3bde666eb2c831e914c source_ref=a95486d535aed1c6b87b5026c7d31274c719666f role=test-infrastructure -->
-Tests that Store.patch_count_for_symbol correctly counts patches associated with a symbol ID.
+<!-- trie:section symbol=tests/test_store:test_patch_rows_are_qname_keyed fingerprint=fc57e0d6e81b997d39c2187e97853934bb321da9f541d60a1009a13062932ef5 body_fp=2c7ede244f73334a966dace095a66b878f832ada5f31ef3069384502f22c4054 source_ref=1edb270eac372aff1b5ed83bb2dca1b284166f88 role=test -->
+Assert that `Store.add_patch` guards against unknown qnames by default and allows bypass via `require_symbol=False`.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_store:test_delete_patches_by_qname fingerprint=0c9fc98460b4ef85d24cf18a48d1c2b0910038a53bf6ad56b6018dd9acdbebef body_fp=9fe4b0f36b26672ecc3cab6d6cb2c854ec65108bb3bde2e3267bdf8e1365a496 source_ref=a95486d535aed1c6b87b5026c7d31274c719666f role=test-infrastructure -->
 Tests Store.delete_patches method with qname parameter removes patches for specific symbol.
@@ -190,8 +190,8 @@ Verifies Store.get_symbol_detail returns patch information for symbols with pend
 <!-- trie:section symbol=tests/test_store:test_grep_symbols_includes_patch_count fingerprint=546b4968e60f78c2998c148fa93e213ff4eb900e810e0e3deeddc7cdb570a78e body_fp=3053241b9d8f39ba735d9eed6d030b1037b41704a1a04f755da353cc51fd2a23 source_ref=a95486d535aed1c6b87b5026c7d31274c719666f role=graph-database -->
 Verifies that Store.grep_symbols returns results with accurate pending patch counts for symbols.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_store:test_patches_cascaded_on_symbol_delete fingerprint=0bec0a50276615fa649a442fa7ed2d8a5203852f243f7241672781c016e62d80 body_fp=f2608840ce38d7625b5a64ffe09d5f9b6e6e4fdc8c15f279d8fe1baab3d05ee4 source_ref=a95486d535aed1c6b87b5026c7d31274c719666f role=test-infrastructure -->
-Verifies that patches are automatically deleted when their associated symbol is removed from the store.
+<!-- trie:section symbol=tests/test_store:test_patches_survive_symbol_replacement fingerprint=71821a66c3ff86b20fa0c5bc1efdd3006671ec1c40e6deb97a37baf66a74ef71 body_fp=3c4ce65afd56e4edf4c6414fa42f7dddf9e094a95c500d8085f1389787495926 source_ref=1edb270eac372aff1b5ed83bb2dca1b284166f88 role=test -->
+Assert that patches keyed by qname survive a `replace_file_symbols` call that removes the associated symbol row.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_store:_seed_greet fingerprint=b4f933e9d0fc5f1b3df00d2ecaddadf5acff9c3de6c5276bba5e2df543e155ef body_fp=6cede5dfaafb62598b41b6540260e85f13ac251b6cab4de92c6de01401a9fcbb source_ref=459b5c5d3e63364c6de2c5475ae57476758c3a65 role=test -->
 Creates test file `a.py` with a `greet` function and populates the Store with its symbols.

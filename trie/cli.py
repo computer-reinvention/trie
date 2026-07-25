@@ -1469,7 +1469,6 @@ def _run_digest_write(
     from datetime import datetime
 
     from trie.git_helpers import current_head
-    from trie.pending_intent import consume_intent
     from trie.session_diff import (
         _one_line,
         collect_session_diff,
@@ -1558,8 +1557,12 @@ def _run_digest_write(
         reporter.error(f"digest write failed: {exc}")
         return False
 
-    # 8. The pending rows now live in a digest entry — consume the file.
-    consume_intent(project_root, config)
+    # 8. The sealed rows now live in a digest entry — consume them.
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        store.delete_applied_patches()
+    finally:
+        store.close()
 
     backed_by = "narrative" if narrative else "raw evidence"
     reporter.info(
@@ -3660,30 +3663,17 @@ def patch_create_cmd(
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
-    if gone:
-        # Removed symbols have no graph row to queue against — record the
-        # intent straight into the pending-intent file so the gate (and the
-        # commit digest) still get it.
-        from trie.pending_intent import append_intent
-
-        append_intent(
-            project_root,
-            _config,
-            [
-                {
-                    "qname": qname,
-                    "op": "delete",
-                    "notes": [note],
-                    "reasons": [reason] if reason else [],
-                }
-            ],
-        )
-        reporter.success(f"removal note recorded for {qname} (pending intent)")
-        return
-
     store = Store(project_root / ".trie" / "graph.db")
     try:
         session_id = _cli_session_id(project_root)
+        if gone:
+            # Removed symbols aren't in the graph anymore; the qname-keyed
+            # patches table holds their deletion intent without an FK.
+            patch_id = store.add_patch(
+                qname, note, reason, session_id, kind="delete", require_symbol=False
+            )
+            reporter.success(f"removal note #{patch_id} recorded for {qname}")
+            return
         patch_id = store.add_patch(qname, note, reason, session_id)
     except KeyError:
         reporter.error(

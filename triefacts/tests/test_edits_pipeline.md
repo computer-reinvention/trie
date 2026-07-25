@@ -1,39 +1,39 @@
 ---
 trie_version: 0.1.9
 source: tests/test_edits_pipeline.py
-file_fingerprint: 6da00772820db89c8c36ebe00ec491ce183ce9e84ff00d0c702eea551b6b7cb0
-last_synced_at: '2026-07-25T11:30:52Z'
+file_fingerprint: 50ddfb20d295e8396ece5f98dcbf719d13b91b115d6325bf82aded6883674c9f
+last_synced_at: '2026-07-25T11:48:31Z'
 description: 'Spec for the slimmed patch pipeline: an intent store, not a code generator.'
 defines:
 - kind: module
   qualified_name: tests/test_edits_pipeline:__module__
-  lines: 1-114
+  lines: 1-119
 - kind: class
   qualified_name: tests/test_edits_pipeline:TestSessionNoteQuality
-  lines: 15-21
+  lines: 14-20
 - kind: method
   qualified_name: tests/test_edits_pipeline:TestSessionNoteQuality.test_rejects_short_and_boilerplate
-  lines: 16-18
+  lines: 15-17
 - kind: method
   qualified_name: tests/test_edits_pipeline:TestSessionNoteQuality.test_accepts_real_note
-  lines: 20-21
+  lines: 19-20
 - kind: function
   qualified_name: tests/test_edits_pipeline:_project
-  lines: 24-41
+  lines: 23-40
 - kind: function
   qualified_name: tests/test_edits_pipeline:test_record_intent_archives_notes_without_generation
-  lines: 44-78
+  lines: 43-83
 - kind: function
   qualified_name: tests/test_edits_pipeline:test_record_intent_preserves_structural_ops
-  lines: 81-90
+  lines: 86-95
 - kind: function
   qualified_name: tests/test_edits_pipeline:test_single_symbol_needs_no_session_note
-  lines: 93-100
+  lines: 98-105
 - kind: function
   qualified_name: tests/test_edits_pipeline:test_preview_patches_reports_pending_and_blast_radius
-  lines: 103-113
+  lines: 108-118
 incoming_refs: 0
-outgoing_refs: 12
+outgoing_refs: 10
 ---
 <!-- trie:section symbol=tests/test_edits_pipeline:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=779d3118d360be3e6cc31619bc506e3cfef98d30e9e27ade7938a41986fc4d11 source_ref=e0282d34035b65bdf7e8d362970ae8d5376a0584 role=test -->
 Tests the edits pipeline functionality including staging, committing, and import fixup operations.
@@ -61,11 +61,11 @@ Build a minimal in-`tmp_path` git repo with a two-symbol `m.py`, a populated `St
 
 - Returns a `(Config, Store)` tuple ready for pipeline test use.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_pipeline:test_record_intent_archives_notes_without_generation fingerprint=d94a343ec87fff80dc27beb1da714578b10c91999a427535d5f67e7bff9e7525 body_fp=5fdcf0b361538bc3f132e19f53bafcb82a3fa67e6fc4a0544d2a5fe547e04533 source_ref=49409b33c5ccf4cea1f24c71912b3228b77ed1dd role=test -->
-Verify that `record_intent` archives patches to the session log, clears the queue, leaves source files unmodified without generating code, and writes a `.pending.md` file inside the digest archive directory.
+<!-- trie:section symbol=tests/test_edits_pipeline:test_record_intent_archives_notes_without_generation fingerprint=86ece2c32493b092669f06f97b0a2b5abb4db34c0bb9bc491f1a05cad0e6651b body_fp=398692cb6b32310b59a9de6e8d932b1a01b634a81f69d093de3b4203c0c85e5b source_ref=97ea987c78febe85ff2c0d057f9bf07443d659ed role=test -->
+Verify that `record_intent` seals patches in-store with the session note, leaves source files unmodified without generating code, and that consuming applied patches empties the store tables.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_pipeline:test_record_intent_preserves_structural_ops fingerprint=27f7c440e37ffa5890f4755e3d4412359aa9ee99b47adb168e7f88dc145997b0 body_fp=2282d1555d30de0363b84d41fb0c9b21591c733e3738c8b7b6f11f15d42aff20 source_ref=49409b33c5ccf4cea1f24c71912b3228b77ed1dd role=test -->
-Verify that `record_intent` archives a `delete`-kind patch without requiring a session note and records the correct op.
+<!-- trie:section symbol=tests/test_edits_pipeline:test_record_intent_preserves_structural_ops fingerprint=f12e109f06dbbe243aaa11eb4d62d1828b4f734d41e9881e84fc9e43a58a69ad body_fp=f8f3cffd60109e59be6ead1b8cf9fc63d797a8a29f94bb0442b13ffc8766cdc9 source_ref=97ea987c78febe85ff2c0d057f9bf07443d659ed role=test -->
+Verify that `record_intent` archives a `delete`-kind patch without requiring a session note and seals it with the correct kind in the store.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_pipeline:test_single_symbol_needs_no_session_note fingerprint=7e06b4b7d7dd1a429364f560a6fe63f89833872fe544bdbf22eca4ec403bb181 body_fp=46343806dd31be8d9de4c43548a50e6452ed52eb2b733e3d0a5bc9b875886271 source_ref=216da440140e9e9a0724eb58e004820fb538cdc8 role=test -->
 Assert that `record_intent` succeeds with an empty session note when only one symbol is queued.
