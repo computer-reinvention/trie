@@ -1,14 +1,14 @@
 ---
 trie_version: 0.1.9
 source: tests/test_session_diff.py
-file_fingerprint: c0ba10e9a7b9a04cc48edb91e94228104a19c577bc566307cce10ca4d08da269
-last_synced_at: '2026-07-24T01:12:56Z'
+file_fingerprint: 0233efa88dec1e083501d8a6aaf0bb941ba63147eaf8252c9532979cf7d18cad
+last_synced_at: '2026-07-25T00:07:06Z'
 description: Tests for the session log archive and the `trie diff` evidence collection/prompt
   assembly.
 defines:
 - kind: module
   qualified_name: tests/test_session_diff:__module__
-  lines: 1-618
+  lines: 1-746
 - kind: function
   qualified_name: tests/test_session_diff:test_record_and_read_entries_roundtrip
   lines: 24-61
@@ -32,12 +32,21 @@ defines:
   lines: 343-410
 - kind: function
   qualified_name: tests/test_session_diff:test_render_digest_section_shape
-  lines: 413-522
+  lines: 413-543
 - kind: function
   qualified_name: tests/test_session_diff:test_upsert_digest_prepend_replace_trim
-  lines: 525-617
+  lines: 546-640
+- kind: function
+  qualified_name: tests/test_session_diff:test_one_line_flattens_and_truncates
+  lines: 643-670
+- kind: function
+  qualified_name: tests/test_session_diff:test_collect_symbol_deltas_before_after
+  lines: 673-721
+- kind: function
+  qualified_name: tests/test_session_diff:test_merge_applied_by_symbol_first_note_wins
+  lines: 724-745
 incoming_refs: 0
-outgoing_refs: 24
+outgoing_refs: 25
 ---
 <!-- trie:section symbol=tests/test_session_diff:__module__ fingerprint=efba484e3aa652464eff4bb42149f2f8ad21e69db80743152ed50083f36a38f2 body_fp=1104a778ce390fa56813958cd8c63c2c3c38548adf128fd9b73f2b057fbc791e source_ref=17faca7a18030ef384494b789fa37a1b8d11cd20 role=test -->
 Test module for session log archive and `trie diff` evidence collection and prompt assembly.
@@ -63,9 +72,18 @@ Verify that `synthesize_narrative` passes the triefact diff as `cache_prefix` wh
 <!-- trie:section symbol=tests/test_session_diff:test_collect_session_diff_since_filters_applied fingerprint=b8ad21187f0eed1369e497ac9b88cb62c894ddac513da36a098c170d0ffcfb7f body_fp=09b8b6feab2de3dcc762b79fe352bda9af2ba3b5238603bae54f6436ceec6f9f source_ref=17faca7a18030ef384494b789fa37a1b8d11cd20 role=test -->
 Verify that `collect_session_diff` filters applied session log entries by the `since` timestamp, excluding entries older than the cutoff while retaining newer ones.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_render_digest_section_shape fingerprint=a2cfd55d4341651648c1dad0d141558a85af940230184de3e709ec7004cedc59 body_fp=136785299f6b7efb88a968eb3340a9fbe3eb4df2bad29d8b9c6c2986fc3f4063 source_ref=c7fd41470ca43d27b6d8b02de542185d856de27e role=test -->
-Verify `render_digest_section` output structure, optional narrative inclusion, and H2-heading demotion inside narratives while preserving headings in fenced code blocks.
+<!-- trie:section symbol=tests/test_session_diff:test_render_digest_section_shape fingerprint=ce6e87b909a2e788f61327f21e9292f2470b06f81fc09d7ac35c79f85cfdd36d body_fp=b86e5fb0cd2f50c47b7fc4135264f2494231f9a983ad9e9f540c7b47ae44618e source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
+Verify `render_digest_section` output structure: header shape, H2-heading demotion in narratives, `### Changes` delta bullets, follow-up suffix, markdown-injection prevention, forbidden old-format artifacts, `### Staged (not applied)` section, and `max_changes` overflow truncation.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_session_diff:test_upsert_digest_prepend_replace_trim fingerprint=5bb9d0370c51a52fbb4897d1dc9d55e1c52ee43c5674b05d60180e106dcd9b20 body_fp=77b241f48d2830479573e2cbfbfbc9aec3a3f69c7036507f03a86aeec0d5760f source_ref=c7fd41470ca43d27b6d8b02de542185d856de27e role=test -->
+<!-- trie:section symbol=tests/test_session_diff:test_upsert_digest_prepend_replace_trim fingerprint=bcf5fa0868f43a522d120217e2e471f8645a9170974963cac33a5d64a26ad23d body_fp=77b241f48d2830479573e2cbfbfbc9aec3a3f69c7036507f03a86aeec0d5760f source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
 Test `upsert_digest` for fresh-file creation, new-entry prepend, same-base replace, oldest-entry trimming, and correct handling of inner `##` headings inside narrative bodies.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_session_diff:test_one_line_flattens_and_truncates fingerprint=2f0ba482c18eb7978c4e4724a58f3a1e674200782e5d3f29c4a862a8f082989c body_fp=b0b2db762e1f94b4d614e613fd8aca35ce2348fe5a6f7b11e5ea5bb7d4203c80 source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
+Verify `_one_line` flattens multiline text, collapses whitespace, cuts at sentence boundaries, truncates long input to ≤200 chars with `…`, and returns `""` for empty input.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_session_diff:test_collect_symbol_deltas_before_after fingerprint=f1ab528f43206ac3ce31ebcffc7085c62c62784fb0a001cd23633942a45532fb body_fp=ec2ed440703e696bdbedefdbbf646ca0faa3a0c7dbd2cdcba9f771a155054df4 source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
+Test that `collect_symbol_deltas` returns `changed` rows with `before`/`after` prose, `added` rows for new symbols, and no row for unchanged symbols.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_session_diff:test_merge_applied_by_symbol_first_note_wins fingerprint=2a24c952c5e057186e3287e08d5a7ac89f95b21a54f20f7060f39b27b3fb0660 body_fp=dfc99a0c54ed5d2dc9c02a715e2846211f52df600ec1e2def897b4708396de45 source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
+Verify that `merge_applied_by_symbol` deduplicates entries by `qname`, preserves the first `op` and `note`, and counts subsequent entries as `followups`.
 <!-- trie:end -->

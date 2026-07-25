@@ -1191,44 +1191,70 @@ def diff_cmd(
         raise typer.Exit(code=1) from exc
 
     from trie.session_diff import (
+        _one_line,
         collect_session_diff,
+        collect_symbol_deltas,
         render_digest_section,
         synthesize_narrative,
         upsert_digest,
     )
 
     if write:
+        import time
+        from datetime import datetime
+
+        from trie.digest_cursor import resolve_digest_window, save_digest_cursor
         from trie.git_helpers import commit_timestamp, current_head
 
-        since = commit_timestamp(project_root, base)
-    else:
-        since = None
+        # 1. Resolve parent commit identity
+        parent_sha = current_head(project_root)
+        if parent_sha is None:
+            parent_sha = base
+        parent_short = parent_sha[:12]
 
-    store = Store(project_root / ".trie" / "graph.db")
-    try:
-        data = collect_session_diff(
+        # 2. Determine the evidence window via the persistent digest cursor
+        since = resolve_digest_window(
             project_root,
-            config,
-            store,
-            session_id=session,
-            base=base,
-            since=since,
+            parent_sha,
+            fallback_since=commit_timestamp(project_root, base),
         )
-    finally:
-        store.close()
 
-    if write:
+        # 3. Collect session evidence
+        store = Store(project_root / ".trie" / "graph.db")
+        try:
+            data = collect_session_diff(
+                project_root,
+                config,
+                store,
+                session_id=session,
+                base=base,
+                since=since,
+            )
+        finally:
+            store.close()
+
         if data.is_empty():
             reporter.info("no session changes; digest not updated")
             return
 
-        # Resolve a short ref for the base
-        if base == "HEAD":
-            head = current_head(project_root)
-            base_short = head[:12] if head else base
-        else:
-            base_short = base[:12]
+        # 4. Collect semantic symbol deltas
+        deltas = collect_symbol_deltas(project_root, config, base=base)
 
+        # 5. Derive a human title from the first non-empty session note
+        title: str | None = None
+        for entry in data.applied:
+            notes = entry.get("notes") or []
+            for note_text in notes:
+                candidate = _one_line(note_text, max_chars=80)
+                if candidate:
+                    title = candidate
+                    break
+            if title:
+                break
+        if not title:
+            title = "Session changes"
+
+        # 6. Optionally synthesize an LLM narrative
         narrative = ""
         if getattr(config.diff, "narrative", True) and not raw:
             try:
@@ -1237,14 +1263,15 @@ def diff_cmd(
             except Exception:
                 narrative = ""
 
-        from datetime import datetime
-
-        date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        # 7. Render and write the digest section
+        date_str = datetime.now().strftime("%Y-%m-%d")
         section = render_digest_section(
             data,
-            base_short=base_short,
+            title=title,
             date_str=date_str,
+            parent_short=parent_short,
             narrative=narrative,
+            deltas=deltas,
         )
 
         digest_path = project_root / config.diff.write_path
@@ -1253,7 +1280,7 @@ def diff_cmd(
             upsert_digest(
                 existing,
                 section,
-                base_short=base_short,
+                base_short=parent_short,
                 max_entries=config.diff.max_entries,
             )
         )
@@ -1264,11 +1291,43 @@ def diff_cmd(
         except ValueError:
             display_path = digest_path
         reporter.info(f"digest written to {display_path} ({backed_by})")
+
+        # 8. Persist the digest cursor so the next run anchors correctly
+        covered_ts: float = 0.0
+        for entry in data.applied:
+            try:
+                ts = float(entry.get("ts", 0) or 0)
+            except (TypeError, ValueError):
+                ts = 0.0
+            if ts > covered_ts:
+                covered_ts = ts
+        if covered_ts == 0.0:
+            covered_ts = time.time()
+
+        save_digest_cursor(
+            project_root,
+            parent=parent_sha,
+            since=since if since is not None else 0.0,
+            covered=covered_ts,
+        )
         return
 
     # ------------------------------------------------------------------ #
     # Terminal rendering modes                                             #
     # ------------------------------------------------------------------ #
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        data = collect_session_diff(
+            project_root,
+            config,
+            store,
+            session_id=session,
+            base=base,
+            since=None,
+        )
+    finally:
+        store.close()
 
     if data.is_empty():
         reporter.info("no session changes detected (no triefact diff, no patch notes)")
