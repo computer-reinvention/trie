@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/session_diff.py
-file_fingerprint: f25f68734ea9b5c42372fd54b4208636d45616771e83e71bf3c913309e768e01
-last_synced_at: '2026-07-25T00:24:06Z'
+file_fingerprint: fcee19fbaac693e19eb5b7ccca451efba5519ab5d95d4eced688af839bb2f304
+last_synced_at: '2026-07-25T00:40:40Z'
 defines:
 - kind: module
   qualified_name: trie/session_diff:__module__
-  lines: 1-590
+  lines: 1-604
 - kind: class
   qualified_name: trie/session_diff:SessionDiff
   lines: 8-27
@@ -17,41 +17,44 @@ defines:
   qualified_name: trie/session_diff:SessionDiff.session_ids
   lines: 20-27
 - kind: function
+  qualified_name: trie/session_diff:_triefact_pathspecs
+  lines: 30-41
+- kind: function
   qualified_name: trie/session_diff:collect_session_diff
-  lines: 30-63
+  lines: 44-77
 - kind: function
   qualified_name: trie/session_diff:_one_line
-  lines: 66-98
+  lines: 80-112
 - kind: constant
   qualified_name: trie/session_diff:_FENCE
-  lines: 101-101
+  lines: 115-115
 - kind: function
   qualified_name: trie/session_diff:build_narrative_prompt
-  lines: 104-176
+  lines: 118-190
 - kind: constant
   qualified_name: trie/session_diff:_NARRATIVE_SYSTEM_PROMPT
-  lines: 179-188
+  lines: 193-202
 - kind: function
   qualified_name: trie/session_diff:synthesize_narrative
-  lines: 191-219
+  lines: 205-233
 - kind: function
   qualified_name: trie/session_diff:render_digest_section
-  lines: 222-361
+  lines: 236-375
 - kind: constant
   qualified_name: trie/session_diff:DIGEST_FILE_HEADER
-  lines: 364-368
+  lines: 378-382
 - kind: function
   qualified_name: trie/session_diff:_new_digest_filename
-  lines: 371-382
+  lines: 385-396
 - kind: function
   qualified_name: trie/session_diff:write_digest
-  lines: 385-458
+  lines: 399-472
 - kind: function
   qualified_name: trie/session_diff:collect_symbol_deltas
-  lines: 461-568
+  lines: 475-582
 - kind: function
   qualified_name: trie/session_diff:merge_applied_by_symbol
-  lines: 571-589
+  lines: 585-603
 incoming_refs: 7
 outgoing_refs: 0
 ---
@@ -67,8 +70,15 @@ Return `True` when `SessionDiff` has no diff text, no applied entries, and no pe
 <!-- trie:section symbol=trie/session_diff:SessionDiff.session_ids fingerprint=f8703e92cc108bac529c20bce6b83766f976d0424f7683d4e60f831b962e00f2 body_fp=a965b48afc59b753e1813be79724b80ffd65d52960bca31c9e3774495446941a source_ref=2fd24a66abd87a87819892d8d61ea7471cee29cb role=domain -->
 Return distinct, non-empty session IDs from `SessionDiff.applied` and `SessionDiff.pending`, preserving insertion order.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/session_diff:collect_session_diff fingerprint=e99566072d1aa60f6284e1dbe197404a57f1a14b1669e9463722b79ca36d44bb body_fp=ec00c194b0806130bfe826c4e1e4a08be17e9ec42620e7edd0add19d7fafd040 role=monitoring-telemetry -->
-`collect_session_diff` assembles a complete `SessionDiff` for a given working session by retrieving the git diff of the triefact tree against a specified base ref, fetching applied patch-note entries from the session log (optionally restricted to entries recorded after a `since` timestamp and/or a specific `session_id`), gathering still-pending patch notes (both modifications and creations) from the store, optionally filtering everything down to a single `session_id`, and returning the bundled result.
+<!-- trie:section symbol=trie/session_diff:_triefact_pathspecs fingerprint=3568ac1bd7c9bb97bf5381b4a6f23bfdded8133fdc861827492ac664b54d5608 body_fp=3df403bc2b091b54f3fb6b1881d44ffdfe64e29f6c0e0c9fbfcb721b0cecd844 source_ref=4c4e91c3c881299bbd6cbb84617acdafd0760205 role=util -->
+Return git pathspecs covering the triefact root while excluding `config.diff.diffs_dir` to prevent digest files from polluting evidence collection.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/session_diff:collect_session_diff fingerprint=c890a4f48029ac679e66239a6d6522bc61572276a1a52cc2da911309cdb1ecf2 body_fp=a559ab9075f3b849a287b0bb954b2f5622db71a9fad5d5d02f26a30d95011351 source_ref=4c4e91c3c881299bbd6cbb84617acdafd0760205 role=orchestration -->
+Gather one session's evidence into a `SessionDiff`: git diff of the triefact tree vs `base`, applied patch notes from the session log, and pending patch notes from the store.
+
+- `session_id`: `None` collects across all sessions; otherwise filters both applied and pending entries.
+- `since`: restricts applied log entries to those recorded after the given Unix timestamp.
+- `base`: git ref used as the diff baseline; defaults to `"HEAD"`.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/session_diff:_one_line fingerprint=c9d246ecf903076038d2359f4e58b3377b6bf54c959c1b6eba19d30ac55795a3 body_fp=841114585aa8684f0cd69efb0b04199fe309daf2a83c450788450b07d7182c36 source_ref=6496768f11e8dbbd9f62de10da624109491b7be3 role=util -->
 Extract the first non-empty line of `text`, collapse whitespace, truncate at the first sentence boundary or `max_chars`, appending `…` if hard-truncated.
@@ -118,7 +128,7 @@ Write a rendered digest section to a timestamped file under `diffs_dir`, atomica
 - `max_entries`: files beyond this count (by mtime, newest first) are unlinked from disk but retained in git history.
 - Returns the project-relative path of the file written.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/session_diff:collect_symbol_deltas fingerprint=4f4b5cd8cbc111c29c6acd141697747586d76b8e5c7c29089fcfc07505967883 body_fp=7358074bbb75e94a5f7e447dd356b7339d69a794f24eaf4b593f214cf7d2d1be source_ref=b52fb7d875efc22b57e789d47535774fa98128e8 role=domain -->
+<!-- trie:section symbol=trie/session_diff:collect_symbol_deltas fingerprint=313196f2dad6a3ecbf02fd525acc27ecad2ddc70e394332b331b7d2bb2a70b8c body_fp=7358074bbb75e94a5f7e447dd356b7339d69a794f24eaf4b593f214cf7d2d1be source_ref=4c4e91c3c881299bbd6cbb84617acdafd0760205 role=domain -->
 Diff the triefact tree against `base`, parse each changed file into `{qname: one_liner}` maps, and return a sorted list of per-symbol delta dicts.
 
 - `status`: one of `"added"`, `"removed"`, or `"changed"`; `"changed"` rows are suppressed when the one-liner is identical (churn gate)
