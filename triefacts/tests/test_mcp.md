@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: tests/test_mcp.py
-file_fingerprint: f8dccd04c8178419f0b993789ffd1a28f20b4e6b31d5847df31967eb945d4f91
-last_synced_at: '2026-07-20T13:09:27Z'
+file_fingerprint: a689eb7fca20de68abf33a10bd230217cfaea54aeb870c7be97cdab6e59442d6
+last_synced_at: '2026-07-25T01:43:20Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: module
   qualified_name: tests/test_mcp:__module__
-  lines: 1-924
+  lines: 1-994
 - kind: constant
   qualified_name: tests/test_mcp:PROJECT_TOML
   lines: 21-30
@@ -239,8 +239,17 @@ defines:
 - kind: function
   qualified_name: tests/test_mcp:test_batch_patch_empty_list_errors
   lines: 920-923
+- kind: function
+  qualified_name: tests/test_mcp:test_read_warns_when_prose_is_stale
+  lines: 929-964
+- kind: function
+  qualified_name: tests/test_mcp:test_read_warns_when_graph_itself_is_stale
+  lines: 967-981
+- kind: function
+  qualified_name: tests/test_mcp:test_read_has_no_stale_warning_when_fresh
+  lines: 984-993
 incoming_refs: 0
-outgoing_refs: 12
+outgoing_refs: 17
 ---
 <!-- trie:section symbol=tests/test_mcp:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8aae9c0160792068985e2d8f76d0fb26134f6f6b03e5f03d32d39b128db471ad source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests for MCP tool surface (grep, read, trace) via direct TrieTools invocation.
@@ -614,4 +623,13 @@ Assert that `batch_patch` reports per-item failures for a missing symbol and an 
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp:test_batch_patch_empty_list_errors fingerprint=fcc2566ebf71c33e9a5308d9357a7fa63ae48b40444578b6c6a0a1241780390f body_fp=58ebc6287f6237ffa8c27c546de0f125ba83dd7cbfdbbc6635521c6640bdcaf0 source_ref=34ac800409ea7e9fc313a6fa636048bec513d2b2 role=test -->
 Assert that `TrieTools.batch_patch` returns an `invalid_argument` error when called with an empty list.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_warns_when_prose_is_stale fingerprint=354d1b9012fc3069a29ddd84391ffd87f628ae9dcc8b7548a06000e65dfc7fb6 body_fp=65d8cdcf5ba3134e50113251a914f9a0bba42b3bd2f096fc8617026d3d239256 source_ref=f17367d9a6796ee0b95f53fa75132bfa3ac23171 role=test -->
+Assert that `TrieTools.read` attaches a `STALE` note to a symbol whose prose predates a source edit followed by a re-scan, and that the compact file view also carries a `STALE PROSE` banner.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_warns_when_graph_itself_is_stale fingerprint=b73cd9b61ae0d89dba0ba5f3552d6856997e6654f5e2ed7c7bb876086ff76964 body_fp=b4eff3a2290d41b9440b540a3ccb0c03b8bc722f2cc0ceb516db5b085883a0a8 source_ref=f17367d9a6796ee0b95f53fa75132bfa3ac23171 role=test -->
+Assert that `TrieTools.read` includes a graph-stale warning when source is edited without a subsequent re-scan.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_has_no_stale_warning_when_fresh fingerprint=3a3f1a75d8300ad70c423063a319bb7366e2b6f86c1d3a1f4af6472a216317c6 body_fp=fcf25f720c36eba73ecc63f85f0cf36c2aaea5f7c7b3b2b9e6fdf6d1ff5dc91f source_ref=f17367d9a6796ee0b95f53fa75132bfa3ac23171 role=test -->
+Assert that `TrieTools.read` emits no stale warnings when prose and graph are both current.
 <!-- trie:end -->

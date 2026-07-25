@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/edits/pipeline.py
 file_fingerprint: c5da3d6a7aa2ee8a95ff31bd8fe205cac5690b9baa61419d12f8e1a9bd3bfc3c
-last_synced_at: '2026-07-25T01:02:09Z'
+last_synced_at: '2026-07-25T01:43:40Z'
 description: The stage/commit edit pipeline.
 defines:
 - kind: module
@@ -126,7 +126,7 @@ Generates a concise session note summarizing pending edit operations from seed s
 - Returns: formatted summary like "edit symbol1, symbol2, create symbol3" or "batch edit" if empty
 - Truncates to first 8 operations to keep the summary manageable
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:_GenJob fingerprint=635fb56198b8aaedb5ed3e9b32123856d097065b5bbeaf695faac30603604833 body_fp=23d7d5043e4ae9761ecceb45c763a9faa4e48627cb6fc5e0643e49c85dcd8a90 source_ref=acbee5dfa56099ae5afd4c2ba335609bcbbb64c6 role=model -->
+<!-- trie:section symbol=trie/edits/pipeline:_GenJob fingerprint=635fb56198b8aaedb5ed3e9b32123856d097065b5bbeaf695faac30603604833 body_fp=23d7d5043e4ae9761ecceb45c763a9faa4e48627cb6fc5e0643e49c85dcd8a90 source_ref=1f152994a6c01e47af87fa54c3ae20b8aedcc1d9 role=model -->
 Holds parameters for one symbol's edit generation job during parallel processing.
 
 - `op`: operation type - "modify", "delete", or "rename"

@@ -1793,7 +1793,6 @@ def _run_full_pass(
         raise typer.Exit(code=1)
 
 
-
 def _report_sync_errors(reporter: Reporter, file_errors: list[tuple[str, str]]) -> bool:
     """Report per-file generation failures. Returns True when any occurred.
 
@@ -2535,6 +2534,17 @@ def _render_read(envelope: dict[str, object], reporter: Reporter) -> None:
         reporter.console.print(f"  [dim]{signature}[/dim]")
     if source_pointer:
         reporter.console.print(f"  [dim]→ {source_pointer}[/dim]")
+
+    # Notes carry the honesty layer (stale-prose warnings, missing-triefact
+    # hints, hub truncation). Stale warnings especially must never be dropped:
+    # a read that serves outdated prose silently is a lying wiki.
+    notes = envelope.get("notes")
+    if isinstance(notes, list) and notes:
+        reporter.console.print()
+        for note in notes:
+            text = str(note)
+            style = "bold yellow" if text.startswith("⚠") else "dim"
+            reporter.console.print(f"[{style}]{text}[/{style}]")
 
     prose = envelope.get("prose") or ""
     if isinstance(prose, str) and prose.strip():
