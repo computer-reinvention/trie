@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.9
 source: trie/cli.py
-file_fingerprint: 8028f56bc963bc44f93446c597133260769a3c57b6b00120d352ac98254d4894
-last_synced_at: '2026-07-25T01:43:20Z'
+file_fingerprint: 642205d62e3df4b586a6b1726d52a16160c3cc70210291994a8757e47ff0cec9
+last_synced_at: '2026-07-25T01:46:09Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
@@ -545,7 +545,7 @@ Scans project for drift, computes either incremental or full-bootstrap worklist,
 - Performs drift check first but continues on drift (informational, not a gate)
 - Acquires write lock to ensure consistent store snapshot during planning
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:verify_cmd fingerprint=404a8a489ac3dff8f8a175632d07fbefd00f73f95de59264aab035c20b6af2c9 body_fp=b1be616430a9b201bca45907bd2e1500a648b462e02f4479997676e0a0b1812a source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
+<!-- trie:section symbol=trie/cli:verify_cmd fingerprint=3182dc32d5135484a723e7e1259b7fa50871036159d113c4aa82c3257476827a body_fp=b1be616430a9b201bca45907bd2e1500a648b462e02f4479997676e0a0b1812a source_ref=991a2f7fd89566ae4e650bd979e2cf9a5a9b69b4 role=api -->
 Runs bidirectional drift check and exits with code 1 if triefacts have diverged from source code.
 
 - Detects both code→triefact drift (source changed without regeneration) and triefact→code drift (tampered sections or deleted symbols)
@@ -644,12 +644,12 @@ Print incremental sync plan emphasizing actual work order and symbol-level impac
 - Lists orphan triefacts that would be removed, truncated at 10 items
 - Preserves bootstrap ranking within each execution tier for cost visibility
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_REASON_LABELS fingerprint=ec482101fe58286effe17023a43479424dfb2b828cee44ffb3f99e8b9adbf8bb body_fp=123a827e0262d8e3a181380a9897a2c5da3dc4d08143cfb49405fb3a26ff4584 source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
+<!-- trie:section symbol=trie/cli:_REASON_LABELS fingerprint=a74cd9fa61964b8516ebff4efdf8859fa2ff50596c2b3765caf8b2d964d0c5cd body_fp=41637c91a10ea3f8163d99b0cca22671a00d986f7952e841c2440a25a9887c8e source_ref=991a2f7fd89566ae4e650bd979e2cf9a5a9b69b4 role=model -->
 Maps StaleReason enum values to human-readable labels for drift reporting.
 
 - Used by `_print_drift_detail` to render per-file drift items in a user-friendly format
 - Keys are StaleReason enum members; values are descriptive strings for CLI output
-- Provides consistent labeling across all drift-related commands (verify, plan, sync)
+- `TAMPERED_BODY` label now includes actionable guidance directing users to move prose outside sentinels and run `trie sync`
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:_print_drift_detail fingerprint=8a63edb41f6619840b29e3b7633ab94852d56e8b2a79b89dcf180f9c1b8a6367 body_fp=698bcad70ac9d737c38314e3d26f0d384ff76f3b86cdcad26f47397e3c262b21 source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=cli-interface -->
 Renders drift check items grouped by triefact file with colored status indicators and indented issue details.

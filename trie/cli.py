@@ -635,7 +635,7 @@ def verify_cmd(ctx: typer.Context) -> None:
 
     Bidirectional: catches both Code → Triefact drift (source changed but section
     wasn't regenerated, or a public symbol has no section) and Triefact → Code drift
-    (section body was tampered with, or section refers to a deleted symbol).
+    (section body was hand-edited between sentinels, or section refers to a deleted symbol).
 
     No LLM, no scan, no DB writes — designed for pre-commit hooks. The same drift
     detection runs as the first step of `trie plan` and `trie sync`; `verify` exists
@@ -1498,7 +1498,7 @@ _REASON_LABELS: dict[StaleReason, str] = {
     StaleReason.MISSING_SECTION: "missing section",
     StaleReason.STALE_SECTION: "stale (source changed)",
     StaleReason.ORPHAN_SECTION: "orphan (symbol gone)",
-    StaleReason.TAMPERED_BODY: "tampered body",
+    StaleReason.TAMPERED_BODY: "hand-edited inside a generated section — move your prose OUTSIDE the sentinels (trie preserves it there), then run `trie sync`",
     StaleReason.LEGACY_SECTION: "legacy (no body fingerprint)",
 }
 
