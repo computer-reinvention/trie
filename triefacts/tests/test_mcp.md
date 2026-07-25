@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: tests/test_mcp.py
-file_fingerprint: a689eb7fca20de68abf33a10bd230217cfaea54aeb870c7be97cdab6e59442d6
-last_synced_at: '2026-07-25T01:46:28Z'
+file_fingerprint: 85a9077a73dd8a41c63db17d24e253adb20e6dff268017a6e52c0c7fb2788379
+last_synced_at: '2026-07-25T06:16:53Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: module
   qualified_name: tests/test_mcp:__module__
-  lines: 1-994
+  lines: 1-1026
 - kind: constant
   qualified_name: tests/test_mcp:PROJECT_TOML
   lines: 21-30
@@ -248,8 +248,11 @@ defines:
 - kind: function
   qualified_name: tests/test_mcp:test_read_has_no_stale_warning_when_fresh
   lines: 984-993
+- kind: function
+  qualified_name: tests/test_mcp:test_read_history_flag_surfaces_intent_trail
+  lines: 996-1025
 incoming_refs: 0
-outgoing_refs: 17
+outgoing_refs: 18
 ---
 <!-- trie:section symbol=tests/test_mcp:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8aae9c0160792068985e2d8f76d0fb26134f6f6b03e5f03d32d39b128db471ad source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests for MCP tool surface (grep, read, trace) via direct TrieTools invocation.
@@ -632,4 +635,11 @@ Assert that `TrieTools.read` includes a graph-stale warning when source is edite
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp:test_read_has_no_stale_warning_when_fresh fingerprint=3a3f1a75d8300ad70c423063a319bb7366e2b6f86c1d3a1f4af6472a216317c6 body_fp=fcf25f720c36eba73ecc63f85f0cf36c2aaea5f7c7b3b2b9e6fdf6d1ff5dc91f source_ref=f17367d9a6796ee0b95f53fa75132bfa3ac23171 role=test -->
 Assert that `TrieTools.read` emits no stale warnings when prose and graph are both current.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_read_history_flag_surfaces_intent_trail fingerprint=624c588da05df6e2b0d1ce6b96520d641ed4853ebbbfd4985bfa1741a19ef510 body_fp=245534da5abe5fe8e09d0e01c5603d50d6f19af97026d1286fd69e8d3630ed47 source_ref=931d15ee10fbf1e812bda2e3e059751488a363e3 role=test -->
+Verify that `history=True` on `TrieTools.read` and `explain_symbol` attaches the digest-archive intent trail, while the default call omits it.
+
+- Writes a stub triediffs archive entry before constructing `TrieTools`.
+- Asserts `history` key is absent from the default `read` envelope (opt-in contract).
+- Asserts symbol read, file view, and `explain_symbol` all surface the parsed trail when `history=True`.
 <!-- trie:end -->

@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: trie/mcp_server.py
-file_fingerprint: 3e369f76ada46e79dabf8ec43ccec81777d568c23f754e307520185a240a1ba0
-last_synced_at: '2026-07-25T06:06:19Z'
+file_fingerprint: b0d39e9f664e56c77e8e7b986c2ef724b54ea8731aeba108005ee146192592eb
+last_synced_at: '2026-07-25T06:17:13Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
 - kind: module
   qualified_name: trie/mcp_server:__module__
-  lines: 1-3350
+  lines: 1-3396
 - kind: class
   qualified_name: trie/mcp_server:RipgrepNotFoundError
   lines: 77-89
@@ -52,7 +52,7 @@ defines:
   lines: 247-266
 - kind: class
   qualified_name: trie/mcp_server:TrieTools
-  lines: 269-3260
+  lines: 269-3306
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.__init__
   lines: 283-312
@@ -151,89 +151,92 @@ defines:
   lines: 1635-1707
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.read
-  lines: 1711-1769
+  lines: 1711-1774
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._strip_line_ref
-  lines: 1772-1783
+  lines: 1777-1788
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._resolve_in_root
-  lines: 1785-1795
+  lines: 1790-1800
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._triefact_view
-  lines: 1797-1873
+  lines: 1802-1890
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._pending_patches_for_file
-  lines: 1875-1916
+  lines: 1892-1933
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._read_symbol
-  lines: 1918-1989
+  lines: 1935-2008
+- kind: method
+  qualified_name: trie/mcp_server:TrieTools._digest_history
+  lines: 2010-2031
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._stale_qnames_for_file
-  lines: 1991-2013
+  lines: 2033-2055
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._section_fingerprint
-  lines: 2015-2033
+  lines: 2057-2075
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._staleness_notes
-  lines: 2035-2074
+  lines: 2077-2116
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._prose_for
-  lines: 2076-2113
+  lines: 2118-2155
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._neighbour_summaries
-  lines: 2115-2140
+  lines: 2157-2182
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.trace
-  lines: 2144-2298
+  lines: 2186-2340
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_str
-  lines: 2302-2461
+  lines: 2344-2503
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_str_all
-  lines: 2463-2576
+  lines: 2505-2618
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.read_source
-  lines: 2578-2636
+  lines: 2620-2678
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.write_file
-  lines: 2638-2698
+  lines: 2680-2740
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.find_files
-  lines: 2700-2771
+  lines: 2742-2813
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_entry_points
-  lines: 2773-2856
+  lines: 2815-2898
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_symbol
-  lines: 2858-2959
+  lines: 2900-3001
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_symbol_and_neighbours
-  lines: 2961-2987
+  lines: 3003-3029
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_symbol
-  lines: 2989-3071
+  lines: 3031-3115
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_symbol_references
-  lines: 3073-3134
+  lines: 3117-3180
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.trace_flow
-  lines: 3136-3194
+  lines: 3182-3240
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_flow
-  lines: 3196-3240
+  lines: 3242-3286
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._suggest_for_qname
-  lines: 3244-3260
+  lines: 3290-3306
 - kind: function
   qualified_name: trie/mcp_server:build_server
-  lines: 3266-3319
+  lines: 3312-3365
 - kind: function
   qualified_name: trie/mcp_server:run_stdio
-  lines: 3322-3329
+  lines: 3368-3375
 - kind: function
   qualified_name: trie/mcp_server:main
-  lines: 3332-3349
-incoming_refs: 12
+  lines: 3378-3395
+incoming_refs: 13
 outgoing_refs: 68
 ---
 <!-- trie:section symbol=trie/mcp_server:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=7fe3b54f1ffb2c5cf0bf8fb619733212b2701ce59504815e5ef75a07ada4e768 source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 role=mcp-server -->
@@ -327,10 +330,10 @@ Find the qname of the symbol whose line range contains `lineno`, preferring nest
 
 Iterates through the ordered list, updating `enclosing` with each symbol that brackets `lineno`. Since symbols are start-ordered, the last matching symbol is the most deeply nested one.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=80db22a4e6bf16a7564ad188f1691fc965407d9bb9e0b1a89e17f3e9c7c8b0cf body_fp=c8c478423367d4da470389bdda3417263570554082e002bbe64dae513fce57e0 source_ref=31ea5773e72df0b09ea019dcab835d5205588818 role=api -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=c95a1e77d25b86bc40eae3baefa6b49256d4abcfbcdd38c6726a64e13f4fcd8d body_fp=c7d5400f97cfef4465d065cea251438a951c3297770b6eedb32307fbefa648ed source_ref=81a270b759f118deb5c5b87c2265bff8a79f1334 role=orchestration -->
 Core interface for MCP tools as plain methods, testable without transport.
 
-Owns the Store and project config for process lifetime. Implements patch tools (patch, batch_patch, create_symbol, delete_symbol, rename_symbol, blast_radius, patch_drop, patch_list, preview, commit), desktop app helpers (all_symbols, all_edges, system_model, summary, record_attention_event, attention, set_investigation, activity, symbols_by_file, file_triefact), three core operations (`grep`, `read`, `trace`), and extended wrappers (grep_str, grep_str_all, read_source, write_file, find_files, grep_entry_points, grep_symbol, grep_symbol_and_neighbours, explain_symbol, explain_symbol_references, trace_flow, explain_flow). All methods return structured dicts with error envelopes; telemetry is captured on each call with configurable event names to distinguish MCP vs CLI usage. `commit` short-circuits to return an executable worklist immediately when the effective backend is `"agent"`, without acquiring the apply lock. `_triefact_view` now prepends a staleness banner when any section's fingerprint predates the current source; `_read_symbol` now prepends staleness notes via `_staleness_notes`; `explain_symbol` likewise folds staleness notes into the response.
+Owns the Store and project config for process lifetime. Implements patch tools (patch, batch_patch, create_symbol, delete_symbol, rename_symbol, blast_radius, patch_drop, patch_list, preview, commit), desktop app helpers (all_symbols, all_edges, system_model, summary, record_attention_event, attention, set_investigation, activity, symbols_by_file, file_triefact), three core operations (`grep`, `read`, `trace`), and extended wrappers (grep_str, grep_str_all, read_source, write_file, find_files, grep_entry_points, grep_symbol, grep_symbol_and_neighbours, explain_symbol, explain_symbol_references, trace_flow, explain_flow). All methods return structured dicts with error envelopes; telemetry is captured on each call with configurable event names to distinguish MCP vs CLI usage. `commit` short-circuits to return an executable worklist immediately when the effective backend is `"agent"`, without acquiring the apply lock. `_triefact_view` now prepends a staleness banner when any section's fingerprint predates the current source; `_read_symbol` now prepends staleness notes via `_staleness_notes`; `explain_symbol` likewise folds staleness notes into the response. `read`, `_triefact_view`, `_read_symbol`, `explain_symbol`, and `explain_symbol_references` accept a `history=True` flag to append the symbol's or file's intent trail from the session-digest archive.
 
 - `event_name`: controls telemetry event name emitted on each call ("mcp_call" for MCP server, "cli_call" for CLI)
 - `store`: SQLite store containing symbol graph and triefact metadata
@@ -572,13 +575,14 @@ Parses TrieTools agent predicate dict into GrepPredicate object or returns error
 - Returns tuple of (GrepPredicate, error_dict_or_None) for uniform error handling
 - `scope_exclude` accepts string or list, normalizes to tuple of path prefixes
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.read fingerprint=ea87a54ab9ee9b1ea91cfe7a236f9edd29e5da1ad51881430829c0b3b7a29ea3 body_fp=a7721dbfb63a86b9cb89b2457b152591c7aa590db0b46d6ae7d5c61b6a132cb0 source_ref=387016dec2af121a411a78de8ef480a933c24894 role=api -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.read fingerprint=46e507f1cac35bf18c92419134d5f23313010014b37aa774d59db9e257961084 body_fp=9ad4ac221c72ca76e14272b818943d30404db32245a0eb69cf41332ee0aac802 source_ref=81a270b759f118deb5c5b87c2265bff8a79f1334 role=api -->
 Dispatch reads to the appropriate source based on `path`: symbol qname → `_read_symbol`; file path with triefact → compact or full triefact view; `path:LINE` cursor / `show_source` / `offset`/`limit` → raw numbered source via `read_source`.
 
 - `path`: qname (`pkg/module:Name`), file path, or `file:LINE`/`file:START-END` cursor ref
 - `full`: when True, returns every triefact section's full prose instead of the compact per-symbol summary
 - `show_source`: forces raw source output regardless of triefact availability
 - `offset`/`limit`: 1-indexed line window; implies `show_source` mode
+- `history`: when True, appends the symbol's or file's intent trail from the session-digest archive; ignored for raw source reads
 - File beats qname when a real on-disk file exists at the colon-bearing path
 <!-- trie:end -->
 <!-- trie:section symbol=trie/mcp_server:TrieTools._strip_line_ref fingerprint=16fca16e06b72f6ba9d4126a2b3420d235a51949dbfa9b246749caf424caa99b body_fp=e86b072393325ecf09b6e1c02942eaa1e24301989f5da1b2b6d16d9989a8bb16 source_ref=387016dec2af121a411a78de8ef480a933c24894 role=util -->
@@ -589,10 +593,11 @@ Split a trailing `:LINE` or `:START-END` suffix from `path`, returning `(clean_p
 <!-- trie:section symbol=trie/mcp_server:TrieTools._resolve_in_root fingerprint=dca3c2c5e29cf37b50351dee85a6ee8e72b17db89e42fe0dbce78c0de166a371 body_fp=5d2fc74743076fc933c6f51030ee2ccb6e5381c7ab1f6553aa32d0b94031917a source_ref=387016dec2af121a411a78de8ef480a933c24894 role=util -->
 Resolve `path` to an absolute `Path` under the project root, returning `None` if the resolved path escapes it.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools._triefact_view fingerprint=6fe051baa8b00ea0d7a2077e78e06e206fbcc6013df522782bc38b78f2929d26 body_fp=2f21fe1b9f776267eac44cf57305165ef97c36380142752736bbe1cf9250122c source_ref=df7c277d94a9a29198067812a2a9243331b67c81 role=domain -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools._triefact_view fingerprint=caba932f18796ee54530ff2e8577e9584ebc5528b8d9be6268c7822bcfec8074 body_fp=4533c5302b9f34dbd9487e515e9439e406c754aa2e928597b5f5ed8b95500790 source_ref=81a270b759f118deb5c5b87c2265bff8a79f1334 role=domain -->
 Render `TrieTools`'s triefact for `file_path` as compact summary or full prose; returns `None` when no triefact exists so the caller falls back to raw source.
 
 - `full`: `True` emits every section's full prose via `render_for_agent`; `False` emits a compact per-symbol summary via `compact_triefact_view`.
+- `history`: when `True`, appends the file's intent trail from the session-digest archive to `output`.
 - Both modes prepend a staleness banner when any section's sentinel fingerprint predates the last-scan fingerprint.
 - Returns `{path, mode, output, has_pending_patches, pending_patches?, notes?}` on success; `pending_patches` and `notes` are present only when staged-but-unapplied patches exist for symbols in the file.
 - Returns `None` when the triefact file is absent or the path escapes the project root.
@@ -603,12 +608,20 @@ Return all pending patch and create records for every symbol whose `file_path` m
 - Returns `[]` silently on any store exception (best-effort).
 - Each record: `{qname, op, count, notes}` where `op` is `"patch"` or `"create"`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools._read_symbol fingerprint=b5a34b02e88f650d632f53a7fb838d7418797f7292917fd01e2e21b124a9c241 body_fp=85911eff1374c28fd98dc6b8e19eeb62a1b0cf8f73e82f2ee35eccd65289f1ee source_ref=df7c277d94a9a29198067812a2a9243331b67c81 role=api -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools._read_symbol fingerprint=cf34658964c5a0847262855b596adb902404ef09541b702578510f92d5af642f body_fp=4bd833c3dc62b870a6e1b05092af8329a7452298efa8ed46d5f2e2db4fc79cc9 source_ref=81a270b759f118deb5c5b87c2265bff8a79f1334 role=domain -->
 Fetch a single symbol's triefact prose plus compact caller/callee summaries from `TrieTools`, emitting a telemetry span.
 
+- `history` — when `True`, adds a `history` key to the result via `_digest_history`
 - `notes` — appended when prose is missing/stale, neighbours are truncated, or the symbol exceeds the hub threshold
 - `pending_patches` — included only when patches exist; each entry gains an `origin` tag (`"cascade"` or `"agent"`)
 - Returns `not_found` error envelope when `qname` is absent from the store
+<!-- trie:end -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools._digest_history fingerprint=2ef6fa57a5fc313a8964bb32b428dbe4c123273a4d7ba3a173f00a656f7a41bc body_fp=aa94f369fbbc3307de74eed005bb9aaf8ffd26f72452abacd017e5edb5267f28 source_ref=81a270b759f118deb5c5b87c2265bff8a79f1334 role=persistence -->
+Return the chronological intent trail for a symbol or module from the session-digest archive, newest first and capped.
+
+- `qname`: returns up to 5 entries via `symbol_history`; takes priority over `module_prefix`.
+- `module_prefix`: returns up to 8 entries via `file_history` when `qname` is `None`.
+- Returns `[]` on any exception or when neither argument is supplied.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/mcp_server:TrieTools._stale_qnames_for_file fingerprint=c615dbb260e882bfb765581e8fe295f9a491cd7e2322c33da920d89cf8881da2 body_fp=be19c5beaa102afd43d857796d1bdb1f89177d77240bd0c2bc10a99ff6e06aa8 source_ref=df7c277d94a9a29198067812a2a9243331b67c81 role=domain -->
 Return the set of qnames in `rel` whose triefact section fingerprint differs from the current symbols-table hash, indicating stale prose.
@@ -722,21 +735,23 @@ TrieTools method extends grep_symbol to include immediate caller and callee meta
 
 Combines fuzzy symbol lookup with neighbourhood exploration in a single round trip. Returns the same structure as grep_symbol plus trimmed summaries of direct references. Used for symbol orientation without separate read calls.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.explain_symbol fingerprint=df545eeb504005d2c742653bfe7afb1ff4ef9a0238a742a55fe5e401cd457cbd body_fp=41735c806268022fecdbe0f08952edddcf88959b92c06777ca63a4beba675840 source_ref=df7c277d94a9a29198067812a2a9243331b67c81 role=api -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.explain_symbol fingerprint=ec6c9df2f6e2fd37c306c0ddc5a4533af8f1a333ab180ca986dd49ba6a498891 body_fp=ed95be0b5ffc9f875af50bd7984ffaeb2e21443c881361a165b4142106505b16 source_ref=81a270b759f118deb5c5b87c2265bff8a79f1334 role=api -->
 TrieTools.explain_symbol returns full prose for a symbol plus a narrative story weaving together its callers and callees.
 
 - `sym`: symbol name or qname (uses fuzzy resolution if exact match fails)
-- Returns dict with `qname`, `signature`, `source_pointer`, `prose`, `story`, `callers`, `callees`, optional `notes`
+- `history`: when True, appends `_digest_history` intent trail under `out["history"]`
+- Returns dict with `qname`, `signature`, `source_pointer`, `prose`, `story`, `callers`, `callees`, optional `notes`, optional `history`
 - `notes` prepends staleness warnings (from `_staleness_notes`) before any prose-generation notes
 - Story includes first paragraph of prose from up to 5 callers/callees under "Called by:" and "Calls into:" sections
 - Telemetry tracks result kind, prose/story character counts, and response size
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.explain_symbol_references fingerprint=eea4957620148f9d0248392d9f05abb2b42803af63e9fcd92c25002b5b64438a body_fp=551bca66176259a1876dedf6342c9fe2b38c0d51422076da6416a504e1443ca3 source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 role=mcp-server -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.explain_symbol_references fingerprint=2a49b14331cbf83b57abb1d76da27ac245404ce8e48bec57af742e8491abbeeb body_fp=e17bb4b1c98afbad07ba07b30811827c5f515749f7e20719e2e04c215f318d84 source_ref=81a270b759f118deb5c5b87c2265bff8a79f1334 role=domain -->
 TrieTools.explain_symbol_references explains how a symbol is used by building a usage story from caller prose.
 
 - Resolves the symbol name via fuzzy search if not found directly
 - Builds usage narrative from the first paragraph of each caller's prose
 - Limits to 8 callers for the usage story, all callers for the summary list
+- `history=True` appends the symbol's intent trail from the digest archive as `result["history"]`
 <!-- trie:end -->
 <!-- trie:section symbol=trie/mcp_server:TrieTools.trace_flow fingerprint=4dd9d61ff701bd2992e0aa4e9b3b5d43ff52b010a1562bc193ddaa229de437b6 body_fp=8ba1c8e084a272174d1ae698449dafe2a13855f2fa78c5168ee6ead9f109d01f source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 role=mcp-server -->
 TrieTools.trace_flow finds call chains between two symbols using graph pathfinding.

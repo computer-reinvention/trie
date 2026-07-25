@@ -1,14 +1,14 @@
 ---
 trie_version: 0.1.9
 source: tests/test_session_diff.py
-file_fingerprint: bcbea371415b765f56558c510340925082eced78400d561781b45372de1c561e
-last_synced_at: '2026-07-25T02:06:42Z'
+file_fingerprint: 0f5bece48db689dd18f693374774777c6febf8d3a48254c75086970d07d18b45
+last_synced_at: '2026-07-25T06:16:53Z'
 description: Tests for the session log archive and the `trie diff` evidence collection/prompt
   assembly.
 defines:
 - kind: module
   qualified_name: tests/test_session_diff:__module__
-  lines: 1-732
+  lines: 1-786
 - kind: function
   qualified_name: tests/test_session_diff:test_record_and_read_entries_roundtrip
   lines: 24-61
@@ -45,6 +45,9 @@ defines:
 - kind: function
   qualified_name: tests/test_session_diff:test_merge_applied_by_symbol_first_note_wins
   lines: 710-731
+- kind: function
+  qualified_name: tests/test_session_diff:test_symbol_and_file_history_from_digest_archive
+  lines: 734-785
 incoming_refs: 0
 outgoing_refs: 25
 ---
@@ -86,4 +89,13 @@ Test that `collect_symbol_deltas` returns `changed` rows with `before`/`after` p
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_session_diff:test_merge_applied_by_symbol_first_note_wins fingerprint=2a24c952c5e057186e3287e08d5a7ac89f95b21a54f20f7060f39b27b3fb0660 body_fp=dfc99a0c54ed5d2dc9c02a715e2846211f52df600ec1e2def897b4708396de45 source_ref=f916af535b126787e42e039ab713e9d460879f00 role=test -->
 Verify that `merge_applied_by_symbol` deduplicates entries by `qname`, preserves the first `op` and `note`, and counts subsequent entries as `followups`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_session_diff:test_symbol_and_file_history_from_digest_archive fingerprint=f6cb9edbe398a9db418796cf2bbbcd9804768fad741e7767c019a10377d42064 body_fp=647cef2ceaa6b4cb9cca7d4de753537d95098e896a2bb9bc7f363a48812c551d source_ref=d975eae36aecf24fcccb49ac5032cd7a805d1e02 role=test -->
+Test `iter_digest_entries`, `symbol_history`, and `file_history` against a synthetic digest archive.
+
+- Verifies entries are returned newest-first and unparseable files are ignored.
+- Confirms overflow markers and Staged-section lines are excluded from `changes`.
+- Checks exact-match semantics: substring qnames produce no results.
+- Asserts `limit` parameter is honoured by `symbol_history`.
+- Validates `file_history` aggregates all symbols sharing a module prefix.
 <!-- trie:end -->
