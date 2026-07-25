@@ -1,19 +1,19 @@
 ---
 trie_version: 0.1.9
 source: trie/edits/backends/__init__.py
-file_fingerprint: 7a4b16bb572d80035b28849b71df1f54c11208e2c6ac849ac41235c6017707ba
-last_synced_at: '2026-07-25T01:56:30Z'
+file_fingerprint: c13b3f1dda7644f4ce97b621e74739819410ea544b2216ee05fe14f983e258ea
+last_synced_at: '2026-07-25T08:07:23Z'
 description: Pluggable per-symbol edit backends.
 defines:
 - kind: module
   qualified_name: trie/edits/backends/__init__:__module__
-  lines: 1-59
+  lines: 1-68
 - kind: constant
   qualified_name: trie/edits/backends/__init__:__all__
   lines: 16-24
 - kind: function
   qualified_name: trie/edits/backends/__init__:make_backend
-  lines: 27-58
+  lines: 27-67
 incoming_refs: 0
 outgoing_refs: 1
 ---
@@ -26,10 +26,11 @@ Provides pluggable per-symbol edit backends with a single selection point throug
 <!-- trie:section symbol=trie/edits/backends/__init__:__all__ fingerprint=0a9c92b8a0355ed64e130aa0fc95db47038999ac9e2bece329e22329e90c4486 body_fp=109100540d036d70ed10a38be478a7db71aa3d73d55d69eb0b2d83f91d1c6c27 source_ref=bdd88e837a46b1e8bcf4e57bdba5c0d75c49bf83 role=config -->
 Defines public API exports for the edit backends module, exposing core types, backend implementations, and factory function.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/backends/__init__:make_backend fingerprint=096396cc0b20349d59bd4ae53dc6024dcfa5b905a853964ec6d081ca26b56308 body_fp=7f1e74c92b338174965f33b14ec4883d9e0e8acde64ab5a76c8275c9b1f0b061 source_ref=2025ea943bcaf9f84636664a55cf591092214c1d role=orchestration -->
+<!-- trie:section symbol=trie/edits/backends/__init__:make_backend fingerprint=caf10862a8825bf8943bbe7dae484901d22d86fe6130904a71246a33d14db8f9 body_fp=cc078b8ed109293557f308d999681e6239d20ddd171ab481235f8cfcb54f7d1b source_ref=3fb41e759d304113c0d373b6da08eaf0b2c91ea4 role=orchestration -->
 Constructs and returns a SymbolEditBackend instance based on configuration and optional overrides.
 
-- `backend`: overrides config.edits.backend when provided
+- `backend`: overrides config.edits.backend when provided; defaults to `"record"` if unset
 - `client`: reuses existing TrieClient instead of creating new one
 - `model`: overrides config.models.edits for client creation
+- Raises `ValueError` if resolved name is `"record"`, as that backend performs no generation
 <!-- trie:end -->

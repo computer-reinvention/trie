@@ -1561,3 +1561,93 @@ def stage_and_commit(
         commit_mode=commit_mode,
         session_note=session_note,
     )
+
+
+def record_intent(
+    store: Store,
+    config: Config,
+    project_root: Path,
+    *,
+    session_note: str = "",
+) -> dict:
+    """Commit pending patch notes as intent — no code generation.
+
+    The record backend treats the patch pipeline as an intent store: agents
+    edit source natively, notes describe why, and apply archives them to the
+    session log (feeding the digest archive and the intent gate) then clears
+    the queue. trie never generates code on this path.
+
+    Same session-note contract as the generating backends: more than one
+    symbol requires a unifying `session_note`.
+    """
+    import time
+
+    from trie.session_log import record_applied
+
+    modify_qnames = store.get_patched_qnames()
+    creates_by_file = store.get_create_patches_grouped()
+    create_count = sum(len(rows) for rows in creates_by_file.values())
+    total = len(modify_qnames) + create_count
+
+    if total == 0:
+        return {"ok": True, "mode": "record", "recorded": 0, "symbols": []}
+    if total > 1 and not session_note.strip():
+        return {
+            "ok": False,
+            "mode": "record",
+            "error": "session_note_required",
+            "message": "A session_note is required when recording more than one symbol.",
+        }
+
+    now = time.time()
+    rows: list[dict] = []
+    for qname in modify_qnames:
+        patches = store.get_patches_for_qname(qname)
+        if not patches:
+            continue
+        # Structural kinds keep their op; plain notes are modifies.
+        kind = next(
+            (p.get("kind") for p in patches if p.get("kind") in ("delete", "rename")),
+            "modify",
+        )
+        session_id = next((p.get("session_id") for p in patches if p.get("session_id")), "")
+        rows.append(
+            {
+                "qname": qname,
+                "op": kind,
+                "notes": [p.get("note", "") for p in patches if p.get("note")],
+                "reasons": [p.get("reason", "") for p in patches if p.get("reason")],
+                "session_id": session_id,
+                "session_note": session_note,
+                "ts": now,
+            }
+        )
+    for _file, creates in creates_by_file.items():
+        for c in creates:
+            rows.append(
+                {
+                    "qname": c.get("target_qname", ""),
+                    "op": "create",
+                    "notes": [c.get("note", "")] if c.get("note") else [],
+                    "reasons": [c.get("reason", "")] if c.get("reason") else [],
+                    "session_id": c.get("session_id", ""),
+                    "session_note": session_note,
+                    "ts": now,
+                }
+            )
+
+    record_applied(project_root, rows)
+    store.delete_patches(all=True)
+    store.delete_create_patches(all=True)
+
+    return {
+        "ok": True,
+        "mode": "record",
+        "recorded": len(rows),
+        "symbols": [r["qname"] for r in rows],
+        "session_note": session_note,
+        "next": (
+            "Intent recorded to the session log. The pre-commit digest will carry it; "
+            "no code was generated — source changes are yours."
+        ),
+    }

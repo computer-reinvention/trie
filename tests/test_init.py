@@ -399,10 +399,16 @@ def test_hook_block_includes_diff_write():
     )
 
     verify_index = PRE_COMMIT_HOOK_BLOCK.index("trie -q verify")
+    intent_index = PRE_COMMIT_HOOK_BLOCK.index("trie intent")
     diff_write_index = PRE_COMMIT_HOOK_BLOCK.index("trie -q diff --write")
-    assert diff_write_index > verify_index, (
-        "'trie -q diff --write' must appear AFTER 'trie -q verify' so that "
-        "verify gates the commit before the advisory digest write runs"
+    assert verify_index < intent_index < diff_write_index, (
+        "hook order must be verify -> intent gate -> digest write: the gate "
+        "blocks unexplained changes before the digest archives their intent"
+    )
+    intent_line = next(ln for ln in PRE_COMMIT_HOOK_BLOCK.splitlines() if "trie intent" in ln)
+    assert "|| exit" in intent_line, "the intent gate must BLOCK the commit"
+    assert "-q intent" not in intent_line, (
+        "intent must not run quiet — its worklist output is the fix instructions"
     )
 
     diff_write_line_start = PRE_COMMIT_HOOK_BLOCK.rfind("\n", 0, diff_write_index) + 1

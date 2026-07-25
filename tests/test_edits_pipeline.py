@@ -234,3 +234,53 @@ class TestImportFixup:
 
         src = "from m import a\n"
         assert _fix_imports_for_structural(src, deleted_names=set(), renamed={}) == src
+
+
+def test_record_intent_archives_notes_without_generation(tmp_path):
+    """The default apply backend: notes -> session log, queue cleared, no code."""
+    import subprocess
+
+    from trie.config import Config
+    from trie.edits.pipeline import record_intent
+    from trie.graph.store import Store
+    from trie.parse.python import extract_symbols
+    from trie.session_log import read_entries
+
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    (tmp_path / "m.py").write_text("def f():\n    return 1\n\n\ndef g():\n    return 2\n")
+    src_before = (tmp_path / "m.py").read_text()
+
+    config = Config.from_dict({})
+    store = Store(tmp_path / ".trie" / "graph.db")
+    try:
+        store.upsert_file(path="m.py", fingerprint="fp")
+        store.replace_file_symbols("m.py", extract_symbols(tmp_path / "m.py", tmp_path))
+        store.add_patch("m:f", note="f returns one", reason="spec", session_id="s1")
+        store.add_create_patch(
+            target_file="m.py", target_qname="m:new", note="add new", reason="", session_id="s1"
+        )
+
+        # Multi-symbol without a session note: refused.
+        refused = record_intent(store, config, tmp_path, session_note="")
+        assert refused["ok"] is False and refused["error"] == "session_note_required"
+
+        result = record_intent(store, config, tmp_path, session_note="ship the m module")
+        assert result["ok"] is True and result["mode"] == "record"
+        assert result["recorded"] == 2
+        assert set(result["symbols"]) == {"m:f", "m:new"}
+
+        # Archived to the session log with the session note attached.
+        rows = read_entries(tmp_path)
+        assert {r["qname"]: r["op"] for r in rows} == {"m:f": "modify", "m:new": "create"}
+        assert all(r["session_note"] == "ship the m module" for r in rows)
+
+        # Queue cleared; source untouched (no generation).
+        assert store.get_patched_qnames() == []
+        assert store.get_create_patches_grouped() == {}
+        assert (tmp_path / "m.py").read_text() == src_before
+
+        # Empty queue re-run is a no-op success.
+        again = record_intent(store, config, tmp_path, session_note="")
+        assert again["ok"] is True and again["recorded"] == 0
+    finally:
+        store.close()

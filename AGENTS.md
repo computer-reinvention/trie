@@ -49,11 +49,12 @@ Repo-specific notes that go beyond the general guide:
   the rg-backed fallback. If a navigation flow feels awkward through
   these tools, that's a signal to fix the tool, not to silently fall
   back to shell grep. Note it in a session summary or open an issue.
-- **Edits go through the patch pipeline. Always.** Stage intent with
-  `patch` / `create_symbol` / `batch_patch`, review with `patch_list`,
-  apply once with `patch_apply` (session note required for multi-symbol
-  applies). Direct edits to indexed source are not an escape hatch —
-  if the pipeline fights you, fix the pipeline and note the friction.
+- **Edit natively; record intent. Always.** You own code changes; the
+  patch pipeline is the intent store. For every touched symbol, stage a
+  note with `patch` / `create_symbol` / `batch_patch` (why, not what),
+  then `patch_apply -N "<session intent>"` to archive them — apply
+  generates no code. The pre-commit `trie intent` gate refuses commits
+  with unexplained symbol changes and prints the fix commands.
 
 ## What's in scope
 

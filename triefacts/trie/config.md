@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/config.py
-file_fingerprint: f9d241cde408b238e3e7f5bab4000a0a1c5201985a4d168900b6901c179d5643
-last_synced_at: '2026-07-25T06:05:53Z'
+file_fingerprint: a0c1af73b81e49e56ac7010092c2d581a32f150f322e16550624fdc4d080a4d1
+last_synced_at: '2026-07-25T08:07:23Z'
 defines:
 - kind: module
   qualified_name: trie/config:__module__
-  lines: 1-482
+  lines: 1-486
 - kind: class
   qualified_name: trie/config:TrieMeta
   lines: 9-10
@@ -27,41 +27,41 @@ defines:
   lines: 57-73
 - kind: class
   qualified_name: trie/config:Edits
-  lines: 77-116
+  lines: 77-120
 - kind: class
   qualified_name: trie/config:LanguageConfig
-  lines: 120-128
+  lines: 124-132
 - kind: class
   qualified_name: trie/config:Sync
-  lines: 132-176
+  lines: 136-180
 - kind: class
   qualified_name: trie/config:Debug
-  lines: 180-199
+  lines: 184-203
 - kind: class
   qualified_name: trie/config:Mcp
-  lines: 203-259
+  lines: 207-263
 - kind: class
   qualified_name: trie/config:Diff
-  lines: 263-290
+  lines: 267-294
 - kind: class
   qualified_name: trie/config:Config
-  lines: 294-354
+  lines: 298-358
 - kind: method
   qualified_name: trie/config:Config.from_dict
-  lines: 308-332
+  lines: 312-336
 - kind: method
   qualified_name: trie/config:Config.load
-  lines: 335-338
+  lines: 339-342
 - kind: method
   qualified_name: trie/config:Config.find_and_load
-  lines: 341-354
+  lines: 345-358
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
-  lines: 357-358
+  lines: 361-362
 - kind: constant
   qualified_name: trie/config:DEFAULT_CONFIG_TOML
-  lines: 361-481
-incoming_refs: 223
+  lines: 365-485
+incoming_refs: 229
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/config:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=73508aef5ccf98a204e6bf0fa288e0420baac8315fc2fb1aa7e8d1bf91d72a01 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
@@ -116,8 +116,15 @@ Configures a language server backend for diagnostics during patch application.
 - `output_format`: determines stdout parsing format - "pyright" or "ruff"
 - `exit_ok_codes`: exit codes interpreted as "no diagnostics found"
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Edits fingerprint=a36dfe52ee715aae6c469e703a0098d9e87c9452bd686375f6932169ecfa2f44 body_fp=4b127f4d46af4f4af3cb65ca4219f797062affd2c614dc38963e63baebdbb27c role=config-management -->
-Configures the patch-apply pipeline and LSP backend settings for code editing operations, including retry limits, LSP backend definitions, commit failure handling, and the edit generation backend (`"llm"`, `"opencode"`, or `"agent"`), where `"agent"` causes patch apply to return an agent-executable worklist instead of performing inline code generation.
+<!-- trie:section symbol=trie/config:Edits fingerprint=cdbd8efc4c0de5af6ff0f4158b4eba228512b2d202c03a4bedd62e46152bcd84 body_fp=5cf2d561a6f5bf322eecea7e100312a8dd3328c405ab236a0398fd28c1e71898 source_ref=fc93dc90cf020ed4b236fdb1dc619eb1297ad188 role=config -->
+Configuration dataclass for the patch-apply pipeline and LSP diagnostics.
+
+- `backend`: one of `"record"` (intent store), `"agent"` (worklist), `"llm"` (legacy), `"opencode"` (per-symbol)
+- `commit_mode`: one of `"all_or_nothing"`, `"per_item"`, `"per_group"` — controls partial-failure behaviour
+- `lsp_backends`: ordered list; first backend found on PATH is used for diagnostics
+- `compile_retry_cap`: attempts before a non-compiling symbol is surfaced in `ApplyReport.unresolved`
+- `output_retries`: pydantic-ai structured-output re-ask limit, independent of network retries
+- `max_output_tokens`: cap per code-generation call; set high to avoid silent truncation on large symbols
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:LanguageConfig fingerprint=53c630a38d44498a9e194e86c35198bb9a6d7eec5f7143a19503cfb475db89f8 body_fp=7ea5116333d3272467cb2cc54cd3c40fdc54b238da538ff650de7611b481d532 source_ref=64675d426ee121ee07f6aca6b23643e1d1ad5991 role=config -->
 Dataclass holding per-language config overrides, keyed by backend name (e.g. `"typescript"`).

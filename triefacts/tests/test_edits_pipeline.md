@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: tests/test_edits_pipeline.py
-file_fingerprint: 395bca6405e94b92aca6ce0f87d43bde520a2f8fa6c1741626d6045e73c74a23
-last_synced_at: '2026-07-25T01:56:23Z'
+file_fingerprint: 136ebfe1a7855b7846e7869d7d595d0a55c306654557721992fc3f68a0e95203
+last_synced_at: '2026-07-25T08:07:20Z'
 defines:
 - kind: module
   qualified_name: tests/test_edits_pipeline:__module__
-  lines: 1-237
+  lines: 1-287
 - kind: constant
   qualified_name: tests/test_edits_pipeline:PROJECT_TOML
   lines: 15-23
@@ -76,8 +76,11 @@ defines:
 - kind: method
   qualified_name: tests/test_edits_pipeline:TestImportFixup.test_noop_when_no_targets
   lines: 232-236
+- kind: function
+  qualified_name: tests/test_edits_pipeline:test_record_intent_archives_notes_without_generation
+  lines: 239-286
 incoming_refs: 0
-outgoing_refs: 33
+outgoing_refs: 35
 ---
 <!-- trie:section symbol=tests/test_edits_pipeline:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=779d3118d360be3e6cc31619bc506e3cfef98d30e9e27ade7938a41986fc4d11 source_ref=e0282d34035b65bdf7e8d362970ae8d5376a0584 role=test -->
 Tests the edits pipeline functionality including staging, committing, and import fixup operations.
@@ -194,4 +197,7 @@ Tests that TestImportFixup._fix_imports_for_structural leaves star imports and p
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_edits_pipeline:TestImportFixup.test_noop_when_no_targets fingerprint=674bc9e3aced5ca1a826ba7506c44b9f8a09d4afe8d77884ec3b5ec8d498ab3a body_fp=27d394c575fa94a627d48cb9bc539c20aa35ecad9e8db9a7bb0bc0fecfffc3d1 source_ref=e0282d34035b65bdf7e8d362970ae8d5376a0584 role=test -->
 Verifies TestImportFixup behavior when no names need deletion or renaming by ensuring source remains unchanged.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_edits_pipeline:test_record_intent_archives_notes_without_generation fingerprint=6a84c5c9341b2f4c38579d8edf0c914d2ec8a28a54f761c9d2bc23707798b654 body_fp=d8c55eef8ef3188d52e85675c8618f15d78e21733ba1c0eebb5677ff450d3761 source_ref=a45aac9d888b47f777cb53b9396cc6532992382e role=test -->
+Verify that `record_intent` archives patches to the session log, clears the queue, and leaves source files unmodified without generating code.
 <!-- trie:end -->

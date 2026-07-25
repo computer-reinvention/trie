@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: trie/edits/pipeline.py
-file_fingerprint: c5da3d6a7aa2ee8a95ff31bd8fe205cac5690b9baa61419d12f8e1a9bd3bfc3c
-last_synced_at: '2026-07-25T01:43:40Z'
+file_fingerprint: 49faae8fe0202c3a6c5276842a1281e7d6d70383ab8a0a1d2a95907f2afead9a
+last_synced_at: '2026-07-25T08:07:24Z'
 description: The stage/commit edit pipeline.
 defines:
 - kind: module
   qualified_name: trie/edits/pipeline:__module__
-  lines: 1-1564
+  lines: 1-1654
 - kind: function
   qualified_name: trie/edits/pipeline:_splice
   lines: 58-69
@@ -68,8 +68,11 @@ defines:
 - kind: function
   qualified_name: trie/edits/pipeline:stage_and_commit
   lines: 1541-1563
+- kind: function
+  qualified_name: trie/edits/pipeline:record_intent
+  lines: 1566-1653
 incoming_refs: 36
-outgoing_refs: 41
+outgoing_refs: 42
 ---
 <!-- trie:section symbol=trie/edits/pipeline:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=e9452fa5658e80ab55660f3be77286f883bbd5a3f02d8be7a680e82f156d1c30 source_ref=acbee5dfa56099ae5afd4c2ba335609bcbbb64c6 role=orchestration -->
 Implements the stage/commit edit pipeline for parallel symbol modification with cascade validation.
@@ -235,4 +238,10 @@ Writes validated staged changes to disk atomically, rescans affected files, upda
 Executes stage then commit in sequence, returning the final report.
 
 - Used by the `commit()` MCP tool for one-shot patch application
+<!-- trie:end -->
+<!-- trie:section symbol=trie/edits/pipeline:record_intent fingerprint=d372f18929e5f40eb4325c068083295320f3308d2a25d4b7c64917804873710b body_fp=b1045c415ae6e561660ae422fc41b08dcb589d987bd3ed82c329530438ee3520 source_ref=e27cc08374574437a8cec87850a73230a84f1186 role=orchestration -->
+Archive all pending patch notes to the session log and clear the queue, without generating any code.
+
+- `session_note`: required when `total > 1`; returns `ok=False` with `"session_note_required"` otherwise.
+- Returns a dict with `ok`, `recorded` count, `symbols` list, and a `next` advisory string.
 <!-- trie:end -->

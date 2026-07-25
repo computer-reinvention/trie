@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.9
 source: tests/test_edits_typescript.py
-file_fingerprint: 9069425acf51933eced5d554f8c325699ba72597642ecbd392b92b095e12d043
-last_synced_at: '2026-07-20T09:54:31Z'
+file_fingerprint: adb5f8b59bc9aed44bf4086ac96b5a88595aad764a592b2c7e10cdd3f0bf1f58
+last_synced_at: '2026-07-25T08:07:20Z'
 description: TypeScript parity for the edit/patch pipeline.
 defines:
 - kind: module
@@ -199,6 +199,6 @@ Assert that `SymbolEdit` validates a >20 KB TSX string containing JSX, backticks
 <!-- trie:section symbol=tests/test_edits_typescript:test_truncated_structured_output_fails_validation fingerprint=1eeab6524a15cd9d34c47a233fddc4381440790d81618a551b8781eb0a90201e body_fp=cb3ee94d0b26a4b5a2a7b9a1f8dd74ba15287fc97f597dc819578acae9e93283 source_ref=e4f12d614c731fa103cda0f0037748b2ca924a5b role=test -->
 Assert that `SymbolEdit.model_validate_json` raises `ValidationError` when given a mid-string-truncated JSON payload, reproducing the token-cap failure mode.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_edits_typescript:test_edit_backend_uses_larger_token_budget_and_retries fingerprint=c9e32756c348cc3c9fcc068f473a6ca8b9508a2f81f90e5ed96a04bbad76f960 body_fp=720039e632fc45103a09f374dfddc4b9bb03df32e35247980263339f27e494b2 source_ref=e4f12d614c731fa103cda0f0037748b2ca924a5b role=test -->
-Assert that `Config.edits.max_output_tokens` is ≥ 8192, `output_retries` is ≥ 2, and that `make_backend` wires both values onto the returned backend instance.
+<!-- trie:section symbol=tests/test_edits_typescript:test_edit_backend_uses_larger_token_budget_and_retries fingerprint=378940a9ba24361f35b310c38e812d2b4029dfc8e0e2267f5f00f734dd82ce76 body_fp=c082b288c841c39a5e93d27d9bd3c36646434f97a6f0d7ae4d26e8840aac2e1a source_ref=595ad317a53f538f3b3a3c21b146680dd3e38880 role=test -->
+Assert that `Config.edits.max_output_tokens` is ≥ 8192, `output_retries` is ≥ 2, and that `make_backend` (called with `backend="llm"`) wires both values onto the returned backend instance.
 <!-- trie:end -->

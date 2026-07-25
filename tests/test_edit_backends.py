@@ -95,13 +95,26 @@ class TestLLMBackend:
 
 
 class TestFactory:
-    def test_default_is_llm(self):
+    def test_default_is_record_which_never_generates(self):
+        """The default backend is 'record' (intent store, no codegen); the
+        generating-backend factory must refuse it loudly instead of silently
+        degrading to LLM generation."""
+        cfg = Config()
+        assert cfg.edits.backend == "record"
+
+        class _DummyClient:
+            pass
+
+        with pytest.raises(ValueError, match="record"):
+            make_backend(cfg, client=_DummyClient())
+
+    def test_llm_backend_still_constructible_explicitly(self):
         cfg = Config()
 
         class _DummyClient:
             pass
 
-        b = make_backend(cfg, client=_DummyClient())
+        b = make_backend(cfg, backend="llm", client=_DummyClient())
         assert isinstance(b, InProcessLLMBackend)
 
     def test_opencode_not_yet_implemented(self):
