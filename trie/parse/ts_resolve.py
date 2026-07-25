@@ -45,9 +45,7 @@ def _iter_config_files(source_root: Path, name_pattern: str) -> list[Path]:
     """
     hits: list[Path] = []
     for dirpath, dirnames, filenames in os.walk(source_root):
-        dirnames[:] = [
-            d for d in dirnames if d not in _PRUNE_DIR_NAMES and not d.startswith(".")
-        ]
+        dirnames[:] = [d for d in dirnames if d not in _PRUNE_DIR_NAMES and not d.startswith(".")]
         for fname in filenames:
             if fnmatch.fnmatch(fname, name_pattern):
                 hits.append(Path(dirpath) / fname)
