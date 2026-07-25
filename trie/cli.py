@@ -2118,7 +2118,7 @@ def setup_cmd(
         raise typer.Exit(code=1)
 
     try:
-        _, project_root = Config.find_and_load(Path.cwd())
+        setup_config, project_root = Config.find_and_load(Path.cwd())
     except ConfigNotFoundError as exc:
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
@@ -2196,7 +2196,21 @@ def setup_cmd(
             reporter.error(str(exc))
             raise typer.Exit(code=1) from exc
 
+    # GitHub workflow install: comments the latest session digest on PRs.
+    # Skipped for non-git dirs; user-owned files (no managed-by marker) are
+    # never touched. Inert off GitHub, so no remote detection is needed.
+    from trie.workflow_install import install_triediff_workflow
+
+    workflow_result = install_triediff_workflow(
+        project_root,
+        diffs_dir=setup_config.diff.diffs_dir,
+        dry_run=dry_run or print_only,
+    )
+
     _render_setup_plan(reporter, mcp_plan, hook_plan, docs_plan, override_plan)
+    wf_path = workflow_result.path or Path(".github/workflows/triediff-comment.yml")
+    wf_note = f" ({workflow_result.note})" if workflow_result.note else ""
+    reporter.info(f"pr digest workflow: {workflow_result.action} {wf_path}{wf_note}")
 
     # Surface a non-zero exit if any step hit an error so CI/scripts react.
     mcp_errors = any(r.action == "error" for r in mcp_plan.results) if mcp_plan else False
@@ -2205,7 +2219,13 @@ def setup_cmd(
     override_errors = (
         any(r.action == "error" for r in override_plan.results) if override_plan else False
     )
-    if mcp_errors or hook_errors or docs_errors or override_errors:
+    if (
+        mcp_errors
+        or hook_errors
+        or docs_errors
+        or override_errors
+        or (workflow_result.action == "error")
+    ):
         raise typer.Exit(code=1)
 
 
