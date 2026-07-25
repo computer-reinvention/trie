@@ -257,10 +257,11 @@ class Mcp:
 class Diff:
     """Config surface for the committed trie-diff digest system.
 
-    TRIE_DIFF.md is a prepend-only, newest-first digest of per-commit session
-    intent (patch notes + triefact change stats, optionally an LLM narrative).
-    Prepend-only means a PR's diff of this file is a pure green block of new
-    digest entries — no diff-of-a-diff noise.
+    Every digest write produces one immutable file under `diffs_dir`, named
+    `<utc-timestamp>-<uuid>.md`, and repoints the `write_path` symlink at it.
+    One file per commit means a PR's digest always appears as a brand-new
+    file — pure additions, never a diff-of-a-diff. An amend/retry of the same
+    commit rewrites that commit's existing file instead of creating another.
     """
 
     narrative: bool = True
@@ -268,15 +269,20 @@ class Diff:
     to deterministic evidence when the client/key is unavailable."""
 
     write_path: str = "TRIE_DIFF.md"
-    """Digest file, relative to project root.  The pre-commit hook block
-    hardcodes the default name, so changing this requires editing the hook."""
+    """Symlink at the project root pointing at the latest digest file under
+    `diffs_dir`. The pre-commit hook block hardcodes the default names, so
+    changing these requires editing the hook."""
+
+    diffs_dir: str = "triediffs"
+    """Directory (relative to project root) holding one digest file per
+    commit. Lives outside the triefact tree so previous digests never feed
+    back into new digest evidence."""
 
     max_entries: int = 20
-    """Prepend-only digest keeps at most this many entries; older ones roll off
-    the bottom."""
+    """Retention cap: keep at most this many digest files in `diffs_dir`;
+    the oldest are pruned (they remain in git history)."""
 
 
-@dataclass
 @dataclass
 class Config:
     trie: TrieMeta = field(default_factory=TrieMeta)
@@ -447,9 +453,10 @@ check_args = ["--outputjson"]
 output_format = "pyright"
 
 # [diff]
-# narrative = true        # LLM narrative at the top of each TRIE_DIFF.md entry (falls back to raw evidence without an API key)
-# write_path = "TRIE_DIFF.md"
-# max_entries = 20        # older digest entries roll off the bottom
+# narrative = true          # LLM narrative at the top of each digest entry (falls back to raw evidence without an API key)
+# write_path = "TRIE_DIFF.md"  # root symlink pointing at the latest digest file
+# diffs_dir = "triediffs"    # one immutable digest file per commit lives here
+# max_entries = 20          # keep at most this many digest files; oldest pruned
 
 [debug]
 # Append-only JSONL telemetry for trie's own operations. Off by default; flip on

@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/mcp_server.py
 file_fingerprint: 6996361c5f5fbe55bc452b8190c7b89e976380388321a60300532657eb4fda93
-last_synced_at: '2026-07-23T16:52:29Z'
+last_synced_at: '2026-07-25T00:24:22Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
 - kind: module
@@ -328,7 +328,7 @@ Owns the Store and project config for process lifetime. Implements patch tools (
 - `rg_path`: resolved ripgrep binary path for text search fallbacks
 - `_session_id`: unique session identifier for patch operations (injectable via TRIE_SESSION_ID env var, falls back to 12-char hex UUID)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.__init__ fingerprint=da31ea5a8dabd217b86c7e6ed605fc3a1d2dbb26bb93f24bc8988024d73a4223 body_fp=1af7361563281662e6bb24529f529f5b296a49d4483c09673b0d6924f865a0ee source_ref=92d722c79d9b74d00c925144ac0a7b0dcc37fb0d role=orchestration -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.__init__ fingerprint=da31ea5a8dabd217b86c7e6ed605fc3a1d2dbb26bb93f24bc8988024d73a4223 body_fp=1af7361563281662e6bb24529f529f5b296a49d4483c09673b0d6924f865a0ee source_ref=92d722c79d9b74d00c925144ac0a7b0dcc37fb0d role=domain -->
 Initialize TrieTools with project configuration, telemetry, store, and session state.
 
 - Loads config from project root and validates ripgrep availability at startup

@@ -90,13 +90,19 @@ def save_digest_cursor(
     parent: str,
     since: float,
     covered: float,
+    file: str = "",
 ) -> None:
-    """Persist the digest window cursor to .trie/digest_cursor.json."""
+    """Persist the digest window cursor to .trie/digest_cursor.json.
+
+    `file` records the project-relative path of the digest file written for
+    `parent`, so an amend/retry of the same commit rewrites that file instead
+    of spawning a duplicate.
+    """
     try:
         cursor_path = project_root / ".trie" / "digest_cursor.json"
         cursor_path.parent.mkdir(parents=True, exist_ok=True)
         payload = json.dumps(
-            {"parent": parent, "since": since, "covered": covered},
+            {"parent": parent, "since": since, "covered": covered, "file": file},
             indent=2,
         )
         tmp_path = cursor_path.with_suffix(".json.tmp")

@@ -29,23 +29,24 @@ PRE_COMMIT_HOOK_END_MARKER = "# end trie-verify"
 #                    preventing partial-state commits.
 #   2. verify      — blocks the commit on drift detection, ensuring the
 #                    triefact file is consistent with the working tree.
-#   3. diff --write — prepends an intent-level digest entry to TRIE_DIFF.md
-#                    (patch notes + triefact change stats, with an optional
-#                    LLM narrative when [diff] config enables it) and stages
-#                    the file so every commit — and therefore every PR —
-#                    carries the latest session digest in a file whose diffs
-#                    are pure additions.  The file name is hardcoded to the
-#                    default diff.write_path (TRIE_DIFF.md); users who change
-#                    that config key must edit their hook accordingly.
-#                    This step is purely advisory: failure never blocks the
-#                    commit.
+#   3. diff --write — writes an intent-level digest entry (patch notes +
+#                    before/after symbol deltas, with an optional LLM
+#                    narrative when [diff] config enables it) as a new
+#                    immutable file under triediffs/ and repoints the
+#                    TRIE_DIFF.md symlink at it, then stages both so every
+#                    commit — and therefore every PR — carries its digest as
+#                    a brand-new file (pure additions, never a diff-of-a-diff).
+#                    The names are hardcoded to the default diff.write_path /
+#                    diff.diffs_dir; users who change those config keys must
+#                    edit their hook accordingly. This step is purely
+#                    advisory: failure never blocks the commit.
 PRE_COMMIT_HOOK_BLOCK = (
     f"{PRE_COMMIT_HOOK_MARKER}\n"
     "if command -v trie >/dev/null 2>&1; then\n"
     "    trie -q lock-check || exit $?\n"
     "    trie -q verify || exit $?\n"
     "    if trie -q diff --write >/dev/null 2>&1; then\n"
-    "        git add TRIE_DIFF.md >/dev/null 2>&1 || true\n"
+    "        git add TRIE_DIFF.md triediffs >/dev/null 2>&1 || true\n"
     "    fi\n"
     "fi\n"
     f"{PRE_COMMIT_HOOK_END_MARKER}\n"

@@ -543,101 +543,68 @@ def test_render_digest_section_shape() -> None:
     )
 
 
-def test_upsert_digest_prepend_replace_trim() -> None:
-    from trie.session_diff import DIGEST_HEADER, upsert_digest
+def test_write_digest_files_symlink_and_prune(tmp_path) -> None:
+    import os
+    import re
 
-    section_a = "## Some title A — 2024-01-01 (parent aaaa)\n\nContent for section A.\n"
-    section_b = "## Some title B — 2024-01-02 (parent bbbb)\n\nContent for section B.\n"
-    section_b2 = "## Some title B2 — 2024-01-02 (parent bbbb)\n\nReplaced content for section B2.\n"
-    section_c = "## Some title C — 2024-01-03 (parent cccc)\n\nContent for section C.\n"
+    from trie.session_diff import DIGEST_FILE_HEADER, write_digest
 
-    # 1. Fresh file: result starts with DIGEST_HEADER and contains section_a
-    result1 = upsert_digest("", section_a, base_short="aaaa")
-    assert result1.startswith(DIGEST_HEADER), (
-        f"Expected result to start with DIGEST_HEADER, got: {result1[:80]!r}"
-    )
-    assert "Content for section A." in result1
+    section_a = "## Title A — 2024-01-01 (parent aaaa)\n\nContent for entry A.\n"
+    section_b = "## Title B — 2024-01-02 (parent bbbb)\n\nContent for entry B.\n"
 
-    # 2. Prepend: section_b with base 'bbbb' appears BEFORE section_a in the output
-    result2 = upsert_digest(result1, section_b, base_short="bbbb")
-    pos_b = result2.index("Content for section B.")
-    pos_a = result2.index("Content for section A.")
-    assert pos_b < pos_a, "section_b should appear before section_a after prepend"
-    assert "Content for section A." in result2
-    assert "Content for section B." in result2
+    # 1. Fresh write: creates the diffs dir, one timestamped file, and the symlink
+    rel_a = write_digest(tmp_path, section_a)
+    file_a = tmp_path / rel_a
+    assert file_a.is_file()
+    assert rel_a.startswith("triediffs/")
+    assert re.fullmatch(r"\d{8}T\d{6}Z-[0-9a-f]{32}\.md", file_a.name), file_a.name
+    text_a = file_a.read_text()
+    assert text_a.startswith(DIGEST_FILE_HEADER)
+    assert "Content for entry A." in text_a
 
-    # 3. Replace on same base 'bbbb': section_b2 replaces section_b, section_a remains
-    result3 = upsert_digest(result2, section_b2, base_short="bbbb")
-    assert "Replaced content for section B2." in result3, (
-        "New body for base bbbb should appear in output"
-    )
-    assert "Content for section B." not in result3, (
-        "Old body for base bbbb should be removed after replace"
-    )
-    assert "Content for section A." in result3, (
-        "section_a should still be present after replace of bbbb"
-    )
+    link = tmp_path / "TRIE_DIFF.md"
+    assert link.is_symlink()
+    target = os.readlink(link)
+    assert not os.path.isabs(target), "symlink target must be relative"
+    assert link.resolve() == file_a.resolve()
+    # Reading through the symlink yields the latest digest
+    assert "Content for entry A." in link.read_text()
 
-    # 4. Trim: with max_entries=2, adding a third distinct base keeps only 2 newest
-    result4 = upsert_digest(result3, section_c, base_short="cccc", max_entries=2)
-    # section_c (newest) and section_b2 (second newest) should be present
-    assert "Content for section C." in result4, "Newest section_c should be present"
-    assert "Replaced content for section B2." in result4, (
-        "Second-newest section_b2 should be present"
-    )
-    # section_a (oldest) should have been trimmed
-    assert "Content for section A." not in result4, (
-        "Oldest section_a should be trimmed when max_entries=2"
-    )
+    # 2. New write (different commit): a second file appears, symlink repoints
+    rel_b = write_digest(tmp_path, section_b)
+    file_b = tmp_path / rel_b
+    assert file_b.is_file() and file_b != file_a
+    assert file_a.is_file(), "previous digest file must be preserved"
+    assert link.resolve() == file_b.resolve()
 
-    # 5. Regression: narrative body containing a '## Inner heading' line must NOT
-    #    be mis-parsed as an entry boundary, causing a phantom entry or a broken
-    #    same-base replace.
-    #
-    #    Build a section for base 'cccc' whose body legitimately contains an inner
-    #    '## ' line (as an LLM narrative might produce before heading demotion).
-    section_cccc_with_inner = (
-        "## Some title cccc — 2024-01-03 (parent cccc)\n\n"
-        "Narrative before inner heading.\n\n"
-        "## Inner heading that is narrative, not an entry\n\n"
-        "More narrative text after inner heading.\n"
-    )
-    # Start from a two-entry digest: aaaa + bbbb2
-    base_digest = upsert_digest("", section_a, base_short="aaaa")
-    base_digest = upsert_digest(base_digest, section_b2, base_short="bbbb")
+    # 3. Same-commit rewrite: reuse_file overwrites in place, no new file
+    section_b2 = "## Title B2 — 2024-01-02 (parent bbbb)\n\nRewritten entry B.\n"
+    rel_b2 = write_digest(tmp_path, section_b2, reuse_file=rel_b)
+    assert rel_b2 == rel_b, "amend/retry must rewrite the same file"
+    assert "Rewritten entry B." in file_b.read_text()
+    assert "Content for entry B." not in file_b.read_text()
+    md_files = list((tmp_path / "triediffs").glob("*.md"))
+    assert len(md_files) == 2, f"expected 2 digest files, got {md_files}"
 
-    # Insert the tricky cccc entry (with the inner ## heading in its body)
-    with_inner = upsert_digest(base_digest, section_cccc_with_inner, base_short="cccc")
+    # 4. A regular file at the symlink path (pre-symlink layout) gets replaced
+    link.unlink()
+    link.write_text("legacy regular file")
+    rel_c = write_digest(tmp_path, "## Title C — 2024-01-03 (parent cccc)\n\nEntry C.\n")
+    assert link.is_symlink()
+    assert link.resolve() == (tmp_path / rel_c).resolve()
 
-    # Now replace cccc with a clean new body
-    section_cccc_replacement = (
-        "## Some title cccc2 — 2024-01-03 (parent cccc)\n\nClean replacement for cccc.\n"
-    )
-    replaced = upsert_digest(with_inner, section_cccc_replacement, base_short="cccc")
-
-    # The replacement body must be present
-    assert "Clean replacement for cccc." in replaced, (
-        "Replacement body for base cccc should be present"
-    )
-    # The old narrative text (both before and after the inner heading) must be gone
-    assert "Narrative before inner heading." not in replaced, (
-        "Old narrative text before inner heading should be removed on replace"
-    )
-    assert "## Inner heading that is narrative, not an entry" not in replaced, (
-        "Inner '## ' heading line in old narrative body should be removed on replace"
-    )
-    assert "More narrative text after inner heading." not in replaced, (
-        "Old narrative text after inner heading should be removed on replace"
-    )
-    # Other entries must survive intact
-    assert "Content for section A." in replaced, "section_a should survive the cccc replacement"
-    assert "Replaced content for section B2." in replaced, (
-        "section_b2 should survive the cccc replacement"
-    )
-    # The replacement must appear exactly once (no phantom duplicate)
-    assert replaced.count("Clean replacement for cccc.") == 1, (
-        "Replacement body should appear exactly once — no phantom duplicates"
-    )
+    # 5. Retention prune: max_entries keeps only the newest files
+    for i in range(4):
+        write_digest(
+            tmp_path,
+            f"## Title {i} — 2024-01-0{4 + i} (parent d{i}d{i})\n\nEntry {i}.\n",
+            max_entries=3,
+        )
+    remaining = sorted((tmp_path / "triediffs").glob("*.md"))
+    assert len(remaining) == 3, f"expected prune to 3 files, got {remaining}"
+    # The symlink still resolves to an existing file (the newest)
+    assert link.resolve().exists()
+    assert "Entry 3." in link.read_text()
 
 
 def test_one_line_flattens_and_truncates():

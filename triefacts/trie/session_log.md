@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/session_log.py
-file_fingerprint: 5a6af89e0c3fb29baef1ba184acc9c46962d8ae0bbde29173deab1d60a0d2897
-last_synced_at: '2026-07-25T00:07:10Z'
+file_fingerprint: 09ba52d64747d9b36e6f68ea4defb80051d52c1ad124258e2bdcb2cf022cf6c0
+last_synced_at: '2026-07-25T00:24:02Z'
 defines:
 - kind: module
   qualified_name: trie/session_log:__module__
-  lines: 1-124
+  lines: 1-130
 - kind: function
   qualified_name: trie/session_log:log_path
   lines: 8-10
@@ -21,10 +21,10 @@ defines:
   lines: 73-84
 - kind: function
   qualified_name: trie/session_log:save_digest_cursor
-  lines: 87-106
+  lines: 87-112
 - kind: function
   qualified_name: trie/session_log:resolve_digest_window
-  lines: 109-123
+  lines: 115-129
 incoming_refs: 14
 outgoing_refs: 0
 ---
@@ -52,12 +52,13 @@ Read and validate the digest cursor from `.trie/digest_cursor.json`, returning `
 
 - Returns `None` if the JSON root is not a dict or lacks any of `parent`, `since`, `covered`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/session_log:save_digest_cursor fingerprint=930d5541b7f2edb6f64dae7b3051ed276d1a810670ccfb9365f1b9845506b5db body_fp=cc39afe4aa6c05c104b034b71c3c7c1b6348a6ff5d396dc1ab91e07a67c2c854 source_ref=1ea9f826d5d2bedc43f59e6cdf6af8e6bce004b7 role=persistence -->
-Atomically write the digest window cursor (`parent`, `since`, `covered`) to `.trie/digest_cursor.json`, swallowing `OSError` on failure.
+<!-- trie:section symbol=trie/session_log:save_digest_cursor fingerprint=7570d569c7be0f6243dff6cd06c8bda97afb7e70cb58ea3f8e1709f739bd37d1 body_fp=5e8f9fb6d9f12bd2563982ac050f15432b1c4f788f9c5ad9c0b57bb3216c864f source_ref=dc8a04dae43b9b9d289a9998dccba10d39826b97 role=persistence -->
+Atomically write the digest window cursor (`parent`, `since`, `covered`, `file`) to `.trie/digest_cursor.json`, swallowing `OSError` on failure.
 
 - `parent`: SHA of the commit this cursor is anchored to.
 - `since`: timestamp marking the start of the covered window.
 - `covered`: timestamp marking the end of the covered window.
+- `file`: project-relative path of the digest file written for `parent`; enables amend/retry to overwrite rather than duplicate.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/session_log:resolve_digest_window fingerprint=579c9a9f2b2dad92492984f6c8f61088fb6fda3cd3ada420cbab150933048a4c body_fp=51338fb7360524f9eee855fb93948198b7d1fd8f4a9d84628ae0625e10d92399 source_ref=1ea9f826d5d2bedc43f59e6cdf6af8e6bce004b7 role=domain -->
 Determine the start timestamp of the applied-notes window for a digest write, using the persisted cursor or a fallback.
