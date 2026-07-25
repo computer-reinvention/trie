@@ -1154,6 +1154,104 @@ def _resolve_audit_log_path(log: Path | None, reporter: Reporter) -> Path:
     return cfg_path
 
 
+def _run_intent_gate(reporter: Reporter, config: Config, project_root: Path) -> bool:
+    """Run the intent gate and render the outcome. Returns True when covered.
+
+    Shared by `trie intent` and `trie gate` so hook-driven and hook-less (CI)
+    environments enforce the identical contract.
+    """
+    from trie.intent_gate import evaluate
+
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        report = evaluate(project_root, config, store)
+    finally:
+        store.close()
+
+    if not report.touched:
+        reporter.success("intent gate: no symbol-level changes vs HEAD")
+        return True
+    if report.ok:
+        reporter.success(
+            f"intent gate: all {len(report.touched)} touched symbol(s) have notes on record"
+        )
+        return True
+
+    reporter.error(
+        f"intent gate: {len(report.uncovered)} of {len(report.touched)} touched "
+        "symbol(s) have no patch note — every change must record its intent"
+    )
+    for t in report.uncovered:
+        reporter.console.print(f"  [yellow]{t.status:<8}[/yellow] {t.qname}")
+    reporter.console.print()
+    reporter.console.print("stage a note per symbol, then re-run:")
+    for t in report.uncovered[:3]:
+        suffix = " --gone" if t.status == "removed" else ""
+        reporter.console.print(f'  trie patch create {t.qname} -n "<why this changed>"{suffix}')
+    if len(report.uncovered) > 3:
+        reporter.console.print(f"  … and {len(report.uncovered) - 3} more")
+    reporter.console.print(
+        'then: trie patch apply -N "<session intent>"   (records notes; no code generation)'
+    )
+    return False
+
+
+@app.command("gate")
+def gate_cmd(
+    ctx: typer.Context,
+    no_digest: bool = typer.Option(
+        False,
+        "--no-digest",
+        help="Skip the digest write (gates only: lock + verify + intent).",
+    ),
+) -> None:
+    """The commit guard, as one command: lock-check + verify + intent + digest.
+
+    This is exactly what the pre-commit hook runs. Call it explicitly in
+    environments where git hooks don't exist or don't fire — CI runners,
+    agents committing from GitHub Actions, bare automation:
+
+        trie refresh   # cold runner: rebuild the graph first (no LLM)
+        ...work...
+        trie gate      # before git commit
+
+    Exit codes: 0 all gates pass (digest is advisory and never blocks),
+    1 verify or intent failed (output says exactly what to fix),
+    2 another trie writer holds the lock (retry when it finishes).
+    A repo without trie.toml exits 0 — nothing to guard.
+    """
+    reporter = _get_reporter(ctx)
+
+    try:
+        config, project_root = Config.find_and_load(Path.cwd())
+    except ConfigNotFoundError:
+        reporter.info("no trie.toml here — nothing to gate")
+        return
+
+    # 1. Lock: never commit while a writer is mid-flight.
+    from trie.refresh_lock import try_acquire
+
+    with try_acquire(project_root, name="gate") as holder:
+        if not holder.acquired:
+            reporter.error(
+                "another trie process is writing (sync/refresh in flight) — retry shortly"
+            )
+            raise typer.Exit(code=2)
+
+    # 2. Verify: prose must match source, both directions.
+    if not _verify_drift(reporter, exit_on_drift=False):
+        reporter.info("fix: run `trie sync`, then retry")
+        raise typer.Exit(code=1)
+
+    # 3. Intent: every changed symbol carries a note.
+    if not _run_intent_gate(reporter, config, project_root):
+        raise typer.Exit(code=1)
+
+    # 4. Digest: advisory — record the commit's story and stage it.
+    if not no_digest:
+        _run_digest_write(reporter, config, project_root, stage=True)
+
+
 @app.command("intent")
 def intent_cmd(ctx: typer.Context) -> None:
     """Gate: every changed symbol must carry a patch note (its intent).
@@ -1172,40 +1270,8 @@ def intent_cmd(ctx: typer.Context) -> None:
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
-    from trie.intent_gate import evaluate
-
-    store = Store(project_root / ".trie" / "graph.db")
-    try:
-        report = evaluate(project_root, config, store)
-    finally:
-        store.close()
-
-    if not report.touched:
-        reporter.success("intent gate: no symbol-level changes vs HEAD")
-        return
-    if report.ok:
-        reporter.success(
-            f"intent gate: all {len(report.touched)} touched symbol(s) have notes on record"
-        )
-        return
-
-    reporter.error(
-        f"intent gate: {len(report.uncovered)} of {len(report.touched)} touched "
-        "symbol(s) have no patch note — every change must record its intent"
-    )
-    for t in report.uncovered:
-        reporter.console.print(f"  [yellow]{t.status:<8}[/yellow] {t.qname}")
-    reporter.console.print()
-    reporter.console.print("stage a note per symbol, then re-run:")
-    for t in report.uncovered[:3]:
-        suffix = " --gone" if t.status == "removed" else ""
-        reporter.console.print(f'  trie patch create {t.qname} -n "<why this changed>"{suffix}')
-    if len(report.uncovered) > 3:
-        reporter.console.print(f"  … and {len(report.uncovered) - 3} more")
-    reporter.console.print(
-        'then: trie patch apply -N "<session intent>"   (records notes; no code generation)'
-    )
-    raise typer.Exit(code=1)
+    if not _run_intent_gate(reporter, config, project_root):
+        raise typer.Exit(code=1)
 
 
 @app.command("index")
@@ -1291,123 +1357,19 @@ def diff_cmd(
         raise typer.Exit(code=1) from exc
 
     from trie.session_diff import (
-        _one_line,
         collect_session_diff,
-        collect_symbol_deltas,
-        render_digest_section,
         synthesize_narrative,
-        write_digest,
     )
 
     if write:
-        import time
-        from datetime import datetime
-
-        from trie.git_helpers import commit_timestamp, current_head
-        from trie.session_log import resolve_digest_window, save_digest_cursor
-
-        # 1. Resolve parent commit identity
-        parent_sha = current_head(project_root)
-        if parent_sha is None:
-            parent_sha = base
-        parent_short = parent_sha[:12]
-
-        # 2. Determine the evidence window via the persistent digest cursor,
-        #    and pick up the same-commit digest file for amend/retry rewrites.
-        from trie.session_log import read_digest_cursor
-
-        since = resolve_digest_window(
+        _run_digest_write(
+            reporter,
+            config,
             project_root,
-            parent_sha,
-            fallback_since=commit_timestamp(project_root, base),
-        )
-        cursor = read_digest_cursor(project_root)
-        reuse_file = cursor.get("file") if cursor and cursor.get("parent") == parent_sha else None
-
-        # 3. Collect session evidence
-        store = Store(project_root / ".trie" / "graph.db")
-        try:
-            data = collect_session_diff(
-                project_root,
-                config,
-                store,
-                session_id=session,
-                base=base,
-                since=since,
-            )
-        finally:
-            store.close()
-
-        if data.is_empty():
-            reporter.info("no session changes; digest not updated")
-            return
-
-        # 4. Collect semantic symbol deltas
-        deltas = collect_symbol_deltas(project_root, config, base=base)
-
-        # 5. Derive a human title from the first non-empty session note
-        # (the per-apply unifying intent — NOT the per-symbol patch notes)
-        title: str | None = None
-        for entry in data.applied:
-            candidate = _one_line(entry.get("session_note", ""), max_chars=80)
-            if candidate:
-                title = candidate
-                break
-        if not title:
-            title = "Session changes"
-
-        # 6. Optionally synthesize an LLM narrative
-        narrative = ""
-        if getattr(config.diff, "narrative", True) and not raw:
-            try:
-                client = make_client(model or config.models.cascade, sync_cfg=config.sync)
-                narrative = synthesize_narrative(data, client)
-            except Exception:
-                narrative = ""
-
-        # 7. Render and write the digest section
-        date_str = datetime.now().strftime("%Y-%m-%d")
-        section = render_digest_section(
-            data,
-            title=title,
-            date_str=date_str,
-            parent_short=parent_short,
-            narrative=narrative,
-            deltas=deltas,
-        )
-
-        written_file = write_digest(
-            project_root,
-            section,
-            diffs_dir=config.diff.diffs_dir,
-            symlink_path=config.diff.write_path,
-            max_entries=config.diff.max_entries,
-            reuse_file=reuse_file,
-        )
-
-        backed_by = "narrative" if narrative else "raw evidence"
-        reporter.info(
-            f"digest written to {written_file} ({backed_by}); {config.diff.write_path} -> latest"
-        )
-
-        # 8. Persist the digest cursor so the next run anchors correctly
-        covered_ts: float = 0.0
-        for entry in data.applied:
-            try:
-                ts = float(entry.get("ts", 0) or 0)
-            except (TypeError, ValueError):
-                ts = 0.0
-            if ts > covered_ts:
-                covered_ts = ts
-        if covered_ts == 0.0:
-            covered_ts = time.time()
-
-        save_digest_cursor(
-            project_root,
-            parent=parent_sha,
-            since=since if since is not None else 0.0,
-            covered=covered_ts,
-            file=written_file,
+            session=session,
+            base=base,
+            raw=raw,
+            model=model,
         )
         return
 
@@ -1488,6 +1450,159 @@ def diff_cmd(
         f"[dim]{len(data.applied)} applied, {len(data.pending)} pending patch note(s);"
         f" diff vs {data.base}[/dim]"
     )
+
+
+def _run_digest_write(
+    reporter: Reporter,
+    config: Config,
+    project_root: Path,
+    *,
+    session: str | None = None,
+    base: str = "HEAD",
+    raw: bool = False,
+    model: str | None = None,
+    stage: bool = False,
+) -> bool:
+    """Write this session's digest entry (the `trie diff --write` body).
+
+    Shared by `diff_cmd` and `trie gate` so hook-driven and hook-less (CI)
+    environments run identical logic. Advisory by design: returns True when a
+    digest was written or there was nothing to record, False only on hard
+    failure. `stage=True` additionally `git add`s the digest file and the
+    latest-symlink so an in-flight commit picks them up.
+    """
+    import time
+    from datetime import datetime
+
+    from trie.git_helpers import commit_timestamp, current_head
+    from trie.session_diff import (
+        _one_line,
+        collect_session_diff,
+        collect_symbol_deltas,
+        render_digest_section,
+        synthesize_narrative,
+        write_digest,
+    )
+    from trie.session_log import (
+        read_digest_cursor,
+        resolve_digest_window,
+        save_digest_cursor,
+    )
+
+    # 1. Resolve parent commit identity
+    parent_sha = current_head(project_root)
+    if parent_sha is None:
+        parent_sha = base
+    parent_short = parent_sha[:12]
+
+    # 2. Determine the evidence window via the persistent digest cursor,
+    #    and pick up the same-commit digest file for amend/retry rewrites.
+    since = resolve_digest_window(
+        project_root,
+        parent_sha,
+        fallback_since=commit_timestamp(project_root, base),
+    )
+    cursor = read_digest_cursor(project_root)
+    reuse_file = cursor.get("file") if cursor and cursor.get("parent") == parent_sha else None
+
+    # 3. Collect session evidence
+    store = Store(project_root / ".trie" / "graph.db")
+    try:
+        data = collect_session_diff(
+            project_root,
+            config,
+            store,
+            session_id=session,
+            base=base,
+            since=since,
+        )
+    finally:
+        store.close()
+
+    if data.is_empty():
+        reporter.info("no session changes; digest not updated")
+        return True
+
+    # 4. Collect semantic symbol deltas
+    deltas = collect_symbol_deltas(project_root, config, base=base)
+
+    # 5. Derive a human title from the first non-empty session note
+    # (the per-apply unifying intent — NOT the per-symbol patch notes)
+    title: str | None = None
+    for entry in data.applied:
+        candidate = _one_line(entry.get("session_note", ""), max_chars=80)
+        if candidate:
+            title = candidate
+            break
+    if not title:
+        title = "Session changes"
+
+    # 6. Optionally synthesize an LLM narrative
+    narrative = ""
+    if getattr(config.diff, "narrative", True) and not raw:
+        try:
+            client = make_client(model or config.models.cascade, sync_cfg=config.sync)
+            narrative = synthesize_narrative(data, client)
+        except Exception:
+            narrative = ""
+
+    # 7. Render and write the digest section
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    section = render_digest_section(
+        data,
+        title=title,
+        date_str=date_str,
+        parent_short=parent_short,
+        narrative=narrative,
+        deltas=deltas,
+    )
+
+    try:
+        written_file = write_digest(
+            project_root,
+            section,
+            diffs_dir=config.diff.diffs_dir,
+            symlink_path=config.diff.write_path,
+            max_entries=config.diff.max_entries,
+            reuse_file=reuse_file,
+        )
+    except OSError as exc:
+        reporter.error(f"digest write failed: {exc}")
+        return False
+
+    backed_by = "narrative" if narrative else "raw evidence"
+    reporter.info(
+        f"digest written to {written_file} ({backed_by}); {config.diff.write_path} -> latest"
+    )
+
+    if stage:
+        from trie.git_helpers import _run_git
+
+        _run_git(
+            ["add", config.diff.write_path, config.diff.diffs_dir],
+            cwd=project_root,
+        )
+
+    # 8. Persist the digest cursor so the next run anchors correctly
+    covered_ts: float = 0.0
+    for entry in data.applied:
+        try:
+            ts = float(entry.get("ts", 0) or 0)
+        except (TypeError, ValueError):
+            ts = 0.0
+        if ts > covered_ts:
+            covered_ts = ts
+    if covered_ts == 0.0:
+        covered_ts = time.time()
+
+    save_digest_cursor(
+        project_root,
+        parent=parent_sha,
+        since=since if since is not None else 0.0,
+        covered=covered_ts,
+        file=written_file,
+    )
+    return True
 
 
 def _print_scan_breakdown(

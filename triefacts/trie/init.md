@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/init.py
-file_fingerprint: cdf4ac7f67aad2169fde9ea374b2333d254ef3683102d725813d925c8250ef17
-last_synced_at: '2026-07-25T10:44:24Z'
+file_fingerprint: 8404d66cb90bf481d446d9ccb779bc363964239677831a79109ab2db39daabfe
+last_synced_at: '2026-07-25T11:18:10Z'
 defines:
 - kind: module
   qualified_name: trie/init:__module__
-  lines: 1-227
+  lines: 1-197
 - kind: constant
   qualified_name: trie/init:GITIGNORE_LINE
   lines: 9-9
@@ -21,28 +21,28 @@ defines:
   lines: 14-14
 - kind: constant
   qualified_name: trie/init:PRE_COMMIT_HOOK_BLOCK
-  lines: 48-59
+  lines: 23-29
 - kind: class
   qualified_name: trie/init:InitResult
-  lines: 63-73
+  lines: 33-43
 - kind: class
   qualified_name: trie/init:InitError
-  lines: 76-77
+  lines: 46-47
 - kind: function
   qualified_name: trie/init:_detect_supported_project
-  lines: 80-108
+  lines: 50-78
 - kind: constant
   qualified_name: trie/init:_detect_python_project
-  lines: 112-112
+  lines: 82-82
 - kind: function
   qualified_name: trie/init:_ensure_gitignore_entry
-  lines: 115-128
+  lines: 85-98
 - kind: function
   qualified_name: trie/init:install_pre_commit_hook
-  lines: 131-162
+  lines: 101-132
 - kind: function
   qualified_name: trie/init:init_project
-  lines: 165-226
+  lines: 135-196
 incoming_refs: 36
 outgoing_refs: 1
 ---
@@ -68,11 +68,11 @@ Comment string marking the start of trie's pre-commit hook block in `.git/hooks/
 <!-- trie:section symbol=trie/init:PRE_COMMIT_HOOK_END_MARKER fingerprint=d0c3f84018a4b0fdae65792bc7130e5d78252bcf888b935afbcbb1162fee2ec0 body_fp=0895ada7bc149132af314e0d92132481cf71ef7930b58b73f120bdb8d753f4d3 source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=agent-integration -->
 String constant marking the end of trie's pre-commit hook block in git hooks.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/init:PRE_COMMIT_HOOK_BLOCK fingerprint=97f17718fd6c448ce6d9b6ffc6ae6664169e0ee49c1e46630f5a60d95b439641 body_fp=95620a9cbc69727452c74174961d9fc6c713f76a51bc8483154380bcded3937b source_ref=13706bdb77f83b4d36a9ff5813936b56fc099941 role=config -->
-Shell script block embedded between marker comments for idempotent injection into `.git/hooks/pre-commit`, gating commits on `lock-check`, `verify`, and `intent`, then writing a diff digest via `diff --write`.
+<!-- trie:section symbol=trie/init:PRE_COMMIT_HOOK_BLOCK fingerprint=5a219e8e67a8defa9814ce8d096f3b227e7bb2864a8c3452c8767bbc81aa304e body_fp=ed551e42bd898b89fd05cd00b97de30fba06c890be9da383525b872c47a57286 source_ref=2c03dbb203a0074b0a5d9c3a83ed9291f6d2df11 role=config -->
+Shell script block embedded between marker comments for idempotent injection into `.git/hooks/pre-commit`, gating commits via a single `trie gate` call.
 
 - Entire block is a no-op if `trie` is not on `PATH`.
-- `lock-check` and `verify` block the commit on failure; `diff --write` is advisory only.
+- `trie gate` runs lock-check, verify, intent gate, and advisory digest write; blocks the commit on failure.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/init:InitResult fingerprint=6159e79af9587c2f4c2280d80e815af142855cae81912c12db1958bb33088be7 body_fp=22b934ac643593344ab076a020e011cd3c7df79abe8c66349e5cf645293e5978 source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=config-management -->
 Dataclass capturing the results of running `init_project`.

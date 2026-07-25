@@ -76,12 +76,15 @@ trie trace src/graph/store:Store.replace_all_edges --direction callers
 Once the hook is installed, every commit passes through:
 
 ```
-git commit
-  ├─ trie verify      blocks if prose drifted from source        (offline)
-  ├─ trie intent      blocks if a changed symbol has no note     (offline)
-  └─ trie diff        writes the commit's digest, stages it      (LLM narrative,
-                      → triefacts/triediffs/<timestamp>-<id>.md   degrades gracefully)
+git commit  →  trie gate
+                 ├─ lock-check    blocks if a trie writer is mid-flight       (offline)
+                 ├─ verify        blocks if prose drifted from source         (offline)
+                 ├─ intent        blocks if a changed symbol has no note      (offline)
+                 └─ diff --write  writes + stages the commit's digest         (LLM narrative,
+                                  → triefacts/triediffs/<timestamp>-<id>.md    degrades gracefully)
 ```
+
+The hook body is exactly one command — `trie gate` — so the guard logic lives in trie and installed hooks never go stale. Where git hooks don't exist (CI runners), run `trie gate` yourself before committing.
 
 Fix a `verify` failure with `trie sync`. Fix an `intent` failure by recording the note it asks for — the error output is copy-pasteable commands.
 
@@ -252,6 +255,7 @@ Supported setup targets: `opencode`, `claude-code`, `claude-desktop`, `cursor`, 
 | `trie setup` | Wire an agent: hook + overrides + docs (+ `--with-mcp`, `--with-sync-bot`) | no |
 | `trie plan` | Drift report + cost preview (`--offline` skips the token counts) | free calls |
 | `trie sync` | Regenerate stale prose + cascade (`--budget` / `--limit` cap spend) | yes |
+| `trie gate` | The whole commit guard: lock + verify + intent + digest (what the hook runs; run explicitly in CI) | digest only |
 | `trie verify` | Bidirectional drift gate | no |
 | `trie intent` | Changed-symbols-need-notes gate | no |
 | `trie patch create <qname> -n "…"` | Record why a symbol changed (`--gone` for removals) | no |
@@ -282,6 +286,35 @@ Everything lives in `trie.toml` (written by `trie init`, all knobs commented):
 - Only prose generation and the digest narrative call a model. The gates, graph, queries, index, and intent recording are all offline.
 - First bootstrap is the big one (roughly proportional to symbols in scope — use `--limit` to sample quality first). Day-to-day syncs touch only what changed: cents, not dollars.
 - The diff-aware regeneration rubric keeps cosmetic edits cheap, and normalized fingerprints mean formatting passes cost nothing.
+
+## Running in CI (GitHub Actions)
+
+Runners have no `.git/hooks`, no turn hooks, and a cold `.trie/` cache — the guard has to be explicit. The pattern for an agent (or any automation) committing from a workflow:
+
+```yaml
+- uses: actions/checkout@v4
+- run: |
+    pipx install uv
+    uv tool install git+https://github.com/computer-reinvention/trie
+    trie refresh                  # cold start: rebuild the symbol graph (no LLM)
+
+# ... the agent works: edits code, records notes via the patch tools ...
+
+- env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # digest narrative + any sync
+  run: |
+    trie sync                     # regenerate prose the edits staled
+    trie gate                     # the same guard the pre-commit hook runs
+    git add -A && git commit -m "..." && git push
+```
+
+What to know:
+
+- **`trie gate` is the whole contract** — lock + verify + intent + digest, identical to the hook. Exit 1 output is copy-pasteable fix commands, so a gated agent can self-correct.
+- **Order matters on a cold runner**: `trie refresh` first (notes can only be recorded against symbols the graph knows), work, then `sync` → `gate` → commit.
+- **Intent notes live in the runner's `.trie/`** — record and commit within the same job; they don't survive across jobs.
+- **No key?** `trie gate --no-digest` still enforces verify + intent; keyless `trie sync` fails loudly rather than pretending.
+- The `trie setup --with-sync-bot` workflow already follows this pattern, including running `trie gate` before its own push — bot commits carry digests too.
 
 ## Adopting trie in a team
 
