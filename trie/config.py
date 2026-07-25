@@ -153,8 +153,9 @@ class Sync:
     # Total wall-clock budget for one call's retry loop, in seconds. With the
     # default 120s request timeout, 8 connection-error attempts can hang a
     # command for ~20 minutes with no terminal output; this bounds that.
-    # 0 = unbounded (attempt-count limit only).
-    retry_total_seconds: float = 0.0
+    # 5 minutes absorbs real rate-limit waves while keeping the worst case
+    # visible-and-finite. 0 = unbounded (attempt-count limit only).
+    retry_total_seconds: float = 300.0
 
     # Per-request timeout (seconds) for a single LLM call. Without an explicit
     # timeout a stalled connection (no response, half-open socket) makes the
@@ -423,7 +424,7 @@ retry_base_delay_seconds = 1.0
 retry_cap_seconds = 60.0
 # Wall-clock budget for one call's whole retry loop; bounds the worst case of
 # repeated connection timeouts (8 x 120s otherwise). 0 = attempt-limit only.
-# retry_total_seconds = 300.0
+retry_total_seconds = 300.0
 
 [mcp]
 # Server-side knobs for the agent surface (`grep` / `read` / `trace`). These are

@@ -2171,6 +2171,16 @@ def setup_cmd(
             "install hook + docs only and leave the agent's built-ins alone."
         ),
     ),
+    with_sync_bot: bool = typer.Option(
+        False,
+        "--with-sync-bot",
+        help=(
+            "Also install a CI sync-bot workflow that regenerates stale "
+            "triefacts on PR branches using the ANTHROPIC_API_KEY repository "
+            "secret and pushes the sync commit. Opt-in because it spends the "
+            "org's API budget and pushes to branches."
+        ),
+    ),
     with_mcp: bool = typer.Option(
         False,
         "--with-mcp",
@@ -2296,18 +2306,29 @@ def setup_cmd(
     # GitHub workflow install: comments the latest session digest on PRs.
     # Skipped for non-git dirs; user-owned files (no managed-by marker) are
     # never touched. Inert off GitHub, so no remote detection is needed.
-    from trie.workflow_install import install_triediff_workflow
+    from trie.workflow_install import install_sync_bot_workflow, install_triediff_workflow
 
     workflow_result = install_triediff_workflow(
         project_root,
         diffs_dir=setup_config.diff.diffs_dir,
         dry_run=dry_run or print_only,
     )
+    sync_bot_result = None
+    if with_sync_bot:
+        sync_bot_result = install_sync_bot_workflow(
+            project_root,
+            dry_run=dry_run or print_only,
+        )
 
     _render_setup_plan(reporter, mcp_plan, hook_plan, docs_plan, override_plan)
     wf_path = workflow_result.path or Path(".github/workflows/triediff-comment.yml")
     wf_note = f" ({workflow_result.note})" if workflow_result.note else ""
     reporter.info(f"pr digest workflow: {workflow_result.action} {wf_path}{wf_note}")
+    if sync_bot_result is not None:
+        sb_path = sync_bot_result.path or Path(".github/workflows/trie-sync-bot.yml")
+        sb_note = f" ({sync_bot_result.note})" if sync_bot_result.note else ""
+        reporter.info(f"sync-bot workflow: {sync_bot_result.action} {sb_path}{sb_note}")
+        reporter.info("  remember: the sync bot needs the ANTHROPIC_API_KEY repository secret")
 
     # Surface a non-zero exit if any step hit an error so CI/scripts react.
     mcp_errors = any(r.action == "error" for r in mcp_plan.results) if mcp_plan else False
@@ -2322,6 +2343,7 @@ def setup_cmd(
         or docs_errors
         or override_errors
         or (workflow_result.action == "error")
+        or (sync_bot_result is not None and sync_bot_result.action == "error")
     ):
         raise typer.Exit(code=1)
 
