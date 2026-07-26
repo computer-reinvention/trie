@@ -5,7 +5,8 @@ agent-first pitch: two indexes (meaning + intent) that live in the repo
 as plain Markdown, kept fresh by `trie sync` and kept honest by the
 pre-commit gate — no external product or service involved.
 
-Design: single white theme, no animation, terse copy.
+Design: single white theme, no animation, terse copy, no em-dashes
+(long sentences are broken into bullets instead).
 
 ## Running
 
@@ -13,18 +14,21 @@ Design: single white theme, no animation, terse copy.
 open landing/index.html
 ```
 
-No build step. No package manager. Three files:
+No build step. No package manager. Four files:
 
-- `index.html` — structure and copy
-- `style.css` — all styling; one light theme, no media-query theming
-- `story.js` — copy-to-clipboard on the install command, nothing else
+- `index.html`: the landing page
+- `docs.html`: sectioned user docs (quickstart, both indexes, the gate,
+  agents, CLI reference, config, costs, CI, teams, troubleshooting)
+  with a sticky sidebar TOC
+- `style.css`: all styling; one light theme, no media-query theming
+- `story.js`: copy-to-clipboard on the install command, nothing else
 
 ## Structure
 
 1. **nav** — sticky, anchors to each section, GitHub link
-2. **hero** — problem-first: "Coding agents start every session from
-   zero", then the fix (meaning + intent index), install command with
-   copy button, fact strip
+2. **hero** — "Self-hosted context infrastructure for coding agents" /
+   "The host is your git repo", the session-starts-from-zero problem,
+   install command with copy button, fact strip
 3. **meaning + intent** — one record, two halves, joined by a literal
    `+`; both cards show the same symbol (what it does / why it is that
    way)

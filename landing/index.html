@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>trie — context infrastructure for coding agents</title>
+    <title>trie · self-hosted context infrastructure for coding agents</title>
     <meta
       name="description"
-      content="trie keeps two indexes in your repo as plain Markdown: what every symbol does, and why every change was made. Kept fresh by sync, kept honest by a commit gate. No services — plain git."
+      content="Self-hosted context infrastructure for coding agents. The host is your git repo: a meaning + intent index as plain Markdown, kept fresh by sync, kept honest by a commit gate. No services."
     />
     <link rel="stylesheet" href="./style.css" />
   </head>
@@ -24,6 +24,7 @@
           <a href="#tools">tools</a>
           <a href="#in-repo">in your repo</a>
           <a href="#install">install</a>
+          <a href="./docs.html">docs</a>
           <a
             class="nav__gh"
             href="https://github.com/computer-reinvention/trie"
@@ -37,20 +38,19 @@
     <section class="hero" id="top">
       <div class="container">
         <p class="hero__kicker">
-          <a href="../">computer reinvention</a> / 01 — trie · context
-          infrastructure for coding agents ·
+          <a href="../">computer reinvention</a> / 01 · trie ·
           <span class="hero__status">pre-alpha</span>
         </p>
         <h1 class="hero__title">
-          Coding agents start every session<br />from <em>zero</em>.
+          Self-hosted context infrastructure<br />for coding <em>agents</em>.
         </h1>
+        <p class="hero__lead">The host is your git repo.</p>
         <p class="hero__sub">
-          They re-derive your codebase by grep and guesswork, burn half their
-          context doing it, and record nothing for the next session. trie ends
-          that: a <strong>meaning&nbsp;+&nbsp;intent</strong> index in your
-          repo — what every symbol does, why it is that way — kept fresh by
-          sync, kept honest by a commit gate. Plain Markdown. Plain git. No
-          services.
+          Agents start every session from zero: they re-derive your codebase
+          by grep and guesswork, then record nothing for the next session.
+          trie fixes both with a <strong>meaning&nbsp;+&nbsp;intent</strong>
+          index committed next to your code. What every symbol does. Why it
+          is that way. Fresh by sync. Honest by a commit gate. No services.
         </p>
         <div class="hero__actions">
           <div class="cmd" data-copy>
@@ -63,11 +63,7 @@
               copy
             </button>
           </div>
-          <a
-            class="btn btn--ghost"
-            href="https://github.com/computer-reinvention/trie"
-            >View source ↗</a
-          >
+          <a class="btn btn--ghost" href="./docs.html">Read the docs</a>
         </div>
         <ul class="hero__facts">
           <li>Plain Markdown, versioned with the code</li>
@@ -129,7 +125,7 @@ rejected with 401 before the handler runs.
    2026-07-25 · commit fade5436</span>
 
 <span class="tok-mod">~</span> src/auth/middleware:require_auth
-  <span class="tok-add">"expired tokens must 401, not 500 — see #241"</span>
+  <span class="tok-add">"expired tokens must 401, not 500 (see #241)"</span>
 
 <span class="tok-mod">~</span> tests/test_auth:test_expired_token_401
   <span class="tok-add">"pins the fail-closed contract"</span></code></pre>
@@ -140,7 +136,7 @@ rejected with 401 before the handler runs.
         <p class="pair__caption">
           <code>trie read src/auth/middleware:require_auth</code> answers
           <em>what</em>. Add <code>--history</code> and it answers
-          <em>why</em> — every note ever recorded against the symbol, in
+          <em>why</em>: every note ever recorded against the symbol, in
           commit order.
         </p>
       </div>
@@ -168,11 +164,11 @@ rejected with 401 before the handler runs.
           <li class="loop__step">
             <div class="loop__num">2</div>
             <div class="loop__body">
-              <h3>The agent records intent — one note per changed symbol.</h3>
+              <h3>The agent records intent. One note per changed symbol.</h3>
               <pre
                 class="loop__cmd"
               ><code>$ trie patch create src/auth:require_auth \
-    -n "expired tokens must 401, not 500 — see #241"</code></pre>
+    -n "expired tokens must 401, not 500 (see #241)"</code></pre>
             </div>
           </li>
           <li class="loop__step">
@@ -191,8 +187,8 @@ rejected with 401 before the handler runs.
             <div class="loop__body">
               <h3>The digest ships with the commit.</h3>
               <p>
-                Same push, same PR, same merge —
-                <code>triefacts/triediffs/</code>, one file per commit.
+                Same push, same PR, same merge. One file per commit in
+                <code>triefacts/triediffs/</code>.
               </p>
             </div>
           </li>
@@ -201,7 +197,7 @@ rejected with 401 before the handler runs.
             <div class="loop__body">
               <h3>Sync regenerates exactly what drifted.</h3>
               <p>
-                An end-of-turn hook runs it automatically — the graph the next
+                An end-of-turn hook runs it automatically. The graph the next
                 query hits reflects the edit that just happened.
               </p>
             </div>
@@ -214,7 +210,7 @@ rejected with 401 before the handler runs.
           </div>
           <p>
             Current prose plus every intent note ever recorded against the
-            symbol, in commit order. <em>Why the code is the way it is</em> —
+            symbol, in commit order. <em>Why the code is the way it is</em>,
             answered from the repo.
           </p>
         </div>
@@ -238,7 +234,7 @@ rejected with 401 before the handler runs.
             <h3><code>grep</code></h3>
             <p>
               Searches symbols, not bytes. Hits carry qname, signature,
-              one-liner, and inbound count — relevance is decided in the result
+              one-liner, and inbound count. Relevance is decided in the result
               row, not by opening files.
             </p>
           </div>
@@ -312,7 +308,7 @@ rejected with 401 before the handler runs.
             </li>
             <li>
               <strong>Gated like tests.</strong> <code>verify</code> and
-              <code>intent</code> run offline — pre-commit hook or any CI
+              <code>intent</code> run offline: pre-commit hook or any CI
               runner, no API key.
             </li>
             <li>
@@ -349,8 +345,11 @@ $ git commit                 <span class="tok-dim"># the gate takes it from here
         </figure>
 
         <div class="install__links">
-          <a class="btn" href="https://github.com/computer-reinvention/trie"
-            >Full quickstart on GitHub ↗</a
+          <a class="btn" href="./docs.html">Read the full documentation</a>
+          <a
+            class="btn btn--ghost"
+            href="https://github.com/computer-reinvention/trie"
+            >GitHub ↗</a
           >
         </div>
       </div>
@@ -361,9 +360,11 @@ $ git commit                 <span class="tok-dim"># the gate takes it from here
       <div class="container footer__inner">
         <div>
           <span class="nav__logo" aria-hidden="true">▲</span>
-          <strong>trie</strong> — context infrastructure for coding agents.
+          <strong>trie</strong> · self-hosted context infrastructure for coding
+          agents.
         </div>
         <div class="footer__links">
+          <a href="./docs.html">docs</a>
           <a href="https://github.com/computer-reinvention/trie">GitHub</a>
           <a href="../">computer reinvention</a>
           <span class="footer__license">MIT · pre-alpha</span>
