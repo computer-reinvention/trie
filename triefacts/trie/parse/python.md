@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/parse/python.py
 file_fingerprint: 4d8785578f5b3be0a070dfa18bec14241facc3a08e7fb576f365160e392557cc
-last_synced_at: '2026-07-25T10:43:50Z'
+last_synced_at: '2026-07-26T20:28:48Z'
 defines:
 - kind: module
   qualified_name: trie/parse/python:__module__
@@ -126,7 +126,7 @@ Concatenates all leaf tokens from a tree-sitter node into a normalized string fo
 <!-- trie:section symbol=trie/parse/python:_hash fingerprint=7057d302a510678c4e042810b0eb270cc10d5047cb0a03fac868582b067b5767 body_fp=cab40cc7af18851f3b97395e7b72cb10a5be1a90b9cb9d0f1907aac65fed9681 source_ref=5e8d03050d1b221cab9968d16c6e9555575ee417 role=source-parsing -->
 Computes SHA-256 hash of string as hex digest for content fingerprinting.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/python:_build_symbol fingerprint=7d482d42fbd226f146d9fcf96ed152b3fc0ba990f0e8493c18fbbfca67db0119 body_fp=90bf4b51315de95d0c99dc15875a81ddb8fd16f2f0b33fdc909a5cf86bfcc3b3 source_ref=5e8d03050d1b221cab9968d16c6e9555575ee417 role=source-parsing -->
+<!-- trie:section symbol=trie/parse/python:_build_symbol fingerprint=7d482d42fbd226f146d9fcf96ed152b3fc0ba990f0e8493c18fbbfca67db0119 body_fp=90bf4b51315de95d0c99dc15875a81ddb8fd16f2f0b33fdc909a5cf86bfcc3b3 source_ref=fa9cbd6ec28228640aecb7c8b9e6c248cb8c9b38 role=parsing -->
 Constructs a Symbol from a tree-sitter node representing a function, class, or method definition.
 
 - `node`: Tree-sitter AST node for the definition
@@ -164,7 +164,7 @@ Removes Python string literal quotes and prefix characters, returning the raw co
 - Handles triple-quoted, single-quoted, and prefixed strings (f/r/b/u)
 - Returns content with surrounding whitespace stripped
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/python:_build_constant_symbol fingerprint=1144abec1cfbde2447fcc8744f55915888eacaecc5ff1cea5114b4e662d1b56e body_fp=fd354404658daeef0a060d4c8efcef86988fd8db801b7c6a5a767f919e846623 source_ref=5e8d03050d1b221cab9968d16c6e9555575ee417 role=source-parsing -->
+<!-- trie:section symbol=trie/parse/python:_build_constant_symbol fingerprint=1144abec1cfbde2447fcc8744f55915888eacaecc5ff1cea5114b4e662d1b56e body_fp=fd354404658daeef0a060d4c8efcef86988fd8db801b7c6a5a767f919e846623 source_ref=fa9cbd6ec28228640aecb7c8b9e6c248cb8c9b38 role=parsing -->
 Creates a Symbol for module-level variable assignments like `NAME = value` or `NAME: T = value`.
 
 - `node`: wrapping expression_statement node for full line range
@@ -185,7 +185,7 @@ Checks if a tree-sitter node represents a module-level single-identifier assignm
 - Returns `None` for tuple unpacking, attribute assignments, or non-assignment statements
 - Only captures `NAME = value` patterns to avoid cluttering the symbol table with ambiguous targets
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/python:_build_module_body_symbol fingerprint=1910e1890486d83c8a17a98dabde20916177931683219cf50e4edebe4d8cfeab body_fp=449f39a367dff9f056ffe37aad8de7e0bf79019ac872a98f3273e428aafa8cb6 source_ref=5e8d03050d1b221cab9968d16c6e9555575ee417 role=source-parsing -->
+<!-- trie:section symbol=trie/parse/python:_build_module_body_symbol fingerprint=1910e1890486d83c8a17a98dabde20916177931683219cf50e4edebe4d8cfeab body_fp=449f39a367dff9f056ffe37aad8de7e0bf79019ac872a98f3273e428aafa8cb6 source_ref=fa9cbd6ec28228640aecb7c8b9e6c248cb8c9b38 role=parsing -->
 Creates a synthetic `__module__` Symbol containing residual module-level code not captured by other symbols.
 
 - `consumed_ranges`: line ranges already claimed by functions/classes/constants
@@ -194,7 +194,7 @@ Creates a synthetic `__module__` Symbol containing residual module-level code no
 - Signature summarizes residual line count and first statement preview
 - Body contains all unclaimed non-comment, non-empty lines joined with newlines
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/python:extract_symbols fingerprint=7649dc31526e2e9955a047b483cf348d394b8861d4c34dc940800b91ac0f0ad3 body_fp=81960de6a9e4b1d7c735cb331c737c7db9e1e98e9bc31cac284ebe7b747f4147 source_ref=5e8d03050d1b221cab9968d16c6e9555575ee417 role=source-parsing -->
+<!-- trie:section symbol=trie/parse/python:extract_symbols fingerprint=7649dc31526e2e9955a047b483cf348d394b8861d4c34dc940800b91ac0f0ad3 body_fp=81960de6a9e4b1d7c735cb331c737c7db9e1e98e9bc31cac284ebe7b747f4147 source_ref=fa9cbd6ec28228640aecb7c8b9e6c248cb8c9b38 role=parsing -->
 Parse Python file and extract its top-level symbols: functions, classes, methods, constants, and module residuals.
 
 - `file_path`: target Python file

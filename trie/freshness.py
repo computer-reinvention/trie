@@ -316,8 +316,8 @@ def _ensure_fresh(
         # *when* we last refreshed, not *whether the graph still exists*: a
         # wiped/regenerated/corrupted `.trie/graph.db` leaves a valid stamp
         # pointing at no data. Treating that as "unchanged" returns a no-op
-        # refresh against an empty graph — the failure mode that surfaces in
-        # the desktop app as "No system model loaded". Detect it up front and
+        # refresh against an empty graph — every query then comes back empty
+        # while looking healthy. Detect it up front and
         # force a graph rebuild (scan only, no LLM — the committed triefacts
         # are trusted as-is, same as the head_moved path).
         store_empty = store.count_symbols() == 0

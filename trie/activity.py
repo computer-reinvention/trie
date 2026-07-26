@@ -1,7 +1,7 @@
 """Ephemeral local activity state for trie, backed by SQLite.
 
 trie's write paths run as independent processes — a terminal `trie sync`, the
-end-of-turn `trie refresh` hook, the desktop app's startup refresh. None of them
+end-of-turn `trie refresh` hook, an editor plugin's refresh. None of them
 share memory, so the live writer status and the working-tree (stale) set live in
 a small on-disk database any process can read while a writer updates it.
 
@@ -70,7 +70,7 @@ def db_path(project_root: Path) -> Path:
 def _connect(project_root: Path) -> Iterator[sqlite3.Connection]:
     """Open the ephemeral activity DB, creating it + schema on first use.
 
-    WAL mode lets `trie status` / the editor read while a writer commits.
+    WAL mode lets `trie status` / other readers poll while a writer commits.
     `busy_timeout` makes brief lock contention block-and-retry rather than raise.
     """
     path = db_path(project_root)

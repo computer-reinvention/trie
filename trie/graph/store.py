@@ -15,7 +15,7 @@ from trie.parse.references import Reference
 # v8: extended symbol-kind vocabulary (interface/type/enum/enum_member/property)
 # for multi-language indexing. The `kind` column is free-text so no schema change
 # is needed — the bump forces a clean cache rebuild so TS files index cleanly.
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 
 # All schema is created if not present. The DB is a regenerable cache under .trie/;
 # bumping SCHEMA_VERSION blows it away and triggers a re-scan on next connect.
@@ -65,8 +65,6 @@ CREATE TABLE IF NOT EXISTS triefact_sections (
     role TEXT NOT NULL DEFAULT '',
     boundary TEXT NOT NULL DEFAULT '',
     last_generated_at INTEGER NOT NULL,
-    hist_mass REAL NOT NULL DEFAULT 0,
-    hist_mass_ts REAL NOT NULL DEFAULT 0,
     PRIMARY KEY (triefact_path, symbol_id)
 );
 CREATE INDEX IF NOT EXISTS idx_sections_symbol ON triefact_sections(symbol_id);
@@ -629,8 +627,6 @@ class Store:
         one_liner: str,
         role: str = "",
         boundary: str = "",
-        hist_mass: float = 0.0,
-        hist_mass_ts: float = 0.0,
         now: int | None = None,
     ) -> None:
         """Record (or refresh) the metadata trie keeps in lockstep with a generated section.
@@ -643,12 +639,6 @@ class Store:
         is the LLM-inferred boundary class (entry/exit/internal); '' when unknown. An
         empty value on update does not clobber a previously-stored non-empty one, so a
         metadata-only refresh that lacks LLM inference preserves the existing tags.
-
-        `hist_mass`/`hist_mass_ts` are the AGM cross-session historical mass parsed
-        from the triefact sentinel (the source of truth); this column is a rebuildable
-        read cache. A zero mass does not clobber a stored non-zero one, mirroring the
-        role/boundary preserve-on-empty rule — so a metadata-only refresh that didn't
-        re-parse the sentinel keeps the existing mass.
         """
         ts = now if now is not None else int(time.time())
         with self._lock:
@@ -663,8 +653,8 @@ class Store:
                 """
                 INSERT INTO triefact_sections
                     (triefact_path, symbol_id, section_fingerprint, one_liner, role,
-                     boundary, last_generated_at, hist_mass, hist_mass_ts)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     boundary, last_generated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(triefact_path, symbol_id) DO UPDATE SET
                     section_fingerprint = excluded.section_fingerprint,
                     one_liner = excluded.one_liner,
@@ -676,15 +666,7 @@ class Store:
                         WHEN excluded.boundary != '' THEN excluded.boundary
                         ELSE triefact_sections.boundary
                     END,
-                    last_generated_at = excluded.last_generated_at,
-                    hist_mass = CASE
-                        WHEN excluded.hist_mass != 0 THEN excluded.hist_mass
-                        ELSE triefact_sections.hist_mass
-                    END,
-                    hist_mass_ts = CASE
-                        WHEN excluded.hist_mass != 0 THEN excluded.hist_mass_ts
-                        ELSE triefact_sections.hist_mass_ts
-                    END
+                    last_generated_at = excluded.last_generated_at
                 """,
                 (
                     triefact_path,
@@ -694,8 +676,6 @@ class Store:
                     role,
                     boundary,
                     ts,
-                    hist_mass,
-                    hist_mass_ts,
                 ),
             )
             self._conn.commit()
@@ -729,41 +709,6 @@ class Store:
             qnames,
         ).fetchall()
         return {row[0]: (row[1] or "") for row in rows}
-
-    def historical_mass_all(self, *, now: float | None = None) -> dict[str, float]:
-        """Return {qname: decayed historical mass} for every symbol with non-zero
-        AGM historical mass.
-
-        Mass is stored in `triefact_sections.hist_mass` (rehydrated from the
-        triefact sentinel, the source of truth) along with the timestamp it was
-        stamped; this decays each value forward to `now` on the AGM historical
-        half-life so callers get a current importance signal without re-stamping.
-        Symbols with zero mass are omitted.
-        """
-        import math as _math
-        import time as _time
-
-        from trie.attention import HISTORICAL_LAMBDA
-
-        ts_now = _time.time() if now is None else now
-        rows = self._conn.execute(
-            """
-            SELECT s.qualified_name, ts.hist_mass, ts.hist_mass_ts
-            FROM triefact_sections ts
-            JOIN symbols s ON s.id = ts.symbol_id
-            WHERE ts.hist_mass > 0
-            """
-        ).fetchall()
-        out: dict[str, float] = {}
-        for qname, mass, mass_ts in rows:
-            if mass_ts and mass_ts > 0:
-                dt = max(0.0, ts_now - float(mass_ts))
-                out[qname] = float(mass) * _math.exp(-HISTORICAL_LAMBDA * dt)
-            else:
-                out[qname] = float(mass)
-        return out
-
-    # --- patch ops ---
 
     def add_patch(
         self,

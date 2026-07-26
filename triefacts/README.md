@@ -8,13 +8,13 @@ Prose descriptions of every in-scope source file and symbol, kept in sync with t
 
 The most-referenced public symbols — start reading here.
 
-- [`trie/config:Config`](trie/config.md) (142 refs) `config` — Root configuration dataclass aggregating all subsection configs, with classmethods to construct from a dict, a TOML file path, or by walking up the directory tree.
+- [`trie/config:Config`](trie/config.md) (140 refs) `config` — Root configuration dataclass aggregating all subsection configs, with classmethods to construct from a dict, a TOML file path, or by walking up the directory tree.
 - [`trie/cli:app`](trie/cli.md) (95 refs) `cli-interface` — Top-level Typer application instance that defines the trie CLI interface.
 - [`tests/fake_client:FakeTrieClient`](tests/fake_client.md) (79 refs) `test` — Test double for `TrieClient` that returns preconfigured structured outputs and records call parameters for verification.
-- [`trie/graph/store:Store`](trie/graph/store.md) (68 refs) `persistence` — SQLite-backed persistence for trie's symbol graph and file fingerprints.
 - [`tests/test_mcp:tools`](tests/test_mcp.md) (67 refs) `test` — Creates a TrieTools fixture for the populated test project and ensures cleanup after use.
-- [`trie/parse/python:extract_symbols`](trie/parse/python.md) (66 refs) `source-parsing` — Parse Python file and extract its top-level symbols: functions, classes, methods, constants, and module residuals.
-- [`trie/sync/writer:TriefactFile`](trie/sync/writer.md) (52 refs) `persistence` — Parses, manipulates, and renders triefact files containing YAML frontmatter and trie-managed documentation sections.
+- [`trie/graph/store:Store`](trie/graph/store.md) (66 refs) `persistence` — SQLite-backed persistence for trie's symbol graph and file fingerprints.
+- [`trie/parse/python:extract_symbols`](trie/parse/python.md) (66 refs) `parsing` — Parse Python file and extract its top-level symbols: functions, classes, methods, constants, and module residuals.
+- [`trie/sync/writer:TriefactFile`](trie/sync/writer.md) (47 refs) `persistence` — Parses, manipulates, and renders triefact files containing YAML frontmatter and trie-managed documentation sections.
 - [`trie/cli:console`](trie/cli.md) (37 refs) `cli-interface` — Creates a Rich Console instance for styled terminal output across CLI commands.
 - [`trie/sync/single_file:sync_single_file`](trie/sync/single_file.md) (37 refs) `orchestration` — Generate or refresh the triefact file for a single Python source file using LLM calls.
 - [`tests/test_mcp_install:project`](tests/test_mcp_install.md) (34 refs) `test-infrastructure` — Creates temporary project directory with trie.toml configuration file and cleans up MCP installation artifacts after test completion.
@@ -30,7 +30,6 @@ The most-referenced public symbols — start reading here.
 
 - [fake_client.md](tests/fake_client.md)
 - [test_activity.md](tests/test_activity.md) — Tests for the SQLite-backed local activity state (trie/activity.py).
-- [test_attention.md](tests/test_attention.md) — Tests for AGM attention contracts, event store, sync-time fold, and typed edges.
 - [test_audit.md](tests/test_audit.md) — Audit summary: JSONL ingestion + rendering.
 - [test_bootstrap.md](tests/test_bootstrap.md)
 - [test_cascade.md](tests/test_cascade.md)
@@ -73,7 +72,6 @@ The most-referenced public symbols — start reading here.
 - [test_setup.md](tests/test_setup.md) — End-to-end tests for `trie setup` and the underlying hook installer.
 - [test_store.md](tests/test_store.md)
 - [test_symbol_level_sync.md](tests/test_symbol_level_sync.md) — Symbol-level sync: regenerate only the symbols actually asked for.
-- [test_system_model.md](tests/test_system_model.md)
 - [test_tool_override_install.md](tests/test_tool_override_install.md) — Tests for `trie.tool_override_install`: replacing agent built-in tools with trie wrappers.
 - [test_triefact_metadata.md](tests/test_triefact_metadata.md) — Front-matter enrichment in `sync_single_file`.
 - [test_ts_resolve.md](tests/test_ts_resolve.md)
@@ -107,8 +105,6 @@ The most-referenced public symbols — start reading here.
 
 - [__init__.md](trie/__init__.md)
 - [activity.md](trie/activity.md) — Ephemeral local activity state for trie, backed by SQLite.
-- [attention.md](trie/attention.md) — AGM (Attention Gravity Map) contracts: the shared vocabulary for modelling
-- [attention_store.md](trie/attention_store.md) — Compressed attention-event capture, backed by SQLite under `.trie/`.
 - [audit.md](trie/audit.md) — Post-hoc analysis of `debug.jsonl` telemetry logs.
 - [check.md](trie/check.md)
 - [cli.md](trie/cli.md)
@@ -141,7 +137,6 @@ The most-referenced public symbols — start reading here.
 ### trie/graph
 
 - [store.md](trie/graph/store.md)
-- [system_model.md](trie/graph/system_model.md) — Assemble a high-level *system model* from the symbol graph.
 
 ### trie/parse
 
@@ -156,7 +151,6 @@ The most-referenced public symbols — start reading here.
 
 ### trie/sync
 
-- [attention_fold.md](trie/sync/attention_fold.md) — Sync-time historical-mass fold for AGM.
 - [bootstrap.md](trie/sync/bootstrap.md)
 - [cascade.md](trie/sync/cascade.md)
 - [generator.md](trie/sync/generator.md)

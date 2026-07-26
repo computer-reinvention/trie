@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/sync/scheduler.py
 file_fingerprint: 505926ab4c10a176fb8bad547743c386de248551c991f6d6f1ff332d04f8eb34
-last_synced_at: '2026-07-25T01:36:52Z'
+last_synced_at: '2026-07-26T20:28:59Z'
 description: Wave-based file scheduler for parallel triefact sync.
 defines:
 - kind: module

@@ -562,7 +562,7 @@ class TrieTools:
 
         Resolves the symbol's file and reuses the mature `compute_cascade` walk to
         find every symbol whose triefact would be regenerated if `qname` changed,
-        with each one's BFS hop distance from the seed (so the desktop can animate
+        with each one's BFS hop distance from the seed (so a caller can order
         the cascade as a staggered wavefront).
 
         Returns {qname, file, direct, cascade:[{qname, hop, file}], cascade_count,
@@ -716,95 +716,8 @@ class TrieTools:
         """Alias for commit(): record pending notes as intent (no code generation)."""
         return self.commit(session_note=session_note)
 
-    # --- desktop app helpers -----------------------------------------------
-
-    def all_symbols(self, rank_by: str = "inbound_count", limit: int = 5000) -> dict[str, Any]:
-        """Return all symbols in the project, sorted by `rank_by`.
-
-        Dedicated endpoint for the desktop app's initial graph population —
-        avoids the empty-predicate guard in `grep` which rejects requests
-        with no filters. Returns {hits: [SymbolDetail, ...]} in the same
-        shape as grep() so the frontend can use the same code path.
-        """
-        from trie.graph.store import GrepPredicate
-
-        pred = GrepPredicate(kind="any")  # kind="any" is non-empty → bypasses the guard
-        results = self.store.grep_symbols(pred, rank_by=rank_by, limit=limit)
-        hist_mass = self.store.historical_mass_all()
-        hits = [
-            {
-                "qname": r.qualified_name,
-                "name": r.name,
-                "kind": r.kind,
-                "file_path": r.file_path,
-                "start_line": r.start_line,
-                "signature": r.signature,
-                "is_public": r.is_public,
-                "inbound_count": r.inbound_count,
-                "outbound_count": r.outbound_count,
-                "one_liner": r.one_liner,
-                "role": r.role,
-                "historical_mass": hist_mass.get(r.qualified_name, 0.0),
-                "pending_patch_count": r.pending_patch_count,
-                "has_pending_patches": r.pending_patch_count > 0,
-            }
-            for r in results
-        ]
-        return {"hits": hits}
-
-    def all_edges(self, limit: int = 50000) -> dict[str, Any]:
-        """Return all call-graph edges for the desktop app's initial graph population.
-
-        Returns {edges: [{from, to}, ...]} — a flat list of directed edges
-        read straight from the SQLite edge table. Much faster than 200 individual
-        trace calls and doesn't require the MCP connection to be fully warmed up.
-        """
-        rows = self.store._conn.execute(
-            """
-            SELECT s_src.qualified_name, s_dst.qualified_name, e.kind
-            FROM edges e
-            JOIN symbols s_src ON s_src.id = e.src_symbol_id
-            JOIN symbols s_dst ON s_dst.id = e.dst_symbol_id
-            LIMIT ?
-            """,
-            (limit,),
-        ).fetchall()
-        return {"edges": [{"from": r[0], "to": r[1], "kind": r[2]} for r in rows]}
-
-    def system_model(
-        self, landmark_limit: int = 160, include_tests: bool = False
-    ) -> dict[str, Any]:
-        """Return the high-level *system model* for the desktop graph view.
-
-        A model of the system rather than one node per symbol. Every production
-        node is classified (door/hub/bedrock/exit/internal/orphan), scored for
-        salience, and annotated with betweenness, depth-from-door, community,
-        subsystem, and a precomputed layered layout position. Tests are excluded
-        by default (set `include_tests` to include them, flagged `is_test`).
-
-        Returns `{nodes, axes: {role, subsystem}, landmarks, stats}` where each
-        axis carries L0 component groups + thresholded group-to-group flow.
-        Pure graph math over the store — no LLM calls. The topology is cached on
-        disk keyed by graph fingerprint; AGM historical mass is injected per node
-        *after* the cache read (it decays continuously, so it must not be baked
-        into the fingerprint-keyed cache).
-        """
-        from trie.graph.system_model import build_system_model_cached
-
-        model = build_system_model_cached(
-            self.store,
-            project_root=self.root,
-            landmark_limit=landmark_limit,
-            include_tests=include_tests,
-        )
-        # Inject live-decayed AGM historical mass onto each node (post-cache).
-        hist_mass = self.store.historical_mass_all()
-        for node in model.get("nodes", []):
-            node["historical_mass"] = hist_mass.get(node.get("qname", ""), 0.0)
-        return model
-
     def summary(self) -> dict[str, Any]:
-        """Return project-level aggregate counts for the trie desktop app.
+        """Return project-level aggregate counts for the project.
 
         Returns {project_name, total_symbols, public_symbols, total_files,
         total_edges, trie_version}.
@@ -831,114 +744,13 @@ class TrieTools:
             "trie_version": getattr(trie_pkg, "__version__", "unknown"),
         }
 
-    def record_attention_event(
-        self, type: str, qname: str, investigation_id: str = ""
-    ) -> dict[str, Any]:
-        """Record one AGM attention event (the durable capture side).
-
-        `type` is one of grep|read|trace|write; `qname` is a symbol qname or a
-        synthetic node qname (see trie.attention.synthetic_qname). The desktop runs
-        the live simulation from the SSE stream — this persists a compressed event
-        log for replay/hydration and feeds the sync-time historical-mass fold.
-        Best-effort; returns {ok, weight} or an error envelope on a bad type.
-        """
-        from trie import attention_store
-        from trie.attention import EVENT_WEIGHTS
-
-        if type not in EVENT_WEIGHTS:
-            return _error(
-                "invalid_argument",
-                f"unknown attention event type {type!r}",
-                "use one of: grep, read, trace, write.",
-            )
-        attention_store.record_event(
-            self.root,
-            event_type=type,  # type: ignore[arg-type]
-            target=qname,
-            session_id=self._session_id,
-            investigation_id=investigation_id,
-        )
-        return {"ok": True, "weight": EVENT_WEIGHTS[type]}
-
-    def attention(self, since: float = 0.0) -> dict[str, Any]:
-        """Return recent AGM attention events + the constant tables, for the
-        desktop to hydrate / replay its live model.
-
-        Events are the compressed log since `since` (unix seconds). `weights`,
-        `live_halflife_seconds`, and `edge_weights` mirror trie.attention so the
-        client never hard-codes them. `synthetic_nodes` lists the non-code
-        cognition surfaces. Historical mass is delivered via system_model /
-        all_symbols (on the nodes), not here.
-        """
-        from trie import attention_store
-        from trie.attention import (
-            EDGE_WEIGHTS,
-            EVENT_WEIGHTS,
-            LIVE_HALFLIFE_SECONDS,
-            PROPAGATION_FACTOR,
-            PROPAGATION_HOPS,
-            SYNTHETIC_NODES,
-            synthetic_qname,
-        )
-
-        events = attention_store.read_events(self.root, since=since)
-        return {
-            "events": [
-                {
-                    "ts": e.ts,
-                    "event_type": e.event_type,
-                    "target": e.target,
-                    "weight": e.weight,
-                    "agent_id": e.agent_id,
-                    "session_id": e.session_id,
-                    "investigation_id": e.investigation_id,
-                }
-                for e in events
-            ],
-            "weights": EVENT_WEIGHTS,
-            "live_halflife_seconds": LIVE_HALFLIFE_SECONDS,
-            "edge_weights": EDGE_WEIGHTS,
-            "propagation_factor": PROPAGATION_FACTOR,
-            "propagation_hops": PROPAGATION_HOPS,
-            "synthetic_nodes": [{"node": n, "qname": synthetic_qname(n)} for n in SYNTHETIC_NODES],
-        }
-
-    def set_investigation(
-        self, label: str, status: str = "active", investigation_id: str = ""
-    ) -> dict[str, Any]:
-        """Declare or update the current AGM investigation (explicit task boundary).
-
-        Investigations are the meaningful unit of continuity (not turns). The agent
-        or host calls this to open a new investigation (from the user task) or mark
-        one resolved/abandoned/superseded. Returns {investigation_id, label, status}.
-        The id is generated when omitted. Persisted as runtime meta so the capture
-        path can key events to it.
-        """
-        import uuid
-
-        from trie import activity as activity_mod
-        from trie.attention import INVESTIGATION_STATUSES
-
-        if status not in INVESTIGATION_STATUSES:
-            return _error(
-                "invalid_argument",
-                f"unknown investigation status {status!r}",
-                f"use one of: {', '.join(INVESTIGATION_STATUSES)}.",
-            )
-        inv_id = investigation_id or uuid.uuid4().hex[:12]
-        activity_mod.set_meta(self.root, "agm_investigation_id", inv_id)
-        activity_mod.set_meta(self.root, "agm_investigation_label", label)
-        activity_mod.set_meta(self.root, "agm_investigation_status", status)
-        return {"investigation_id": inv_id, "label": label, "status": status}
-
     def activity(self) -> dict[str, Any]:
-        """Return the live writer status + working-tree stale set for the editor.
+        """Return the live writer status + working-tree stale set.
 
         Reads the ephemeral `.trie/activity.db` (see `trie.activity`). Any process
-        — a terminal `trie sync`, the end-of-turn refresh hook, the desktop's own
-        refresh — updates that DB, so the editor can poll this to glow the
-        currently-syncing file and show a "N stale" badge regardless of which
-        process is doing the work. A crashed writer reads back as idle.
+        — a terminal `trie sync` or the end-of-turn refresh hook — updates that DB,
+        so any client can poll this for live writer status and the stale count
+        regardless of which process is doing the work. A crashed writer reads back as idle.
 
         Returns {status: {...}, pending: {count, stale, head} | null,
         patches: {total_patches, symbol_count, create_count, by_origin}, apply: {...}|null}.
@@ -991,7 +803,7 @@ class TrieTools:
         """Return all symbols in a given source file.
 
         Returns {file_path, symbols: [SymbolDetail, ...]}.
-        Used by the desktop app sidebar file-click to highlight graph nodes.
+        A file-level view over the symbol graph.
         """
         rows = self.store._conn.execute(
             """
@@ -1032,7 +844,7 @@ class TrieTools:
         """Return the whole triefact for a source file: front matter + ordered
         per-symbol sections (prose body, role, fingerprints, source line range).
 
-        The desktop app's triefact view renders this. `file_path` is source-root
+        `file_path` is source-root
         relative (e.g. `trie/sync/writer.py`). Returns
         `{file_path, triefact_path, exists, front_matter, sections: [...]}`;
         `exists` is False (with empty sections) when the file has no triefact yet.
@@ -3323,19 +3135,12 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     server.tool(name="patch_drop")(tools.patch_drop)
     server.tool(name="patch_list")(tools.patch_list)
     server.tool(name="patch_apply")(tools.patch_apply)
-    # Desktop app helpers — project summary + symbols by file + all symbols
+    # Project-level queries.
     server.tool(name="summary")(tools.summary)
     server.tool(name="symbols_by_file")(tools.symbols_by_file)
     server.tool(name="file_triefact")(tools.file_triefact)
     server.tool(name="activity")(tools.activity)
     server.tool(name="blast_radius")(tools.blast_radius)
-    server.tool(name="all_symbols")(tools.all_symbols)
-    server.tool(name="all_edges")(tools.all_edges)
-    server.tool(name="system_model")(tools.system_model)
-    # AGM (Attention Gravity Map) — capture + read + investigation declaration.
-    server.tool(name="record_attention_event")(tools.record_attention_event)
-    server.tool(name="attention")(tools.attention)
-    server.tool(name="set_investigation")(tools.set_investigation)
     return server, tools
 
 
@@ -3353,7 +3158,7 @@ def main() -> None:
     """Console-script entry point: ``trie-mcp <project-dir>``.
 
     Runs the stdio MCP server for the given project. This is the surface
-    external harnesses (including the trie desktop app) spawn as a sidecar.
+    external harnesses spawn as a sidecar.
     """
     import sys
 
