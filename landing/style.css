@@ -350,6 +350,10 @@ a:hover {
   text-align: center;
 }
 
+.demo--tools {
+  margin-top: 36px;
+}
+
 /* ── meaning + intent pair ────────────────────────────────────────────── */
 
 .pair {
