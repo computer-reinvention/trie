@@ -22,13 +22,13 @@ No build step. No package manager. Three files:
 ## Structure
 
 1. **nav** — sticky, anchors to each section, GitHub link
-2. **hero** — "Context infrastructure for coding agents", install
-   command with copy button, fact strip
-3. **the problem** — one lede: agents burn context reconstructing
-   intent from code
-4. **two indexes** — meaning (`triefacts/`) and intent
-   (`triefacts/triediffs/`) side by side, each with a real file excerpt
-5. **the loop** — five numbered steps: edit → record intent → gate →
+2. **hero** — problem-first: "Coding agents start every session from
+   zero", then the fix (meaning + intent index), install command with
+   copy button, fact strip
+3. **meaning + intent** — one record, two halves, joined by a literal
+   `+`; both cards show the same symbol (what it does / why it is that
+   way)
+4. **the loop** — five numbered steps: edit → record intent → gate →
    digest ships with the commit → sync regenerates what drifted;
    payoff is `trie read <symbol> --history`
 6. **tools** — `grep` / `read` / `trace`, plus the self-hosting proof
