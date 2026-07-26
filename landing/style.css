@@ -1,30 +1,11 @@
 /* ───────────────────────────────────────────────────────────────────────────
    trie landing — serious tool page
-   Static, dependency-free. Dark default, light theme via [data-theme=light].
+   Static, dependency-free. Single light theme; no animation.
    ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --bg: #0b0e12;
-  --bg-alt: #0f131a;
-  --panel: #121820;
-  --panel-edge: #1e2733;
-  --ink: #e6ebf1;
-  --ink-dim: #98a5b3;
-  --ink-faint: #5c6875;
-  --accent: #4fd1a5;
-  --accent-dim: rgba(79, 209, 165, 0.12);
-  --red: #f07178;
-  --amber: #e5c07b;
-  --mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto,
-    Helvetica, Arial, sans-serif;
-  --maxw: 1080px;
-  --radius: 8px;
-}
-
-[data-theme="light"] {
-  --bg: #fbfcfd;
-  --bg-alt: #f2f5f8;
+  --bg: #ffffff;
+  --bg-alt: #f4f6f9;
   --panel: #ffffff;
   --panel-edge: #dde4ec;
   --ink: #1a222c;
@@ -34,22 +15,17 @@
   --accent-dim: rgba(14, 143, 102, 0.08);
   --red: #c43e4a;
   --amber: #9a7018;
+  --mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto,
+    Helvetica, Arial, sans-serif;
+  --maxw: 1080px;
+  --radius: 8px;
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
 }
 
 body {
@@ -163,40 +139,6 @@ a:hover {
   .nav__links a:not(.nav__gh) {
     display: none;
   }
-}
-
-.theme-toggle {
-  background: none;
-  border: 1px solid var(--panel-edge);
-  border-radius: 6px;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  color: var(--ink-dim);
-}
-
-.theme-toggle:hover {
-  color: var(--ink);
-  border-color: var(--ink-faint);
-}
-
-.theme-toggle svg {
-  width: 16px;
-  height: 16px;
-}
-
-.icon-sun {
-  display: none;
-}
-
-[data-theme="light"] .icon-sun {
-  display: block;
-}
-
-[data-theme="light"] .icon-moon {
-  display: none;
 }
 
 /* ── hero ─────────────────────────────────────────────────────────────── */
@@ -468,7 +410,7 @@ a:hover {
 /* ── file cards ───────────────────────────────────────────────────────── */
 
 .filecard {
-  background: var(--bg);
+  background: var(--bg-alt);
   border: 1px solid var(--panel-edge);
   border-radius: var(--radius);
   overflow: hidden;
@@ -476,7 +418,7 @@ a:hover {
 
 .section--alt .filecard,
 .panel .filecard {
-  background: color-mix(in srgb, var(--bg) 60%, var(--panel));
+  background: var(--bg-alt);
 }
 
 .filecard figcaption {
@@ -720,27 +662,4 @@ a:hover {
   color: var(--ink-faint);
   font-family: var(--mono);
   font-size: 12.5px;
-}
-
-/* ── reveal (subtle, respects reduced motion) ─────────────────────────── */
-
-.reveal-init {
-  opacity: 0;
-  transform: translateY(12px);
-  transition:
-    opacity 0.5s ease,
-    transform 0.5s ease;
-}
-
-.reveal-in {
-  opacity: 1;
-  transform: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .reveal-init {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
 }
