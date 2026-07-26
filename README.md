@@ -1,3 +1,5 @@
+<img src="landing/logo.svg" width="64" alt="trie logo" />
+
 # trie
 
 > **An index of meaning and intent for your codebase.**
