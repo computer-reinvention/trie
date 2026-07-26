@@ -110,7 +110,9 @@ a:hover {
 
 .nav__logo {
   color: var(--accent);
-  font-size: 12px;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
 }
 
 .nav__links {
