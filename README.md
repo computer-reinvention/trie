@@ -26,6 +26,8 @@ Humans browse the meaning index as a wiki that can't silently rot, and read the 
 
 trie does **not** generate or edit your source code. You (or your agent) own every code change; trie owns the record of what it means and why it happened.
 
+![The write side: an agent edits, its commit is blocked until it records why, sync heals the prose, the digest ships with the commit](landing/demo-loop.gif)
+
 > **Status:** pre-alpha · v0.1 in active development.
 
 ---
@@ -217,6 +219,8 @@ trie read src/slugify:slugify --history
 ---
 
 ## How agents use it
+
+![The read side: a why-question answered in two tool calls and zero file reads, citing the recorded intent](landing/demo-context.gif)
 
 `trie setup` wires a coding agent in one idempotent pass:
 
