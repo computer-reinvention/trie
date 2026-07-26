@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: tests/test_activity.py
 file_fingerprint: 04002d8d8af80b2b98784e08f110cb113e800112ba2de32d7b8e1c9dbae7011a
-last_synced_at: '2026-06-09T10:08:00Z'
+last_synced_at: '2026-07-26T20:28:35Z'
 description: Tests for the SQLite-backed local activity state (trie/activity.py).
 defines:
 - kind: module

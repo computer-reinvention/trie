@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.1.9
 source: trie/activity.py
-file_fingerprint: 87e4d317e8a952a28644bdbbd12fb8fa15773037a096677b90f9b39ead82db63
-last_synced_at: '2026-06-09T10:07:39Z'
+file_fingerprint: b81d54402100e55d8b7665e39110803fb72572719877392c386bc904c5208a4c
+last_synced_at: '2026-07-26T20:27:48Z'
 description: Ephemeral local activity state for trie, backed by SQLite.
 defines:
 - kind: module
@@ -107,7 +107,7 @@ defines:
 - kind: method
   qualified_name: trie/activity:ActivityProgress.on_skip
   lines: 400-403
-incoming_refs: 26
+incoming_refs: 19
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/activity:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=14c1d957e81320f2a43c5f5cc90535b8747974f04adac72d17bd69ae06b4cddc source_ref=2f462a970066470f2a553a12b94d8ecdc7c9d2d9 role=persistence -->
@@ -132,7 +132,7 @@ SQLite schema creating three tables for ephemeral trie activity state.
 <!-- trie:section symbol=trie/activity:db_path fingerprint=23fb5be98a9ec4515c2044254a25da56fe69f828f8d48f301452ebf9bb01a100 body_fp=e09f60174cebdf90d6c74cf8ea6e0642e1c30cdaf89af7312bf4e25994856d11 source_ref=cc1786342572b4c96d926421417b6f3c5cf4ce46 role=util -->
 Returns the path to the activity database file within the project's .trie directory.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/activity:_connect fingerprint=5927a4b7c2aebadbee77c010465dd1de6bf5611df14f8cecb50a9847860291d4 body_fp=0cd5c70b5fdbe1ebea3b54c4e65f21cdc93ca38d43d11e17bd454abe4add3146 source_ref=cc1786342572b4c96d926421417b6f3c5cf4ce46 role=persistence -->
+<!-- trie:section symbol=trie/activity:_connect fingerprint=b537be28250ba75a498addd6d084740480b373fe68dc93dc0179375ad3b43f0a body_fp=0cd5c70b5fdbe1ebea3b54c4e65f21cdc93ca38d43d11e17bd454abe4add3146 source_ref=159836de03874c9d962e001a7754ae78f6e97e63 role=persistence -->
 Opens ephemeral SQLite activity database with WAL journaling and schema initialization.
 
 - Creates `.trie` directory and database file if missing

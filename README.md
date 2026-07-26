@@ -312,7 +312,7 @@ What to know:
 
 - **`trie gate` is the whole contract** — lock + verify + intent + digest, identical to the hook. Exit 1 output is copy-pasteable fix commands, so a gated agent can self-correct.
 - **Order matters on a cold runner**: `trie refresh` first (notes can only be recorded against symbols the graph knows), work, then `sync` → `gate` → commit.
-- **Intent travels with the tree**: recorded notes live in `triefacts/triediffs/.pending.md` (inside the triefact tree, not in `.trie/` cache) until the digest write consumes them at commit — nothing is lost between steps or stashed in runner-local state.
+- **Record and commit in the same job**: staged notes live in the runner-local store until the digest write archives them into `triefacts/triediffs/` at commit — the committed digest is the durable record.
 - **No key?** `trie gate --no-digest` still enforces verify + intent; keyless `trie sync` fails loudly rather than pretending.
 
 ## Adopting trie in a team

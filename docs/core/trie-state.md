@@ -15,7 +15,6 @@ safe to delete.
 .trie/
 ├── graph.db          # the symbol graph (SQLite) — symbols, edges, sections
 ├── graph.head        # fingerprint stamp: what the graph was last built from
-├── system_model.json # cached high-level "model of the system" for the graph view
 ├── activity.db       # ephemeral live state: writer status + working-tree stale set
 └── refresh.lock      # advisory flock held by an in-flight refresh/sync
 ```
@@ -29,8 +28,8 @@ edges between them, and the triefact section metadata joined per symbol
 
 - **Written by:** `trie sync`, `trie refresh`, bootstrap — anything that
   (re)indexes source or ingests triefacts.
-- **Read by:** the MCP navigation tools (`grep`/`read`/`trace`/…), the CLI
-  query commands, and every desktop graph endpoint.
+- **Read by:** the MCP navigation tools (`grep`/`read`/`trace`/…) and the CLI
+  query commands.
 - **Concurrency:** opened with `check_same_thread=False` and guarded by an RLock
   on the hot mutation paths so the parallel sync scheduler's worker threads can
   share one connection.
@@ -49,26 +48,15 @@ working tree against this stamp to decide whether the graph has drifted.
 - **Safe to delete?** Yes — the next refresh re-stamps it. A missing stamp reads
   as "never indexed" and triggers a rebuild.
 
-## `system_model.json` — cached graph-view model
-
-The precomputed high-level model the desktop graph renders: classified +
-scored nodes, role/subsystem component axes, landmark set, and layout hints.
-Computing it is moderately expensive, so it is cached here and served instantly
-to the `/desktop/graph/system-model` endpoint after the first build.
-
-- **Written by:** the system-model builder (on first request / after a rebuild).
-- **Read by:** the desktop `system_model` MCP tool + endpoint.
-- **Safe to delete?** Yes — recomputed on next request.
-
 ## `activity.db` — ephemeral live state
 
 See [`trie/activity.py`](../trie/activity.py) for the authority. This SQLite DB
 holds **transient runtime state only**, shared across the independent processes
 that write to a project (a terminal `trie sync`, the end-of-turn `trie refresh`
-hook, the desktop app's startup refresh). None of them share memory, so the
+hook). None of them share memory, so the
 live status and the stale set live on disk where any process can read them.
 
-WAL mode lets readers (e.g. `trie status`, the editor's activity poll) read
+WAL mode lets readers (e.g. `trie status`, the MCP `activity` tool) read
 while a writer commits. Three tables:
 
 - **`status`** — a single row describing what the active writer is doing right
@@ -85,9 +73,8 @@ while a writer commits. Three tables:
 
 - **Written by:** `ActivityWriter` (wraps every sync/refresh/roles run) and the
   refresh path's `write_pending`/`clear_pending`.
-- **Read by:** `trie status`, the desktop `activity` MCP tool + endpoint
-  (`/desktop/graph/activity`), which the editor polls to glow the
-  currently-syncing file and show the "N stale" badge.
+- **Read by:** `trie status` and the MCP `activity` tool, which any client can
+  poll for live writer status and the "N stale" count.
 - **Safe to delete?** Yes — it is purely live state. A missing DB reads as
   "idle, nothing known"; the next writer recreates it.
 
@@ -110,7 +97,6 @@ system telling you the hook is already doing the work.
 | `triefacts/`        | yes        | via sync ($) | the durable prose + sentinels  |
 | `.trie/graph.db`    | no         | yes (free)   | parsed graph                   |
 | `.trie/graph.head`  | no         | yes (free)   | freshness stamp                |
-| `.trie/system_model.json` | no   | yes (free)   | cached graph-view model        |
 | `.trie/activity.db` | no         | yes (free)   | live writer status + stale set |
 | `.trie/refresh.lock`| no         | n/a          | advisory writer lock           |
 | `debug.jsonl`       | no         | n/a          | durable telemetry (append log) |

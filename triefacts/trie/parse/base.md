@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/parse/base.py
 file_fingerprint: d8355e20b8bb1e4f04ce493c5934c60c199a8abbd145289c06dfa980bcf2dd8e
-last_synced_at: '2026-07-25T10:43:48Z'
+last_synced_at: '2026-07-26T20:28:34Z'
 description: The language-backend contract.
 defines:
 - kind: module
