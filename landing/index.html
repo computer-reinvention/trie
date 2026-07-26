@@ -3,29 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>trie — an index of meaning and intent for your codebase</title>
+    <title>trie — context infrastructure for coding agents</title>
     <meta
       name="description"
-      content="trie maintains two indexes alongside your source tree — what every symbol does, and why every change was made — as plain Markdown, versioned with your code, enforced at commit time. No services. No servers. Just your repo."
+      content="trie keeps two indexes in your repo as plain Markdown: what every symbol does, and why every change was made. Kept fresh by sync, kept honest by a commit gate. No services — plain git."
     />
     <link rel="stylesheet" href="./style.css" />
-    <script>
-      // Apply the saved/preferred theme before paint so there's no flash.
-      (function () {
-        try {
-          var saved = localStorage.getItem("trie-theme");
-          var prefersLight =
-            window.matchMedia &&
-            window.matchMedia("(prefers-color-scheme: light)").matches;
-          var theme = saved || (prefersLight ? "light" : "dark");
-          if (theme === "light") {
-            document.documentElement.setAttribute("data-theme", "light");
-          }
-        } catch (_) {
-          /* localStorage blocked — fall through to dark default */
-        }
-      })();
-    </script>
   </head>
   <body>
     <!-- ─────────────────────────────── NAV ─────────────────────────────── -->
@@ -38,8 +21,8 @@
         <nav class="nav__links">
           <a href="#indexes">indexes</a>
           <a href="#loop">the loop</a>
+          <a href="#tools">tools</a>
           <a href="#in-repo">in your repo</a>
-          <a href="#agents">agents</a>
           <a href="#install">install</a>
           <a
             class="nav__gh"
@@ -47,46 +30,6 @@
             >GitHub ↗</a
           >
         </nav>
-        <button
-          type="button"
-          class="theme-toggle"
-          id="themeToggle"
-          aria-label="Toggle light / dark theme"
-          title="Toggle theme"
-        >
-          <svg
-            class="icon-moon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-          </svg>
-          <svg
-            class="icon-sun"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="4" />
-            <line x1="12" y1="2" x2="12" y2="4" />
-            <line x1="12" y1="20" x2="12" y2="22" />
-            <line x1="2" y1="12" x2="4" y2="12" />
-            <line x1="20" y1="12" x2="22" y2="12" />
-            <line x1="4.93" y1="4.93" x2="6.34" y2="6.34" />
-            <line x1="17.66" y1="17.66" x2="19.07" y2="19.07" />
-            <line x1="4.93" y1="19.07" x2="6.34" y2="17.66" />
-            <line x1="17.66" y1="6.34" x2="19.07" y2="4.93" />
-          </svg>
-        </button>
       </div>
     </header>
 
@@ -98,13 +41,13 @@
           <span class="hero__status">pre-alpha</span>
         </p>
         <h1 class="hero__title">
-          An index of <em>meaning</em> and <em>intent</em><br />
-          for your codebase.
+          Context infrastructure<br />for coding <em>agents</em>.
         </h1>
         <p class="hero__sub">
-          What every symbol does. Why every change was made. Written as plain
-          Markdown next to your source, versioned with your code, and enforced
-          at commit time — <strong>no external services required</strong>.
+          Two indexes, in your repo, as Markdown: <strong>what every symbol
+          does</strong> and <strong>why every change was made</strong>. Kept
+          fresh by sync. Kept honest by a commit gate. No services, no servers
+          — plain git.
         </p>
         <div class="hero__actions">
           <div class="cmd" data-copy>
@@ -124,10 +67,10 @@
           >
         </div>
         <ul class="hero__facts">
-          <li>Markdown in your repo — nothing to host</li>
-          <li>Works with plain <code>git</code></li>
+          <li>Plain Markdown, versioned with the code</li>
           <li>Offline commit gates</li>
-          <li>Python &amp; TypeScript today</li>
+          <li>Nothing to host</li>
+          <li>Python &amp; TypeScript</li>
         </ul>
       </div>
     </section>
@@ -136,11 +79,11 @@
     <section class="section section--tight">
       <div class="container container--narrow">
         <p class="lede">
-          Documentation rots because nothing stops it from rotting. Commit
-          messages describe diffs, not decisions. Six months later the only
-          record of <em>why</em> the code is the way it is — is the code.
-          trie fixes both, with the same mechanism your code already trusts:
-          <strong>version control and a pre-commit gate.</strong>
+          Agents burn context reconstructing intent from code. <code>grep</code>
+          returns bytes. File reads return noise. Commit messages describe
+          diffs, not decisions. trie gives the agent
+          <strong>prose that is guaranteed current</strong> — and makes every
+          session explain its changes to the next one.
         </p>
       </div>
     </section>
@@ -149,25 +92,18 @@
     <section class="section" id="indexes">
       <div class="container">
         <div class="section__head">
-          <h2>Two indexes, kept honest by construction.</h2>
-          <p>
-            Both live in <code>triefacts/</code> at the root of your repo.
-            Both are plain Markdown. Both are checked at every commit.
-          </p>
+          <h2>Two indexes. Both in <code>triefacts/</code>. Both gated.</h2>
         </div>
 
         <div class="grid grid--2">
           <!-- meaning -->
           <div class="panel">
-            <div class="panel__tag">index of meaning</div>
-            <h3>One prose section per symbol.</h3>
+            <div class="panel__tag">meaning</div>
+            <h3>What every symbol does.</h3>
             <p>
-              One source file maps to one triefact. Each function, class, and
-              method gets a section describing what it does and how it connects
-              — regenerated only when the underlying source actually changes,
-              cascade-aware (change a function, its callers' prose refreshes
-              too). Your own notes live in the same files and survive
-              regeneration.
+              One triefact per source file, one section per symbol. Regenerated
+              only when source changes, cascade-aware. Drifted prose blocks the
+              commit.
             </p>
             <figure class="filecard">
               <figcaption>triefacts/src/slugify.md</figcaption>
@@ -188,14 +124,11 @@ to single dashes, trims to `max_len`.</code></pre>
 
           <!-- intent -->
           <div class="panel">
-            <div class="panel__tag panel__tag--accent">index of intent</div>
-            <h3>One note per changed symbol.</h3>
+            <div class="panel__tag panel__tag--accent">intent</div>
+            <h3>Why every change was made.</h3>
             <p>
-              Recorded when the change is made — not reconstructed in a PR
-              description weeks later. A changed symbol with no note
-              <strong>blocks the commit</strong>. Notes are archived per commit
-              as an immutable digest that shows up in your PRs and answers
-              <em>"why?"</em> forever.
+              One note per changed symbol, recorded at edit time. No note, no
+              commit. Archived per commit as an immutable digest.
             </p>
             <figure class="filecard">
               <figcaption>
@@ -224,9 +157,8 @@ the silent CASCADE loss during graph refreshes.
         <div class="section__head">
           <h2>The loop.</h2>
           <p>
-            Intent is captured at edit time, enforced at commit time, and
-            archived with the commit itself. Every step is a plain command;
-            the gates run offline.
+            Each session writes the context the next session reads. Enforced,
+            not hoped for.
           </p>
         </div>
 
@@ -234,22 +166,14 @@ the silent CASCADE loss during graph refreshes.
           <li class="loop__step">
             <div class="loop__num">1</div>
             <div class="loop__body">
-              <h3>Edit code normally.</h3>
-              <p>
-                You — or your agent — change source with the usual tools.
-                trie never generates or edits your code.
-              </p>
+              <h3>The agent edits source.</h3>
+              <p>Normal tools. trie never generates or edits code.</p>
             </div>
           </li>
           <li class="loop__step">
             <div class="loop__num">2</div>
             <div class="loop__body">
-              <h3>Record intent per symbol.</h3>
-              <p>
-                A one-line note for each changed symbol:
-                <em>why</em>, not what. Staged locally; nothing leaves your
-                machine.
-              </p>
+              <h3>The agent records intent — one note per changed symbol.</h3>
               <pre
                 class="loop__cmd"
               ><code>$ trie patch create src/auth:require_auth \
@@ -259,13 +183,7 @@ the silent CASCADE loss during graph refreshes.
           <li class="loop__step">
             <div class="loop__num">3</div>
             <div class="loop__body">
-              <h3>The gate holds the line.</h3>
-              <p>
-                <code>git commit</code> runs <code>trie gate</code>: prose that
-                drifted from source blocks the commit; a changed symbol with no
-                note blocks the commit. Error output is copy-pasteable fix
-                commands.
-              </p>
+              <h3>The gate blocks dishonest commits.</h3>
               <pre class="loop__cmd loop__cmd--gate"><code>git commit
   └─ trie gate
       ├─ verify   prose ↔ source, both directions   <span class="tok-ok">offline</span>
@@ -276,25 +194,21 @@ the silent CASCADE loss during graph refreshes.
           <li class="loop__step">
             <div class="loop__num">4</div>
             <div class="loop__body">
-              <h3>The record ships with the commit.</h3>
+              <h3>The digest ships with the commit.</h3>
               <p>
-                One immutable digest per commit in
-                <code>triefacts/triediffs/</code>, symlinked from
-                <code>TRIE_DIFF.md</code>. It travels in the same push, shows
-                in the same PR, and merges with the same merge.
+                Same push, same PR, same merge —
+                <code>triefacts/triediffs/</code>, one file per commit.
               </p>
             </div>
           </li>
           <li class="loop__step">
             <div class="loop__num">5</div>
             <div class="loop__body">
-              <h3>The meaning index stays fresh.</h3>
+              <h3>Sync regenerates exactly what drifted.</h3>
               <p>
-                <code>trie sync</code> regenerates exactly the prose that
-                drifted — plus the callers of what changed. With an agent hook
-                installed, this happens at the end of every turn.
+                An end-of-turn hook runs it automatically — the graph the next
+                query hits reflects the edit that just happened.
               </p>
-              <pre class="loop__cmd"><code>$ trie sync        <span class="tok-dim"># only what drifted, cascade-aware</span></code></pre>
             </div>
           </li>
         </ol>
@@ -304,23 +218,71 @@ the silent CASCADE loss during graph refreshes.
             <pre><code>$ trie read src/auth:require_auth --history</code></pre>
           </div>
           <p>
-            Six months later: the symbol's current prose, plus every intent
-            note ever recorded against it, in commit order. The story of the
-            code, from the codebase itself.
+            Current prose plus every intent note ever recorded against the
+            symbol, in commit order. <em>Why the code is the way it is</em> —
+            answered from the repo.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ────────────────────────────── TOOLS ────────────────────────────── -->
+    <section class="section" id="tools">
+      <div class="container">
+        <div class="section__head">
+          <h2>What the agent sees.</h2>
+          <p>
+            <code>trie setup</code> overrides the agent's <code>grep</code> and
+            <code>read</code> and adds the graph tools. A dozen speculative
+            file reads become two or three round-trips of prose.
+          </p>
+        </div>
+
+        <div class="grid grid--3">
+          <div class="panel panel--min">
+            <h3><code>grep</code></h3>
+            <p>
+              Searches symbols, not bytes. Hits carry qname, signature,
+              one-liner, and inbound count — relevance is decided in the result
+              row, not by opening files.
+            </p>
+          </div>
+          <div class="panel panel--min">
+            <h3><code>read</code></h3>
+            <p>
+              One call returns a symbol's prose plus one-liners for every
+              caller and callee. <code>--history</code> appends the intent
+              trail.
+            </p>
+          </div>
+          <div class="panel panel--min">
+            <h3><code>trace</code></h3>
+            <p>
+              Blast radius before a change. Call paths between two symbols.
+              Structural questions, answered structurally.
+            </p>
+          </div>
+        </div>
+
+        <div class="agents__note">
+          <p class="agents__proof">
+            trie is built with itself: every commit in
+            <a href="https://github.com/computer-reinvention/trie"
+              >its repository</a
+            >
+            passes the gate it ships, and its <code>triefacts/</code> tree is
+            generated and enforced by its own loop.
           </p>
         </div>
       </div>
     </section>
 
     <!-- ──────────────────────────── IN YOUR REPO ───────────────────────── -->
-    <section class="section" id="in-repo">
+    <section class="section section--alt" id="in-repo">
       <div class="container">
         <div class="section__head">
-          <h2>Everything is in your repo. Nothing else exists.</h2>
-          <p>
-            No hosted index. No sync service. No database server. No dashboard
-            to keep alive. If you can clone the repo, you have all of it.
-          </p>
+          <h2>No product. No service. Just files in git.</h2>
+          <p>If you can clone the repo, you have all of it.</p>
         </div>
 
         <div class="grid grid--split">
@@ -328,107 +290,41 @@ the silent CASCADE loss during graph refreshes.
             <figcaption>your repository</figcaption>
             <pre><code>your-project/
 ├── src/                    <span class="tok-dim">← your code, untouched</span>
-├── triefacts/              <span class="tok-add">← index of meaning (Markdown)</span>
+├── triefacts/              <span class="tok-add">← meaning (Markdown)</span>
 │   ├── src/
 │   │   ├── auth/middleware.md
 │   │   └── slugify.md
-│   └── triediffs/          <span class="tok-add">← index of intent (one per commit)</span>
+│   └── triediffs/          <span class="tok-add">← intent (one digest per commit)</span>
 │       └── 20260725T114949Z-fade5436….md
 ├── TRIE_DIFF.md            <span class="tok-add">← symlink to the latest digest</span>
 ├── trie.toml               <span class="tok-add">← config, committed</span>
 └── .trie/                  <span class="tok-dim">← local cache, gitignored,
-                              safe to delete anytime</span></code></pre>
+                              delete anytime</span></code></pre>
           </figure>
 
           <ul class="checklist">
             <li>
-              <strong>Versioned like code.</strong> Branch it, diff it, blame
-              it, revert it. The indexes for a branch describe that branch.
+              <strong>Versioned like code.</strong> Branch, diff, blame,
+              revert. A branch's indexes describe that branch.
             </li>
             <li>
-              <strong>Reviewed like code.</strong> Prose changes and intent
-              digests appear in the PR diff, next to the code they explain.
+              <strong>Reviewed like code.</strong> Prose and digests appear in
+              the PR diff, next to the code they explain.
             </li>
             <li>
               <strong>Merged like code.</strong> Markdown merges with git's
-              merge. No custom storage format, no migration server.
+              merge.
             </li>
             <li>
-              <strong>Gated like tests.</strong> <code>trie verify</code> and
-              <code>trie intent</code> are offline checks — they run in a
-              pre-commit hook or any CI runner, no API key needed.
+              <strong>Gated like tests.</strong> <code>verify</code> and
+              <code>intent</code> run offline — pre-commit hook or any CI
+              runner, no API key.
             </li>
             <li>
-              <strong>Readable with nothing installed.</strong> It's Markdown.
-              GitHub renders it. Your editor renders it. <code>cat</code>
-              renders it.
-            </li>
-            <li>
-              <strong>Disposable cache, durable record.</strong> The only
-              non-committed state (<code>.trie/</code>) can be deleted and
-              rebuilt from source at any time.
+              <strong>Readable with nothing installed.</strong> GitHub renders
+              it. <code>cat</code> renders it.
             </li>
           </ul>
-        </div>
-      </div>
-    </section>
-
-    <!-- ────────────────────────────── AGENTS ───────────────────────────── -->
-    <section class="section section--alt" id="agents">
-      <div class="container">
-        <div class="section__head">
-          <h2>The working context layer for coding agents.</h2>
-          <p>
-            <code>trie setup</code> wires the indexes into opencode, Claude
-            Code, Cursor, and friends: reading tools resolve questions in
-            prose, and the intent gate makes agents explain their own changes.
-          </p>
-        </div>
-
-        <div class="grid grid--3">
-          <div class="panel panel--min">
-            <h3><code>grep</code> that sees symbols</h3>
-            <p>
-              Searches the symbol graph, not bytes. Every hit returns a qname,
-              signature, one-liner, and centrality — “is this the right
-              function?” is answered in the result row, not by opening the
-              file.
-            </p>
-          </div>
-          <div class="panel panel--min">
-            <h3><code>read</code> that returns context</h3>
-            <p>
-              Reading a symbol returns its prose plus one-liners for every
-              caller and callee. <code>--history</code> appends the intent
-              trail. A dozen speculative file reads become two or three
-              round-trips of prose.
-            </p>
-          </div>
-          <div class="panel panel--min">
-            <h3><code>trace</code> that walks the graph</h3>
-            <p>
-              Blast radius before a change, execution paths between two
-              symbols, entry-point discovery — structural questions answered
-              structurally.
-            </p>
-          </div>
-        </div>
-
-        <div class="agents__note">
-          <p>
-            And on the write side: agents record their intent notes through the
-            same gate humans use. The context the <em>next</em> session reads
-            is guaranteed to include why this one did what it did — the loop
-            closes.
-          </p>
-          <p class="agents__proof">
-            trie is built this way. Every commit in
-            <a href="https://github.com/computer-reinvention/trie"
-              >its own repository</a
-            >
-            passes the gate it ships; its
-            <code>triefacts/</code> tree is generated and enforced by itself.
-          </p>
         </div>
       </div>
     </section>
@@ -437,40 +333,29 @@ the silent CASCADE loss during graph refreshes.
     <section class="section" id="install">
       <div class="container container--narrow">
         <div class="section__head">
-          <h2>Get started.</h2>
+          <h2>Install.</h2>
           <p>
-            Python 3.11+, <code>uv</code>, <code>ripgrep</code>, and an
-            Anthropic API key for prose generation. The gates themselves run
-            offline.
+            Python 3.11+, <code>uv</code>, <code>ripgrep</code>. An Anthropic
+            key for prose generation; the gates run offline.
           </p>
         </div>
 
         <figure class="filecard filecard--steps">
-          <pre><code><span class="tok-dim"># install</span>
-$ uv tool install git+https://github.com/computer-reinvention/trie
+          <pre><code>$ uv tool install git+https://github.com/computer-reinvention/trie
 
-<span class="tok-dim"># initialise: config + symbol graph + optional pre-commit hook</span>
 $ cd your-project
-$ trie init
+$ trie init                  <span class="tok-dim"># config + symbol graph + pre-commit hook</span>
+$ trie setup                 <span class="tok-dim"># wire the agent: tools + turn hook</span>
+$ trie plan                  <span class="tok-dim"># cost preview, free</span>
+$ trie sync --limit 10       <span class="tok-dim"># bootstrap; sample quality first</span>
 
-<span class="tok-dim"># wire up your coding agent (optional)</span>
-$ trie setup
-
-<span class="tok-dim"># see the cost before paying it — free token-count preview</span>
-$ trie plan
-
-<span class="tok-dim"># bootstrap the meaning index, with a guardrail</span>
-$ trie sync --limit 10       <span class="tok-dim"># sample quality on the top-ranked files</span>
-$ trie sync --budget 5.00    <span class="tok-dim"># or cap the spend</span>
-
-<span class="tok-dim"># day-to-day</span>
-$ trie sync                  <span class="tok-dim"># regenerate exactly what drifted</span>
+$ trie sync                  <span class="tok-dim"># day-to-day: only what drifted</span>
 $ git commit                 <span class="tok-dim"># the gate takes it from here</span></code></pre>
         </figure>
 
         <div class="install__links">
           <a class="btn" href="https://github.com/computer-reinvention/trie"
-            >Read the full quickstart on GitHub ↗</a
+            >Full quickstart on GitHub ↗</a
           >
         </div>
       </div>
@@ -481,8 +366,7 @@ $ git commit                 <span class="tok-dim"># the gate takes it from here
       <div class="container footer__inner">
         <div>
           <span class="nav__logo" aria-hidden="true">▲</span>
-          <strong>trie</strong> — an index of meaning and intent for your
-          codebase.
+          <strong>trie</strong> — context infrastructure for coding agents.
         </div>
         <div class="footer__links">
           <a href="https://github.com/computer-reinvention/trie">GitHub</a>
