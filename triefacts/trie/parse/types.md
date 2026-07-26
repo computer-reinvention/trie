@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: trie/parse/types.py
-file_fingerprint: bd859aec8a3e0c094316f6fdba0febc8aeba0c2896ba7cb96d60fa7fdf50001f
-last_synced_at: '2026-06-17T16:41:58Z'
+file_fingerprint: 8b94352b6a4b9a947016ac1013cd439c1acf154f4f15852a43951f17786ea35f
+last_synced_at: '2026-07-26T20:27:48Z'
 description: Language-neutral value types for the parse layer.
 defines:
 - kind: module
   qualified_name: trie/parse/types:__module__
-  lines: 1-96
+  lines: 1-95
 - kind: constant
   qualified_name: trie/parse/types:KINDS
   lines: 29-40
@@ -19,10 +19,10 @@ defines:
   lines: 54-68
 - kind: class
   qualified_name: trie/parse/types:Reference
-  lines: 72-87
+  lines: 72-86
 - kind: class
   qualified_name: trie/parse/types:FileData
-  lines: 91-95
+  lines: 90-94
 incoming_refs: 25
 outgoing_refs: 0
 ---
@@ -47,7 +47,7 @@ Immutable dataclass representing a single parsed symbol emitted by a language ba
 - `parent_class`: set only for `method`, `enum_member`, and `property` kinds; holds the container's name
 - `decorators`: raw decorator lines, e.g. `("@classmethod",)`
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/types:Reference fingerprint=58f1cbed064e1bda8a24c85fbd120aeeffecad12b13befafc688008b9631d06f body_fp=d06cd34ed7dccc3dce51777542e285c629996a9a0aae73243be0b9cc1a845152 source_ref=a174d61d063c82dd1e024ea9f6b0f62628a9d783 role=model -->
+<!-- trie:section symbol=trie/parse/types:Reference fingerprint=bc7d710ddc71b093d46034ec42adfc79d5722545fe3088df3dffe543002d1c8f body_fp=d06cd34ed7dccc3dce51777542e285c629996a9a0aae73243be0b9cc1a845152 source_ref=3e644d475721db755030fe34fb383847776db950 role=model -->
 Immutable dataclass representing a single typed, outbound edge from one symbol to another within a parsed file.
 
 - `target_qname`: resolved qualified name persisted as a string before DB lookup of `symbol_id`

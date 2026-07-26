@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/check.py
 file_fingerprint: 4d3434ff06d42849c109b1f44fba3822707e8a0c90131d255d551fe78926dcd2
-last_synced_at: '2026-07-20T09:55:07Z'
+last_synced_at: '2026-07-26T20:28:35Z'
 defines:
 - kind: module
   qualified_name: trie/check:__module__
@@ -28,7 +28,7 @@ defines:
 - kind: function
   qualified_name: trie/check:_check_project_inner
   lines: 66-174
-incoming_refs: 23
+incoming_refs: 22
 outgoing_refs: 7
 ---
 <!-- trie:section symbol=trie/check:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=e75d59ec8e0be55d54ce1acd9587d0bf4fd631bb2424d3f9513a7179e684f3a9 source_ref=b13418772d94c7dea0e494653a1d4aadcca3a1c6 role=change-detection -->

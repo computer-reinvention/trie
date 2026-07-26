@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/parse/references.py
 file_fingerprint: edd5ec0dd0e18bf21761ae1336a7e920dabad906e1dcfb285945b206026a56e6
-last_synced_at: '2026-07-25T10:44:38Z'
+last_synced_at: '2026-07-26T20:28:41Z'
 description: Reference extraction via tree-sitter.
 defines:
 - kind: module
@@ -47,7 +47,7 @@ defines:
 - kind: constant
   qualified_name: trie/parse/references:__all__
   lines: 458-458
-incoming_refs: 21
+incoming_refs: 19
 outgoing_refs: 12
 ---
 <!-- trie:section symbol=trie/parse/references:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a8d190298548018a1815d39892ee468daee2697b58134c9028d373077fce37fd source_ref=c6775babce628ee17704cd01d13e5bd434d47d37 role=source-parsing -->
@@ -127,7 +127,7 @@ Locates the tree-sitter node for a symbol by matching line numbers against funct
 - Searches top-level definitions and class methods one level deep
 - Returns None if no matching node is found at the symbol's start_line
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/references:extract_file_data fingerprint=631856d37302e0d51611faa040bb5c2ebef3ec2788a232ab7b5ba1517c082ab3 body_fp=6f78e68f7b6cc860cb771e4f696de37db5bc839efb27332c50ff470d00baa97b source_ref=c9e7ab14ee34a35fa4a54bcd01dfaddd1082be0d role=parsing hist_mass=0.3@1784541326 -->
+<!-- trie:section symbol=trie/parse/references:extract_file_data fingerprint=631856d37302e0d51611faa040bb5c2ebef3ec2788a232ab7b5ba1517c082ab3 body_fp=6f78e68f7b6cc860cb771e4f696de37db5bc839efb27332c50ff470d00baa97b source_ref=c9e7ab14ee34a35fa4a54bcd01dfaddd1082be0d role=parsing -->
 Parses a Python file and extracts both its symbol definitions and typed reference edges using tree-sitter.
 
 - `source_root`: Optional root path for computing qualified names; defaults to file's parent directory  

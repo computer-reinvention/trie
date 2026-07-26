@@ -1378,7 +1378,7 @@ export default tool({
     reason: tool.schema
       .string()
       .optional()
-      .describe("Why the cascade needs to know about this change."),
+      .describe("Why this change was made — the intent, not the mechanics."),
   },
   async execute(args, context) {
     const flags: string[] = [

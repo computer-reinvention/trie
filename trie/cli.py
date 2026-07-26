@@ -204,7 +204,7 @@ def _activity_progress(
 ) -> Iterator[ProgressCallback]:
     """Like `_progress_callback`, but also mirrors progress into the shared
     `.trie/` activity state (`status.json` + `activity.jsonl`) so any process —
-    a terminal sync, the hook, the desktop app — has a live, readable view of
+    a terminal sync or the hook — has a live, readable view of
     what this run is doing. The Rich/JSONL reporter and the activity feed both
     fire.
     """
@@ -217,24 +217,13 @@ def _activity_progress(
             yield ActivityProgress(writer, inner=adapter)
     finally:
         adapter.close()
-        # AGM: after a sync/refresh run has folded historical mass into every
-        # regenerated triefact, advance the attention-store watermark so the next
-        # run's recurrence window starts here. Per-run (not per-file) so every
-        # file in this run saw the same "since last fold" window. Best-effort.
-        if op in ("sync", "bootstrap", "refresh", "roles"):
-            try:
-                from trie.sync.attention_fold import advance_fold_watermark
-
-                advance_fold_watermark(project_root)
-            except Exception:
-                pass
 
 
 class _JsonlProgress:
     """ProgressCallback that emits one JSON object per line to a stream.
 
     This is the machine-readable counterpart to `_ProgressAdapter`. Hosts that
-    drive trie as a subprocess (the desktop app's startup refresh, CI) parse
+    drive trie as a subprocess (CI, editor plugins) parse
     these lines to render their own progress UI instead of scraping Rich output.
 
     Event schema (every line is a complete JSON object with a `kind` field):
@@ -882,7 +871,7 @@ def refresh_cmd(
         help=(
             "Emit machine-readable JSON-Lines progress to stdout instead of a "
             'Rich progress bar. Each line is one event ({"kind": ...}); hosts '
-            "driving trie as a subprocess (the desktop app) parse this to render "
+            "driving trie as a subprocess parse this to render "
             "their own status UI. Implies quiet Rich output."
         ),
     ),
@@ -1031,7 +1020,7 @@ def _refresh_progress(
 def _emit_freshness_json(result: FreshnessResult, *, mode: str) -> None:
     """Emit the terminal `summary` JSONL event for a refresh outcome.
 
-    Mirrors `_report_freshness` but as a structured event the desktop app keys
+    Mirrors `_report_freshness` but as a structured event subprocess hosts key
     on to close out its status display.
     """
     inc = result.incremental

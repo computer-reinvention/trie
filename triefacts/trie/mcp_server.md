@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: trie/mcp_server.py
-file_fingerprint: 7329f07dcbafa8779ab3806f60785b6fb0a7a941e82a11b5953237ec8ce13cec
-last_synced_at: '2026-07-25T11:49:36Z'
+file_fingerprint: 5c2e0367220f5d603f53cc3efc1a52cca83489eb4edddde10a25638debc225ac
+last_synced_at: '2026-07-26T20:28:18Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
 - kind: module
   qualified_name: trie/mcp_server:__module__
-  lines: 1-3370
+  lines: 1-3175
 - kind: class
   qualified_name: trie/mcp_server:RipgrepNotFoundError
   lines: 77-89
@@ -52,7 +52,7 @@ defines:
   lines: 247-266
 - kind: class
   qualified_name: trie/mcp_server:TrieTools
-  lines: 269-3280
+  lines: 269-3092
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.__init__
   lines: 283-312
@@ -99,145 +99,127 @@ defines:
   qualified_name: trie/mcp_server:TrieTools.patch_apply
   lines: 715-717
 - kind: method
-  qualified_name: trie/mcp_server:TrieTools.all_symbols
-  lines: 721-753
-- kind: method
-  qualified_name: trie/mcp_server:TrieTools.all_edges
-  lines: 755-772
-- kind: method
-  qualified_name: trie/mcp_server:TrieTools.system_model
-  lines: 774-804
-- kind: method
   qualified_name: trie/mcp_server:TrieTools.summary
-  lines: 806-832
-- kind: method
-  qualified_name: trie/mcp_server:TrieTools.record_attention_event
-  lines: 834-861
-- kind: method
-  qualified_name: trie/mcp_server:TrieTools.attention
-  lines: 863-904
-- kind: method
-  qualified_name: trie/mcp_server:TrieTools.set_investigation
-  lines: 906-932
+  lines: 719-745
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.activity
-  lines: 934-988
+  lines: 747-800
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.symbols_by_file
-  lines: 990-1029
+  lines: 802-841
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.file_triefact
-  lines: 1031-1092
+  lines: 843-904
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep
-  lines: 1096-1228
+  lines: 908-1040
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._maybe_text_match_fallback
-  lines: 1230-1375
+  lines: 1042-1187
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._fuzzy_prose_fallback
-  lines: 1377-1453
+  lines: 1189-1265
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._text_match_in_scope
-  lines: 1455-1554
+  lines: 1267-1366
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._attribute_text_matches_to_symbols
-  lines: 1556-1579
+  lines: 1368-1391
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._candidate_matches_predicate
-  lines: 1581-1607
+  lines: 1393-1419
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._parse_predicate
-  lines: 1609-1681
+  lines: 1421-1493
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.read
-  lines: 1685-1748
+  lines: 1497-1560
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._strip_line_ref
-  lines: 1751-1762
+  lines: 1563-1574
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._resolve_in_root
-  lines: 1764-1774
+  lines: 1576-1586
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._triefact_view
-  lines: 1776-1864
+  lines: 1588-1676
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._pending_patches_for_file
-  lines: 1866-1907
+  lines: 1678-1719
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._read_symbol
-  lines: 1909-1982
+  lines: 1721-1794
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._digest_history
-  lines: 1984-2005
+  lines: 1796-1817
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._stale_qnames_for_file
-  lines: 2007-2029
+  lines: 1819-1841
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._section_fingerprint
-  lines: 2031-2049
+  lines: 1843-1861
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._staleness_notes
-  lines: 2051-2090
+  lines: 1863-1902
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._prose_for
-  lines: 2092-2129
+  lines: 1904-1941
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._neighbour_summaries
-  lines: 2131-2156
+  lines: 1943-1968
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.trace
-  lines: 2160-2314
+  lines: 1972-2126
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_str
-  lines: 2318-2477
+  lines: 2130-2289
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_str_all
-  lines: 2479-2592
+  lines: 2291-2404
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.read_source
-  lines: 2594-2652
+  lines: 2406-2464
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.write_file
-  lines: 2654-2714
+  lines: 2466-2526
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.find_files
-  lines: 2716-2787
+  lines: 2528-2599
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_entry_points
-  lines: 2789-2872
+  lines: 2601-2684
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_symbol
-  lines: 2874-2975
+  lines: 2686-2787
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_symbol_and_neighbours
-  lines: 2977-3003
+  lines: 2789-2815
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_symbol
-  lines: 3005-3089
+  lines: 2817-2901
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_symbol_references
-  lines: 3091-3154
+  lines: 2903-2966
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.trace_flow
-  lines: 3156-3214
+  lines: 2968-3026
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_flow
-  lines: 3216-3260
+  lines: 3028-3072
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._suggest_for_qname
-  lines: 3264-3280
+  lines: 3076-3092
 - kind: function
   qualified_name: trie/mcp_server:build_server
-  lines: 3286-3339
+  lines: 3098-3144
 - kind: function
   qualified_name: trie/mcp_server:run_stdio
-  lines: 3342-3349
+  lines: 3147-3154
 - kind: function
   qualified_name: trie/mcp_server:main
-  lines: 3352-3369
+  lines: 3157-3174
 incoming_refs: 13
-outgoing_refs: 68
+outgoing_refs: 67
 ---
 <!-- trie:section symbol=trie/mcp_server:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=7fe3b54f1ffb2c5cf0bf8fb619733212b2701ce59504815e5ef75a07ada4e768 source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 role=mcp-server -->
 MCP server exposing trie's triefact tree and symbol graph to coding agents over stdio.
@@ -330,10 +312,10 @@ Find the qname of the symbol whose line range contains `lineno`, preferring nest
 
 Iterates through the ordered list, updating `enclosing` with each symbol that brackets `lineno`. Since symbols are start-ordered, the last matching symbol is the most deeply nested one.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=1c5a2b825d0719fe749753bc722aedf2227addc6f3f7fbad9629cf77206a604c body_fp=a769a84e65f78a71d956ed0ef62edd090d0291de094a3832a1dcc88a362eca24 source_ref=77098c0a1179a2a9ecd9ad8b5616de5b457df217 role=orchestration -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=3355dd5c359acbd8ca1b80332d68d3d98f2a357e00ea2c961b54da7f08f4c790 body_fp=384daf997b9c12048b7f7b493d139bcf04114db4d969fde00f01aa8c9b62c942 source_ref=df8a5cd8065a92017ff6c2705df9e5afb2e8cd8f role=orchestration -->
 Core interface for MCP tools as plain methods, testable without transport.
 
-Owns the Store and project config for process lifetime. Implements patch tools (patch, batch_patch, create_symbol, delete_symbol, rename_symbol, blast_radius, patch_drop, patch_list, preview, commit), desktop app helpers (all_symbols, all_edges, system_model, summary, record_attention_event, attention, set_investigation, activity, symbols_by_file, file_triefact), three core operations (`grep`, `read`, `trace`), and extended wrappers (grep_str, grep_str_all, read_source, write_file, find_files, grep_entry_points, grep_symbol, grep_symbol_and_neighbours, explain_symbol, explain_symbol_references, trace_flow, explain_flow). All methods return structured dicts with error envelopes; telemetry is captured on each call with configurable event names to distinguish MCP vs CLI usage. `commit` always routes through `record_intent` (no code generation, no apply lock, no backend dispatch) — the multi-backend path has been removed. `patch_apply` is now an alias for `commit(session_note=...)` rather than a no-argument deprecated stub. `preview` imports from `trie.edits.pipeline` (was `trie.edits.apply`). `_triefact_view` prepends a staleness banner when any section's fingerprint predates the current source; `_read_symbol` prepends staleness notes via `_staleness_notes`; `explain_symbol` likewise folds staleness notes into the response. `read`, `_triefact_view`, `_read_symbol`, `explain_symbol`, and `explain_symbol_references` accept a `history=True` flag to append the symbol's or file's intent trail from the session-digest archive.
+Owns the Store and project config for process lifetime. Implements patch tools (patch, batch_patch, create_symbol, delete_symbol, rename_symbol, blast_radius, patch_drop, patch_list, preview, commit), project-level queries (summary, activity, symbols_by_file, file_triefact), three core operations (`grep`, `read`, `trace`), and extended wrappers (grep_str, grep_str_all, read_source, write_file, find_files, grep_entry_points, grep_symbol, grep_symbol_and_neighbours, explain_symbol, explain_symbol_references, trace_flow, explain_flow). All methods return structured dicts with error envelopes; telemetry is captured on each call with configurable event names to distinguish MCP vs CLI usage. `commit` always routes through `record_intent` (no code generation). `patch_apply` is an alias for `commit(session_note=...)`. `preview` imports from `trie.edits.pipeline`. `_triefact_view` prepends a staleness banner when any section's fingerprint predates the current source; `_read_symbol` prepends staleness notes via `_staleness_notes`; `explain_symbol` likewise folds staleness notes into the response. `read`, `_triefact_view`, `_read_symbol`, `explain_symbol`, and `explain_symbol_references` accept a `history=True` flag to append the symbol's or file's intent trail from the session-digest archive.
 
 - `event_name`: controls telemetry event name emitted on each call ("mcp_call" for MCP server, "cli_call" for CLI)
 - `store`: SQLite store containing symbol graph and triefact metadata
@@ -399,7 +381,7 @@ Stages a rename patch for an existing symbol to `new_name` (the local identifier
 - Returns: patch_id, qname, new_name, and list of reference qnames
 - Commit fails if the symbol definition cannot be rewritten unambiguously
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.blast_radius fingerprint=e00d5ec65a2ed5125dafaab8333322a45b0bbf7309d98d76cfff8491f0262b9d body_fp=aa112e9ab438f72b61a977ee93f17830df1514634f4fa71d1a72f6bdb6052f94 source_ref=f2057a3fdb019667d44454cdddf8000d6523bfa7 role=domain -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.blast_radius fingerprint=3b543f280fc04f6a21787caa478637a7f569d71115bd6809c7e1b52c26a1dc68 body_fp=aa112e9ab438f72b61a977ee93f17830df1514634f4fa71d1a72f6bdb6052f94 source_ref=df8a5cd8065a92017ff6c2705df9e5afb2e8cd8f role=domain -->
 Computes the cascade blast radius of editing a symbol using graph traversal.
 
 - Returns dict with qname, file path, direct hop count, cascade list with hop distances, and total cascade count
@@ -437,32 +419,7 @@ Archive all pending patch notes as intent via `record_intent`; no code is genera
 <!-- trie:section symbol=trie/mcp_server:TrieTools.patch_apply fingerprint=024a0904ecda7d9180f99812c988ecdbacfd6a753be4dfca14b95fdde5164453 body_fp=43930a6144854de6e6143dfb9822a12bf664a28d827de60b14b7c4c8abc77a1a source_ref=c921b380767d3408daed50f993e502b6ddb15ca3 role=api -->
 Back-compat alias for `TrieTools.commit()`; now accepts and forwards an optional `session_note` instead of always passing an empty string.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.all_symbols fingerprint=acced3bb257297d000ce63a4915aebd229274ba022dc35993e41f4906e0673ec body_fp=55d00a3a67706f204e48c5585f9a383cfc1a19e7acce6a4178bf7f6d3baa5daf source_ref=77098c0a1179a2a9ecd9ad8b5616de5b457df217 role=api -->
-TrieTools.all_symbols returns all project symbols sorted by rank_by, bypassing grep's empty predicate guard.
-
-- `rank_by`: sorting criterion, defaults to "inbound_count"
-- `limit`: maximum symbols to return, defaults to 5000
-- Returns: dict with "hits" list containing full SymbolDetail records plus historical_mass field
-<!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.all_edges fingerprint=c10de1ac433089bf91a5cf68f746777bec3ef4cef890bac76788f14f86c3bfc6 body_fp=89de7974f52a1b1afccffed13aa2ff45ac08d35db23cda9a023cc245b133503b source_ref=31da51020b7add0a40187e2904d7841c0e4651f1 role=api -->
-Return all call-graph edges for the desktop app's initial graph population.
-
-- `limit`: maximum number of edges to return (default 50000)
-- Returns `{edges: [{from, to, kind}, ...]}` — flat list of directed edges from SQLite with edge type
-<!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.system_model fingerprint=fe36511f156259aef3c557ed945db2d58f19c14ada29b8d2a465f45e7340abb3 body_fp=71862974933431ff42fd6266048672915dd4a8b6aed7f06ee2d70c2e9de8353c source_ref=31da51020b7add0a40187e2904d7841c0e4651f1 role=api -->
-Returns a high-level system model for desktop graph visualization with classified nodes, axis summaries, and landmarks.
-
-- `landmark_limit`: maximum number of landmark symbols to include in the L1 view (default 160)
-- `include_tests`: whether to include test symbols flagged as `is_test` (default False)
-- returns: dict with `{nodes, axes: {role, subsystem}, landmarks, stats}` containing graph topology and metadata
-- nodes are classified as door/hub/bedrock/exit/internal/orphan with salience scores and layout positions
-- includes aggregated component groups and thresholded flow edges for architectural overview
-- results cached on disk by graph fingerprint for instant repeat calls
-- injects live AGM historical mass per node after cache read (decays continuously)
-- pure graph analysis with no LLM calls required
-<!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.summary fingerprint=ed9f6804bf456d31b6628a2ffc2d73eb903a7c3040160f5b6347896061dec46b body_fp=b1de55753ce5e944089a958c45d4a2f6c8f163328e8984a93635a45f5946f2d3 source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 role=mcp-server -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.summary fingerprint=f324310250bed2399715e1f298b6e9f05079ff8db11dff383e0cf9f9a439648b body_fp=b1de55753ce5e944089a958c45d4a2f6c8f163328e8984a93635a45f5946f2d3 source_ref=df8a5cd8065a92017ff6c2705df9e5afb2e8cd8f role=domain -->
 TrieTools returns project-level aggregate statistics by executing SQL count queries against the graph database.
 
 - `project_name`: directory name of the project root
@@ -473,44 +430,21 @@ TrieTools returns project-level aggregate statistics by executing SQL count quer
 - `total_edges`: count of call-graph edges between symbols
 - `trie_version`: package version string or "unknown"
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.record_attention_event fingerprint=5bf0dd0087c2575839e9d87bf24d3ae86a2c9cf1fb352ada11db485b654ff230 body_fp=d8238d19b91315568bd3f4c10de7b77653e3d98ee3172d1fef0fdfc81d890bac source_ref=31da51020b7add0a40187e2904d7841c0e4651f1 role=persistence -->
-TrieTools.record_attention_event records one AGM attention event to persistent storage for replay and historical mass calculation.
-
-- `type`: must be one of grep, read, trace, or write
-- Returns weight value from EVENT_WEIGHTS for the event type
-<!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.attention fingerprint=5ab5ec0e0188c77d3f593de541cea84ed2a185871e7a1334dd67c3795f14bbc4 body_fp=15d149a55f8379c77f034ece299949c0a499da45f4ab1c47143994dcf4afa0ae source_ref=31da51020b7add0a40187e2904d7841c0e4651f1 role=api -->
-TrieTools.attention returns recent AGM attention events and constant configuration tables for the desktop's live attention model.
-
-- `since`: unix timestamp cutoff for event retrieval (default 0.0 for all events)
-- Returns events list with timestamps, types, targets, and session metadata plus configuration constants
-- Desktop uses this to hydrate/replay its live attention simulation without hard-coding weights or parameters
-<!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.set_investigation fingerprint=991af81dcc0e286701e6fa41be10d8801f2907aa3e152d267fc7569957fbe1c9 body_fp=ca1c3686c63281961c2e8d812d3be098e4ddb6d75e8d0e478d4c8f8dbde0ba17 source_ref=31da51020b7add0a40187e2904d7841c0e4651f1 role=api -->
-Declare or update the current AGM investigation (explicit task boundary).
-
-The TrieTools method persists investigation metadata (id, label, status) to runtime storage so the attention capture path can key events to it. Investigations represent meaningful units of continuity beyond individual turns.
-
-- **label**: human-readable description of the investigation/task
-- **status**: must be one of the valid investigation statuses from `trie.attention` 
-- **investigation_id**: auto-generated when omitted (12-char UUID hex prefix)
-- **Returns**: dict with investigation_id, label, and status
-<!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.activity fingerprint=9fe4f42c234d76aa74b4596b31236ff937284e79fc9501ae3e1a191782486338 body_fp=130f441ba10806d9c22863021b38b028d23a9c9efef22f6278e1c8116d9c8bd4 source_ref=2eb1969800e5124c94db178fe9d69fe146ad89ac role=api -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.activity fingerprint=97a479f532fa896bd8ea704a8a54caafc97e86e2693c6730dc8ff29ba51ac13e body_fp=130f441ba10806d9c22863021b38b028d23a9c9efef22f6278e1c8116d9c8bd4 source_ref=df8a5cd8065a92017ff6c2705df9e5afb2e8cd8f role=api -->
 TrieTools.activity returns live writer status, stale file set, and patch summary for editor polling.
 
 - Reads ephemeral `.trie/activity.db` for sync process state
 - Returns dict with `status` object (state, op, pid, current_file, etc), `pending` object (count, stale files, head) or null, `patches` summary (counts by origin), and `apply` object when patch application is active
 - Enables editor to show sync progress, stale file badges, and patch status regardless of which process is syncing
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.symbols_by_file fingerprint=7327f1e7efcb1aa7fac79a7727cf492e4e245e2c515b9a12885e1bc6f275c1eb body_fp=c8ad00c51cc8cb0f9ba66d2dad0a4e7325165c931755b1888857def48c88f307 source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 role=mcp-server -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.symbols_by_file fingerprint=d7a64c13443f0221d0ad7fd1df8ac09b24489a77317402484899b99181d047bd body_fp=c8ad00c51cc8cb0f9ba66d2dad0a4e7325165c931755b1888857def48c88f307 source_ref=df8a5cd8065a92017ff6c2705df9e5afb2e8cd8f role=persistence -->
 TrieTools.symbols_by_file returns all symbols in a given source file with their metadata.
 
 - Returns dict with `file_path` and `symbols` list containing symbol details
 - Symbols ordered by start line ascending within the file
 - Used by desktop app sidebar to highlight corresponding graph nodes on file click
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.file_triefact fingerprint=3c41b032bf487c41094e3b5f9fa082c10a3e49fb37af694dea6fb92da57dd2d7 body_fp=ed47071f8ef4d957aa8e62c01f0c75928e3cf695b48192f01df7f9649e5b7be0 source_ref=f2057a3fdb019667d44454cdddf8000d6523bfa7 role=api -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.file_triefact fingerprint=9d0df0145723d2004e0426877e7774869efafb56b45201fdcfdd231014878dec body_fp=ed47071f8ef4d957aa8e62c01f0c75928e3cf695b48192f01df7f9649e5b7be0 source_ref=df8a5cd8065a92017ff6c2705df9e5afb2e8cd8f role=api -->
 TrieTools.file_triefact returns the complete triefact for a source file with front matter and symbol sections.
 
 - `file_path`: source-root relative path like `trie/sync/writer.py`
@@ -779,15 +713,15 @@ Generate suggestion text for `not_found` errors by fuzzy-matching the failed qna
 - Uses qualified name matching first, then falls back to local name matching if no qname matches
 - Returns None only when no fuzzy matches are found (rare case)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:build_server fingerprint=5493cf022116b60348bfb7eb49780fa3a1b95da706afc39aee505d178bdb0675 body_fp=713748c5f8d19b55ca39df2ddc2fb109990be31a92d5bde35aebec58a78f6f56 source_ref=c8b279d53ea4a7a3c856c698ff3b034c835ca920 role=orchestration -->
+<!-- trie:section symbol=trie/mcp_server:build_server fingerprint=ccada3c83ab2a413e5211220ba4e05071524543fed482f54060ec01e2e03e392 body_fp=2a1c5e4cb0c6b63ce51f4789ac9ff91aeaea4fb3e3838ead0e0885cd7334e661 source_ref=df8a5cd8065a92017ff6c2705df9e5afb2e8cd8f role=orchestration -->
 Construct an MCP server with all trie tools registered from a TrieTools instance.
 
 - Returns tuple of (FastMCP server, TrieTools) for testing and CLI reuse
 - Registers 11 core tools: grep/read/trace family plus extended search/explain functions
 - Registers 4 file tools: grep_str_all, find_files, read_source, write_file
 - Registers 10 edit tools: adds `batch_patch` to the create/modify/delete/rename workflow with preview/commit
-- Registers 8 desktop app helpers for graph visualization and file triefacts
-- Registers 3 AGM tools for attention event capture and investigation tracking
+- Registers 5 project-level query tools: summary, symbols_by_file, file_triefact, activity, blast_radius
+- AGM tools and desktop-only helpers (all_symbols, all_edges, system_model) are no longer registered
 <!-- trie:end -->
 <!-- trie:section symbol=trie/mcp_server:run_stdio fingerprint=c57b100fd07ba8bcfcaedebb2648cbe5949b2106b69128d814bb6c633382c744 body_fp=8a8cba0ff5e958f81c55546e70cad6b2d11b39ce9a25aa725ed997e48c4d1089 source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 role=mcp-server -->
 Run the MCP server over stdio for the project at `project_root`.
@@ -795,6 +729,6 @@ Run the MCP server over stdio for the project at `project_root`.
 - Configures stdout and stderr for line buffering to ensure prompt output
 - Blocks until the parent process closes the pipe
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:main fingerprint=67ee5d4f7f32c1a0df4b7add041eecedf6d74e8c4032e8c7bdff5f91552fedd9 body_fp=87be6759d2b659a0120598ba3d2790afe461e3254accc39dd95c1e74c8d2d5d6 source_ref=c8b279d53ea4a7a3c856c698ff3b034c835ca920 role=entrypoint -->
+<!-- trie:section symbol=trie/mcp_server:main fingerprint=cae2a0ae09ead6d8ca05631fe03f2b4e857ad2666fbccf4fd92eb04c469dd2ac body_fp=87be6759d2b659a0120598ba3d2790afe461e3254accc39dd95c1e74c8d2d5d6 source_ref=df8a5cd8065a92017ff6c2705df9e5afb2e8cd8f role=entrypoint -->
 Parse `sys.argv[1]` as a project directory and delegate to `run_stdio`, exiting with an error message if the argument is missing or the path does not exist.
 <!-- trie:end -->

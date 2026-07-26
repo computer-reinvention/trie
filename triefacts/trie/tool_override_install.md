@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.9
 source: trie/tool_override_install.py
-file_fingerprint: 454bcbc037e29af61f4c2f165819693baa803ba8831f514b5e6cb404afcfff3a
-last_synced_at: '2026-07-25T11:01:56Z'
+file_fingerprint: 7ab72e8a04badb2b9c92561c243949cc3320313686c458b45c156b3083eec96d
+last_synced_at: '2026-07-26T20:27:48Z'
 description: 'Tool-override installation: replace an agent''s built-in tools with
   trie wrappers.'
 defines:
@@ -244,7 +244,7 @@ Renders TypeScript code for an opencode `explain_flow.ts` tool that wraps `trie 
 - Spawns `trie explain-flow <symbol1> <symbol2>` subprocess via Bun
 - Returns stdout on exit codes 0-1, throws error on other codes
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_patch fingerprint=87ca7e6e5fad1c25ad0ebdc34636de4e56c7ac31657928b83cfc7eb87af3f64a body_fp=e1a92fe20ddfa6618f2874b6cd776bf5b348b2bf9583760d06219934041fbf4e source_ref=362c4b6c531c2f801d60fbc3df61114f11e65391 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_patch fingerprint=cb5bd6abec03b5d1f633c8b50b354af994e53930ed2be2bed6e75c68a9dc5a82 body_fp=e1a92fe20ddfa6618f2874b6cd776bf5b348b2bf9583760d06219934041fbf4e source_ref=d68b2a621544f7b2b53dd1026d3e0f702b51e1b0 role=io -->
 Renders the TypeScript source for an opencode `patch.ts` tool that posts implementation notes against symbols.
 
 - Returns complete TypeScript tool definition that calls `trie patch create`

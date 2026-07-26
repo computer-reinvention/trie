@@ -55,10 +55,6 @@ def backfill_section_records(
                     # Restore the role tag from the persisted sentinel so a graph.db
                     # rebuild recovers roles from disk without re-running the LLM.
                     role=section.role,
-                    # Likewise restore AGM historical mass from the sentinel — the
-                    # triefact is the source of truth, this column is rebuildable cache.
-                    hist_mass=section.historical_mass,
-                    hist_mass_ts=section.historical_mass_ts,
                 )
 
 
@@ -560,17 +556,6 @@ def sync_single_file(
             front_matter["outgoing_refs"] = outbound
 
         triefact.front_matter = front_matter
-
-        # AGM: fold cross-session historical mass into each section's sentinel
-        # before render, so the cognitive-importance signal lands in the same
-        # write that regenerated the prose (no extra diff churn). Best-effort —
-        # a missing/empty attention store simply decays existing mass forward.
-        try:
-            from trie.sync.attention_fold import fold_historical_mass
-
-            fold_historical_mass(triefact, project_root=project_root)
-        except Exception:
-            pass
 
         write_path.parent.mkdir(parents=True, exist_ok=True)
         write_path.write_text(triefact.render())
