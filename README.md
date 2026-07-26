@@ -5,7 +5,9 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](#license)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](#status--roadmap)
-[![Tests](https://img.shields.io/badge/tests-819%20passing-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/tests-768%20passing-brightgreen.svg)](#)
+
+**[Website](https://computerreinvention.com/trie/)** · **[Documentation](https://computerreinvention.com/trie/docs.html)**
 
 ---
 
