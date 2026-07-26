@@ -10,8 +10,8 @@ parser.
 validator and doc that enumerates kinds imports it from here rather than
 hardcoding a string list, so adding a kind is a one-line change.
 
-`EDGE_KINDS` mirrors the relationship vocabulary for `Reference.kind` (the AGM
-typed edges).
+`EDGE_KINDS` mirrors the relationship vocabulary for `Reference.kind` (the typed
+edges of the reference graph).
 """
 
 from __future__ import annotations
@@ -75,11 +75,10 @@ class Reference:
     `target_qname` is the resolved target's qualified name (e.g. `src/foo:bar`). It's a string
     so it can be persisted before the target's symbol_id is looked up in the DB.
 
-    `kind` is the relationship type (AGM typed edges): one of `calls`, `references`,
-    `imports`, `contains`, `inherits`, `implements`. The resolver assigns the most
-    specific kind it can derive from the AST; ambiguous bare-identifier uses default
-    to `references` and call-position uses to `calls`. `depends_on` from the AGM PRD
-    is intentionally not produced — there is no AST construct for it.
+    `kind` is the relationship type: one of `calls`, `references`, `imports`,
+    `contains`, `inherits`, `implements`. The resolver assigns the most specific
+    kind it can derive from the AST; ambiguous bare-identifier uses default to
+    `references` and call-position uses to `calls`.
     """
 
     src_qname: str

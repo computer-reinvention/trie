@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/parse/typescript.py
 file_fingerprint: 8ed78333715704973c2af03310ca7683007b5ed9b9054cba7f383b326b21c015
-last_synced_at: '2026-07-25T10:43:52Z'
+last_synced_at: '2026-07-26T20:28:56Z'
 description: TypeScript / TSX symbol extraction via tree-sitter.
 defines:
 - kind: module
@@ -154,7 +154,7 @@ Return `True` if `stmt` is an `export_statement` node.
 <!-- trie:section symbol=trie/parse/typescript:_unwrap fingerprint=322af535a5be66568bc0271e62ea3b11b5bea4697fa31a641af125e4ca0f338f body_fp=099ff62c155bf6695cfd985bcc444168a4c9688b495cb22891db34597d514be8 source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=parsing -->
 Unwrap an `export_statement` node to its inner declaration, returning the node itself for any other statement type.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:extract_symbols fingerprint=2e0b9a6b20e40c45a1d4b3d82c447a40235978962d458779ebc8d92b89379720 body_fp=2b2cb1654f0de2558c6366fb9ecc4c416fa957c9242712d6a2e7c3c3d1ca367d source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=parsing -->
+<!-- trie:section symbol=trie/parse/typescript:extract_symbols fingerprint=2e0b9a6b20e40c45a1d4b3d82c447a40235978962d458779ebc8d92b89379720 body_fp=2b2cb1654f0de2558c6366fb9ecc4c416fa957c9242712d6a2e7c3c3d1ca367d source_ref=d880c8b49d280136d0173df964ea2ad6ed2dc33e role=parsing -->
 Parse a TypeScript/TSX file and return a deduplicated, source-ordered list of `Symbol` objects.
 
 - `source_root`: used to compute qualified names; defaults to `file_path.parent`
@@ -164,42 +164,42 @@ Parse a TypeScript/TSX file and return a deduplicated, source-ordered list of `S
 <!-- trie:section symbol=trie/parse/typescript:_dispatch_top_level fingerprint=4d9d2d9abed1d89ca7da7c787440b1240cf8bfee033cdacd9337a561994444b6 body_fp=a03a2e280fea6bdf5ddc7a59d7db383e75cfc639f7d6df3d93ea85d5fab0ae0c source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=orchestration -->
 Route a single unwrapped top-level AST node to the appropriate builder and call `emit` for each resulting `Symbol`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:_build_callable fingerprint=8f47807cfe2c98a2038376a560e1ddee5878bc51d82773b6feab3bfcff3a1430 body_fp=d379e7bab0cab8a92208c3ed3ae997da38edd90a1e79d93138a3550817c71f65 source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=parsing -->
+<!-- trie:section symbol=trie/parse/typescript:_build_callable fingerprint=8f47807cfe2c98a2038376a560e1ddee5878bc51d82773b6feab3bfcff3a1430 body_fp=d379e7bab0cab8a92208c3ed3ae997da38edd90a1e79d93138a3550817c71f65 source_ref=d880c8b49d280136d0173df964ea2ad6ed2dc33e role=parsing -->
 Build a `Symbol` for a TypeScript function, method, or arrow function declaration node.
 
 - `parent`: non-`None` sets `kind` to `"method"` and prefixes the qualified name.
 - `name_override`: substitutes the name inferred from the node (used for named arrow bindings).
 - Body-less declarations (signatures) fingerprint the signature text instead of the body tokens.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:_build_type_decl fingerprint=b6d2addb616e7abb99c314f2af134db079a94ceea805c249fddd86a9304610bf body_fp=a3d0c177d4936434539bb05704cbb189c6809371b6059c380de55401bc6e7445 source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=parsing -->
+<!-- trie:section symbol=trie/parse/typescript:_build_type_decl fingerprint=b6d2addb616e7abb99c314f2af134db079a94ceea805c249fddd86a9304610bf body_fp=a3d0c177d4936434539bb05704cbb189c6809371b6059c380de55401bc6e7445 source_ref=d880c8b49d280136d0173df964ea2ad6ed2dc33e role=parsing -->
 Build a `Symbol` for a TypeScript `interface` or `type` alias declaration node.
 
 - `kind`: `"interface"` uses header-only signature; `"type"` uses full node text as signature.
 - `outer`: statement node used for line numbers and JSDoc lookup.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:_walk_class fingerprint=57eee964fc337461271450846922c7e777dfa50c85a1eaad680d7013fa4757ba body_fp=9b5b0e34ac29c6519f2a873803dc4f78d25782d362378453cfc0ca40e36bbff7 source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=parsing -->
+<!-- trie:section symbol=trie/parse/typescript:_walk_class fingerprint=57eee964fc337461271450846922c7e777dfa50c85a1eaad680d7013fa4757ba body_fp=9b5b0e34ac29c6519f2a873803dc4f78d25782d362378453cfc0ca40e36bbff7 source_ref=d880c8b49d280136d0173df964ea2ad6ed2dc33e role=parsing -->
 Emit a `Symbol` for the class itself plus child `Symbol`s for each method and property member found in its body.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:_build_property fingerprint=25af33d78bebf54bceac94eaee1888d9edec8bb83d03d007f9ef1b0308b91ec0 body_fp=be2aa5645cd1fb3e7548c068ca13e262f57aab91701232d71b3d4bd58249d3e7 source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=parsing -->
+<!-- trie:section symbol=trie/parse/typescript:_build_property fingerprint=25af33d78bebf54bceac94eaee1888d9edec8bb83d03d007f9ef1b0308b91ec0 body_fp=be2aa5645cd1fb3e7548c068ca13e262f57aab91701232d71b3d4bd58249d3e7 source_ref=d880c8b49d280136d0173df964ea2ad6ed2dc33e role=parsing -->
 Build a `property` `Symbol` from a class field/property member node, returning `None` if no name can be resolved.
 
 - `class_private`: propagates owning-class privacy to all its members.
 - `is_public` is `False` if class is private, name starts with `_`/`#`, or node carries a `private` accessibility modifier.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:_walk_enum fingerprint=d7501b7700ebe39d5606fb10c2aa4b0e120baa2088e7efea0f647dc4478d1c4d body_fp=579c48f7b98d926d36aab5b952f9520c3eccb71d2a8ae61f07f74cb97a0cdf97 source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=parsing -->
+<!-- trie:section symbol=trie/parse/typescript:_walk_enum fingerprint=d7501b7700ebe39d5606fb10c2aa4b0e120baa2088e7efea0f647dc4478d1c4d body_fp=579c48f7b98d926d36aab5b952f9520c3eccb71d2a8ae61f07f74cb97a0cdf97 source_ref=d880c8b49d280136d0173df964ea2ad6ed2dc33e role=parsing -->
 Emit one `enum` `Symbol` plus one `enum_member` `Symbol` per body member for a `enum_declaration` node.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:_walk_lexical fingerprint=680c218a0d2b4a97923551c480018696512b6f687273e1f521283ffc15432df4 body_fp=76795976a86373871799537800f8e336c1fb92a57fbf7f0083078d2747183610 source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=parsing -->
+<!-- trie:section symbol=trie/parse/typescript:_walk_lexical fingerprint=680c218a0d2b4a97923551c480018696512b6f687273e1f521283ffc15432df4 body_fp=76795976a86373871799537800f8e336c1fb92a57fbf7f0083078d2747183610 source_ref=d880c8b49d280136d0173df964ea2ad6ed2dc33e role=parsing -->
 Extract `Symbol` entries from a top-level `const`/`let`/`var` declaration node, classifying arrow/function-valued bindings as `function` and all others as `constant`; skips destructuring targets.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:_walk_ambient fingerprint=aac55d121e7c78fa6feeb67b2b0a431421154482a27a2d4b59c904203c72127c body_fp=7114712a49a8c78356a27887977d5eaf62e65781c2543181c9f548d9bdc3f38a source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=parsing -->
+<!-- trie:section symbol=trie/parse/typescript:_walk_ambient fingerprint=aac55d121e7c78fa6feeb67b2b0a431421154482a27a2d4b59c904203c72127c body_fp=7114712a49a8c78356a27887977d5eaf62e65781c2543181c9f548d9bdc3f38a source_ref=d880c8b49d280136d0173df964ea2ad6ed2dc33e role=parsing -->
 Extract `Symbol` entries from an `ambient_declaration` node, handling both `declare module "x" { ... }` blocks and bare `declare function/const` statements.
 
 - `declare module "x"` emits a `module` symbol keyed by the literal string name, plus nested type/function declarations keyed under that name.
 - Bare declarations are attributed to `module_key` (the file's own module).
 - Returns `(Symbol, Node)` pairs; returns an empty list if the inner node is absent or unrecognised.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:_build_module_symbol fingerprint=ef3ae1cb0137211c60f839420aac00a41047816a13951bbe84a49a72a17bc6c4 body_fp=cca9db4e50282470cb313377d110d7e32f14e566f750fa384bbf7dde4e2dbebc source_ref=a0e9825b04cc3b11bb861f7ea147d26db3dcace3 role=parsing -->
+<!-- trie:section symbol=trie/parse/typescript:_build_module_symbol fingerprint=ef3ae1cb0137211c60f839420aac00a41047816a13951bbe84a49a72a17bc6c4 body_fp=cca9db4e50282470cb313377d110d7e32f14e566f750fa384bbf7dde4e2dbebc source_ref=d880c8b49d280136d0173df964ea2ad6ed2dc33e role=parsing -->
 Build a synthetic `__module__` `Symbol` from top-level AST nodes not claimed by any already-extracted symbol, excluding imports and comments.
 
 - `consumed`: line ranges already owned by extracted symbols; used to skip those nodes.

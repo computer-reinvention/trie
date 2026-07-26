@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/sync/bootstrap.py
 file_fingerprint: 3bc374880d5785934f4c89da315b1c63c82799a144cfe4b9844418ca0524acc4
-last_synced_at: '2026-07-25T10:44:29Z'
+last_synced_at: '2026-07-26T20:28:57Z'
 defines:
 - kind: module
   qualified_name: trie/sync/bootstrap:__module__

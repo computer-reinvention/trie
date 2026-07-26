@@ -14,7 +14,8 @@ constants and non-symbol `__module__` regions are already indexed and patchable
 (the spec's assumptions were wrong; the failures were stale-graph artifacts).
 Only an optional no-LLM `--line-edit` optimisation remains, deferred.
 
-**Genuinely remaining:** EXT-9 (multi-language indexing — the structural
+**Genuinely remaining:** more languages beyond Python + TypeScript/TSX (EXT-9
+delivered the backend registry and the TS backend — the structural
 unlock), and the deliberately-out-of-scope EXT-5 (binaries), EXT-6 (dir
 listing — partly covered by `find`), EXT-10 (external dirs).
 
@@ -283,5 +284,6 @@ synced project; all are fixed in the same change set.
 3. ✅ EXT-7 — found already addressed (constants + `__module__` patchable); only
    an optional no-LLM `--line-edit` remains, deferred.
 4. ✅ EXT-8 (`trie write`) — done.
-5. ⬜ EXT-9 (multi-language) — the structural unlock; the main remaining work.
+5. ✅ EXT-9 (multi-language) — backend registry + TypeScript/TSX shipped;
+   further languages are additive.
    This is what still forces `fs_*` for non-Python code.
