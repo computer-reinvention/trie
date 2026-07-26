@@ -80,18 +80,19 @@
       <div class="container">
         <figure class="demo">
           <video
-            src="./demo-loop.mp4"
-            poster="./demo-loop-poster.jpg"
+            src="./demo.mp4"
+            poster="./demo-poster.jpg"
             autoplay
             loop
             muted
             playsinline
-            aria-label="20-second demo: an agent edits code, its commit is blocked until it records why, it syncs the prose fresh, and the commit passes with its digest."
+            aria-label="50-second demo: an agent investigates a bug, fixes it, and is blocked from committing until it records the discovered cause; without trie that knowledge is lost; six months later another agent answers the why-question in two tool calls from the recorded intent."
           ></video>
           <figcaption>
-            The write side: the agent edits, its commit is blocked until it
-            records the why, sync heals the prose, the digest ships with the
-            commit. No human in the loop after the task.
+            The whole loop: an agent investigates, fixes, and is gated until
+            the discovered cause is recorded. Without trie, that knowledge
+            evaporates. Six months later, another agent answers the
+            why-question in two tool calls.
           </figcaption>
         </figure>
       </div>
@@ -277,23 +278,6 @@ rejected with 401 before the handler runs.
             </p>
           </div>
         </div>
-
-        <figure class="demo demo--tools">
-          <video
-            src="./demo-context.mp4"
-            poster="./demo-context-poster.jpg"
-            autoplay
-            loop
-            muted
-            playsinline
-            aria-label="19-second demo: an agent answers a why-question in two tool calls — grep returns a ranked symbol with a one-liner, read returns prose plus history, and the answer cites the recorded intent."
-          ></video>
-          <figcaption>
-            The read side: a why-question answered in two tool calls and zero
-            file reads — the answer cites the intent note recorded in the
-            first demo.
-          </figcaption>
-        </figure>
 
         <div class="agents__note">
           <p class="agents__proof">
