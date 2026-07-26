@@ -325,6 +325,31 @@ a:hover {
   color: var(--accent);
 }
 
+/* ── demo video ───────────────────────────────────────────────────────── */
+
+.section--demo {
+  padding: 56px 0;
+}
+
+.demo {
+  margin: 0;
+}
+
+.demo video {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--panel-edge);
+  border-radius: var(--radius);
+  background: var(--bg-alt);
+}
+
+.demo figcaption {
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
 /* ── meaning + intent pair ────────────────────────────────────────────── */
 
 .pair {
