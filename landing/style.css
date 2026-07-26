@@ -314,6 +314,52 @@ a:hover {
   font-size: 16.5px;
 }
 
+.section__head h2 em {
+  font-style: normal;
+  color: var(--accent);
+}
+
+/* ── meaning + intent pair ────────────────────────────────────────────── */
+
+.pair {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.pair__plus {
+  align-self: center;
+  font-family: var(--mono);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--accent);
+  padding: 0 4px;
+  user-select: none;
+}
+
+.pair__caption {
+  margin-top: 24px;
+  color: var(--ink-dim);
+  font-size: 15px;
+  max-width: 720px;
+}
+
+.pair__caption em {
+  color: var(--ink);
+}
+
+@media (max-width: 860px) {
+  .pair {
+    grid-template-columns: 1fr;
+  }
+
+  .pair__plus {
+    justify-self: center;
+    padding: 0;
+  }
+}
+
 .lede {
   font-size: clamp(18px, 2.4vw, 22px);
   line-height: 1.55;

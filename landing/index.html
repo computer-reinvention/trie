@@ -19,7 +19,7 @@
           trie
         </a>
         <nav class="nav__links">
-          <a href="#indexes">indexes</a>
+          <a href="#indexes">meaning + intent</a>
           <a href="#loop">the loop</a>
           <a href="#tools">tools</a>
           <a href="#in-repo">in your repo</a>
@@ -44,10 +44,10 @@
           Context infrastructure<br />for coding <em>agents</em>.
         </h1>
         <p class="hero__sub">
-          Two indexes, in your repo, as Markdown: <strong>what every symbol
-          does</strong> and <strong>why every change was made</strong>. Kept
-          fresh by sync. Kept honest by a commit gate. No services, no servers
-          — plain git.
+          One index in your repo, as Markdown:
+          <strong>meaning&nbsp;+&nbsp;intent</strong> — what every symbol
+          does, and why it is that way. Kept fresh by sync. Kept honest by a
+          commit gate. No services, no servers — plain git.
         </p>
         <div class="hero__actions">
           <div class="cmd" data-copy>
@@ -88,66 +88,71 @@
       </div>
     </section>
 
-    <!-- ─────────────────────────── TWO INDEXES ─────────────────────────── -->
+    <!-- ─────────────────────────── MEANING + INTENT ────────────────────── -->
     <section class="section" id="indexes">
       <div class="container">
         <div class="section__head">
-          <h2>Two indexes. Both in <code>triefacts/</code>. Both gated.</h2>
+          <h2><em>meaning</em> + <em>intent</em></h2>
+          <p>
+            One record, two halves. Both live in <code>triefacts/</code>,
+            both are plain Markdown, both are gated at commit. Here is the
+            same symbol on both sides:
+          </p>
         </div>
 
-        <div class="grid grid--2">
+        <div class="pair">
           <!-- meaning -->
           <div class="panel">
             <div class="panel__tag">meaning</div>
-            <h3>What every symbol does.</h3>
+            <h3>What the symbol does.</h3>
             <p>
-              One triefact per source file, one section per symbol. Regenerated
-              only when source changes, cascade-aware. Drifted prose blocks the
-              commit.
+              One section per symbol, one triefact per source file. Regenerated
+              when the source changes. Drifted prose blocks the commit.
             </p>
             <figure class="filecard">
-              <figcaption>triefacts/src/slugify.md</figcaption>
-              <pre><code><span class="tok-dim">---
-source: src/slugify.py
-defines:
-  - { kind: function, qualified_name: "src/slugify:slugify" }
-incoming_refs: 2
----</span>
+              <figcaption>triefacts/src/auth/middleware.md</figcaption>
+              <pre><code><span class="tok-dim">source: src/auth/middleware.py</span>
 
-<span class="tok-h">## `slugify(text, max_len=60) -> str`</span>
+<span class="tok-h">## `require_auth(handler) -> handler`</span>
 
-Normalizes text to a URL-safe slug: strips accents
-via NFKD, lowercases, collapses non-alphanumerics
-to single dashes, trims to `max_len`.</code></pre>
+Wraps a route handler with a session check.
+Requests with a missing or expired token are
+rejected with 401 before the handler runs.
+
+<span class="tok-dim">Called by:</span> routes/admin · routes/api</code></pre>
             </figure>
           </div>
+
+          <div class="pair__plus" aria-hidden="true">+</div>
 
           <!-- intent -->
           <div class="panel">
             <div class="panel__tag panel__tag--accent">intent</div>
-            <h3>Why every change was made.</h3>
+            <h3>Why it is that way.</h3>
             <p>
-              One note per changed symbol, recorded at edit time. No note, no
-              commit. Archived per commit as an immutable digest.
+              One note per changed symbol, recorded at edit time. A missing
+              note blocks the commit. Archived per commit as a digest.
             </p>
             <figure class="filecard">
-              <figcaption>
-                triefacts/triediffs/20260725T114949Z-fade5436….md
-              </figcaption>
-              <pre><code><span class="tok-h">## Patches use their sqlite table end-to-end —
-   2026-07-25 (parent f6e3e069)</span>
+              <figcaption>triefacts/triediffs/20260725T1149Z-….md</figcaption>
+              <pre><code><span class="tok-h">## Expired sessions must fail closed
+   2026-07-25 · commit fade5436</span>
 
-The patches table is re-keyed on qname, eliminating
-the silent CASCADE loss during graph refreshes.
+<span class="tok-mod">~</span> src/auth/middleware:require_auth
+  <span class="tok-add">"expired tokens must 401, not 500 — see #241"</span>
 
-<span class="tok-dim">### Changes</span>
-<span class="tok-mod">~</span> store:Store.add_patch — qname-keyed insert;
-  typo guard stays for live symbols
-<span class="tok-add">+</span> store:Store.mark_patches_applied — the apply seal
-<span class="tok-del">−</span> trie/pending_intent — module removed at the root</code></pre>
+<span class="tok-mod">~</span> tests/test_auth:test_expired_token_401
+  <span class="tok-add">"pins the fail-closed contract"</span></code></pre>
             </figure>
           </div>
         </div>
+
+        <p class="pair__caption">
+          <code>trie read src/auth/middleware:require_auth</code> answers
+          <em>what</em>. Add <code>--history</code> and it answers
+          <em>why</em> — every note ever recorded against the symbol, in
+          commit order.
+        </p>
       </div>
     </section>
 
