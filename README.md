@@ -21,7 +21,7 @@ trie fixes both, in the repo, with the mechanism your code already trusts: versi
 
 Humans browse the meaning index as a wiki that can't silently rot, and read the intent index as the story of each commit. For coding agents, the two indexes are the working context layer — `trie setup` wires them in:
 
-- **Reading:** the agent's built-in `grep` and `read` are overridden to hit the indexes first. `grep` searches the symbol graph and returns matches *with one-liners*; `read <qname>` returns a symbol's prose plus one-liners for every caller and callee; `trace` walks the reference graph; `read --history` replays the intent trail. A question like "what happens when an unauthenticated request hits /admin?" resolves in two or three round-trips of prose instead of a dozen speculative file reads.
+- **Reading:** the agent's built-in `grep` and `read` are overridden to hit the indexes first. `grep` searches the symbol graph and returns matches *with one-liners*; `read <qname>` returns a symbol's prose plus one-liners for every caller and callee; `trace` walks the reference graph; `read --history` replays the intent trail. Questions about the codebase resolve in a few round-trips of prose instead of a dozen speculative file reads.
 - **Writing:** the agent edits source with its normal tools — then records a one-line note per changed symbol (`patch`, or `batch_patch` for many) and archives them with `patch_apply`. The pre-commit `trie intent` gate blocks the commit until every changed symbol carries its note, so the context layer the *next* session reads is guaranteed to include why this one did what it did.
 
 trie does **not** generate or edit your source code. You (or your agent) own every code change; trie owns the record of what it means and why it happened.
@@ -69,10 +69,10 @@ trie verify                   # offline: prose matches source, both directions
 trie intent                   # offline: every changed symbol carries a note
 
 # 8. Query either index from a shell (same JSON envelopes the MCP tools return)
-trie grep --name require_auth
-trie read src/auth/middleware:require_auth            # meaning
-trie read src/auth/middleware:require_auth --history  # + intent trail
-trie trace src/graph/store:Store.replace_all_edges --direction callers
+trie grep --name slugify
+trie read src/slugify:slugify             # meaning
+trie read src/slugify:slugify --history   # + intent trail
+trie trace src/slugify:slugify --direction callers
 ```
 
 ### The commit loop
@@ -135,7 +135,7 @@ ADR links. Regeneration preserves it byte-for-byte.
 The naive "docs per file" approach rots on the first refactor. trie's guarantees are mechanical:
 
 - **Fingerprints.** Each section sentinel carries a hash of the source symbol (whitespace/comment-normalized — formatting churn never triggers regeneration) and a hash of the prose body. `trie verify` compares both directions offline: source that outran its prose, and prose that was hand-edited inside a generated section. Drift is a build break, not a TODO.
-- **The cascade.** Change `slugify()` and the reference graph knows `posts:make_url` and `feeds:item_url` call it — their prose regenerates in the same pass, so descriptions of callers don't quietly go stale. Hub symbols (>20 inbound references by default) cap the fan-out so one edit can't invalidate the world.
+- **The cascade.** When a symbol changes, the reference graph knows its callers describe it — their prose regenerates in the same pass, so it doesn't quietly go stale. Hub symbols (>20 inbound references by default) cap the fan-out so one edit can't invalidate the world.
 - **Stale warnings on read.** If prose *is* momentarily behind the source (mid-session, before a sync), every read surface says so — `⚠ STALE PROSE … run trie sync` — instead of serving outdated text as truth.
 - **Scoped regeneration.** `trie sync` touches only stale sections plus their cascade. `trie refresh` (run automatically by the agent turn hook) rebuilds the symbol graph without LLM calls; fresh clones and `git pull` never auto-spend.
 
@@ -160,10 +160,10 @@ Code changes say *what*; they rarely say *why*. trie makes the why a first-class
 #    trie never generates or modifies code.
 
 # 2. Record why, per touched symbol (one or two sentences):
-trie patch create src/slugify:slugify -n "Trim trailing dashes — slugs ending in '-' broke the CDN cache key"
+trie patch create src/slugify:slugify -n "trim trailing dashes; they leaked into generated URLs"
 
 # 3. Commit the notes to the intent ledger (generates nothing):
-trie patch apply -N "Fix CDN cache misses caused by malformed slugs"
+trie patch apply -N "normalize slug output"
 ```
 
 Agents do the same through the `patch` / `batch_patch` / `create_symbol` / `delete_symbol` / `rename_symbol` tools. `patch apply` requires a real session note (the unifying intent) when more than one symbol is pending — junk like "fix" or "wip" is rejected, because that note becomes the title of the commit's digest.
@@ -188,14 +188,13 @@ Deliberately conservative scoping: formatting and line shifts never gate (normal
 At commit time, the hook fuses the recorded notes (stated intent) with the triefact prose deltas (observed effect) into one immutable digest file:
 
 ```markdown
-## Fix CDN cache misses caused by malformed slugs — 2026-07-25 (parent bdadb22)
+## normalize slug output — 2026-07-25 (parent bdadb22)
 
 <≤120-word narrative synthesized from the notes and the prose diff>
 
 ### Changes
 - ~ src/slugify:slugify — "…collapses non-alphanumerics…" → "…trims to max_len
   without leaving a trailing dash."
-- + src/slugify:_strip_accents — "Strip accents via NFKD normalization."
 ```
 
 - One file per commit under `triefacts/triediffs/`; `TRIE_DIFF.md` at the repo root is a symlink to the latest. In a PR, each digest appears as a brand-new file — pure additions, never a diff of a diff.
@@ -209,8 +208,8 @@ At commit time, the hook fuses the recorded notes (stated intent) with the trief
 trie read src/slugify:slugify --history
 # …prose, callers, callees…
 # history (2)
-#   2026-07-25 · ~ src/slugify:slugify — Trim trailing dashes — slugs ending in '-' broke the CDN cache key
-#     Fix CDN cache misses caused by malformed slugs
+#   2026-07-25 · ~ trim trailing dashes; they leaked into generated URLs
+#     ↳ normalize slug output
 ```
 
 `--history` works on `trie read` (symbols and whole files), `trie explain-symbol`, and `trie explain-symbol-refs`, and as an opt-in flag on the corresponding agent tools. Default reads are unchanged — the trail costs tokens only when asked for.
