@@ -37,17 +37,20 @@
     <section class="hero" id="top">
       <div class="container">
         <p class="hero__kicker">
-          <a href="../">computer reinvention</a> / 01 — trie ·
+          <a href="../">computer reinvention</a> / 01 — trie · context
+          infrastructure for coding agents ·
           <span class="hero__status">pre-alpha</span>
         </p>
         <h1 class="hero__title">
-          Context infrastructure<br />for coding <em>agents</em>.
+          Coding agents start every session<br />from <em>zero</em>.
         </h1>
         <p class="hero__sub">
-          One index in your repo, as Markdown:
-          <strong>meaning&nbsp;+&nbsp;intent</strong> — what every symbol
-          does, and why it is that way. Kept fresh by sync. Kept honest by a
-          commit gate. No services, no servers — plain git.
+          They re-derive your codebase by grep and guesswork, burn half their
+          context doing it, and record nothing for the next session. trie ends
+          that: a <strong>meaning&nbsp;+&nbsp;intent</strong> index in your
+          repo — what every symbol does, why it is that way — kept fresh by
+          sync, kept honest by a commit gate. Plain Markdown. Plain git. No
+          services.
         </p>
         <div class="hero__actions">
           <div class="cmd" data-copy>
@@ -72,19 +75,6 @@
           <li>Nothing to host</li>
           <li>Python &amp; TypeScript</li>
         </ul>
-      </div>
-    </section>
-
-    <!-- ──────────────────────────── THE PROBLEM ────────────────────────── -->
-    <section class="section section--tight">
-      <div class="container container--narrow">
-        <p class="lede">
-          Agents burn context reconstructing intent from code. <code>grep</code>
-          returns bytes. File reads return noise. Commit messages describe
-          diffs, not decisions. trie gives the agent
-          <strong>prose that is guaranteed current</strong> — and makes every
-          session explain its changes to the next one.
-        </p>
       </div>
     </section>
 
@@ -189,7 +179,7 @@ rejected with 401 before the handler runs.
             <div class="loop__num">3</div>
             <div class="loop__body">
               <h3>The gate blocks dishonest commits.</h3>
-              <pre class="loop__cmd loop__cmd--gate"><code>git commit
+              <pre class="loop__cmd"><code>git commit
   └─ trie gate
       ├─ verify   prose ↔ source, both directions   <span class="tok-ok">offline</span>
       ├─ intent   every changed symbol has a note   <span class="tok-ok">offline</span>
@@ -291,7 +281,7 @@ rejected with 401 before the handler runs.
         </div>
 
         <div class="grid grid--split">
-          <figure class="filecard filecard--tree">
+          <figure class="filecard">
             <figcaption>your repository</figcaption>
             <pre><code>your-project/
 ├── src/                    <span class="tok-dim">← your code, untouched</span>

@@ -289,10 +289,6 @@ a:hover {
   border-bottom: 1px solid var(--panel-edge);
 }
 
-.section--tight {
-  padding: 56px 0;
-}
-
 .section--alt {
   background: var(--bg-alt);
 }
@@ -360,29 +356,11 @@ a:hover {
   }
 }
 
-.lede {
-  font-size: clamp(18px, 2.4vw, 22px);
-  line-height: 1.55;
-  color: var(--ink-dim);
-}
-
-.lede strong {
-  color: var(--ink);
-}
-
-.lede em {
-  color: var(--ink);
-}
-
 /* ── grids & panels ───────────────────────────────────────────────────── */
 
 .grid {
   display: grid;
   gap: 24px;
-}
-
-.grid--2 {
-  grid-template-columns: repeat(2, 1fr);
 }
 
 .grid--3 {
@@ -395,7 +373,6 @@ a:hover {
 }
 
 @media (max-width: 860px) {
-  .grid--2,
   .grid--3,
   .grid--split {
     grid-template-columns: 1fr;
