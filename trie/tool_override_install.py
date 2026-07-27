@@ -1641,7 +1641,7 @@ export default tool({
     "code yourself). Dependent callers are reported so you can review the " +
     "blast radius; the note is archived as delete intent on `patch_apply`. " +
     "For symbols already gone from the graph, use the CLI form: " +
-    "`trie patch create <qname> -n \"...\" --gone`.",
+    "`trie patch create <qname> -n \\"...\\" --gone`.",
   args: {
     qname: tool.schema
       .string()
