@@ -726,3 +726,13 @@ class TypeScriptBackend:
 
     def system_prompt(self) -> str:
         return TS_SYSTEM_PROMPT
+
+    def resolver(self):
+        """No type-aware resolver paired yet — tree-sitter-only extraction.
+
+        TypeScript has the same method-dispatch gap as Python; a future
+        `ReferenceResolver` (e.g. a typescript-language-server LSP client) slots
+        in here without touching the extraction pipeline. Returns `None` today,
+        so behaviour is unchanged.
+        """
+        return None

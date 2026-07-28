@@ -64,6 +64,7 @@ The most-referenced public symbols — start reading here.
 - [test_refresh_lock.md](tests/test_refresh_lock.md) — Tests for the refresh lock + queue.
 - [test_registry.md](tests/test_registry.md)
 - [test_reporter.md](tests/test_reporter.md)
+- [test_resolver.md](tests/test_resolver.md) — Tests for the tree-sitter + resolver seam.
 - [test_roles.md](tests/test_roles.md) — Tests for role tagging: durable persistence, derived taxonomy, and the
 - [test_scan.md](tests/test_scan.md)
 - [test_scheduler.md](tests/test_scheduler.md) — Tests for the wave-based file scheduler (trie/sync/scheduler.py).
@@ -144,10 +145,16 @@ The most-referenced public symbols — start reading here.
 - [python.md](trie/parse/python.md)
 - [references.md](trie/parse/references.md) — Reference extraction via tree-sitter.
 - [registry.md](trie/parse/registry.md) — Language-backend registry — dispatch by file extension.
+- [resolver.md](trie/parse/resolver.md) — The reference-resolver contract — tree-sitter's type-aware supplement.
 - [ts_resolve.md](trie/parse/ts_resolve.md) — TypeScript module-specifier resolution — config + syntax, never type inference.
 - [types.md](trie/parse/types.md) — Language-neutral value types for the parse layer.
 - [typescript.md](trie/parse/typescript.md) — TypeScript / TSX symbol extraction via tree-sitter.
 - [typescript_refs.md](trie/parse/typescript_refs.md) — TypeScript reference (edge) extraction via tree-sitter.
+
+### trie/parse/resolvers
+
+- [__init__.md](trie/parse/resolvers/__init__.md) — Concrete `ReferenceResolver` implementations, one per analysis engine.
+- [jedi_resolver.md](trie/parse/resolvers/jedi_resolver.md) — Jedi-backed reference resolver for Python — tree-sitter's type-aware pair.
 
 ### trie/sync
 
