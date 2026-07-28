@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: trie/parse/typescript.py
-file_fingerprint: f68684ff930882506435170167d6beb51f4750c3ee1ce3c3869b18daf89f2922
-last_synced_at: '2026-07-28T23:14:05Z'
+file_fingerprint: ce8b5bb6367b65fcb3b178058e43161c8e6881e3474616a916d899f3685996f4
+last_synced_at: '2026-07-28T23:34:00Z'
 description: TypeScript / TSX symbol extraction via tree-sitter.
 defines:
 - kind: module
   qualified_name: trie/parse/typescript:__module__
-  lines: 1-739
+  lines: 1-782
 - kind: constant
   qualified_name: trie/parse/typescript:_TS_LANGUAGE
   lines: 26-26
@@ -94,22 +94,25 @@ defines:
   lines: 685-704
 - kind: class
   qualified_name: trie/parse/typescript:TypeScriptBackend
-  lines: 707-738
+  lines: 707-781
+- kind: method
+  qualified_name: trie/parse/typescript:TypeScriptBackend.__init__
+  lines: 723-725
 - kind: method
   qualified_name: trie/parse/typescript:TypeScriptBackend.extract_file_data
-  lines: 714-719
+  lines: 727-751
 - kind: method
   qualified_name: trie/parse/typescript:TypeScriptBackend.extract_symbols
-  lines: 721-722
+  lines: 753-754
 - kind: method
   qualified_name: trie/parse/typescript:TypeScriptBackend.source_suffix
-  lines: 724-725
+  lines: 756-757
 - kind: method
   qualified_name: trie/parse/typescript:TypeScriptBackend.system_prompt
-  lines: 727-728
+  lines: 759-760
 - kind: method
   qualified_name: trie/parse/typescript:TypeScriptBackend.resolver
-  lines: 730-738
+  lines: 762-781
 incoming_refs: 18
 outgoing_refs: 9
 ---
@@ -223,14 +226,18 @@ Return the first named child of `node` whose type equals `type_name`, or `None`.
 <!-- trie:section symbol=trie/parse/typescript:TS_SYSTEM_PROMPT fingerprint=523395e0a833b64879f69133b4728bcddd9ad2d969d17af2dcbd23988ae67be2 body_fp=627b38ffd1b0dcc3119dae55d61a1e680ded005416cd0c7a89c57f13c9d0270a source_ref=1ac465220acb62d6851652aa47760d1d3c8fec6d role=config -->
 System prompt string passed to the LLM when generating documentation for TypeScript symbols.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend fingerprint=6c46d52e0ad89bf18691fb185554c5cd1990cf0c273629e45c7b49ff9f74a9da body_fp=3110e85305fe92812b584e0b6d35ff0207a3845ec670483ffe12eb10ed40ca45 source_ref=1ac465220acb62d6851652aa47760d1d3c8fec6d role=api -->
-Implements `LanguageBackend` for `.ts`, `.tsx`, and `.d.ts` files, wiring symbol extraction and the system prompt; `resolver()` returns `None` (no LSP client paired yet).
+<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend fingerprint=f1cc11ba82338efb8bff414e6cad2a2bef70a2cb117e199f06307ca5e82d3f40 body_fp=1180f92c8c3482163b697749b9fac815ae1a017cab2df8dc6e58128455d63b35 source_ref=e1c63593dc55002aae32a954ca66e5ff7d7fb810 role=api -->
+Implements `LanguageBackend` for `.ts`, `.tsx`, and `.d.ts` files, wiring two-pass reference extraction (tree-sitter + optional LSP resolver), symbol extraction, and the system prompt.
 
 - `extensions`: ordered longest-first so `.d.ts` resolves before `.ts`
-- `extract_file_data`: delegates to `typescript_refs`; does not support `source_text` override
+- `extract_file_data`: delegates to `typescript_refs`; merges LSP-resolved member-dispatch edges when a resolver is available; does not support `source_text` override
+- `resolver()`: returns a cached `LspResolver` for typescript-language-server, or `None` if `TRIE_DISABLE_RESOLVER=1` or the server is not on PATH
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend.extract_file_data fingerprint=391eb76e61c9467ec91b49e809631bccc557aa9a77908063b4683637c4bd5490 body_fp=a1a358e9c4ee05c68fbdef3abf58d6af238bbfea6d14a663d628721e0f077688 source_ref=1ac465220acb62d6851652aa47760d1d3c8fec6d role=api -->
-Delegate `TypeScriptBackend` file-data extraction to `trie.parse.typescript_refs.extract_file_data`, raising `NotImplementedError` if `source_text` is supplied.
+<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend.__init__ fingerprint=b84739b0fbbdbeb6b33571852fef53390cb973b63bb786a1526af79058a93652 body_fp=779a4e01c23334eee94cbe132b8047b27c8a5ab40c03b5b4ab51dec6bbdc3b04 source_ref=e1c63593dc55002aae32a954ca66e5ff7d7fb810 role=domain -->
+Initialize `TypeScriptBackend` with `_resolver` and `_resolver_built` set to their unbuilt defaults.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend.extract_file_data fingerprint=dc038b10128bc6c9df2eb8bf837d237120f2d33f6afad6d8ba9bbc26aec49bcd body_fp=dd91f6f1ef6d8748b4c3c103b9a1fdc56304e5dc499d8ef2761c2c1ff876c5f7 source_ref=e1c63593dc55002aae32a954ca66e5ff7d7fb810 role=orchestration -->
+Extract `TypeScriptBackend` file data via `typescript_refs.extract_file_data`, then merge LSP resolver references if available; raises `NotImplementedError` if `source_text` is supplied.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend.extract_symbols fingerprint=af266339106949531c076cf2e82cb2565f65b39795b7b77394086774fac189f3 body_fp=5e85f9bd9b18072ccf379bf3036f775de01fa136dd04c2ccfb1cf0eadc9a8086 source_ref=1ac465220acb62d6851652aa47760d1d3c8fec6d role=api -->
 Delegate `TypeScriptBackend.extract_symbols` to the module-level `extract_symbols` function, returning its `list[Symbol]`.
@@ -241,6 +248,10 @@ Delegate `TypeScriptBackend.extract_symbols` to the module-level `extract_symbol
 <!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend.system_prompt fingerprint=4a9cf48bef1c51973826ab0b4182de46d91cdb98cee34a2fc01a12e68369f30a body_fp=77fed3c1e333fdeed04723e2f7a6b6a9d827037581383564c020f6820f386fef source_ref=1ac465220acb62d6851652aa47760d1d3c8fec6d role=api -->
 Return the `TypeScriptBackend`'s documentation-generation system prompt string.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend.resolver fingerprint=61ab9b935cffae0b09c2c12d05f5f0e8ecf76dd6e191596e7d94ad9f960b05f5 body_fp=85b5b0378d88c2052a6153fc796235c27b2aa16d803e276b1f67ec786bff459c source_ref=1ac465220acb62d6851652aa47760d1d3c8fec6d role=api -->
-`TypeScriptBackend.resolver` returns `None`; no type-aware reference resolver is paired with this backend yet.
+<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend.resolver fingerprint=d053fde1515981c50c6325556606271ab03040b1b3292e317e230d51dccce10e body_fp=e847455ed071013e175de3beb3215ed76414026413f6f2f8e0f7d703d28568ee source_ref=e1c63593dc55002aae32a954ca66e5ff7d7fb810 role=orchestration -->
+`TypeScriptBackend.resolver` returns a cached `LspResolver` for `typescript-language-server`, or `None` if disabled or unavailable.
+
+- Sets `TRIE_DISABLE_RESOLVER=1` to force `None` (tree-sitter-only mode).
+- Degrades to `None` when `typescript-language-server` is not on PATH.
+- Result is built once and cached in `_resolver`.
 <!-- trie:end -->

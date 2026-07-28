@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/parse/registry.py
 file_fingerprint: e634231b55c749e429666733542cd8e16baf0b306c22f9ddf3fefdb58b430960
-last_synced_at: '2026-07-28T23:14:51Z'
+last_synced_at: '2026-07-28T23:34:21Z'
 description: "Language-backend registry \u2014 dispatch by file extension."
 defines:
 - kind: module

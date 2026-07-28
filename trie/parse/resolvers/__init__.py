@@ -1,9 +1,11 @@
-"""Concrete `ReferenceResolver` implementations, one per analysis engine.
+"""Concrete `ReferenceResolver` implementations.
 
-Each resolver pairs with a tree-sitter `LanguageBackend` to fill the method-call
-gap tree-sitter leaves. `JediResolver` is the Python reference implementation
-(in-process, static type inference). A future generic LSP-client resolver slots
-in here for languages served by a language server.
+Every language uses the same generic `LspResolver` (`lsp_resolver.py`), driving
+a real language server over LSP to fill tree-sitter's method-dispatch gap. The
+per-language wiring — server command, LSP languageId, and the tree-sitter
+member-call-site extractor — lives in `specs.py`. Adding a language is a spec
+plus a `backend.resolver()` that returns `LspResolver(spec)`; no new resolver
+class is needed.
 """
 
 from __future__ import annotations
