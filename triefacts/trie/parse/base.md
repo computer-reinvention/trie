@@ -1,35 +1,38 @@
 ---
 trie_version: 0.1.9
 source: trie/parse/base.py
-file_fingerprint: d8355e20b8bb1e4f04ce493c5934c60c199a8abbd145289c06dfa980bcf2dd8e
-last_synced_at: '2026-07-26T20:28:34Z'
+file_fingerprint: 32755b1e9be88d882304884b3462e37e147c966ffd83885942b1ef22c593e143
+last_synced_at: '2026-07-28T23:14:31Z'
 description: The language-backend contract.
 defines:
 - kind: module
   qualified_name: trie/parse/base:__module__
-  lines: 1-74
+  lines: 1-87
 - kind: class
   qualified_name: trie/parse/base:LanguageBackend
-  lines: 27-73
+  lines: 28-86
 - kind: method
   qualified_name: trie/parse/base:LanguageBackend.extract_file_data
-  lines: 42-50
+  lines: 43-51
 - kind: method
   qualified_name: trie/parse/base:LanguageBackend.extract_symbols
-  lines: 52-60
+  lines: 53-61
 - kind: method
   qualified_name: trie/parse/base:LanguageBackend.source_suffix
-  lines: 62-69
+  lines: 63-70
 - kind: method
   qualified_name: trie/parse/base:LanguageBackend.system_prompt
-  lines: 71-73
-incoming_refs: 2
-outgoing_refs: 2
+  lines: 72-74
+- kind: method
+  qualified_name: trie/parse/base:LanguageBackend.resolver
+  lines: 76-86
+incoming_refs: 3
+outgoing_refs: 3
 ---
 <!-- trie:section symbol=trie/parse/base:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=24bbdccbd9923bfbbf35ebe32e1a393d3daa6c67df3e8c8622e92a433129d18f source_ref=2716b92a3f2978f94b87918091dea1ad4a696738 role=model -->
 Defines the `LanguageBackend` protocol — the contract every language plugin must satisfy to integrate with the parse engine.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/base:LanguageBackend fingerprint=f46e32bbf4464a6d2df0f1c18a995fe6c65476851e991a87ce459594af039c5e body_fp=567e6be415b164a22c143b39988c2a56c7f8a01684dce4174be9937b7c88ab32 source_ref=2716b92a3f2978f94b87918091dea1ad4a696738 role=model -->
+<!-- trie:section symbol=trie/parse/base:LanguageBackend fingerprint=97b7a0787ca1f22f084f9bca36ca4d80b0a7ccfd92fac265127375a3f8a6fcb5 body_fp=394d72825820aa3b384c72fe728c1b2de5acc056b2345c5134397f09895d9d0e source_ref=3d599cf92c5207761d11072a3dca41b1f8017f84 role=model -->
 Runtime-checkable `Protocol` defining the contract every language plugin must implement to make a file family indexable by the engine.
 
 - `name`: human/config identifier, e.g. `"python"`, `"typescript"`
@@ -38,6 +41,7 @@ Runtime-checkable `Protocol` defining the contract every language plugin must im
 - `extract_symbols`: parses symbols only, skipping reference resolution
 - `source_suffix`: canonical suffix for newly created files (write path, not read)
 - `system_prompt`: language-tuned system prompt for triefact prose generation
+- `resolver`: returns the paired `ReferenceResolver` for type-dependent edges, or `None` for tree-sitter-only extraction
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/base:LanguageBackend.extract_file_data fingerprint=1ff716464c4869c5e5e5d0e812778370922e00732b008c90e8ff183e625dcecb body_fp=e8aabd5a373676ea59cc86b4242443f728a1bf0de281ba71414fbd82f731b9a9 source_ref=f83083eed86f54b5d2e684ea18671853d11614b5 role=parsing -->
 Parse one file into a `FileData` containing both symbols and outbound references in a single pass.
@@ -56,4 +60,9 @@ Return the canonical file extension for newly created files of this language, us
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/base:LanguageBackend.system_prompt fingerprint=127a1695b6d2660736131f6d96dc5dcef8b718b53ef6f2aacd11532818780f45 body_fp=c5868178c9f9837eacb6ffb67f56aa267e305593cedd6194f97a704ee0827cca source_ref=f83083eed86f54b5d2e684ea18671853d11614b5 role=domain -->
 Return the language-tuned system prompt string used when generating `LanguageBackend` triefact prose.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/parse/base:LanguageBackend.resolver fingerprint=cb491c36be1eb40effae6bce4fa31211d9db7bd2526e330cf1704e31f69d6cce body_fp=adf7733c555baf65be536f15d9668be133ab079f718c46c7f115a9e97174fba1 source_ref=3d599cf92c5207761d11072a3dca41b1f8017f84 role=domain -->
+Return the `ReferenceResolver` paired with this `LanguageBackend`, or `None` for tree-sitter-only reference extraction.
+
+- Returns `None` by default; override to add method-dispatch edge coverage.
 <!-- trie:end -->

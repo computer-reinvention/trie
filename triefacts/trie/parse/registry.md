@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/parse/registry.py
 file_fingerprint: e634231b55c749e429666733542cd8e16baf0b306c22f9ddf3fefdb58b430960
-last_synced_at: '2026-07-25T10:44:27Z'
+last_synced_at: '2026-07-28T23:14:51Z'
 description: "Language-backend registry \u2014 dispatch by file extension."
 defines:
 - kind: module
@@ -50,7 +50,7 @@ Language-backend registry that dispatches parse calls by file extension, with lo
 - `_BACKENDS`: ordered list of all registered `LanguageBackend` instances
 - `_BY_EXTENSION`: flat `(ext, backend)` pairs sorted longest-suffix-first for unambiguous dispatch
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/registry:_build_registry fingerprint=e11a423230d9cda2e924a3320fd6a54bf1362630e01688865c125718c6bcba9c body_fp=abe3df0e066149b33d8641fa3eaa76244a389e41ebd29bdef3d112041abb75dd source_ref=686152e31595ecc66442a77f00cd86db541a8f0b role=config -->
+<!-- trie:section symbol=trie/parse/registry:_build_registry fingerprint=e11a423230d9cda2e924a3320fd6a54bf1362630e01688865c125718c6bcba9c body_fp=abe3df0e066149b33d8641fa3eaa76244a389e41ebd29bdef3d112041abb75dd source_ref=686152e31595ecc66442a77f00cd86db541a8f0b role=util -->
 Build and return the list of available `LanguageBackend` instances, appending `TypeScriptBackend` only if its module imports successfully.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/registry:_BACKENDS fingerprint=cb943c770b9c9cd8a3f06ee1677079c2d35811248d76740edc9daef7f4e6bcc4 body_fp=6ec23a6890c92487c52893eb8756cb7fe762e3f72e78f2e95c577a9325acc7a1 source_ref=eb8b31b98e0c496b7ffd217770dd85030edef53d role=config -->

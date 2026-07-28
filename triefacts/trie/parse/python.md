@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/parse/python.py
-file_fingerprint: 4d8785578f5b3be0a070dfa18bec14241facc3a08e7fb576f365160e392557cc
-last_synced_at: '2026-07-26T20:28:48Z'
+file_fingerprint: 71c5448b0e50a89a5f4e0e512f6104528880845e3dcbf89aa2f4cd95b9a9b434
+last_synced_at: '2026-07-28T23:14:31Z'
 defines:
 - kind: module
   qualified_name: trie/parse/python:__module__
-  lines: 1-579
+  lines: 1-633
 - kind: constant
   qualified_name: trie/parse/python:__all__
   lines: 13-13
@@ -69,20 +69,26 @@ defines:
   lines: 403-549
 - kind: class
   qualified_name: trie/parse/python:PythonBackend
-  lines: 552-578
+  lines: 552-632
+- kind: method
+  qualified_name: trie/parse/python:PythonBackend.__init__
+  lines: 568-570
 - kind: method
   qualified_name: trie/parse/python:PythonBackend.extract_file_data
-  lines: 560-567
+  lines: 572-598
+- kind: method
+  qualified_name: trie/parse/python:PythonBackend.resolver
+  lines: 600-621
 - kind: method
   qualified_name: trie/parse/python:PythonBackend.extract_symbols
-  lines: 569-570
+  lines: 623-624
 - kind: method
   qualified_name: trie/parse/python:PythonBackend.source_suffix
-  lines: 572-573
+  lines: 626-627
 - kind: method
   qualified_name: trie/parse/python:PythonBackend.system_prompt
-  lines: 575-578
-incoming_refs: 81
+  lines: 629-632
+incoming_refs: 88
 outgoing_refs: 4
 ---
 <!-- trie:section symbol=trie/parse/python:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=1d0b1eaee344de28ead43745e7b68d7058f187ab37abeaf153eec6b6f8fa3fc2 source_ref=5e8d03050d1b221cab9968d16c6e9555575ee417 role=source-parsing -->
@@ -204,15 +210,26 @@ Parse Python file and extract its top-level symbols: functions, classes, methods
 - Creates synthetic `__module__` symbol for residual code not captured by other symbols
 - Handles decorators, overloads, and property setter deduplication via last-wins strategy
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/python:PythonBackend fingerprint=78a0747ba9461a727fe715781a8a8fff1b78d025562c4f81dc2c7c270366b955 body_fp=3a60982d5e5edca373f02d3b6b476cbcb5a84db1ce0f1556dde7b650aae873d5 source_ref=fa9cbd6ec28228640aecb7c8b9e6c248cb8c9b38 role=api -->
-Python `LanguageBackend` implementation that delegates all operations to this module's free functions.
+<!-- trie:section symbol=trie/parse/python:PythonBackend fingerprint=e176d7faf761e80cd914b76db4098e6a10a927e1190916e1cbf772640b53e6ae body_fp=6c9ad98bf519c20a02fd11dec123b26c80f04c69b7b5f31abe36dbe24d1f45c0 source_ref=6b18d027f2fde66b2f9c651f56ce26abd1f9a014 role=domain -->
+Python `LanguageBackend` implementation performing two-pass reference extraction: tree-sitter structural pass merged with an optional jedi resolver for type-dependent edges.
 
-- `extract_file_data`: raises `NotImplementedError` if `source_text` is supplied; lazily imports `trie.parse.references` to avoid circular imports.
+- `extract_file_data`: raises `NotImplementedError` if `source_text` is supplied; lazily imports `trie.parse.references` to avoid circular imports; merges jedi resolver edges via `merge_references` when a resolver is available.
+- `resolver`: returns a cached `JediResolver` instance, or `None` if `TRIE_DISABLE_RESOLVER=1` or jedi is not installed.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/python:PythonBackend.extract_file_data fingerprint=169cc9961183027877e5b6fb2092fa09a4097ed41a2bc6e9f7ade56f6e2b8196 body_fp=3e3ed468a7ee9c26a374f40df9c3be1c0b6f35fa35de6132ccddfc7cbc52d3b7 source_ref=c24423fc5755b20e2aa7c07664aecc657778685c role=api -->
-Delegates `PythonBackend.extract_file_data` to `trie.parse.references.extract_file_data`, importing it lazily to avoid a circular import.
+<!-- trie:section symbol=trie/parse/python:PythonBackend.__init__ fingerprint=b84739b0fbbdbeb6b33571852fef53390cb973b63bb786a1526af79058a93652 body_fp=df474718f375e356edb709d78a6ffcf106cf907fae9f3022426a748c7bd2a31d source_ref=6b18d027f2fde66b2f9c651f56ce26abd1f9a014 role=domain -->
+Initialize `PythonBackend` with `_resolver` set to `None` and `_resolver_built` flag set to `False`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/parse/python:PythonBackend.extract_file_data fingerprint=d899960d72f8d478f73c3ecda1347e57c2653a374bfb3a6ede3fad77ca5024e8 body_fp=4df1018f106a82029655912e778bb7dad692d57b7480b2ff71694d1e3c2f31f4 source_ref=6b18d027f2fde66b2f9c651f56ce26abd1f9a014 role=orchestration -->
+Runs `PythonBackend.extract_file_data` via `trie.parse.references.extract_file_data`, then merges jedi-resolved reference edges via `merge_references` if a resolver is available.
 
 - `source_text`: unsupported; raises `NotImplementedError` if provided.
+- Returns bare `file_data` if `resolver()` returns `None` or jedi produces no extra edges.
+- Returns a new `FileData` with merged references when jedi edges are found.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/parse/python:PythonBackend.resolver fingerprint=749fb6a0cc8ba3515323159bdbbc5de873af7634cadd4dbf0a9f908bd79e948a body_fp=f3d1ed4afdded4ebcec079c35fb1fa46a280de8108a7f46c04667b33b0500b06 source_ref=6b18d027f2fde66b2f9c651f56ce26abd1f9a014 role=config -->
+Return the cached `JediResolver` instance for `PythonBackend`, or `None` if jedi is unavailable or `TRIE_DISABLE_RESOLVER=1` is set.
+
+- Returns `None` silently on `ImportError` or when the env-var disables it.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/python:PythonBackend.extract_symbols fingerprint=af266339106949531c076cf2e82cb2565f65b39795b7b77394086774fac189f3 body_fp=3c89957366e69d82e3b38164d495774b9d49d84739e58355516893cff57098b6 source_ref=c24423fc5755b20e2aa7c07664aecc657778685c role=api -->
 Delegates `PythonBackend.extract_symbols` directly to the module-level `extract_symbols` function with identical arguments.

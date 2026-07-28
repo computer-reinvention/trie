@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/sync/single_file.py
 file_fingerprint: 634df6ae716aaf4b4d6500ca88b414e1a5a2f3543eac220e55fcf19e1a3ac538
-last_synced_at: '2026-07-26T20:27:54Z'
+last_synced_at: '2026-07-28T23:14:51Z'
 defines:
 - kind: module
   qualified_name: trie/sync/single_file:__module__
@@ -82,7 +82,7 @@ Computes a SHA256 hash of the input text as a hexadecimal string.
 <!-- trie:section symbol=trie/sync/single_file:_triefact_path_for fingerprint=1c2e2cf4fa444cf778b7950d1adb2c52f77952ba318f32650aa629fbcb6ee9a5 body_fp=f3af242cde387d60e322268b4dc3f74f73599045beed4a87abeba99d881e0cc2 source_ref=da91ee7ba7df534c772bf0cfb02b2cfcdb8bce67 role=documentation-sync -->
 Computes the triefact file path for a given source file by mapping its relative position under the source root to the triefacts root with a .md extension.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:_file_description fingerprint=bc5c4ab179593304d4c7bfa09b1ce03affab3167c1f68d40a19bf0dce86bb1c7 body_fp=b9379c5cb3fe7a496660497957aa5ad17c5778e2c8bf4786bd67ebb26216d80c source_ref=6cd32bcbcf3b954f87385b8932e63a19b2514a6f role=util -->
+<!-- trie:section symbol=trie/sync/single_file:_file_description fingerprint=bc5c4ab179593304d4c7bfa09b1ce03affab3167c1f68d40a19bf0dce86bb1c7 body_fp=b9379c5cb3fe7a496660497957aa5ad17c5778e2c8bf4786bd67ebb26216d80c source_ref=e0ec1aff11d8b03d0bd7c2ee3e874a2551f88c6f role=util -->
 Extracts the first non-empty line from a source file's module docstring as a description.
 
 - Returns `None` for non-Python files or files with no module docstring
