@@ -705,18 +705,50 @@ Also classify the symbol's architectural role via the `role` field. Pick the sin
 
 
 class TypeScriptBackend:
-    """`LanguageBackend` for TypeScript / TSX / declaration files."""
+    """`LanguageBackend` for TypeScript / TSX / declaration files.
+
+    Two-pass reference extraction, identical in shape to Python: tree-sitter
+    (`typescript_refs.extract_file_data`) resolves imports, heritage,
+    containment, and namespace/import-resolved calls; the paired
+    `ReferenceResolver` (an `LspResolver` driving typescript-language-server)
+    supplements it with member-dispatch edges through typed values
+    (`this.helper()`, `obj.method()`). Merged via `merge_references`. If no
+    TypeScript language server is installed, degrades to tree-sitter-only.
+    """
 
     name = "typescript"
     # Longest/compound suffix first so `.d.ts` resolves before `.ts`.
     extensions = (".d.ts", ".tsx", ".ts")
 
+    def __init__(self) -> None:
+        self._resolver = None
+        self._resolver_built = False
+
     def extract_file_data(self, file_path, source_root=None, *, source_text=None):
+        from pathlib import Path
+
+        from trie.parse.resolver import merge_references
         from trie.parse.typescript_refs import extract_file_data as _efd
 
         if source_text is not None:
             raise NotImplementedError("source_text override is not supported for extract_file_data")
-        return _efd(file_path, source_root=source_root)
+
+        file_data = _efd(file_path, source_root=source_root)
+
+        resolver = self.resolver()
+        if resolver is None:
+            return file_data
+
+        abs_path = Path(file_path).resolve()
+        root = (Path(source_root) if source_root is not None else abs_path.parent).resolve()
+        extra = resolver.resolve_file(abs_path, root, file_data.symbols)
+        if not extra:
+            return file_data
+
+        from trie.parse.types import FileData
+
+        merged = merge_references(file_data.references, extra)
+        return FileData(symbols=file_data.symbols, references=merged)
 
     def extract_symbols(self, file_path, source_root=None, *, source_text=None):
         return extract_symbols(file_path, source_root=source_root, source_text=source_text)
@@ -728,11 +760,22 @@ class TypeScriptBackend:
         return TS_SYSTEM_PROMPT
 
     def resolver(self):
-        """No type-aware resolver paired yet — tree-sitter-only extraction.
+        """Return the cached TS LSP resolver, or None if disabled/unavailable.
 
-        TypeScript has the same method-dispatch gap as Python; a future
-        `ReferenceResolver` (e.g. a typescript-language-server LSP client) slots
-        in here without touching the extraction pipeline. Returns `None` today,
-        so behaviour is unchanged.
+        Set `TRIE_DISABLE_RESOLVER=1` to force tree-sitter-only extraction. If
+        `typescript-language-server` isn't on PATH, degrades to
+        tree-sitter-only.
         """
-        return None
+        if not self._resolver_built:
+            self._resolver_built = True
+            import os
+
+            if os.environ.get("TRIE_DISABLE_RESOLVER") == "1":
+                self._resolver = None
+            else:
+                from trie.parse.resolvers.lsp_resolver import LspResolver
+                from trie.parse.resolvers.specs import typescript_spec
+
+                spec = typescript_spec()
+                self._resolver = LspResolver(spec) if spec is not None else None
+        return self._resolver

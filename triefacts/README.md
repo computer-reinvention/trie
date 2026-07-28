@@ -28,6 +28,7 @@ The most-referenced public symbols — start reading here.
 
 ### tests
 
+- [conftest.md](tests/conftest.md) — Shared pytest configuration.
 - [fake_client.md](tests/fake_client.md)
 - [test_activity.md](tests/test_activity.md) — Tests for the SQLite-backed local activity state (trie/activity.py).
 - [test_audit.md](tests/test_audit.md) — Audit summary: JSONL ingestion + rendering.
@@ -64,7 +65,7 @@ The most-referenced public symbols — start reading here.
 - [test_refresh_lock.md](tests/test_refresh_lock.md) — Tests for the refresh lock + queue.
 - [test_registry.md](tests/test_registry.md)
 - [test_reporter.md](tests/test_reporter.md)
-- [test_resolver.md](tests/test_resolver.md) — Tests for the tree-sitter + resolver seam.
+- [test_resolver.md](tests/test_resolver.md) — Tests for the tree-sitter + LSP resolver seam.
 - [test_roles.md](tests/test_roles.md) — Tests for role tagging: durable persistence, derived taxonomy, and the
 - [test_scan.md](tests/test_scan.md)
 - [test_scheduler.md](tests/test_scheduler.md) — Tests for the wave-based file scheduler (trie/sync/scheduler.py).
@@ -142,6 +143,7 @@ The most-referenced public symbols — start reading here.
 ### trie/parse
 
 - [base.md](trie/parse/base.md) — The language-backend contract.
+- [lsp_client.md](trie/parse/lsp_client.md) — A minimal Language Server Protocol client over stdio.
 - [python.md](trie/parse/python.md)
 - [references.md](trie/parse/references.md) — Reference extraction via tree-sitter.
 - [registry.md](trie/parse/registry.md) — Language-backend registry — dispatch by file extension.
@@ -154,7 +156,8 @@ The most-referenced public symbols — start reading here.
 ### trie/parse/resolvers
 
 - [__init__.md](trie/parse/resolvers/__init__.md) — Concrete `ReferenceResolver` implementations, one per analysis engine.
-- [jedi_resolver.md](trie/parse/resolvers/jedi_resolver.md) — Jedi-backed reference resolver for Python — tree-sitter's type-aware pair.
+- [lsp_resolver.md](trie/parse/resolvers/lsp_resolver.md) — Generic, language-agnostic `ReferenceResolver` backed by an LSP server.
+- [specs.md](trie/parse/resolvers/specs.md) — Per-language LSP server specs — the one place a new language is registered.
 
 ### trie/sync
 

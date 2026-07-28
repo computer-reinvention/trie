@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/sync/single_file.py
 file_fingerprint: 634df6ae716aaf4b4d6500ca88b414e1a5a2f3543eac220e55fcf19e1a3ac538
-last_synced_at: '2026-07-28T23:14:51Z'
+last_synced_at: '2026-07-28T23:34:25Z'
 defines:
 - kind: module
   qualified_name: trie/sync/single_file:__module__

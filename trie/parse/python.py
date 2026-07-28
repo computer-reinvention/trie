@@ -555,11 +555,12 @@ class PythonBackend:
     Two-pass reference extraction: tree-sitter (`references.extract_file_data`)
     does the fast structural pass — symbols, imports, containment, class bases,
     and module-level/import-resolved call edges — then the paired
-    `ReferenceResolver` (jedi) supplements it with the type-dependent method
-    dispatch edges tree-sitter can't derive (`obj.method()`, `self.helper()`).
-    The two edge sets are merged with `merge_references` (dedup + strongest-kind
-    wins). The resolver is optional and cached per backend instance; if jedi is
-    unavailable the backend degrades to tree-sitter-only extraction.
+    `ReferenceResolver` (a `LspResolver` driving pyright/basedpyright)
+    supplements it with the type-dependent method dispatch edges tree-sitter
+    can't derive (`obj.method()`, `self.helper()`). The two edge sets are merged
+    with `merge_references` (dedup + strongest-kind wins). The resolver is
+    optional and cached per backend instance; if no Python language server is
+    installed the backend degrades to tree-sitter-only extraction.
     """
 
     name = "python"
@@ -598,12 +599,12 @@ class PythonBackend:
         return FileData(symbols=file_data.symbols, references=merged)
 
     def resolver(self):
-        """Return the cached jedi resolver, or None if disabled/unavailable.
+        """Return the cached LSP resolver, or None if disabled/unavailable.
 
         Set `TRIE_DISABLE_RESOLVER=1` to force tree-sitter-only extraction
         (used by tests that assert on tree-sitter's edge set, and as a debug
-        escape hatch). If jedi isn't installed, the backend silently degrades
-        to tree-sitter-only.
+        escape hatch). If no Python language server (pyright / basedpyright) is
+        on PATH, the backend silently degrades to tree-sitter-only.
         """
         if not self._resolver_built:
             self._resolver_built = True
@@ -612,12 +613,11 @@ class PythonBackend:
             if os.environ.get("TRIE_DISABLE_RESOLVER") == "1":
                 self._resolver = None
             else:
-                try:
-                    from trie.parse.resolvers.jedi_resolver import JediResolver
+                from trie.parse.resolvers.lsp_resolver import LspResolver
+                from trie.parse.resolvers.specs import python_spec
 
-                    self._resolver = JediResolver()
-                except ImportError:
-                    self._resolver = None
+                spec = python_spec()
+                self._resolver = LspResolver(spec) if spec is not None else None
         return self._resolver
 
     def extract_symbols(self, file_path, source_root=None, *, source_text=None):
