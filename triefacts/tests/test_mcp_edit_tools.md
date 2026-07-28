@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: tests/test_mcp_edit_tools.py
-file_fingerprint: 9edd924a31a2a7bf05903aa4b7ed50d898d6fb31fd5488703f3767383ee2078a
-last_synced_at: '2026-07-26T20:28:26Z'
+file_fingerprint: 4ee5c539e04f38d8d6ee284e1d6f4438ab2465963ebd1a402f589a19f16c2a8e
+last_synced_at: '2026-07-28T23:47:51Z'
 description: 'Tests for the MCP edit tool surface: patch/create/delete/rename/preview/list.'
 defines:
 - kind: module
   qualified_name: tests/test_mcp_edit_tools:__module__
-  lines: 1-167
+  lines: 1-173
 - kind: constant
   qualified_name: tests/test_mcp_edit_tools:PROJECT_TOML
   lines: 20-27
@@ -34,58 +34,58 @@ defines:
   lines: 83-86
 - kind: class
   qualified_name: tests/test_mcp_edit_tools:TestCreateTool
-  lines: 89-100
+  lines: 89-106
 - kind: method
   qualified_name: tests/test_mcp_edit_tools:TestCreateTool.test_create_stages_create_patch
   lines: 90-95
 - kind: method
-  qualified_name: tests/test_mcp_edit_tools:TestCreateTool.test_create_existing_symbol_errors_with_fix
-  lines: 97-100
+  qualified_name: tests/test_mcp_edit_tools:TestCreateTool.test_create_existing_symbol_falls_back_to_patch
+  lines: 97-106
 - kind: class
   qualified_name: tests/test_mcp_edit_tools:TestDeleteTool
-  lines: 103-111
+  lines: 109-117
 - kind: method
   qualified_name: tests/test_mcp_edit_tools:TestDeleteTool.test_delete_lists_dependents
-  lines: 104-107
+  lines: 110-113
 - kind: method
   qualified_name: tests/test_mcp_edit_tools:TestDeleteTool.test_delete_unknown_errors
-  lines: 109-111
+  lines: 115-117
 - kind: class
   qualified_name: tests/test_mcp_edit_tools:TestRenameTool
-  lines: 114-122
+  lines: 120-128
 - kind: method
   qualified_name: tests/test_mcp_edit_tools:TestRenameTool.test_rename_returns_references
-  lines: 115-118
+  lines: 121-124
 - kind: method
   qualified_name: tests/test_mcp_edit_tools:TestRenameTool.test_rename_invalid_identifier
-  lines: 120-122
+  lines: 126-128
 - kind: class
   qualified_name: tests/test_mcp_edit_tools:TestPreviewAndList
-  lines: 125-142
+  lines: 131-148
 - kind: method
   qualified_name: tests/test_mcp_edit_tools:TestPreviewAndList.test_preview_reports_pending_and_cascade
-  lines: 126-130
-- kind: method
-  qualified_name: tests/test_mcp_edit_tools:TestPreviewAndList.test_preview_flags_multi_symbol_note_need
   lines: 132-136
 - kind: method
-  qualified_name: tests/test_mcp_edit_tools:TestPreviewAndList.test_patch_list_includes_kind
+  qualified_name: tests/test_mcp_edit_tools:TestPreviewAndList.test_preview_flags_multi_symbol_note_need
   lines: 138-142
+- kind: method
+  qualified_name: tests/test_mcp_edit_tools:TestPreviewAndList.test_patch_list_includes_kind
+  lines: 144-148
 - kind: class
   qualified_name: tests/test_mcp_edit_tools:TestActivityAndSummary
-  lines: 145-156
+  lines: 151-162
 - kind: method
   qualified_name: tests/test_mcp_edit_tools:TestActivityAndSummary.test_activity_includes_patches_block
-  lines: 146-151
+  lines: 152-157
 - kind: method
   qualified_name: tests/test_mcp_edit_tools:TestActivityAndSummary.test_patch_summary_counts_creates
-  lines: 153-156
+  lines: 159-162
 - kind: class
   qualified_name: tests/test_mcp_edit_tools:TestSessionIdInjection
-  lines: 159-166
+  lines: 165-172
 - kind: method
   qualified_name: tests/test_mcp_edit_tools:TestSessionIdInjection.test_env_session_id_used
-  lines: 160-166
+  lines: 166-172
 incoming_refs: 0
 outgoing_refs: 8
 ---
@@ -127,14 +127,14 @@ TestPatchTool.test_patch_requires_exactly_one_of_note_source verifies patch tool
 <!-- trie:section symbol=tests/test_mcp_edit_tools:TestPatchTool.test_patch_unknown_qname_has_fix fingerprint=ad36762a25e89b6d8dc5fc8e79f03d3df33b954d5ffe13cdb02e788686df0ddc body_fp=ecd510a557ea6f38e6f51c768567e44ade77513fdf582415b15b2b1ba9252908 source_ref=1c912ed813dfb58752f16ac3ed6e959695a703b6 role=test -->
 Verifies TestPatchTool patches for unknown symbols return not_found errors with patch tool fix suggestions.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_edit_tools:TestCreateTool fingerprint=0fdcb6b8d972aab1447fd26e9431e6df8e70a82e788f059931e92d6272b4f0cc body_fp=04fc9bc2426f353f0e3587795cee97025b7913858f7374a00d8282a66ad40412 source_ref=1c912ed813dfb58752f16ac3ed6e959695a703b6 role=test -->
-Tests the TrieTools.create_symbol method functionality for creating new symbols via MCP interface.
+<!-- trie:section symbol=tests/test_mcp_edit_tools:TestCreateTool fingerprint=37ec996acafec7e1ba0331f2af6c375a0c9b049dbf729ede3127e3c753820025 body_fp=6e1998234dc2e5ec958589e639a05e43ef020f10a9b8343e24a931f6c1363953 source_ref=e9a78162908128eaac554c055f1ed9e887f1185d role=test -->
+Tests `TrieTools.create_symbol`: staging new symbols and gracefully falling back to a patch when the symbol already exists.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp_edit_tools:TestCreateTool.test_create_stages_create_patch fingerprint=95c6806d36629622794e11a08292a5748a6a2fd23ef89c02ef7727ac3bbfb81d body_fp=ee053053c0d6522fd16b6cba6d43988d590646299b886d5e272b541fbf359c98 source_ref=1c912ed813dfb58752f16ac3ed6e959695a703b6 role=test -->
 Tests that TestCreateTool.create_symbol returns a create patch ID and adds the symbol to the patch list.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_edit_tools:TestCreateTool.test_create_existing_symbol_errors_with_fix fingerprint=0457e02c40828ed0b1f327de30343b02ae85566681a0bb0ce1f48d2939733a82 body_fp=b9564683efe75267ad4efb1e82f224bdec994dcd57c2b6ed8ed6099a5269b19c source_ref=1c912ed813dfb58752f16ac3ed6e959695a703b6 role=test -->
-Tests that TestCreateTool.test_create_existing_symbol_errors_with_fix returns an error with patch tool suggestion when attempting to create an existing symbol.
+<!-- trie:section symbol=tests/test_mcp_edit_tools:TestCreateTool.test_create_existing_symbol_falls_back_to_patch fingerprint=55f57bc88a5028a2859c677f3247a62d8fa6ba14ebd061b00cdf9d9bd0eeff8e body_fp=f012fcf164309e41d3509b4b31771c568dc38075c1d52c34388664640d164b4b source_ref=e9a78162908128eaac554c055f1ed9e887f1185d role=test -->
+Assert that `TestCreateTool.test_create_existing_symbol_falls_back_to_patch` verifies `create_symbol` silently converts to a patch when the target symbol already exists, returning `op="patch"` and `fell_back=True` with no error.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp_edit_tools:TestDeleteTool fingerprint=8d50af07cbfd5a47a9c79c2e8599971346ff5982e6de53bba663870d99aa6389 body_fp=c5fb35bc23b52a8e3e4c8adef90b7516795ec8d0add47f173584b714d63896b4 source_ref=1c912ed813dfb58752f16ac3ed6e959695a703b6 role=test -->
 Tests the TrieTools delete_symbol operation.
