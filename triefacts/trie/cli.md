@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/cli.py
-file_fingerprint: b407b5d275d0daa1081c8f86c6dfcb5095542bb962053fa76e9fb890e5d1ce70
-last_synced_at: '2026-07-26T20:27:52Z'
+file_fingerprint: 24e23384a03dbfb8138f8456ebf604d9ba0619e69936979db7fd34749313dee2
+last_synced_at: '2026-07-28T23:47:51Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
-  lines: 1-4326
+  lines: 1-4338
 - kind: constant
   qualified_name: trie/cli:app
   lines: 78-81
@@ -330,49 +330,49 @@ defines:
   lines: 3630-3676
 - kind: function
   qualified_name: trie/cli:patch_create_batch_cmd
-  lines: 3680-3794
+  lines: 3680-3800
 - kind: function
   qualified_name: trie/cli:patch_create_symbol_cmd
-  lines: 3798-3840
+  lines: 3804-3852
 - kind: function
   qualified_name: trie/cli:patch_delete_symbol_cmd
-  lines: 3844-3871
+  lines: 3856-3883
 - kind: function
   qualified_name: trie/cli:patch_rename_symbol_cmd
-  lines: 3875-3904
+  lines: 3887-3916
 - kind: function
   qualified_name: trie/cli:patch_apply_cmd
-  lines: 3908-3958
+  lines: 3920-3970
 - kind: function
   qualified_name: trie/cli:patch_preview_cmd
-  lines: 3962-4005
+  lines: 3974-4017
 - kind: function
   qualified_name: trie/cli:patch_list_cmd
-  lines: 4009-4051
+  lines: 4021-4063
 - kind: function
   qualified_name: trie/cli:patch_drop_cmd
-  lines: 4055-4093
+  lines: 4067-4105
 - kind: constant
   qualified_name: trie/cli:mcp_app
-  lines: 4101-4108
+  lines: 4113-4120
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 4113-4115
+  lines: 4125-4127
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 4118-4128
+  lines: 4130-4140
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 4132-4201
+  lines: 4144-4213
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 4204-4219
+  lines: 4216-4231
 - kind: function
   qualified_name: trie/cli:mcp_uninstall_cmd
-  lines: 4223-4298
+  lines: 4235-4310
 - kind: function
   qualified_name: trie/cli:_render_uninstall_plan
-  lines: 4301-4321
+  lines: 4313-4333
 incoming_refs: 95
 outgoing_refs: 163
 ---
@@ -1083,15 +1083,15 @@ Creates a fire-and-forget edit patch against a symbol in the trie graph store.
 - Uses a stable CLI session ID for tracking related patches together
 - Returns the patch ID after successful creation on both paths
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:patch_create_batch_cmd fingerprint=e8e49da442695fe76c0d074020c7390caae868f905570564bc9678a174304a88 body_fp=f2b2c9232877c2aee649df8fdb2a4200e6b7666b107dac2ca4683917d156861a source_ref=85e57bbb035420774c33a2c6594da614a72f3d47 role=api -->
+<!-- trie:section symbol=trie/cli:patch_create_batch_cmd fingerprint=99755305e4ad7504b3948f6f3bcc0cebb50520f84cbfb546383cc68319c2c5bd body_fp=63d1ad52bf5f6bbcfe2da29c4763e9faf2375d6bf490b763fdf7af7bb2bd5baa source_ref=d1734541aa8bcf57bf2e2c039be357a394a1ac1c role=api -->
 Stage multiple `patch` or `create` operations in one call, reading a JSON array from `--json-file` or stdin.
 
-- `op`: `"patch"` (default) modifies an existing symbol; `"create"` stages a new symbol.
+- `op`: `"patch"` (default) modifies an existing symbol; `"create"` stages a new symbol — if the symbol already exists, silently falls back to `"patch"` and sets `"fell_back": true` in the result entry.
 - Items are processed independently; failures are reported without aborting remaining items.
 - Emits `{"staged": N, "failed": N, "results": [...]}` as JSON to stdout.
 - Exits 1 if zero items were staged successfully.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:patch_create_symbol_cmd fingerprint=eb7419a1e9a7e32d6229ca974f46c5ac781021bfa99e565ebad0910d60401c8a body_fp=79674ac48e601f3bff45ba7f2dcc544e031a970b69412f598d3d9f3bb01f3d3a source_ref=85e57bbb035420774c33a2c6594da614a72f3d47 role=api -->
+<!-- trie:section symbol=trie/cli:patch_create_symbol_cmd fingerprint=e0385e93e61bcffe98beb1c7409c19582424e8afc7a4de84d89f1b2a742806c2 body_fp=c9d5741ce00c01e0e5ec8e7d2bbea5c9b71e7e50fa4944490c6e67360081bc56 source_ref=d1734541aa8bcf57bf2e2c039be357a394a1ac1c role=api -->
 Stage creation of a new symbol to be applied by `trie patch apply`.
 
 - **qname**: intended qualified name like `pkg/mod:new_fn`
@@ -1099,7 +1099,7 @@ Stage creation of a new symbol to be applied by `trie patch apply`.
 - **file**: target source file; when omitted, resolved via `registry.resolve_create_target` (existing module wins, else language-inferred suffix)
 - **anchor**: place the symbol after this existing qname
 - **reason**: why the symbol is needed
-- Validates qname doesn't already exist in the graph
+- If qname already exists in the graph, falls back to `Store.add_patch` instead of erroring
 - Stores create patch via `Store.add_create_patch` with session tracking
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:patch_delete_symbol_cmd fingerprint=d42b44a08aab95225aa29d2ef76a46ff4a907a793fda7b7ba45a30e5335c6d39 body_fp=b394a6512f0db2a67095c269a1a8cd3bfd16923d6c1f435524aab68ae659b289 source_ref=28797ad23f63ab76a0d693ea640c1de9c59f6c50 role=api -->

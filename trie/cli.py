@@ -3744,17 +3744,16 @@ def patch_create_batch_cmd(
                 )
                 continue
             try:
+                # Graceful create→patch fallback (mirrors TrieTools.batch_patch):
+                # a `create` for an already-existing symbol is recorded as a
+                # `patch` instead of failing, flagged with `fell_back`.
+                fell_back_from_create = (
+                    op == "create" and store.get_symbol_detail(qname) is not None
+                )
+                if fell_back_from_create:
+                    op = "patch"
+
                 if op == "create":
-                    if store.get_symbol_detail(qname) is not None:
-                        results.append(
-                            {
-                                "index": idx,
-                                "qname": qname,
-                                "ok": False,
-                                "error": "symbol exists — use op=patch",
-                            }
-                        )
-                        continue
                     target_file = str(item.get("file", "")) or registry.resolve_create_target(
                         src_root, qname
                     )
@@ -3772,9 +3771,16 @@ def patch_create_batch_cmd(
                     staged += 1
                 else:
                     pid = store.add_patch(qname, note, reason, session_id)
-                    results.append(
-                        {"index": idx, "qname": qname, "ok": True, "op": "patch", "patch_id": pid}
-                    )
+                    entry: dict[str, object] = {
+                        "index": idx,
+                        "qname": qname,
+                        "ok": True,
+                        "op": "patch",
+                        "patch_id": pid,
+                    }
+                    if fell_back_from_create:
+                        entry["fell_back"] = True
+                    results.append(entry)
                     staged += 1
             except KeyError:
                 results.append(
@@ -3817,9 +3823,15 @@ def patch_create_symbol_cmd(
 
     store = Store(project_root / ".trie" / "graph.db")
     try:
+        # Graceful create→patch fallback: if the symbol already exists, record
+        # the note as a patch rather than erroring — the intent is equally valid
+        # and the agent shouldn't have to re-run with a different subcommand.
         if store.get_symbol_detail(qname) is not None:
-            reporter.error(f"{qname!r} already exists — use `trie patch create` to change it")
-            raise typer.Exit(code=1)
+            pid = store.add_patch(qname, note, reason, _cli_session_id(project_root))
+            reporter.success(
+                f"{qname!r} already existed — recorded as patch #{pid} instead of a create"
+            )
+            return
         # Resolve target file via the registry: existing module file wins, else
         # infer the language for a new file (sibling, then default suffix). Pass
         # `--file` to override explicitly.
