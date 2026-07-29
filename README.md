@@ -39,7 +39,8 @@ trie does **not** generate or edit your source code. You (or your agent) own eve
 - **Python 3.11+** and [`uv`](https://docs.astral.sh/uv/) on PATH
 - **[ripgrep](https://github.com/BurntSushi/ripgrep)** (`rg`) on PATH — the `grep` tool's text-match fallback needs it (`brew install ripgrep` / `apt install ripgrep`)
 - An Anthropic API key in `ANTHROPIC_API_KEY` (default model: `anthropic/claude-sonnet-4-6`)
-- **Languages indexed today:** Python, TypeScript/TSX
+- **Languages indexed today:** Python, TypeScript/TSX, JavaScript/JSX, Go, Rust, C, Lua
+- **Optional — a language server per language** for type-aware reference precision (method/member dispatch). Discovered on PATH; when absent, that language falls back to tree-sitter-only. Defaults: basedpyright/pyright (Python), typescript-language-server (TS/JS), gopls (Go), rust-analyzer (Rust), clangd (C), lua-language-server (Lua). See [`[resolver]` config](#reference-resolution).
 
 ```bash
 # 1. Install (pick one)
@@ -283,7 +284,32 @@ Everything lives in `trie.toml` (written by `trie init`, all knobs commented):
 | `[sync]` | Parallelism, retry policy (incl. `retry_total_seconds` wall-clock budget) |
 | `[diff]` | Digest narrative on/off, file locations, retention |
 | `[mcp]` | Agent-surface tuning (result caps, fuzzy thresholds) |
+| `[resolver]` | Type-aware reference resolution (see below) |
 | `[debug]` | Local JSONL telemetry (off by default, never uploaded) |
+
+<a id="reference-resolution"></a>
+### Reference resolution
+
+Reference edges come from two passes. Tree-sitter does the fast structural pass — symbols, imports, containment, class bases, and the calls it can resolve by name. Because tree-sitter has no type information, it can't resolve dispatch through a value (`obj.method()`, `self.helper()`, `this.foo()`), which is most calls in object-oriented code. An optional **language server** supplements it: for each unresolved member call trie asks the server for the definition and adds the edge. The two passes are complementary — the LSP pass only fills what tree-sitter drops.
+
+Servers are discovered on PATH; when none is installed for a language, that language falls back to tree-sitter-only (no error). Defaults per language:
+
+| Language | Extensions | Server |
+| --- | --- | --- |
+| Python | `.py` | basedpyright → pyright |
+| TypeScript / JavaScript | `.ts .tsx .js .jsx .mjs .cjs` | typescript-language-server |
+| Go | `.go` | gopls |
+| Rust | `.rs` | rust-analyzer |
+| C | `.c .h` | clangd |
+| Lua | `.lua` | lua-language-server |
+
+```toml
+[resolver]
+enabled = true                       # master switch (or set TRIE_DISABLE_RESOLVER=1)
+# disabled_languages = ["rust", "go"] # force tree-sitter-only per language
+# [resolver.servers]                  # override the server command per language
+# python = ["basedpyright-langserver", "--stdio"]
+```
 
 ## Costs
 
@@ -346,9 +372,9 @@ triefacts/triediffs/**  linguist-generated=false
 
 ## Status & roadmap
 
-Works today: the full loop documented above — meaning index with cascade + verify, intent ledger with gate + digests + PR comments + history, agent integration for the listed harnesses, Python and TypeScript/TSX.
+Works today: the full loop documented above — meaning index with cascade + verify, intent ledger with gate + digests + PR comments + history, agent integration for the listed harnesses, and seven languages (Python, TypeScript/TSX, JavaScript/JSX, Go, Rust, C, Lua) with type-aware reference precision via optional per-language LSP servers layered over the tree-sitter pass.
 
-Next, roughly in order: prose-stability tuning (kill cosmetic regeneration churn at the prompt level), reference precision (SCIP/type-aware edges over the tree-sitter heuristic), more languages, Windows support, a local-model path for source-cannot-leave environments.
+Next, roughly in order: prose-stability tuning (kill cosmetic regeneration churn at the prompt level), latency tuning for cold language servers, more languages (Java, C#, Ruby, Swift drop in as new resolver specs), Windows support, a local-model path for source-cannot-leave environments.
 
 ## License
 
