@@ -28,8 +28,6 @@ trie does **not** generate or edit your source code. You (or your agent) own eve
 
 ![An agent investigates a bug, fixes it, and is gated until it records the discovered cause; without trie that knowledge is lost; six months later another agent answers the why-question from the recorded intent](landing/demo.gif)
 
-> **Status:** pre-alpha · v0.1 in active development.
-
 ---
 
 ## Quick start
