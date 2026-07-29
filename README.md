@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](#license)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](#status--roadmap)
-[![Tests](https://img.shields.io/badge/tests-768%20passing-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/tests-806%20passing-brightgreen.svg)](#)
 
 **[Website](https://computerreinvention.com/trie/)** · **[Documentation](https://computerreinvention.com/trie/docs.html)**
 
@@ -26,7 +26,9 @@ Humans browse the meaning index as a wiki that can't silently rot, and read the 
 
 trie does **not** generate or edit your source code. You (or your agent) own every code change; trie owns the record of what it means and why it happened.
 
-![An agent investigates a bug, fixes it, and is gated until it records the discovered cause; without trie that knowledge is lost; six months later another agent answers the why-question from the recorded intent](landing/demo.gif)
+<video src="https://github.com/computer-reinvention/trie/raw/main/landing/demo.mp4" controls muted loop width="960"></video>
+
+<sub>An agent investigates a bug, fixes it, and is gated until it records the discovered cause; without trie that knowledge is lost; six months later another agent answers the why-question from the recorded intent. ([Watch the demo](https://github.com/computer-reinvention/trie/raw/main/landing/demo.mp4) if it doesn't play inline.)</sub>
 
 ---
 
