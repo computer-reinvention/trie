@@ -1,6 +1,6 @@
 [project]
 name = "trie"
-version = "0.1.9"
+version = "0.2.0"
 description = "Documentation tree as coding harness anchor — LSP/SCIP-aware cascade keeps a Markdown doc tree coherent with code."
 readme = "README.md"
 license = { text = "MIT" }

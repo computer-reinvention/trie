@@ -107,7 +107,15 @@
               An Anthropic API key in <code>ANTHROPIC_API_KEY</code> for prose
               generation. The gates, graph, and queries run offline.
             </li>
-            <li>Languages indexed today: Python and TypeScript/TSX.</li>
+            <li>
+              Languages indexed today: Python, TypeScript/TSX,
+              JavaScript/JSX, Go, Rust, C, and Lua.
+            </li>
+            <li>
+              Optional per-language language server for type-aware reference
+              precision (method/member dispatch) &mdash; discovered on PATH,
+              falls back to tree-sitter-only when absent.
+            </li>
           </ul>
         </section>
 
@@ -637,11 +645,49 @@ stage a note per symbol, then re-run:
                 <td>Agent-surface tuning (result caps, fuzzy thresholds)</td>
               </tr>
               <tr>
+                <td><code>[resolver]</code></td>
+                <td>Type-aware reference resolution (LSP servers; see below)</td>
+              </tr>
+              <tr>
                 <td><code>[debug]</code></td>
                 <td>Local JSONL telemetry (off by default, never uploaded)</td>
               </tr>
             </tbody>
           </table>
+
+          <h3>Reference resolution</h3>
+          <p>
+            Reference edges come from two passes. Tree-sitter does the fast
+            structural pass &mdash; symbols, imports, containment, class bases,
+            and the calls it can resolve by name. Having no type information, it
+            can't resolve dispatch through a value
+            (<code>obj.method()</code>, <code>self.helper()</code>,
+            <code>this.foo()</code>) &mdash; most calls in object-oriented code.
+            An optional <strong>language server</strong> supplements it: for each
+            unresolved member call trie asks the server for the definition and
+            adds the edge. The passes are complementary; the LSP pass only fills
+            what tree-sitter drops. Servers are discovered on PATH; when none is
+            installed for a language, that language is tree-sitter-only (no
+            error).
+          </p>
+          <table>
+            <thead>
+              <tr><th>Language</th><th>Extensions</th><th>Default server</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Python</td><td><code>.py</code></td><td>basedpyright &rarr; pyright</td></tr>
+              <tr><td>TypeScript / JavaScript</td><td><code>.ts .tsx .js .jsx .mjs .cjs</code></td><td>typescript-language-server</td></tr>
+              <tr><td>Go</td><td><code>.go</code></td><td>gopls</td></tr>
+              <tr><td>Rust</td><td><code>.rs</code></td><td>rust-analyzer</td></tr>
+              <tr><td>C</td><td><code>.c .h</code></td><td>clangd</td></tr>
+              <tr><td>Lua</td><td><code>.lua</code></td><td>lua-language-server</td></tr>
+            </tbody>
+          </table>
+          <pre><code>[resolver]
+enabled = true                        # master switch (or TRIE_DISABLE_RESOLVER=1)
+# disabled_languages = ["rust", "go"] # force tree-sitter-only per language
+# [resolver.servers]                  # override the server command per language
+# python = ["basedpyright-langserver", "--stdio"]</code></pre>
         </section>
 
         <!-- ═══ 9. COSTS ══════════════════════════════════════════════ -->
@@ -805,10 +851,13 @@ triefacts/triediffs/**  linguist-generated=false</code></pre>
             </li>
             <li>
               <strong>The cascade missed a connection.</strong> Reference
-              detection is tree-sitter + import based. It catches
-              <code>from foo import bar</code> and same-module matches but can
-              miss dynamic dispatch. SCIP/type-aware precision is on the
-              roadmap.
+              detection is tree-sitter first (imports, same-module calls,
+              containment) plus an optional type-aware LSP pass that resolves
+              method/member dispatch (<code>obj.method()</code>,
+              <code>self.helper()</code>). If a connection is still missing,
+              check the language's server is installed and on PATH &mdash;
+              without it that language is tree-sitter-only. Truly dynamic
+              dispatch (<code>getattr</code>-style) is out of reach for both.
             </li>
             <li>
               <strong>PR diffs are noisy.</strong> See
@@ -825,13 +874,17 @@ triefacts/triediffs/**  linguist-generated=false</code></pre>
             <li>The meaning index with cascade + verify</li>
             <li>The intent ledger with gate + digests + PR comments + history</li>
             <li>Agent integration for the listed harnesses</li>
-            <li>Python and TypeScript/TSX</li>
+            <li>
+              Seven languages &mdash; Python, TypeScript/TSX, JavaScript/JSX,
+              Go, Rust, C, Lua &mdash; with type-aware reference precision via
+              optional per-language LSP servers over the tree-sitter pass
+            </li>
           </ul>
           <p>Next, roughly in order:</p>
           <ul>
             <li>Prose-stability tuning (kill cosmetic regeneration churn)</li>
-            <li>Reference precision (SCIP/type-aware edges over the tree-sitter heuristic)</li>
-            <li>More languages; Windows support</li>
+            <li>Latency tuning for cold language servers</li>
+            <li>More languages (Java, C#, Ruby, Swift as new resolver specs); Windows support</li>
             <li>A local-model path for source-cannot-leave environments</li>
           </ul>
           <p>
