@@ -26,9 +26,7 @@ Humans browse the meaning index as a wiki that can't silently rot, and read the 
 
 trie does **not** generate or edit your source code. You (or your agent) own every code change; trie owns the record of what it means and why it happened.
 
-<video src="https://github.com/computer-reinvention/trie/raw/main/landing/demo.mp4" controls muted loop width="960"></video>
-
-<sub>An agent investigates a bug, fixes it, and is gated until it records the discovered cause; without trie that knowledge is lost; six months later another agent answers the why-question from the recorded intent. ([Watch the demo](https://github.com/computer-reinvention/trie/raw/main/landing/demo.mp4) if it doesn't play inline.)</sub>
+![An agent investigates a bug, fixes it, and is gated until it records the discovered cause; without trie that knowledge is lost; six months later another agent answers the why-question from the recorded intent](https://raw.githubusercontent.com/computer-reinvention/trie/main/landing/demo.gif)
 
 ---
 
