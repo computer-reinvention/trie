@@ -1,47 +1,47 @@
 ---
 trie_version: 0.1.9
 source: trie/parse/registry.py
-file_fingerprint: e634231b55c749e429666733542cd8e16baf0b306c22f9ddf3fefdb58b430960
-last_synced_at: '2026-07-28T23:34:21Z'
+file_fingerprint: bf4a4f3a5ad7da372694ca7639d1fcd56557266c27e503360c0ab4bdca97033f
+last_synced_at: '2026-07-29T00:05:16Z'
 description: "Language-backend registry \u2014 dispatch by file extension."
 defines:
 - kind: module
   qualified_name: trie/parse/registry:__module__
-  lines: 1-144
+  lines: 1-149
 - kind: function
   qualified_name: trie/parse/registry:_build_registry
-  lines: 24-36
+  lines: 24-41
 - kind: constant
   qualified_name: trie/parse/registry:_BACKENDS
-  lines: 39-39
+  lines: 44-44
 - kind: constant
   qualified_name: trie/parse/registry:_BY_EXTENSION
-  lines: 43-47
+  lines: 48-52
 - kind: function
   qualified_name: trie/parse/registry:all_backends
-  lines: 50-52
+  lines: 55-57
 - kind: function
   qualified_name: trie/parse/registry:get_backend
-  lines: 55-60
+  lines: 60-65
 - kind: function
   qualified_name: trie/parse/registry:get_backend_for_file
-  lines: 63-73
+  lines: 68-78
 - kind: function
   qualified_name: trie/parse/registry:source_suffixes
-  lines: 76-82
+  lines: 81-87
 - kind: function
   qualified_name: trie/parse/registry:is_indexable
-  lines: 85-87
+  lines: 90-92
 - kind: function
   qualified_name: trie/parse/registry:resolve_create_target
-  lines: 90-113
+  lines: 95-118
 - kind: function
   qualified_name: trie/parse/registry:extract_file_data
-  lines: 116-130
+  lines: 121-135
 - kind: function
   qualified_name: trie/parse/registry:extract_symbols
-  lines: 133-143
-incoming_refs: 21
+  lines: 138-148
+incoming_refs: 24
 outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/parse/registry:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=564c5ea59f7a063651a525e0104d098afaccb1fadf02b5a8d84b5f1483f91a24 source_ref=eb8b31b98e0c496b7ffd217770dd85030edef53d role=orchestration -->
@@ -50,8 +50,8 @@ Language-backend registry that dispatches parse calls by file extension, with lo
 - `_BACKENDS`: ordered list of all registered `LanguageBackend` instances
 - `_BY_EXTENSION`: flat `(ext, backend)` pairs sorted longest-suffix-first for unambiguous dispatch
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/registry:_build_registry fingerprint=e11a423230d9cda2e924a3320fd6a54bf1362630e01688865c125718c6bcba9c body_fp=abe3df0e066149b33d8641fa3eaa76244a389e41ebd29bdef3d112041abb75dd source_ref=686152e31595ecc66442a77f00cd86db541a8f0b role=util -->
-Build and return the list of available `LanguageBackend` instances, appending `TypeScriptBackend` only if its module imports successfully.
+<!-- trie:section symbol=trie/parse/registry:_build_registry fingerprint=2a7bb05c214a5567b950c495b53e3efe41b12614b98a3d8761a41e76fcf52841 body_fp=aa91b45874409cddced43d8a2c35d61018a0762f881c2176e309c8f969d6f71f source_ref=60022d377964904faa06f0c95a37c398a2d22fd2 role=config -->
+Build and return the list of available `LanguageBackend` instances, appending `TypeScriptBackend`, `GoBackend`, `RustBackend`, `CBackend`, and `LuaBackend` only if their modules import successfully.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/registry:_BACKENDS fingerprint=cb943c770b9c9cd8a3f06ee1677079c2d35811248d76740edc9daef7f4e6bcc4 body_fp=6ec23a6890c92487c52893eb8756cb7fe762e3f72e78f2e95c577a9325acc7a1 source_ref=eb8b31b98e0c496b7ffd217770dd85030edef53d role=config -->
 Module-level list of all instantiated `LanguageBackend` objects, populated once at import time by `_build_registry()`.

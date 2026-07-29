@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: trie/parse/typescript.py
-file_fingerprint: ce8b5bb6367b65fcb3b178058e43161c8e6881e3474616a916d899f3685996f4
-last_synced_at: '2026-07-28T23:34:00Z'
+file_fingerprint: 3add53a5020602a06f7cb0bc46aa0cb9c0920ebf58fbd0fb3149211423670d01
+last_synced_at: '2026-07-29T00:05:51Z'
 description: TypeScript / TSX symbol extraction via tree-sitter.
 defines:
 - kind: module
   qualified_name: trie/parse/typescript:__module__
-  lines: 1-782
+  lines: 1-788
 - kind: constant
   qualified_name: trie/parse/typescript:_TS_LANGUAGE
   lines: 26-26
@@ -16,103 +16,103 @@ defines:
   lines: 27-27
 - kind: function
   qualified_name: trie/parse/typescript:_make_parser
-  lines: 30-33
+  lines: 30-37
 - kind: function
   qualified_name: trie/parse/typescript:_node_text
-  lines: 36-37
-- kind: function
-  qualified_name: trie/parse/typescript:_hash
   lines: 40-41
 - kind: function
+  qualified_name: trie/parse/typescript:_hash
+  lines: 44-45
+- kind: function
   qualified_name: trie/parse/typescript:_module_key
-  lines: 44-51
+  lines: 48-55
 - kind: function
   qualified_name: trie/parse/typescript:_normalize_tokens
-  lines: 54-73
+  lines: 58-77
 - kind: function
   qualified_name: trie/parse/typescript:_leading_jsdoc
-  lines: 76-85
+  lines: 80-89
 - kind: function
   qualified_name: trie/parse/typescript:_name_of
-  lines: 88-97
+  lines: 92-101
 - kind: function
   qualified_name: trie/parse/typescript:_signature_text
-  lines: 100-106
+  lines: 104-110
 - kind: constant
   qualified_name: trie/parse/typescript:_DECLARATION_KINDS
-  lines: 111-114
+  lines: 115-118
 - kind: function
   qualified_name: trie/parse/typescript:_is_exported
-  lines: 117-118
+  lines: 121-122
 - kind: function
   qualified_name: trie/parse/typescript:_unwrap
-  lines: 121-129
+  lines: 125-133
 - kind: function
   qualified_name: trie/parse/typescript:extract_symbols
-  lines: 132-181
+  lines: 136-185
 - kind: function
   qualified_name: trie/parse/typescript:_dispatch_top_level
-  lines: 184-228
+  lines: 188-232
 - kind: function
   qualified_name: trie/parse/typescript:_build_callable
-  lines: 231-266
+  lines: 235-270
 - kind: function
   qualified_name: trie/parse/typescript:_build_type_decl
-  lines: 269-296
+  lines: 273-300
 - kind: function
   qualified_name: trie/parse/typescript:_walk_class
-  lines: 299-353
+  lines: 303-357
 - kind: function
   qualified_name: trie/parse/typescript:_build_property
-  lines: 356-386
+  lines: 360-390
 - kind: function
   qualified_name: trie/parse/typescript:_walk_enum
-  lines: 389-447
+  lines: 393-451
 - kind: function
   qualified_name: trie/parse/typescript:_walk_lexical
-  lines: 450-505
+  lines: 454-509
 - kind: function
   qualified_name: trie/parse/typescript:_walk_ambient
-  lines: 508-601
+  lines: 512-605
 - kind: function
   qualified_name: trie/parse/typescript:_build_module_symbol
-  lines: 604-647
+  lines: 608-651
 - kind: function
   qualified_name: trie/parse/typescript:_public
-  lines: 653-656
+  lines: 657-660
 - kind: function
   qualified_name: trie/parse/typescript:_member_name
-  lines: 659-666
+  lines: 663-670
 - kind: function
   qualified_name: trie/parse/typescript:_has_modifier
-  lines: 669-673
+  lines: 673-677
 - kind: function
   qualified_name: trie/parse/typescript:_first_child_of_type
-  lines: 676-680
+  lines: 680-684
 - kind: constant
   qualified_name: trie/parse/typescript:TS_SYSTEM_PROMPT
-  lines: 685-704
+  lines: 689-708
 - kind: class
   qualified_name: trie/parse/typescript:TypeScriptBackend
-  lines: 707-781
+  lines: 711-787
 - kind: method
   qualified_name: trie/parse/typescript:TypeScriptBackend.__init__
-  lines: 723-725
+  lines: 729-731
 - kind: method
   qualified_name: trie/parse/typescript:TypeScriptBackend.extract_file_data
-  lines: 727-751
+  lines: 733-757
 - kind: method
   qualified_name: trie/parse/typescript:TypeScriptBackend.extract_symbols
-  lines: 753-754
-- kind: method
-  qualified_name: trie/parse/typescript:TypeScriptBackend.source_suffix
-  lines: 756-757
-- kind: method
-  qualified_name: trie/parse/typescript:TypeScriptBackend.system_prompt
   lines: 759-760
 - kind: method
+  qualified_name: trie/parse/typescript:TypeScriptBackend.source_suffix
+  lines: 762-763
+- kind: method
+  qualified_name: trie/parse/typescript:TypeScriptBackend.system_prompt
+  lines: 765-766
+- kind: method
   qualified_name: trie/parse/typescript:TypeScriptBackend.resolver
-  lines: 762-781
+  lines: 768-787
 incoming_refs: 18
 outgoing_refs: 9
 ---
@@ -125,7 +125,7 @@ Module-level `Language` instance wrapping the tree-sitter TypeScript grammar, us
 <!-- trie:section symbol=trie/parse/typescript:_TSX_LANGUAGE fingerprint=c5ad589203599457aa04a1169938d8c363698f6f5911beb7d29dfcaf5f5f83ff body_fp=63500b6fd37a52e831727da65e2b67dce39a64823975d19febf0dbad2668d042 source_ref=1ac465220acb62d6851652aa47760d1d3c8fec6d role=config -->
 Module-level `Language` instance for the TSX grammar, used by `_make_parser` to configure TSX file parsing.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:_make_parser fingerprint=07a068d41639a8c9b7be43046a41af58ffdbc4d225dc8c575e154c8d7c6a8614 body_fp=cb84eaa96b74f59a518db7d533bb8a7ecbb78ee145ef46570848bb2add5dc82b source_ref=1ac465220acb62d6851652aa47760d1d3c8fec6d role=util -->
+<!-- trie:section symbol=trie/parse/typescript:_make_parser fingerprint=6ef66fb600f59d93983e79eb86f78e9547d3c28f63cf5607ced765c261c720b4 body_fp=cb84eaa96b74f59a518db7d533bb8a7ecbb78ee145ef46570848bb2add5dc82b source_ref=e26a1192f6add3e1cab718bb626a08a23e9d5981 role=util -->
 Construct a `Parser` configured with the TSX or TS language grammar based on `file_path`'s extension.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/typescript:_node_text fingerprint=90272da3050ae7f74f98b5fb62c5860239cd69d3c98b9843ee7816f84677e986 body_fp=f7c7c49a0a058caa316ed12e0c99cff7c2b8529e560cbb1eff2a216286e0ba83 source_ref=1ac465220acb62d6851652aa47760d1d3c8fec6d role=util -->
@@ -134,8 +134,8 @@ Decode the byte span of `node` from `source` into a UTF-8 string, replacing inva
 <!-- trie:section symbol=trie/parse/typescript:_hash fingerprint=7057d302a510678c4e042810b0eb270cc10d5047cb0a03fac868582b067b5767 body_fp=4d6c535ddd567d3e1fea8feeb45a70dc232492d2f3105352d59a2cda51262480 source_ref=1ac465220acb62d6851652aa47760d1d3c8fec6d role=util -->
 Return the SHA-256 hex digest of a UTF-8-encoded string.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:_module_key fingerprint=6d00b86626487f14812511a38f31a6c043b38a10e8521a1795aa4d74c92409d9 body_fp=b6b3b0654293ba64af58a58945c646c38768d15cf35cfd871c7214a18b6a9875 source_ref=1ac465220acb62d6851652aa47760d1d3c8fec6d role=util -->
-Compute the qualified-name prefix for a file by stripping its TypeScript extension from its path relative to `source_root`, returning a slash-form string.
+<!-- trie:section symbol=trie/parse/typescript:_module_key fingerprint=06c146e80c9fbcf54a049f41a7b4aabc2081d2789b6e85c2b6a989cb49476e76 body_fp=e3bf206e51a147d598be98f24a310b5dee733c040fa5bdd30a7f937043e14d09 source_ref=e26a1192f6add3e1cab718bb626a08a23e9d5981 role=util -->
+Compute the qualified-name prefix for a file by stripping its TypeScript or JavaScript extension from its path relative to `source_root`, returning a slash-form string.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/typescript:_normalize_tokens fingerprint=da1d32cd7ab0afb71037deba11a042b2a02412c61813009f1f055e5becc682b0 body_fp=8339f59e79f2bb2d875958573a67f05fcf23bc689195bcb7aa42b39cb5d94ef1 source_ref=1ac465220acb62d6851652aa47760d1d3c8fec6d role=util -->
 Recursively collect leaf-token text from a tree-sitter node, skipping comment nodes, and return tokens joined by spaces.
@@ -226,10 +226,10 @@ Return the first named child of `node` whose type equals `type_name`, or `None`.
 <!-- trie:section symbol=trie/parse/typescript:TS_SYSTEM_PROMPT fingerprint=523395e0a833b64879f69133b4728bcddd9ad2d969d17af2dcbd23988ae67be2 body_fp=627b38ffd1b0dcc3119dae55d61a1e680ded005416cd0c7a89c57f13c9d0270a source_ref=1ac465220acb62d6851652aa47760d1d3c8fec6d role=config -->
 System prompt string passed to the LLM when generating documentation for TypeScript symbols.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend fingerprint=f1cc11ba82338efb8bff414e6cad2a2bef70a2cb117e199f06307ca5e82d3f40 body_fp=1180f92c8c3482163b697749b9fac815ae1a017cab2df8dc6e58128455d63b35 source_ref=e1c63593dc55002aae32a954ca66e5ff7d7fb810 role=api -->
-Implements `LanguageBackend` for `.ts`, `.tsx`, and `.d.ts` files, wiring two-pass reference extraction (tree-sitter + optional LSP resolver), symbol extraction, and the system prompt.
+<!-- trie:section symbol=trie/parse/typescript:TypeScriptBackend fingerprint=037f9407f3cfca2b9a692b51de5b57005ef0cef32c3972e71e5c1108f082c722 body_fp=bc8d102aca3e4d7956c73e681523838eaa617a6a5eee49acd039e33cea5c5b6f source_ref=e26a1192f6add3e1cab718bb626a08a23e9d5981 role=domain -->
+Implements `LanguageBackend` for `.ts`, `.tsx`, `.d.ts`, `.jsx`, `.mjs`, `.cjs`, and `.js` files, wiring two-pass reference extraction (tree-sitter + optional LSP resolver), symbol extraction, and the system prompt.
 
-- `extensions`: ordered longest-first so `.d.ts` resolves before `.ts`
+- `extensions`: ordered longest-first so `.d.ts` resolves before `.ts`; JavaScript suffixes included as the TS grammar is a superset
 - `extract_file_data`: delegates to `typescript_refs`; merges LSP-resolved member-dispatch edges when a resolver is available; does not support `source_text` override
 - `resolver()`: returns a cached `LspResolver` for typescript-language-server, or `None` if `TRIE_DISABLE_RESOLVER=1` or the server is not on PATH
 <!-- trie:end -->

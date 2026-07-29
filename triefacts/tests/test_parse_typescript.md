@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_parse_typescript.py
 file_fingerprint: 7f31de0d9a1edc5a11457c615ceb409a97c9436be61c4787690547328daa9b33
-last_synced_at: '2026-07-28T23:34:34Z'
+last_synced_at: '2026-07-29T00:06:48Z'
 defines:
 - kind: module
   qualified_name: tests/test_parse_typescript:__module__

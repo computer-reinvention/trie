@@ -29,7 +29,11 @@ _TSX_LANGUAGE = Language(tst.language_tsx())
 
 def _make_parser(file_path: Path) -> Parser:
     parser = Parser()
-    parser.language = _TSX_LANGUAGE if file_path.name.endswith(".tsx") else _TS_LANGUAGE
+    # JSX-bearing suffixes need the TSX grammar; plain JS parses fine under the
+    # TypeScript grammar (a superset), so .js/.mjs/.cjs use the TS grammar and
+    # .jsx uses TSX.
+    name = file_path.name
+    parser.language = _TSX_LANGUAGE if name.endswith((".tsx", ".jsx")) else _TS_LANGUAGE
     return parser
 
 
@@ -45,7 +49,7 @@ def _module_key(file_path: Path, source_root: Path) -> str:
     """qname prefix — file path minus a recognised source suffix (slash form)."""
     rel = file_path.relative_to(source_root)
     s = str(rel)
-    for ext in (".d.ts", ".tsx", ".ts"):
+    for ext in (".d.ts", ".tsx", ".ts", ".jsx", ".mjs", ".cjs", ".js"):
         if s.endswith(ext):
             return s[: -len(ext)]
     return str(rel.with_suffix(""))
@@ -717,8 +721,10 @@ class TypeScriptBackend:
     """
 
     name = "typescript"
-    # Longest/compound suffix first so `.d.ts` resolves before `.ts`.
-    extensions = (".d.ts", ".tsx", ".ts")
+    # Longest/compound suffix first so `.d.ts` resolves before `.ts`. JavaScript
+    # suffixes are handled by the same backend (typescript-language-server serves
+    # JS too); the TS grammar is a superset for symbol/reference extraction.
+    extensions = (".d.ts", ".tsx", ".ts", ".jsx", ".mjs", ".cjs", ".js")
 
     def __init__(self) -> None:
         self._resolver = None
