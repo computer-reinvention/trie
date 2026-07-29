@@ -11,7 +11,7 @@
 
 ---
 
-Every session spent on a codebase — by an engineer or a coding agent — starts by re-deriving context: *what does this do, and why is it like this?* The code answers the first slowly and the second not at all. Commit messages describe diffs, not decisions; documentation rots because nothing stops it from rotting.
+Every coding agent's session starts by re-deriving context: *what does this code do, and why is it like this?* The code itself answers the first question bit-by-bit and the second not at all. Commit messages describe diffs, not decisions; documentation rots because nothing stops it from rotting. No tool exists to record symbol level intent - it lives in the programmer's head or in between the conversation turns of the coding agent. Eventually forgotten, lost to time in both cases.
 
 trie fixes both, in the repo, with the mechanism your code already trusts: version control and a pre-commit gate. It maintains two indexes alongside your source tree and keeps both honest:
 
