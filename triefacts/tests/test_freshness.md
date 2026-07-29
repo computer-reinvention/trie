@@ -1,13 +1,13 @@
 ---
 trie_version: 0.2.0
 source: tests/test_freshness.py
-file_fingerprint: 1a9703522acaccffd852d40e4a7e04da0a938cbb70decba87bbb531e790ee629
-last_synced_at: '2026-07-29T17:55:07Z'
+file_fingerprint: 8cb71cd6fd365057153d6d3bec2ab111f317036a443a17d7f8eb66b2f96f8c6f
+last_synced_at: '2026-07-29T18:38:37Z'
 description: Tests for the turn-boundary freshness gate (`trie sync --graph-only`).
 defines:
 - kind: module
   qualified_name: tests/test_freshness:__module__
-  lines: 1-493
+  lines: 1-531
 - kind: function
   qualified_name: tests/test_freshness:_git
   lines: 46-48
@@ -98,8 +98,11 @@ defines:
 - kind: function
   qualified_name: tests/test_freshness:test_cli_graph_only_outside_git_fails
   lines: 473-492
+- kind: function
+  qualified_name: tests/test_freshness:test_full_sync_stamps_graph_freshness
+  lines: 495-530
 incoming_refs: 0
-outgoing_refs: 35
+outgoing_refs: 36
 ---
 <!-- trie:section symbol=tests/test_freshness:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=ab7aae61e5f60ed8e938017caba43f98f18fdecee1f09edc37363ae841e7dc8b source_ref=a3a134b57a603882c49ea5d69c36ac88832aa352 role=test-infrastructure -->
 Tests for the turn-boundary freshness gate that prevents stale graph state across git operations and file modifications.
@@ -203,4 +206,7 @@ Assert that `trie sync --graph-only` reports "prose stale" on every subsequent r
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_freshness:test_cli_graph_only_outside_git_fails fingerprint=358bbb4202fd20c0676a2d1f47a855e5cbf28b638b41c18a805a1ebc65dbdf62 body_fp=24fb4d4fd95c329e756c74e8405712e9255230b660ff54f2bd2d22d1e6916966 source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
 Assert that `trie sync --graph-only` exits with code 1 and mentions "git repository" when run outside a git repo.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_freshness:test_full_sync_stamps_graph_freshness fingerprint=794f7cc3ae6532b91812d4c02ec28df35a697ff9559d787940553afacbe5e365 body_fp=26fd57522757d9133d640cefbe60770f29c0b8aad18a4389a470e04452294129 source_ref=ced013c93ceed35f637b33681e5bbd760c5b4287 role=test -->
+Assert that both bootstrap and incremental `trie sync` write a graph freshness stamp, preventing the next turn hook from triggering a redundant rebuild.
 <!-- trie:end -->

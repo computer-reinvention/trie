@@ -490,3 +490,41 @@ def test_cli_graph_only_outside_git_fails(tmp_path: Path, monkeypatch: pytest.Mo
     result = runner.invoke(app, ["sync", "--graph-only"])
     assert result.exit_code == 1
     assert "git repository" in result.output
+
+
+def test_full_sync_stamps_graph_freshness(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """Regression: a full `trie sync` begins with a whole-project scan, so it
+    must stamp graph freshness — otherwise the very next turn hook sees
+    head_moved/mtimes_moved and redundantly rebuilds an already-current graph."""
+    from typer.testing import CliRunner
+
+    from tests.fake_client import FakeTrieClient
+    from trie.cli import app
+
+    monkeypatch.setattr(
+        "trie.cli.make_client",
+        lambda *_a, **_kw: FakeTrieClient(output_body="## body\n\nDeterministic."),
+    )
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+
+    # Full sync from cold (bootstrap path — no triefacts yet). --limit keeps
+    # the first-run budget guard satisfied.
+    result = runner.invoke(app, ["sync", "--limit", "10"])
+    assert result.exit_code == 0, result.output
+    stamp = read_stamp(project)
+    assert stamp is not None, "bootstrap sync must stamp graph freshness"
+
+    # The immediate graph-only run must be a no-op, not head_moved/mtimes_moved.
+    followup = runner.invoke(app, ["sync", "--graph-only"])
+    assert followup.exit_code == 0, followup.output
+    assert "graph fresh" in followup.output
+
+    # Same contract on the incremental path: edit + full sync → stamped again.
+    time.sleep(0.01)
+    alpha = project / "src" / "alpha.py"
+    alpha.write_text(alpha.read_text() + "\n\n\ndef alpha_two():\n    return 2\n")
+    result2 = runner.invoke(app, ["sync"])
+    assert result2.exit_code == 0, result2.output
+    followup2 = runner.invoke(app, ["sync", "--graph-only"])
+    assert "graph fresh" in followup2.output

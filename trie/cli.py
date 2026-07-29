@@ -32,6 +32,7 @@ from trie.freshness import (
     NotAGitRepoError,
     ensure_fresh_after_turn,
     ensure_fresh_before_turn,
+    stamp_graph_fresh,
 )
 from trie.graph.store import Store
 from trie.hook_install import (
@@ -2008,6 +2009,11 @@ def _run_full_pass(
         if result.files_synced:
             _refresh_index_quietly(config, project_root, store)
 
+    # Bootstrap began with a whole-project scan: the graph is current with
+    # disk regardless of how much prose the budget allowed. Stamp it so the
+    # next graph-only sync no-ops.
+    stamp_graph_fresh(project_root, config)
+
     had_errors = _report_sync_errors(reporter, result.file_errors)
     reporter.success(
         f"synced {result.files_synced} files "
@@ -2232,6 +2238,9 @@ def _run_metadata_only_refresh(reporter: Reporter) -> None:
                 # cost or token telemetry to report.
                 bar.finish_file(rel)
 
+    # The metadata pass began with a whole-project scan: stamp graph freshness.
+    stamp_graph_fresh(config=config, project_root=project_root)
+
     reporter.success(
         f"refreshed metadata on {changed_count} of {total - skipped_count} triefact(s) "
         f"({total - changed_count - skipped_count} already current)"
@@ -2268,6 +2277,9 @@ def _run_roles_only_sync(reporter: Reporter, *, model: str | None, rederive_taxo
                 progress=cb,
                 rederive_taxonomy=rederive_taxonomy,
             )
+
+    # The roles pass began with a whole-project scan: stamp graph freshness.
+    stamp_graph_fresh(config=config, project_root=project_root)
 
     if result.taxonomy_derived:
         reporter.success(
@@ -2310,6 +2322,11 @@ def _run_incremental_sync(
         )
         if result.files_synced:
             _refresh_index_quietly(config, project_root, store)
+
+    # run_incremental began with a whole-project scan, so the graph is now
+    # current with disk: stamp it so the next graph-only sync (the turn hook)
+    # no-ops instead of redundantly rebuilding.
+    stamp_graph_fresh(project_root, config)
 
     if result.orphan_triefacts_removed:
         for triefact in result.orphan_triefacts_removed:

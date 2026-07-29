@@ -22,6 +22,9 @@ before file reads, before any other text-search tool. It searches the
 indexed symbol graph first and falls back to ripgrep over in-scope
 source bodies, attributing hits to their enclosing symbols — you get
 signatures, one-liners, and call-graph context instead of raw lines.
+When name matches are sparse, body/prose-matched candidates ride along
+under `related` — a concept's implementing module surfaces even when
+its symbols are named differently than your query.
 
 ---
 
@@ -45,12 +48,17 @@ note, so the record is enforced, not aspirational.
    clears the queue. Multi-symbol applies require a session note (the
    unifying intent). The archived notes feed the per-commit digest
    (`trie diff`), the PR digest comments, and `read --history`.
+   The response ends with gate coverage: touched symbols still missing
+   a note are listed under `uncovered` — stage notes for them and apply
+   again *now*, instead of discovering them as a failed commit later.
 
 The gate (`trie intent`, runs in the pre-commit hook): compares the
 working tree to HEAD at the normalized-body level — formatting and
 line shifts never gate — and lists any touched symbol without a note,
 with copy-pasteable `trie patch create <qname> -n "…"` commands. Synthetic
-`__module__` symbols are exempt.
+`__module__` symbols are exempt, and a note on a class covers its
+methods (one note for a new class is enough; method-level notes are
+for finer granularity, not an obligation).
 
 Patches accumulate across turns and across agents; drop stale ones with
 `«patch_drop»`.
@@ -156,8 +164,12 @@ trie patch apply         [--note STR]   (records notes; generates no code)
 
 CLI-specific behaviour:
 - **`trie grep` / `trie read` / `trie trace`** output Rich tables /
-  structured prose by default; pass `--json` for the raw envelope. The
-  other query commands are JSON-only and accept no `--json` flag.
+  structured prose on a terminal and plain untruncated records when
+  piped; pass `--json` for the raw envelope. The other query commands
+  are JSON-only and accept no `--json` flag.
+- **`trie sync --file X`** regenerates only the file's *stale* symbols
+  (fresh sections pass through without an LLM call; a fully-fresh file
+  is a free no-op). Pass `--force` for a full fresh rewrite.
 - **Exit codes**: `0` on success, `1` on tool error, `2` on argument
   errors. Errors print to **stderr**.
 - **The same project is targeted** regardless of surface — everything
@@ -170,8 +182,13 @@ trie init         [--force] [--no-install-hooks] [--no-scan]
 trie plan         [--model MODEL]
 trie sync         [--file PATH] [--all] [--dry-run] [--budget USD]
                   [--limit N] [--model MODEL] [--metadata-only] [--force]
+trie sync --graph-only  [--before-turn | --after-turn] [--json]
+                  # graph rebuild + freshness stamp; never calls the LLM.
+                  # This is what turn hooks run. There is no separate
+                  # refresh command. Output reports two clauses:
+                  # "graph …; prose …" — when prose is stale, a plain
+                  # `trie sync` regenerates it.
 trie verify
-trie sync --graph-only   [--before-turn] [--after-turn]   # graph rebuild, never the LLM
 trie lock-check
 trie audit        [--log PATH] [--compare PATH] [--as-json]
 trie setup        [--target NAME] [--all] [--scope project|user]

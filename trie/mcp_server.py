@@ -721,6 +721,11 @@ class TrieTools:
         clears the queue. `session_note` (the unifying intent) is required when
         more than one symbol is pending. Source changes are yours; this records
         why they happened.
+
+        The response's `uncovered` key lists touched symbols that still have
+        no note and would fail the pre-commit gate — stage notes for those and
+        commit again instead of finding out at `git commit` time. Empty list
+        means full coverage.
         """
         from trie.edits.pipeline import record_intent
 
@@ -958,19 +963,26 @@ class TrieTools:
         {
           "hits": [ {qname, signature, file_pointer, one_liner, is_public, kind,
                      inbound_count, outbound_count}, ... ],
-          "fallback"?: { ... }   # present only when hits is empty
+          "fallback"?: { ... },  # present only when hits is empty
+          "related"?: [ ... ],   # body/prose-matched extras when hits < limit
+          "related_kind"?: "text_match" | "fuzzy_prose"
         }
         ```
+        When name hits leave room under `limit`, `related` carries candidates
+        whose *bodies or prose* match the query (never repeating a hit's
+        qname) — the module implementing a concept surfaces even when its
+        symbol names don't contain the query string.
+
         On empty hits, `fallback.kind` is one of:
         - `"none"`: predicate had no `name_contains` for the fallback to search on.
         - `"text_match_empty"`: the query string appears in no in-scope source body
           and fuzzy matching also found nothing above the cutoff.
         - `"text_match"`: a string search against in-scope source bodies found
           candidate symbols; `matches` is the ranked list (by `inbound_count`
-          desc) capped at `grep_fallback_match_limit`. Even when the underlying
-          string match was very broad, we always return the top-ranked
-          candidates so the agent can triangulate from data rather than refine
-          blindly.
+          desc) capped at `grep_fallback_match_limit` and by the request's
+          own `limit`. Even when the underlying string match was very broad,
+          we always return the top-ranked candidates so the agent can
+          triangulate from data rather than refine blindly.
         - `"fuzzy_prose"`: no exact match anywhere, but rapidfuzz found symbols
           whose name, one_liner, or triefact prose is close enough; `matches`
           is sorted by relevance score descending.
