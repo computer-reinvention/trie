@@ -230,35 +230,40 @@ def test_synthesize_narrative_uses_cache_prefix() -> None:
     import types
 
     from trie.session_diff import SessionDiff as LocalSessionDiff  # type: ignore[attr-defined]
-    from trie.session_diff import synthesize_narrative
+    from trie.session_diff import SessionNarrative, synthesize_narrative
 
     diff = LocalSessionDiff(triefact_diff="- old fact\n+ new fact\n")
+    fake_output = SessionNarrative(one_liner="Did the thing.", body="narrative md")
 
     class FakeClientWithCache:
         def __init__(self) -> None:
+            self.recorded_output_type: type | None = None
             self.recorded_system: str | None = None
             self.recorded_user: str | None = None
             self.recorded_cache_prefix: str | None = None
             self.recorded_max_tokens: int | None = None
 
-        def run_text(
+        def run(
             self,
+            output_type: type,
             system_prompt: str,
             user_prompt: str,
             *,
             max_tokens: int = 1024,
             cache_prefix: str | None = None,
         ) -> object:
+            self.recorded_output_type = output_type
             self.recorded_system = system_prompt
             self.recorded_user = user_prompt
             self.recorded_cache_prefix = cache_prefix
             self.recorded_max_tokens = max_tokens
-            return types.SimpleNamespace(output="narrative md")
+            return types.SimpleNamespace(output=fake_output)
 
     client_with_cache = FakeClientWithCache()
     result = synthesize_narrative(diff, client_with_cache)
 
-    assert result == "narrative md"
+    assert result == fake_output
+    assert client_with_cache.recorded_output_type is SessionNarrative
     assert client_with_cache.recorded_cache_prefix is not None
     assert "## Raw triefact diff" in client_with_cache.recorded_cache_prefix
     # max_tokens is a runaway guard, not the length target: a cap near the
@@ -274,8 +279,9 @@ def test_synthesize_narrative_uses_cache_prefix() -> None:
             self.recorded_system: str | None = None
             self.recorded_user: str | None = None
 
-        def run_text(
+        def run(
             self,
+            output_type: type,
             system_prompt: str,
             user_prompt: str,
             *,
@@ -283,14 +289,64 @@ def test_synthesize_narrative_uses_cache_prefix() -> None:
         ) -> object:
             self.recorded_system = system_prompt
             self.recorded_user = user_prompt
-            return types.SimpleNamespace(output="narrative md")
+            return types.SimpleNamespace(output=fake_output)
 
     client_no_cache = FakeClientNoCache()
     result_fallback = synthesize_narrative(diff, client_no_cache)
 
-    assert result_fallback == "narrative md"
+    assert result_fallback == fake_output
     recorded_user_no_cache = client_no_cache.recorded_user or ""
     assert "## Raw triefact diff" in recorded_user_no_cache
+
+    class FakeLegacyTextClient:
+        """Client whose structured output is a bare string (legacy/test fake)."""
+
+        def run(
+            self,
+            output_type: type,
+            system_prompt: str,
+            user_prompt: str,
+            *,
+            max_tokens: int = 1024,
+            cache_prefix: str | None = None,
+        ) -> object:
+            return types.SimpleNamespace(output="bare text narrative")
+
+    coerced = synthesize_narrative(diff, FakeLegacyTextClient())
+    assert coerced.one_liner == ""
+    assert coerced.body == "bare text narrative"
+
+
+def test_session_narrative_as_markdown_formatting() -> None:
+    from trie.session_diff import SessionNarrative
+
+    full = SessionNarrative(
+        one_liner="Adds structured digest narratives.",
+        body="The digest now renders a summary line.\n\n- `synthesize_narrative` returns a model",
+        conflicts=["Note claims `foo` was removed but the diff shows no change."],
+    )
+    md = full.as_markdown()
+    blocks = md.split("\n\n")
+    assert blocks[0] == "**Adds structured digest narratives.**"
+    assert blocks[1].startswith("The digest now renders a summary line.")
+    assert (
+        blocks[-1]
+        == "> **Intent vs. diff:** Note claims `foo` was removed but the diff shows no change."
+    )
+
+    # Empty/whitespace fields are dropped instead of leaving stray markers.
+    minimal = SessionNarrative(one_liner="", body="Only a body.", conflicts=["  "])
+    assert minimal.as_markdown() == "Only a body."
+
+    # Multiple conflicts render one blockquote line each, in order.
+    multi = SessionNarrative(
+        one_liner="x",
+        body="y",
+        conflicts=["first", "second"],
+    )
+    lines = multi.as_markdown().splitlines()
+    assert lines[-2] == "> **Intent vs. diff:** first"
+    assert lines[-1] == "> **Intent vs. diff:** second"
 
 
 def test_render_digest_section_shape() -> None:
