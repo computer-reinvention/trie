@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/models.py
 file_fingerprint: 5e1ff92834dd0c08961f384abe4d713306bc9042f72728e62a66740e93eabf64
-last_synced_at: '2026-07-25T10:43:52Z'
+last_synced_at: '2026-07-29T01:49:23Z'
 defines:
 - kind: module
   qualified_name: trie/models:__module__
@@ -139,7 +139,7 @@ defines:
 - kind: function
   qualified_name: trie/models:make_client
   lines: 711-724
-incoming_refs: 48
+incoming_refs: 49
 outgoing_refs: 6
 ---
 <!-- trie:section symbol=trie/models:__module__ fingerprint=040dd73062f452f0be03d3b12bd0034fbdf69902b59a94606a29415a8bde56d9 body_fp=9b387fda13f0c60ba17cbe1d813fca36e81accdb48ac1477cbbc51fd87ee73ba source_ref=8f45f466ffa9b5cb61224b64456ad3d91e218ec8 role=orchestration -->
@@ -332,7 +332,7 @@ Wraps Pydantic AI agent creation and execution with structured output, prompt ca
 - Applies exponential backoff retry on rate limits and server errors
 - Configures request timeouts to prevent hung connections from blocking worker threads indefinitely
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:TrieClient.__init__ fingerprint=5ea067cab1ad71d37698daec406cb31c07a5b9df936a7ce4902ac6f4796b706c body_fp=dfe7c5ca5571689413f666f132f5f10e054e51d4fc49bb10b2ef084f0db137a6 source_ref=54db09acbc4744575e7989226c07b6e81210a833 role=domain -->
+<!-- trie:section symbol=trie/models:TrieClient.__init__ fingerprint=5ea067cab1ad71d37698daec406cb31c07a5b9df936a7ce4902ac6f4796b706c body_fp=dfe7c5ca5571689413f666f132f5f10e054e51d4fc49bb10b2ef084f0db137a6 source_ref=eac7d606b20c417f983eb8e133fd62c5dcf7aa6a role=domain -->
 Initializes TrieClient with model ID conversion, timeout configuration, and raw Anthropic client.
 
 - `full_model_id`: trie's provider/model format (e.g., "anthropic/claude-sonnet-4-6")

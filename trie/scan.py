@@ -37,6 +37,7 @@ def scan_project(*, project_root: Path, config: Config, store: Store) -> ScanRes
     """
     with telemetry.timed("scan", project_root=str(project_root)) as tele:
         project_root = project_root.resolve()
+        registry.apply_resolver_config(config)
         src_root = (project_root / config.triefacts.source_root).resolve()
         discovered = discover_files(project_root, config.scope)
 

@@ -17,6 +17,15 @@ class Scope:
             "**/*.py",
             "**/*.ts",
             "**/*.tsx",
+            "**/*.js",
+            "**/*.jsx",
+            "**/*.mjs",
+            "**/*.cjs",
+            "**/*.go",
+            "**/*.rs",
+            "**/*.c",
+            "**/*.h",
+            "**/*.lua",
         ]
     )
     exclude: list[str] = field(
@@ -34,6 +43,30 @@ class Scope:
 class Triefacts:
     root: str = "triefacts"
     source_root: str = "."
+
+
+@dataclass
+class Resolver:
+    """Configuration for the type-aware LSP reference resolver.
+
+    The resolver supplements tree-sitter with method/member-dispatch edges by
+    driving a language server. Defaults keep the built-in per-language server
+    choices (basedpyright/pyright, typescript-language-server, gopls,
+    rust-analyzer, clangd, lua-language-server), each discovered on PATH.
+
+    - `enabled`: master switch. When False, all backends extract with
+      tree-sitter only (equivalent to `TRIE_DISABLE_RESOLVER=1`).
+    - `disabled_languages`: language names (e.g. "rust", "go") to force
+      tree-sitter-only for, even when a server is installed.
+    - `servers`: per-language server command override, e.g.
+      `{"python": ["basedpyright-langserver", "--stdio"]}`. Replaces the
+      built-in command for that language's spec; discovery/degradation still
+      apply (a missing binary → tree-sitter-only for that language).
+    """
+
+    enabled: bool = True
+    disabled_languages: list[str] = field(default_factory=list)
+    servers: dict[str, list[str]] = field(default_factory=dict)
 
 
 @dataclass
@@ -225,6 +258,7 @@ class Config:
     mcp: Mcp = field(default_factory=Mcp)
     debug: Debug = field(default_factory=Debug)
     diff: Diff = field(default_factory=Diff)
+    resolver: Resolver = field(default_factory=Resolver)
 
     @classmethod
     def from_dict(cls, data: dict) -> Config:
@@ -242,6 +276,7 @@ class Config:
             mcp=Mcp(**data.get("mcp", {})),
             debug=Debug(**data.get("debug", {})),
             diff=Diff(**data.get("diff", {})),
+            resolver=Resolver(**data.get("resolver", {})),
         )
 
     @classmethod
@@ -279,12 +314,16 @@ version = "0.1.9"
 
 [scope]
 # Glob patterns relative to the project root (the directory containing this file).
-# Defaults cover every language trie has a parser backend for (Python +
-# TypeScript/TSX). Trim this list to just the extensions your project uses to
-# keep discovery fast and sync cost down.
+# Defaults cover every language trie has a parser backend for (Python,
+# TypeScript/TSX, JavaScript, Go, Rust, C, Lua). Trim this list to just the
+# extensions your project uses to keep discovery fast and sync cost down.
 # Tests are included by default — they encode behavioral spec worth documenting.
 # Add `"**/tests/**"` to `exclude` if you'd rather skip them to keep cost down.
-include = ["**/*.py", "**/*.ts", "**/*.tsx"]
+include = [
+    "**/*.py",
+    "**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs",
+    "**/*.go", "**/*.rs", "**/*.c", "**/*.h", "**/*.lua",
+]
 # `**/.*/**` prunes every hidden directory (.git, .trie, .venv, .opencode,
 # .vscode, …) — none of those are project source.
 exclude = [
@@ -376,4 +415,20 @@ log_to_stderr = false                          # mirror events to stderr (dev on
 capture_args = true                            # include MCP tool args in events
 capture_responses = false                      # include full response bodies (large)
 redact_keys = []                               # field paths to elide, e.g. ["args.predicate"]
+
+[resolver]
+# The type-aware LSP resolver supplements tree-sitter with method/member
+# dispatch edges (obj.method(), self.helper()) by driving a language server.
+# Defaults discover a standard server per language on PATH and degrade to
+# tree-sitter-only when none is installed.
+enabled = true
+# Languages to force tree-sitter-only, even if a server is installed:
+# disabled_languages = ["rust", "go"]
+# Override the server command for a language (replaces the built-in default):
+# [resolver.servers]
+# python = ["basedpyright-langserver", "--stdio"]
+# go     = ["gopls"]
+# rust   = ["rust-analyzer"]
+# c      = ["clangd"]
+# lua    = ["lua-language-server"]
 """

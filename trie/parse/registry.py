@@ -23,16 +23,21 @@ from trie.parse.types import FileData, Symbol
 
 def _build_registry() -> list[LanguageBackend]:
     backends: list[LanguageBackend] = [PythonBackend()]
-    # TypeScript registers here in Phase 3 once trie/parse/typescript.py exists:
-    #   from trie.parse.typescript import TypeScriptBackend
-    #   backends.append(TypeScriptBackend())
-    try:
-        from trie.parse.typescript import TypeScriptBackend
-
-        backends.append(TypeScriptBackend())
-    except ImportError:
-        # TypeScript backend / its tree-sitter grammar not installed yet.
-        pass
+    # Each additional backend is optional at import time: if its tree-sitter
+    # grammar isn't installed, it's simply not registered (the language becomes
+    # unindexable rather than crashing the whole registry).
+    for module_name, class_name in (
+        ("trie.parse.typescript", "TypeScriptBackend"),
+        ("trie.parse.go", "GoBackend"),
+        ("trie.parse.rust", "RustBackend"),
+        ("trie.parse.c", "CBackend"),
+        ("trie.parse.lua", "LuaBackend"),
+    ):
+        try:
+            module = __import__(module_name, fromlist=[class_name])
+            backends.append(getattr(module, class_name)())
+        except ImportError:
+            pass
     return backends
 
 
@@ -50,6 +55,30 @@ _BY_EXTENSION: list[tuple[str, LanguageBackend]] = sorted(
 def all_backends() -> tuple[LanguageBackend, ...]:
     """Every registered backend."""
     return tuple(_BACKENDS)
+
+
+def apply_resolver_config(config) -> None:
+    """Push trie.toml's `[resolver]` settings into the resolver spec selectors.
+
+    Backends build their resolver lazily and cache it, so this also resets each
+    backend's resolver cache — a subsequent `resolver()` rebuilds it under the
+    new config. Called at the start of a scan so the parse layer stays
+    config-free by default while honouring project configuration when present.
+    """
+    from trie.parse.resolvers import specs
+
+    res = getattr(config, "resolver", None)
+    if res is None:
+        return
+    specs.configure_resolver(
+        enabled=res.enabled,
+        disabled_languages=res.disabled_languages,
+        servers=res.servers,
+    )
+    for b in _BACKENDS:
+        if hasattr(b, "_resolver_built"):
+            b._resolver_built = False
+            b._resolver = None
 
 
 def get_backend(name: str) -> LanguageBackend | None:

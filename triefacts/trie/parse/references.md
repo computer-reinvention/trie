@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/parse/references.py
 file_fingerprint: edd5ec0dd0e18bf21761ae1336a7e920dabad906e1dcfb285945b206026a56e6
-last_synced_at: '2026-07-26T20:28:41Z'
+last_synced_at: '2026-07-28T23:34:36Z'
 description: Reference extraction via tree-sitter.
 defines:
 - kind: module

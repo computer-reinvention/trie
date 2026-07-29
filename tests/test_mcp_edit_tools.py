@@ -94,10 +94,16 @@ class TestCreateTool:
         listed = tools.patch_list()
         assert any(c["target_qname"] == "lib:helper" for c in listed["creates"])
 
-    def test_create_existing_symbol_errors_with_fix(self, tools):
+    def test_create_existing_symbol_falls_back_to_patch(self, tools):
+        # Creating a symbol that already exists is not an error: the note is
+        # recorded as a patch and the result flags the graceful fallback.
         r = tools.create_symbol("lib:slugify", note="dup")
-        assert r["error"]["code"] == "already_exists"
-        assert r["error"]["fix"]["tool"] == "patch"
+        assert "error" not in r
+        assert r["op"] == "patch"
+        assert r["fell_back"] is True
+        assert "patch_id" in r
+        listed = tools.patch_list()
+        assert any(p["qname"] == "lib:slugify" for p in listed["patches"])
 
 
 class TestDeleteTool:
