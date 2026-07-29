@@ -1,14 +1,14 @@
 ---
 trie_version: 0.2.0
 source: trie/freshness.py
-file_fingerprint: 970d01c4da7804c7f0fbfce1e6acdbdea64532052e44148350aa98ddeefd4a5d
-last_synced_at: '2026-07-29T17:55:02Z'
+file_fingerprint: 4d7b60f6ccd58a5b820b98cbefcd04a0bcc4e018cddb3ed23c3f7908c6ef191a
+last_synced_at: '2026-07-29T18:38:38Z'
 description: 'Freshness gate: keep the graph + triefact tree current with respect
   to disk and HEAD.'
 defines:
 - kind: module
   qualified_name: trie/freshness:__module__
-  lines: 1-370
+  lines: 1-393
 - kind: constant
   qualified_name: trie/freshness:STAMP_FILENAME
   lines: 53-53
@@ -34,28 +34,31 @@ defines:
   qualified_name: trie/freshness:write_stamp
   lines: 123-133
 - kind: function
+  qualified_name: trie/freshness:stamp_graph_fresh
+  lines: 136-156
+- kind: function
   qualified_name: trie/freshness:scan_mtimes
-  lines: 136-155
+  lines: 159-178
 - kind: function
   qualified_name: trie/freshness:_require_git
-  lines: 158-174
+  lines: 181-197
 - kind: function
   qualified_name: trie/freshness:_mtimes_differ
-  lines: 177-189
+  lines: 200-212
 - kind: class
   qualified_name: trie/freshness:FreshnessResult
-  lines: 193-209
+  lines: 216-232
 - kind: function
   qualified_name: trie/freshness:ensure_fresh_before_turn
-  lines: 212-239
+  lines: 235-262
 - kind: function
   qualified_name: trie/freshness:ensure_fresh_after_turn
-  lines: 242-264
+  lines: 265-287
 - kind: function
   qualified_name: trie/freshness:_ensure_fresh
-  lines: 267-369
-incoming_refs: 24
-outgoing_refs: 9
+  lines: 290-392
+incoming_refs: 29
+outgoing_refs: 11
 ---
 <!-- trie:section symbol=trie/freshness:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=d60cccb6d7672a73cd632cf51c0697cfac932f1e9143b45a73e72d8dcf9c0604 source_ref=03c354e2bc01cc9a770ee44dfa2954fb8bba6f78 role=change-detection -->
 Freshness gate module that keeps the graph and triefact tree current with respect to disk and git HEAD.
@@ -100,6 +103,12 @@ Returns the recorded freshness stamp from disk, or None if missing or unreadable
 <!-- trie:end -->
 <!-- trie:section symbol=trie/freshness:write_stamp fingerprint=3191fba827b0de10432e3d06820239627570d6d361596c9d3abcd01940ccd5d4 body_fp=87f73609447123b2e8e27ba8ffd57a43601e1781ebcc01b9f57b50902f244540 source_ref=03c354e2bc01cc9a770ee44dfa2954fb8bba6f78 role=change-detection -->
 Writes a freshness stamp to disk atomically using write-then-rename to prevent corruption.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/freshness:stamp_graph_fresh fingerprint=0b1a90b1065166768c438840845b30bd86294a57839d5061a4c56422fdf49f2e body_fp=d6c01664fad48134de3b2363c316ebd9ac0eba97fdc661a53ae3f8e6d567fb18 source_ref=0b739aacd3bb27bb550bd07e35677cebc4eb61ea role=persistence -->
+Write a freshness stamp recording the current HEAD SHA and all in-scope file mtimes, preventing redundant graph rebuilds on the next turn hook.
+
+- No-op when `project_root` is not a git repo or has no commits yet.
+- Must not be called after `trie sync --file`; single-file scans do not justify stamping the full mtime map.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/freshness:scan_mtimes fingerprint=bcf189563877e5a915ba69067f3a2d7adf79275e2404d31d4c0507334bd2d3c3 body_fp=0faaea3f8ed87f14aa6f266f222cd44a8b189ca288e6f2f0e89120b38ad93cae source_ref=03c354e2bc01cc9a770ee44dfa2954fb8bba6f78 role=change-detection -->
 Returns modification times for all in-scope source files as a dictionary mapping relative paths to mtime floats.

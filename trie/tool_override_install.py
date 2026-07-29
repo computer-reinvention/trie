@@ -177,7 +177,9 @@ export default tool({
         "Substring to search for. Mapped to trie's `name_contains` " +
           "predicate; case-insensitive, matched against symbol local names. " +
           "If no symbol matches, trie's text-match fallback searches in-scope " +
-          "source bodies and attributes hits to enclosing symbols.",
+          "source bodies and attributes hits to enclosing symbols; when name " +
+          "matches are sparse, body/prose-matched candidates are appended " +
+          "under 'related by prose'.",
       ),
     path: tool.schema
       .string()
@@ -1491,7 +1493,9 @@ export default tool({
     "Archives every pending note to the session log (feeding the per-commit " +
     "digest, read --history, and the `trie intent` pre-commit gate) and " +
     "clears the queue. Multi-symbol applies REQUIRE a session_note " +
-    "describing the unifying intent.",
+    "describing the unifying intent. The output ends with gate coverage: " +
+    "touched symbols still lacking notes are listed so you can stage and " +
+    "re-apply now instead of failing the commit later.",
   args: {
     session_note: tool.schema
       .string()

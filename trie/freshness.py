@@ -133,6 +133,29 @@ def write_stamp(project_root: Path, stamp: Stamp) -> None:
     os.replace(tmp, path)
 
 
+def stamp_graph_fresh(project_root: Path, config: Config) -> None:
+    """Record that the graph is current with disk after a full-scan operation.
+
+    Every sync path that begins with a whole-project `scan_project` (incremental
+    sync, bootstrap, metadata-only, roles-only) leaves the graph consistent with
+    HEAD + current mtimes — exactly what the freshness stamp asserts. Without
+    stamping, the next `trie sync --graph-only` (i.e. the very next turn hook)
+    sees `head_moved`/`mtimes_moved` and redundantly rebuilds a graph that is
+    already current.
+
+    Deliberately NOT called after `trie sync --file` — that path scans one file,
+    so stamping the whole mtime map would mask edits elsewhere. Advisory: a
+    no-op outside git or before the first commit (the stamp is git-anchored,
+    and the graph-only path will simply rescan).
+    """
+    if not is_git_repo(project_root):
+        return
+    head = current_head(project_root)
+    if not head:
+        return
+    write_stamp(project_root, Stamp(head=head, mtimes=scan_mtimes(project_root, config)))
+
+
 def scan_mtimes(project_root: Path, config: Config) -> dict[str, float]:
     """Return `{source-rel-path: mtime}` for every in-scope file.
 
