@@ -1,8 +1,8 @@
 ---
 trie_version: 0.1.9
 source: trie/config.py
-file_fingerprint: f8d13680ed4bdfd9e27d75fab74f83e92bbafe23f11b8ba8330607d439d8f29a
-last_synced_at: '2026-07-29T01:48:33Z'
+file_fingerprint: 5a16ef57960b9c00dd576311c48cb0345b56e8363d225ffc74641ccb9c4d9cc8
+last_synced_at: '2026-07-29T02:54:35Z'
 defines:
 - kind: module
   qualified_name: trie/config:__module__
@@ -74,7 +74,7 @@ Defines configuration data structures and loading logic for the trie documentati
 - Config: main configuration class with TOML loading and project discovery
 - DEFAULT_CONFIG_TOML: template configuration with documentation comments
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:TrieMeta fingerprint=54d24a44672076f46996a3143c80a8d75b426482d4256cacba0f6d5c7f7584f3 body_fp=5c5884eaa3d6be1aac461f511a163cadc94d636e92c667435bcd341db9bf6b75 source_ref=64675d426ee121ee07f6aca6b23643e1d1ad5991 role=model -->
+<!-- trie:section symbol=trie/config:TrieMeta fingerprint=4a567e8d864b6fbc3eaabdd2083b8c05be47d3d5171cb3d63ab8c8fb22f9f605 body_fp=5c5884eaa3d6be1aac461f511a163cadc94d636e92c667435bcd341db9bf6b75 source_ref=ef006806a3d41eb39becc803db256e1c63cbc46c role=model -->
 Stores the trie library version string.
 
 - `version`: Current version of the trie library

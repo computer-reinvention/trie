@@ -7,7 +7,7 @@ from pathlib import Path
 
 @dataclass
 class TrieMeta:
-    version: str = "0.1.9"
+    version: str = "0.2.0"
 
 
 @dataclass
@@ -310,7 +310,7 @@ DEFAULT_CONFIG_TOML = """\
 # trie configuration — see https://github.com/pankajgarkoti/trie
 
 [trie]
-version = "0.1.9"
+version = "0.2.0"
 
 [scope]
 # Glob patterns relative to the project root (the directory containing this file).

@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/init.py
 file_fingerprint: 8404d66cb90bf481d446d9ccb779bc363964239677831a79109ab2db39daabfe
-last_synced_at: '2026-07-29T01:48:55Z'
+last_synced_at: '2026-07-29T02:54:45Z'
 defines:
 - kind: module
   qualified_name: trie/init:__module__
