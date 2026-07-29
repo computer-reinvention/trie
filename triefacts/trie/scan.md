@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/scan.py
 file_fingerprint: eff8da70c2e94c57499a045e82c240e95445373c0211cf18e2e7e13b3a62f5be
-last_synced_at: '2026-07-26T20:28:42Z'
+last_synced_at: '2026-07-29T00:06:31Z'
 defines:
 - kind: module
   qualified_name: trie/scan:__module__

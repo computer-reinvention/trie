@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/sync/single_file.py
 file_fingerprint: 634df6ae716aaf4b4d6500ca88b414e1a5a2f3543eac220e55fcf19e1a3ac538
-last_synced_at: '2026-07-28T23:34:25Z'
+last_synced_at: '2026-07-29T00:06:55Z'
 defines:
 - kind: module
   qualified_name: trie/sync/single_file:__module__
@@ -82,7 +82,7 @@ Computes a SHA256 hash of the input text as a hexadecimal string.
 <!-- trie:section symbol=trie/sync/single_file:_triefact_path_for fingerprint=1c2e2cf4fa444cf778b7950d1adb2c52f77952ba318f32650aa629fbcb6ee9a5 body_fp=f3af242cde387d60e322268b4dc3f74f73599045beed4a87abeba99d881e0cc2 source_ref=da91ee7ba7df534c772bf0cfb02b2cfcdb8bce67 role=documentation-sync -->
 Computes the triefact file path for a given source file by mapping its relative position under the source root to the triefacts root with a .md extension.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:_file_description fingerprint=bc5c4ab179593304d4c7bfa09b1ce03affab3167c1f68d40a19bf0dce86bb1c7 body_fp=b9379c5cb3fe7a496660497957aa5ad17c5778e2c8bf4786bd67ebb26216d80c source_ref=e0ec1aff11d8b03d0bd7c2ee3e874a2551f88c6f role=util -->
+<!-- trie:section symbol=trie/sync/single_file:_file_description fingerprint=bc5c4ab179593304d4c7bfa09b1ce03affab3167c1f68d40a19bf0dce86bb1c7 body_fp=b9379c5cb3fe7a496660497957aa5ad17c5778e2c8bf4786bd67ebb26216d80c source_ref=e0ec1aff11d8b03d0bd7c2ee3e874a2551f88c6f role=parsing -->
 Extracts the first non-empty line from a source file's module docstring as a description.
 
 - Returns `None` for non-Python files or files with no module docstring
@@ -94,14 +94,14 @@ Builds a list of dictionaries containing symbol metadata for triefact front matt
 - Returns entries with `kind`, `qualified_name`, and `lines` fields for each symbol
 - Sorted by start line to match source file order
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:_resolve_previous_symbols fingerprint=8fc33ac4cad57a5d5e9a3db964b2bf5766b470e96a0556c471e7c51c9e16544f body_fp=3ef5d1ca85f338214adda448cc6ab6e663574abfbbd1fd7d649152fbe09a75d1 source_ref=6cd32bcbcf3b954f87385b8932e63a19b2514a6f role=domain -->
+<!-- trie:section symbol=trie/sync/single_file:_resolve_previous_symbols fingerprint=8fc33ac4cad57a5d5e9a3db964b2bf5766b470e96a0556c471e7c51c9e16544f body_fp=3ef5d1ca85f338214adda448cc6ab6e663574abfbbd1fd7d649152fbe09a75d1 source_ref=e0ec1aff11d8b03d0bd7c2ee3e874a2551f88c6f role=util -->
 Retrieve previous Symbol instances for qualified names that have git blob references by fetching and parsing historical file content.
 
 - Groups lookups by blob hash to minimize git calls and parsing overhead
 - Returns empty dict when no section references exist
 - Skips symbols that can't be resolved due to unreachable blobs or parse errors
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:refresh_triefact_metadata fingerprint=a89b7a84b9d768fa81770ad6b46a9489e16633f805a84e271026faf557776631 body_fp=a937a868bc56aca5b842b6ac79a293451b67b3e9320335e0f68c81e301406c64 source_ref=6cd32bcbcf3b954f87385b8932e63a19b2514a6f role=orchestration -->
+<!-- trie:section symbol=trie/sync/single_file:refresh_triefact_metadata fingerprint=a89b7a84b9d768fa81770ad6b46a9489e16633f805a84e271026faf557776631 body_fp=a937a868bc56aca5b842b6ac79a293451b67b3e9320335e0f68c81e301406c64 source_ref=e0ec1aff11d8b03d0bd7c2ee3e874a2551f88c6f role=orchestration -->
 Refreshes a triefact file's front matter from the current store without calling the LLM.
 
 - `store` — when None, skips reference counts in front matter; other metadata still updates

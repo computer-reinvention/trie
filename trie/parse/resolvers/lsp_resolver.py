@@ -50,6 +50,15 @@ class LspServerSpec:
     command: list[str]  # argv to spawn the server in stdio mode
     language_id: str  # LSP languageId, e.g. "python", "typescript"
     call_sites: CallSiteExtractor  # member-call sites for this grammar
+    # Seconds to wait for the initialize handshake. Fast servers (pyright,
+    # tsserver) answer in well under a second; heavier ones (rust-analyzer,
+    # clangd, gopls) index the workspace first and can take much longer, so
+    # they raise this. A too-short timeout just means the resolver degrades to
+    # tree-sitter-only for that server (no crash).
+    init_timeout: float = 15.0
+    # Seconds to let the server settle after didOpen before querying, so
+    # background indexing has a chance to make definition answers correct.
+    warmup: float = 0.0
 
     def is_available(self) -> bool:
         """True if the server binary is on PATH (so a backend can offer it)."""
@@ -87,7 +96,7 @@ class LspResolver:
         key = str(source_root.resolve())
         client = self._clients.get(key)
         if client is None:
-            client = LspClient(self._spec.command, source_root)
+            client = LspClient(self._spec.command, source_root, timeout=self._spec.init_timeout)
             client.start()
             self._clients[key] = client
         return client
@@ -106,6 +115,10 @@ class LspResolver:
         own_by_line = _symbols_by_line(symbols)
         client = self._client_for(source_root)
         client.did_open(file_path, self._spec.language_id, source.decode("utf-8", "replace"))
+        if self._spec.warmup:
+            import time
+
+            time.sleep(self._spec.warmup)
 
         target_index: dict[Path, dict[int, str]] = {}
         references: list[Reference] = []
