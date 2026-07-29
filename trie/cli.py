@@ -288,8 +288,8 @@ def _acquire_write_lock_or_exit(
     """Hold the refresh lock for the duration of a write-side command, or exit
     with a clear message if another process already holds it.
 
-    The lock is shared with the hook-driven `trie refresh` and with any other
-    write-side trie command in the same checkout. The hook's refresh path
+    The lock is shared with the hook-driven `trie sync --graph-only` and with any
+    other write-side trie command in the same checkout. The hook's graph-sync path
     quietly queues itself when contended because the agent harness wants
     no-op-on-conflict semantics; operator-typed commands deserve the opposite
     — a loud failure with a non-zero exit so the operator knows their work
@@ -663,11 +663,11 @@ def status_cmd(
     """Show trie's working state — like `git status` for the triefact tree.
 
     Reports:
-      • the active writer (idle, or a running sync/refresh with live progress),
+      • the active writer (idle, or a running sync with live progress),
       • the stale triefacts a `trie sync` would regenerate — computed from the
         same offline content-drift check `trie verify` uses (source body
         fingerprints vs. triefact sentinels), so it's authoritative, not a cached
-        guess. The refresh-computed `pending.json` set is unioned in.
+        guess. The pending set recorded by graph-only syncs is unioned in.
 
     Read-only and fast: a content-drift scan (no LLM, no DB writes). Safe to run
     while a sync is in flight — it reflects that sync's live progress.
@@ -693,7 +693,7 @@ def status_cmd(
     for it in check.items:
         drift_by_file[it.source_path] = drift_by_file.get(it.source_path, 0) + 1
 
-    # Union with the refresh-computed pending set (a graph-only refresh may have
+    # Union with the recorded pending set (a graph-only sync may have
     # flagged cascade files whose own bodies didn't change but whose neighbours did).
     pending = read_pending(project_root)
     stale_set = set(drift_by_file) | set(pending.stale if pending else ())
@@ -780,7 +780,7 @@ def status_cmd(
 def lock_check_cmd(ctx: typer.Context) -> None:
     """Probe whether another trie process holds the project's write lock.
 
-    Designed for the pre-commit hook: if a `trie refresh` or `trie sync` is
+    Designed for the pre-commit hook: if a `trie sync` is
     mid-flight, committing would race the triefact tree the commit is trying
     to capture. We refuse the commit in that case so the user retries once
     the writer finishes.
@@ -830,73 +830,21 @@ def lock_check_cmd(ctx: typer.Context) -> None:
         raise typer.Exit(code=2)
 
 
-@app.command("refresh")
-def refresh_cmd(
-    ctx: typer.Context,
-    before_turn: bool = typer.Option(
-        False,
-        "--before-turn",
-        help=(
-            "Run the cheap pre-turn freshness gate: full refresh if HEAD or mtimes "
-            "moved, no-op otherwise. Intended as an agent harness's pre-turn hook."
-        ),
-    ),
-    after_turn: bool = typer.Option(
-        False,
-        "--after-turn",
-        help=(
-            "Run the post-turn freshness sweep: detect filesystem changes since "
-            "the last refresh and sync affected files. Intended as an agent "
-            "harness's post-turn hook. Default mode when neither flag is given."
-        ),
-    ),
-    model: str | None = typer.Option(
-        None,
-        "--model",
-        help="Override the configured model (only used when refresh fires a sync).",
-    ),
-    sync_prose: bool = typer.Option(
-        False,
-        "--sync",
-        help=(
-            "Regenerate drifted triefact prose inline (the old behaviour). By "
-            "default refresh is graph-only and fast: it rebuilds the symbol graph "
-            "and marks drifted triefacts stale for a later `trie sync`, keeping "
-            "the turn boundary cheap."
-        ),
-    ),
-    as_json: bool = typer.Option(
-        False,
-        "--json",
-        help=(
-            "Emit machine-readable JSON-Lines progress to stdout instead of a "
-            'Rich progress bar. Each line is one event ({"kind": ...}); hosts '
-            "driving trie as a subprocess parse this to render "
-            "their own status UI. Implies quiet Rich output."
-        ),
-    ),
-) -> None:
-    """Bring the graph + triefacts up to date with the working tree.
+def _run_graph_only_sync(reporter: Reporter, *, as_json: bool, before_turn: bool) -> None:
+    """`trie sync --graph-only`: rebuild the graph + stamp freshness, never the LLM.
 
-    The freshness gate. Agent harnesses register this as a hook:
+    This is the hook-facing half of sync (formerly the `trie refresh` command).
+    Agent harnesses register it as a turn hook:
 
-      • `trie refresh --before-turn`: run at the start of an agent turn.
-        Cheap when nothing changed since last refresh, full sync when HEAD or
-        files have moved.
-      • `trie refresh --after-turn`: run at the end of a turn. Picks up the
-        agent's own edits and folds them into the graph + triefact tree before
-        anyone (this agent next turn, another tool, a human) reads them.
+      • `trie sync --graph-only --before-turn`: cheap pre-turn freshness gate.
+      • `trie sync --graph-only --after-turn`: post-turn sweep picking up the
+        agent's own edits (the default turn mode).
 
-    With neither flag, defaults to --after-turn behaviour.
-
-    Both modes fail loudly outside a git repo: the gate's correctness depends
-    on `git rev-parse HEAD` succeeding.
+    Guaranteed free: no LLM call, no API key needed. Prose drift is recorded
+    in the pending set and reported; a plain `trie sync` regenerates it.
+    Fails loudly outside a git repo: the gate's correctness depends on
+    `git rev-parse HEAD` succeeding.
     """
-    reporter = _get_reporter(ctx)
-    if before_turn and after_turn:
-        reporter.error("--before-turn and --after-turn are mutually exclusive")
-        raise typer.Exit(code=1)
-
     # In --json mode the Rich progress bar and success lines would interleave
     # with the JSONL stream and corrupt it. Mute the reporter so stdout carries
     # only well-formed JSON events; errors still emit as {"kind": "error"}.
@@ -912,21 +860,21 @@ def refresh_cmd(
             reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
-    model_id = model or config.models.cascade
-    client = make_client(model_id, sync_cfg=config.sync)
     db_path = project_root / ".trie" / "graph.db"
 
     runner = ensure_fresh_before_turn if before_turn else ensure_fresh_after_turn
     mode_label = "before-turn" if before_turn else "after-turn"
 
     if as_json:
-        emit_jsonl_event({"kind": "phase", "phase": "refresh", "mode": mode_label})
+        emit_jsonl_event({"kind": "phase", "phase": "graph-sync", "mode": mode_label})
 
-    # `trie refresh` runs as a per-turn hook, so two agent turns in quick
-    # succession can fire two refresh processes that race the SQLite store
-    # and the triefact tree. The lock serialises them; the queued sentinel
-    # coalesces N rapid contests down to "one current run + at most one
-    # tail run" so we don't fan out an unbounded chain.
+    # Graph-only sync runs as a per-turn hook, so two agent turns in quick
+    # succession can fire two processes that race the SQLite store and the
+    # triefact tree. The lock serialises them; the queued sentinel coalesces
+    # N rapid contests down to "one current run + at most one tail run" so we
+    # don't fan out an unbounded chain. (Full sync uses the same lock but
+    # exits 2 on contention instead — operators deserve a loud failure,
+    # hooks deserve quiet coalescing.)
     with try_acquire_refresh_lock(project_root) as holder:
         if not holder.acquired:
             holder.mark_queued()
@@ -941,21 +889,21 @@ def refresh_cmd(
                     {"kind": "summary", "refreshed": False, "reason": "queued", "mode": mode_label}
                 )
             else:
-                reporter.success(f"{mode_label}: another refresh is running; queued for tail pass.")
+                reporter.success(
+                    f"{mode_label}: another graph sync is running; queued for tail pass."
+                )
             return
 
         with (
             Store(db_path) as store,
-            _refresh_progress(reporter, as_json, project_root=project_root) as cb,
+            _graph_sync_progress(reporter, as_json, project_root=project_root) as cb,
         ):
             try:
                 result = runner(
                     project_root=project_root,
                     config=config,
                     store=store,
-                    client=client,
                     progress=cb,
-                    sync_prose=sync_prose,
                 )
             except NotAGitRepoError as exc:
                 if as_json:
@@ -968,10 +916,10 @@ def refresh_cmd(
             else:
                 _report_freshness(reporter, result, mode=mode_label)
 
-            # Tail pass: at most one extra run, coalescing every refresh
-            # request that arrived while we held the lock. We deliberately
-            # don't loop further — if more refreshes pile up during the
-            # tail itself, the next hook invocation handles them.
+            # Tail pass: at most one extra run, coalescing every request
+            # that arrived while we held the lock. We deliberately don't
+            # loop further — if more requests pile up during the tail
+            # itself, the next hook invocation handles them.
             if holder.consume_queued():
                 telemetry.emit(
                     "refresh_lock_tail_pass",
@@ -982,9 +930,7 @@ def refresh_cmd(
                     project_root=project_root,
                     config=config,
                     store=store,
-                    client=client,
                     progress=cb,
-                    sync_prose=sync_prose,
                 )
                 if as_json:
                     _emit_freshness_json(tail, mode=f"{mode_label} (tail)")
@@ -993,10 +939,10 @@ def refresh_cmd(
 
 
 @contextmanager
-def _refresh_progress(
+def _graph_sync_progress(
     reporter: Reporter, as_json: bool, *, project_root: Path
 ) -> Iterator[ProgressCallback]:
-    """Pick the progress sink for a refresh run, mirroring into the shared
+    """Pick the progress sink for a graph-only sync run, mirroring into the shared
     `.trie/` activity state either way.
 
     `--json` routes per-file events through `_JsonlProgress` (one JSON object
@@ -1018,47 +964,37 @@ def _refresh_progress(
 
 
 def _emit_freshness_json(result: FreshnessResult, *, mode: str) -> None:
-    """Emit the terminal `summary` JSONL event for a refresh outcome.
+    """Emit the terminal `summary` JSONL event for a graph-sync outcome.
 
     Mirrors `_report_freshness` but as a structured event subprocess hosts key
     on to close out its status display.
     """
-    inc = result.incremental
     emit_jsonl_event(
         {
             "kind": "summary",
             "mode": mode,
             "refreshed": result.refreshed,
             "reason": result.reason,
-            "files_synced": inc.files_synced if inc is not None else 0,
-            "cost_usd": inc.actual_cost_usd if inc is not None else 0.0,
             "stale_files": list(result.stale_files),
         }
     )
 
 
 def _report_freshness(reporter: Reporter, result: FreshnessResult, *, mode: str) -> None:
-    """Render a single line per refresh outcome, plus token totals when a sync ran."""
-    if not result.refreshed:
-        reporter.success(f"{mode}: already fresh ({result.reason})")
-        return
-    inc = result.incremental
-    if inc is None:
-        # Graph-only refresh (the fast default). When mtimes_moved marked files
-        # stale, nudge toward `trie sync`; otherwise it was a pure graph rebuild.
-        if result.stale_files:
-            n = len(result.stale_files)
-            reporter.success(
-                f"{mode}: refreshed graph ({result.reason}); "
-                f"{n} triefact(s) now stale — run `trie sync` to regenerate"
-            )
-        else:
-            reporter.success(f"{mode}: refreshed graph ({result.reason})")
-        return
-    reporter.success(
-        f"{mode}: refreshed ({result.reason}); "
-        f"synced {inc.files_synced} file(s), cost ${inc.actual_cost_usd:.4f}"
-    )
+    """Render one line per graph-sync outcome, always in two clauses: graph and prose.
+
+    A fresh graph must never be reported as plain "fresh" while prose lags —
+    that phrasing shipped commit failures where the hook said "already fresh"
+    and the pre-commit gate immediately found stale triefacts. The prose clause
+    is sourced from `FreshnessResult.stale_files` (the pending set), which is
+    populated on every outcome including `unchanged`.
+    """
+    graph = f"graph synced ({result.reason})" if result.refreshed else "graph fresh"
+    n = len(result.stale_files)
+    if n:
+        reporter.warn(f"{mode}: {graph}; prose stale in {n} file(s) — run `trie sync`")
+    else:
+        reporter.success(f"{mode}: {graph}; prose fresh")
 
 
 @app.command("audit")
@@ -1183,7 +1119,43 @@ def _run_intent_gate(reporter: Reporter, config: Config, project_root: Path) -> 
     reporter.console.print(
         'then: trie patch apply -N "<session intent>"   (records notes; no code generation)'
     )
+    reporter.console.print(
+        "(agent harnesses: stage via the patch / batch_patch tools, then patch_apply)"
+    )
     return False
+
+
+def _warn_on_version_skew(reporter: Reporter, project_root: Path) -> None:
+    """Warn when the running trie binary is a different version than this checkout's
+    trie source package (the self-hosting case).
+
+    Hooks and generated tools resolve `trie` from PATH; after editing trie's own
+    interface the globally installed tool lags the checkout until reinstalled,
+    which once shipped a whole commit whose digest was written by the previous
+    release. Cheap probe: only fires when `pyproject.toml` at the project root
+    names the `trie` package itself. Advisory — never blocks.
+    """
+    from trie import __version__
+
+    pyproject = project_root / "pyproject.toml"
+    if not pyproject.exists():
+        return
+    try:
+        import tomllib
+
+        data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
+    except Exception:
+        return
+    project = data.get("project") or {}
+    if project.get("name") != "trie":
+        return
+    repo_version = str(project.get("version", ""))
+    if repo_version and repo_version != __version__:
+        reporter.warn(
+            f"running trie {__version__} but this checkout is {repo_version} — "
+            "reinstall with `uv tool install --force .` so hooks and tools "
+            "run the code you just changed"
+        )
 
 
 @app.command("gate")
@@ -1201,9 +1173,9 @@ def gate_cmd(
     environments where git hooks don't exist or don't fire — CI runners,
     agents committing from GitHub Actions, bare automation:
 
-        trie refresh   # cold runner: rebuild the graph first (no LLM)
+        trie sync --graph-only   # cold runner: rebuild the graph first (no LLM)
         ...work...
-        trie gate      # before git commit
+        trie gate                # before git commit
 
     Exit codes: 0 all gates pass (digest is advisory and never blocks),
     1 verify or intent failed (output says exactly what to fix),
@@ -1218,14 +1190,19 @@ def gate_cmd(
         reporter.info("no trie.toml here — nothing to gate")
         return
 
+    # 0. Version visibility: hooks resolve `trie` from PATH, so a stale global
+    # install can silently run old gate logic against a newer checkout. Print
+    # the running version, and when this project *is* the trie source repo at
+    # a different version, warn loudly — that skew shipped confusing gate
+    # behaviour before it was made visible.
+    _warn_on_version_skew(reporter, project_root)
+
     # 1. Lock: never commit while a writer is mid-flight.
     from trie.refresh_lock import try_acquire
 
     with try_acquire(project_root, name="gate") as holder:
         if not holder.acquired:
-            reporter.error(
-                "another trie process is writing (sync/refresh in flight) — retry shortly"
-            )
+            reporter.error("another trie process is writing (a sync is in flight) — retry shortly")
             raise typer.Exit(code=2)
 
     # 2. Verify: prose must match source, both directions.
@@ -1732,11 +1709,47 @@ def _verify_drift(reporter: Reporter, *, exit_on_drift: bool) -> bool:
 @app.command("sync")
 def sync_cmd(
     ctx: typer.Context,
+    graph_only: bool = typer.Option(
+        False,
+        "--graph-only",
+        help=(
+            "Rebuild the symbol graph and freshness stamp from source without "
+            "calling the LLM. Free and fast; drifted prose is marked stale for "
+            "a later full `trie sync`. This is what turn hooks run."
+        ),
+    ),
+    before_turn: bool = typer.Option(
+        False,
+        "--before-turn",
+        help=(
+            "Hook mode (implies --graph-only): cheap pre-turn freshness gate — "
+            "no-op when nothing changed since the last graph sync."
+        ),
+    ),
+    after_turn: bool = typer.Option(
+        False,
+        "--after-turn",
+        help=(
+            "Hook mode (implies --graph-only): post-turn sweep that picks up the "
+            "agent's own edits. Default turn mode for --graph-only."
+        ),
+    ),
+    as_json: bool = typer.Option(
+        False,
+        "--json",
+        help=(
+            "With --graph-only: emit machine-readable JSON-Lines progress to "
+            'stdout instead of Rich output. Each line is one event ({"kind": ...}).'
+        ),
+    ),
     file: Path | None = typer.Option(
         None,
         "--file",
         "-f",
-        help="Sync exactly one source file. Useful as a smoke test of the LLM path.",
+        help=(
+            "Sync exactly one source file. Regenerates only its stale symbols by "
+            "default; combine with --force for a full fresh rewrite."
+        ),
     ),
     all_: bool = typer.Option(
         False,
@@ -1803,10 +1816,12 @@ def sync_cmd(
         ),
     ),
 ) -> None:
-    """Generate or refresh trie triefacts.
+    """Bring the graph and triefacts up to date with the working tree.
 
     Modes (auto-detected):
-      • --file          : sync one file.
+      • --graph-only    : rebuild graph + freshness stamp; never the LLM. Turn
+                          hooks run `trie sync --graph-only --after-turn`.
+      • --file          : sync one file (stale symbols only; --force for all).
       • --dry-run       : preview unified diff against the live tree.
       • --metadata-only : refresh front matter only; no LLM, no section changes.
       • --all           : force full re-pass.
@@ -1817,6 +1832,38 @@ def sync_cmd(
     drift gate suitable for pre-commit hooks, use `trie verify`.
     """
     reporter = _get_reporter(ctx)
+
+    # Turn flags imply --graph-only: a turn hook must never spend.
+    if before_turn and after_turn:
+        reporter.error("--before-turn and --after-turn are mutually exclusive")
+        raise typer.Exit(code=1)
+    graph_only = graph_only or before_turn or after_turn
+    if graph_only:
+        incompatible = {
+            "--file": file is not None,
+            "--all": all_,
+            "--budget": budget is not None,
+            "--limit": limit is not None,
+            "--dry-run": dry_run,
+            "--metadata-only": metadata_only,
+            "--roles-only": roles_only,
+            "--rederive-taxonomy": rederive_taxonomy,
+            "--force": force,
+            "--model": model is not None,
+        }
+        offending = [flag for flag, given in incompatible.items() if given]
+        if offending:
+            reporter.error(
+                f"--graph-only never calls the LLM and cannot be combined with "
+                f"{', '.join(offending)}"
+            )
+            raise typer.Exit(code=1)
+        _run_graph_only_sync(reporter, as_json=as_json, before_turn=before_turn)
+        return
+    if as_json:
+        reporter.error("--json requires --graph-only")
+        raise typer.Exit(code=1)
+
     if file is not None and all_:
         reporter.error("--file and --all are mutually exclusive")
         raise typer.Exit(code=1)
@@ -2058,6 +2105,15 @@ def _run_dry_run_diff(
 def _run_single_file_sync(
     reporter: Reporter, file: Path, model: str | None, force: bool = False
 ) -> None:
+    """`trie sync --file X`: regenerate one file's triefact, stale symbols only.
+
+    By default the LLM is called only for symbols whose section fingerprints
+    lag their source (per `check_project`, the same classifier the pre-commit
+    gate uses); fresh sections pass through byte-identically. A file that has
+    never been synced (missing triefact) gets a full cold write. `--force`
+    regenerates every symbol from scratch — the smoke-test / known-bad-prose
+    path. Nothing stale and no --force → report and exit without an LLM call.
+    """
     if not file.exists():
         reporter.error(f"{file} does not exist")
         raise typer.Exit(code=1)
@@ -2068,6 +2124,28 @@ def _run_single_file_sync(
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
+    symbols_to_regen: set[str] | None = None
+    if not force:
+        src_root = (project_root / config.triefacts.source_root).resolve()
+        try:
+            rel_source = str(file.resolve().relative_to(src_root))
+        except ValueError:
+            reporter.error(f"{file} is outside the configured source root ({src_root})")
+            raise typer.Exit(code=1) from None
+        check = check_project(project_root=project_root, config=config)
+        file_items = [it for it in check.items if it.source_path == rel_source]
+        if not file_items:
+            reporter.success(f"{rel_source}: all symbols fresh — nothing to do")
+            reporter.info("  use --force to rewrite every symbol from scratch")
+            return
+        if not any(it.qualified_name is None for it in file_items):
+            # Symbol-level staleness only: regenerate exactly those, pass the
+            # rest through byte-identically. A missing-triefact item (qname
+            # None) keeps symbols_to_regen=None for a full cold write.
+            symbols_to_regen = {
+                it.qualified_name for it in file_items if it.qualified_name is not None
+            }
+
     model_id = model or config.models.bootstrap
     client = make_client(model_id, sync_cfg=config.sync)
     db_path = project_root / ".trie" / "graph.db"
@@ -2077,12 +2155,21 @@ def _run_single_file_sync(
         reporter.status(f"generating triefact for [cyan]{file}[/cyan]…"),
     ):
         result = sync_single_file(
-            file, project_root=project_root, config=config, client=client, store=store, force=force
+            file,
+            project_root=project_root,
+            config=config,
+            client=client,
+            store=store,
+            symbols_to_regen=symbols_to_regen,
+            force=force,
         )
 
     reporter.success(f"wrote {result.triefact_path}")
+    passed_through = (
+        f", {result.symbols_skipped} fresh passed through" if result.symbols_skipped else ""
+    )
     reporter.info(
-        f"  {result.symbols_generated} symbols generated"
+        f"  {result.symbols_generated} symbols regenerated{passed_through}"
         + (f", {result.sections_removed} stale sections removed" if result.sections_removed else "")
     )
     reporter.detail(
@@ -2318,8 +2405,8 @@ def setup_cmd(
     For each detected (or specified) target, this runs three installs by
     default:
 
-      1. A turn-boundary hook that calls `trie refresh --after-turn` so the
-         graph and triefact tree stay current with the agent's edits.
+      1. A turn-boundary hook that calls `trie sync --graph-only --after-turn`
+         so the graph and triefact tree stay current with the agent's edits.
       2. Custom tool wrappers that replace the agent's built-in `grep` and
          `read` with calls to `trie grep` / `trie read`, plus `trace` and
          the explain/grep-str family as new tools. Pass `--no-overrides` to
@@ -2633,14 +2720,55 @@ def _patched_tag(count: int) -> str:
     return f" [yellow][patched: {count}][/yellow]"
 
 
+def _grep_output_is_tty() -> bool:
+    """True when grep output goes to an interactive terminal.
+
+    Piped/captured output (agent tool wrappers, scripts) gets plain records
+    instead of Rich tables: box-drawn tables render at width 80 when piped
+    and truncate qnames with `…` — destroying exactly the datum the caller
+    needs to copy into the next tool call.
+    """
+    import sys as _sys
+
+    try:
+        return _sys.stdout.isatty()
+    except Exception:
+        return False
+
+
+def _print_grep_records(
+    reporter: Reporter, rows: list, *, qname_suffix: Callable[[dict], str] | None = None
+) -> None:
+    """Plain, full-width, one-record-per-hit rendering for non-tty consumers.
+
+    Format (stable — agent wrappers parse this visually, keep it grep-able):
+
+        <qname>  <kind>  <file:line>
+            <one-liner>
+    """
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        qname = str(r.get("qname", ""))
+        if qname_suffix is not None:
+            qname += qname_suffix(r)
+        kind = str(r.get("kind", "") or r.get("inbound_count", ""))
+        pointer = str(r.get("file_pointer", ""))
+        reporter.console.print(f"{qname}  {kind}  {pointer}", markup=False, highlight=False)
+        one_liner = str(r.get("one_liner", "")).strip()
+        if one_liner:
+            reporter.console.print(f"    {one_liner}", markup=False, highlight=False)
+
+
 def _render_grep(envelope: dict[str, object], reporter: Reporter) -> None:
     """Human-readable rendering for `trie grep` output.
 
-    Shows hits as a compact table (qname, kind, file pointer, one-liner)
-    when present. When hits is empty, falls through to the fallback
-    envelope: prints the fallback kind, query, note, and the ranked
-    candidate matches if any. Error envelopes show the code, message,
-    and suggestion on separate lines.
+    Interactive terminals get a compact Rich table (qname, kind, file
+    pointer, one-liner). Piped output — the agent-wrapper case — gets plain
+    untruncated records instead, one per hit. When hits is empty, falls
+    through to the fallback envelope: prints the fallback kind, query, note,
+    and the ranked candidate matches if any. Error envelopes show the code,
+    message, and suggestion on separate lines.
     """
     from rich.table import Table
 
@@ -2649,26 +2777,42 @@ def _render_grep(envelope: dict[str, object], reporter: Reporter) -> None:
         _render_error_envelope(err, reporter)
         return
 
+    is_tty = _grep_output_is_tty()
+
     hits = envelope.get("hits") or []
     if isinstance(hits, list) and hits:
-        table = Table(title=f"{len(hits)} hit(s)", show_header=True, header_style="bold")
-        table.add_column("qname", style="cyan")
-        table.add_column("kind", style="dim")
-        table.add_column("location", style="dim")
-        table.add_column("one-liner")
-        for h in hits:
-            if not isinstance(h, dict):
-                continue
-            qname = str(h.get("qname", ""))
-            patch_count = int(h.get("pending_patch_count", 0))
-            qname_display = qname + _patched_tag(patch_count)
-            table.add_row(
-                qname_display,
-                str(h.get("kind", "")),
-                str(h.get("file_pointer", "")),
-                str(h.get("one_liner", "")),
+        if not is_tty:
+            reporter.console.print(f"{len(hits)} hit(s)", markup=False)
+            _print_grep_records(
+                reporter,
+                hits,
+                qname_suffix=lambda h: _patched_tag(int(h.get("pending_patch_count", 0))),
             )
-        reporter.console.print(table)
+        else:
+            table = Table(title=f"{len(hits)} hit(s)", show_header=True, header_style="bold")
+            table.add_column("qname", style="cyan")
+            table.add_column("kind", style="dim")
+            table.add_column("location", style="dim")
+            table.add_column("one-liner")
+            for h in hits:
+                if not isinstance(h, dict):
+                    continue
+                qname = str(h.get("qname", ""))
+                patch_count = int(h.get("pending_patch_count", 0))
+                qname_display = qname + _patched_tag(patch_count)
+                table.add_row(
+                    qname_display,
+                    str(h.get("kind", "")),
+                    str(h.get("file_pointer", "")),
+                    str(h.get("one_liner", "")),
+                )
+            reporter.console.print(table)
+        related = envelope.get("related") or []
+        if isinstance(related, list) and related:
+            reporter.info(
+                f"[dim]related by prose ({len(related)} — name didn't match, prose did):[/dim]"
+            )
+            _print_grep_records(reporter, related)
         return
 
     # No hits. Show the fallback envelope.
@@ -2685,6 +2829,10 @@ def _render_grep(envelope: dict[str, object], reporter: Reporter) -> None:
 
     matches = fallback.get("matches") or []
     if isinstance(matches, list) and matches:
+        if not is_tty:
+            reporter.console.print(f"{len(matches)} candidate(s) by text match", markup=False)
+            _print_grep_records(reporter, matches)
+            return
         table = Table(
             title=f"{len(matches)} candidate(s) by text match",
             show_header=True,
@@ -3390,7 +3538,7 @@ def _render_write(envelope: dict[str, object], reporter: Reporter) -> None:
     verb = "created" if envelope.get("created") else "overwrote"
     reporter.success(f"{verb} {envelope.get('path')} ({envelope.get('bytes_written')} bytes)")
     if envelope.get("needs_sync"):
-        reporter.info("this file is in trie's scope — run `trie sync` / `trie refresh` to index it")
+        reporter.info("this file is in trie's scope — run `trie sync` to index it")
 
 
 def _render_find(envelope: dict[str, object], reporter: Reporter) -> None:
@@ -3968,6 +4116,18 @@ def patch_apply_cmd(
     reporter.success(f"recorded intent for {envelope['recorded']} symbol(s) to the session log")
     for q in envelope.get("symbols", []):
         reporter.console.print(f"  [cyan]{q}[/cyan]")
+    uncovered = envelope.get("uncovered")
+    if uncovered:
+        reporter.warn(
+            f"intent gate: {len(uncovered)} touched symbol(s) still lack notes "
+            "and would fail the commit gate:"
+        )
+        for q in uncovered[:5]:
+            reporter.console.print(f"  [yellow]{q}[/yellow]")
+        if len(uncovered) > 5:
+            reporter.console.print(f"  … and {len(uncovered) - 5} more")
+    elif uncovered is not None:
+        reporter.info("intent gate: all touched symbols covered")
 
 
 @patch_app.command("preview")

@@ -1,12 +1,12 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.0
 source: trie/config.py
-file_fingerprint: 5a16ef57960b9c00dd576311c48cb0345b56e8363d225ffc74641ccb9c4d9cc8
-last_synced_at: '2026-07-29T02:54:35Z'
+file_fingerprint: 38a087f21be615578b2f72f274c75b24a5d1784d6ad8d1d70378f58de9f3ef38
+last_synced_at: '2026-07-29T17:54:48Z'
 defines:
 - kind: module
   qualified_name: trie/config:__module__
-  lines: 1-435
+  lines: 1-436
 - kind: class
   qualified_name: trie/config:TrieMeta
   lines: 9-10
@@ -33,29 +33,29 @@ defines:
   lines: 137-156
 - kind: class
   qualified_name: trie/config:Mcp
-  lines: 160-216
+  lines: 160-217
 - kind: class
   qualified_name: trie/config:Diff
-  lines: 220-247
+  lines: 221-248
 - kind: class
   qualified_name: trie/config:Config
-  lines: 251-302
+  lines: 252-303
 - kind: method
   qualified_name: trie/config:Config.from_dict
-  lines: 264-280
+  lines: 265-281
 - kind: method
   qualified_name: trie/config:Config.load
-  lines: 283-286
+  lines: 284-287
 - kind: method
   qualified_name: trie/config:Config.find_and_load
-  lines: 289-302
+  lines: 290-303
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
-  lines: 305-306
+  lines: 306-307
 - kind: constant
   qualified_name: trie/config:DEFAULT_CONFIG_TOML
-  lines: 309-434
-incoming_refs: 202
+  lines: 310-435
+incoming_refs: 353
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/config:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=73508aef5ccf98a204e6bf0fa288e0420baac8315fc2fb1aa7e8d1bf91d72a01 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
@@ -131,18 +131,18 @@ Configures telemetry logging for trie operations, controlled by the TRIE_DEBUG e
 - `capture_responses`: includes full LLM response bodies in logs (large data)
 - `redact_keys`: field paths to elide from logged data
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Mcp fingerprint=a3cc2e17786817953b72dd705739ff8061b22a2cb075f22a8ef2fc154ae66403 body_fp=03cb69ecda486cd711a6d42b1ccb4a4496b9262f65c6532b92eff329bd693a24 source_ref=d781ba02a70d89cf4245db2d94ab73c09402c2b8 role=config -->
-Configuration dataclass for MCP agent tool behaviors including grep, read and trace settings.
+<!-- trie:section symbol=trie/config:Mcp fingerprint=8ef59f987061dad18825c0fbd216fd0eaf393f132fe55930b6acee33a0e59676 body_fp=2f91ae5ed59dfd1500fbfa5d76d230aaf4a2daffa71127ae0494b58f9944a8cc source_ref=d993ec8facf84f0075a976a1e538b2aea4e04d52 role=config -->
+Dataclass holding server-side tuning knobs for the MCP `grep`, `read`, and `trace` tools; never exposed to the agent.
 
-- `grep_max_limit`: Maximum number of results returned by grep tool (default 50)
-- `grep_fallback_max_files`: File limit for ripgrep fallback when symbol search fails (default 200)
-- `grep_fallback_match_limit`: Symbol limit for fallback results after hub-ranking (default 30)
-- `fuzzy_cutoff`: Minimum rapidfuzz score (0-100) for fuzzy matching inclusion (default 45.0)
-- `fuzzy_prose_pre_filter`: Score threshold before reading triefact prose from disk (default 30.0)
-- `read_max_neighbours_per_direction`: Neighbor limit per direction, 0 for unlimited (default 0)
-- `trace_max_depth`: Maximum traversal depth for trace operations (default 5)
-- `trace_hub_threshold`: Node count threshold for hub skipping in trace (default 50)
-- `trace_max_nodes`: Maximum nodes returned by trace operations (default 200)
+- `grep_fallback_max_files`: max in-scope files walked by the ripgrep fallback when name-match returns nothing.
+- `grep_fallback_match_limit`: cap on candidate symbols returned from the ripgrep fallback after hub-ranking.
+- `fuzzy_cutoff`: minimum rapidfuzz WRatio score (0–100) to include a hit in any fuzzy result.
+- `fuzzy_prose_pre_filter`: minimum score on name/one-liner before prose is read from disk; prevents O(N) disk reads.
+- `fuzzy_prose_weight`: multiplier on prose-derived score so prose-only matches rank below name matches.
+- `read_max_neighbours_per_direction`: `0` = unlimited neighbour symbols returned by `read`.
+- `read_prose_max_chars`: `0` = unlimited prose characters returned by `read`.
+- `trace_hub_threshold`: symbols with more inbound refs than this are skipped during `trace`/`trace_flow` expansion.
+- `trace_prose_at_depth`: `0` = no prose attached to trace results.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:Diff fingerprint=02d7b7c4a34c801654ba7e7ba0c3ee31d29e464c963c3cb640a04f17864788fb body_fp=747554c26372c258e537318bfc51b807c9efe899851acdf68fe92327964fd2fb source_ref=18c0228ab22574981e4c5031db011c5783d28510 role=config -->
 Dataclass holding configuration for the per-commit digest system, where each commit produces one immutable file under `diffs_dir` and `write_path` is a symlink to the latest.

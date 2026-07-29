@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.0
 source: tests/test_mcp_edit_tools.py
 file_fingerprint: 4ee5c539e04f38d8d6ee284e1d6f4438ab2465963ebd1a402f589a19f16c2a8e
-last_synced_at: '2026-07-28T23:47:51Z'
+last_synced_at: '2026-07-29T17:55:24Z'
 description: 'Tests for the MCP edit tool surface: patch/create/delete/rename/preview/list.'
 defines:
 - kind: module
@@ -87,7 +87,7 @@ defines:
   qualified_name: tests/test_mcp_edit_tools:TestSessionIdInjection.test_env_session_id_used
   lines: 166-172
 incoming_refs: 0
-outgoing_refs: 8
+outgoing_refs: 11
 ---
 <!-- trie:section symbol=tests/test_mcp_edit_tools:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=2fb06c53c5335479bd3ae505c315da921dbf2ddfe3cde3b36cf55c056be20a59 source_ref=1c912ed813dfb58752f16ac3ed6e959695a703b6 role=test -->
 Tests for the MCP edit tool surface: patch, create, delete, rename, preview, and list operations.
@@ -104,7 +104,7 @@ Creates a test project with trie.toml config, lib.py with slugify function, and 
 
 - Returns the temporary project directory path
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_edit_tools:tools fingerprint=42243bcbe1160f1829c0d29be47560ccd781efb88ffe453c84792a3e6c15d8eb body_fp=630058fb0e304c884c1651d916a56c2c86e7667e8720141ddc4c6e6873f59ef7 source_ref=1c912ed813dfb58752f16ac3ed6e959695a703b6 role=test -->
+<!-- trie:section symbol=tests/test_mcp_edit_tools:tools fingerprint=42243bcbe1160f1829c0d29be47560ccd781efb88ffe453c84792a3e6c15d8eb body_fp=630058fb0e304c884c1651d916a56c2c86e7667e8720141ddc4c6e6873f59ef7 source_ref=e9a78162908128eaac554c055f1ed9e887f1185d role=test -->
 Creates and yields a TrieTools instance for the test project, ensuring cleanup after use.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp_edit_tools:TestPatchTool fingerprint=2db97d785a0030cac2712191b24cc9965fc95bc4f492d01a1183a600df5f710f body_fp=d2001fe5bf26aa7f3d2ac98dcf9f5ecad9cafb768209d2f4952a675c930f013a source_ref=1c912ed813dfb58752f16ac3ed6e959695a703b6 role=test -->
@@ -185,9 +185,9 @@ Verifies that TestActivityAndSummary activity method returns patches block with 
 <!-- trie:section symbol=tests/test_mcp_edit_tools:TestActivityAndSummary.test_patch_summary_counts_creates fingerprint=4f11e448170cab69475b333638f0933f5640c9b7a19d50bacc3c04a5d231deb1 body_fp=69c8343de4f5ea067e204da183a1b6eac74d93725cf1965be6499b519672b380 source_ref=1c912ed813dfb58752f16ac3ed6e959695a703b6 role=test -->
 TestActivityAndSummary.test_patch_summary_counts_creates verifies that patch_summary includes create operations in its count.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_edit_tools:TestSessionIdInjection fingerprint=32be77b3725604e6c470312fe57b9b22aa96054fb6643ce293a6dd9ebcbc2bf2 body_fp=c0f702509e00bb661e63392a5309a86be4a9f883c27295fd52aeeaea31aac005 source_ref=1c912ed813dfb58752f16ac3ed6e959695a703b6 role=test -->
+<!-- trie:section symbol=tests/test_mcp_edit_tools:TestSessionIdInjection fingerprint=32be77b3725604e6c470312fe57b9b22aa96054fb6643ce293a6dd9ebcbc2bf2 body_fp=c0f702509e00bb661e63392a5309a86be4a9f883c27295fd52aeeaea31aac005 source_ref=e9a78162908128eaac554c055f1ed9e887f1185d role=test -->
 Tests that TrieTools reads session ID from TRIE_SESSION_ID environment variable.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp_edit_tools:TestSessionIdInjection.test_env_session_id_used fingerprint=75dd4f547709e5ab8a430412cac2cfff9fe0af273d58ea4b4637f9dbf46ce237 body_fp=f628ba6ddb2ffdffe87bfc669bfc29379672208e01f6b49cce14d8cf43d45009 source_ref=1c912ed813dfb58752f16ac3ed6e959695a703b6 role=test -->
+<!-- trie:section symbol=tests/test_mcp_edit_tools:TestSessionIdInjection.test_env_session_id_used fingerprint=75dd4f547709e5ab8a430412cac2cfff9fe0af273d58ea4b4637f9dbf46ce237 body_fp=f628ba6ddb2ffdffe87bfc669bfc29379672208e01f6b49cce14d8cf43d45009 source_ref=e9a78162908128eaac554c055f1ed9e887f1185d role=test -->
 Verifies TestSessionIdInjection uses environment variable TRIE_SESSION_ID to set TrieTools session ID.
 <!-- trie:end -->

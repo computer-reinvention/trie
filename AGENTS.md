@@ -70,22 +70,30 @@ bootstrapping a new checkout, one-off operations, and debugging.
 
 ```bash
 trie init && trie plan                  # plan adds free count_tokens cost preview
-trie setup --target opencode            # install MCP + end-of-turn refresh hook
+trie setup --target opencode            # install MCP + end-of-turn graph-sync hook
 trie sync --limit 10                    # capped first-run bootstrap (one-time)
-trie sync --file path/to/some.py        # smoke-test the LLM path on one file
+trie sync --file path/to/some.py        # regenerate one file's stale symbols
+trie sync --file some.py --force        # full fresh rewrite (LLM smoke test)
 trie sync --dry-run                     # preview unified diff before paying
-trie refresh                            # manual refresh (hook also calls this)
+trie sync --graph-only                  # graph rebuild + stamp; never the LLM
 trie verify                             # fingerprint-only drift gate
 trie lock-check                         # pre-commit's "is a writer running?" probe
 trie audit                              # telemetry summary for the last session
 ```
 
-Once `trie setup` has registered the hook, prefer letting the hook drive
-syncs — it runs `trie refresh` at the end of every agent turn, picks up
-exactly the files just edited, and stamps the graph so MCP queries stay
-honest. Manual `trie sync` is still available but will exit 2 if it
-collides with an in-flight refresh; this is the system telling you the
-hook is doing its job.
+There is no separate refresh command: `trie sync --graph-only` IS the
+graph refresh (the turn hook runs it with `--after-turn`). Once
+`trie setup` has registered the hook, prefer letting the hook drive graph
+syncs — it fires at the end of every agent turn, picks up exactly the
+files just edited, and stamps the graph so MCP queries stay honest. Its
+output always reports both clauses ("graph …; prose …"); when it says
+prose is stale, a plain `trie sync` regenerates it. Manual `trie sync`
+will exit 2 if it collides with an in-flight graph sync; this is the
+system telling you the hook is doing its job.
+
+After changing trie's own CLI/hook surface, reinstall the global tool
+(`uv tool install --force .`) — hooks resolve `trie` from PATH, and `trie
+gate` warns when the installed version lags this checkout.
 
 ## Shipping
 

@@ -1048,12 +1048,32 @@ class TrieTools:
             # When the predicate matched nothing, try the text-match fallback.
             # The fallback always produces SOMETHING in the response — even if
             # it's `kind="none"` — so the agent never has to guess whether
-            # trie tried alternatives or not.
+            # trie tried alternatives or not. The fallback is additionally
+            # capped by the request's own `limit` so an 8-row ask never fans
+            # out into a 30-row consolation table.
             if not hit_dicts:
-                fallback = self._maybe_text_match_fallback(pred_obj)
+                fallback = self._maybe_text_match_fallback(pred_obj, max_matches=capped_limit)
                 result["fallback"] = fallback
                 tele_ctx["fallback_kind"] = fallback["kind"]
                 tele_ctx["fallback_match_count"] = len(fallback.get("matches", []))
+            elif len(hit_dicts) < capped_limit and pred_obj.name_contains:
+                # Fill-up: a couple of weak name hits used to suppress the
+                # text/prose fallback entirely, hiding the module that actually
+                # implements the concept (e.g. `triediff` name-matching only a
+                # workflow installer while all the digest machinery lives in
+                # `session_diff`). Append prose/body candidates the name scan
+                # missed, clearly separated under `related`.
+                seen = {h["qname"] for h in hit_dicts}
+                fb = self._maybe_text_match_fallback(
+                    pred_obj, max_matches=capped_limit - len(hit_dicts) + len(seen)
+                )
+                related = [m for m in fb.get("matches", []) if m.get("qname") not in seen][
+                    : capped_limit - len(hit_dicts)
+                ]
+                if related:
+                    result["related"] = related
+                    result["related_kind"] = fb["kind"]
+                    tele_ctx["related_count"] = len(related)
 
             tele_ctx["result_kind"] = "ok"
             tele_ctx["result_count"] = len(hit_dicts)
@@ -1062,8 +1082,15 @@ class TrieTools:
                 tele_ctx["response"] = result
             return result
 
-    def _maybe_text_match_fallback(self, pred: GrepPredicate) -> dict[str, Any]:
+    def _maybe_text_match_fallback(
+        self, pred: GrepPredicate, *, max_matches: int | None = None
+    ) -> dict[str, Any]:
         """Build the `fallback` envelope returned alongside an empty `hits` list.
+
+        `max_matches` additionally caps the candidate list below the configured
+        `grep_fallback_match_limit` — callers pass the request's own `limit`
+        (or the remaining row budget on the fill-up path) so fallback output
+        never exceeds what the caller asked for.
 
         The contract is to always return a dict with a `kind` field, so the
         agent can dispatch on three distinct empty cases:
@@ -1108,7 +1135,7 @@ class TrieTools:
         if not rg_hits:
             # Exact-string search found nothing — try fuzzy scoring across
             # all symbol names and one_liners as a last resort.
-            fuzzy_fallback = self._fuzzy_prose_fallback(query, pred)
+            fuzzy_fallback = self._fuzzy_prose_fallback(query, pred, max_matches=max_matches)
             if fuzzy_fallback:
                 return fuzzy_fallback
             return {
@@ -1156,7 +1183,7 @@ class TrieTools:
         if not candidates:
             # Text-search found symbols, but none survived the predicate's
             # other filters. Try fuzzy fallback before giving up.
-            fuzzy_fallback = self._fuzzy_prose_fallback(query, pred)
+            fuzzy_fallback = self._fuzzy_prose_fallback(query, pred, max_matches=max_matches)
             if fuzzy_fallback:
                 return fuzzy_fallback
             return {
@@ -1170,7 +1197,10 @@ class TrieTools:
             }
 
         candidates.sort(key=lambda c: (-c[0].inbound_count, c[0].qualified_name))
-        capped = candidates[: self.mcp_cfg.grep_fallback_match_limit]
+        cap = self.mcp_cfg.grep_fallback_match_limit
+        if max_matches is not None:
+            cap = min(cap, max(1, max_matches))
+        capped = candidates[:cap]
         truncated = len(candidates) > len(capped)
 
         one_liner_cap = self.mcp_cfg.grep_one_liner_max_chars
@@ -1209,7 +1239,9 @@ class TrieTools:
             "note": note,
         }
 
-    def _fuzzy_prose_fallback(self, query: str, pred: GrepPredicate) -> dict[str, Any] | None:
+    def _fuzzy_prose_fallback(
+        self, query: str, pred: GrepPredicate, *, max_matches: int | None = None
+    ) -> dict[str, Any] | None:
         """Fuzzy-score all in-scope symbols against `query` using name + one_liner +
         prose, returning a `fuzzy_prose` fallback envelope if any clear enough.
 
@@ -1224,6 +1256,8 @@ class TrieTools:
         pre_filter = self.mcp_cfg.fuzzy_prose_pre_filter
         prose_weight = self.mcp_cfg.fuzzy_prose_weight
         match_limit = self.mcp_cfg.grep_fallback_match_limit
+        if max_matches is not None:
+            match_limit = min(match_limit, max(1, max_matches))
 
         # Walk all symbols in the store; apply predicate filters before scoring
         # to keep the loop as tight as possible.
@@ -1918,7 +1952,7 @@ class TrieTools:
             ):
                 notes.append(
                     f"⚠ {detail.file_path} changed since the last graph refresh; "
-                    "this prose may be stale — run `trie refresh`."
+                    "this prose may be stale — run `trie sync --graph-only`."
                 )
         except OSError:
             pass

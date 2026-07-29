@@ -146,7 +146,7 @@ def record_intent(
     )
     store.mark_patches_applied(session_note)
 
-    return {
+    envelope = {
         "ok": True,
         "mode": "record",
         "recorded": len(symbols),
@@ -157,3 +157,23 @@ def record_intent(
             "generated — source changes are yours."
         ),
     }
+
+    # Apply-time coverage feedback: run the same evaluation the pre-commit
+    # gate will, so an agent learns about touched-but-unnoted symbols NOW
+    # (one patch call away) instead of at commit time (one failed commit
+    # away). Advisory — evaluation failures never poison a successful seal.
+    try:
+        from trie.intent_gate import evaluate
+
+        report = evaluate(project_root, config, store)
+        envelope["uncovered"] = sorted(t.qname for t in report.uncovered)
+        if envelope["uncovered"]:
+            envelope["next"] = (
+                "Intent sealed, but these touched symbols still have no note and "
+                "would fail the commit gate: stage a patch note for each, then "
+                "patch_apply again."
+            )
+    except Exception:
+        pass
+
+    return envelope

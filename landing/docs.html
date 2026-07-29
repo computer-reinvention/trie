@@ -242,7 +242,7 @@ warnings, ADR links. Regeneration preserves it byte-for-byte.</code></pre>
             <li>
               <strong>Scoped regeneration.</strong> <code>trie sync</code>
               touches only stale sections plus their cascade.
-              <code>trie refresh</code> (run automatically by the agent turn
+              <code>trie sync --graph-only</code> (run automatically by the agent turn
               hook) rebuilds the symbol graph without LLM calls. Fresh clones
               and <code>git pull</code> never auto-spend.
             </li>
@@ -405,7 +405,7 @@ stage a note per symbol, then re-run:
           <ol>
             <li>
               <strong>Turn-boundary hook.</strong> Runs
-              <code>trie refresh --after-turn</code> when the session goes
+              <code>trie sync --graph-only --after-turn</code> when the session goes
               idle, so the graph tracks the agent's edits. No LLM cost.
             </li>
             <li>
@@ -491,7 +491,7 @@ stage a note per symbol, then re-run:
             unchanged.
           </p>
 
-          <h3>What <code>trie refresh</code> costs</h3>
+          <h3>What <code>trie sync --graph-only</code> costs</h3>
           <table>
             <thead>
               <tr><th>State</th><th>When</th><th>Action</th></tr>
@@ -590,7 +590,7 @@ stage a note per symbol, then re-run:
                 <td>no</td>
               </tr>
               <tr>
-                <td><code>trie refresh</code></td>
+                <td><code>trie sync --graph-only</code></td>
                 <td>Freshness gate (what the turn hook calls)</td>
                 <td>only on real edits</td>
               </tr>
@@ -730,7 +730,7 @@ enabled = true                        # master switch (or TRIE_DISABLE_RESOLVER=
 - run: |
     pipx install uv
     uv tool install git+https://github.com/computer-reinvention/trie
-    trie refresh                  <span class="tok-dim"># cold start: rebuild the symbol graph (no LLM)</span>
+    trie sync --graph-only        <span class="tok-dim"># cold start: rebuild the symbol graph (no LLM)</span>
 
 <span class="tok-dim"># ... the agent works: edits code, records notes via the patch tools ...</span>
 
@@ -749,7 +749,7 @@ enabled = true                        # master switch (or TRIE_DISABLE_RESOLVER=
             </li>
             <li>
               <strong>Order matters on a cold runner.</strong>
-              <code>trie refresh</code> first (notes can only be recorded
+              <code>trie sync --graph-only</code> first (notes can only be recorded
               against symbols the graph knows), work, then
               <code>sync → gate → commit</code>.
             </li>
@@ -834,7 +834,7 @@ triefacts/triediffs/**  linguist-generated=false</code></pre>
             </li>
             <li>
               <strong><code>sync</code> exits 2.</strong> It collided with an
-              in-flight refresh (the turn hook doing its job). Let the hook
+              in-flight graph sync (the turn hook doing its job). Let the hook
               finish and retry.
             </li>
             <li>
@@ -846,7 +846,7 @@ triefacts/triediffs/**  linguist-generated=false</code></pre>
             <li>
               <strong>A lookup returns nothing for a symbol you can see in
               source.</strong> The file may be out of <code>[scope]</code>, or
-              the graph is stale: run <code>trie refresh</code>. Never
+              the graph is stale: run <code>trie sync --graph-only</code>. Never
               hand-build qnames from file paths; look them up.
             </li>
             <li>

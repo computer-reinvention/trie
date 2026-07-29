@@ -5,21 +5,24 @@ the agent edits source files; between sessions a `git pull` can bring in
 collaborators' work. Without a gate, the MCP server's view of the project drifts
 from reality and the agent loses trust in trie's answers.
 
-This module provides two trigger points:
+This module backs `trie sync --graph-only` (the hook-driven graph sync). It
+provides two trigger points:
 
   - `ensure_fresh_before_turn(...)`: cheap probe at turn start. Catches the
     "someone pulled" case (HEAD moved) and the "someone edited between turns"
-    case (mtime moved). No-op when nothing changed since the last refresh.
+    case (mtime moved). No-op when nothing changed since the last graph sync.
 
   - `ensure_fresh_after_turn(...)`: filesystem sweep at turn end. Catches the
     "agent edited inside the just-finished turn" case. Reuses the same scan +
-    cascade + sync machinery as `before_turn`.
+    cascade machinery as `before_turn`.
 
-Both triggers ultimately call `run_incremental`, which already handles
-scan-then-cascade-then-sync correctly. The novelty here is in *deciding when to
-call it*, recorded in a stamp file at `.trie/graph.head`. The stamp carries:
+Both triggers are graph-only and never call the LLM: they rebuild the symbol
+graph from source and record which triefacts' prose now lags in the pending
+set (`.trie/activity.db`) for a later full `trie sync` to regenerate. The
+novelty here is in *deciding when to rebuild*, recorded in a stamp file at
+`.trie/graph.head`. The stamp carries:
 
-  - the git HEAD SHA at the last refresh, and
+  - the git HEAD SHA at the last graph sync, and
   - a map of `in-scope-relative-path -> last-seen-mtime` so we can detect file
     changes without re-reading bytes.
 
@@ -37,18 +40,13 @@ from pathlib import Path
 from typing import Any
 
 from trie import telemetry
-from trie.activity import write_pending
+from trie.activity import read_pending, write_pending
 from trie.config import Config
 from trie.git_helpers import current_head, is_git_repo
 from trie.graph.store import Store
-from trie.models import TrieClient
 from trie.scan import scan_project
 from trie.scope import discover_files
-from trie.sync.incremental import (
-    IncrementalResult,
-    compute_incremental_worklist,
-    run_incremental,
-)
+from trie.sync.incremental import compute_incremental_worklist
 from trie.sync.progress import ProgressCallback
 from trie.sync.single_file import backfill_section_records
 
@@ -193,23 +191,21 @@ def _mtimes_differ(a: dict[str, float], b: dict[str, float]) -> bool:
 
 @dataclass(frozen=True)
 class FreshnessResult:
-    """Outcome of an ensure_fresh call.
+    """Outcome of an ensure_fresh call (the `trie sync --graph-only` core).
 
     `refreshed` is True iff the graph was rebuilt. `head` is the SHA of HEAD at
-    the time of the check. `incremental` carries the underlying result only when
-    an inline LLM sync ran (the opt-in `--sync` path); the default refresh is
-    graph-only and leaves it None.
+    the time of the check.
 
-    `stale_files` lists triefacts whose prose now lags their source after a
-    `mtimes_moved` refresh — the work a subsequent `trie sync` would do. The
-    default refresh marks these stale (writing `.trie/pending.json`) rather than
-    regenerating them inline, so the turn-boundary hook stays fast.
+    `stale_files` lists source files whose triefact prose lags — the work a
+    subsequent full `trie sync` would do. It is populated on *every* outcome,
+    including `unchanged` (from the recorded pending set), so callers can
+    always report prose staleness honestly: a fresh graph does not mean fresh
+    prose. Graph syncs never regenerate prose; they only record the lag.
     """
 
     refreshed: bool
     reason: str
     head: str
-    incremental: IncrementalResult | None = None
     stale_files: tuple[str, ...] = ()
 
 
@@ -218,32 +214,28 @@ def ensure_fresh_before_turn(
     project_root: Path,
     config: Config,
     store: Store,
-    client: TrieClient,
     progress: ProgressCallback | None = None,
-    sync_prose: bool = False,
 ) -> FreshnessResult:
     """Cheap freshness probe to run at the start of an agent turn.
 
     Four states (see `_ensure_fresh` for the full rationale):
-      1. `no_stamp` → graph scan only (no LLM). First run in this checkout.
-      2. `head_moved` → graph scan only (no LLM). Someone pulled; trust the
+      1. `no_stamp` → graph scan only. First run in this checkout.
+      2. `head_moved` → graph scan only. Someone pulled; trust the
          committed triefact prose.
-      3. `mtimes_moved` → graph scan only (no LLM by default); drifted triefacts
-         are marked stale in `.trie/pending.json` for a later `trie sync`. Pass
-         `sync_prose=True` to regenerate prose inline (the old behaviour).
-      4. `unchanged` → no-op fast path.
+      3. `mtimes_moved` → graph scan; drifted triefacts are marked stale in
+         the pending set for a later full `trie sync`.
+      4. `unchanged` → no-op fast path (still reports pending prose staleness).
 
-    Refresh is the *fast* gate: keeping the LLM out of the turn boundary is the
-    whole point. Prose regen is decoupled into `trie sync`.
+    The graph sync is the *fast* gate: it never calls the LLM — keeping spend
+    out of the turn boundary is the whole point. Prose regen lives exclusively
+    in the full `trie sync`.
     """
     return _ensure_fresh(
         project_root=project_root,
         config=config,
         store=store,
-        client=client,
         progress=progress,
         trigger="before_turn",
-        sync_prose=sync_prose,
     )
 
 
@@ -252,29 +244,23 @@ def ensure_fresh_after_turn(
     project_root: Path,
     config: Config,
     store: Store,
-    client: TrieClient,
     progress: ProgressCallback | None = None,
-    sync_prose: bool = False,
 ) -> FreshnessResult:
     """Always-on freshness sweep to run at the end of an agent turn.
 
     Reuses the same machinery as `ensure_fresh_before_turn` — the same
-    HEAD/mtime checks drive the same refresh path. The semantic difference is
-    one of intent: this hook fires after the agent has finished editing, so
+    HEAD/mtime checks drive the same graph-sync path. The semantic difference
+    is one of intent: this hook fires after the agent has finished editing, so
     in steady state it picks up exactly the files the agent just touched. If
     HEAD also moved (unusual but possible — the agent ran `git pull` itself),
-    that's caught too.
-
-    Graph-only by default (fast); `sync_prose=True` regenerates inline.
+    that's caught too. Never calls the LLM.
     """
     return _ensure_fresh(
         project_root=project_root,
         config=config,
         store=store,
-        client=client,
         progress=progress,
         trigger="after_turn",
-        sync_prose=sync_prose,
     )
 
 
@@ -283,18 +269,16 @@ def _ensure_fresh(
     project_root: Path,
     config: Config,
     store: Store,
-    client: TrieClient,
     progress: ProgressCallback | None,
     trigger: str,
-    sync_prose: bool = False,
 ) -> FreshnessResult:
-    """Shared freshness implementation. `trigger` is a telemetry label only.
+    """Shared graph-sync implementation. `trigger` is a telemetry label only.
 
-    Branches by reason. Every path rebuilds the graph from source via
-    `scan_project` (fast, no LLM). Prose regeneration is decoupled: by default
-    even `mtimes_moved` only *marks* drifted triefacts stale (in
-    `.trie/pending.json`) instead of regenerating them inline, so refresh stays
-    fast at the turn boundary. `sync_prose=True` restores inline regen.
+    Branches by reason. Every non-`unchanged` path rebuilds the graph from
+    source via `scan_project` (fast, never the LLM). Prose regeneration is
+    fully decoupled: `mtimes_moved` only *marks* drifted triefacts stale in
+    the pending set (`.trie/activity.db`) so the turn boundary stays fast and
+    free; the full `trie sync` is the one place prose gets regenerated.
 
     Rationale:
       - `no_stamp`: first run in a fresh checkout. Auto-spending LLM dollars on
@@ -303,9 +287,10 @@ def _ensure_fresh(
       - `head_moved`: a `git pull` brought in committed triefacts; re-LLMing
         them would discard a teammate's work. Scan rebuilds the graph against
         the new code; committed prose stays as-is.
-      - `mtimes_moved`: local source edits drift prose from source. Graph-only
-        by default — the drift is recorded as stale and a later `trie sync`
-        regenerates it. With `sync_prose=True`, `run_incremental` fires inline.
+      - `mtimes_moved`: local source edits drift prose from source. The drift
+        is recorded as stale and a later full `trie sync` regenerates it.
+      - `unchanged`: no-op for the graph, but the recorded pending set is
+        still surfaced so callers never report "fresh" while prose lags.
     """
     with telemetry.timed("freshness_gate", trigger=trigger) as tele:
         head = _require_git(project_root)
@@ -342,31 +327,19 @@ def _ensure_fresh(
         if reason == "unchanged":
             if store.count_section_records() < store.count_symbols():
                 backfill_section_records(project_root, config, store)
-            return FreshnessResult(refreshed=False, reason=reason, head=head, incremental=None)
+            # The graph is current, but prose staleness recorded by an earlier
+            # graph sync may still be outstanding. Surface it on every call so
+            # "fresh" is never claimed while the drift gate would fail.
+            pending = read_pending(project_root)
+            stale = pending.stale if pending is not None else ()
+            tele["stale_files"] = len(stale)
+            return FreshnessResult(refreshed=False, reason=reason, head=head, stale_files=stale)
 
         if reason == "mtimes_moved":
-            if sync_prose:
-                # Opt-in inline regen: `run_incremental` handles scan + cascade +
-                # LLM sync with diff-aware regen. Slow; only when explicitly asked.
-                result = run_incremental(
-                    project_root=project_root,
-                    config=config,
-                    store=store,
-                    client=client,
-                    progress=progress,
-                )
-                write_stamp(project_root, Stamp(head=head, mtimes=current_mtimes))
-                # Inline sync regenerated everything that drifted, so the working
-                # tree is clean: drop the whole pending set.
-                write_pending(project_root, stale=[], head=head)
-                tele["files_synced"] = result.files_synced
-                tele["actual_cost_usd"] = result.actual_cost_usd
-                return FreshnessResult(refreshed=True, reason=reason, head=head, incremental=result)
-
-            # Default: graph-only. Rebuild the symbol graph from source (fast,
-            # no LLM) so MCP queries reflect current code, then record which
-            # triefacts now lag their source in `.trie/pending.json`. A later
-            # `trie sync` regenerates the prose. The turn boundary stays fast.
+            # Rebuild the symbol graph from source (fast, no LLM) so MCP
+            # queries reflect current code, then record which triefacts now
+            # lag their source in the pending set. A later full `trie sync`
+            # regenerates the prose. The turn boundary stays fast.
             worklist = compute_incremental_worklist(
                 project_root=project_root, config=config, store=store
             )
@@ -376,9 +349,7 @@ def _ensure_fresh(
             stale = tuple(worklist.affected_files)
             write_pending(project_root, stale=list(stale), head=head)
             tele["stale_files"] = len(stale)
-            return FreshnessResult(
-                refreshed=True, reason=reason, head=head, incremental=None, stale_files=stale
-            )
+            return FreshnessResult(refreshed=True, reason=reason, head=head, stale_files=stale)
 
         # `no_stamp`, `head_moved`, and `empty_store`: rebuild the graph without
         # firing the LLM. The triefacts on disk reflect whatever the user / team
@@ -393,4 +364,6 @@ def _ensure_fresh(
         tele["files_scanned"] = scan_result.files_total
         tele["symbols_total"] = scan_result.symbols_total
         tele["edges_total"] = scan_result.edges_total
-        return FreshnessResult(refreshed=True, reason=reason, head=head, incremental=None)
+        pending = read_pending(project_root)
+        stale = pending.stale if pending is not None else ()
+        return FreshnessResult(refreshed=True, reason=reason, head=head, stale_files=stale)

@@ -74,10 +74,10 @@ def test_opencode_hook_creates_plugin_file(project: Path):
     assert expected_path.exists()
     contents = expected_path.read_text()
     # Key wiring: the plugin listens for `session.status` with idle status
-    # (the new non-deprecated event) and runs trie refresh.
+    # (the new non-deprecated event) and runs the graph-only sync.
     assert "session.status" in contents
     assert '"idle"' in contents
-    assert "trie refresh --after-turn" in contents
+    assert "trie sync --graph-only --after-turn" in contents
     # The plugin MUST default-export a PluginModule shape with `id`. opencode's
     # v1 loader (`readV1Plugin`) requires path plugins to carry an `id`, and
     # the legacy named-export path is being phased out.
@@ -215,7 +215,7 @@ def test_claude_code_hook_is_manual_setup(project: Path):
     assert result.action == "needs_manual_setup"
     assert result.path is None
     # Instructions actually mention how to wire it.
-    assert "trie refresh" in result.detail
+    assert "trie sync --graph-only" in result.detail
 
 
 def test_unknown_target_raises(project: Path):
@@ -254,7 +254,7 @@ def test_apply_one_returns_needs_manual_setup_for_render_none(project: Path):
     assert isinstance(result, HookApplyResult)
     assert result.action == "needs_manual_setup"
     assert result.path is None
-    assert "trie refresh" in result.detail
+    assert "trie sync --graph-only" in result.detail
 
 
 # ---------------------------------------------------------------------------

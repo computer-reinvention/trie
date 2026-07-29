@@ -134,3 +134,29 @@ def test_gate_exits_2_when_writer_holds_the_lock(tmp_path: Path, monkeypatch):
     result = runner.invoke(app, ["gate"])
     assert result.exit_code == 2
     assert "retry" in result.output.lower()
+
+
+def test_gate_warns_on_self_hosting_version_skew(tmp_path: Path, monkeypatch):
+    """When the project IS the trie source repo at a different version than the
+    running binary, the gate warns loudly — a stale global install once shipped
+    a commit whose digest was written by the previous release."""
+    repo = _synced_repo(tmp_path)
+    (repo / "pyproject.toml").write_text(
+        '[project]\nname = "trie"\nversion = "999.0.0"\n',
+    )
+    monkeypatch.chdir(repo)
+    result = runner.invoke(app, ["gate", "--no-digest"])
+    flat = " ".join(result.output.split())
+    assert "999.0.0" in flat
+    assert "uv tool install --force" in flat
+
+
+def test_gate_no_skew_warning_for_other_projects(tmp_path: Path, monkeypatch):
+    """A non-trie project with its own pyproject must never see the warning."""
+    repo = _synced_repo(tmp_path)
+    (repo / "pyproject.toml").write_text(
+        '[project]\nname = "someapp"\nversion = "999.0.0"\n',
+    )
+    monkeypatch.chdir(repo)
+    result = runner.invoke(app, ["gate", "--no-digest"])
+    assert "uv tool install --force" not in " ".join(result.output.split())

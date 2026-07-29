@@ -81,7 +81,7 @@ trie trace src/graph/store:Store.replace_all_edges --direction callers --depth 2
 - **After every code change:** `trie sync` regenerates exactly the stale sections plus
   their cascade. Run it before opening a PR so reviewers see the prose change too. (If
   `trie setup` installed the turn-boundary hook for your agent, the agent runs
-  `trie refresh --after-turn` for you between turns.)
+  `trie sync --graph-only --after-turn` for you between turns.)
 - **In CI / pre-commit:** `trie verify` only — it's deterministic, offline, and
   exits non-zero on drift. Never let CI call the LLM path.
 - **For agents:** `trie setup` once. Agents read the graph (via MCP or the
@@ -459,7 +459,7 @@ trie setup --no-overrides                 # skip the tool-override step
 `trie setup` does four things in one pass:
 
 1. **MCP server registration** — makes trie available to the agent. Same as standalone `trie mcp install`.
-2. **Turn-boundary hook** — calls `trie refresh --after-turn` when the agent's session goes idle, so the graph picks up edits the agent just made.
+2. **Turn-boundary hook** — calls `trie sync --graph-only --after-turn` when the agent's session goes idle, so the graph picks up edits the agent just made.
 3. **Agent-facing docs** — writes `TRIE.md` (a usage guide for agents) and appends a one-line pointer to `AGENTS.md` / `CLAUDE.md` so the agent finds the guide on load. Tool names in the doc are rendered for the harness in question (`trie_grep` for opencode, `mcp__trie__grep` for Claude Code).
 4. **Tool overrides** — replaces the agent's built-in `grep` and `read` with wrappers that route through trie, and adds `trace` as a new tool. The agent's built-in `grep` now searches the symbol graph; built-in `read` returns a **compact triefact view** by default (file description, ref counts, and one entry per symbol with qname, kind, lines, signature, and first-paragraph intro) and routes to `trie read` for qnames. Pass `full: true` to get every section's full prose with trie's internal frontmatter (`trie_version`, `file_fingerprint`, `last_synced_at`, `source`) and all section sentinels (with their fingerprints) stripped — agents see prose, not machinery. `show_source: true` is the escape hatch back to raw bytes. Default on; pass `--no-overrides` to skip.
 
@@ -469,7 +469,7 @@ Supported targets: `opencode`, `claude-code`, `claude-desktop`, `cursor`, `winds
 
 - **opencode (trie-native fork)**: the strongest integration. The [`computer-reinvention/opencode`](https://github.com/computer-reinvention/opencode) fork (vendored here as the `opencode/` submodule) ships the trie tools as the agent's **default** toolset — `trie_grep` / `trie_read` / `trie_trace` and the full patch pipeline (`trie_patch`, `trie_create_symbol` / `trie_delete_symbol` / `trie_rename_symbol`, `trie_patch_preview`, `trie_patch_apply`) are native, the stock file tools are demoted to backup (`fs_*`), an edit guard routes indexed-code edits through the pipeline, and a trie usage guide is injected into the system prompt. No per-project tool-override files are needed on this build. See the fork's [README](opencode/README.md) and the capability-gap tracker in [`docs/core/trie-tool-extensions.md`](docs/core/trie-tool-extensions.md).
 - **opencode (upstream)**: full coverage via injection — MCP registration, plugin-based turn hook (`session.idle` event), `TRIE.md` + `AGENTS.md` pointer, and the full tool override (`.opencode/tools/{grep,read,trace}.ts`).
-- **claude-code**: MCP registration, `TRIE.md` + `CLAUDE.md` pointer, and a non-blocking `PreToolUse` advisory hook on built-in `Grep` (Claude Code has no full tool-override surface; the hook injects a system reminder pointing at `mcp__trie__grep`). Hook automation isn't documented for per-turn events on this harness, so `trie refresh` is a manual step today.
+- **claude-code**: MCP registration, `TRIE.md` + `CLAUDE.md` pointer, and a non-blocking `PreToolUse` advisory hook on built-in `Grep` (Claude Code has no full tool-override surface; the hook injects a system reminder pointing at `mcp__trie__grep`). Hook automation isn't documented for per-turn events on this harness, so `trie sync --graph-only` is a manual step today.
 - **Other targets** (`claude-desktop`, `cursor`, `windsurf`, `vscode`, `codex`): MCP registration works; turn hook and tool override emit a `manual setup required` notice with the instruction to follow.
 
 `trie setup` is idempotent — re-running reports each file as `skipped` if it's already up to date, `updated` if it drifted. Safe to run after every checkout.
@@ -500,7 +500,7 @@ The MCP snippet shape depends on the agent's schema. For Claude-style agents:
 
 For opencode it's the `mcp.<name>` form documented in [opencode's docs](https://opencode.ai/docs/mcp-servers).
 
-### What `trie refresh` actually does
+### What `trie sync --graph-only` actually does
 
 The freshness gate has four states. Costs are bounded and predictable:
 
@@ -509,7 +509,7 @@ The freshness gate has four states. Costs are bounded and predictable:
 | `unchanged`    | stamp matches HEAD + mtimes    | no-op                                                                                     |
 | `no_stamp`     | first run in this checkout     | rebuild the graph (no LLM); record stamp                                                  |
 | `head_moved`   | `git pull` brought new commits | rebuild the graph (no LLM); trust committed triefacts; record stamp                       |
-| `mtimes_moved` | local edits since last refresh | scan + run incremental sync (LLM as needed; diff-aware rubric keeps cosmetic edits cheap) |
+| `mtimes_moved` | local edits since the last graph sync | scan (no LLM); drifted triefacts marked stale for the next full `trie sync` |
 
 The LLM path only fires for `mtimes_moved`. Trie does **not** auto-spend on fresh clones or after `git pull`. Run `trie sync` explicitly when you want prose regen beyond what edits warrant.
 

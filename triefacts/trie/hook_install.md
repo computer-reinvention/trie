@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.2.0
 source: trie/hook_install.py
-file_fingerprint: 4c45a4c792c5b6bae87ec84e58b88d2ad578752f9f4a79108b7a66ac3c0e32a5
-last_synced_at: '2026-06-03T21:12:28Z'
+file_fingerprint: 235e0b5653036800a56d1513388fb87c0d0a21a022b026452ffab0ae82d2b9f6
+last_synced_at: '2026-07-29T17:54:58Z'
 description: Turn-boundary hook installation for coding agents.
 defines:
 - kind: module
   qualified_name: trie/hook_install:__module__
-  lines: 1-468
+  lines: 1-469
 - kind: constant
   qualified_name: trie/hook_install:Action
   lines: 36-36
@@ -28,27 +28,27 @@ defines:
   lines: 105-105
 - kind: function
   qualified_name: trie/hook_install:_render_opencode_plugin
-  lines: 108-164
+  lines: 108-165
 - kind: function
   qualified_name: trie/hook_install:_render_opencode_package_json
-  lines: 167-196
+  lines: 168-197
 - kind: constant
   qualified_name: trie/hook_install:TARGETS
-  lines: 205-279
+  lines: 206-280
 - kind: class
   qualified_name: trie/hook_install:HookInstallPlan
-  lines: 288-294
+  lines: 289-295
 - kind: function
   qualified_name: trie/hook_install:install
-  lines: 297-347
+  lines: 298-348
 - kind: function
   qualified_name: trie/hook_install:apply_one
-  lines: 350-436
+  lines: 351-437
 - kind: function
   qualified_name: trie/hook_install:_apply_support_files
-  lines: 439-467
+  lines: 440-468
 incoming_refs: 17
-outgoing_refs: 0
+outgoing_refs: 1
 ---
 <!-- trie:section symbol=trie/hook_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=21ee9d447b947371dbc665d0c8e007fa0ce70a727b8ff219daf9a1aba308f600 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
 Installs turn-boundary hooks that automatically run `trie refresh` when coding agents finish sessions.
@@ -94,11 +94,11 @@ Static configuration describing an agent's turn-boundary hook installation requi
 <!-- trie:section symbol=trie/hook_install:_OPENCODE_PLUGIN_FILENAME fingerprint=7442e6e578a889b0767a95dd3881ed665d3e6834945f3fa54cb3a7c6aceb8925 body_fp=eb365a6e1177a9dea9e870261354332bde8897c6def370567736635558763811 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
 Filename constant for the opencode plugin that triggers trie refresh on agent turn boundaries.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:_render_opencode_plugin fingerprint=2124c7400ce40dcbe5268bec6afb9f79f933b518b9a420739102174413aadae9 body_fp=215bb7eee4dc621905c05396141df04702ca8494140c701f58bb4f17226cfe27 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
-Generates TypeScript plugin source code for opencode to automatically run `trie refresh --after-turn` on idle sessions.
+<!-- trie:section symbol=trie/hook_install:_render_opencode_plugin fingerprint=91eee9cdd5ef96f9e80cbb0ea6c7cc7accb1989968c9a04882982fda69d2f9d0 body_fp=f2af4f3dfb93dfb1b10f8c6f466530ab22dd81d1aa258773cb860fba454a5b9f source_ref=f7496ac380664c8c8c5e1faeaf56b98c2f230b69 role=io -->
+Generates TypeScript plugin source code for opencode to automatically run `trie sync --graph-only --after-turn` on idle sessions.
 
 - Returns complete plugin file content as string
-- Plugin listens for `session.status` with idle type to trigger refresh
+- Plugin listens for `session.status` with idle type to trigger sync
 - Uses `quiet()` to suppress stdout/stderr from flooding opencode TUI
 - Swallows errors to prevent plugin failures from disrupting opencode sessions
 <!-- trie:end -->
@@ -109,7 +109,7 @@ Renders `.opencode/package.json` pinning `@opencode-ai/plugin` to prevent openco
 - Prevents `ERR_MODULE_NOT_FOUND` errors when opencode auto-pins to `"local"`
 - Works around opencode bugs #28286 and #27676 that break plugin imports
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:TARGETS fingerprint=7eb650c1091fe74c8c5781751a1c3aba97b671ce9d6ea1b316bfb82060ccaea3 body_fp=247db4a205edb681a13bb95c5255badfde198a176abc2fd4e7b912c49b866671 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+<!-- trie:section symbol=trie/hook_install:TARGETS fingerprint=794ceee835be8ac0de8e8d58d422e7c4673276bf496f622614be02f8dc9ebf9c body_fp=247db4a205edb681a13bb95c5255badfde198a176abc2fd4e7b912c49b866671 source_ref=f7496ac380664c8c8c5e1faeaf56b98c2f230b69 role=agent-integration -->
 Maps agent names to their turn-boundary hook installation specifications.
 
 - Only "opencode" supports automated hook installation with TypeScript plugin

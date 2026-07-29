@@ -1,13 +1,15 @@
-"""Tests for the turn-boundary freshness gate.
+"""Tests for the turn-boundary freshness gate (`trie sync --graph-only`).
 
 The gate has four states, and each is exercised here:
 
-  1. `fresh` — stamp matches current HEAD and mtimes; no refresh fires.
-  2. `no_stamp` — fresh checkout, no `.trie/graph.head` yet; full refresh fires.
-  3. `head_moved` — `git pull` or commit changed HEAD; full refresh fires.
-  4. `mtimes_moved` — files edited since last refresh; refresh fires (and
-     `run_incremental` only re-parses changed files internally).
+  1. `unchanged` — stamp matches current HEAD and mtimes; no rebuild fires
+     (but recorded prose staleness is still reported).
+  2. `no_stamp` — fresh checkout, no `.trie/graph.head` yet; graph rebuild fires.
+  3. `head_moved` — `git pull` or commit changed HEAD; graph rebuild fires.
+  4. `mtimes_moved` — files edited since the last graph sync; rebuild fires and
+     drifted triefacts are recorded in the pending set.
 
+The graph sync NEVER calls the LLM — the API doesn't even accept a client.
 The non-git case must raise `NotAGitRepoError` rather than degrade silently —
 silent degradation is the failure mode the gate exists to prevent.
 """
@@ -21,7 +23,6 @@ from pathlib import Path
 
 import pytest
 
-from tests.fake_client import FakeTrieClient
 from trie.config import Config
 from trie.freshness import (
     NotAGitRepoError,
@@ -157,12 +158,7 @@ def test_ensure_fresh_raises_outside_git(tmp_path: Path):
     db = tmp_path / ".trie" / "graph.db"
     db.parent.mkdir(parents=True, exist_ok=True)
     with Store(db) as store, pytest.raises(NotAGitRepoError):
-        ensure_fresh_before_turn(
-            project_root=tmp_path,
-            config=config,
-            store=store,
-            client=FakeTrieClient(output_body="## `body`\n\nDeterministic."),
-        )
+        ensure_fresh_before_turn(project_root=tmp_path, config=config, store=store)
 
 
 # ---------------------------------------------------------------------------
@@ -170,39 +166,21 @@ def test_ensure_fresh_raises_outside_git(tmp_path: Path):
 # ---------------------------------------------------------------------------
 
 
-def _run_before_turn(
-    project: Path, client: FakeTrieClient | None = None, *, sync_prose: bool = False
-):
-    """Run the pre-turn gate, returning the FreshnessResult.
-
-    A caller that needs to inspect LLM call counts after the run can pass its
-    own FakeTrieClient instance and read `.calls` on it. The default behaviour
-    matches the original helper for tests that don't care about call counts.
-    """
+def _run_before_turn(project: Path):
+    """Run the pre-turn gate, returning the FreshnessResult."""
     config, _ = Config.find_and_load(project)
     db = project / ".trie" / "graph.db"
     db.parent.mkdir(parents=True, exist_ok=True)
     with Store(db) as store:
-        return ensure_fresh_before_turn(
-            project_root=project,
-            config=config,
-            store=store,
-            client=client or FakeTrieClient(output_body="## `body`\n\nDeterministic."),
-            sync_prose=sync_prose,
-        )
+        return ensure_fresh_before_turn(project_root=project, config=config, store=store)
 
 
-def _run_after_turn(project: Path, client: FakeTrieClient | None = None):
+def _run_after_turn(project: Path):
     config, _ = Config.find_and_load(project)
     db = project / ".trie" / "graph.db"
     db.parent.mkdir(parents=True, exist_ok=True)
     with Store(db) as store:
-        return ensure_fresh_after_turn(
-            project_root=project,
-            config=config,
-            store=store,
-            client=client or FakeTrieClient(output_body="## `body`\n\nDeterministic."),
-        )
+        return ensure_fresh_after_turn(project_root=project, config=config, store=store)
 
 
 def test_no_stamp_triggers_scan_without_llm(project: Path):
@@ -216,12 +194,9 @@ def test_no_stamp_triggers_scan_without_llm(project: Path):
     `no_stamp`. Both paths converge; the reason label just records which guard
     fired first.
     """
-    client = FakeTrieClient(output_body="## `body`\n\nDeterministic.")
-    result = _run_before_turn(project, client=client)
+    result = _run_before_turn(project)
     assert result.refreshed is True
     assert result.reason == "empty_store"
-    assert result.incremental is None, "first contact must not invoke run_incremental"
-    assert client.calls == 0, "first contact must not invoke the LLM"
     # The stamp now exists and records current HEAD.
     stamp = read_stamp(project)
     assert stamp is not None
@@ -256,12 +231,9 @@ def test_empty_store_with_valid_stamp_self_heals(project: Path):
         assert store.count_symbols() == 0
 
     # Stamp still matches HEAD + mtimes, but the store is empty.
-    client = FakeTrieClient(output_body="## `body`\n\nDeterministic.")
-    healed = _run_before_turn(project, client=client)
+    healed = _run_before_turn(project)
     assert healed.refreshed is True
     assert healed.reason == "empty_store"
-    assert healed.incremental is None, "self-heal must not invoke run_incremental"
-    assert client.calls == 0, "self-heal rebuilds from triefacts; no LLM"
 
     # The graph is repopulated.
     with Store(db) as store:
@@ -274,7 +246,6 @@ def test_unchanged_state_is_a_noop(project: Path):
     second = _run_before_turn(project)
     assert second.refreshed is False
     assert second.reason == "unchanged"
-    assert second.incremental is None
 
 
 def test_head_moved_triggers_scan_without_llm(project: Path):
@@ -289,20 +260,17 @@ def test_head_moved_triggers_scan_without_llm(project: Path):
     _git(["add", "README.md"], project)
     _git(["commit", "-q", "-m", "add readme"], project)
 
-    client = FakeTrieClient(output_body="## `body`\n\nDeterministic.")
-    result = _run_before_turn(project, client=client)
+    result = _run_before_turn(project)
     assert result.refreshed is True
     assert result.reason == "head_moved"
-    assert result.incremental is None, "head_moved must not invoke run_incremental"
-    assert client.calls == 0, "head_moved must not invoke the LLM"
     after_head = read_stamp(project).head
     assert after_head != before_head
 
 
 def test_mtimes_moved_is_graph_only_and_marks_stale(project: Path):
-    """Edit a file without committing: HEAD unchanged, mtime moved. By default
-    refresh is FAST — it rebuilds the graph (no LLM) and records the drifted
-    triefacts as stale in pending.json rather than regenerating prose inline."""
+    """Edit a file without committing: HEAD unchanged, mtime moved. The graph
+    sync is FAST — it rebuilds the graph (no LLM) and records the drifted
+    triefacts as stale in the pending set rather than regenerating prose."""
     from trie.activity import read_pending
 
     _run_before_turn(project)
@@ -312,12 +280,9 @@ def test_mtimes_moved_is_graph_only_and_marks_stale(project: Path):
     alpha = project / "src" / "alpha.py"
     alpha.write_text(alpha.read_text() + "\n# tweak\n")
 
-    client = FakeTrieClient(output_body="## `body`\n\nDeterministic.")
-    result = _run_before_turn(project, client=client)
+    result = _run_before_turn(project)
     assert result.refreshed is True
     assert result.reason == "mtimes_moved"
-    assert result.incremental is None, "default mtimes_moved must NOT invoke run_incremental"
-    assert client.calls == 0, "default refresh must not touch the LLM"
     assert "src/alpha.py" in result.stale_files
     # The stale set is persisted for `trie status` / the editor to read.
     pending = read_pending(project)
@@ -326,25 +291,27 @@ def test_mtimes_moved_is_graph_only_and_marks_stale(project: Path):
     assert read_stamp(project).head == before_head
 
 
-def test_mtimes_moved_with_sync_prose_runs_inline(project: Path):
-    """The opt-in `sync_prose=True` path restores inline LLM regen and clears
-    the pending set."""
-    from trie.activity import read_pending
+def test_unchanged_still_reports_pending_prose_staleness(project: Path):
+    """Regression: `unchanged` must carry the recorded pending set.
 
+    A graph-only sync advances the stamp, so the *next* sync sees `unchanged`.
+    It must still surface the outstanding prose staleness — the old behaviour
+    reported "already fresh" while the pre-commit gate failed on the same
+    tree, sending the operator in a circle."""
     _run_before_turn(project)
     time.sleep(0.01)
     alpha = project / "src" / "alpha.py"
     alpha.write_text(alpha.read_text() + "\n# tweak\n")
 
-    client = FakeTrieClient(output_body="## `body`\n\nDeterministic.")
-    result = _run_before_turn(project, client=client, sync_prose=True)
-    assert result.refreshed is True
-    assert result.reason == "mtimes_moved"
-    assert result.incremental is not None, "sync_prose=True must invoke run_incremental"
-    # Inline sync leaves the working tree clean.
-    pending = read_pending(project)
-    assert pending is not None
-    assert pending.stale == ()
+    moved = _run_before_turn(project)
+    assert moved.reason == "mtimes_moved"
+    assert "src/alpha.py" in moved.stale_files
+
+    # Stamp advanced: the next run is `unchanged`, but the prose lag persists.
+    second = _run_before_turn(project)
+    assert second.refreshed is False
+    assert second.reason == "unchanged"
+    assert "src/alpha.py" in second.stale_files
 
 
 def test_new_file_added_triggers_refresh(project: Path):
@@ -402,39 +369,108 @@ def test_after_turn_noop_when_nothing_changed(project: Path):
 # ---------------------------------------------------------------------------
 
 
-def test_cli_refresh_default_runs_after_turn(project: Path, monkeypatch: pytest.MonkeyPatch):
-    """No-flag invocation triggers the after-turn path. Default exists so a
-    hook config can just say `trie refresh` without remembering the flag."""
+def test_cli_graph_only_defaults_to_after_turn(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """`trie sync --graph-only` with no turn flag runs the after-turn sweep,
+    exits 0, and never needs an API key (no client is constructed at all)."""
     from typer.testing import CliRunner
 
     from trie.cli import app
 
-    # Stub make_client so we don't construct a real AnthropicClient (which would
-    # fail in the test sandbox without ANTHROPIC_API_KEY).
-    monkeypatch.setattr(
-        "trie.cli.make_client",
-        lambda *_a, **_kw: FakeTrieClient(output_body="## `body`\n\nDeterministic."),
-    )
     monkeypatch.chdir(project)
 
     runner = CliRunner()
-    result = runner.invoke(app, ["refresh"])
+    result = runner.invoke(app, ["sync", "--graph-only"])
     assert result.exit_code == 0, result.output
+    assert "after-turn" in result.output
 
 
-def test_cli_refresh_before_and_after_mutex(project: Path, monkeypatch: pytest.MonkeyPatch):
+def test_cli_turn_flags_imply_graph_only(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """`trie sync --after-turn` alone must behave as --graph-only --after-turn:
+    a turn hook must never be one dropped flag away from LLM spend."""
     from typer.testing import CliRunner
 
     from trie.cli import app
 
     monkeypatch.chdir(project)
     runner = CliRunner()
-    result = runner.invoke(app, ["refresh", "--before-turn", "--after-turn"])
+    result = runner.invoke(app, ["sync", "--after-turn"])
+    assert result.exit_code == 0, result.output
+    assert "after-turn" in result.output
+
+
+def test_cli_graph_only_before_and_after_mutex(project: Path, monkeypatch: pytest.MonkeyPatch):
+    from typer.testing import CliRunner
+
+    from trie.cli import app
+
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["sync", "--before-turn", "--after-turn"])
     assert result.exit_code == 1
     assert "mutually exclusive" in result.output
 
 
-def test_cli_refresh_outside_git_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_cli_graph_only_rejects_llm_flags(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """--graph-only refuses LLM-mode flags rather than silently ignoring them."""
+    from typer.testing import CliRunner
+
+    from trie.cli import app
+
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+    for flags in (
+        ["--graph-only", "--file", "src/alpha.py"],
+        ["--graph-only", "--budget", "1.0"],
+        ["--after-turn", "--all"],
+        ["--graph-only", "--model", "anthropic/claude-sonnet-4-6"],
+    ):
+        result = runner.invoke(app, ["sync", *flags])
+        assert result.exit_code == 1, (flags, result.output)
+        assert "cannot be combined" in result.output
+
+
+def test_cli_refresh_command_is_gone(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """`trie refresh` was merged into `trie sync --graph-only` and hard-removed."""
+    from typer.testing import CliRunner
+
+    from trie.cli import app
+
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+    result = runner.invoke(app, ["refresh"])
+    assert result.exit_code != 0
+    assert "No such command" in result.output
+
+
+def test_cli_graph_only_reports_stale_prose_every_run(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """The 'graph fresh; prose stale' clause must appear on repeat runs, not
+    just the one that noticed the edit."""
+    from typer.testing import CliRunner
+
+    from trie.cli import app
+
+    monkeypatch.chdir(project)
+    runner = CliRunner()
+    assert runner.invoke(app, ["sync", "--graph-only"]).exit_code == 0  # prime
+
+    time.sleep(0.01)
+    alpha = project / "src" / "alpha.py"
+    alpha.write_text(alpha.read_text() + "\n# tweak\n")
+
+    first = runner.invoke(app, ["sync", "--graph-only"])
+    assert first.exit_code == 0, first.output
+    assert "prose stale" in first.output
+
+    second = runner.invoke(app, ["sync", "--graph-only"])
+    assert second.exit_code == 0, second.output
+    assert "graph fresh" in second.output
+    assert "prose stale" in second.output
+    assert "trie sync" in second.output
+
+
+def test_cli_graph_only_outside_git_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """The hard-error contract surfaces through the CLI as a non-zero exit."""
     from typer.testing import CliRunner
 
@@ -448,13 +484,9 @@ def test_cli_refresh_outside_git_fails(tmp_path: Path, monkeypatch: pytest.Monke
         'cascade = "anthropic/claude-sonnet-4-6"\n'
         "[cascade]\ndefault_depth = 1\nhub_symbol_threshold = 20\n"
     )
-    monkeypatch.setattr(
-        "trie.cli.make_client",
-        lambda *_a, **_kw: FakeTrieClient(output_body="## `body`\n\nDeterministic."),
-    )
     monkeypatch.chdir(tmp_path)
 
     runner = CliRunner()
-    result = runner.invoke(app, ["refresh"])
+    result = runner.invoke(app, ["sync", "--graph-only"])
     assert result.exit_code == 1
     assert "git repository" in result.output

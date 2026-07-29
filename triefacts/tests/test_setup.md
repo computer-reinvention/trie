@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.2.0
 source: tests/test_setup.py
-file_fingerprint: 86cb254cd0c4339624942317ede1168fc28a3822bebae8ce1273c7ec7f5852c1
-last_synced_at: '2026-06-03T21:01:16Z'
+file_fingerprint: ff563a642c2833d937013e2313440c9b2607818c09d4d41909f3d704fa8d674a
+last_synced_at: '2026-07-29T17:54:44Z'
 description: End-to-end tests for `trie setup` and the underlying hook installer.
 defines:
 - kind: module
@@ -101,10 +101,10 @@ Creates minimal trie project with config file for setup tests and cleans up arti
 - Creates `trie.toml` with basic configuration sections required by `Config.find_and_load`
 - Cleans up any `.mcp.json` or `.claude` files that may leak outside the temp directory
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_setup:test_opencode_hook_creates_plugin_file fingerprint=fc94d480e290261b1fe2896b887d8b2dad458d4ad585c77f7a6e67594d0f2a0b body_fp=2e64fd315881cc940421870059e3b392224f21d02f599864b29ebacc01ec0d5e source_ref=ee8a95ecaf3f1e7f45f08a83c627670aaa27deb4 role=test-infrastructure -->
-Verifies that `install()` creates a TypeScript plugin file for opencode that listens for session idle status and triggers trie refresh.
+<!-- trie:section symbol=tests/test_setup:test_opencode_hook_creates_plugin_file fingerprint=263c709706992b9491a35aa03163b7818a05fb6dc20ddb36359d49e34eca7d26 body_fp=a6a1697a5b1e0bc70b2ee765f432abe06caf78d8ee8ed5b10315765cff624dcd source_ref=7b00d0c0c6dd33c1043e6364acdaf4a8a35bd5d6 role=test -->
+Verifies that `install()` creates a TypeScript plugin file for opencode that listens for session idle status and triggers a graph-only sync.
 
-- Checks plugin contains "session.status", "idle", and "trie refresh --after-turn" 
+- Checks plugin contains "session.status", "idle", and "trie sync --graph-only --after-turn"
 - Verifies plugin uses default export with "trie-refresh" id
 - Confirms accompanying package.json with @opencode-ai/plugin dependency is created
 <!-- trie:end -->
@@ -134,12 +134,12 @@ Verifies that `install` with `print_only=True` returns preview results without w
 <!-- trie:section symbol=tests/test_setup:test_dry_run_writes_no_files fingerprint=a143c463520454fbd073ae45f77963a03b5ba91f65e6ac4691022307e2caaf32 body_fp=bf45b7235dcc6edf563904b7a7a4a69f1dd0fa6132ae25fb1de4f05f2ce06665 source_ref=ee8a95ecaf3f1e7f45f08a83c627670aaa27deb4 role=test-infrastructure -->
 Verifies that `install` with `dry_run=True` produces preview results without creating filesystem directories.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_setup:test_claude_code_hook_is_manual_setup fingerprint=a8ace2daa3934f5c10dd65a38b09bbac037bbf420577839aab85faebe680da5f body_fp=c70e172a8b03a35613924ea2b0334342aa822b9bc256b682c88b693443e1e0cf source_ref=ee8a95ecaf3f1e7f45f08a83c627670aaa27deb4 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_setup:test_claude_code_hook_is_manual_setup fingerprint=6720c09ddc813966e1fcd82a0038e335e18d736a64f2f6245314c6a1a594faf4 body_fp=f4b9fb138aaaac8c58dedea0af6c8c6f73ac30a34d71164a154c235d6bcfa3de source_ref=7b00d0c0c6dd33c1043e6364acdaf4a8a35bd5d6 role=test -->
 Tests that `install` returns `needs_manual_setup` for claude-code targets instead of creating files.
 
 - Verifies `result.action` is `"needs_manual_setup"`
 - Checks `result.path` is `None` (no file created)
-- Confirms instructions contain "trie refresh"
+- Confirms instructions contain "trie sync --graph-only"
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_setup:test_unknown_target_raises fingerprint=b996901d4154a592929d95841b43d8430c072ac3d703a97266a8b5c4234ad90b body_fp=68f4faba62eae81bbc6ad280689d6c77f129270fea0b868cbdaa6c24a4e6f140 source_ref=ee8a95ecaf3f1e7f45f08a83c627670aaa27deb4 role=test-infrastructure -->
 Verifies that `install` raises `HookInstallError` when given an unknown target name.
@@ -147,12 +147,12 @@ Verifies that `install` raises `HookInstallError` when given an unknown target n
 <!-- trie:section symbol=tests/test_setup:test_install_all_covers_every_target fingerprint=65b44f9f93cdc70987d9b72ed2f8154b496d4438c69b5b08bfdaed8142fff5a6 body_fp=8f6e9f751c7de493f6cbda661db27023723b728842df46c4dd4e6e376661eb1f source_ref=ee8a95ecaf3f1e7f45f08a83c627670aaa27deb4 role=test-infrastructure -->
 Verifies that `install` with `install_all=True` produces results for every target in the TARGETS registry.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_setup:test_apply_one_returns_needs_manual_setup_for_render_none fingerprint=90abc01ee67a98b22e5174ecbf38accc7f8eb7650f4914d15cc4e7b6842010c0 body_fp=8aa9f26742cde907e01a2bcc000e391f4e6c9f9a247ceac64800f6bed9fd69c9 source_ref=ee8a95ecaf3f1e7f45f08a83c627670aaa27deb4 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_setup:test_apply_one_returns_needs_manual_setup_for_render_none fingerprint=edf1212d32061a4320a00b7da9003acd3cf2e3a060a72b1c4c134678a0342702 body_fp=545fe6764997c9cc3e8df6fae57483f9f1645dcf2f9375b8b4a121acc6d62a2a source_ref=7b00d0c0c6dd33c1043e6364acdaf4a8a35bd5d6 role=test -->
 Verifies that `apply_one` returns a manual setup result when the target has no automated hook content.
 
 - Uses the "cursor" target which lacks `render_contents`
 - Asserts the result action is "needs_manual_setup" with no file path
-- Confirms the detail contains setup instructions
+- Confirms the detail contains `"trie sync --graph-only"`
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_setup:test_cli_setup_opencode_writes_hook_and_overrides_by_default fingerprint=572621477207cb95c3abc357b2201db81033977c79b53c7f2d85df4fa9e2301b body_fp=9c1b33b9b3eefe2558f39173ebb72428713b4700a1ebce967adb8fc69592acb4 source_ref=ee8a95ecaf3f1e7f45f08a83c627670aaa27deb4 role=test-infrastructure -->
 Verifies that `trie setup --target opencode` writes hook plugin and package.json but skips MCP config by default.

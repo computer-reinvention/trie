@@ -181,11 +181,33 @@ def _covered_qnames(project_root: Path, config: Config, store: Store) -> set[str
     return covered
 
 
+def _parent_qname(qname: str) -> str | None:
+    """Owning-class qname for a method-shaped qname, else None.
+
+    `pkg/mod:Class.method` → `pkg/mod:Class`. Only one level: nested attribute
+    chains collapse to their top-level owner within the module.
+    """
+    mod, sep, local = qname.partition(":")
+    if not sep or "." not in local:
+        return None
+    return f"{mod}:{local.split('.', 1)[0]}"
+
+
 def evaluate(project_root: Path, config: Config, store: Store) -> IntentReport:
-    """Run the gate: touched symbols minus covered ones."""
+    """Run the gate: touched symbols minus covered ones.
+
+    A note on a class covers its methods: when `mod:Class` has intent on
+    record, `mod:Class.method` counts as covered too. Notes describing a new
+    or reworked class naturally describe its methods; demanding a separate
+    note per method produced commit-time failures for intent that was already
+    written down (and each method remains individually notable when finer
+    granularity is wanted).
+    """
     touched = touched_symbols(project_root, config)
     if not touched:
         return IntentReport()
     covered = _covered_qnames(project_root, config, store)
-    uncovered = [t for t in touched if t.qname not in covered]
+    uncovered = [
+        t for t in touched if t.qname not in covered and _parent_qname(t.qname) not in covered
+    ]
     return IntentReport(touched=touched, uncovered=uncovered)
