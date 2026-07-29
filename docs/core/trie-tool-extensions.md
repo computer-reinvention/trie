@@ -161,7 +161,7 @@ weren't patchable. Both are false against a *fresh* graph:
 
 The earlier "not found" results were a **stale-graph artifact**: `trie sync
 --file` regenerates triefacts but does not run a scan, so new symbols aren't in
-the store until `trie refresh` / a full scan. That's the existing "stale graph"
+the store until `trie sync --graph-only` / a full scan. That's the existing "stale graph"
 caveat, not a missing capability.
 
 **What actually remains (optional, low priority):** a deterministic, no-LLM

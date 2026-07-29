@@ -77,7 +77,7 @@ first** with `grep_symbol` (fuzzy) or `grep` (predicate search).
 Take the `qname` from the result and pass it — unchanged — to `read`,
 `trace`, etc. When any tool returns a `qname`, round-trip it without
 rewriting. If a lookup returns nothing, the symbol isn't in the graph
-(out of scope, or the index is stale — run `trie refresh`); a
+(out of scope, or the index is stale — run `trie sync --graph-only`); a
 hand-built qname won't fix that.
 
 ---
@@ -105,7 +105,7 @@ hand-built qname won't fix that.
   `prose` is empty and `notes` says so.
 - **In CI runners there are no git hooks.** If you are committing from
   an Actions runner (or any automation), the guard does not run by
-  itself: run `trie refresh` once after checkout (cold graph, no LLM),
+  itself: run `trie sync --graph-only` once after checkout (cold graph, no LLM),
   and run `trie gate` before `git commit` — it is exactly what the
   pre-commit hook runs, and its failure output tells you what to fix.
 - **Every source change needs a patch note.** Edit natively, then
@@ -173,7 +173,7 @@ trie plan         [--model MODEL]
 trie sync         [--file PATH] [--all] [--dry-run] [--budget USD]
                   [--limit N] [--model MODEL] [--metadata-only] [--force]
 trie verify
-trie refresh      [--before-turn] [--after-turn]
+trie sync --graph-only   [--before-turn] [--after-turn]   # graph rebuild, never the LLM
 trie lock-check
 trie audit        [--log PATH] [--compare PATH] [--as-json]
 trie setup        [--target NAME] [--all] [--scope project|user]
@@ -212,8 +212,8 @@ get called. trie flags this with a `notes` field on the symbol's
 inbound threshold appear as leaves listed in `truncated_at`. Query the
 hub directly to see its neighbourhood.
 
-**Stale graph.** If trie's turn-boundary refresh hook is installed, the
-graph stays current. If not, run `trie refresh` to bring it up to date.
+**Stale graph.** If trie's turn-boundary hook is installed, the graph
+stays current. If not, run `trie sync --graph-only` to bring it up to date.
 
 **Module-level constants aren't indexed as separate symbols.**
 `MAX_RETRIES = 5` isn't its own symbol-table entry; `grep` finds it

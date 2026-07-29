@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.0
 source: tests/test_symbol_level_sync.py
-file_fingerprint: 557cc0ef4d2d6936d9449cad54b52e04caa6f9bc6c9c0b5ae7dabf808cdebcd5
-last_synced_at: '2026-07-25T01:37:02Z'
+file_fingerprint: 095b0684ddd187048875f6455f8b04df03ce17a17acbf58a3cab545a227f059e
+last_synced_at: '2026-07-29T17:54:44Z'
 description: 'Symbol-level sync: regenerate only the symbols actually asked for.'
 defines:
 - kind: module
   qualified_name: tests/test_symbol_level_sync:__module__
-  lines: 1-341
+  lines: 1-424
 - kind: constant
   qualified_name: tests/test_symbol_level_sync:FIXTURE_DIR
   lines: 31-31
@@ -44,8 +44,23 @@ defines:
 - kind: function
   qualified_name: tests/test_symbol_level_sync:test_underscored_symbols_are_documented_and_can_go_stale
   lines: 312-340
+- kind: function
+  qualified_name: tests/test_symbol_level_sync:_cli_file_sync
+  lines: 348-364
+- kind: function
+  qualified_name: tests/test_symbol_level_sync:test_cli_file_sync_fresh_file_is_a_free_noop
+  lines: 367-378
+- kind: function
+  qualified_name: tests/test_symbol_level_sync:test_cli_file_sync_regenerates_only_stale_symbols
+  lines: 381-400
+- kind: function
+  qualified_name: tests/test_symbol_level_sync:test_cli_file_sync_force_rewrites_everything
+  lines: 403-413
+- kind: function
+  qualified_name: tests/test_symbol_level_sync:test_cli_file_sync_never_synced_file_gets_full_cold_write
+  lines: 416-423
 incoming_refs: 0
-outgoing_refs: 33
+outgoing_refs: 60
 ---
 <!-- trie:section symbol=tests/test_symbol_level_sync:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=da8aad35f588907e10af88c80b9961cbfdb6447ba33c348c07f99fa0427e2031 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a role=test-infrastructure -->
 Tests symbol-level sync functionality ensuring only requested symbols are regenerated while others remain byte-identical.
@@ -105,4 +120,19 @@ Tests that run_incremental regenerates only the changed symbol while preserving 
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_symbol_level_sync:test_underscored_symbols_are_documented_and_can_go_stale fingerprint=83103e9fad1ddc9c6dd458d47055a45da52160bc322cc88d14089ac18bbf805e body_fp=db69723a57dd772b8f709fe607559aab7c3d6df39b40ab6db2453fec92179b3c source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a role=change-detection -->
 Verifies that underscored symbols receive documentation and are properly detected as stale when modified.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_symbol_level_sync:_cli_file_sync fingerprint=0b3e6d813667f6227abf39dcb32e11d50e803dd9f2a876370142718d4ac136d5 body_fp=8774fc9bfab26597f8f391db853c22d9e78744950b60677ab0e1b1486f1ca9e2 source_ref=fff2a035ad30c13465a614cfe02c144204714790 role=test -->
+Invoke `trie sync --file calculator.py [args]` via `CliRunner`, patching `make_client` with `FakeTrieClient`, and return the CLI result and collected clients list.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_symbol_level_sync:test_cli_file_sync_fresh_file_is_a_free_noop fingerprint=d2d3343d0be8016b81ce107c1ad695b6accce25de94ea4389b0f2c181b4f70bf body_fp=353316d084dd2af718d7993a86352af2ff1937a9576e862f8c87fb1cb74a5c1b source_ref=fff2a035ad30c13465a614cfe02c144204714790 role=test -->
+Assert that `trie sync --file` on a fully-synced file skips client construction entirely and prints an "all symbols fresh" hint.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_symbol_level_sync:test_cli_file_sync_regenerates_only_stale_symbols fingerprint=7e81753d701d27244e2196aff9b783a23ea7a1af1b6985a656c4e90e2355a470 body_fp=ea3c325307b43eece41ee53e3a6794e4478e60ab1b2720a591fe8d8a7dfdac1e source_ref=fff2a035ad30c13465a614cfe02c144204714790 role=test -->
+Verify that `trie sync --file` regenerates only the single edited symbol, not every symbol in the file.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_symbol_level_sync:test_cli_file_sync_force_rewrites_everything fingerprint=f47d2c5ae0553736ca882c4f2dd8d6f243e7ccddf07be9053d8d168c6121762c body_fp=0b52c35e0f6547eee3ad1b5cc64aa806c6a54fe916b4b3c5c4f06b3a65d0f050 source_ref=fff2a035ad30c13465a614cfe02c144204714790 role=test -->
+Verify that `trie sync --file calculator.py --force` regenerates all 6 symbols, preserving full-rewrite semantics.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_symbol_level_sync:test_cli_file_sync_never_synced_file_gets_full_cold_write fingerprint=eaa8e537643dc8e93083be36cacf5a49c3078cb6915861801aaa370e6ca2eefb body_fp=b351a8c7ae2ba025ecb8d973274297921b0917fa84d1e52299df4622e2bd212a source_ref=fff2a035ad30c13465a614cfe02c144204714790 role=test -->
+Assert that `trie sync --file` on a never-synced file performs a full cold write, calling the LLM for all 6 symbols.
 <!-- trie:end -->

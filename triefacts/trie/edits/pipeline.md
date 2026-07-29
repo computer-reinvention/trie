@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.0
 source: trie/edits/pipeline.py
-file_fingerprint: e4ce1947f4debbcdbd358685daecd8bd8dbf2a1fd724692d8d89a8d3fc0c3cc4
-last_synced_at: '2026-07-25T11:48:33Z'
+file_fingerprint: 1ae19b23cff798543eba9f1f286bb61aa12527f571e8048c11ae67c4f5ab2344
+last_synced_at: '2026-07-29T17:54:52Z'
 description: 'The patch pipeline: an intent store, not a code generator.'
 defines:
 - kind: module
   qualified_name: trie/edits/pipeline:__module__
-  lines: 1-160
+  lines: 1-180
 - kind: constant
   qualified_name: trie/edits/pipeline:_SESSION_NOTE_STOPLIST
   lines: 30-30
@@ -25,7 +25,7 @@ defines:
   lines: 80-106
 - kind: function
   qualified_name: trie/edits/pipeline:record_intent
-  lines: 109-159
+  lines: 109-179
 incoming_refs: 8
 outgoing_refs: 0
 ---
@@ -63,9 +63,9 @@ Return a read-only summary of pending patch notes and the call-graph blast radiu
 - `cascade_symbols` / `patched_symbols`: integer counts of each list
 - `total_patches`: total note count across all patched symbols
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:record_intent fingerprint=4dd357a5776e518df25638789b44869d2584c02817b3d13688f6bf511139d00c body_fp=b4a1f289e1fecad1e96e885f8e2bfedbb3feab6fedf7807c88d3614f2b1e44ea source_ref=c360ff8f7df2b3e6b0a8cda993262c2aeead5962 role=orchestration -->
+<!-- trie:section symbol=trie/edits/pipeline:record_intent fingerprint=895ef762ad5366f4dbd2b96b3939f5acdf88386527c6b8c40bc8060953ce157f body_fp=babf952c37766e09254ce760785795edfcabbcb9a5b59d44f11fa3179ca90f99 source_ref=8cc6b80e39def17acbd14a35ba1ec746c86d67ad role=domain -->
 Seal pending patch notes in-place via `store.mark_patches_applied` (stamps `applied=1`), without writing to any external file or clearing rows from the patches tables.
 
 - `session_note`: required when `total > 1`; validated via `session_note_ok` (rejects empty, too-short, and stoplist words); returns `ok=False` with `"session_note_required"` otherwise.
-- Returns a dict with `ok`, `recorded` count, `symbols` list, and a `next` advisory string.
+- Returns a dict with `ok`, `recorded` count, `symbols` list, and a `next` advisory string; on success also attempts to populate `uncovered` with qnames of touched-but-unnoted symbols via `trie.intent_gate.evaluate` (advisory only — exceptions are silently swallowed).
 <!-- trie:end -->

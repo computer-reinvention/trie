@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.0
 source: tests/test_mcp.py
-file_fingerprint: 85a9077a73dd8a41c63db17d24e253adb20e6dff268017a6e52c0c7fb2788379
-last_synced_at: '2026-07-28T23:48:24Z'
+file_fingerprint: 802e912c08e890e8e501ada6124d56c60f6c0a36e4c45d89883fac7202b7bb9d
+last_synced_at: '2026-07-29T17:54:46Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: module
   qualified_name: tests/test_mcp:__module__
-  lines: 1-1026
+  lines: 1-1059
 - kind: constant
   qualified_name: tests/test_mcp:PROJECT_TOML
   lines: 21-30
@@ -84,175 +84,184 @@ defines:
   qualified_name: tests/test_mcp:test_grep_fallback_caps_matches_and_notes_truncation
   lines: 309-335
 - kind: function
+  qualified_name: tests/test_mcp:test_grep_fallback_capped_by_request_limit
+  lines: 338-343
+- kind: function
+  qualified_name: tests/test_mcp:test_grep_partial_name_hits_fill_up_with_related
+  lines: 346-361
+- kind: function
+  qualified_name: tests/test_mcp:test_grep_full_hits_skip_related_fill_up
+  lines: 364-368
+- kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_omits_truncation_note_when_under_cap
-  lines: 338-346
+  lines: 371-379
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_honours_scope_prefix
-  lines: 349-364
+  lines: 382-397
 - kind: function
   qualified_name: tests/test_mcp:test_grep_normal_hits_path_omits_fallback_key
-  lines: 367-373
+  lines: 400-406
 - kind: function
   qualified_name: tests/test_mcp:test_read_returns_prose_and_neighbours
-  lines: 379-386
+  lines: 412-419
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_pointer_shape
-  lines: 389-392
+  lines: 422-425
 - kind: function
   qualified_name: tests/test_mcp:test_read_neighbour_carries_one_liner
-  lines: 395-398
+  lines: 428-431
 - kind: function
   qualified_name: tests/test_mcp:test_read_unknown_qname_returns_not_found
-  lines: 401-404
+  lines: 434-437
 - kind: function
   qualified_name: tests/test_mcp:test_read_fuzzy_suggestion_for_typo
-  lines: 407-413
+  lines: 440-446
 - kind: function
   qualified_name: tests/test_mcp:test_read_file_path_returns_compact_triefact_view
-  lines: 419-429
+  lines: 452-462
 - kind: function
   qualified_name: tests/test_mcp:test_read_file_path_full_returns_prose_without_sentinels
-  lines: 432-439
+  lines: 465-472
 - kind: function
   qualified_name: tests/test_mcp:test_read_file_path_show_source_returns_numbered_source
-  lines: 442-446
+  lines: 475-479
 - kind: function
   qualified_name: tests/test_mcp:test_read_file_path_offset_limit_implies_source
-  lines: 449-454
+  lines: 482-487
 - kind: function
   qualified_name: tests/test_mcp:test_read_non_indexed_file_falls_back_to_source
-  lines: 457-461
+  lines: 490-494
 - kind: function
   qualified_name: tests/test_mcp:test_read_file_with_line_suffix_reads_source_window
-  lines: 464-468
+  lines: 497-501
 - kind: function
   qualified_name: tests/test_mcp:test_trace_callers_returns_topology
-  lines: 474-480
+  lines: 507-513
 - kind: function
   qualified_name: tests/test_mcp:test_trace_callees_returns_outbound
-  lines: 483-486
+  lines: 516-519
 - kind: function
   qualified_name: tests/test_mcp:test_trace_both_directions
-  lines: 489-494
+  lines: 522-527
 - kind: function
   qualified_name: tests/test_mcp:test_trace_invalid_direction_returns_error
-  lines: 497-500
+  lines: 530-533
 - kind: function
   qualified_name: tests/test_mcp:test_trace_unknown_qname_returns_not_found
-  lines: 503-506
+  lines: 536-539
 - kind: function
   qualified_name: tests/test_mcp:test_trace_depth_zero_returns_only_root
-  lines: 509-512
+  lines: 542-545
 - kind: function
   qualified_name: tests/test_mcp:test_trace_depth_clamp_adds_note
-  lines: 515-519
+  lines: 548-552
 - kind: function
   qualified_name: tests/test_mcp:test_build_server_registers_three_verbs
-  lines: 525-548
+  lines: 558-581
 - kind: function
   qualified_name: tests/test_mcp:test_build_server_wire_names_bind_to_internal_methods
-  lines: 551-568
+  lines: 584-601
 - kind: function
   qualified_name: tests/test_mcp:dual_rank_project
-  lines: 577-634
+  lines: 610-667
 - kind: function
   qualified_name: tests/test_mcp:test_grep_entry_points_niche_ranks_before_hub
-  lines: 637-660
+  lines: 670-693
 - kind: function
   qualified_name: tests/test_mcp:test_grep_entry_points_hits_carry_score
-  lines: 663-675
+  lines: 696-708
 - kind: function
   qualified_name: tests/test_mcp:test_grep_symbol_typo_tolerance
-  lines: 678-684
+  lines: 711-717
 - kind: function
   qualified_name: tests/test_mcp:test_grep_symbol_returns_score_field
-  lines: 687-695
+  lines: 720-728
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fuzzy_prose_fallback
-  lines: 698-713
+  lines: 731-746
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_fuzzy_fallback
-  lines: 716-726
+  lines: 749-759
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_fuzzy_fallback_finds_close_name
-  lines: 729-745
+  lines: 762-778
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_all_finds_non_indexed_file
-  lines: 751-757
+  lines: 784-790
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_all_attributes_indexed_hits_to_symbols
-  lines: 760-764
+  lines: 793-797
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_default_does_not_see_non_indexed
-  lines: 767-772
+  lines: 800-805
 - kind: function
   qualified_name: tests/test_mcp:test_find_files_by_extension
-  lines: 775-779
+  lines: 808-812
 - kind: function
   qualified_name: tests/test_mcp:test_find_files_by_bare_name
-  lines: 782-785
+  lines: 815-818
 - kind: function
   qualified_name: tests/test_mcp:test_find_files_indexed_only
-  lines: 788-792
+  lines: 821-825
 - kind: function
   qualified_name: tests/test_mcp:test_find_files_prunes_trie_dir
-  lines: 795-798
+  lines: 828-831
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_non_indexed_file
-  lines: 801-806
+  lines: 834-839
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_offset_limit
-  lines: 809-814
+  lines: 842-847
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_missing_file_errors
-  lines: 817-821
+  lines: 850-854
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_directory_errors
-  lines: 824-828
+  lines: 857-861
 - kind: function
   qualified_name: tests/test_mcp:test_blast_radius_reports_cascade
-  lines: 831-837
+  lines: 864-870
 - kind: function
   qualified_name: tests/test_mcp:test_blast_radius_unknown_symbol_errors
-  lines: 840-844
+  lines: 873-877
 - kind: function
   qualified_name: tests/test_mcp:test_write_file_creates_new_file
-  lines: 847-853
+  lines: 880-886
 - kind: function
   qualified_name: tests/test_mcp:test_write_file_refuses_clobber_without_overwrite
-  lines: 856-861
+  lines: 889-894
 - kind: function
   qualified_name: tests/test_mcp:test_write_file_overwrite_flag
-  lines: 864-869
+  lines: 897-902
 - kind: function
   qualified_name: tests/test_mcp:test_write_file_indexed_path_flags_needs_sync
-  lines: 872-876
+  lines: 905-909
 - kind: function
   qualified_name: tests/test_mcp:test_write_file_outside_root_errors
-  lines: 879-883
+  lines: 912-916
 - kind: function
   qualified_name: tests/test_mcp:test_batch_patch_stages_mixed_items
-  lines: 886-900
+  lines: 919-933
 - kind: function
   qualified_name: tests/test_mcp:test_batch_patch_reports_bad_items_without_aborting
-  lines: 903-917
+  lines: 936-950
 - kind: function
   qualified_name: tests/test_mcp:test_batch_patch_empty_list_errors
-  lines: 920-923
+  lines: 953-956
 - kind: function
   qualified_name: tests/test_mcp:test_read_warns_when_prose_is_stale
-  lines: 929-964
+  lines: 962-997
 - kind: function
   qualified_name: tests/test_mcp:test_read_warns_when_graph_itself_is_stale
-  lines: 967-981
+  lines: 1000-1014
 - kind: function
   qualified_name: tests/test_mcp:test_read_has_no_stale_warning_when_fresh
-  lines: 984-993
+  lines: 1017-1026
 - kind: function
   qualified_name: tests/test_mcp:test_read_history_flag_surfaces_intent_trail
-  lines: 996-1025
+  lines: 1029-1058
 incoming_refs: 0
-outgoing_refs: 18
+outgoing_refs: 107
 ---
 <!-- trie:section symbol=tests/test_mcp:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8aae9c0160792068985e2d8f76d0fb26134f6f6b03e5f03d32d39b128db471ad source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests for MCP tool surface (grep, read, trace) via direct TrieTools invocation.
@@ -387,6 +396,18 @@ Tests that grep's fallback mechanism caps excessive matches and includes truncat
 - Checks that `unique_symbols` indicates more candidates were found
 - Ensures truncation note contains "of" to communicate incomplete results
 - Confirms returned matches still carry standard fields like `qname` and `inbound_count`
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_capped_by_request_limit fingerprint=591fab6b93894c7bcc93cf5d54e917e23d6971b7c50985b22c8c2e6036835dbf body_fp=6978b356ce8bf2d68d951744a5ee4d91e07e822fc4816a907dad603f4e51fba1 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Assert that `TrieTools.grep` fallback `matches` list is capped to the request's `limit`, not the config-level match cap.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_partial_name_hits_fill_up_with_related fingerprint=56b57e03bcb00e4f5ea110176ed32b1626be41a87df754c5ff3543dce5222f4b body_fp=0fb7cbb40320b2740a64f3267b691b7b1cb550716dbefc3ebba5a16aef6c8785 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Verify that partial name hits fill the remaining `limit` budget with `related` body-match candidates that exclude qnames already in `hits`.
+
+- `related_kind` must equal `"text_match"` when fill-up runs.
+- Combined `hits` + `related` count must not exceed `limit`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_full_hits_skip_related_fill_up fingerprint=9be62a2b4e4134d3b8f13fded1d11b986871900df64cafb9c88924a8c87d0a27 body_fp=84c200b392acf4ca5db48c215c3acf82d49bf0261de3c51c2e77a17305378c63 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Assert that `TrieTools.grep` omits the `related` key when name hits already saturate the requested `limit`.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp:test_grep_fallback_omits_truncation_note_when_under_cap fingerprint=cf99e3b6a8f38acee3321f95f67be04eb837de301219103c85baec04b0a7bad0 body_fp=a9548def3accc79b05d07ca23e28d0657120c151ae5ed0b29d520d382f4d5e8a source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests that grep fallback omits truncation warnings when match count stays within limit.

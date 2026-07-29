@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.0
 source: tests/test_session_diff.py
 file_fingerprint: a0817e01a1494387d84bb52c0933ec29fe265d4e9af4f9aff802d26fc576ce4d
-last_synced_at: '2026-07-29T12:12:04Z'
+last_synced_at: '2026-07-29T17:55:36Z'
 description: Tests for the session log archive and the `trie diff` evidence collection/prompt
   assembly.
 defines:
@@ -46,7 +46,7 @@ defines:
   qualified_name: tests/test_session_diff:test_symbol_and_file_history_from_digest_archive
   lines: 680-731
 incoming_refs: 0
-outgoing_refs: 13
+outgoing_refs: 22
 ---
 <!-- trie:section symbol=tests/test_session_diff:__module__ fingerprint=efba484e3aa652464eff4bb42149f2f8ad21e69db80743152ed50083f36a38f2 body_fp=1104a778ce390fa56813958cd8c63c2c3c38548adf128fd9b73f2b057fbc791e source_ref=c2dff8907b251d36ea66f85df0d978cec2ed679e role=test -->
 Test module for session log archive and `trie diff` evidence collection and prompt assembly.

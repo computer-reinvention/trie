@@ -1,14 +1,14 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.0
 source: trie/intent_gate.py
-file_fingerprint: da9fc12eca0eda8238923359cc145943e46714bb8ddba3eb8b98981c53dcf9b8
-last_synced_at: '2026-07-25T11:48:28Z'
+file_fingerprint: f14d630e86019dd7aac53a8c5c9be7ae2a0d5115b5bdd614bfaf493c704cafe7
+last_synced_at: '2026-07-29T17:55:00Z'
 description: 'The intent gate: refuse commits when changed symbols carry no patch
   notes.'
 defines:
 - kind: module
   qualified_name: trie/intent_gate:__module__
-  lines: 1-192
+  lines: 1-214
 - kind: constant
   qualified_name: trie/intent_gate:MODIFIED
   lines: 36-36
@@ -37,10 +37,13 @@ defines:
   qualified_name: trie/intent_gate:_covered_qnames
   lines: 145-181
 - kind: function
+  qualified_name: trie/intent_gate:_parent_qname
+  lines: 184-193
+- kind: function
   qualified_name: trie/intent_gate:evaluate
-  lines: 184-191
-incoming_refs: 4
-outgoing_refs: 0
+  lines: 196-213
+incoming_refs: 5
+outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/intent_gate:__module__ fingerprint=9e1250a0aa1097f31e1890d650053028fe3a4312895ea493c0d41814d805a5bb body_fp=32402d30d37d1a98d6f7a6bb0a990fff5e380fdae3ef533a129318fa9d237961 source_ref=daed11eea0dee4cce5f3872141ff4d898f7cbb4e role=domain -->
 Enforces intent coverage for commits by computing which symbols changed relative to HEAD and verifying each has a recorded patch note or session-log entry.
@@ -90,6 +93,11 @@ Return the set of qnames that have intent recorded for the upcoming commit, draw
 
 - `config`: used to locate the diffs directory for digest lookup.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/intent_gate:evaluate fingerprint=0ad9d38cfd26450c75c548b56ae70ac95c0dbc370be4fc595f187146ff5973bf body_fp=86516846e89b64b4caad6e5e242b4824e0ab36841f71e500f8cef65158562572 source_ref=0c60adcffc4cd3b694a3fe16398c634c7803ca05 role=domain -->
-Compute an `IntentReport` by diffing touched symbols against covered qnames for the current commit window.
+<!-- trie:section symbol=trie/intent_gate:_parent_qname fingerprint=a6d693609876b6d86f4fd27f263dd86d42d88c5f89f7d01effaf679e413262db body_fp=84dd68900a1807b6f078145a5550bdb90dd8c5e5510574ad1d7f4e72376502ac source_ref=d66d954661ff3bcddb53ffe2ff4ef55136ca9381 role=util -->
+Extract the owning-class qname from a method-shaped qname, returning `None` for module-level or non-dotted names.
+
+- Splits only one level: `pkg/mod:Class.method` → `pkg/mod:Class`; deeper chains resolve to the top-level class within the module.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/intent_gate:evaluate fingerprint=b8e069f6860b42b4be690a69bcc855c951435a94f9f507c90fe404f8dec58a45 body_fp=52372e5ba63d4218dfb812f970c853f0d3a6dbce6e7ea59bbe2c6a4c4d1b9a3a source_ref=d66d954661ff3bcddb53ffe2ff4ef55136ca9381 role=domain -->
+Compute an `IntentReport` by diffing touched symbols against covered qnames; a class-level note also covers its methods.
 <!-- trie:end -->

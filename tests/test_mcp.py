@@ -335,6 +335,39 @@ def test_grep_fallback_caps_matches_and_notes_truncation(
     assert "inbound_count" in only
 
 
+def test_grep_fallback_capped_by_request_limit(tools: TrieTools):
+    """The fallback candidate list must respect the request's own `limit` —
+    an 8-row ask never fans out into a config-cap-sized consolation table."""
+    result = tools.grep({"name_contains": "replace"}, limit=1)
+    assert result["hits"] == []
+    assert len(result["fallback"]["matches"]) == 1
+
+
+def test_grep_partial_name_hits_fill_up_with_related(tools: TrieTools):
+    """Regression: a couple of weak name hits used to suppress the text/prose
+    fallback entirely, hiding the module that actually implements a concept.
+    When name hits leave room under `limit`, body/prose candidates ride along
+    under `related`, excluding qnames already in `hits`."""
+    # "slugify" name-matches lib:slugify AND appears in app:make_url's body.
+    result = tools.grep({"name_contains": "slugify"}, limit=10)
+    hit_qnames = {h["qname"] for h in result["hits"]}
+    assert "lib:slugify" in hit_qnames
+    related = result.get("related", [])
+    related_qnames = {m["qname"] for m in related}
+    assert "app:make_url" in related_qnames
+    assert not (related_qnames & hit_qnames), "related must not repeat hits"
+    assert result["related_kind"] == "text_match"
+    # Fill-up respects the overall row budget.
+    assert len(result["hits"]) + len(related) <= 10
+
+
+def test_grep_full_hits_skip_related_fill_up(tools: TrieTools):
+    """When name hits already fill the requested limit, no fallback work runs."""
+    result = tools.grep({"name_contains": "slugify"}, limit=1)
+    assert len(result["hits"]) == 1
+    assert "related" not in result
+
+
 def test_grep_fallback_omits_truncation_note_when_under_cap(tools: TrieTools):
     """When the match count fits inside `match_limit`, no truncation note is
     appended — the agent is seeing the full picture."""

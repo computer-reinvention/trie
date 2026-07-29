@@ -175,12 +175,13 @@ class Mcp:
     #     stops the rg walker when the substring is very common. The fallback
     #     still returns whatever was accumulated — never a "too noisy" refusal.
     #   - match_limit: cap on returned candidate symbols after hub-ranking by
-    #     inbound count. Defaults to 30 so the agent sees enough to triangulate
-    #     even on broad queries; raw shell grep would have shown N lines and we
-    #     owe at least that floor of utility. The `match_count` / `unique_symbols`
-    #     fields tell the agent how many candidates exist beyond the cap.
+    #     inbound count. Defaults to 8: fallback candidates are a consolation
+    #     list, not results — a 30-row miss table drowned the signal and burned
+    #     agent context for no triangulation benefit. The `match_count` /
+    #     `unique_symbols` fields tell the agent how many candidates exist
+    #     beyond the cap; the request's own `limit` caps it further.
     grep_fallback_max_files: int = 200
-    grep_fallback_match_limit: int = 30
+    grep_fallback_match_limit: int = 8
 
     # fuzzy matching (rapidfuzz-based, applied across grep / grep_symbol /
     # grep_entry_points / grep_str fallback)

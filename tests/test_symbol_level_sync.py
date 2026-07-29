@@ -338,3 +338,86 @@ def test_underscored_symbols_are_documented_and_can_go_stale(project: Path):
         it.qualified_name for it in result.items if it.reason == StaleReason.STALE_SECTION
     }
     assert "calculator:_internal_helper" in stale_qnames
+
+
+# ---------------------------------------------------------------------------
+# CLI `trie sync --file`: stale-only by default, --force for a full rewrite.
+# ---------------------------------------------------------------------------
+
+
+def _cli_file_sync(project: Path, monkeypatch: pytest.MonkeyPatch, *args: str):
+    """Invoke `trie sync --file calculator.py [...args]` with a captured fake client."""
+    from typer.testing import CliRunner
+
+    from trie.cli import app
+
+    clients: list[FakeTrieClient] = []
+
+    def _fake_make_client(*_a, **_kw):
+        client = FakeTrieClient(output_body="## regenerated")
+        clients.append(client)
+        return client
+
+    monkeypatch.setattr("trie.cli.make_client", _fake_make_client)
+    monkeypatch.chdir(project)
+    result = CliRunner().invoke(app, ["sync", "--file", "calculator.py", *args])
+    return result, clients
+
+
+def test_cli_file_sync_fresh_file_is_a_free_noop(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """A fully-fresh file must not construct a client or call the LLM at all."""
+    config, _ = Config.find_and_load(project)
+    sync_single_file(
+        project / "calculator.py", project_root=project, config=config, client=FakeTrieClient()
+    )
+
+    result, clients = _cli_file_sync(project, monkeypatch)
+    assert result.exit_code == 0, result.output
+    assert "all symbols fresh" in result.output
+    assert "--force" in result.output
+    assert clients == [], "fresh file must not even construct an LLM client"
+
+
+def test_cli_file_sync_regenerates_only_stale_symbols(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Regression: `--file` used to re-bill every symbol in the file when only
+    one had changed (123 regens for a 2-symbol edit). Default is now the same
+    stale-subset the incremental path uses."""
+    config, _ = Config.find_and_load(project)
+    sync_single_file(
+        project / "calculator.py", project_root=project, config=config, client=FakeTrieClient()
+    )
+
+    src = project / "calculator.py"
+    src.write_text(src.read_text().replace("return a + b", "return b + a"))
+
+    result, clients = _cli_file_sync(project, monkeypatch)
+    assert result.exit_code == 0, result.output
+    assert len(clients) == 1
+    assert clients[0].calls == 1, "only the edited symbol may hit the LLM"
+    assert "1 symbols regenerated" in result.output
+    assert "5 fresh passed through" in result.output
+
+
+def test_cli_file_sync_force_rewrites_everything(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """--force keeps the old full-rewrite semantics (smoke-test path)."""
+    config, _ = Config.find_and_load(project)
+    sync_single_file(
+        project / "calculator.py", project_root=project, config=config, client=FakeTrieClient()
+    )
+
+    result, clients = _cli_file_sync(project, monkeypatch, "--force")
+    assert result.exit_code == 0, result.output
+    assert len(clients) == 1
+    assert clients[0].calls == 6, "--force regenerates every symbol"
+
+
+def test_cli_file_sync_never_synced_file_gets_full_cold_write(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """A file with no triefact yet regenerates everything (cold write)."""
+    result, clients = _cli_file_sync(project, monkeypatch)
+    assert result.exit_code == 0, result.output
+    assert len(clients) == 1
+    assert clients[0].calls == 6

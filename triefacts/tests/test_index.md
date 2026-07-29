@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.0
 source: tests/test_index.py
 file_fingerprint: 5d822ac85d723c1fbfe185633ec97d61f1850f1b37517f1d296a09ac522bf0e1
-last_synced_at: '2026-07-25T01:52:18Z'
+last_synced_at: '2026-07-29T17:55:29Z'
 defines:
 - kind: module
   qualified_name: tests/test_index:__module__
@@ -20,7 +20,7 @@ defines:
   qualified_name: tests/test_index:test_write_index_without_tree_is_noop
   lines: 105-112
 incoming_refs: 0
-outgoing_refs: 10
+outgoing_refs: 15
 ---
 <!-- trie:section symbol=tests/test_index:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=05870e363a79953e65f02fd1f109866ef83a6d2dae59c54f0a448ca52d4d6242 source_ref=5ed21ef55342be836e62e34317d6f8102cf13d1f role=test -->
 Tests for `trie.index` covering `build_index` output shape, `write_index` idempotence, and no-op behaviour when no triefact tree exists.

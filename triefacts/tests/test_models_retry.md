@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.0
 source: tests/test_models_retry.py
 file_fingerprint: 9c2ce050365972595913b15d85be1800d591f8e3e81c2f9f0916d296aa819c39
-last_synced_at: '2026-07-29T02:54:54Z'
+last_synced_at: '2026-07-29T17:55:37Z'
 description: Retry-on-rate-limit behaviour of `AnthropicClient`.
 defines:
 - kind: module
@@ -84,7 +84,7 @@ defines:
   qualified_name: tests/test_models_retry:test_retry_total_seconds_zero_is_unbounded
   lines: 358-377
 incoming_refs: 0
-outgoing_refs: 28
+outgoing_refs: 29
 ---
 <!-- trie:section symbol=tests/test_models_retry:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=6230e0b6dac96c666f4c643a238e8932016fce96586b9091c4f78ad67994b7c1 source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=test-infrastructure -->
 Tests retry behavior of `AnthropicClient` against rate limits, server errors, timeouts, and non-retryable exceptions.

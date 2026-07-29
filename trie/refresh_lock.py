@@ -1,8 +1,8 @@
-"""Mutual exclusion + coalescing queue for `trie refresh`.
+"""Mutual exclusion + coalescing queue for trie's write-side commands.
 
 The freshness hook fires on every agent turn boundary. When an agent ships
 many rapid turns — or two MCP harnesses race the same project — multiple
-`trie refresh` processes can land overlapping. Each one would run a full
+`trie sync --graph-only` processes can land overlapping. Each one would run a full
 scan + (potentially) an LLM-spending sync against the same `.trie/graph.db`
 SQLite file and the same triefact tree, racing on writes.
 
@@ -11,7 +11,7 @@ directory:
 
   - `refresh.lock`: a file held with `fcntl.flock(LOCK_EX | LOCK_NB)`. The
     OS releases it automatically on process exit, including crashes, so a
-    dead `trie refresh` never strands the lock for the next caller.
+    dead trie process never strands the lock for the next caller.
 
   - `refresh.queued`: a sentinel file whose mere existence means "a refresh
     came in while I held the lock; do one more pass before releasing." The
