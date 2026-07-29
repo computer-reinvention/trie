@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/cli.py
 file_fingerprint: 24e23384a03dbfb8138f8456ebf604d9ba0619e69936979db7fd34749313dee2
-last_synced_at: '2026-07-28T23:47:51Z'
+last_synced_at: '2026-07-29T03:04:12Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
@@ -404,7 +404,7 @@ Generates a stable session ID for CLI patch operations, reused across multiple i
 - Otherwise persists a 12-character UUID in activity database for project-wide reuse
 - Ensures `trie patch --session drop` works by maintaining consistent session identity
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_ProgressAdapter fingerprint=461508833971d6960227589e60e8d0554cca8d9567c3036ade7cdbf2512b7a95 body_fp=441186a4466e461e3d32a2f9e639160f821a075ab40c9811045341078e50ca35 source_ref=531556cb2ca369f928920ff2e8a5af396c7dd9ee role=util -->
+<!-- trie:section symbol=trie/cli:_ProgressAdapter fingerprint=461508833971d6960227589e60e8d0554cca8d9567c3036ade7cdbf2512b7a95 body_fp=441186a4466e461e3d32a2f9e639160f821a075ab40c9811045341078e50ca35 source_ref=d1734541aa8bcf57bf2e2c039be357a394a1ac1c role=util -->
 Bridges sync's ProgressCallback Protocol to a Reporter ProgressHandle with lazy initialization.
 
 - Creates underlying ProgressHandle on first `on_start` call to avoid requiring total upfront
@@ -467,7 +467,7 @@ Context manager that provides progress reporting mirrored to both Rich console a
 
 - Yields a `ProgressCallback` that routes to both the Rich progress bar and `.trie/status.json` + `activity.jsonl`
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_JsonlProgress fingerprint=fd935dfc306344a1ab7e8d1965eef70da05594cf71cadac05dafdb542c05825f body_fp=430e5e67d0aa6bec9e82b4e9dba6688044d4b532c9a3b04bce995aa27144c794 source_ref=52f31b74d0b45bfccb6eb7f634c856efb4d783b3 role=io -->
+<!-- trie:section symbol=trie/cli:_JsonlProgress fingerprint=fd935dfc306344a1ab7e8d1965eef70da05594cf71cadac05dafdb542c05825f body_fp=430e5e67d0aa6bec9e82b4e9dba6688044d4b532c9a3b04bce995aa27144c794 source_ref=d1734541aa8bcf57bf2e2c039be357a394a1ac1c role=io -->
 Implement `ProgressCallback` by serialising each sync event as a newline-delimited JSON object to a stream, enabling subprocess hosts to parse progress without scraping Rich output.
 
 - `stream`: defaults to `sys.stdout`; each line is flushed immediately
@@ -743,7 +743,7 @@ Sync a single file specified by `--file` option in the `sync` command.
 - Creates LLM client and opens graph store, then calls `sync_single_file`
 - Reports success with triefact path, symbol counts, and token usage details
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_run_metadata_only_refresh fingerprint=ab88ff6a5f8617fcb6bbcc42dae27974d38c2d4d9d9e8f5df2a4c2dcd0f4ad19 body_fp=eb1f4ef332c83227c8796367c61641906b4bf42a0777d7799d2ca2aaa79f1ee2 source_ref=836a095d74cebfc79fe1aef607c8dd820c222a92 role=documentation-sync -->
+<!-- trie:section symbol=trie/cli:_run_metadata_only_refresh fingerprint=ab88ff6a5f8617fcb6bbcc42dae27974d38c2d4d9d9e8f5df2a4c2dcd0f4ad19 body_fp=eb1f4ef332c83227c8796367c61641906b4bf42a0777d7799d2ca2aaa79f1ee2 source_ref=d1734541aa8bcf57bf2e2c039be357a394a1ac1c role=orchestration -->
 Refreshes triefact front matter from the live store without LLM calls, designed for post-graph-change updates.
 
 - Rescans project to pick up new edges from resolver changes

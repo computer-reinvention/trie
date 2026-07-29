@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: tests/test_roles.py
-file_fingerprint: ff86cc085fcd8cb0287a107ab29a87127a6330b72afa35c176e26f4d9c1e8e1c
-last_synced_at: '2026-07-26T20:28:23Z'
+file_fingerprint: c13afcad24aa5f9f02760d3dcca28af8fc50d8285726b5e40e068f030c8a1a7b
+last_synced_at: '2026-07-29T03:03:41Z'
 description: 'Tests for role tagging: durable persistence, derived taxonomy, and the'
 defines:
 - kind: module
   qualified_name: tests/test_roles:__module__
-  lines: 1-279
+  lines: 1-352
 - kind: function
   qualified_name: tests/test_roles:test_section_role_round_trips_through_render_and_parse
   lines: 32-46
@@ -21,43 +21,52 @@ defines:
   qualified_name: tests/test_roles:test_set_section_role_missing_symbol_returns_false
   lines: 72-74
 - kind: function
+  qualified_name: tests/test_roles:_roles_project
+  lines: 85-93
+- kind: function
+  qualified_name: tests/test_roles:test_role_carried_forward_when_body_unchanged
+  lines: 96-123
+- kind: function
+  qualified_name: tests/test_roles:test_role_updates_when_body_changes
+  lines: 126-147
+- kind: function
   qualified_name: tests/test_roles:test_taxonomy_save_load_round_trip
-  lines: 82-92
+  lines: 155-165
 - kind: function
   qualified_name: tests/test_roles:test_load_taxonomy_absent_returns_none
-  lines: 95-97
+  lines: 168-170
 - kind: function
   qualified_name: tests/test_roles:test_load_taxonomy_malformed_returns_none
-  lines: 100-105
+  lines: 173-178
 - kind: function
   qualified_name: tests/test_roles:test_derive_taxonomy_returns_proposed_roles
-  lines: 113-122
+  lines: 186-195
 - kind: function
   qualified_name: tests/test_roles:test_run_roles_only_persists_to_disk_and_db
-  lines: 131-151
+  lines: 204-224
 - kind: function
   qualified_name: tests/test_roles:test_roles_survive_db_wipe_via_disk_restore
-  lines: 154-174
+  lines: 227-247
 - kind: function
   qualified_name: tests/test_roles:test_run_roles_only_only_missing_short_circuits
-  lines: 177-201
+  lines: 250-274
 - kind: function
   qualified_name: tests/test_roles:test_infer_role_clamps_to_vocabulary
-  lines: 204-216
+  lines: 277-289
 - kind: function
   qualified_name: tests/test_roles:_write_config
-  lines: 224-234
+  lines: 297-307
 - kind: function
   qualified_name: tests/test_roles:_git
-  lines: 237-238
+  lines: 310-311
 - kind: function
   qualified_name: tests/test_roles:project
-  lines: 242-256
+  lines: 315-329
 - kind: function
   qualified_name: tests/test_roles:_bootstrap
-  lines: 259-278
+  lines: 332-351
 incoming_refs: 0
-outgoing_refs: 40
+outgoing_refs: 45
 ---
 <!-- trie:section symbol=tests/test_roles:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=efc37c446790b90fb19c706b6873892ebfec635682dd8fe6bdbe931e995f2a52 source_ref=808f1bab7d3a9a1f792a2c387a66fa8309013b1e role=test -->
 Tests for role tagging system including persistence, taxonomy derivation, and two-pass classification workflow.
@@ -82,6 +91,15 @@ Verifies TriefactFile.set_section_role updates only the role field, preserving b
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_roles:test_set_section_role_missing_symbol_returns_false fingerprint=5954fed5b1d3178d3b8decad6533114ec9835ba5959acbba5cbeb02a5581f79e body_fp=9bc37ef158e4cb2779c26920a0c234efa98111be9b313d2eb98777a30571710f source_ref=808f1bab7d3a9a1f792a2c387a66fa8309013b1e role=test -->
 Verifies that TriefactFile.set_section_role returns False when attempting to set a role on a non-existent section.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_roles:_roles_project fingerprint=9e8f68c5ed4a302c61dbe8eaf51f954633190736866b87cd3e564745eb3eeaf7 body_fp=ce12471c60664db76c04c7b6c774d7d46f06767c6b68def573080297d45f136c source_ref=5576e0e44de525aa292d4a453d27732cda9bb473 role=test -->
+Create a minimal temporary project with a `trie.toml` config and a single `svc.py` source file, returning the project root and loaded `Config`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_roles:test_role_carried_forward_when_body_unchanged fingerprint=623e9ffba0ef3bb7ed651fab5127456e689388d4b4197941d8db01d14efefe0f body_fp=805bedebdf8fbcd6ee89a9360982231e314703d6d937abf772a7fef482314b68 source_ref=5576e0e44de525aa292d4a453d27732cda9bb473 role=test -->
+Assert that `sync_single_file` preserves the existing role when a forced re-sync produces a byte-identical body.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_roles:test_role_updates_when_body_changes fingerprint=fda9fb3c412a76a4790f7face2bacfa1386f486c877a9de42b69474e1b0b092e body_fp=15b6ae7b4a319ed94688e0b21930143f9cbe3802f910f1eb5173f1b468e77e66 source_ref=5576e0e44de525aa292d4a453d27732cda9bb473 role=test -->
+Assert that `sync_single_file` adopts the new role when the regenerated body differs from the previous version.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_roles:test_taxonomy_save_load_round_trip fingerprint=e326869a73af6f3806785732f2aa3417a941f800f27f71c22f3f0d2c5d7d39a3 body_fp=763a4834d6c2599eabbeef71d29c2dfa8bb6610af61969f82d14bda748e8004a source_ref=808f1bab7d3a9a1f792a2c387a66fa8309013b1e role=test -->
 ## `test_taxonomy_save_load_round_trip`

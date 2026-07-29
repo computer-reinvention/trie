@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_scheduler.py
 file_fingerprint: 3901e6f9692033cf9b9caef42545c389dc13594086a02657233d1c0450fc2ee9
-last_synced_at: '2026-07-26T20:28:27Z'
+last_synced_at: '2026-07-29T03:03:48Z'
 description: Tests for the wave-based file scheduler (trie/sync/scheduler.py).
 defines:
 - kind: module
