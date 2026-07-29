@@ -501,12 +501,27 @@ def sync_single_file(
         for sym, gen in generated:
             qn = sym.qualified_name
             mode_counts[gen.mode] += 1
+            # Role stability: `role` is a fresh LLM classification every run and is
+            # non-deterministic — the same unchanged symbol can flip between two
+            # valid labels across syncs, creating pure regeneration churn (a role
+            # change with an identical body_fp and source_ref) that slips past the
+            # intent gate. When the regenerated prose is byte-identical to the
+            # previous section's prose, the symbol genuinely didn't change, so we
+            # carry the previous role forward instead of the freshly-classified
+            # one. A real body change still re-classifies.
+            prev_section = existing_sections.get(qn)
+            effective_role = gen.role
+            if prev_section is not None and prev_section.body == gen.body and prev_section.role:
+                # Body unchanged → keep the previously-assigned role verbatim.
+                # (Boundary is not persisted in the section sentinel, so only the
+                # role is stabilised here; the store record below uses gen.boundary.)
+                effective_role = prev_section.role
             triefact.upsert_section(
                 qualified_name=qn,
                 fingerprint=sym.body_normalized_hash,
                 body=gen.body,
                 source_ref=current_blob,
-                role=gen.role,
+                role=effective_role,
             )
             symbols_generated += 1
             totals["in"] += gen.input_tokens
@@ -521,7 +536,7 @@ def sync_single_file(
                         symbol_qname=qn,
                         section_fingerprint=sym.body_normalized_hash,
                         one_liner=extract_one_liner(section.body),
-                        role=gen.role,
+                        role=effective_role,
                         boundary=gen.boundary,
                     )
 
