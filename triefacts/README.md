@@ -8,13 +8,13 @@ Prose descriptions of every in-scope source file and symbol, kept in sync with t
 
 The most-referenced public symbols — start reading here.
 
-- [`trie/config:Config`](trie/config.md) (142 refs) `config` — Root configuration dataclass aggregating all subsection configs, with classmethods to construct from a dict, a TOML file path, or by walking up the directory tree.
+- [`trie/config:Config`](trie/config.md) (143 refs) `config` — Root configuration dataclass aggregating all subsection configs, with classmethods to construct from a dict, a TOML file path, or by walking up the directory tree.
 - [`trie/cli:app`](trie/cli.md) (95 refs) `cli-interface` — Top-level Typer application instance that defines the trie CLI interface.
-- [`tests/fake_client:FakeTrieClient`](tests/fake_client.md) (79 refs) `test` — Test double for `TrieClient` that returns preconfigured structured outputs and records call parameters for verification.
+- [`tests/fake_client:FakeTrieClient`](tests/fake_client.md) (81 refs) `test` — Test double for `TrieClient` that returns preconfigured structured outputs and records call parameters for verification.
 - [`tests/test_mcp:tools`](tests/test_mcp.md) (67 refs) `test` — Creates a TrieTools fixture for the populated test project and ensures cleanup after use.
 - [`trie/graph/store:Store`](trie/graph/store.md) (66 refs) `persistence` — SQLite-backed persistence for trie's symbol graph and file fingerprints.
 - [`trie/parse/python:extract_symbols`](trie/parse/python.md) (66 refs) `parsing` — Parse Python file and extract its top-level symbols: functions, classes, methods, constants, and module residuals.
-- [`trie/sync/writer:TriefactFile`](trie/sync/writer.md) (47 refs) `persistence` — Parses, manipulates, and renders triefact files containing YAML frontmatter and trie-managed documentation sections.
+- [`trie/sync/writer:TriefactFile`](trie/sync/writer.md) (49 refs) `persistence` — Parses, manipulates, and renders triefact files containing YAML frontmatter and trie-managed documentation sections.
 - [`trie/cli:console`](trie/cli.md) (37 refs) `cli-interface` — Creates a Rich Console instance for styled terminal output across CLI commands.
 - [`trie/sync/single_file:sync_single_file`](trie/sync/single_file.md) (37 refs) `orchestration` — Generate or refresh the triefact file for a single Python source file using LLM calls.
 - [`tests/test_mcp_install:project`](tests/test_mcp_install.md) (34 refs) `test-infrastructure` — Creates temporary project directory with trie.toml configuration file and cleans up MCP installation artifacts after test completion.

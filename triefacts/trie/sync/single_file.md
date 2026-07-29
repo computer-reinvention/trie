@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/sync/single_file.py
-file_fingerprint: 634df6ae716aaf4b4d6500ca88b414e1a5a2f3543eac220e55fcf19e1a3ac538
-last_synced_at: '2026-07-29T01:49:26Z'
+file_fingerprint: 800cde823ae823084ccd33c5b0bc64454b4dff129ef1ecde30dafc8ad6ae3f58
+last_synced_at: '2026-07-29T03:03:35Z'
 defines:
 - kind: module
   qualified_name: trie/sync/single_file:__module__
-  lines: 1-603
+  lines: 1-618
 - kind: function
   qualified_name: trie/sync/single_file:backfill_section_records
   lines: 25-58
@@ -39,7 +39,7 @@ defines:
   lines: 200-294
 - kind: function
   qualified_name: trie/sync/single_file:sync_single_file
-  lines: 297-602
+  lines: 297-617
 incoming_refs: 68
 outgoing_refs: 24
 ---
@@ -109,7 +109,7 @@ Refreshes a triefact file's front matter from the current store without calling 
 - Preserves existing `last_synced_at` timestamp and all section bodies unchanged
 - No-op returning `changed=False` when the triefact file doesn't exist
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:sync_single_file fingerprint=e23f78412fe954b00f575c30a2c0677a2f21e48f9d3dba5ad1218cc68bb6c737 body_fp=0e00a43958426df79bb7afb425c0bec6e922416d7001572677a36aeec547d6e2 source_ref=e0ec1aff11d8b03d0bd7c2ee3e874a2551f88c6f role=orchestration -->
+<!-- trie:section symbol=trie/sync/single_file:sync_single_file fingerprint=936a642bd24b9dfc675da75539ab523e6044a2b1ab40a8b26285637d9fb4becf body_fp=2d150c59a80cd31f15a939452f320fee37cb40c00813307c9c90dc108e7b528d source_ref=fafd0f25e185cf2f2b0b6d0272a456fb02ab100a role=orchestration -->
 Generate or refresh the triefact file for a single Python source file using LLM calls.
 
 - `symbols_to_regen`: when None, regenerates all symbols; when a set, only regenerates listed symbols
@@ -119,4 +119,5 @@ Generate or refresh the triefact file for a single Python source file using LLM 
 - Preserves existing hand-written prose between section sentinels
 - Removes sections for symbols no longer present in source
 - Implements three-phase execution: plan (partition symbols), generate (parallel LLM calls), apply (serial mutations)
+- In the apply phase, carries the previous role forward when regenerated prose is byte-identical to the previous section, preventing non-deterministic role churn
 <!-- trie:end -->

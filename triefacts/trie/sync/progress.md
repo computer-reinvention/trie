@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/sync/progress.py
 file_fingerprint: af06a9fa87b258c20e0c29188a165c54a315ce135458a0ddb79aa94637335d99
-last_synced_at: '2026-07-26T20:28:55Z'
+last_synced_at: '2026-07-29T03:03:48Z'
 defines:
 - kind: module
   qualified_name: trie/sync/progress:__module__
