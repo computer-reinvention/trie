@@ -550,21 +550,75 @@ def extract_symbols(
 
 
 class PythonBackend:
-    """The reference `LanguageBackend` — delegates to this module's free
-    functions. Pure delegation: no behavior change versus the pre-registry code.
+    """The reference `LanguageBackend` for Python.
+
+    Two-pass reference extraction: tree-sitter (`references.extract_file_data`)
+    does the fast structural pass — symbols, imports, containment, class bases,
+    and module-level/import-resolved call edges — then the paired
+    `ReferenceResolver` (a `LspResolver` driving pyright/basedpyright)
+    supplements it with the type-dependent method dispatch edges tree-sitter
+    can't derive (`obj.method()`, `self.helper()`). The two edge sets are merged
+    with `merge_references` (dedup + strongest-kind wins). The resolver is
+    optional and cached per backend instance; if no Python language server is
+    installed the backend degrades to tree-sitter-only extraction.
     """
 
     name = "python"
     extensions = (".py",)
 
+    def __init__(self) -> None:
+        self._resolver = None
+        self._resolver_built = False
+
     def extract_file_data(self, file_path, source_root=None, *, source_text=None):
         # references.py imports python.py at module load, so import lazily here
         # to avoid a circular import at definition time.
+        from pathlib import Path
+
         from trie.parse.references import extract_file_data
+        from trie.parse.resolver import merge_references
 
         if source_text is not None:
             raise NotImplementedError("source_text override is not supported for extract_file_data")
-        return extract_file_data(file_path, source_root=source_root)
+
+        file_data = extract_file_data(file_path, source_root=source_root)
+
+        resolver = self.resolver()
+        if resolver is None:
+            return file_data
+
+        abs_path = Path(file_path).resolve()
+        root = (Path(source_root) if source_root is not None else abs_path.parent).resolve()
+        extra = resolver.resolve_file(abs_path, root, file_data.symbols)
+        if not extra:
+            return file_data
+
+        from trie.parse.types import FileData
+
+        merged = merge_references(file_data.references, extra)
+        return FileData(symbols=file_data.symbols, references=merged)
+
+    def resolver(self):
+        """Return the cached LSP resolver, or None if disabled/unavailable.
+
+        Set `TRIE_DISABLE_RESOLVER=1` to force tree-sitter-only extraction
+        (used by tests that assert on tree-sitter's edge set, and as a debug
+        escape hatch). If no Python language server (pyright / basedpyright) is
+        on PATH, the backend silently degrades to tree-sitter-only.
+        """
+        if not self._resolver_built:
+            self._resolver_built = True
+            import os
+
+            if os.environ.get("TRIE_DISABLE_RESOLVER") == "1":
+                self._resolver = None
+            else:
+                from trie.parse.resolvers.lsp_resolver import LspResolver
+                from trie.parse.resolvers.specs import python_spec
+
+                spec = python_spec()
+                self._resolver = LspResolver(spec) if spec is not None else None
+        return self._resolver
 
     def extract_symbols(self, file_path, source_root=None, *, source_text=None):
         return extract_symbols(file_path, source_root=source_root, source_text=source_text)

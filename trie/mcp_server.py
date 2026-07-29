@@ -396,17 +396,19 @@ class TrieTools:
                 )
                 continue
             try:
+                # Graceful create→patch fallback: if a `create` targets a symbol
+                # that already exists in the graph, record it as a `patch`
+                # instead of failing. Recording intent shouldn't force the agent
+                # to re-classify create vs patch — post-sync the symbol usually
+                # exists, and the note is equally valid either way. The result
+                # flags `fell_back: True` so the caller can see what happened.
+                if op == "create" and self.store.get_symbol_detail(qname) is not None:
+                    op = "patch"
+                    fell_back_from_create = True
+                else:
+                    fell_back_from_create = False
+
                 if op == "create":
-                    if self.store.get_symbol_detail(qname) is not None:
-                        results.append(
-                            {
-                                "index": idx,
-                                "qname": qname,
-                                "ok": False,
-                                "error": "symbol exists — use op=patch",
-                            }
-                        )
-                        continue
                     target_file = str(item.get("file_path", "")) or registry.resolve_create_target(
                         src_root, qname
                     )
@@ -424,9 +426,17 @@ class TrieTools:
                     staged += 1
                 else:
                     pid = self.store.add_patch(qname, note, reason, self._session_id)
-                    results.append(
-                        {"index": idx, "qname": qname, "ok": True, "op": "patch", "patch_id": pid}
-                    )
+                    entry = {
+                        "index": idx,
+                        "qname": qname,
+                        "ok": True,
+                        "op": "patch",
+                        "patch_id": pid,
+                    }
+                    if fell_back_from_create:
+                        entry["fell_back"] = True
+                        entry["note"] = "symbol already existed — recorded as patch"
+                    results.append(entry)
                     staged += 1
             except KeyError:
                 results.append(
@@ -435,12 +445,20 @@ class TrieTools:
         pending = len(self.store.get_patched_qnames()) + sum(
             len(v) for v in self.store.get_create_patches_grouped().values()
         )
-        return {
+        fell_back = [r["qname"] for r in results if r.get("fell_back")]
+        summary = {
             "staged": staged,
             "failed": len(results) - staged,
             "results": results,
             "pending_patch_count": pending,
         }
+        if fell_back:
+            summary["created_as_patch"] = fell_back
+            summary["note"] = (
+                f"{len(fell_back)} symbol(s) already existed and were recorded as patches: "
+                + ", ".join(fell_back)
+            )
+        return summary
 
     def _blast_radius_brief(self, qname: str) -> dict[str, Any]:
         """Compact blast-radius for patch returns (no LLM). Best-effort."""
@@ -477,13 +495,18 @@ class TrieTools:
         """
         if not note.strip():
             return _error("invalid_argument", "note must describe the new symbol.")
+        # Graceful create→patch fallback: recording intent for a symbol that
+        # already exists shouldn't be an error the agent has to recover from —
+        # the note is equally valid as a patch. Record it and say so.
         if self.store.get_symbol_detail(qname) is not None:
-            return _error(
-                "already_exists",
-                f"{qname!r} already exists.",
-                "use patch(qname=..., note=...) to change its body instead.",
-                fix={"tool": "patch", "args": {"qname": qname, "note": note}},
-            )
+            pid = self.store.add_patch(qname, note, reason, self._session_id)
+            return {
+                "patch_id": int(pid),
+                "qname": qname,
+                "op": "patch",
+                "fell_back": True,
+                "note": f"{qname!r} already existed — recorded as a patch instead of a create.",
+            }
         # Resolve the target source file. An explicit `file_path` always wins.
         # Otherwise the qname's module part names the file MINUS extension — probe
         # the registered language suffixes for an existing file on disk (the

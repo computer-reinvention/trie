@@ -8,7 +8,7 @@ Prose descriptions of every in-scope source file and symbol, kept in sync with t
 
 The most-referenced public symbols — start reading here.
 
-- [`trie/config:Config`](trie/config.md) (140 refs) `config` — Root configuration dataclass aggregating all subsection configs, with classmethods to construct from a dict, a TOML file path, or by walking up the directory tree.
+- [`trie/config:Config`](trie/config.md) (142 refs) `config` — Root configuration dataclass aggregating all subsection configs, with classmethods to construct from a dict, a TOML file path, or by walking up the directory tree.
 - [`trie/cli:app`](trie/cli.md) (95 refs) `cli-interface` — Top-level Typer application instance that defines the trie CLI interface.
 - [`tests/fake_client:FakeTrieClient`](tests/fake_client.md) (79 refs) `test` — Test double for `TrieClient` that returns preconfigured structured outputs and records call parameters for verification.
 - [`tests/test_mcp:tools`](tests/test_mcp.md) (67 refs) `test` — Creates a TrieTools fixture for the populated test project and ensures cleanup after use.
@@ -20,17 +20,23 @@ The most-referenced public symbols — start reading here.
 - [`tests/test_mcp_install:project`](tests/test_mcp_install.md) (34 refs) `test-infrastructure` — Creates temporary project directory with trie.toml configuration file and cleans up MCP installation artifacts after test completion.
 - [`trie/config:ConfigNotFoundError`](trie/config.md) (34 refs) `config-management` — Exception raised when Config.find_and_load cannot locate a trie.toml file in the directory tree.
 - [`tests/test_store:store`](tests/test_store.md) (33 refs) `test-infrastructure` — Pytest fixture that creates a temporary Store instance and ensures cleanup after test completion.
+- [`trie/parse/types:Symbol`](trie/parse/types.md) (28 refs) `model` — Immutable dataclass representing a single parsed symbol emitted by a language backend.
 - [`trie/reporter:Verbosity`](trie/reporter.md) (28 refs) `cli-interface` — Defines integer enum levels for controlling Reporter output verbosity.
 - [`trie/telemetry:timed`](trie/telemetry.md) (28 refs) `monitoring-telemetry` — Context manager that times a block and emits a telemetry event with duration on exit.
-- [`trie/tool_override_install:install`](trie/tool_override_install.md) (27 refs) `agent-integration` — Apply tool-override files for one or more targets.
 
 ## Files
 
+### scripts
+
+- [bench_resolver.md](scripts/bench_resolver.md)
+
 ### tests
 
+- [conftest.md](tests/conftest.md) — Shared pytest configuration.
 - [fake_client.md](tests/fake_client.md)
 - [test_activity.md](tests/test_activity.md) — Tests for the SQLite-backed local activity state (trie/activity.py).
 - [test_audit.md](tests/test_audit.md) — Audit summary: JSONL ingestion + rendering.
+- [test_backends_multilang.md](tests/test_backends_multilang.md) — Symbol + tree-sitter reference extraction for the Go/Rust/C/Lua backends.
 - [test_bootstrap.md](tests/test_bootstrap.md)
 - [test_cascade.md](tests/test_cascade.md)
 - [test_check.md](tests/test_check.md)
@@ -64,6 +70,7 @@ The most-referenced public symbols — start reading here.
 - [test_refresh_lock.md](tests/test_refresh_lock.md) — Tests for the refresh lock + queue.
 - [test_registry.md](tests/test_registry.md)
 - [test_reporter.md](tests/test_reporter.md)
+- [test_resolver.md](tests/test_resolver.md) — Tests for the tree-sitter + LSP resolver seam.
 - [test_roles.md](tests/test_roles.md) — Tests for role tagging: durable persistence, derived taxonomy, and the
 - [test_scan.md](tests/test_scan.md)
 - [test_scheduler.md](tests/test_scheduler.md) — Tests for the wave-based file scheduler (trie/sync/scheduler.py).
@@ -141,13 +148,25 @@ The most-referenced public symbols — start reading here.
 ### trie/parse
 
 - [base.md](trie/parse/base.md) — The language-backend contract.
+- [c.md](trie/parse/c.md) — C language backend — tree-sitter symbols + references, paired with clangd.
+- [go.md](trie/parse/go.md) — Go language backend — tree-sitter symbols + references, paired with gopls.
+- [lsp_client.md](trie/parse/lsp_client.md) — A minimal Language Server Protocol client over stdio.
+- [lua.md](trie/parse/lua.md) — Lua language backend — tree-sitter symbols + references, paired with lua-language-server.
 - [python.md](trie/parse/python.md)
 - [references.md](trie/parse/references.md) — Reference extraction via tree-sitter.
 - [registry.md](trie/parse/registry.md) — Language-backend registry — dispatch by file extension.
+- [resolver.md](trie/parse/resolver.md) — The reference-resolver contract — tree-sitter's type-aware supplement.
+- [rust.md](trie/parse/rust.md) — Rust language backend — tree-sitter symbols + references, paired with rust-analyzer.
 - [ts_resolve.md](trie/parse/ts_resolve.md) — TypeScript module-specifier resolution — config + syntax, never type inference.
 - [types.md](trie/parse/types.md) — Language-neutral value types for the parse layer.
 - [typescript.md](trie/parse/typescript.md) — TypeScript / TSX symbol extraction via tree-sitter.
 - [typescript_refs.md](trie/parse/typescript_refs.md) — TypeScript reference (edge) extraction via tree-sitter.
+
+### trie/parse/resolvers
+
+- [__init__.md](trie/parse/resolvers/__init__.md) — Concrete `ReferenceResolver` implementations, one per analysis engine.
+- [lsp_resolver.md](trie/parse/resolvers/lsp_resolver.md) — Generic, language-agnostic `ReferenceResolver` backed by an LSP server.
+- [specs.md](trie/parse/resolvers/specs.md) — Per-language LSP server specs — the one place a new language is registered.
 
 ### trie/sync
 

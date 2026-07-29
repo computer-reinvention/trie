@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/sync/reconcile.py
 file_fingerprint: 15269bf1d27fc9114af81e8025120fb83339d0fd4f276125f5c8f669ffa61c8f
-last_synced_at: '2026-07-20T09:55:21Z'
+last_synced_at: '2026-07-29T01:49:09Z'
 defines:
 - kind: module
   qualified_name: trie/sync/reconcile:__module__

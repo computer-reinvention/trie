@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/sync/roles.py
 file_fingerprint: d3b1f5ed4cf82a407ddb2c03ab7acb016c9fdd483933614ed5190d743094f0f6
-last_synced_at: '2026-07-26T20:28:51Z'
+last_synced_at: '2026-07-29T01:49:10Z'
 description: 'Roles-only sync: (re)infer the architectural role tag for every symbol
   without'
 defines:

@@ -20,6 +20,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
+from trie.parse.resolver import ReferenceResolver
 from trie.parse.types import FileData, Symbol
 
 
@@ -71,3 +72,15 @@ class LanguageBackend(Protocol):
     def system_prompt(self) -> str:
         """The language-tuned generator system prompt for triefact prose."""
         ...
+
+    def resolver(self) -> ReferenceResolver | None:
+        """The type-aware reference resolver paired with this backend, if any.
+
+        Tree-sitter (via `extract_file_data`) is the fast structural pass and
+        resolves module-level/import edges. A `ReferenceResolver` supplements it
+        with the type-dependent edges tree-sitter can't derive — chiefly method
+        dispatch (`obj.method()`, `self.helper()`). Returning `None` means
+        tree-sitter-only extraction (the safe default); pairing a resolver is
+        how a language gains method-call coverage. See `trie.parse.resolver`.
+        """
+        return None

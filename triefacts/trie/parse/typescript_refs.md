@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/parse/typescript_refs.py
 file_fingerprint: 26c7bf67784e8f254ffeea4190afc1490099c7c90f5f4a8f31f3b4fe8648f443
-last_synced_at: '2026-07-26T20:28:41Z'
+last_synced_at: '2026-07-29T00:06:48Z'
 description: TypeScript reference (edge) extraction via tree-sitter.
 defines:
 - kind: module
@@ -125,7 +125,7 @@ Module-level cache mapping source-root path strings to their `TsResolver` instan
 <!-- trie:section symbol=trie/parse/typescript_refs:_shared_resolver fingerprint=af1e399dd37e68ba689d0bb594a0c8ad440da5e27709b7927f798c8e93aea62d body_fp=2e5f97b24f44aac3d13aefdc758abf6cac486df5e9066dde5d3cf1ded0edb773 source_ref=1ed998c56ddb9bb463465902e353473ed681fce0 role=util -->
 Return a cached `TsResolver` for `source_root`, building and storing one on first access.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/typescript_refs:extract_file_data fingerprint=926f2de4caf04acb2f1d8662bc28560a00323a389c505f92e3c3b702c3ffb116 body_fp=b020263c642db93c46977931ccf1b62d60cc32c13d925e377dc596a118f47d0e source_ref=1ed998c56ddb9bb463465902e353473ed681fce0 role=parsing -->
+<!-- trie:section symbol=trie/parse/typescript_refs:extract_file_data fingerprint=926f2de4caf04acb2f1d8662bc28560a00323a389c505f92e3c3b702c3ffb116 body_fp=b020263c642db93c46977931ccf1b62d60cc32c13d925e377dc596a118f47d0e source_ref=1ed998c56ddb9bb463465902e353473ed681fce0 role=io -->
 Parse a single TypeScript file into a `FileData` containing extracted symbols and resolved outbound references.
 
 - `source_root`: defaults to the file's parent directory if omitted.
