@@ -1,8 +1,8 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: tests/test_mcp.py
 file_fingerprint: 802e912c08e890e8e501ada6124d56c60f6c0a36e4c45d89883fac7202b7bb9d
-last_synced_at: '2026-07-29T18:32:58Z'
+last_synced_at: '2026-07-29T23:18:43Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: module
@@ -433,11 +433,10 @@ Verifies that `read` returns caller/callee neighbours with a populated `one_line
 <!-- trie:section symbol=tests/test_mcp:test_read_unknown_qname_returns_not_found fingerprint=3265a0090391b2d6756d124cacb28e9a01e3e19ee7b45fe0032c752b36efb7f7 body_fp=31dfb682d072853a786d186bd95ef20d15c6b068e06ec581c585b8b1f1c9146b source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Verify `TrieTools.read` returns an error envelope with `not_found` code for unknown symbol names.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_fuzzy_suggestion_for_typo fingerprint=656607d4483ca9d33fd84a8e21cd913fd53f6dfb9c395347ff19d836dabaa261 body_fp=1e16595f82f06d08d3af11310c2ed4e77f4fca84de607b81906dbf94fa9f0d91 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
-Tests that the read tool returns a fuzzy suggestion when given a qname with a typo.
+<!-- trie:section symbol=tests/test_mcp:test_read_fuzzy_suggestion_for_typo fingerprint=656607d4483ca9d33fd84a8e21cd913fd53f6dfb9c395347ff19d836dabaa261 body_fp=cfa7fbe15f8df846aac2397982444ceb80953a416f52d4e3b887b5e1fd09603e source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Tests that `tools.read` returns a fuzzy suggestion when given a qname with a typo.
 
-- Calls `tools.read("lib:slugfy")` with a misspelled qname ("slugfy" instead of "slugify")
-- Verifies the response contains an error with a suggestion that either mentions "slugify" directly or guides the user to use `grep()`
+- Passes `"lib:slugfy"` (misspelled); expects `error` with a `suggestion` containing `"slugify"` or `"grep("`
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp:test_read_file_path_returns_compact_triefact_view fingerprint=6b57267237051b42a5318728289aa553c37e72ce7444fa3438811b3a536569d7 body_fp=7bb3207f720052d6b4c9c5ee845c80bf944339bdf3bfac5d754e2c1f5dc65621 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Assert that `TrieTools.read` with a file path returns `mode="triefact_compact"` and an output body containing per-symbol prose, not line-numbered raw source.
@@ -482,8 +481,8 @@ Verifies that TrieTools.trace returns a not_found error for nonexistent symbols.
 <!-- trie:section symbol=tests/test_mcp:test_trace_depth_zero_returns_only_root fingerprint=76be5ecaba8cb2a295a796f304e77c718a9dcc8d23868995efa57a5182d2a1c2 body_fp=11c567dde7da9bc8423d8827a4f588b836dddc74664fc8fd360db71e6bf9bcd0 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test-infrastructure -->
 Verifies that trace with depth=0 returns only the root symbol with no edges.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trace_depth_clamp_adds_note fingerprint=c455960b8dcfb8693c4e826945685a9217238b8705ee7806c1ca182dccf62c13 body_fp=08f8f6001272fdf61e7b1e11b14cfdb2422712187f89ab03ab670e2f46a66336 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
-Tests that TrieTools.trace adds a note when depth exceeds the configured maximum.
+<!-- trie:section symbol=tests/test_mcp:test_trace_depth_clamp_adds_note fingerprint=c455960b8dcfb8693c4e826945685a9217238b8705ee7806c1ca182dccf62c13 body_fp=c81daf1b227fe7198278fd3c30998cbb0c0ce92a8721d55999d4afdb19789595 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Tests that `TrieTools.trace` adds a note when depth exceeds the configured maximum.
 
 - Requests depth=99 against default max of 5 and verifies "clamped" appears in response notes
 <!-- trie:end -->
@@ -543,12 +542,12 @@ Verify grep_str returns fuzzy fallback when regex search fails but symbol name i
 - Skips assertion if ripgrep accidentally finds literal matches in source
 - Validates fallback contains expected symbol via name matching
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_str_all_finds_non_indexed_file fingerprint=dc3e9e6b1e196c6e51059cbdcecb830a3116e01b8410665633c730fb2cc90ef5 body_fp=a813374f678cbb00c569bcae1c861e09dfc3754f4212ae56f5008d9ccab47d35 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
-Tests that TrieTools.grep_str_all searches the entire repository including non-indexed files.
+<!-- trie:section symbol=tests/test_mcp:test_grep_str_all_finds_non_indexed_file fingerprint=dc3e9e6b1e196c6e51059cbdcecb830a3116e01b8410665633c730fb2cc90ef5 body_fp=54a5d495e2dfa1a7a23205e10f9b43f7fc969589a3ec0ecaed0ce5dc79610434 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Tests that `TrieTools.grep_str_all` searches the entire repository including non-indexed files.
 
-- Creates a package.json file with "WIDGET_MARKER" content outside the indexed scope
-- Verifies the search result includes the non-indexed file in text_hits
-- Confirms text_match_count reflects the found occurrence
+- Creates a `package.json` file with "WIDGET_MARKER" content outside the indexed scope
+- Verifies the search result includes the non-indexed file in `text_hits`
+- Confirms `text_match_count` reflects the found occurrence
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp:test_grep_str_all_attributes_indexed_hits_to_symbols fingerprint=df6205a39150a2009abb81500fad1584543648c73cb153c08b54c6cd57f835e7 body_fp=7fc268ea45df03ff0296a3cd7e64bb80810080e229174a99695736acf8ab4e47 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Verifies that TrieTools.grep_str_all attributes in-scope code hits to their enclosing symbols.
@@ -603,10 +602,10 @@ Verifies that TrieTools.blast_radius returns the cascade set of symbols affected
 - Tests with "lib:slugify" and asserts "make_url" appears in the cascade (symbols that reference slugify)
 - Validates the response contains the original qname and no error field
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_blast_radius_unknown_symbol_errors fingerprint=5043abdf9e81ce86f69ffb20bce9e767e715283736669d4b5a376ff86a728711 body_fp=9b8e3de2e17030987e08b5c1e087f567d35824ea3b0e01c3a2222f723648be70 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
-Tests that blast_radius returns a structured not_found error for unknown qnames.
+<!-- trie:section symbol=tests/test_mcp:test_blast_radius_unknown_symbol_errors fingerprint=5043abdf9e81ce86f69ffb20bce9e767e715283736669d4b5a376ff86a728711 body_fp=39d1445c40d4423c6b6e260a806a6f839362195f39fafb9ee81053aeb9f3f3a5 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Tests that `blast_radius` returns a structured not_found error for unknown qnames.
 
-- Verifies the error envelope contains code "not_found" for missing symbols
+- Verifies the error envelope contains code `"not_found"` for missing symbols
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp:test_write_file_creates_new_file fingerprint=a625baeab49c1742208ace6e441a610b4522a4201b6c8c4fd509965b94b8133c body_fp=68174f41b435b6433744cefd120a8dadd5ef62d30c0294492560ff0a01e3be4b source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Verifies that TrieTools.write_file creates new files at arbitrary paths under the project root.

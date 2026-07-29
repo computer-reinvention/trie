@@ -1,13 +1,13 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: tests/test_gate.py
-file_fingerprint: d04cd746dc4a275bf46c5a440a7c4c576ed38abf0fbd48ed5805f4ef71955726
-last_synced_at: '2026-07-29T17:54:46Z'
+file_fingerprint: b6421c3b5b56d6c143faebc1cc3e544af8a1cacbc46a45c0eb9de3ca81bdc15a
+last_synced_at: '2026-07-29T23:17:26Z'
 description: "Spec for `trie gate` \u2014 the commit guard as one command."
 defines:
 - kind: module
   qualified_name: tests/test_gate:__module__
-  lines: 1-163
+  lines: 1-193
 - kind: constant
   qualified_name: tests/test_gate:runner
   lines: 16-16
@@ -35,8 +35,11 @@ defines:
 - kind: function
   qualified_name: tests/test_gate:test_gate_no_skew_warning_for_other_projects
   lines: 154-162
+- kind: function
+  qualified_name: tests/test_gate:test_patch_create_suggests_close_qnames_on_miss
+  lines: 165-192
 incoming_refs: 0
-outgoing_refs: 13
+outgoing_refs: 14
 ---
 <!-- trie:section symbol=tests/test_gate:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=344269b0874680fdcac103211c4b3981e2baaa650449fa871f98ed18e4b47d17 source_ref=1dd00ca9aebbf98ecbad24aef4365f2e5a630bc0 role=test -->
 Integration tests for the `trie gate` commit-guard command, covering no-op, verify failure, intent-gate blocking, lock contention, and clean-pass scenarios.
@@ -70,4 +73,7 @@ Assert that `trie gate` emits a version-skew warning with the detected version a
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_gate:test_gate_no_skew_warning_for_other_projects fingerprint=4be10d29db38cafd906999f5a05b8b81f59d7a1b9d99310dfe09ca04df67aef0 body_fp=d3b5ae0e8200630d1940e110cbc60ed23a7a656f9df370477a5d3e3835acd3bc source_ref=6b2b5f37fb6e6eff07b99ad0ef92e460be785e97 role=test -->
 Assert that `trie gate` emits no version-skew warning when the project's `pyproject.toml` names a package other than `trie`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_gate:test_patch_create_suggests_close_qnames_on_miss fingerprint=6f350483096d3c2405b084146756ccad717d74e4e1c049ea42046a85f9654956 body_fp=f25fbf3097f53c003fcacaa7f1491044dd4f9bfb217800d95240bb237b6ae6c3 source_ref=a1751f70f339ca1dd429f735fa9eef29e1b549a3 role=test -->
+Assert that `patch create` with an unknown qname outputs "did you mean" candidates and mentions `--gone` as a secondary hint, not the primary error.
 <!-- trie:end -->

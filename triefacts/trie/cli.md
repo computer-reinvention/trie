@@ -1,12 +1,12 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: trie/cli.py
-file_fingerprint: a7549b5b4d38682f9289b7ac640cb4b4970893785008cd53045a5eb51ca98244
-last_synced_at: '2026-07-29T18:38:42Z'
+file_fingerprint: 6839f919581cde1a2da11e9dd5823e786aee4c03a828039d2ff4ed1e5faa121e
+last_synced_at: '2026-07-29T23:17:32Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
-  lines: 1-4515
+  lines: 1-4541
 - kind: constant
   qualified_name: trie/cli:app
   lines: 79-82
@@ -335,55 +335,58 @@ defines:
   qualified_name: trie/cli:_RichApplyProgress.verify
   lines: 3790-3791
 - kind: function
+  qualified_name: trie/cli:_close_qname_suggestions
+  lines: 3794-3810
+- kind: function
   qualified_name: trie/cli:patch_create_cmd
-  lines: 3795-3841
+  lines: 3814-3867
 - kind: function
   qualified_name: trie/cli:patch_create_batch_cmd
-  lines: 3845-3965
+  lines: 3871-3991
 - kind: function
   qualified_name: trie/cli:patch_create_symbol_cmd
-  lines: 3969-4017
+  lines: 3995-4043
 - kind: function
   qualified_name: trie/cli:patch_delete_symbol_cmd
-  lines: 4021-4048
+  lines: 4047-4074
 - kind: function
   qualified_name: trie/cli:patch_rename_symbol_cmd
-  lines: 4052-4081
+  lines: 4078-4107
 - kind: function
   qualified_name: trie/cli:patch_apply_cmd
-  lines: 4085-4147
+  lines: 4111-4173
 - kind: function
   qualified_name: trie/cli:patch_preview_cmd
-  lines: 4151-4194
+  lines: 4177-4220
 - kind: function
   qualified_name: trie/cli:patch_list_cmd
-  lines: 4198-4240
+  lines: 4224-4266
 - kind: function
   qualified_name: trie/cli:patch_drop_cmd
-  lines: 4244-4282
+  lines: 4270-4308
 - kind: constant
   qualified_name: trie/cli:mcp_app
-  lines: 4290-4297
+  lines: 4316-4323
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 4302-4304
+  lines: 4328-4330
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 4307-4317
+  lines: 4333-4343
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 4321-4390
+  lines: 4347-4416
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 4393-4408
+  lines: 4419-4434
 - kind: function
   qualified_name: trie/cli:mcp_uninstall_cmd
-  lines: 4412-4487
+  lines: 4438-4513
 - kind: function
   qualified_name: trie/cli:_render_uninstall_plan
-  lines: 4490-4510
-incoming_refs: 103
-outgoing_refs: 360
+  lines: 4516-4536
+incoming_refs: 104
+outgoing_refs: 361
 ---
 <!-- trie:section symbol=trie/cli:__module__ fingerprint=d16be5917b98ff58f36f3487c349d240fc53396bc24bb9e0d8903c2f9e48f690 body_fp=10f0e1573012e0fc76e1358d4da306bc2ba6e70254a41da3bf25ef8b26e41199 source_ref=ec65582312b341065f0f0bb2b57d76d2fbe38026 role=entrypoint -->
 Main CLI module for trie providing comprehensive project management, triefact synchronization, and agent integration commands.
@@ -1086,10 +1089,14 @@ Prints a refresh indicator for the given file path during patch apply progress r
 <!-- trie:section symbol=trie/cli:_RichApplyProgress.verify fingerprint=9bb6073c0083b530e9d8a61ec3fe90bde21961bdcbb397e39268aa6d65db357c body_fp=88843d1669232469dd7a92f0b73d40fc967e947a1c92e8d576021241cb8f1664 source_ref=ec65582312b341065f0f0bb2b57d76d2fbe38026 role=util -->
 Prints a green checkmark indicating the project is consistent after patch application. Called by `apply_patches` at the end of its verification phase.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:patch_create_cmd fingerprint=9b39c04b2da7ae15712d100bcf6549b3ec83ef51061927bf6844bf6ac8a8fe87 body_fp=aa398016157044c1162369feafc0d23251614de457168cfa3b74c07e7bb1297a source_ref=ec65582312b341065f0f0bb2b57d76d2fbe38026 role=api -->
+<!-- trie:section symbol=trie/cli:_close_qname_suggestions fingerprint=7b6b852bb904da182dcdc0119d8bfabd130432d02f20e31dc08e0b98a4175b16 body_fp=50cf8b8b072f70e5f8f21031c04ebb09af62cd15179ac4beca0d63d3a07e13db source_ref=a926c793af5e1f338acdc176a5faae767217b646 role=util -->
+Fuzzy-match `qname` against all graph-known qualified names and return up to `n` close suggestions for did-you-mean hints; returns `[]` on any failure.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/cli:patch_create_cmd fingerprint=9d5a2ec666530f0810063cc7779dd2aa454e05b5371ae6c5612fcd668245769f body_fp=9e4244a12a3d8bfacaec04dd629867ed11fde0413e47c368e44455a4f945317d source_ref=a926c793af5e1f338acdc176a5faae767217b646 role=api -->
 Creates a fire-and-forget edit patch against a symbol in the trie graph store.
 
 - `--gone`: records the note via `store.add_patch(..., kind="delete", require_symbol=False)` instead of an FK-constrained insert — routes through the store (not the pending-intent file)
+- On `KeyError`, calls `_close_qname_suggestions` for fuzzy did-you-mean hints before exiting 1
 - Validates that the symbol exists in the graph database before creating the patch (non-`--gone` path)
 - Uses a stable CLI session ID for tracking related patches together
 - Returns the patch ID after successful creation on both paths
@@ -1127,7 +1134,7 @@ Stage a rename of an existing symbol for later application by `trie patch apply`
 - Creates a rename patch in the graph database with optional reason
 - Reports the number of existing references that will need updating
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:patch_apply_cmd fingerprint=47f2d4fed10e1a103beee083a710c3efc06b61eb2a95254c6e12b5d0c036965a body_fp=3cd7f7b8dbcf67288f85b6162c06058accd9c3bad1e38bd85554b91a300fac70 source_ref=b1cd8673daa7f27bf82a8377747312a95d250581 role=api -->
+<!-- trie:section symbol=trie/cli:patch_apply_cmd fingerprint=5f4eda920305e3f49d4bdc0ce8cabd318f66cefe003c63997bc88e66d9ae1e84 body_fp=3cd7f7b8dbcf67288f85b6162c06058accd9c3bad1e38bd85554b91a300fac70 source_ref=a926c793af5e1f338acdc176a5faae767217b646 role=api -->
 Archive pending patch notes as intent via `record_intent` — always the `record` path, no code generation.
 
 - `--note`: session-level unifying intent for the apply run.

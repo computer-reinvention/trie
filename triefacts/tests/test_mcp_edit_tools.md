@@ -1,8 +1,8 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: tests/test_mcp_edit_tools.py
 file_fingerprint: 4ee5c539e04f38d8d6ee284e1d6f4438ab2465963ebd1a402f589a19f16c2a8e
-last_synced_at: '2026-07-29T18:32:23Z'
+last_synced_at: '2026-07-29T23:18:10Z'
 description: 'Tests for the MCP edit tool surface: patch/create/delete/rename/preview/list.'
 defines:
 - kind: module

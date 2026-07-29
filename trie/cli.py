@@ -3791,6 +3791,25 @@ class _RichApplyProgress:
         self.console.print("  [green]✓[/green] project consistent")
 
 
+def _close_qname_suggestions(store: Store, qname: str, *, n: int = 3) -> list[str]:
+    """Fuzzy-match a missed qname against the graph for did-you-mean hints.
+
+    A `not_found` on the patch path is far more often a hand-built/guessed
+    qname than a genuinely removed symbol (module-level constants and methods
+    are the usual traps), so the error message leads with close matches.
+    Best-effort: returns [] on any failure rather than masking the real error.
+    """
+    try:
+        from rapidfuzz import fuzz, process
+
+        hits = process.extract(
+            qname, store.all_qualified_names(), scorer=fuzz.WRatio, limit=n, score_cutoff=45
+        )
+        return [h[0] for h in hits]
+    except Exception:
+        return []
+
+
 @patch_app.command("create")
 def patch_create_cmd(
     ctx: typer.Context,
@@ -3830,9 +3849,16 @@ def patch_create_cmd(
             return
         patch_id = store.add_patch(qname, note, reason, session_id)
     except KeyError:
-        reporter.error(
-            f"symbol {qname!r} not found in the graph"
-            " — if it was removed, use --gone to record the note directly"
+        # A wrong qname is far more often a guess/typo than a removed symbol:
+        # suggest close matches first (hand-built qnames are the documented
+        # trap), and mention --gone only as the removal escape hatch.
+        suggestions = _close_qname_suggestions(store, qname)
+        reporter.error(f"symbol {qname!r} not found in the graph")
+        if suggestions:
+            reporter.info("  did you mean: " + "  ".join(suggestions))
+        reporter.info(
+            "  (wrong name? look it up with `trie grep --name <fragment>`; "
+            "actually removed? re-run with --gone)"
         )
         raise typer.Exit(code=1) from None
     finally:
@@ -4129,10 +4155,10 @@ def patch_apply_cmd(
         raise typer.Exit(code=1)
     if envelope.get("recorded", 0) == 0:
         reporter.info("no pending patches to record")
-        return
-    reporter.success(f"recorded intent for {envelope['recorded']} symbol(s) to the session log")
-    for q in envelope.get("symbols", []):
-        reporter.console.print(f"  [cyan]{q}[/cyan]")
+    else:
+        reporter.success(f"recorded intent for {envelope['recorded']} symbol(s) to the session log")
+        for q in envelope.get("symbols", []):
+            reporter.console.print(f"  [cyan]{q}[/cyan]")
     uncovered = envelope.get("uncovered")
     if uncovered:
         reporter.warn(

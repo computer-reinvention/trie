@@ -128,7 +128,18 @@ def record_intent(
     total = len(unapplied) + create_count
 
     if total == 0:
-        return {"ok": True, "mode": "record", "recorded": 0, "symbols": []}
+        # Nothing staged — but still answer "what would the gate say?", so the
+        # lazy-but-correct flow works from zero: edit → patch_apply → read the
+        # uncovered list → stage exactly those. Without this, an empty queue
+        # silently skipped the coverage report and hid the worklist.
+        envelope: dict = {"ok": True, "mode": "record", "recorded": 0, "symbols": []}
+        envelope.update(_coverage_report(store, config, project_root))
+        if envelope.get("uncovered"):
+            envelope["next"] = (
+                "Nothing was staged, and these touched symbols have no note on "
+                "record — stage a patch note for each, then patch_apply."
+            )
+        return envelope
     if total > 1 and not session_note_ok(session_note):
         return {
             "ok": False,
@@ -158,22 +169,29 @@ def record_intent(
         ),
     }
 
-    # Apply-time coverage feedback: run the same evaluation the pre-commit
-    # gate will, so an agent learns about touched-but-unnoted symbols NOW
-    # (one patch call away) instead of at commit time (one failed commit
-    # away). Advisory — evaluation failures never poison a successful seal.
+    envelope.update(_coverage_report(store, config, project_root))
+    if envelope.get("uncovered"):
+        envelope["next"] = (
+            "Intent sealed, but these touched symbols still have no note and "
+            "would fail the commit gate: stage a patch note for each, then "
+            "patch_apply again."
+        )
+
+    return envelope
+
+
+def _coverage_report(store: Store, config: Config, project_root: Path) -> dict:
+    """Apply-time coverage feedback: run the same evaluation the pre-commit
+    gate will, so an agent learns about touched-but-unnoted symbols NOW (one
+    patch call away) instead of at commit time (one failed commit away).
+
+    Returns `{"uncovered": [...]}` or `{}` — advisory by design: evaluation
+    failures never poison the apply that just succeeded.
+    """
     try:
         from trie.intent_gate import evaluate
 
         report = evaluate(project_root, config, store)
-        envelope["uncovered"] = sorted(t.qname for t in report.uncovered)
-        if envelope["uncovered"]:
-            envelope["next"] = (
-                "Intent sealed, but these touched symbols still have no note and "
-                "would fail the commit gate: stage a patch note for each, then "
-                "patch_apply again."
-            )
+        return {"uncovered": sorted(t.qname for t in report.uncovered)}
     except Exception:
-        pass
-
-    return envelope
+        return {}

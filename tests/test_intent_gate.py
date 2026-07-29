@@ -170,3 +170,30 @@ def test_gate_is_silent_outside_git(tmp_path: Path) -> None:
     (tmp_path / "mod.py").write_text("def f():\n    return 1\n")
     config = Config.from_dict({})
     assert touched_symbols(tmp_path, config) == []
+
+
+def test_record_intent_empty_queue_still_reports_uncovered(tmp_path: Path) -> None:
+    """The lazy-but-correct flow must work from zero: edit → patch_apply (with
+    nothing staged) → read the uncovered worklist. An empty queue used to
+    early-return without coverage info, hiding the worklist until commit time."""
+    from trie.edits.pipeline import record_intent
+
+    config, repo = _repo(tmp_path)
+    (repo / "mod.py").write_text(
+        "import os\n\n\ndef alpha():\n    return 42\n\n\ndef beta():\n    return 2\n"
+    )
+
+    db = repo / ".trie" / "graph.db"
+    db.parent.mkdir(exist_ok=True)
+    store = Store(db)
+    try:
+        store.upsert_file(path="mod.py", fingerprint="fp")
+        store.replace_file_symbols("mod.py", extract_symbols(repo / "mod.py", repo))
+
+        envelope = record_intent(store, config, repo, session_note="")
+        assert envelope["ok"]
+        assert envelope["recorded"] == 0
+        assert envelope["uncovered"] == ["mod:alpha"]
+        assert "stage a patch note" in envelope["next"]
+    finally:
+        store.close()

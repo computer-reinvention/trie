@@ -1,8 +1,8 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: tests/test_reporter.py
 file_fingerprint: 2687fddcd8fd3190739e2dfc9f7de9cc4c857a52f2ef14254e74a34b8f2eab2b
-last_synced_at: '2026-07-29T18:38:48Z'
+last_synced_at: '2026-07-29T23:18:12Z'
 defines:
 - kind: module
   qualified_name: tests/test_reporter:__module__

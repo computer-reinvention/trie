@@ -346,11 +346,23 @@ class TrieTools:
         try:
             patch_id = self.store.add_patch(qname, payload_note, payload_reason, self._session_id)
         except KeyError:
+            # A missed qname is far more often hand-built/guessed than a
+            # genuinely removed symbol — lead with did-you-mean candidates so
+            # the agent recovers in zero extra round trips.
+            close = _close_qname_matches(qname, self.store.all_qualified_names())
+            suggestion = (
+                f"Did you mean: {', '.join(close)}? "
+                if close
+                else "Use grep({'name_contains': '...'}) to find the exact qname. "
+            )
             return _error(
                 "not_found",
                 f"Symbol {qname!r} not found in the graph.",
-                "Use grep({'name_contains': '...'}) to find the exact qname.",
-                fix={"tool": "patch", "args": {"qname": qname, "note": note or ""}},
+                suggestion + "For a removed symbol, use delete intent (patch create --gone).",
+                fix={
+                    "tool": "patch",
+                    "args": {"qname": close[0] if close else qname, "note": note or ""},
+                },
             )
         detail = self.store.get_symbol_detail(qname)
         return {
@@ -439,9 +451,11 @@ class TrieTools:
                     results.append(entry)
                     staged += 1
             except KeyError:
-                results.append(
-                    {"index": idx, "qname": qname, "ok": False, "error": "symbol not found"}
-                )
+                close = _close_qname_matches(qname, self.store.all_qualified_names())
+                entry = {"index": idx, "qname": qname, "ok": False, "error": "symbol not found"}
+                if close:
+                    entry["did_you_mean"] = close
+                results.append(entry)
         pending = len(self.store.get_patched_qnames()) + sum(
             len(v) for v in self.store.get_create_patches_grouped().values()
         )

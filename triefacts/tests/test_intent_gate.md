@@ -1,12 +1,12 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: tests/test_intent_gate.py
-file_fingerprint: f8ec0c89fc8093e01f605eb078bf4bacc537f249a7ebafa71877d49e1b258723
-last_synced_at: '2026-07-29T17:54:43Z'
+file_fingerprint: c6b7991bd20e8c38745e6cc17ec3c3f4d9ad1c0eef6abc6b068d2f3ae64323fe
+last_synced_at: '2026-07-29T23:17:26Z'
 defines:
 - kind: module
   qualified_name: tests/test_intent_gate:__module__
-  lines: 1-173
+  lines: 1-200
 - kind: function
   qualified_name: tests/test_intent_gate:_repo
   lines: 12-24
@@ -28,8 +28,11 @@ defines:
 - kind: function
   qualified_name: tests/test_intent_gate:test_gate_is_silent_outside_git
   lines: 168-172
+- kind: function
+  qualified_name: tests/test_intent_gate:test_record_intent_empty_queue_still_reports_uncovered
+  lines: 175-199
 incoming_refs: 0
-outgoing_refs: 15
+outgoing_refs: 17
 ---
 <!-- trie:section symbol=tests/test_intent_gate:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=48fc5e12071387fc4977e174d8fbdc11d23878395a12a7372934c033f3b261fd source_ref=945539ac71d6c4a1e128b30da5bb269e87eddcdf role=test -->
 Integration tests for `trie.intent_gate`, covering `touched_symbols` and `evaluate` against temporary git repositories.
@@ -56,4 +59,7 @@ Verify that `record_intent` returns uncovered symbol names in the envelope and c
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_intent_gate:test_gate_is_silent_outside_git fingerprint=af9a0fc394ebd565d308889e9b1a8cb216b0820cad3c6599dccd031221817197 body_fp=7285d6d5f18bbb6caf0752e59fbc0f312b9c1176214e781172d0b82ca61ae777 source_ref=12283969949cabe34de0812d48c53ab1ee7c7c4d role=test -->
 Assert that `touched_symbols` returns an empty list when the given directory is not a Git repository.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_intent_gate:test_record_intent_empty_queue_still_reports_uncovered fingerprint=396c88b18c275494e82150e8bd699449c1f0361fbb2db690cb643992d1a44cf3 body_fp=c651b6a8ba80dcbc3b62bc2e2f89b7c04f40f7922184e06f1c686197cdccd708 source_ref=5148c4884c0ae6159f6587bd38df45463ccbe306 role=test -->
+Verify that `record_intent` reports uncovered symbols even when the patch queue is empty, preventing silent early-return before commit time.
 <!-- trie:end -->
