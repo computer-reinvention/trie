@@ -37,7 +37,12 @@ include = ["src/**/*.py"]
 exclude = ["**/tests/**", "**/__pycache__/**"]
 ```
 
-Languages indexed today: Python and TypeScript/TSX.
+Languages indexed today: Python, TypeScript/TSX, JavaScript/JSX, Go, Rust, C, and Lua.
+
+Reference edges are tree-sitter first; an optional per-language language server
+(basedpyright/pyright, typescript-language-server, gopls, rust-analyzer, clangd,
+lua-language-server — discovered on PATH) adds type-aware method/member-dispatch
+edges. Missing server → tree-sitter-only for that language.
 
 ## 3. Preview the bill
 
@@ -129,7 +134,10 @@ variations.
   short note — "extracted helper, no behaviour change" is a valid intent.
 - **PR diffs are noisy**: add `triefacts/** linguist-generated=true` to
   `.gitattributes` — GitHub will collapse the triefact tree by default.
-- **The cascade missed a connection**: reference detection is
-  tree-sitter + import based. It catches `from foo import bar` and
-  same-module matches but can miss dynamic dispatch. SCIP/type-aware
-  precision is on the roadmap.
+- **The cascade missed a connection**: reference detection is tree-sitter
+  first (imports, same-module calls, containment) plus an optional
+  type-aware LSP pass that resolves method/member dispatch
+  (`obj.method()`, `self.helper()`). If a connection is still missing,
+  check that the language's server is installed and on PATH — without it
+  that language is tree-sitter-only. Truly dynamic dispatch
+  (`getattr`-style) is still out of reach for both passes.

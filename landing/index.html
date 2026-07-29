@@ -70,7 +70,7 @@
           <li>Plain Markdown, versioned with the code</li>
           <li>Offline commit gates</li>
           <li>Nothing to host</li>
-          <li>Python &amp; TypeScript</li>
+          <li>Python, TypeScript, JavaScript, Go, Rust, C, Lua</li>
         </ul>
       </div>
     </section>
@@ -351,7 +351,10 @@ rejected with 401 before the handler runs.
           <h2>Install.</h2>
           <p>
             Python 3.11+, <code>uv</code>, <code>ripgrep</code>. An Anthropic
-            key for prose generation; the gates run offline.
+            key for prose generation; the gates run offline. Optionally, a
+            language server per language (pyright, gopls, rust-analyzer, clangd,
+            &hellip;) for type-aware reference precision &mdash; trie falls back
+            to tree-sitter without one.
           </p>
         </div>
 
