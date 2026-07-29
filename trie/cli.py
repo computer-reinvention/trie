@@ -1421,7 +1421,7 @@ def diff_cmd(
 
     from rich.markdown import Markdown
 
-    console.print(Markdown(narrative))
+    console.print(Markdown(narrative.as_markdown()))
     console.print(
         f"[dim]{len(data.applied)} applied, {len(data.pending)} pending patch note(s);"
         f" diff vs {data.base}[/dim]"
@@ -1518,7 +1518,7 @@ def _run_digest_write(
     if getattr(config.diff, "narrative", True) and not raw:
         try:
             client = make_client(model or config.models.cascade, sync_cfg=config.sync)
-            narrative = synthesize_narrative(data, client)
+            narrative = synthesize_narrative(data, client).as_markdown()
         except Exception:
             narrative = ""
 
