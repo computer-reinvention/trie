@@ -1,8 +1,8 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: tests/test_edits_pipeline.py
 file_fingerprint: 50ddfb20d295e8396ece5f98dcbf719d13b91b115d6325bf82aded6883674c9f
-last_synced_at: '2026-07-29T17:55:34Z'
+last_synced_at: '2026-07-29T23:18:11Z'
 description: 'Spec for the slimmed patch pipeline: an intent store, not a code generator.'
 defines:
 - kind: module
