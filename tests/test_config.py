@@ -17,6 +17,41 @@ def test_defaults_when_empty_dict():
     assert cfg.cascade.hub_symbol_threshold == 20
 
 
+def test_resolver_defaults():
+    cfg = Config.from_dict({})
+    assert cfg.resolver.enabled is True
+    assert cfg.resolver.disabled_languages == []
+    assert cfg.resolver.servers == {}
+
+
+def test_resolver_overrides():
+    cfg = Config.from_dict(
+        {
+            "resolver": {
+                "enabled": False,
+                "disabled_languages": ["rust", "go"],
+                "servers": {"python": ["basedpyright-langserver", "--stdio"]},
+            }
+        }
+    )
+    assert cfg.resolver.enabled is False
+    assert cfg.resolver.disabled_languages == ["rust", "go"]
+    assert cfg.resolver.servers["python"] == ["basedpyright-langserver", "--stdio"]
+
+
+def test_resolver_config_gates_specs():
+    from trie.parse.resolvers import specs
+
+    try:
+        specs.configure_resolver(enabled=False)
+        assert specs.python_spec() is None
+        assert specs.typescript_spec() is None
+        specs.configure_resolver(enabled=True, disabled_languages=["c"])
+        assert specs.c_spec() is None
+    finally:
+        specs.configure_resolver()  # reset to defaults
+
+
 def test_overrides_merge_per_section():
     cfg = Config.from_dict(
         {

@@ -1,13 +1,13 @@
 ---
 trie_version: 0.1.9
 source: trie/parse/resolvers/lsp_resolver.py
-file_fingerprint: d01a8b4b73a6391eb593526cdd8778798617bda7629311b2ce3ffdee0089a5f8
-last_synced_at: '2026-07-29T00:05:33Z'
+file_fingerprint: b3e190e71b1c526e835ad200ddb8db11b8dc96f8a2b91ddfe33df32f052b2fd8
+last_synced_at: '2026-07-29T01:48:46Z'
 description: Generic, language-agnostic `ReferenceResolver` backed by an LSP server.
 defines:
 - kind: module
   qualified_name: trie/parse/resolvers/lsp_resolver:__module__
-  lines: 1-218
+  lines: 1-267
 - kind: constant
   qualified_name: trie/parse/resolvers/lsp_resolver:CallSite
   lines: 38-38
@@ -16,48 +16,51 @@ defines:
   lines: 42-42
 - kind: class
   qualified_name: trie/parse/resolvers/lsp_resolver:LspServerSpec
-  lines: 46-65
+  lines: 46-71
 - kind: method
   qualified_name: trie/parse/resolvers/lsp_resolver:LspServerSpec.is_available
-  lines: 63-65
+  lines: 69-71
 - kind: class
   qualified_name: trie/parse/resolvers/lsp_resolver:LspResolver
-  lines: 68-155
+  lines: 74-204
 - kind: method
   qualified_name: trie/parse/resolvers/lsp_resolver:LspResolver.__init__
-  lines: 71-76
+  lines: 77-85
 - kind: method
   qualified_name: trie/parse/resolvers/lsp_resolver:LspResolver.name
-  lines: 79-80
+  lines: 88-89
 - kind: method
   qualified_name: trie/parse/resolvers/lsp_resolver:LspResolver.resolve_file
-  lines: 82-93
+  lines: 91-102
 - kind: method
   qualified_name: trie/parse/resolvers/lsp_resolver:LspResolver._client_for
-  lines: 95-102
+  lines: 104-111
+- kind: method
+  qualified_name: trie/parse/resolvers/lsp_resolver:LspResolver._await_ready
+  lines: 113-149
 - kind: method
   qualified_name: trie/parse/resolvers/lsp_resolver:LspResolver._resolve_file_inner
-  lines: 104-149
+  lines: 151-198
 - kind: method
   qualified_name: trie/parse/resolvers/lsp_resolver:LspResolver.close
-  lines: 151-155
+  lines: 200-204
 - kind: function
   qualified_name: trie/parse/resolvers/lsp_resolver:_symbols_by_line
-  lines: 158-169
+  lines: 207-218
 - kind: function
   qualified_name: trie/parse/resolvers/lsp_resolver:_target_qname
-  lines: 172-191
+  lines: 221-240
 - kind: function
   qualified_name: trie/parse/resolvers/lsp_resolver:_file_symbols_by_line
-  lines: 194-207
+  lines: 243-256
 - kind: function
   qualified_name: trie/parse/resolvers/lsp_resolver:_uri_to_path
-  lines: 210-214
+  lines: 259-263
 - kind: constant
   qualified_name: trie/parse/resolvers/lsp_resolver:__all__
-  lines: 217-217
+  lines: 266-266
 incoming_refs: 9
-outgoing_refs: 8
+outgoing_refs: 9
 ---
 <!-- trie:section symbol=trie/parse/resolvers/lsp_resolver:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=f2729d82dc68371cccbd25b017140aecb079ffc94f8389b457e123bab863107e source_ref=3be80bbceaf2380ed1dd92b08cafab72d7534c55 role=orchestration -->
 Language-agnostic `ReferenceResolver` backed by an LSP server, resolving member-call edges that tree-sitter alone cannot derive.
@@ -73,7 +76,7 @@ Type alias for a 0-based `(line, character)` position identifying a member-call 
 <!-- trie:section symbol=trie/parse/resolvers/lsp_resolver:CallSiteExtractor fingerprint=a8f182633ed345f7c91813ca2fac2976ab19f7374d1bc13da2f93a49d27cc77a body_fp=f9601ffaa6f06d5f51b2ca77cc263100b1ba238cbe417b367c43cb1797948d28 source_ref=3be80bbceaf2380ed1dd92b08cafab72d7534c55 role=model -->
 Type alias for a callable that accepts raw file bytes and yields `CallSite` positions to resolve.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/resolvers/lsp_resolver:LspServerSpec fingerprint=500999689d7f5cb3899768233995dd4c55e8066a0dfc0456c6f760d69771871b body_fp=a6b200196aeac5a10d2345c43ab12dc0f13425df5c9a040cda1579d31d20d5c8 source_ref=192b085a4de586615b738fdd3c7ec0a90135239b role=model -->
+<!-- trie:section symbol=trie/parse/resolvers/lsp_resolver:LspServerSpec fingerprint=dfd873f85d33d1cff5aaf8e55df39bc2b7d8a8fb174804a09f5c7ef0f977a64a body_fp=782d8ec45f0a93dbe19207f94acd13c03542e0e579a20d76506325395efeac14 source_ref=4735bbaade7f55f007c85927f5dd3a99e8e6f2da role=model -->
 Frozen dataclass bundling all language-specific configuration needed to drive one LSP server for member-call resolution.
 
 - `name`: resolver identity string used for telemetry (e.g. `"pyright"`)
@@ -82,21 +85,23 @@ Frozen dataclass bundling all language-specific configuration needed to drive on
 - `call_sites`: language-specific extractor yielding member-call sites from raw file bytes
 - `init_timeout`: seconds to wait for the LSP initialize handshake; defaults to `15.0`
 - `warmup`: seconds to sleep after `didOpen` before querying; defaults to `0.0`
+- `ready_timeout`: max seconds to poll the first call site until the server returns a definition; defaults to `0.0` (no polling)
 - `is_available()`: returns `True` if `command[0]` is found on `PATH`
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/resolvers/lsp_resolver:LspServerSpec.is_available fingerprint=3da08adb8d99c293c0f1d2119418318521e43df83854896945caf451102eab10 body_fp=f2adfa5ac4ceb4abd96adf70ba8247d579e5f78a103b2682ead8a06f451d98d9 source_ref=3be80bbceaf2380ed1dd92b08cafab72d7534c55 role=util -->
 Returns `True` if `LspServerSpec.command` is non-empty and its first element resolves via `shutil.which`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/resolvers/lsp_resolver:LspResolver fingerprint=52ffdf3e75c97d61d6da4fe31a781708256a54297771fcb64f2e188a8fc8780a body_fp=7cfa1c0c2d65f7df6b4cf1dd397267ce2e034a40f3f2b1550148e3335ec8abcb source_ref=192b085a4de586615b738fdd3c7ec0a90135239b role=domain -->
+<!-- trie:section symbol=trie/parse/resolvers/lsp_resolver:LspResolver fingerprint=31266820765cfc9fd95453fbbec805c9c5204b4a986f14faa1d1c8c98856c6d2 body_fp=8124fd6aeb081343b7b29f43d57c186d5ac0446bee331c552030308ff6059fce source_ref=4735bbaade7f55f007c85927f5dd3a99e8e6f2da role=domain -->
 Resolves member-call `Reference` edges for a source file by driving a language server over LSP via `LspClient`.
 
 - `spec`: `LspServerSpec` supplying the server command, language ID, call-site extractor, init timeout, and optional warmup delay.
 - `resolve_file`: returns `[]` on any `LspError` or unexpected exception, never raises.
 - `_clients`: one `LspClient` per resolved source-root path, lazily started and reused across files to amortise server warm-up cost; client is constructed with `spec.init_timeout`.
+- `_ready`: set of source-root keys whose server has passed the readiness probe; limits the `_await_ready` polling cost to once per workspace.
 - `close`: must be called to terminate all cached server processes.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/resolvers/lsp_resolver:LspResolver.__init__ fingerprint=6497dbfabc7b5d240ffa239ac8550a339b0ccd43e99b55a5bec83230b9838fad body_fp=325fa98761567ea4dede78226c85702645d1db7ede0034e6c5152c3056a4cf8a source_ref=3be80bbceaf2380ed1dd92b08cafab72d7534c55 role=domain -->
-Initialize `LspResolver` with the given `LspServerSpec`, setting up an empty per-root `LspClient` cache.
+<!-- trie:section symbol=trie/parse/resolvers/lsp_resolver:LspResolver.__init__ fingerprint=999d40b53770a405c971151f29372cf4105bec5ac87e83e09743cca774e4ede9 body_fp=996730683e0e48a4f9ffa3682d470d8530ff97d94f8823fcf0c00f9402fbc365 source_ref=4735bbaade7f55f007c85927f5dd3a99e8e6f2da role=domain -->
+Initialize `LspResolver` with the given `LspServerSpec`, setting up an empty per-root `LspClient` cache and an empty set of ready source roots.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/resolvers/lsp_resolver:LspResolver.name fingerprint=7c0cdbac5b2dbb5d3e2d04c41ce73fe13d43032593f87ca9bd7402e63c005888 body_fp=3030586c71ec3182e50ee23d01fa2c72505c00c3080de5031c2eb70c7a81d3c3 source_ref=3be80bbceaf2380ed1dd92b08cafab72d7534c55 role=model -->
 `LspResolver.name` is the resolver's identity string, forwarded from its `LspServerSpec`.
@@ -107,8 +112,15 @@ Run `LspResolver`'s full LSP-backed resolution for one file, returning `[]` on a
 <!-- trie:section symbol=trie/parse/resolvers/lsp_resolver:LspResolver._client_for fingerprint=b576ad5ea10cb9380737c159f0d81cf5d169771aaf78078ddf65431ccc3e70aa body_fp=0af15d48252edac1c26f7b31d8830125467d32d29263ca6eef00a8d26fa04400 source_ref=192b085a4de586615b738fdd3c7ec0a90135239b role=orchestration -->
 Return a cached `LspClient` for the given `source_root`, creating and starting one with `spec.init_timeout` if none exists.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/resolvers/lsp_resolver:LspResolver._resolve_file_inner fingerprint=a762af9710673b82f510feacc88e9a17f55c2dba9085dfd1f2057e336608d374 body_fp=4364ca6d7ea697b3c219f16a0edf32c51a73eb8c88f7a8876650981561729ea0 source_ref=192b085a4de586615b738fdd3c7ec0a90135239b role=domain -->
-Core implementation of `LspResolver.resolve_file`; opens the file via LSP, optionally sleeps for `spec.warmup` seconds, queries `textDocument/definition` at each call site, and maps results to project-internal `Reference` edges.
+<!-- trie:section symbol=trie/parse/resolvers/lsp_resolver:LspResolver._await_ready fingerprint=12625e540844e19423f25cbe11f2182f0c75f6fa75c7bd5b7cb48fc7820f77e2 body_fp=cd1affd060d2f145515fe6f34ff0476b69ecbedaf17bd10f9a0b0e5ced69ee27 source_ref=4735bbaade7f55f007c85927f5dd3a99e8e6f2da role=domain -->
+Poll the first call site with exponential backoff until the LSP server returns a definition or `ready_timeout` is exhausted, then mark the workspace ready.
+
+- `sites`: only the first entry is probed; no-op if empty.
+- `ready_timeout ≤ 0`: returns immediately, skipping all polling.
+- Workspace is marked ready regardless of whether a definition was found, so the probe runs at most once per `(server, workspace)` pair.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/parse/resolvers/lsp_resolver:LspResolver._resolve_file_inner fingerprint=162ebcb599b73be42cf509698b798138cebe6facb9f6d352eb8d49dc4b6f0556 body_fp=f2b784e1493e5a178849335ee5ce5cf4783cf9eeb67b2dc6e987da0797b3a397 source_ref=4735bbaade7f55f007c85927f5dd3a99e8e6f2da role=domain -->
+Core implementation of `LspResolver.resolve_file`; opens the file via LSP, optionally sleeps for `spec.warmup` seconds, polls for server readiness via `_await_ready`, queries `textDocument/definition` at each call site, and maps results to project-internal `Reference` edges.
 
 - `symbols`: caller-supplied symbols for the file, used to map source lines to qnames.
 - Returns one `Reference(kind="calls")` per unique `(src_qname, tgt_qname)` pair; skips self-references and off-project definitions.

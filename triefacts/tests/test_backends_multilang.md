@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_backends_multilang.py
 file_fingerprint: 2aee397fb038c527ff9493627123ea5d0acd63c6f666649327f5f43c629b7443
-last_synced_at: '2026-07-29T00:05:55Z'
+last_synced_at: '2026-07-29T01:48:58Z'
 description: Symbol + tree-sitter reference extraction for the Go/Rust/C/Lua backends.
 defines:
 - kind: module

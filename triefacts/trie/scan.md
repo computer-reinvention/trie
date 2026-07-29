@@ -1,12 +1,12 @@
 ---
 trie_version: 0.1.9
 source: trie/scan.py
-file_fingerprint: eff8da70c2e94c57499a045e82c240e95445373c0211cf18e2e7e13b3a62f5be
-last_synced_at: '2026-07-29T00:06:31Z'
+file_fingerprint: aaeaef853270182b1b11e7777c18260a49daedf84eaabede5d1047a45eb8fdeb
+last_synced_at: '2026-07-29T01:48:24Z'
 defines:
 - kind: module
   qualified_name: trie/scan:__module__
-  lines: 1-111
+  lines: 1-112
 - kind: class
   qualified_name: trie/scan:ScanResult
   lines: 16-24
@@ -15,9 +15,9 @@ defines:
   lines: 27-28
 - kind: function
   qualified_name: trie/scan:scan_project
-  lines: 31-110
+  lines: 31-111
 incoming_refs: 22
-outgoing_refs: 5
+outgoing_refs: 6
 ---
 <!-- trie:section symbol=trie/scan:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=707e1d430cd869746b7ed5377a65ba2e430bacec467f40f67f40b4d789502e8c source_ref=ba0d38d68c99a578b6395e4b44522d5825f9668d role=source-parsing -->
 Scans Python projects to extract and persist symbol definitions and references with incremental updates.
@@ -37,11 +37,12 @@ Contains metrics from scanning a project's source files for symbols and referenc
 <!-- trie:section symbol=trie/scan:file_fingerprint fingerprint=46c7c51a18ded3953f42cbf0478b0794532566079fd73b079dc9950d2c108e07 body_fp=8ad89667e91e786f56931ae31d6e18fd2fdd8bb2814d50034c3454f7ea014f85 source_ref=ba0d38d68c99a578b6395e4b44522d5825f9668d role=change-detection -->
 Computes SHA-256 hash of UTF-8 encoded text as hexadecimal string.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/scan:scan_project fingerprint=90ead9905aad5fc9127629afcbb79140862b3fc57d506439b232ca1bdf572aeb body_fp=40db81afbc1ccaa96931b8c91003d1a13de4feee2c6a97e0de834fed868e2fb8 source_ref=8b4c03492f968dc6f52c71fc4bee91ebbcdcfb79 role=orchestration -->
+<!-- trie:section symbol=trie/scan:scan_project fingerprint=c24bda287627db5eed11373586b8ec8aa7cc0e726d124b0f6bd173da024d44b0 body_fp=a38a53367bc89dfa5f83c1ccb6d191ae24628ad8e47165688a4422045ab3e4d0 source_ref=a6e0afc35d0e2d84b7f14f09afe81e988fa302f6 role=orchestration -->
 Walks the project, parses changed files, and persists symbols to the store with fingerprint-based change detection.
 
 - Files whose fingerprint matches stored value are skipped without re-parsing
 - Only files passing `registry.is_indexable` are included in the scan scope
+- Calls `registry.apply_resolver_config(config)` before scanning to configure resolvers
 - Files no longer in scope or on disk are removed with cascade deletion
 - Edges are regenerated from scratch on every scan due to potential symbol ID changes
 <!-- trie:end -->

@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: tests/test_resolver.py
 file_fingerprint: 5982bff93126b20f7a2847c08996f0c84839222f8f8e48d8e9b3fd9dfd96acfb
-last_synced_at: '2026-07-29T00:06:46Z'
+last_synced_at: '2026-07-29T01:49:06Z'
 description: Tests for the tree-sitter + LSP resolver seam.
 defines:
 - kind: module
