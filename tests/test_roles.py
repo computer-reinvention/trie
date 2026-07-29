@@ -75,6 +75,79 @@ def test_set_section_role_missing_symbol_returns_false():
 
 
 # ---------------------------------------------------------------------------
+# Role stability: an unchanged body must not let a re-classification churn the
+# role. The LLM's role output is non-deterministic; when the regenerated prose
+# is byte-identical to the previous section, the previous role is carried
+# forward so cascade/cosmetic re-syncs don't flip role=api ↔ role=orchestration.
+# ---------------------------------------------------------------------------
+
+
+def _roles_project(tmp_path: Path) -> tuple[Path, Config]:
+    (tmp_path / "trie.toml").write_text(
+        '[trie]\nversion = "0.2.0"\n'
+        '[scope]\ninclude = ["**/*.py"]\nexclude = ["**/__pycache__/**"]\n'
+        '[triefacts]\nroot = "triefacts"\nsource_root = "."\n'
+    )
+    (tmp_path / "svc.py").write_text("def serve():\n    return 1\n")
+    config, _ = Config.find_and_load(tmp_path)
+    return tmp_path, config
+
+
+def test_role_carried_forward_when_body_unchanged(tmp_path: Path):
+    from trie.sync.single_file import sync_single_file
+
+    root, config = _roles_project(tmp_path)
+    src = root / "svc.py"
+
+    # v1: body B, role "api".
+    sync_single_file(
+        src,
+        project_root=root,
+        config=config,
+        client=FakeTrieClient(output_body="## `serve`\n\nServes.", output_role="api"),
+    )
+    tf = TriefactFile.parse((root / "triefacts" / "svc.md").read_text())
+    assert tf.get_section("svc:serve").role == "api"
+
+    # v2: SAME body, but the classifier now says "orchestration". force=True so
+    # the diff-aware path doesn't short-circuit — we still regenerate, but the
+    # identical body must keep the original role.
+    sync_single_file(
+        src,
+        project_root=root,
+        config=config,
+        force=True,
+        client=FakeTrieClient(output_body="## `serve`\n\nServes.", output_role="orchestration"),
+    )
+    tf2 = TriefactFile.parse((root / "triefacts" / "svc.md").read_text())
+    assert tf2.get_section("svc:serve").role == "api", "role churned on unchanged body"
+
+
+def test_role_updates_when_body_changes(tmp_path: Path):
+    from trie.sync.single_file import sync_single_file
+
+    root, config = _roles_project(tmp_path)
+    src = root / "svc.py"
+
+    sync_single_file(
+        src,
+        project_root=root,
+        config=config,
+        client=FakeTrieClient(output_body="## `serve`\n\nOld.", output_role="api"),
+    )
+    # Different body this time → a genuine change → the new role wins.
+    sync_single_file(
+        src,
+        project_root=root,
+        config=config,
+        force=True,
+        client=FakeTrieClient(output_body="## `serve`\n\nNew.", output_role="orchestration"),
+    )
+    tf = TriefactFile.parse((root / "triefacts" / "svc.md").read_text())
+    assert tf.get_section("svc:serve").role == "orchestration"
+
+
+# ---------------------------------------------------------------------------
 # Taxonomy persistence.
 # ---------------------------------------------------------------------------
 
