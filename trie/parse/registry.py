@@ -57,6 +57,30 @@ def all_backends() -> tuple[LanguageBackend, ...]:
     return tuple(_BACKENDS)
 
 
+def apply_resolver_config(config) -> None:
+    """Push trie.toml's `[resolver]` settings into the resolver spec selectors.
+
+    Backends build their resolver lazily and cache it, so this also resets each
+    backend's resolver cache — a subsequent `resolver()` rebuilds it under the
+    new config. Called at the start of a scan so the parse layer stays
+    config-free by default while honouring project configuration when present.
+    """
+    from trie.parse.resolvers import specs
+
+    res = getattr(config, "resolver", None)
+    if res is None:
+        return
+    specs.configure_resolver(
+        enabled=res.enabled,
+        disabled_languages=res.disabled_languages,
+        servers=res.servers,
+    )
+    for b in _BACKENDS:
+        if hasattr(b, "_resolver_built"):
+            b._resolver_built = False
+            b._resolver = None
+
+
 def get_backend(name: str) -> LanguageBackend | None:
     """The backend registered under `name` (e.g. "python"), or None."""
     for b in _BACKENDS:

@@ -1,85 +1,119 @@
 ---
 trie_version: 0.1.9
 source: trie/parse/resolvers/specs.py
-file_fingerprint: 2b7232135e3f6a8040144b88b594e4b9523e4feee6a494195a8592f660e609a1
-last_synced_at: '2026-07-29T00:06:11Z'
+file_fingerprint: e0627c73baec64484adfd106641a70ed48f52c91d15db79bf3a80192807d19ce
+last_synced_at: '2026-07-29T01:48:52Z'
 description: "Per-language LSP server specs \u2014 the one place a new language is\
   \ registered."
 defines:
 - kind: module
   qualified_name: trie/parse/resolvers/specs:__module__
-  lines: 1-292
+  lines: 1-347
+- kind: constant
+  qualified_name: trie/parse/resolvers/specs:_ENABLED
+  lines: 23-23
+- kind: constant
+  qualified_name: trie/parse/resolvers/specs:_DISABLED_LANGUAGES
+  lines: 24-24
+- kind: constant
+  qualified_name: trie/parse/resolvers/specs:_SERVER_OVERRIDES
+  lines: 25-25
+- kind: function
+  qualified_name: trie/parse/resolvers/specs:configure_resolver
+  lines: 28-44
+- kind: function
+  qualified_name: trie/parse/resolvers/specs:_apply_config
+  lines: 47-54
 - kind: function
   qualified_name: trie/parse/resolvers/specs:_python_call_sites
-  lines: 18-23
+  lines: 57-62
 - kind: function
   qualified_name: trie/parse/resolvers/specs:_typescript_call_sites
-  lines: 26-37
+  lines: 65-76
 - kind: function
   qualified_name: trie/parse/resolvers/specs:_walk_attribute_calls
-  lines: 40-56
+  lines: 79-95
 - kind: function
   qualified_name: trie/parse/resolvers/specs:_walk_member_calls
-  lines: 59-75
+  lines: 98-114
 - kind: function
   qualified_name: trie/parse/resolvers/specs:_go_call_sites
-  lines: 78-98
+  lines: 117-137
 - kind: function
   qualified_name: trie/parse/resolvers/specs:_rust_call_sites
-  lines: 101-121
+  lines: 140-160
 - kind: function
   qualified_name: trie/parse/resolvers/specs:_c_call_sites
-  lines: 124-149
+  lines: 163-188
 - kind: function
   qualified_name: trie/parse/resolvers/specs:_lua_call_sites
-  lines: 152-176
+  lines: 191-215
 - kind: constant
   qualified_name: trie/parse/resolvers/specs:PYRIGHT_SPEC
-  lines: 179-184
+  lines: 218-223
 - kind: constant
   qualified_name: trie/parse/resolvers/specs:BASEDPYRIGHT_SPEC
-  lines: 186-191
+  lines: 225-230
 - kind: constant
   qualified_name: trie/parse/resolvers/specs:TYPESCRIPT_SPEC
-  lines: 193-198
+  lines: 232-237
 - kind: function
   qualified_name: trie/parse/resolvers/specs:python_spec
-  lines: 201-209
+  lines: 240-258
 - kind: function
   qualified_name: trie/parse/resolvers/specs:typescript_spec
-  lines: 212-214
+  lines: 261-264
 - kind: constant
   qualified_name: trie/parse/resolvers/specs:GO_SPEC
-  lines: 220-227
+  lines: 270-277
 - kind: constant
   qualified_name: trie/parse/resolvers/specs:RUST_SPEC
-  lines: 229-236
+  lines: 279-286
 - kind: constant
   qualified_name: trie/parse/resolvers/specs:C_SPEC
-  lines: 238-245
+  lines: 288-295
 - kind: constant
   qualified_name: trie/parse/resolvers/specs:LUA_SPEC
-  lines: 247-254
+  lines: 297-304
 - kind: function
   qualified_name: trie/parse/resolvers/specs:go_spec
-  lines: 257-259
+  lines: 307-310
 - kind: function
   qualified_name: trie/parse/resolvers/specs:rust_spec
-  lines: 262-264
+  lines: 313-316
 - kind: function
   qualified_name: trie/parse/resolvers/specs:c_spec
-  lines: 267-269
+  lines: 319-322
 - kind: function
   qualified_name: trie/parse/resolvers/specs:lua_spec
-  lines: 272-274
+  lines: 325-328
 - kind: constant
   qualified_name: trie/parse/resolvers/specs:__all__
-  lines: 277-291
+  lines: 331-346
 incoming_refs: 5
 outgoing_refs: 6
 ---
 <!-- trie:section symbol=trie/parse/resolvers/specs:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=9af97eb90c31e8b7bcbcaf6033061f919c64c365ddef2549f32f007b4f796153 source_ref=490e2b18f9c0beeb78883965246615da4373c0d6 role=config -->
 Register per-language `LspServerSpec` instances binding LSP server commands, language IDs, and tree-sitter call-site extractors for Python and TypeScript.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/parse/resolvers/specs:_ENABLED fingerprint=bc75b0349a5f890732098d9145b659cad8c080df5bd60a5da54f7a2d8a677b46 body_fp=5b06cc1da31d40e1bf01be6db2323c25a2558a9613840932f5e3385a72ca3b70 source_ref=6c06c7b10b7c4e22c232fe504e6f8e8229afcdd6 role=config -->
+Process-global flag; when `False`, every `*_spec()` selector returns `None`, disabling LSP resolution entirely.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/parse/resolvers/specs:_DISABLED_LANGUAGES fingerprint=1b8cb254c23c66f920a4d07077ebe9757476cb23007af21a38f568740df5146c body_fp=867662aa6922596640a09656205eb6867f49480391b282c03ed840da6bef01cb source_ref=6c06c7b10b7c4e22c232fe504e6f8e8229afcdd6 role=config -->
+Process-global set of language names excluded from LSP resolution; populated by `configure_resolver`.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/parse/resolvers/specs:_SERVER_OVERRIDES fingerprint=28d90a3086e1ed52700f340e765e0eab0c42413098ca79e38f15947c3f8dcea7 body_fp=0ba71091c9961acbb1d09a28f9572a4c1c80b286b5c8f822e8376d26c1bd2291 source_ref=6c06c7b10b7c4e22c232fe504e6f8e8229afcdd6 role=config -->
+Process-global map from language name to replacement LSP server command, injected by `configure_resolver` before parsing.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/parse/resolvers/specs:configure_resolver fingerprint=8109d45425d72179dfc7a502409179ce9725adab3be21d9672bf922666b103c0 body_fp=234e8910027b6c974107befafd4775ceedde4e36ee06662f14fe409c9ba692ab source_ref=6c06c7b10b7c4e22c232fe504e6f8e8229afcdd6 role=config -->
+Set process-global resolver configuration used by all `*_spec()` selectors.
+
+- `enabled=False` forces every spec selector to return `None` (tree-sitter only).
+- `disabled_languages`: language names whose spec selectors return `None`.
+- `servers`: maps a language name to a replacement server command list.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/parse/resolvers/specs:_apply_config fingerprint=fb6156e18e459d651f3e717d5b0c4a7d029b5d675d2ecc8c8a9e3c1d7ccd950e body_fp=d3f90af0e426166a3d57f746f120ad601be9555e99f1a6de6862ce980229135e source_ref=6c06c7b10b7c4e22c232fe504e6f8e8229afcdd6 role=config -->
+Return `None` if the language is globally or individually disabled, otherwise return the spec with its command replaced by any configured server override.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/resolvers/specs:_python_call_sites fingerprint=ed0551b2e658fd519428649b97642b6dcf0e161ec33abf9df7db6b9f7f3ce5ca body_fp=c0e9d27f14ff4876588cd02de5db59152cd73c6e87ac9a5fd020640f2c0ce342 source_ref=490e2b18f9c0beeb78883965246615da4373c0d6 role=parsing -->
 Parse `source` and return 0-based `(line, col)` positions for every `<expr>.<attr>(...)` attribute call in Python source.
@@ -121,36 +155,36 @@ Return 0-based `(line, col)` positions of each `t.m(...)` or `t:m(...)` member c
 <!-- trie:section symbol=trie/parse/resolvers/specs:TYPESCRIPT_SPEC fingerprint=65688ad05eeb5ac12e73421a1a2b9098ebb9adab2f5b723508651e90d07fbc7c body_fp=e8992dbb3070623c2c25e91c2ee2843812be0028c5a384ceb0c6be1d6cdf4909 source_ref=490e2b18f9c0beeb78883965246615da4373c0d6 role=config -->
 `LspServerSpec` binding `typescript-language-server --stdio` to the `typescript` language ID with `_typescript_call_sites` as the call-site extractor.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/resolvers/specs:python_spec fingerprint=ccb481b5782c566c817aa06afefd8da59c2605e2075b80444545b9b12612a8f1 body_fp=f7978cfbcc58b3a62f37575d695a0e2b6e045504c1e5bea503b34306c4ec45ef source_ref=c7ac435e9b947e60b7f6b8e2bf0cdb6fb6ab1858 role=config -->
-Return the first available Python `LspServerSpec`, preferring `BASEDPYRIGHT_SPEC` over `PYRIGHT_SPEC`, or `None` if neither is installed.
+<!-- trie:section symbol=trie/parse/resolvers/specs:python_spec fingerprint=96fc1ad209d46807b9fa45aec16bfdfab5308bcb5d34e6adb82105dc239d695e body_fp=8fc09f58833b128e5df3b9d817494edc006f3513185212483a374795a4e507dd source_ref=6c06c7b10b7c4e22c232fe504e6f8e8229afcdd6 role=config -->
+Return the first available Python `LspServerSpec`, honouring a `servers.python` command override and returning `None` if the resolver is disabled or no server is installed; otherwise prefers `BASEDPYRIGHT_SPEC` over `PYRIGHT_SPEC`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/resolvers/specs:typescript_spec fingerprint=ff137e937219d700b573d5f9e0eb6e5646e82791e53a4fe8bb6840d488796656 body_fp=d017b217b7378e420d4284c300e9aad445e5c0f57a2107cd65e48d341505ae38 source_ref=490e2b18f9c0beeb78883965246615da4373c0d6 role=config -->
-Return `TYPESCRIPT_SPEC` if the typescript-language-server binary is on PATH, otherwise `None`.
+<!-- trie:section symbol=trie/parse/resolvers/specs:typescript_spec fingerprint=9a65f998d4034b9c4bfc9d24048066b01dac70b0922ff279822079e0c672b83b body_fp=ec60b1d3c2904a66d94d73c9ffa5a5e6b53448759a87047f70e39894b2008fa7 source_ref=6c06c7b10b7c4e22c232fe504e6f8e8229afcdd6 role=config -->
+Return `TYPESCRIPT_SPEC` gated through `_apply_config`, or `None` if disabled or `typescript-language-server` is not on PATH.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/resolvers/specs:GO_SPEC fingerprint=1dd64ee24dc95e0e32bb0f9143c16085b749f7148364b97d217df6f3169f3c05 body_fp=7372c75ba5f45191e9fe0a0145d3dd3750105e55923066eb1ed0bdad89cfa356 source_ref=6c32e743b56c123c0ee5a83d6b4335e505711be4 role=config -->
-`LspServerSpec` for Go, binding `gopls` (stdio) to the Go call-site walker with a 30 s init timeout and 2 s warmup.
+<!-- trie:section symbol=trie/parse/resolvers/specs:GO_SPEC fingerprint=953d42759d95c7701356eb8949b276c65d97f699d8a543f9a4f22e08966aea73 body_fp=3c10ba7560ce42913cf7555a752289ee5c99ca581dd5d8145bf6c81e7e86ae2d source_ref=6c06c7b10b7c4e22c232fe504e6f8e8229afcdd6 role=config -->
+`LspServerSpec` for Go, binding `gopls` (stdio) to the Go call-site walker with a 30 s init timeout and 30 s ready timeout.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/resolvers/specs:RUST_SPEC fingerprint=c868902fde33ea5a2abc26421b2666ae54cc7218310adb65749fd640c00a4619 body_fp=65959935a1fef4dc14b15d6339d35c4680665545946071105a4705b04387e74d source_ref=6c32e743b56c123c0ee5a83d6b4335e505711be4 role=config -->
-`LspServerSpec` for `rust-analyzer` over stdio, with a 60 s init timeout and 3 s warmup before queries.
+<!-- trie:section symbol=trie/parse/resolvers/specs:RUST_SPEC fingerprint=6d6a8a0079cb0a530f8ded3703398d44d03a95fccc1430b3c08d258875f5264b body_fp=4c0f459af56940e0359470ce84f594eeab5b11258325c69b342ccbb45bd944ed source_ref=6c06c7b10b7c4e22c232fe504e6f8e8229afcdd6 role=config -->
+`LspServerSpec` for `rust-analyzer` over stdio, with a 90 s init timeout and 90 s ready timeout before queries.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/resolvers/specs:C_SPEC fingerprint=c351b8287ea7087b15fb95000095aff6ebf6bd2f86d970f36bd36b714ac8ba48 body_fp=0cdfafd77bf80dc0794017a46cd02841a27d9349d7f25067498f8fa339675b9a source_ref=6c32e743b56c123c0ee5a83d6b4335e505711be4 role=config -->
-`LspServerSpec` constant binding clangd to the C language with a 30 s init timeout and 1.5 s warmup.
+<!-- trie:section symbol=trie/parse/resolvers/specs:C_SPEC fingerprint=6924819c197d806b75b02b8c6a568d0f9a7a6b8c367406ca6370f0be39d449f0 body_fp=edf231c920678349b7b4ee5464f16bed31eb1c7a8d3d59c4207c7a594163aa6c source_ref=6c06c7b10b7c4e22c232fe504e6f8e8229afcdd6 role=config -->
+`LspServerSpec` constant binding clangd to the C language with a 30 s init timeout and 20 s ready timeout.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/resolvers/specs:LUA_SPEC fingerprint=716ad57f5415b16c9bb8e3419ce7afa41c95ee55067e7e1d3a711394a9e39d60 body_fp=3abbbd1ca31be6d6b22dd316a8e57d5190d92d327f761b9ab4ea734acaeb02b8 source_ref=6c32e743b56c123c0ee5a83d6b4335e505711be4 role=config -->
-`LspServerSpec` for Lua, binding `lua-language-server` over stdio with a 30 s init timeout and 1.5 s warmup.
+<!-- trie:section symbol=trie/parse/resolvers/specs:LUA_SPEC fingerprint=90657db296a3ec19a70063390d4debce0c1f5b914d0d2598983ea30346f16571 body_fp=320038ba57d584e94e428b31f75b31587a04550a386d412c170dc3a9ab3e430e source_ref=6c06c7b10b7c4e22c232fe504e6f8e8229afcdd6 role=config -->
+`LspServerSpec` for Lua, binding `lua-language-server` over stdio with a 30 s init timeout and 20 s ready timeout.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/resolvers/specs:go_spec fingerprint=4814218a1652fd1e9e1124eb16b30c53af06d674659f819b183a85d17aae4eec body_fp=2928bfc587666a820f28bf83a54b9f151d5e478a27d8a70fe25923bb76463e15 source_ref=6c32e743b56c123c0ee5a83d6b4335e505711be4 role=config -->
-Return `GO_SPEC` if `gopls` is found on PATH, otherwise `None`.
+<!-- trie:section symbol=trie/parse/resolvers/specs:go_spec fingerprint=d7496da704f5290d3c9913b9c6ced9eba3469dd03ec3997d7570b9144a594e27 body_fp=59c18ecf61d8a5bd7747346dda4f0539a6ac99d5595b2fd73c9e2d6cebe1ccff source_ref=6c06c7b10b7c4e22c232fe504e6f8e8229afcdd6 role=config -->
+Return `GO_SPEC` (with any configured overrides applied) if `gopls` is found on PATH and the resolver is enabled, otherwise `None`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/resolvers/specs:rust_spec fingerprint=df89aab21b9e311cb8b7d91f2a223de11b7bbb16cd636303478e4bda57bcf66d body_fp=272eebad8c80638b9ace482cbec36a28dd1771423216c0bfb6d61d8774ce296c source_ref=6c32e743b56c123c0ee5a83d6b4335e505711be4 role=config -->
-Return `RUST_SPEC` if `rust-analyzer` is on PATH, otherwise `None`.
+<!-- trie:section symbol=trie/parse/resolvers/specs:rust_spec fingerprint=81bf238cd95fb4fc46ee3f5e6c1ec95ac40f399edf3e53566e1571fa71119cb1 body_fp=663e955b62cdce0216aa4cc3986f9f8d66860a2a1fe5e79fc49b096a5ee2b585 source_ref=6c06c7b10b7c4e22c232fe504e6f8e8229afcdd6 role=config -->
+Return `RUST_SPEC` (after applying config overrides) if `rust-analyzer` is on PATH and the resolver is enabled, otherwise `None`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/resolvers/specs:c_spec fingerprint=afcb8e4942bc1452b52adb0457dc8c2d803c0278e555905464148f818398d556 body_fp=d6dc969b312ec95165cee62b2825fb18a1c2812641414b1bea5958d94a32b7ed source_ref=6c32e743b56c123c0ee5a83d6b4335e505711be4 role=config -->
-Return `C_SPEC` if clangd is found on PATH, otherwise return `None`.
+<!-- trie:section symbol=trie/parse/resolvers/specs:c_spec fingerprint=33ca96a0908a99934f9d9f1c40c99fb02bbf6601d192b127c7c081c7cdfbd1b2 body_fp=0780bf433c76246fe1523d0e0908f04434d39a57adfc4560623bbfac6e2f9496 source_ref=6c06c7b10b7c4e22c232fe504e6f8e8229afcdd6 role=config -->
+Return `C_SPEC` (possibly overridden) if clangd is found on PATH and the resolver is enabled for C, otherwise return `None`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/resolvers/specs:lua_spec fingerprint=60e2741932327fb8f5e7b958dcc04480ececf370e91e68219e18604e678e878b body_fp=9f68ab4d8d194bfada77e5e2099a9108caf5738ec059748c88336f60a99c2c0d source_ref=6c32e743b56c123c0ee5a83d6b4335e505711be4 role=config -->
-Return `LUA_SPEC` if `lua-language-server` is found on PATH, otherwise return `None`.
+<!-- trie:section symbol=trie/parse/resolvers/specs:lua_spec fingerprint=20d1f792e6441a624c34894e0293cec74833dab432b39fdb84cefed5fe8e0b22 body_fp=f3bce12fa181ffee710dd506d4947a7e5cbee8d8907a72b36586c11f73a69d14 source_ref=6c06c7b10b7c4e22c232fe504e6f8e8229afcdd6 role=config -->
+Return the Lua LSP spec if `lua-language-server` is on PATH and the resolver is enabled for Lua, otherwise return `None`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/resolvers/specs:__all__ fingerprint=f53857724770928045816ca885659b9eee3fbcb5ae9ad3416c6798b4c62a8bbc body_fp=8e54c74561709c785982da0a8ddb51cf7d70597846c6e0b3e030f4add3866dcc source_ref=6c32e743b56c123c0ee5a83d6b4335e505711be4 role=config -->
-Declares the public API of this module: all per-language `LspServerSpec` constants and their availability-checking accessor functions.
+<!-- trie:section symbol=trie/parse/resolvers/specs:__all__ fingerprint=da297f2208e5710d49e326c325cdef0098d2d1141b32a1a60c8f362e17981352 body_fp=e1778cec5594f6e2ddfea877d371e992a22f3997dcebad5e56fe0c4c65bed1ea source_ref=6c06c7b10b7c4e22c232fe504e6f8e8229afcdd6 role=config -->
+Declares the public API of this module: all per-language `LspServerSpec` constants, their availability-checking accessor functions, and `configure_resolver`.
 <!-- trie:end -->

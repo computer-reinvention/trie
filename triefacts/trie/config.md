@@ -1,58 +1,61 @@
 ---
 trie_version: 0.1.9
 source: trie/config.py
-file_fingerprint: 840ab6361dc6e25743732a9505db6c39e68c3db6bb8dda50ade5acca070a7368
-last_synced_at: '2026-07-25T10:43:48Z'
+file_fingerprint: f8d13680ed4bdfd9e27d75fab74f83e92bbafe23f11b8ba8330607d439d8f29a
+last_synced_at: '2026-07-29T01:48:33Z'
 defines:
 - kind: module
   qualified_name: trie/config:__module__
-  lines: 1-380
+  lines: 1-435
 - kind: class
   qualified_name: trie/config:TrieMeta
   lines: 9-10
 - kind: class
   qualified_name: trie/config:Scope
-  lines: 14-30
+  lines: 14-39
 - kind: class
   qualified_name: trie/config:Triefacts
-  lines: 34-36
+  lines: 43-45
+- kind: class
+  qualified_name: trie/config:Resolver
+  lines: 49-69
 - kind: class
   qualified_name: trie/config:Models
-  lines: 40-42
+  lines: 73-75
 - kind: class
   qualified_name: trie/config:Cascade
-  lines: 46-52
+  lines: 79-85
 - kind: class
   qualified_name: trie/config:Sync
-  lines: 56-100
+  lines: 89-133
 - kind: class
   qualified_name: trie/config:Debug
-  lines: 104-123
+  lines: 137-156
 - kind: class
   qualified_name: trie/config:Mcp
-  lines: 127-183
+  lines: 160-216
 - kind: class
   qualified_name: trie/config:Diff
-  lines: 187-214
+  lines: 220-247
 - kind: class
   qualified_name: trie/config:Config
-  lines: 218-267
+  lines: 251-302
 - kind: method
   qualified_name: trie/config:Config.from_dict
-  lines: 230-245
+  lines: 264-280
 - kind: method
   qualified_name: trie/config:Config.load
-  lines: 248-251
+  lines: 283-286
 - kind: method
   qualified_name: trie/config:Config.find_and_load
-  lines: 254-267
+  lines: 289-302
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
-  lines: 270-271
+  lines: 305-306
 - kind: constant
   qualified_name: trie/config:DEFAULT_CONFIG_TOML
-  lines: 274-379
-incoming_refs: 201
+  lines: 309-434
+incoming_refs: 202
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/config:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=73508aef5ccf98a204e6bf0fa288e0420baac8315fc2fb1aa7e8d1bf91d72a01 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
@@ -76,10 +79,10 @@ Stores the trie library version string.
 
 - `version`: Current version of the trie library
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Scope fingerprint=963e53b5f6fe65f50bfdb5957fc60ae9c740976cf6fb421f55185f3d760e6b83 body_fp=6ff57d75e40b0bc0ac222762573131c3a976c8d66cadd9c009329b5c53b86fe0 source_ref=64675d426ee121ee07f6aca6b23643e1d1ad5991 role=config -->
+<!-- trie:section symbol=trie/config:Scope fingerprint=95b891d347bbe687492ee429be84488431b0dbb88f8376795edaff2267b00e71 body_fp=4731e293fed2186a4fe7a6ddd476c60df3f2d611c4629bda2207fb663a2d0725 source_ref=510dbd7539ccb0936ec4f10c68b018717709082e role=model -->
 Defines file inclusion and exclusion patterns for trie's source scanning scope.
 
-- `include`: glob patterns for files to process (defaults to Python, TypeScript, and TSX files)
+- `include`: glob patterns for files to process (defaults to Python, TypeScript/TSX, JavaScript, Go, Rust, C/H, and Lua files)
 - `exclude`: glob patterns for files to skip (defaults to hidden dirs, pycache, node_modules, build/dist)
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:Triefacts fingerprint=84cd9d09bda2f42fbf759b0a2513c408f1fb2318a52590091926390f71f50d50 body_fp=597421696508c0e16a51d04c5d23089ed022da24e0d2df885d1c300a638848e1 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
@@ -87,6 +90,13 @@ Configuration for triefact output paths and source tree location.
 
 - `root`: Directory where generated Markdown triefacts are stored, mirroring source structure
 - `source_root`: Path to source tree root relative to config file location
+<!-- trie:end -->
+<!-- trie:section symbol=trie/config:Resolver fingerprint=ad417019b30d58a20901fbe12f889884573fc0f71bce635342b37a5c26e28191 body_fp=b9c31d78356c4a26c98677c97677b4acd68cfba47f0971f72d6d00d3cc086d6f source_ref=510dbd7539ccb0936ec4f10c68b018717709082e role=config -->
+Configure the type-aware LSP reference resolver that supplements tree-sitter with method/member-dispatch edges.
+
+- `enabled`: master switch; `False` forces tree-sitter-only for all languages.
+- `disabled_languages`: per-language opt-out from LSP even when a server is installed.
+- `servers`: overrides the built-in server command per language; missing binary still degrades gracefully.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:Models fingerprint=abf55624d4d046500cb6caf33a90cb62e33c0a2f319cfcb63d35d6a242726335 body_fp=551a97eb8dc312873a2b951610ade333a2167482905c6b62079f30035c2467eb source_ref=18c7db2eecc1f170e5b7aba91c79b86944ad11cf role=config -->
 Specifies default model identifiers for different trie operations.
@@ -142,14 +152,14 @@ Dataclass holding configuration for the per-commit digest system, where each com
 - `diffs_dir`: defaults to `"triefacts/triediffs"`; directory holding one immutable digest file per commit; lives inside the triefact tree, explicitly excluded from evidence collection to avoid feedback loops.
 - `max_entries`: oldest digest files are pruned from `diffs_dir` when this cap is exceeded.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Config fingerprint=76570047bd7816e85460d5af5154c5e3e7ecdea56bf83dae40b2d73d788b55d5 body_fp=3ab910f8c4d35f5020fb89cf8b685cd95f1c1393128ec609ad7e95227b87f53c source_ref=18c7db2eecc1f170e5b7aba91c79b86944ad11cf role=config -->
+<!-- trie:section symbol=trie/config:Config fingerprint=12a4bc43770566272abef892091eaa23d8f73dc8d31081651a1acd5706d8cb84 body_fp=b51c2ff1f707a5e4f6c5dd0f0401715a3ba6004201dfb8fede842428d7ac166a source_ref=510dbd7539ccb0936ec4f10c68b018717709082e role=config -->
 Root configuration dataclass aggregating all subsection configs, with classmethods to construct from a dict, a TOML file path, or by walking up the directory tree.
 
-- `from_dict`: silently drops `models.edits` and top-level `[edits]`/`[languages]` keys from legacy configs.
+- `from_dict`: silently drops `models.edits` and top-level `[edits]`/`[languages]` keys from legacy configs; now also populates the `resolver` field.
 - `find_and_load`: raises `ConfigNotFoundError` if no `trie.toml` is found in `start` or any ancestor; returns `(Config, config_dir)` where `config_dir` is the project root.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Config.from_dict fingerprint=8938319fb2c90a40c9fa5ec0f654308541036cf2f2383b585eb5982d7424885b body_fp=e98f5d2a6702999c91253cbd69310e2f1943a4016d905df0edea63b63e413a26 source_ref=18c7db2eecc1f170e5b7aba91c79b86944ad11cf role=config -->
-Creates a `Config` instance from a dictionary, silently ignoring `[edits]`, `[languages]`, and `models.edits` sections from legacy trie.toml files, and populating all remaining fields including `diff` from the input dict.
+<!-- trie:section symbol=trie/config:Config.from_dict fingerprint=4cb497239f0a398bed137fee387e56f6208055e895b78ab78d1bdc4ee9745a28 body_fp=4c67ad2dc3ea2121f76ff8032ded9adb83874fe67895dbc7ab131d1ee52465ee source_ref=510dbd7539ccb0936ec4f10c68b018717709082e role=config -->
+Creates a `Config` instance from a dictionary, silently ignoring `[edits]`, `[languages]`, and `models.edits` sections from legacy trie.toml files, and populating all remaining fields including `diff` and `resolver` from the input dict.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:Config.load fingerprint=5365299d7ecf0cdb6ae8bfad33855d997debd906c3d769b616f66b3f625a0f2b body_fp=77e4ce7fa1e8c65f89b23d443add922c44475b46ec65cdd9049ff7b2960fc2e8 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
 Config.load parses a TOML file at the given path and returns a Config instance.

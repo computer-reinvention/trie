@@ -1,35 +1,44 @@
 ---
 trie_version: 0.1.9
 source: tests/test_config.py
-file_fingerprint: 19135655e050e0adc481d5f9f16a2abda87e78960cec4031673abec7cf184454
-last_synced_at: '2026-07-25T10:44:06Z'
+file_fingerprint: cd213f25d1a2aba76c2b7b369df2810273054fb531e96b0060c02f3b685794b9
+last_synced_at: '2026-07-29T01:48:28Z'
 defines:
 - kind: module
   qualified_name: tests/test_config:__module__
-  lines: 1-69
+  lines: 1-104
 - kind: function
   qualified_name: tests/test_config:test_defaults_when_empty_dict
   lines: 10-17
 - kind: function
+  qualified_name: tests/test_config:test_resolver_defaults
+  lines: 20-24
+- kind: function
+  qualified_name: tests/test_config:test_resolver_overrides
+  lines: 27-39
+- kind: function
+  qualified_name: tests/test_config:test_resolver_config_gates_specs
+  lines: 42-52
+- kind: function
   qualified_name: tests/test_config:test_overrides_merge_per_section
-  lines: 20-34
+  lines: 55-69
 - kind: function
   qualified_name: tests/test_config:test_load_roundtrips_default_template
-  lines: 37-42
+  lines: 72-77
 - kind: function
   qualified_name: tests/test_config:test_find_and_load_walks_up
-  lines: 45-51
+  lines: 80-86
 - kind: function
   qualified_name: tests/test_config:test_find_and_load_raises_when_missing
-  lines: 54-56
+  lines: 89-91
 - kind: function
   qualified_name: tests/test_config:test_unknown_top_level_keys_are_ignored
-  lines: 59-62
+  lines: 94-97
 - kind: function
   qualified_name: tests/test_config:test_unknown_keys_within_known_section_raise
-  lines: 65-68
+  lines: 100-103
 incoming_refs: 0
-outgoing_refs: 10
+outgoing_refs: 12
 ---
 <!-- trie:section symbol=tests/test_config:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=4c19dcc1dd79e84522cba2e81e74fb8cbde04913c1a842843b260f43a9ca9b73 source_ref=ce0170296e1b69f535154cc3d8fa01546c83fc5e role=test-infrastructure -->
 Tests configuration loading, merging, and validation for the Config class.
@@ -47,6 +56,15 @@ Verifies that Config.from_dict uses default values when initialized with empty d
 
 - Checks version, scope patterns, triefacts root, model names, and cascade settings
 - Uses assertion-based verification of expected default configuration values
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_config:test_resolver_defaults fingerprint=4ae5ba89041145ad9bb8a42db5266fc9bd436457b3b0c177fa604868634daaab body_fp=f933b74ab85562823d6a59eab1f17d2c5c901326372b739a34fac3a17714af36 source_ref=3d37fa183314a6c47e966911cbaba79329583648 role=test -->
+Assert that `Config.from_dict({})` produces resolver defaults: `enabled=True`, `disabled_languages=[]`, `servers={}`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_config:test_resolver_overrides fingerprint=712f4d1baaea759d15cb55edaf443cdc0d8266b6b06c4dec4084dfe79018a6e4 body_fp=f332801b12c0dbe3facee7cca21d17f1b867430a66ca993e8a6ed8cd011176cc source_ref=3d37fa183314a6c47e966911cbaba79329583648 role=test -->
+Verify that resolver config fields (`enabled`, `disabled_languages`, `servers`) correctly override defaults when supplied via `Config.from_dict`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_config:test_resolver_config_gates_specs fingerprint=82d7995478c0bef11b738d21cb9b549ada75e9de2c50839ec6764dfe61686537 body_fp=8c7a47c3a182adaa6bdbd539378f298a5cef53688889fe3146ddbee14d0647c9 source_ref=3d37fa183314a6c47e966911cbaba79329583648 role=test -->
+Verify that `specs.configure_resolver` gates language spec resolution, returning `None` for disabled or globally-disabled languages.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_config:test_overrides_merge_per_section fingerprint=5baed518a1d25e4a0508e76368d6bdcfd516757fecf5e7e4f4e79b4a9731b35e body_fp=cba865c6b785bc6d77a4e69e8ca96aa5868e8ddfc45a5afac55fb6a7dcc6425f source_ref=ce0170296e1b69f535154cc3d8fa01546c83fc5e role=test-infrastructure -->
 Tests that Config.from_dict merges overrides per section while preserving defaults for untouched sections and keys.

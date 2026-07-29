@@ -59,6 +59,12 @@ class LspServerSpec:
     # Seconds to let the server settle after didOpen before querying, so
     # background indexing has a chance to make definition answers correct.
     warmup: float = 0.0
+    # Max seconds to actively poll for readiness on a server's first file: some
+    # servers (rust-analyzer, gopls, clangd) return empty/null definitions until
+    # their background workspace index completes. We reopen+re-query the first
+    # call site with backoff until it resolves or this deadline passes. 0 = no
+    # readiness polling (fast servers that answer immediately, e.g. pyright).
+    ready_timeout: float = 0.0
 
     def is_available(self) -> bool:
         """True if the server binary is on PATH (so a backend can offer it)."""
@@ -74,6 +80,9 @@ class LspResolver:
         # servers pay a workspace-warmup cost on first open; caching amortises
         # it. Keyed by resolved root path string.
         self._clients: dict[str, LspClient] = {}
+        # Source roots whose server has already passed the readiness probe, so
+        # we pay the probe cost at most once per (server, workspace).
+        self._ready: set[str] = set()
 
     @property
     def name(self) -> str:
@@ -101,6 +110,44 @@ class LspResolver:
             self._clients[key] = client
         return client
 
+    def _await_ready(
+        self,
+        client: LspClient,
+        file_path: Path,
+        source_root: Path,
+        sites: list[CallSite],
+    ) -> None:
+        """Block until the server answers definitions, or the deadline passes.
+
+        Heavy servers (rust-analyzer, gopls, clangd) return empty definitions
+        until their background workspace index finishes. We poll the first call
+        site with exponential backoff until *any* location comes back — proof
+        the index is live — then remember this workspace as ready so subsequent
+        files skip the probe. A no-op when `ready_timeout` is 0 (fast servers).
+        """
+        if self._spec.ready_timeout <= 0:
+            return
+        key = str(source_root.resolve())
+        if key in self._ready or not sites:
+            return
+        import time
+
+        line, char = sites[0]
+        deadline = time.monotonic() + self._spec.ready_timeout
+        delay = 0.25
+        while time.monotonic() < deadline:
+            try:
+                if client.definition(file_path, line, char):
+                    break
+            except LspError:
+                pass
+            time.sleep(delay)
+            delay = min(delay * 1.6, 2.0)
+        # Mark ready regardless: either it resolved, or we spent the budget and
+        # won't pay it again for this workspace (best-effort — worst case a few
+        # early edges are missed on a very cold index).
+        self._ready.add(key)
+
     def _resolve_file_inner(
         self,
         file_path: Path,
@@ -119,6 +166,8 @@ class LspResolver:
             import time
 
             time.sleep(self._spec.warmup)
+
+        self._await_ready(client, file_path, source_root, sites)
 
         target_index: dict[Path, dict[int, str]] = {}
         references: list[Reference] = []

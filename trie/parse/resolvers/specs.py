@@ -12,7 +12,46 @@ server is installed and otherwise degrades to tree-sitter-only.
 
 from __future__ import annotations
 
+import dataclasses
+
 from trie.parse.resolvers.lsp_resolver import CallSite, LspServerSpec
+
+# Process-global resolver configuration, applied to every spec selector. The
+# parse layer is config-free by construction (backends are import-time
+# singletons), so the scan pipeline injects trie.toml's [resolver] settings
+# here via `configure_resolver` before parsing. Defaults = built-in behaviour.
+_ENABLED = True
+_DISABLED_LANGUAGES: set[str] = set()
+_SERVER_OVERRIDES: dict[str, list[str]] = {}
+
+
+def configure_resolver(
+    *,
+    enabled: bool = True,
+    disabled_languages: list[str] | None = None,
+    servers: dict[str, list[str]] | None = None,
+) -> None:
+    """Apply [resolver] config (from trie.toml) to the spec selectors.
+
+    - `enabled=False` makes every `*_spec()` return None (tree-sitter only).
+    - `disabled_languages` lists language names to force off individually.
+    - `servers` maps a language name to a replacement server command.
+    Idempotent; call once per process before parsing.
+    """
+    global _ENABLED, _DISABLED_LANGUAGES, _SERVER_OVERRIDES
+    _ENABLED = enabled
+    _DISABLED_LANGUAGES = set(disabled_languages or [])
+    _SERVER_OVERRIDES = dict(servers or {})
+
+
+def _apply_config(language: str, spec: LspServerSpec) -> LspServerSpec | None:
+    """Gate/override a spec per resolver config. Returns None if disabled."""
+    if not _ENABLED or language in _DISABLED_LANGUAGES:
+        return None
+    override = _SERVER_OVERRIDES.get(language)
+    if override:
+        spec = dataclasses.replace(spec, command=list(override))
+    return spec
 
 
 def _python_call_sites(source: bytes) -> list[CallSite]:
@@ -201,17 +240,28 @@ TYPESCRIPT_SPEC = LspServerSpec(
 def python_spec() -> LspServerSpec | None:
     """The first available Python LSP spec, or None.
 
-    Prefers basedpyright (faster) and falls back to pyright.
+    Honours a `[resolver] servers.python` override; otherwise prefers
+    basedpyright (faster) and falls back to pyright. Returns None when the
+    resolver is disabled for Python or no server is installed.
     """
-    for spec in (BASEDPYRIGHT_SPEC, PYRIGHT_SPEC):
+    override = _SERVER_OVERRIDES.get("python")
+    candidates = (
+        (dataclasses.replace(BASEDPYRIGHT_SPEC, command=list(override)),)
+        if override
+        else (BASEDPYRIGHT_SPEC, PYRIGHT_SPEC)
+    )
+    if not _ENABLED or "python" in _DISABLED_LANGUAGES:
+        return None
+    for spec in candidates:
         if spec.is_available():
             return spec
     return None
 
 
 def typescript_spec() -> LspServerSpec | None:
-    """The TypeScript LSP spec if its server is installed, else None."""
-    return TYPESCRIPT_SPEC if TYPESCRIPT_SPEC.is_available() else None
+    """The TypeScript LSP spec if installed and enabled, else None."""
+    spec = _apply_config("typescript", TYPESCRIPT_SPEC)
+    return spec if spec is not None and spec.is_available() else None
 
 
 # Heavier servers index the whole workspace before answering; give the
@@ -223,7 +273,7 @@ GO_SPEC = LspServerSpec(
     language_id="go",
     call_sites=_go_call_sites,
     init_timeout=30.0,
-    warmup=2.0,
+    ready_timeout=30.0,
 )
 
 RUST_SPEC = LspServerSpec(
@@ -231,8 +281,8 @@ RUST_SPEC = LspServerSpec(
     command=["rust-analyzer"],
     language_id="rust",
     call_sites=_rust_call_sites,
-    init_timeout=60.0,
-    warmup=3.0,
+    init_timeout=90.0,
+    ready_timeout=90.0,
 )
 
 C_SPEC = LspServerSpec(
@@ -241,7 +291,7 @@ C_SPEC = LspServerSpec(
     language_id="c",
     call_sites=_c_call_sites,
     init_timeout=30.0,
-    warmup=1.5,
+    ready_timeout=20.0,
 )
 
 LUA_SPEC = LspServerSpec(
@@ -250,28 +300,32 @@ LUA_SPEC = LspServerSpec(
     language_id="lua",
     call_sites=_lua_call_sites,
     init_timeout=30.0,
-    warmup=1.5,
+    ready_timeout=20.0,
 )
 
 
 def go_spec() -> LspServerSpec | None:
-    """The Go LSP spec (gopls) if installed, else None."""
-    return GO_SPEC if GO_SPEC.is_available() else None
+    """The Go LSP spec (gopls) if installed and enabled, else None."""
+    spec = _apply_config("go", GO_SPEC)
+    return spec if spec is not None and spec.is_available() else None
 
 
 def rust_spec() -> LspServerSpec | None:
-    """The Rust LSP spec (rust-analyzer) if installed, else None."""
-    return RUST_SPEC if RUST_SPEC.is_available() else None
+    """The Rust LSP spec (rust-analyzer) if installed and enabled, else None."""
+    spec = _apply_config("rust", RUST_SPEC)
+    return spec if spec is not None and spec.is_available() else None
 
 
 def c_spec() -> LspServerSpec | None:
-    """The C LSP spec (clangd) if installed, else None."""
-    return C_SPEC if C_SPEC.is_available() else None
+    """The C LSP spec (clangd) if installed and enabled, else None."""
+    spec = _apply_config("c", C_SPEC)
+    return spec if spec is not None and spec.is_available() else None
 
 
 def lua_spec() -> LspServerSpec | None:
-    """The Lua LSP spec (lua-language-server) if installed, else None."""
-    return LUA_SPEC if LUA_SPEC.is_available() else None
+    """The Lua LSP spec (lua-language-server) if installed and enabled, else None."""
+    spec = _apply_config("lua", LUA_SPEC)
+    return spec if spec is not None and spec.is_available() else None
 
 
 __all__ = [
@@ -283,6 +337,7 @@ __all__ = [
     "RUST_SPEC",
     "TYPESCRIPT_SPEC",
     "c_spec",
+    "configure_resolver",
     "go_spec",
     "lua_spec",
     "python_spec",

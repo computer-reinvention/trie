@@ -2,7 +2,7 @@
 trie_version: 0.1.9
 source: trie/mcp_server.py
 file_fingerprint: 041ce2b4a27ed5be07e9f48e886078ff5f17ebf96cf19f64cd60e8f23141a786
-last_synced_at: '2026-07-28T23:48:06Z'
+last_synced_at: '2026-07-29T01:49:36Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
 - kind: module
@@ -312,7 +312,7 @@ Find the qname of the symbol whose line range contains `lineno`, preferring nest
 
 Iterates through the ordered list, updating `enclosing` with each symbol that brackets `lineno`. Since symbols are start-ordered, the last matching symbol is the most deeply nested one.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=d9cad64936f919fe983e9b6c7835df0cf3b89f5d328f7a64dfacb3ab66227f35 body_fp=6999b551ee4897adee3fdffbd1d6543f92397dbcd40ccd92db207e75acceb82a source_ref=9f9aed9b3a6d7ac7607fb0fc1c4098b064b480a4 role=orchestration -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=d9cad64936f919fe983e9b6c7835df0cf3b89f5d328f7a64dfacb3ab66227f35 body_fp=6999b551ee4897adee3fdffbd1d6543f92397dbcd40ccd92db207e75acceb82a source_ref=9f9aed9b3a6d7ac7607fb0fc1c4098b064b480a4 role=api -->
 Core interface for MCP tools as plain methods, testable without transport.
 
 Owns the Store and project config for process lifetime. Implements patch tools (patch, batch_patch, create_symbol, delete_symbol, rename_symbol, blast_radius, patch_drop, patch_list, preview, commit), project-level queries (summary, activity, symbols_by_file, file_triefact), three core operations (`grep`, `read`, `trace`), and extended wrappers (grep_str, grep_str_all, read_source, write_file, find_files, grep_entry_points, grep_symbol, grep_symbol_and_neighbours, explain_symbol, explain_symbol_references, trace_flow, explain_flow). All methods return structured dicts with error envelopes; telemetry is captured on each call with configurable event names to distinguish MCP vs CLI usage. `commit` always routes through `record_intent` (no code generation). `patch_apply` is an alias for `commit(session_note=...)`. `preview` imports from `trie.edits.pipeline`. `_triefact_view` prepends a staleness banner when any section's fingerprint predates the current source; `_read_symbol` prepends staleness notes via `_staleness_notes`; `explain_symbol` likewise folds staleness notes into the response. `read`, `_triefact_view`, `_read_symbol`, `explain_symbol`, and `explain_symbol_references` accept a `history=True` flag to append the symbol's or file's intent trail from the session-digest archive. `batch_patch` now applies a graceful create→patch fallback: if a `create` item targets a symbol already in the graph, it is recorded as a `patch` and the result includes `fell_back: True` plus a `created_as_patch` summary list. `create_symbol` likewise falls back to `patch` (returning `op: "patch", fell_back: True`) instead of returning an `already_exists` error.
@@ -322,7 +322,7 @@ Owns the Store and project config for process lifetime. Implements patch tools (
 - `rg_path`: resolved ripgrep binary path for text search fallbacks
 - `_session_id`: unique session identifier for patch operations (injectable via TRIE_SESSION_ID env var, falls back to 12-char hex UUID)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.__init__ fingerprint=da31ea5a8dabd217b86c7e6ed605fc3a1d2dbb26bb93f24bc8988024d73a4223 body_fp=3f1442d7ffaffd877c13b2fbb819d2a8be0aafd969463aa996f25077eca51c52 source_ref=31ea5773e72df0b09ea019dcab835d5205588818 role=domain -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.__init__ fingerprint=da31ea5a8dabd217b86c7e6ed605fc3a1d2dbb26bb93f24bc8988024d73a4223 body_fp=3f1442d7ffaffd877c13b2fbb819d2a8be0aafd969463aa996f25077eca51c52 source_ref=9f9aed9b3a6d7ac7607fb0fc1c4098b064b480a4 role=domain -->
 Initialize `TrieTools` with project configuration, telemetry, store, and session state.
 
 - Loads config from project root and validates ripgrep availability at startup
