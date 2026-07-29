@@ -2,7 +2,7 @@
 trie_version: 0.2.1
 source: tests/test_mcp.py
 file_fingerprint: 802e912c08e890e8e501ada6124d56c60f6c0a36e4c45d89883fac7202b7bb9d
-last_synced_at: '2026-07-29T23:18:43Z'
+last_synced_at: '2026-07-29T23:24:47Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: module

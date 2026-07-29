@@ -1,12 +1,12 @@
 ---
 trie_version: 0.2.1
 source: trie/cli.py
-file_fingerprint: 6839f919581cde1a2da11e9dd5823e786aee4c03a828039d2ff4ed1e5faa121e
-last_synced_at: '2026-07-29T23:17:32Z'
+file_fingerprint: 1563b19a589e75c9d3c858d15ea4254c39cc810837a1108ff199f6a8ff8821fb
+last_synced_at: '2026-07-29T23:24:08Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
-  lines: 1-4541
+  lines: 1-4539
 - kind: constant
   qualified_name: trie/cli:app
   lines: 79-82
@@ -336,57 +336,57 @@ defines:
   lines: 3790-3791
 - kind: function
   qualified_name: trie/cli:_close_qname_suggestions
-  lines: 3794-3810
+  lines: 3794-3808
 - kind: function
   qualified_name: trie/cli:patch_create_cmd
-  lines: 3814-3867
+  lines: 3812-3865
 - kind: function
   qualified_name: trie/cli:patch_create_batch_cmd
-  lines: 3871-3991
+  lines: 3869-3989
 - kind: function
   qualified_name: trie/cli:patch_create_symbol_cmd
-  lines: 3995-4043
+  lines: 3993-4041
 - kind: function
   qualified_name: trie/cli:patch_delete_symbol_cmd
-  lines: 4047-4074
+  lines: 4045-4072
 - kind: function
   qualified_name: trie/cli:patch_rename_symbol_cmd
-  lines: 4078-4107
+  lines: 4076-4105
 - kind: function
   qualified_name: trie/cli:patch_apply_cmd
-  lines: 4111-4173
+  lines: 4109-4171
 - kind: function
   qualified_name: trie/cli:patch_preview_cmd
-  lines: 4177-4220
+  lines: 4175-4218
 - kind: function
   qualified_name: trie/cli:patch_list_cmd
-  lines: 4224-4266
+  lines: 4222-4264
 - kind: function
   qualified_name: trie/cli:patch_drop_cmd
-  lines: 4270-4308
+  lines: 4268-4306
 - kind: constant
   qualified_name: trie/cli:mcp_app
-  lines: 4316-4323
+  lines: 4314-4321
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 4328-4330
+  lines: 4326-4328
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 4333-4343
+  lines: 4331-4341
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 4347-4416
+  lines: 4345-4414
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 4419-4434
+  lines: 4417-4432
 - kind: function
   qualified_name: trie/cli:mcp_uninstall_cmd
-  lines: 4438-4513
+  lines: 4436-4511
 - kind: function
   qualified_name: trie/cli:_render_uninstall_plan
-  lines: 4516-4536
+  lines: 4514-4534
 incoming_refs: 104
-outgoing_refs: 361
+outgoing_refs: 362
 ---
 <!-- trie:section symbol=trie/cli:__module__ fingerprint=d16be5917b98ff58f36f3487c349d240fc53396bc24bb9e0d8903c2f9e48f690 body_fp=10f0e1573012e0fc76e1358d4da306bc2ba6e70254a41da3bf25ef8b26e41199 source_ref=ec65582312b341065f0f0bb2b57d76d2fbe38026 role=entrypoint -->
 Main CLI module for trie providing comprehensive project management, triefact synchronization, and agent integration commands.
@@ -617,7 +617,7 @@ Evaluate the intent gate via `trie.intent_gate.evaluate`, render the outcome, an
 
 - Returns `False` and prints a copy-pasteable worklist when any touched symbol lacks a note.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_warn_on_version_skew fingerprint=a12d75da76c3a26835a0a8086d3cbd034bf4527bcaf98cd386a897b807179f64 body_fp=20377768ff9f56ccf3bb80bf2a09d4e75746898419d403090ef6431c0c5c7b0c source_ref=b1cd8673daa7f27bf82a8377747312a95d250581 role=util -->
+<!-- trie:section symbol=trie/cli:_warn_on_version_skew fingerprint=8e948cb365beaa2acd7d3e27d9578d3316ddec7ba633ac2f3ee6bc6caff3422b body_fp=20377768ff9f56ccf3bb80bf2a09d4e75746898419d403090ef6431c0c5c7b0c source_ref=f803cb599a03936d496cac84820bfd4e78a600a2 role=util -->
 Warn via `reporter` when the installed `trie` binary version differs from the version declared in the project root's `pyproject.toml`.
 
 - Only fires when `pyproject.toml` exists and names `"trie"` as the project; silently no-ops otherwise.
@@ -1089,8 +1089,8 @@ Prints a refresh indicator for the given file path during patch apply progress r
 <!-- trie:section symbol=trie/cli:_RichApplyProgress.verify fingerprint=9bb6073c0083b530e9d8a61ec3fe90bde21961bdcbb397e39268aa6d65db357c body_fp=88843d1669232469dd7a92f0b73d40fc967e947a1c92e8d576021241cb8f1664 source_ref=ec65582312b341065f0f0bb2b57d76d2fbe38026 role=util -->
 Prints a green checkmark indicating the project is consistent after patch application. Called by `apply_patches` at the end of its verification phase.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_close_qname_suggestions fingerprint=7b6b852bb904da182dcdc0119d8bfabd130432d02f20e31dc08e0b98a4175b16 body_fp=50cf8b8b072f70e5f8f21031c04ebb09af62cd15179ac4beca0d63d3a07e13db source_ref=a926c793af5e1f338acdc176a5faae767217b646 role=util -->
-Fuzzy-match `qname` against all graph-known qualified names and return up to `n` close suggestions for did-you-mean hints; returns `[]` on any failure.
+<!-- trie:section symbol=trie/cli:_close_qname_suggestions fingerprint=43648b44ebab8b775cf26778257e39e5a8f42ddf9248eeca7bce65d59d125f23 body_fp=fbf7b54c143630a9e45425a2b88f9878a75dc1ac2301d559ed80168d0c658013 source_ref=f803cb599a03936d496cac84820bfd4e78a600a2 role=util -->
+Fuzzy-match `qname` against all graph-known qualified names via `_close_qname_matches` (same-module symbols ranked first) and return up to `n` suggestions; returns `[]` on any failure.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:patch_create_cmd fingerprint=9d5a2ec666530f0810063cc7779dd2aa454e05b5371ae6c5612fcd668245769f body_fp=9e4244a12a3d8bfacaec04dd629867ed11fde0413e47c368e44455a4f945317d source_ref=a926c793af5e1f338acdc176a5faae767217b646 role=api -->
 Creates a fire-and-forget edit patch against a symbol in the trie graph store.

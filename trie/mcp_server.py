@@ -166,9 +166,28 @@ def _looks_like_qname(s: str) -> bool:
 
 
 def _close_qname_matches(qname: str, candidates: list[str], *, n: int = 3) -> list[str]:
-    """Fuzzy-match `qname` against the known set. Used for `not_found` suggestions."""
-    hits = _process.extract(qname, candidates, scorer=_fuzz.WRatio, limit=n, score_cutoff=45)
-    return [h[0] for h in hits]
+    """Fuzzy-match `qname` against the known set. Used for `not_found` suggestions.
+
+    Same-module candidates lead: a missed qname almost always names the right
+    file with the wrong local symbol (the classic `mod:__module__` guess for
+    what is actually `mod:__version__`), so symbols from the same module are
+    scored on local name alone and ranked ahead of global qname matches.
+    """
+    module, sep, local = qname.partition(":")
+    ranked: list[str] = []
+    if sep and local:
+        same_module = [c for c in candidates if c.startswith(module + ":")]
+        local_names = {c: c.split(":", 1)[1] for c in same_module}
+        hits = _process.extract(
+            local, list(local_names.values()), scorer=_fuzz.WRatio, limit=n, score_cutoff=30
+        )
+        matched_locals = [h[0] for h in hits]
+        ranked = [c for c in same_module if local_names[c] in matched_locals]
+    global_hits = _process.extract(qname, candidates, scorer=_fuzz.WRatio, limit=n, score_cutoff=45)
+    for h in global_hits:
+        if h[0] not in ranked:
+            ranked.append(h[0])
+    return ranked[:n]
 
 
 def _close_name_matches(name: str, candidates: list[str], *, n: int = 3) -> list[str]:

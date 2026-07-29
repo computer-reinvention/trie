@@ -92,8 +92,11 @@ will exit 2 if it collides with an in-flight graph sync; this is the
 system telling you the hook is doing its job.
 
 After changing trie's own CLI/hook surface, reinstall the global tool
-(`uv tool install --force .`) — hooks resolve `trie` from PATH, and `trie
-gate` warns when the installed version lags this checkout.
+with `uv tool install --force --reinstall .` — hooks resolve `trie` from
+PATH, and `trie gate` warns when the installed version lags this
+checkout. The `--reinstall` matters: without it uv reuses the cached
+wheel whenever the version number hasn't changed, silently installing
+stale code that no version-skew probe can detect.
 
 ## Shipping
 
