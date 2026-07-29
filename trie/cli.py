@@ -1154,8 +1154,8 @@ def _warn_on_version_skew(reporter: Reporter, project_root: Path) -> None:
     if repo_version and repo_version != __version__:
         reporter.warn(
             f"running trie {__version__} but this checkout is {repo_version} — "
-            "reinstall with `uv tool install --force .` so hooks and tools "
-            "run the code you just changed"
+            "reinstall with `uv tool install --force --reinstall .` so hooks "
+            "and tools run the code you just changed"
         )
 
 
@@ -3796,16 +3796,14 @@ def _close_qname_suggestions(store: Store, qname: str, *, n: int = 3) -> list[st
 
     A `not_found` on the patch path is far more often a hand-built/guessed
     qname than a genuinely removed symbol (module-level constants and methods
-    are the usual traps), so the error message leads with close matches.
-    Best-effort: returns [] on any failure rather than masking the real error.
+    are the usual traps), so the error message leads with close matches —
+    same-module symbols first (see `_close_qname_matches`). Best-effort:
+    returns [] on any failure rather than masking the real error.
     """
     try:
-        from rapidfuzz import fuzz, process
+        from trie.mcp_server import _close_qname_matches
 
-        hits = process.extract(
-            qname, store.all_qualified_names(), scorer=fuzz.WRatio, limit=n, score_cutoff=45
-        )
-        return [h[0] for h in hits]
+        return _close_qname_matches(qname, store.all_qualified_names(), n=n)
     except Exception:
         return []
 
