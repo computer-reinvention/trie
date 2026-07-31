@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.0
 source: tests/test_tool_override_install.py
 file_fingerprint: 70443976502e772d6583cdcb2efc6b6b18b2bdec426c108020010d44ad3f3536
-last_synced_at: '2026-07-26T20:28:26Z'
+last_synced_at: '2026-07-29T18:32:25Z'
 description: 'Tests for `trie.tool_override_install`: replacing agent built-in tools
   with trie wrappers.'
 defines:

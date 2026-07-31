@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: tests/test_reporter.py
 file_fingerprint: 2687fddcd8fd3190739e2dfc9f7de9cc4c857a52f2ef14254e74a34b8f2eab2b
-last_synced_at: '2026-07-20T13:08:58Z'
+last_synced_at: '2026-07-29T23:24:14Z'
 defines:
 - kind: module
   qualified_name: tests/test_reporter:__module__
@@ -53,7 +53,7 @@ defines:
   qualified_name: tests/test_reporter:test_root_version_still_works_with_verbosity_flags
   lines: 155-159
 incoming_refs: 0
-outgoing_refs: 16
+outgoing_refs: 45
 ---
 <!-- trie:section symbol=tests/test_reporter:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=fa430be3ec87445f293f027c2caea83ff425a3a5b12a05014e7d843942d78fdb source_ref=df741a005acc31e764a566519cdb2c64bda589ef role=test-infrastructure -->
 Tests the Reporter class and CLI verbosity handling across different output levels.
@@ -100,10 +100,10 @@ Tests that Reporter in verbose mode includes token input/output counts in progre
 <!-- trie:section symbol=tests/test_reporter:test_progress_marks_cascade_files fingerprint=944720a995eb0b02425521b59ff4ed80094e06132a12dc5576e0d86e72cb0e5a body_fp=409492796a6a06e5fa3e0e62a05390410edddac04919a0231e2f169428b2c205 source_ref=5e48c05b6f5e1bb204453e3c25d35cc90260bfa1 role=test -->
 Verifies that Reporter marks cascade files with "(cascade)" label while direct files show no label.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_reporter:test_progress_adapter_prints_plan_header_and_section_separators fingerprint=14c1be964a148c7de54e5e5fe16096e891205e13b5555dbee9a8e06097533ecd body_fp=4ce95c2df5604b6b6d065318879bb99fb2955272717228cc0158addef1281425 source_ref=996d2328867a89c082141e47e065fa13da717a8d role=test -->
-Tests that _ProgressAdapter emits plan headers and section separators with proper formatting and labels.
+<!-- trie:section symbol=tests/test_reporter:test_progress_adapter_prints_plan_header_and_section_separators fingerprint=14c1be964a148c7de54e5e5fe16096e891205e13b5555dbee9a8e06097533ecd body_fp=588db6c3af8f5b1916b2ac7ce707134e5c8b60e5b54ab67a23363486213ff34e source_ref=924ac6da38ef7268ebeb8333be41cc9bf62c78d7 role=test -->
+Tests that `_ProgressAdapter` emits plan headers and section separators with proper formatting and labels.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_reporter:test_progress_adapter_plan_is_silent_when_nothing_to_sync fingerprint=e8c27274f61b673117fc3274337aeafead20a3462ddff91a582aff8774b9b59e body_fp=b26150d7b960a86ec996dc943b3f07bd0107ea35ab8410028065f1e102a0fada source_ref=996d2328867a89c082141e47e065fa13da717a8d role=test -->
+<!-- trie:section symbol=tests/test_reporter:test_progress_adapter_plan_is_silent_when_nothing_to_sync fingerprint=e8c27274f61b673117fc3274337aeafead20a3462ddff91a582aff8774b9b59e body_fp=b26150d7b960a86ec996dc943b3f07bd0107ea35ab8410028065f1e102a0fada source_ref=924ac6da38ef7268ebeb8333be41cc9bf62c78d7 role=test -->
 Tests that `_ProgressAdapter` produces no output when the plan contains zero files to sync.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_reporter:test_root_quiet_and_verbose_are_mutually_exclusive fingerprint=12ec037a8e879ad498003721a687247e59e8f6edf8c01e71e67eb34cb28d3025 body_fp=1e58c13470b9c6d1b035a0734fbd34f0946e0c9a9a0131f2d5296e44213ab227 source_ref=df741a005acc31e764a566519cdb2c64bda589ef role=test-infrastructure -->

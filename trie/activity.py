@@ -1,9 +1,10 @@
 """Ephemeral local activity state for trie, backed by SQLite.
 
 trie's write paths run as independent processes — a terminal `trie sync`, the
-end-of-turn `trie refresh` hook, an editor plugin's refresh. None of them
-share memory, so the live writer status and the working-tree (stale) set live in
-a small on-disk database any process can read while a writer updates it.
+end-of-turn `trie sync --graph-only` hook, an editor plugin's graph sync. None
+of them share memory, so the live writer status and the working-tree (stale)
+set live in a small on-disk database any process can read while a writer
+updates it.
 
 SQLite is the right tool: atomic transactions (no torn reads), WAL mode for
 concurrent readers during a write, and a single file instead of a litter of

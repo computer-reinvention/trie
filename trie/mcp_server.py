@@ -166,9 +166,28 @@ def _looks_like_qname(s: str) -> bool:
 
 
 def _close_qname_matches(qname: str, candidates: list[str], *, n: int = 3) -> list[str]:
-    """Fuzzy-match `qname` against the known set. Used for `not_found` suggestions."""
-    hits = _process.extract(qname, candidates, scorer=_fuzz.WRatio, limit=n, score_cutoff=45)
-    return [h[0] for h in hits]
+    """Fuzzy-match `qname` against the known set. Used for `not_found` suggestions.
+
+    Same-module candidates lead: a missed qname almost always names the right
+    file with the wrong local symbol (the classic `mod:__module__` guess for
+    what is actually `mod:__version__`), so symbols from the same module are
+    scored on local name alone and ranked ahead of global qname matches.
+    """
+    module, sep, local = qname.partition(":")
+    ranked: list[str] = []
+    if sep and local:
+        same_module = [c for c in candidates if c.startswith(module + ":")]
+        local_names = {c: c.split(":", 1)[1] for c in same_module}
+        hits = _process.extract(
+            local, list(local_names.values()), scorer=_fuzz.WRatio, limit=n, score_cutoff=30
+        )
+        matched_locals = [h[0] for h in hits]
+        ranked = [c for c in same_module if local_names[c] in matched_locals]
+    global_hits = _process.extract(qname, candidates, scorer=_fuzz.WRatio, limit=n, score_cutoff=45)
+    for h in global_hits:
+        if h[0] not in ranked:
+            ranked.append(h[0])
+    return ranked[:n]
 
 
 def _close_name_matches(name: str, candidates: list[str], *, n: int = 3) -> list[str]:
@@ -346,11 +365,23 @@ class TrieTools:
         try:
             patch_id = self.store.add_patch(qname, payload_note, payload_reason, self._session_id)
         except KeyError:
+            # A missed qname is far more often hand-built/guessed than a
+            # genuinely removed symbol — lead with did-you-mean candidates so
+            # the agent recovers in zero extra round trips.
+            close = _close_qname_matches(qname, self.store.all_qualified_names())
+            suggestion = (
+                f"Did you mean: {', '.join(close)}? "
+                if close
+                else "Use grep({'name_contains': '...'}) to find the exact qname. "
+            )
             return _error(
                 "not_found",
                 f"Symbol {qname!r} not found in the graph.",
-                "Use grep({'name_contains': '...'}) to find the exact qname.",
-                fix={"tool": "patch", "args": {"qname": qname, "note": note or ""}},
+                suggestion + "For a removed symbol, use delete intent (patch create --gone).",
+                fix={
+                    "tool": "patch",
+                    "args": {"qname": close[0] if close else qname, "note": note or ""},
+                },
             )
         detail = self.store.get_symbol_detail(qname)
         return {
@@ -439,9 +470,11 @@ class TrieTools:
                     results.append(entry)
                     staged += 1
             except KeyError:
-                results.append(
-                    {"index": idx, "qname": qname, "ok": False, "error": "symbol not found"}
-                )
+                close = _close_qname_matches(qname, self.store.all_qualified_names())
+                entry = {"index": idx, "qname": qname, "ok": False, "error": "symbol not found"}
+                if close:
+                    entry["did_you_mean"] = close
+                results.append(entry)
         pending = len(self.store.get_patched_qnames()) + sum(
             len(v) for v in self.store.get_create_patches_grouped().values()
         )
@@ -721,6 +754,11 @@ class TrieTools:
         clears the queue. `session_note` (the unifying intent) is required when
         more than one symbol is pending. Source changes are yours; this records
         why they happened.
+
+        The response's `uncovered` key lists touched symbols that still have
+        no note and would fail the pre-commit gate — stage notes for those and
+        commit again instead of finding out at `git commit` time. Empty list
+        means full coverage.
         """
         from trie.edits.pipeline import record_intent
 
@@ -958,19 +996,26 @@ class TrieTools:
         {
           "hits": [ {qname, signature, file_pointer, one_liner, is_public, kind,
                      inbound_count, outbound_count}, ... ],
-          "fallback"?: { ... }   # present only when hits is empty
+          "fallback"?: { ... },  # present only when hits is empty
+          "related"?: [ ... ],   # body/prose-matched extras when hits < limit
+          "related_kind"?: "text_match" | "fuzzy_prose"
         }
         ```
+        When name hits leave room under `limit`, `related` carries candidates
+        whose *bodies or prose* match the query (never repeating a hit's
+        qname) — the module implementing a concept surfaces even when its
+        symbol names don't contain the query string.
+
         On empty hits, `fallback.kind` is one of:
         - `"none"`: predicate had no `name_contains` for the fallback to search on.
         - `"text_match_empty"`: the query string appears in no in-scope source body
           and fuzzy matching also found nothing above the cutoff.
         - `"text_match"`: a string search against in-scope source bodies found
           candidate symbols; `matches` is the ranked list (by `inbound_count`
-          desc) capped at `grep_fallback_match_limit`. Even when the underlying
-          string match was very broad, we always return the top-ranked
-          candidates so the agent can triangulate from data rather than refine
-          blindly.
+          desc) capped at `grep_fallback_match_limit` and by the request's
+          own `limit`. Even when the underlying string match was very broad,
+          we always return the top-ranked candidates so the agent can
+          triangulate from data rather than refine blindly.
         - `"fuzzy_prose"`: no exact match anywhere, but rapidfuzz found symbols
           whose name, one_liner, or triefact prose is close enough; `matches`
           is sorted by relevance score descending.
@@ -1048,12 +1093,32 @@ class TrieTools:
             # When the predicate matched nothing, try the text-match fallback.
             # The fallback always produces SOMETHING in the response — even if
             # it's `kind="none"` — so the agent never has to guess whether
-            # trie tried alternatives or not.
+            # trie tried alternatives or not. The fallback is additionally
+            # capped by the request's own `limit` so an 8-row ask never fans
+            # out into a 30-row consolation table.
             if not hit_dicts:
-                fallback = self._maybe_text_match_fallback(pred_obj)
+                fallback = self._maybe_text_match_fallback(pred_obj, max_matches=capped_limit)
                 result["fallback"] = fallback
                 tele_ctx["fallback_kind"] = fallback["kind"]
                 tele_ctx["fallback_match_count"] = len(fallback.get("matches", []))
+            elif len(hit_dicts) < capped_limit and pred_obj.name_contains:
+                # Fill-up: a couple of weak name hits used to suppress the
+                # text/prose fallback entirely, hiding the module that actually
+                # implements the concept (e.g. `triediff` name-matching only a
+                # workflow installer while all the digest machinery lives in
+                # `session_diff`). Append prose/body candidates the name scan
+                # missed, clearly separated under `related`.
+                seen = {h["qname"] for h in hit_dicts}
+                fb = self._maybe_text_match_fallback(
+                    pred_obj, max_matches=capped_limit - len(hit_dicts) + len(seen)
+                )
+                related = [m for m in fb.get("matches", []) if m.get("qname") not in seen][
+                    : capped_limit - len(hit_dicts)
+                ]
+                if related:
+                    result["related"] = related
+                    result["related_kind"] = fb["kind"]
+                    tele_ctx["related_count"] = len(related)
 
             tele_ctx["result_kind"] = "ok"
             tele_ctx["result_count"] = len(hit_dicts)
@@ -1062,8 +1127,15 @@ class TrieTools:
                 tele_ctx["response"] = result
             return result
 
-    def _maybe_text_match_fallback(self, pred: GrepPredicate) -> dict[str, Any]:
+    def _maybe_text_match_fallback(
+        self, pred: GrepPredicate, *, max_matches: int | None = None
+    ) -> dict[str, Any]:
         """Build the `fallback` envelope returned alongside an empty `hits` list.
+
+        `max_matches` additionally caps the candidate list below the configured
+        `grep_fallback_match_limit` — callers pass the request's own `limit`
+        (or the remaining row budget on the fill-up path) so fallback output
+        never exceeds what the caller asked for.
 
         The contract is to always return a dict with a `kind` field, so the
         agent can dispatch on three distinct empty cases:
@@ -1108,7 +1180,7 @@ class TrieTools:
         if not rg_hits:
             # Exact-string search found nothing — try fuzzy scoring across
             # all symbol names and one_liners as a last resort.
-            fuzzy_fallback = self._fuzzy_prose_fallback(query, pred)
+            fuzzy_fallback = self._fuzzy_prose_fallback(query, pred, max_matches=max_matches)
             if fuzzy_fallback:
                 return fuzzy_fallback
             return {
@@ -1156,7 +1228,7 @@ class TrieTools:
         if not candidates:
             # Text-search found symbols, but none survived the predicate's
             # other filters. Try fuzzy fallback before giving up.
-            fuzzy_fallback = self._fuzzy_prose_fallback(query, pred)
+            fuzzy_fallback = self._fuzzy_prose_fallback(query, pred, max_matches=max_matches)
             if fuzzy_fallback:
                 return fuzzy_fallback
             return {
@@ -1170,7 +1242,10 @@ class TrieTools:
             }
 
         candidates.sort(key=lambda c: (-c[0].inbound_count, c[0].qualified_name))
-        capped = candidates[: self.mcp_cfg.grep_fallback_match_limit]
+        cap = self.mcp_cfg.grep_fallback_match_limit
+        if max_matches is not None:
+            cap = min(cap, max(1, max_matches))
+        capped = candidates[:cap]
         truncated = len(candidates) > len(capped)
 
         one_liner_cap = self.mcp_cfg.grep_one_liner_max_chars
@@ -1209,7 +1284,9 @@ class TrieTools:
             "note": note,
         }
 
-    def _fuzzy_prose_fallback(self, query: str, pred: GrepPredicate) -> dict[str, Any] | None:
+    def _fuzzy_prose_fallback(
+        self, query: str, pred: GrepPredicate, *, max_matches: int | None = None
+    ) -> dict[str, Any] | None:
         """Fuzzy-score all in-scope symbols against `query` using name + one_liner +
         prose, returning a `fuzzy_prose` fallback envelope if any clear enough.
 
@@ -1224,6 +1301,8 @@ class TrieTools:
         pre_filter = self.mcp_cfg.fuzzy_prose_pre_filter
         prose_weight = self.mcp_cfg.fuzzy_prose_weight
         match_limit = self.mcp_cfg.grep_fallback_match_limit
+        if max_matches is not None:
+            match_limit = min(match_limit, max(1, max_matches))
 
         # Walk all symbols in the store; apply predicate filters before scoring
         # to keep the loop as tight as possible.
@@ -1918,7 +1997,7 @@ class TrieTools:
             ):
                 notes.append(
                     f"⚠ {detail.file_path} changed since the last graph refresh; "
-                    "this prose may be stale — run `trie refresh`."
+                    "this prose may be stale — run `trie sync --graph-only`."
                 )
         except OSError:
             pass

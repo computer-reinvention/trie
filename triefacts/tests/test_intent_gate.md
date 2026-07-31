@@ -1,12 +1,12 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: tests/test_intent_gate.py
-file_fingerprint: 522dbc1c076674a0bb51fdbf5da0b8fb30af0975d5dd90ba80e202df11dbb2ed
-last_synced_at: '2026-07-25T11:48:28Z'
+file_fingerprint: c6b7991bd20e8c38745e6cc17ec3c3f4d9ad1c0eef6abc6b068d2f3ae64323fe
+last_synced_at: '2026-07-29T23:17:26Z'
 defines:
 - kind: module
   qualified_name: tests/test_intent_gate:__module__
-  lines: 1-97
+  lines: 1-200
 - kind: function
   qualified_name: tests/test_intent_gate:_repo
   lines: 12-24
@@ -20,10 +20,19 @@ defines:
   qualified_name: tests/test_intent_gate:test_evaluate_coverage_from_pending_and_session_log
   lines: 60-89
 - kind: function
+  qualified_name: tests/test_intent_gate:test_class_note_covers_its_methods
+  lines: 92-133
+- kind: function
+  qualified_name: tests/test_intent_gate:test_record_intent_reports_uncovered_symbols
+  lines: 136-165
+- kind: function
   qualified_name: tests/test_intent_gate:test_gate_is_silent_outside_git
-  lines: 92-96
+  lines: 168-172
+- kind: function
+  qualified_name: tests/test_intent_gate:test_record_intent_empty_queue_still_reports_uncovered
+  lines: 175-199
 incoming_refs: 0
-outgoing_refs: 8
+outgoing_refs: 17
 ---
 <!-- trie:section symbol=tests/test_intent_gate:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=48fc5e12071387fc4977e174d8fbdc11d23878395a12a7372934c033f3b261fd source_ref=945539ac71d6c4a1e128b30da5bb269e87eddcdf role=test -->
 Integration tests for `trie.intent_gate`, covering `touched_symbols` and `evaluate` against temporary git repositories.
@@ -42,6 +51,15 @@ Verify that `touched_symbols` reports untracked new files as `"added"` and delet
 <!-- trie:section symbol=tests/test_intent_gate:test_evaluate_coverage_from_pending_and_session_log fingerprint=2176fe785d7443d41d719d8ed1479c0dc9f199d4dcf96f609fff6b928e0f712e body_fp=e502cf69921aa57e13b6ccbb2dab97ab15743596111bd8d801685c12790c8b8b source_ref=2b83adb43e3b1d78f38bf0f77a8150c97c9638d7 role=test -->
 Verify that `evaluate` correctly tracks uncovered symbols as coverage is added via pending patch notes and applied (sealed) store patch rows.
 <!-- trie:end -->
+<!-- trie:section symbol=tests/test_intent_gate:test_class_note_covers_its_methods fingerprint=b8fa1a8d88404cf78f481c49263617976756e225499992b67475956bca0d92e2 body_fp=e1c472359adae6931649ee7eeef0cbc666395478b59b76650afb5451fe20681c source_ref=a7a08e1e946842e9a20ea6b94c26c0530ef07fda role=test -->
+Assert that a patch note on a class covers all its methods, but a method note does not cover the class or sibling methods.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_intent_gate:test_record_intent_reports_uncovered_symbols fingerprint=10395894f7a4684448c77de40ca5f863cf0e2bc42bce56edd5cae31a6bfb0f39 body_fp=f72df56eac98c102f36efe0ca9f36d9945e5514dbde04fcd9fb092db69f19229 source_ref=a7a08e1e946842e9a20ea6b94c26c0530ef07fda role=test -->
+Verify that `record_intent` returns uncovered symbol names in the envelope and clears them once all touched symbols are noted.
+<!-- trie:end -->
 <!-- trie:section symbol=tests/test_intent_gate:test_gate_is_silent_outside_git fingerprint=af9a0fc394ebd565d308889e9b1a8cb216b0820cad3c6599dccd031221817197 body_fp=7285d6d5f18bbb6caf0752e59fbc0f312b9c1176214e781172d0b82ca61ae777 source_ref=12283969949cabe34de0812d48c53ab1ee7c7c4d role=test -->
 Assert that `touched_symbols` returns an empty list when the given directory is not a Git repository.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_intent_gate:test_record_intent_empty_queue_still_reports_uncovered fingerprint=396c88b18c275494e82150e8bd699449c1f0361fbb2db690cb643992d1a44cf3 body_fp=c651b6a8ba80dcbc3b62bc2e2f89b7c04f40f7922184e06f1c686197cdccd708 source_ref=5148c4884c0ae6159f6587bd38df45463ccbe306 role=test -->
+Verify that `record_intent` reports uncovered symbols even when the patch queue is empty, preventing silent early-return before commit time.
 <!-- trie:end -->

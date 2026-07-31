@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.0
 source: tests/test_models.py
 file_fingerprint: cc3db9128544e3b040f80b32aaad23339f99bbe04de346be0f87b836d79a7c90
-last_synced_at: '2026-07-29T02:54:48Z'
+last_synced_at: '2026-07-29T17:55:27Z'
 defines:
 - kind: module
   qualified_name: tests/test_models:__module__
@@ -41,7 +41,7 @@ defines:
   qualified_name: tests/test_models:test_batch_filter_output_tolerates_empty_object
   lines: 134-145
 incoming_refs: 0
-outgoing_refs: 12
+outgoing_refs: 20
 ---
 <!-- trie:section symbol=tests/test_models:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=3744fb3808fe3555bb15d5f07f548cd7c8584688007f6c4b27c159e4a823e3cf source_ref=cd01e48f99e715d106504085b600e52b32176ce5 role=test-infrastructure -->
 Tests for the `trie.models` module, focusing on `TrieClient` token counting and prompt caching behavior.

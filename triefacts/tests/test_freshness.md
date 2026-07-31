@@ -1,93 +1,108 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.2.0
 source: tests/test_freshness.py
-file_fingerprint: 95b985f174680363effb5aea5a603d54e50513bc5c3ed450e14474db3519a3f5
-last_synced_at: '2026-06-06T14:18:52Z'
-description: Tests for the turn-boundary freshness gate.
+file_fingerprint: 8cb71cd6fd365057153d6d3bec2ab111f317036a443a17d7f8eb66b2f96f8c6f
+last_synced_at: '2026-07-29T18:38:37Z'
+description: Tests for the turn-boundary freshness gate (`trie sync --graph-only`).
 defines:
 - kind: module
   qualified_name: tests/test_freshness:__module__
-  lines: 1-461
+  lines: 1-531
 - kind: function
   qualified_name: tests/test_freshness:_git
-  lines: 45-47
+  lines: 46-48
 - kind: function
   qualified_name: tests/test_freshness:_init_repo
-  lines: 50-53
+  lines: 51-54
 - kind: function
   qualified_name: tests/test_freshness:project
-  lines: 57-78
+  lines: 58-79
 - kind: function
   qualified_name: tests/test_freshness:test_stamp_round_trip
-  lines: 86-89
+  lines: 87-90
 - kind: function
   qualified_name: tests/test_freshness:test_read_stamp_returns_none_when_missing
-  lines: 92-93
+  lines: 93-94
 - kind: function
   qualified_name: tests/test_freshness:test_read_stamp_returns_none_on_malformed_json
-  lines: 96-99
+  lines: 97-100
 - kind: function
   qualified_name: tests/test_freshness:test_read_stamp_returns_none_on_wrong_schema
-  lines: 102-105
+  lines: 103-106
 - kind: function
   qualified_name: tests/test_freshness:test_write_stamp_is_atomic_no_partial_files_left_behind
-  lines: 108-113
+  lines: 109-114
 - kind: function
   qualified_name: tests/test_freshness:test_scan_mtimes_returns_in_scope_files_only
-  lines: 121-127
+  lines: 122-128
 - kind: function
   qualified_name: tests/test_freshness:test_scan_mtimes_changes_after_file_edit
-  lines: 130-138
+  lines: 131-139
 - kind: function
   qualified_name: tests/test_freshness:test_ensure_fresh_raises_outside_git
-  lines: 146-165
+  lines: 147-161
 - kind: function
   qualified_name: tests/test_freshness:_run_before_turn
-  lines: 173-192
+  lines: 169-175
 - kind: function
   qualified_name: tests/test_freshness:_run_after_turn
-  lines: 195-205
+  lines: 178-183
 - kind: function
   qualified_name: tests/test_freshness:test_no_stamp_triggers_scan_without_llm
-  lines: 208-228
+  lines: 186-203
 - kind: function
   qualified_name: tests/test_freshness:test_empty_store_with_valid_stamp_self_heals
-  lines: 231-268
+  lines: 206-240
 - kind: function
   qualified_name: tests/test_freshness:test_unchanged_state_is_a_noop
-  lines: 271-277
+  lines: 243-248
 - kind: function
   qualified_name: tests/test_freshness:test_head_moved_triggers_scan_without_llm
-  lines: 280-299
+  lines: 251-267
 - kind: function
   qualified_name: tests/test_freshness:test_mtimes_moved_is_graph_only_and_marks_stale
-  lines: 302-326
+  lines: 270-291
 - kind: function
-  qualified_name: tests/test_freshness:test_mtimes_moved_with_sync_prose_runs_inline
-  lines: 329-347
+  qualified_name: tests/test_freshness:test_unchanged_still_reports_pending_prose_staleness
+  lines: 294-314
 - kind: function
   qualified_name: tests/test_freshness:test_new_file_added_triggers_refresh
-  lines: 350-359
+  lines: 317-326
 - kind: function
   qualified_name: tests/test_freshness:test_removed_file_triggers_refresh
-  lines: 362-369
+  lines: 329-336
 - kind: function
   qualified_name: tests/test_freshness:test_after_turn_picks_up_just_made_edit
-  lines: 377-388
+  lines: 344-355
 - kind: function
   qualified_name: tests/test_freshness:test_after_turn_noop_when_nothing_changed
-  lines: 391-397
+  lines: 358-364
 - kind: function
-  qualified_name: tests/test_freshness:test_cli_refresh_default_runs_after_turn
-  lines: 405-422
+  qualified_name: tests/test_freshness:test_cli_graph_only_defaults_to_after_turn
+  lines: 372-384
 - kind: function
-  qualified_name: tests/test_freshness:test_cli_refresh_before_and_after_mutex
-  lines: 425-434
+  qualified_name: tests/test_freshness:test_cli_turn_flags_imply_graph_only
+  lines: 387-398
 - kind: function
-  qualified_name: tests/test_freshness:test_cli_refresh_outside_git_fails
-  lines: 437-460
+  qualified_name: tests/test_freshness:test_cli_graph_only_before_and_after_mutex
+  lines: 401-410
+- kind: function
+  qualified_name: tests/test_freshness:test_cli_graph_only_rejects_llm_flags
+  lines: 413-429
+- kind: function
+  qualified_name: tests/test_freshness:test_cli_refresh_command_is_gone
+  lines: 432-442
+- kind: function
+  qualified_name: tests/test_freshness:test_cli_graph_only_reports_stale_prose_every_run
+  lines: 445-470
+- kind: function
+  qualified_name: tests/test_freshness:test_cli_graph_only_outside_git_fails
+  lines: 473-492
+- kind: function
+  qualified_name: tests/test_freshness:test_full_sync_stamps_graph_freshness
+  lines: 495-530
 incoming_refs: 0
-outgoing_refs: 40
+outgoing_refs: 36
 ---
 <!-- trie:section symbol=tests/test_freshness:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=ab7aae61e5f60ed8e938017caba43f98f18fdecee1f09edc37363ae841e7dc8b source_ref=a3a134b57a603882c49ea5d69c36ac88832aa352 role=test-infrastructure -->
 Tests for the turn-boundary freshness gate that prevents stale graph state across git operations and file modifications.
@@ -130,48 +145,34 @@ Verifies that `scan_mtimes` returns only files matching the configured scope pat
 <!-- trie:section symbol=tests/test_freshness:test_scan_mtimes_changes_after_file_edit fingerprint=1b67abaef026c1ee9fb5fe6819e8e6f5e8c6d3d998b2dc360702895c4af0eda1 body_fp=e20cb2e13f6cf713bc6570001243a316a3e1dc35d42789d044aa7783af7f4ed4 source_ref=a3a134b57a603882c49ea5d69c36ac88832aa352 role=change-detection -->
 Verifies that `scan_mtimes` detects file modification times changing when source files are edited.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:test_ensure_fresh_raises_outside_git fingerprint=8367b6046047f80f7b6b3bb2170adbb3f445edbf63f301ce34d542c7e9a78532 body_fp=3597330e1a59a08972829bc29036ec2ce7f1d24d4183adefd8fbda3af9dc531d source_ref=a3a134b57a603882c49ea5d69c36ac88832aa352 role=test-infrastructure -->
-Verifies that `ensure_fresh_before_turn` raises `NotAGitRepoError` when called outside a git repository.
+<!-- trie:section symbol=tests/test_freshness:test_ensure_fresh_raises_outside_git fingerprint=9db564e3aa2e8aff5564d55a4eda79cc1430e430cc0d0716aa4c0df666b27f0b body_fp=794250b6ed1ee5a4cdf9e496913f69331b3535ef46de1f7a5abb85455dc7b45e source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
+Assert that `ensure_fresh_before_turn` raises `NotAGitRepoError` when called outside a git repository.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:_run_before_turn fingerprint=ed973b4b217cdaa36e091d520f2727630e7c8a797fb974cc0450595c3a999e6e body_fp=d6bee366f8dbb22e63bdee996fa60ec42673ede3eb034eaffb07549d349ae496 source_ref=126b95462888a58eab7dda6efb246eabc3941e1b role=util -->
-Runs ensure_fresh_before_turn with test fixtures, optionally accepting a client to inspect LLM call counts.
-
-- `client`: if None, uses a default FakeTrieClient for deterministic testing
-- `sync_prose`: passed through to enable inline prose regeneration
+<!-- trie:section symbol=tests/test_freshness:_run_before_turn fingerprint=ee2fc4c5f5e1104f0286c16c360f38e74d6edb4663c9f93e12dea3aba1a58638 body_fp=dbf2e3102acc7eeab0c6ac909760b0d5f56094852dd2872f3c18688df6e81322 source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
+Runs `ensure_fresh_before_turn` with project fixtures and returns the `FreshnessResult`; no LLM client or prose sync is accepted or performed.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:_run_after_turn fingerprint=a442953cd9d0a2624b0fd4681c83c3af537c79593588ab97a22c7bd1a304db1b body_fp=fe3a2355ed58cbeb0e6ae86d863862cfb62e013a25d3eebbcd104f1021d5aba7 source_ref=a3a134b57a603882c49ea5d69c36ac88832aa352 role=test-infrastructure -->
-Test helper that runs the after-turn freshness gate with database and client setup.
+<!-- trie:section symbol=tests/test_freshness:_run_after_turn fingerprint=00d6efaad0512bd1d2ade3eeba137d186bc14b59b317759ba9c6c87909e9a00b body_fp=74cd531770172135f52e7613ad65558ba915c13dbdde469eccc2621bf0a42f97 source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
+Invoke `ensure_fresh_after_turn` against a real project fixture and return the `FreshnessResult`.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:test_no_stamp_triggers_scan_without_llm fingerprint=c305a11f671c6277306c70f0a8453a98dc6a659feea4a77744f1e89b184c71b1 body_fp=e790c2c69d1122ec790acb2f481abefceab08863e0946e808a30aeb0fb6340c2 source_ref=a3a134b57a603882c49ea5d69c36ac88832aa352 role=change-detection -->
-Verifies that first run in a fresh project triggers a graph scan without LLM calls.
-
-- Confirms empty store guard reports "empty_store" reason instead of "no_stamp"
-- Validates incremental refresh is skipped on first contact
-- Ensures stamp is created and records current HEAD after refresh
-- Confirms LLM client receives zero calls during scan-only rebuild
+<!-- trie:section symbol=tests/test_freshness:test_no_stamp_triggers_scan_without_llm fingerprint=cb9cdf287f762c8f64736553121348f1981b658ed72b7edc91dd02fdc4c78712 body_fp=4084cba01a07be2e08adc84d62e95acc7d3b1c0f2e3a04a488a17c44bad551d2 source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
+Assert that the first run against an empty store triggers a graph scan without LLM calls and records reason `"empty_store"`.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:test_empty_store_with_valid_stamp_self_heals fingerprint=720d506359e244b71b9b081e43f0081ddfd35790e3fae72704e1826f293615ff body_fp=34cc7d7f54462e168ce301cc373d53079393cf80cf63cb589407b841ec15acb4 source_ref=a3a134b57a603882c49ea5d69c36ac88832aa352 role=change-detection -->
-Verifies that empty-store guard overrides valid stamp to trigger scan-only rebuild when graph database is corrupted.
-
-- Sets up valid stamp then simulates corrupted empty database
-- Confirms rebuild triggers with `empty_store` reason despite matching stamp
-- Validates no LLM calls during self-healing process
+<!-- trie:section symbol=tests/test_freshness:test_empty_store_with_valid_stamp_self_heals fingerprint=94e549022a7a7d1f8c1686fa0664794fd16ad08b928d15c1d8f74b44874738e9 body_fp=903ebb50d4d933f166448731c753788452e33ee6252e45d41c3856530d816c28 source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
+Assert that deleting `graph.db` while a valid stamp remains forces an `empty_store` rebuild and repopulates the graph, not a no-op `unchanged` verdict.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:test_unchanged_state_is_a_noop fingerprint=8a432c89b41adb3a659c54709a1d0a2f7012900505ba89d3cd2081611b3e0569 body_fp=2bbc4e0845965beaedbc192c4f108422502d4383235035e1cefe361e85c137b5 source_ref=a3a134b57a603882c49ea5d69c36ac88832aa352 role=change-detection -->
-Verifies that freshness gate returns unchanged status when no files or git state have changed since last refresh.
+<!-- trie:section symbol=tests/test_freshness:test_unchanged_state_is_a_noop fingerprint=1d99bfa3bd8e22ce36d38b1d3835eb5cd7f4a44fc7c60498470bc8a0cf40a2ad body_fp=250e1c7163eaac341181d43c908e16b4e0f7483365a8cff4639d3bac0bdf424c source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
+Assert that a second consecutive `ensure_fresh_before_turn` call returns `refreshed=False` with reason `"unchanged"`.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:test_head_moved_triggers_scan_without_llm fingerprint=7c7b6e6971abb581360e4fcb858cf34d7d6f853887f5f33cc6bf13ce11cf2f1b body_fp=e72a9475d1e5ddaea7daf9cf3a3877aa563da9bcdae6abd11f90cbc5a83b3689 source_ref=a3a134b57a603882c49ea5d69c36ac88832aa352 role=change-detection -->
-Verifies that changing git HEAD without modifying tracked files triggers a graph rescan but skips LLM calls.
+<!-- trie:section symbol=tests/test_freshness:test_head_moved_triggers_scan_without_llm fingerprint=e9bda31036e11b00a69788d44fbdd2a5721d1d7f2f3ac992e1a7f8a0ea7419d7 body_fp=3bba216892919314f4bf622c182c0dcbf3459653b5b78c8e55c88c2a18252ba3 source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
+Assert that a new git commit shifts HEAD and triggers a graph-only rescan without invoking the LLM.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:test_mtimes_moved_is_graph_only_and_marks_stale fingerprint=25d6cf14f37b9181dd82b8d4af33e84a9b08791273ed2e4d65655e929fac92b6 body_fp=e2e7a243017e5811293d97a26d9fb5ebd34d0372be94c55f3bbfb80fd4b9af09 source_ref=126b95462888a58eab7dda6efb246eabc3941e1b role=test -->
+<!-- trie:section symbol=tests/test_freshness:test_mtimes_moved_is_graph_only_and_marks_stale fingerprint=a1aa84fbb9ba8fef0220f8c4ec9970533d065a12e0bf49676828939cb6f506d1 body_fp=e2e7a243017e5811293d97a26d9fb5ebd34d0372be94c55f3bbfb80fd4b9af09 source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
 Tests that file edits trigger fast refresh that rebuilds graph without LLM and marks changed files as stale.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:test_mtimes_moved_with_sync_prose_runs_inline fingerprint=31ad13b929a7c8fb2a78e7d8f8d70c5f09a5240e8a95dc17572ead3722a280c0 body_fp=e36e22b1d5f776ea92652c8d7ee8b990de496b24358fe63ed81254638305bb1c source_ref=126b95462888a58eab7dda6efb246eabc3941e1b role=test -->
-Verifies that sync_prose=True triggers inline LLM regeneration and clears pending stale files after mtime changes.
+<!-- trie:section symbol=tests/test_freshness:test_unchanged_still_reports_pending_prose_staleness fingerprint=44366573627147cf032593a3de969b8f7baa4e8599056921ab0bf5a6a51eabe9 body_fp=623d7f6572b81144de59e49d2f30136a95604687fef9ac4c55f7818a218217c9 source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
+Regression test: verifies that an `unchanged` freshness result still surfaces the recorded prose staleness from the pending set, not just runs where `mtimes_moved` was detected.
 
-- Modifies a file to trigger mtime_moved state
-- Asserts result.incremental is not None when sync_prose=True 
-- Confirms pending.stale is cleared after inline sync
+- Edits `src/alpha.py`, confirms `mtimes_moved` with `src/alpha.py` in `stale_files`, then asserts the immediately following `unchanged` run still reports `src/alpha.py` as stale.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_freshness:test_new_file_added_triggers_refresh fingerprint=72a4d16126c9c220e45e18f140acba2cf99435c57bad3b59f76c56bdbc95df22 body_fp=48075a2e3ec369fdbb3e2efbe21cd8c7468f55fe64365e81c1b07014244d9775 source_ref=a3a134b57a603882c49ea5d69c36ac88832aa352 role=change-detection -->
 Verifies that creating a new in-scope file triggers freshness refresh via mtime detection.
@@ -185,16 +186,27 @@ Tests that the after-turn freshness gate detects file modifications and triggers
 <!-- trie:section symbol=tests/test_freshness:test_after_turn_noop_when_nothing_changed fingerprint=9cfb3d3d7aec1e2b94374c89931394b3ad21096fa27413ad4e83b7f74ea4b5ca body_fp=d57f912acced439c679d5fb8e310c40101a6543b779c104506dc05beaa8d244c source_ref=a3a134b57a603882c49ea5d69c36ac88832aa352 role=change-detection -->
 Verifies that after-turn freshness check skips refresh when no source files changed since last refresh.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:test_cli_refresh_default_runs_after_turn fingerprint=f22dd366b40ee69587e3e3da35085658d4520cad79261e3a630c6a948ee431b3 body_fp=e6020bd61792046e2c86b0b102dcb99d8ed0641ac19e0f9dd1030681c2f270f7 source_ref=a3a134b57a603882c49ea5d69c36ac88832aa352 role=test-infrastructure -->
-Verifies that `trie refresh` CLI command without flags runs the after-turn freshness gate by default.
+<!-- trie:section symbol=tests/test_freshness:test_cli_graph_only_defaults_to_after_turn fingerprint=00008cbdb9e0bb77b2d191c1b1a385df374c8e01552ebb3721074eb20037c28d body_fp=d64cadd350b488020b7523b410246c9506c0759fd163811b077bfff10c6cdc8a source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
+Assert that `trie sync --graph-only` exits 0 and runs the after-turn sweep without requiring an API key.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:test_cli_refresh_before_and_after_mutex fingerprint=a656ec572aa7041e39940d696a533e02cb4eb833e3cc5e278199b18bccaadb99 body_fp=ab57c10111ff30fa3bd61285f181dd1727eb5676ab27593ed5f9414ed1519afe source_ref=a3a134b57a603882c49ea5d69c36ac88832aa352 role=test-infrastructure -->
-Verifies the CLI rejects both `--before-turn` and `--after-turn` flags simultaneously with exit code 1.
+<!-- trie:section symbol=tests/test_freshness:test_cli_turn_flags_imply_graph_only fingerprint=cf557c9b67a84d4a261846b0742e3048dd097bb369c7a8b7fb1ee74cc0a878a0 body_fp=56a1950dde86be4b178e180dc52aa0c785be9cc4f573ee8c2580f7b78c8d38bf source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
+Assert that `trie sync --after-turn` implicitly applies `--graph-only`, never triggering LLM spend.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_freshness:test_cli_refresh_outside_git_fails fingerprint=ae9d7e6fe8285a8be7c1bc4818e405388a351ffe08979820a130884f7b31210d body_fp=1554a5c161ad99a6522986126777a2bcfdc93089d5d728fffea04ee5e2231a74 source_ref=a3a134b57a603882c49ea5d69c36ac88832aa352 role=change-detection -->
-Verifies that `trie refresh` CLI command exits with code 1 when run outside git repository.
-
-- Creates trie.toml config in non-git directory
-- Mocks client creation to avoid API key requirements
-- Asserts CLI returns exit code 1 and mentions "git repository"
+<!-- trie:section symbol=tests/test_freshness:test_cli_graph_only_before_and_after_mutex fingerprint=32e6a92f89245d99c7a7577ee57a5765b342d6778b58618966fdf7e79432b265 body_fp=f93344de5386031e1b8079c62384eb3ec9550b76bd06066c17d4ca32f9ae4d67 source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
+Assert that `trie sync --before-turn --after-turn` exits with code 1 and prints "mutually exclusive".
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_freshness:test_cli_graph_only_rejects_llm_flags fingerprint=78ed081a2816b4ef17172a16b34c6e227bba7b71cf60031a793dafc4ebcebc2f body_fp=e3553501d7cfa1f3839af39ba25175716f5de8975fdaaac397b677bada3b5dd8 source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
+Assert that `trie sync --graph-only` (and `--after-turn`) exits 1 with "cannot be combined" for each LLM-mode flag (`--file`, `--budget`, `--all`, `--model`).
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_freshness:test_cli_refresh_command_is_gone fingerprint=9919d4b6d3d5eb931629a4952354af9aa008462f2906d2bb268173251b166b87 body_fp=de99a2c45fe42e1565a7dc2a7241ee2a41bce754397c895f7a403361b67dd01e source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
+Assert that `trie refresh` is no longer a valid CLI command, expecting a non-zero exit and "No such command" in output.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_freshness:test_cli_graph_only_reports_stale_prose_every_run fingerprint=f546446c3b76bbfba46138f41b96801ed31b47e944a3603a3525f1aa8b1ad7fa body_fp=5441f957ddb20e6a7b420a2e82e20886509771d1f5eea01667b8925fce7e5ed8 source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
+Assert that `trie sync --graph-only` reports "prose stale" on every subsequent run after a file edit, not only the run that detected the mtime change.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_freshness:test_cli_graph_only_outside_git_fails fingerprint=358bbb4202fd20c0676a2d1f47a855e5cbf28b638b41c18a805a1ebc65dbdf62 body_fp=24fb4d4fd95c329e756c74e8405712e9255230b660ff54f2bd2d22d1e6916966 source_ref=92ccf12cb1f9c8c71edc05273f7cd4ee33c44227 role=test -->
+Assert that `trie sync --graph-only` exits with code 1 and mentions "git repository" when run outside a git repo.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_freshness:test_full_sync_stamps_graph_freshness fingerprint=794f7cc3ae6532b91812d4c02ec28df35a697ff9559d787940553afacbe5e365 body_fp=26fd57522757d9133d640cefbe60770f29c0b8aad18a4389a470e04452294129 source_ref=ced013c93ceed35f637b33681e5bbd760c5b4287 role=test -->
+Assert that both bootstrap and incremental `trie sync` write a graph freshness stamp, preventing the next turn hook from triggering a redundant rebuild.
 <!-- trie:end -->

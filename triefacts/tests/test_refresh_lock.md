@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.2.0
 source: tests/test_refresh_lock.py
-file_fingerprint: f37035603e7cde190a1a87d214327d25c837bec535ba99a295b010093dd1e3f0
-last_synced_at: '2026-06-03T21:00:00Z'
+file_fingerprint: 02bf21e094f3591390a4551a7c19f75534baaf9e9146ef036911a1c9fedcd732
+last_synced_at: '2026-07-29T17:54:40Z'
 description: Tests for the refresh lock + queue.
 defines:
 - kind: module
@@ -42,7 +42,7 @@ defines:
   qualified_name: tests/test_refresh_lock:test_lock_released_when_holder_crashes
   lines: 228-242
 - kind: function
-  qualified_name: tests/test_refresh_lock:test_cli_refresh_when_contended_queues_and_exits_zero
+  qualified_name: tests/test_refresh_lock:test_cli_graph_only_when_contended_queues_and_exits_zero
   lines: 250-326
 - kind: function
   qualified_name: tests/test_refresh_lock:_make_minimal_trie_project
@@ -63,7 +63,7 @@ defines:
   qualified_name: tests/test_refresh_lock:test_cli_plan_when_contended_exits_two
   lines: 496-538
 incoming_refs: 0
-outgoing_refs: 19
+outgoing_refs: 24
 ---
 <!-- trie:section symbol=tests/test_refresh_lock:__module__ fingerprint=e898e798072bf5c540959d26eaadc8cccfdbc85d6e9a0dcc06ceaa5812d960e9 body_fp=7cfb574da64cd1185c8037bdb6bf6a7055036c90da0fcac4d18d03fe3f597786 source_ref=a247889420e6c77627c6b64724dd207c13c8bf27 role=test-infrastructure -->
 Tests for refresh lock serialization and queueing mechanisms using real subprocess contention.
@@ -122,14 +122,8 @@ Verifies that when a lock holder process crashes without cleanup, the OS release
 - Confirms the crashed process had acquired the lock before dying
 - Tests that a new `try_acquire()` call succeeds after the crash
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_refresh_lock:test_cli_refresh_when_contended_queues_and_exits_zero fingerprint=f6d69648eb1e68bd974e36df7869e38c8cc20bef67544657499bf1b17db256d1 body_fp=bbd530795ed5235f4041a202a5e091e2676d7f6b3832fd64ae35d79b833ced9d source_ref=a247889420e6c77627c6b64724dd207c13c8bf27 role=test-infrastructure -->
-Verifies `trie refresh` CLI queues when contended and exits zero instead of blocking.
-
-- Sets up minimal trie project with git repository to pass freshness gate
-- Spawns child process holding refresh lock to simulate contention
-- Invokes `trie refresh` CLI which should detect lock contention
-- Asserts exit code 0 and "queued" message in output
-- Confirms queued sentinel file exists for lock holder to consume
+<!-- trie:section symbol=tests/test_refresh_lock:test_cli_graph_only_when_contended_queues_and_exits_zero fingerprint=46f04de851e82b86b322865ed1052dd1231e682a6e2cbce9e6f2f5dc2f82c3b3 body_fp=1f5b7074f90c7b0cc0eb2883ab3c25945d0366d0c21c2021c487300f5d08e672 source_ref=3b3c20241df9bcdf7a1fce82196074b5f88bde0a role=test -->
+Assert that `trie sync --graph-only` exits 0, prints "queued", and writes the queued sentinel when another process holds the refresh lock.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_refresh_lock:_make_minimal_trie_project fingerprint=d26724620fc7e0de633567db6872771e9e400e24a9ff452df9c5f9a221f09e06 body_fp=21964a348ad318141fcd855673798456555ff9e9bda52be2d25e2af31502bce3 source_ref=a247889420e6c77627c6b64724dd207c13c8bf27 role=test-infrastructure -->
 Creates a minimal trie project with configuration file, source tree, and git repository for testing.

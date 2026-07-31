@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.0
 source: trie/init.py
 file_fingerprint: 8404d66cb90bf481d446d9ccb779bc363964239677831a79109ab2db39daabfe
-last_synced_at: '2026-07-29T02:54:45Z'
+last_synced_at: '2026-07-29T17:55:31Z'
 defines:
 - kind: module
   qualified_name: trie/init:__module__
@@ -44,7 +44,7 @@ defines:
   qualified_name: trie/init:init_project
   lines: 135-196
 incoming_refs: 36
-outgoing_refs: 1
+outgoing_refs: 3
 ---
 <!-- trie:section symbol=trie/init:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=95b8552fa69d3eff65de01deecb2317826321452b0dc87de2cc7fcf12d191a9f source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=agent-integration -->
 Initializes trie projects by writing configuration, updating gitignore, and running initial scans.

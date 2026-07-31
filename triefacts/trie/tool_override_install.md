@@ -1,14 +1,14 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.0
 source: trie/tool_override_install.py
-file_fingerprint: f91fe9ebfd6c3ccab56138062abeb34e003957e2012fd07d96c1b464453c0ba3
-last_synced_at: '2026-07-27T18:35:04Z'
+file_fingerprint: bb57f246ff6fcaf4f5a4cd1641463adcd1400906fae4e1bd9369a954c52c0d7f
+last_synced_at: '2026-07-29T18:31:54Z'
 description: 'Tool-override installation: replace an agent''s built-in tools with
   trie wrappers.'
 defines:
 - kind: module
   qualified_name: trie/tool_override_install:__module__
-  lines: 1-2244
+  lines: 1-2248
 - kind: constant
   qualified_name: trie/tool_override_install:Action
   lines: 49-49
@@ -32,82 +32,82 @@ defines:
   lines: 132-137
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_grep_override
-  lines: 140-242
+  lines: 140-244
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_read_override
-  lines: 245-981
+  lines: 247-983
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_trace
-  lines: 984-1053
+  lines: 986-1055
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_grep_str
-  lines: 1061-1094
+  lines: 1063-1096
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_grep_entry_points
-  lines: 1097-1129
+  lines: 1099-1131
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_grep_symbol
-  lines: 1132-1164
+  lines: 1134-1166
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_grep_symbol_neighbours
-  lines: 1167-1200
+  lines: 1169-1202
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_explain_symbol
-  lines: 1203-1236
+  lines: 1205-1238
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_explain_symbol_refs
-  lines: 1239-1271
+  lines: 1241-1273
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_trace_flow
-  lines: 1274-1310
+  lines: 1276-1312
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_explain_flow
-  lines: 1313-1349
+  lines: 1315-1351
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_patch
-  lines: 1357-1405
+  lines: 1359-1407
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_patch_drop
-  lines: 1408-1449
+  lines: 1410-1451
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_patch_list
-  lines: 1452-1479
+  lines: 1454-1481
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_patch_apply
-  lines: 1482-1524
+  lines: 1484-1528
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_create_symbol
-  lines: 1527-1584
+  lines: 1531-1588
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_rename_symbol
-  lines: 1587-1629
+  lines: 1591-1633
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_delete_symbol
-  lines: 1632-1673
+  lines: 1636-1677
 - kind: function
   qualified_name: trie/tool_override_install:_render_opencode_batch_patch
-  lines: 1676-1730
+  lines: 1680-1734
 - kind: function
   qualified_name: trie/tool_override_install:_render_claude_code_hooks_json
-  lines: 1738-1794
+  lines: 1742-1798
 - kind: constant
   qualified_name: trie/tool_override_install:TARGETS
-  lines: 1803-2003
+  lines: 1807-2007
 - kind: class
   qualified_name: trie/tool_override_install:ToolOverrideInstallPlan
-  lines: 2012-2018
+  lines: 2016-2022
 - kind: function
   qualified_name: trie/tool_override_install:install
-  lines: 2021-2060
+  lines: 2025-2064
 - kind: function
   qualified_name: trie/tool_override_install:apply_one
-  lines: 2063-2120
+  lines: 2067-2124
 - kind: function
   qualified_name: trie/tool_override_install:_remove_obsolete
-  lines: 2123-2176
+  lines: 2127-2180
 - kind: function
   qualified_name: trie/tool_override_install:_apply_file
-  lines: 2179-2243
+  lines: 2183-2247
 incoming_refs: 33
 outgoing_refs: 0
 ---
@@ -171,7 +171,7 @@ Standard TypeScript header comment injected into all generated opencode tool ove
 - Contains warning against manual editing and instructions for opting out
 - References opencode.ai custom-tools documentation
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_override fingerprint=386f2bbc2a3c500004686b90e6493cd52dd4016863221e192dcbfd4d13028533 body_fp=effa9eadec1298bbf56a76a7ed95c0c3721dde375a55de9b6fe4183c9f9e12bc source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_override fingerprint=2020fbbeaf9204b1052fff6d326af6207f6564c360c69bff9a81de5924b262cd body_fp=effa9eadec1298bbf56a76a7ed95c0c3721dde375a55de9b6fe4183c9f9e12bc source_ref=7ba881213606148abcb9329ac86bff6104b7b2e5 role=io -->
 Generates the TypeScript source for opencode's `grep.ts` tool override that replaces the built-in grep with symbol-aware search via `trie grep`.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/tool_override_install:_render_opencode_read_override fingerprint=ffe463adc332d1f0f88803fa18b58ae49c3b0e654de8c52d6130ffd38a1cfc29 body_fp=f55d7a489f1e10ac416cd3ea564d6eb021fd49b18c3e1ee4ef05a3fb707264d1 source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
@@ -264,12 +264,13 @@ Generate TypeScript tool for opencode that lists pending patches by symbol.
 
 Returns a generated TypeScript tool definition that shells out to `trie patch list` and displays the symbol-grouped patches to the agent. The tool takes no arguments and formats output to show "(no pending patches)" when the command succeeds but produces no output.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_patch_apply fingerprint=8fbcaf739b8cddddfc2f452d67d6fdd8210136a52262be5e54fa387bf5217ae4 body_fp=9a04e6c72d96b1fb85bd16f11d64df0692a497d988b10a5edfaa1e3d1fcf08e7 source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_patch_apply fingerprint=8f6bc4d3648fc77a929645dfc45a1c4830fd5c64bcecf47559c83ea3baf8ca98 body_fp=4fb8b6496a919d82febab22605c66e7410555238886c46be13319c371df37005 source_ref=7ba881213606148abcb9329ac86bff6104b7b2e5 role=io -->
 Generates TypeScript source for opencode's `patch_apply.ts` tool override.
 
 - Returns template code that wraps `trie patch apply` subprocess calls
 - Accepts only `session_note` (required for multi-symbol applies); `backend`, `commit_mode`, and `verbose` args removed
 - Generated tool description clarifies that `patch apply` archives intent only — trie generates no code
+- Generated tool description includes gate-coverage output: touched symbols still lacking notes are listed after apply
 <!-- trie:end -->
 <!-- trie:section symbol=trie/tool_override_install:_render_opencode_create_symbol fingerprint=a03ed259d181f8928a2c0a5309fe5a50fce1816e14a07757dfe8e0ddefd83b19 body_fp=bee4aa08815e981b49e558f8cca1bc2cb8751df42bb1f18a68e8c3ba2c51ea24 source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
 Render the `.opencode/tools/create_symbol.ts` override file that stages creation of a new symbol via `trie patch create-symbol`.

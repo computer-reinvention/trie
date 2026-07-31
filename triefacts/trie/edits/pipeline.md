@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: trie/edits/pipeline.py
-file_fingerprint: e4ce1947f4debbcdbd358685daecd8bd8dbf2a1fd724692d8d89a8d3fc0c3cc4
-last_synced_at: '2026-07-25T11:48:33Z'
+file_fingerprint: 78eacfd9837f0cbc0051e3ae2a17c8ef7b831e3ffe28b8bf79c7960defea026a
+last_synced_at: '2026-07-29T23:17:31Z'
 description: 'The patch pipeline: an intent store, not a code generator.'
 defines:
 - kind: module
   qualified_name: trie/edits/pipeline:__module__
-  lines: 1-160
+  lines: 1-198
 - kind: constant
   qualified_name: trie/edits/pipeline:_SESSION_NOTE_STOPLIST
   lines: 30-30
@@ -25,7 +25,10 @@ defines:
   lines: 80-106
 - kind: function
   qualified_name: trie/edits/pipeline:record_intent
-  lines: 109-159
+  lines: 109-180
+- kind: function
+  qualified_name: trie/edits/pipeline:_coverage_report
+  lines: 183-197
 incoming_refs: 8
 outgoing_refs: 0
 ---
@@ -63,9 +66,15 @@ Return a read-only summary of pending patch notes and the call-graph blast radiu
 - `cascade_symbols` / `patched_symbols`: integer counts of each list
 - `total_patches`: total note count across all patched symbols
 <!-- trie:end -->
-<!-- trie:section symbol=trie/edits/pipeline:record_intent fingerprint=4dd357a5776e518df25638789b44869d2584c02817b3d13688f6bf511139d00c body_fp=b4a1f289e1fecad1e96e885f8e2bfedbb3feab6fedf7807c88d3614f2b1e44ea source_ref=c360ff8f7df2b3e6b0a8cda993262c2aeead5962 role=orchestration -->
+<!-- trie:section symbol=trie/edits/pipeline:record_intent fingerprint=9326b2a878fa067c28d451248da289e56c03bfb7b70c35c128aa0c0e92720465 body_fp=fb5df33de7a8db38dab798816b58692ccf26dda54cef21f015c67b4b755b8f66 source_ref=a50b31660d0129189f1eeecc691bf1931b0d789b role=domain -->
 Seal pending patch notes in-place via `store.mark_patches_applied` (stamps `applied=1`), without writing to any external file or clearing rows from the patches tables.
 
 - `session_note`: required when `total > 1`; validated via `session_note_ok` (rejects empty, too-short, and stoplist words); returns `ok=False` with `"session_note_required"` otherwise.
-- Returns a dict with `ok`, `recorded` count, `symbols` list, and a `next` advisory string.
+- Returns a dict with `ok`, `recorded` count, `symbols` list, and a `next` advisory string; on success also attempts to populate `uncovered` with qnames of touched-but-unnoted symbols via `trie.intent_gate.evaluate` (advisory only — exceptions are silently swallowed).
+- When `total == 0`, still runs the coverage report and returns it (with a `next` hint if uncovered symbols exist), rather than returning an empty envelope immediately.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/edits/pipeline:_coverage_report fingerprint=e7218a6b13aa3f6dcc8855cee725d9b597f1933c50039dd6de751a3f877b8a22 body_fp=37255c35fa9fd5e9378a9c3397439316056b27cfadc97c7094bf569633583955 source_ref=a50b31660d0129189f1eeecc691bf1931b0d789b role=domain -->
+Run the intent-gate evaluation at apply time and return uncovered touched symbols so agents learn of gaps before commit.
+
+- Returns `{"uncovered": [...]}` on violations, or `{}` on clean/error — never raises.
 <!-- trie:end -->

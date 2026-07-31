@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: tests/test_gate.py
-file_fingerprint: 10d498bb0e1d461cf1150e7e9cb52ae8ef943605adfa989c1e2727bd3baba4aa
-last_synced_at: '2026-07-25T11:18:23Z'
+file_fingerprint: b6421c3b5b56d6c143faebc1cc3e544af8a1cacbc46a45c0eb9de3ca81bdc15a
+last_synced_at: '2026-07-29T23:17:26Z'
 description: "Spec for `trie gate` \u2014 the commit guard as one command."
 defines:
 - kind: module
   qualified_name: tests/test_gate:__module__
-  lines: 1-137
+  lines: 1-193
 - kind: constant
   qualified_name: tests/test_gate:runner
   lines: 16-16
@@ -29,8 +29,17 @@ defines:
 - kind: function
   qualified_name: tests/test_gate:test_gate_exits_2_when_writer_holds_the_lock
   lines: 116-136
+- kind: function
+  qualified_name: tests/test_gate:test_gate_warns_on_self_hosting_version_skew
+  lines: 139-151
+- kind: function
+  qualified_name: tests/test_gate:test_gate_no_skew_warning_for_other_projects
+  lines: 154-162
+- kind: function
+  qualified_name: tests/test_gate:test_patch_create_suggests_close_qnames_on_miss
+  lines: 165-192
 incoming_refs: 0
-outgoing_refs: 4
+outgoing_refs: 14
 ---
 <!-- trie:section symbol=tests/test_gate:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=344269b0874680fdcac103211c4b3981e2baaa650449fa871f98ed18e4b47d17 source_ref=1dd00ca9aebbf98ecbad24aef4365f2e5a630bc0 role=test -->
 Integration tests for the `trie gate` commit-guard command, covering no-op, verify failure, intent-gate blocking, lock contention, and clean-pass scenarios.
@@ -58,4 +67,13 @@ Verify that `gate` passes on a clean synced repo, blocks after an unexplained so
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_gate:test_gate_exits_2_when_writer_holds_the_lock fingerprint=4f0dac5754fc546d8e694a544cf190ad13088de5c7fa5bec1542529c60de7dc7 body_fp=756e92096495b25a57214e2d54c4383930182864ed9969f434c6a3286a562cdc source_ref=1dd00ca9aebbf98ecbad24aef4365f2e5a630bc0 role=test -->
 Assert `trie gate` exits with code 2 and emits a retry message when `refresh_lock.try_acquire` yields an unacquired lock.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_gate:test_gate_warns_on_self_hosting_version_skew fingerprint=1b96adae73a0b495e9fa2a9b608e594d87bb8ffb1e2a94eebce5d57d930a2dc8 body_fp=397ad9995ae3ff989be24aa059502533601753e0fb3a91010414a92a3cd34f1d source_ref=6b2b5f37fb6e6eff07b99ad0ef92e460be785e97 role=test -->
+Assert that `trie gate` emits a version-skew warning with the detected version and `uv tool install --force` when the project being gated is the trie source repo itself at a mismatched version.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_gate:test_gate_no_skew_warning_for_other_projects fingerprint=4be10d29db38cafd906999f5a05b8b81f59d7a1b9d99310dfe09ca04df67aef0 body_fp=d3b5ae0e8200630d1940e110cbc60ed23a7a656f9df370477a5d3e3835acd3bc source_ref=6b2b5f37fb6e6eff07b99ad0ef92e460be785e97 role=test -->
+Assert that `trie gate` emits no version-skew warning when the project's `pyproject.toml` names a package other than `trie`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_gate:test_patch_create_suggests_close_qnames_on_miss fingerprint=6f350483096d3c2405b084146756ccad717d74e4e1c049ea42046a85f9654956 body_fp=f25fbf3097f53c003fcacaa7f1491044dd4f9bfb217800d95240bb237b6ae6c3 source_ref=a1751f70f339ca1dd429f735fa9eef29e1b549a3 role=test -->
+Assert that `patch create` with an unknown qname outputs "did you mean" candidates and mentions `--gone` as a secondary hint, not the primary error.
 <!-- trie:end -->

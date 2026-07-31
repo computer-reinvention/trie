@@ -1,6 +1,6 @@
 """Tests for the refresh lock + queue.
 
-The lock exists to serialise concurrent `trie refresh` calls and to
+The lock exists to serialise concurrent `trie sync --graph-only` calls and to
 coalesce a fan-in of rapid turn-end hooks down to a bounded number of
 actual refreshes. The tests below pin:
 
@@ -243,15 +243,15 @@ def test_lock_released_when_holder_crashes(tmp_path: Path):
 
 
 # ---------------------------------------------------------------------------
-# CLI integration: a contested `trie refresh` exits 0 with a queued message.
+# CLI integration: a contested `trie sync --graph-only` exits 0 with a queued message.
 # ---------------------------------------------------------------------------
 
 
-def test_cli_refresh_when_contended_queues_and_exits_zero(
+def test_cli_graph_only_when_contended_queues_and_exits_zero(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    """Drive the actual `trie refresh` CLI under contention. The other holder
-    is a child process; the parent invocation must see the queue branch."""
+    """Drive the actual `trie sync --graph-only` CLI under contention. The other
+    holder is a child process; the parent invocation must see the queue branch."""
     import subprocess
 
     from typer.testing import CliRunner
@@ -312,7 +312,7 @@ def test_cli_refresh_when_contended_queues_and_exits_zero(
         monkeypatch.chdir(tmp_path)
 
         runner = CliRunner()
-        result = runner.invoke(app, ["refresh"])
+        result = runner.invoke(app, ["sync", "--graph-only"])
         assert result.exit_code == 0, result.output
         assert "queued" in result.output.lower()
 

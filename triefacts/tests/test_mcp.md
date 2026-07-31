@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: tests/test_mcp.py
-file_fingerprint: 85a9077a73dd8a41c63db17d24e253adb20e6dff268017a6e52c0c7fb2788379
-last_synced_at: '2026-07-28T23:48:24Z'
+file_fingerprint: 802e912c08e890e8e501ada6124d56c60f6c0a36e4c45d89883fac7202b7bb9d
+last_synced_at: '2026-07-29T23:24:47Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: module
   qualified_name: tests/test_mcp:__module__
-  lines: 1-1026
+  lines: 1-1059
 - kind: constant
   qualified_name: tests/test_mcp:PROJECT_TOML
   lines: 21-30
@@ -84,175 +84,184 @@ defines:
   qualified_name: tests/test_mcp:test_grep_fallback_caps_matches_and_notes_truncation
   lines: 309-335
 - kind: function
+  qualified_name: tests/test_mcp:test_grep_fallback_capped_by_request_limit
+  lines: 338-343
+- kind: function
+  qualified_name: tests/test_mcp:test_grep_partial_name_hits_fill_up_with_related
+  lines: 346-361
+- kind: function
+  qualified_name: tests/test_mcp:test_grep_full_hits_skip_related_fill_up
+  lines: 364-368
+- kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_omits_truncation_note_when_under_cap
-  lines: 338-346
+  lines: 371-379
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fallback_honours_scope_prefix
-  lines: 349-364
+  lines: 382-397
 - kind: function
   qualified_name: tests/test_mcp:test_grep_normal_hits_path_omits_fallback_key
-  lines: 367-373
+  lines: 400-406
 - kind: function
   qualified_name: tests/test_mcp:test_read_returns_prose_and_neighbours
-  lines: 379-386
+  lines: 412-419
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_pointer_shape
-  lines: 389-392
+  lines: 422-425
 - kind: function
   qualified_name: tests/test_mcp:test_read_neighbour_carries_one_liner
-  lines: 395-398
+  lines: 428-431
 - kind: function
   qualified_name: tests/test_mcp:test_read_unknown_qname_returns_not_found
-  lines: 401-404
+  lines: 434-437
 - kind: function
   qualified_name: tests/test_mcp:test_read_fuzzy_suggestion_for_typo
-  lines: 407-413
+  lines: 440-446
 - kind: function
   qualified_name: tests/test_mcp:test_read_file_path_returns_compact_triefact_view
-  lines: 419-429
+  lines: 452-462
 - kind: function
   qualified_name: tests/test_mcp:test_read_file_path_full_returns_prose_without_sentinels
-  lines: 432-439
+  lines: 465-472
 - kind: function
   qualified_name: tests/test_mcp:test_read_file_path_show_source_returns_numbered_source
-  lines: 442-446
+  lines: 475-479
 - kind: function
   qualified_name: tests/test_mcp:test_read_file_path_offset_limit_implies_source
-  lines: 449-454
+  lines: 482-487
 - kind: function
   qualified_name: tests/test_mcp:test_read_non_indexed_file_falls_back_to_source
-  lines: 457-461
+  lines: 490-494
 - kind: function
   qualified_name: tests/test_mcp:test_read_file_with_line_suffix_reads_source_window
-  lines: 464-468
+  lines: 497-501
 - kind: function
   qualified_name: tests/test_mcp:test_trace_callers_returns_topology
-  lines: 474-480
+  lines: 507-513
 - kind: function
   qualified_name: tests/test_mcp:test_trace_callees_returns_outbound
-  lines: 483-486
+  lines: 516-519
 - kind: function
   qualified_name: tests/test_mcp:test_trace_both_directions
-  lines: 489-494
+  lines: 522-527
 - kind: function
   qualified_name: tests/test_mcp:test_trace_invalid_direction_returns_error
-  lines: 497-500
+  lines: 530-533
 - kind: function
   qualified_name: tests/test_mcp:test_trace_unknown_qname_returns_not_found
-  lines: 503-506
+  lines: 536-539
 - kind: function
   qualified_name: tests/test_mcp:test_trace_depth_zero_returns_only_root
-  lines: 509-512
+  lines: 542-545
 - kind: function
   qualified_name: tests/test_mcp:test_trace_depth_clamp_adds_note
-  lines: 515-519
+  lines: 548-552
 - kind: function
   qualified_name: tests/test_mcp:test_build_server_registers_three_verbs
-  lines: 525-548
+  lines: 558-581
 - kind: function
   qualified_name: tests/test_mcp:test_build_server_wire_names_bind_to_internal_methods
-  lines: 551-568
+  lines: 584-601
 - kind: function
   qualified_name: tests/test_mcp:dual_rank_project
-  lines: 577-634
+  lines: 610-667
 - kind: function
   qualified_name: tests/test_mcp:test_grep_entry_points_niche_ranks_before_hub
-  lines: 637-660
+  lines: 670-693
 - kind: function
   qualified_name: tests/test_mcp:test_grep_entry_points_hits_carry_score
-  lines: 663-675
+  lines: 696-708
 - kind: function
   qualified_name: tests/test_mcp:test_grep_symbol_typo_tolerance
-  lines: 678-684
+  lines: 711-717
 - kind: function
   qualified_name: tests/test_mcp:test_grep_symbol_returns_score_field
-  lines: 687-695
+  lines: 720-728
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fuzzy_prose_fallback
-  lines: 698-713
+  lines: 731-746
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_fuzzy_fallback
-  lines: 716-726
+  lines: 749-759
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_fuzzy_fallback_finds_close_name
-  lines: 729-745
+  lines: 762-778
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_all_finds_non_indexed_file
-  lines: 751-757
+  lines: 784-790
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_all_attributes_indexed_hits_to_symbols
-  lines: 760-764
+  lines: 793-797
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_default_does_not_see_non_indexed
-  lines: 767-772
+  lines: 800-805
 - kind: function
   qualified_name: tests/test_mcp:test_find_files_by_extension
-  lines: 775-779
+  lines: 808-812
 - kind: function
   qualified_name: tests/test_mcp:test_find_files_by_bare_name
-  lines: 782-785
+  lines: 815-818
 - kind: function
   qualified_name: tests/test_mcp:test_find_files_indexed_only
-  lines: 788-792
+  lines: 821-825
 - kind: function
   qualified_name: tests/test_mcp:test_find_files_prunes_trie_dir
-  lines: 795-798
+  lines: 828-831
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_non_indexed_file
-  lines: 801-806
+  lines: 834-839
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_offset_limit
-  lines: 809-814
+  lines: 842-847
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_missing_file_errors
-  lines: 817-821
+  lines: 850-854
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_directory_errors
-  lines: 824-828
+  lines: 857-861
 - kind: function
   qualified_name: tests/test_mcp:test_blast_radius_reports_cascade
-  lines: 831-837
+  lines: 864-870
 - kind: function
   qualified_name: tests/test_mcp:test_blast_radius_unknown_symbol_errors
-  lines: 840-844
+  lines: 873-877
 - kind: function
   qualified_name: tests/test_mcp:test_write_file_creates_new_file
-  lines: 847-853
+  lines: 880-886
 - kind: function
   qualified_name: tests/test_mcp:test_write_file_refuses_clobber_without_overwrite
-  lines: 856-861
+  lines: 889-894
 - kind: function
   qualified_name: tests/test_mcp:test_write_file_overwrite_flag
-  lines: 864-869
+  lines: 897-902
 - kind: function
   qualified_name: tests/test_mcp:test_write_file_indexed_path_flags_needs_sync
-  lines: 872-876
+  lines: 905-909
 - kind: function
   qualified_name: tests/test_mcp:test_write_file_outside_root_errors
-  lines: 879-883
+  lines: 912-916
 - kind: function
   qualified_name: tests/test_mcp:test_batch_patch_stages_mixed_items
-  lines: 886-900
+  lines: 919-933
 - kind: function
   qualified_name: tests/test_mcp:test_batch_patch_reports_bad_items_without_aborting
-  lines: 903-917
+  lines: 936-950
 - kind: function
   qualified_name: tests/test_mcp:test_batch_patch_empty_list_errors
-  lines: 920-923
+  lines: 953-956
 - kind: function
   qualified_name: tests/test_mcp:test_read_warns_when_prose_is_stale
-  lines: 929-964
+  lines: 962-997
 - kind: function
   qualified_name: tests/test_mcp:test_read_warns_when_graph_itself_is_stale
-  lines: 967-981
+  lines: 1000-1014
 - kind: function
   qualified_name: tests/test_mcp:test_read_has_no_stale_warning_when_fresh
-  lines: 984-993
+  lines: 1017-1026
 - kind: function
   qualified_name: tests/test_mcp:test_read_history_flag_surfaces_intent_trail
-  lines: 996-1025
+  lines: 1029-1058
 incoming_refs: 0
-outgoing_refs: 18
+outgoing_refs: 107
 ---
 <!-- trie:section symbol=tests/test_mcp:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8aae9c0160792068985e2d8f76d0fb26134f6f6b03e5f03d32d39b128db471ad source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests for MCP tool surface (grep, read, trace) via direct TrieTools invocation.
@@ -285,10 +294,10 @@ Creates a test project fixture with scanned symbols and generated triefacts for 
 - Syncs `lib.py` and `app.py` using FakeTrieClient to generate documentation
 - Returns the project path with `.trie/graph.db` containing queryable data
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:tools fingerprint=b89f3ca1611ed5226f820d82ffc6f4d3db27942f64390976744c1fbf0d5e67de body_fp=03851a485a0bfaf6da9ce7379e6be9bbf9d979aecffc4d8f0ba33a8ec4d47b67 source_ref=931d15ee10fbf1e812bda2e3e059751488a363e3 role=test -->
+<!-- trie:section symbol=tests/test_mcp:tools fingerprint=b89f3ca1611ed5226f820d82ffc6f4d3db27942f64390976744c1fbf0d5e67de body_fp=03851a485a0bfaf6da9ce7379e6be9bbf9d979aecffc4d8f0ba33a8ec4d47b67 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Creates a TrieTools fixture for the populated test project and ensures cleanup after use.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing fingerprint=2ea97d1b02ea695fbca32b81cfd8377a7e1da3159c9b30a1815fe2099d25638b body_fp=4df7c8bf2d3fc78317a7bf684cf1bca16d55c1971b6168ee2217d647e9423267 source_ref=931d15ee10fbf1e812bda2e3e059751488a363e3 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_trie_tools_init_fails_clearly_when_rg_missing fingerprint=2ea97d1b02ea695fbca32b81cfd8377a7e1da3159c9b30a1815fe2099d25638b body_fp=4df7c8bf2d3fc78317a7bf684cf1bca16d55c1971b6168ee2217d647e9423267 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Tests that TrieTools initialization fails with clear error message when ripgrep binary is missing.
 
 - Simulates missing `rg` by stubbing `shutil.which` to return `None`
@@ -388,6 +397,18 @@ Tests that grep's fallback mechanism caps excessive matches and includes truncat
 - Ensures truncation note contains "of" to communicate incomplete results
 - Confirms returned matches still carry standard fields like `qname` and `inbound_count`
 <!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_fallback_capped_by_request_limit fingerprint=591fab6b93894c7bcc93cf5d54e917e23d6971b7c50985b22c8c2e6036835dbf body_fp=6978b356ce8bf2d68d951744a5ee4d91e07e822fc4816a907dad603f4e51fba1 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Assert that `TrieTools.grep` fallback `matches` list is capped to the request's `limit`, not the config-level match cap.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_partial_name_hits_fill_up_with_related fingerprint=56b57e03bcb00e4f5ea110176ed32b1626be41a87df754c5ff3543dce5222f4b body_fp=0fb7cbb40320b2740a64f3267b691b7b1cb550716dbefc3ebba5a16aef6c8785 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Verify that partial name hits fill the remaining `limit` budget with `related` body-match candidates that exclude qnames already in `hits`.
+
+- `related_kind` must equal `"text_match"` when fill-up runs.
+- Combined `hits` + `related` count must not exceed `limit`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_full_hits_skip_related_fill_up fingerprint=9be62a2b4e4134d3b8f13fded1d11b986871900df64cafb9c88924a8c87d0a27 body_fp=84c200b392acf4ca5db48c215c3acf82d49bf0261de3c51c2e77a17305378c63 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Assert that `TrieTools.grep` omits the `related` key when name hits already saturate the requested `limit`.
+<!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp:test_grep_fallback_omits_truncation_note_when_under_cap fingerprint=cf99e3b6a8f38acee3321f95f67be04eb837de301219103c85baec04b0a7bad0 body_fp=a9548def3accc79b05d07ca23e28d0657120c151ae5ed0b29d520d382f4d5e8a source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests that grep fallback omits truncation warnings when match count stays within limit.
 
@@ -400,69 +421,68 @@ Verify that TrieTools.grep respects scope_prefix filter when falling back to tex
 <!-- trie:section symbol=tests/test_mcp:test_grep_normal_hits_path_omits_fallback_key fingerprint=e4d4fa9ea51cf2db4cfeb5df2b356f09c2f3af9fb4af96059369c25e6b38f07d body_fp=3a3f17e5a24da2b03ebf5366361c6f3ec8b60bdf54c478993e5c91b9f0779225 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Asserts that `TrieTools.grep` omits the `fallback` key when primary search returns hits.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_returns_prose_and_neighbours fingerprint=8c1f77548638b430933ea0f0fab8a398b6ee3ac0f3dce12584d0dc79166d6f8e body_fp=16835740c35ea08067deb52b701db95fbba764e04fe7e686d325bc2f1aa438b4 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
-Test that TrieTools.read returns structured output containing qname, prose documentation, and caller/callee neighbor lists.
+<!-- trie:section symbol=tests/test_mcp:test_read_returns_prose_and_neighbours fingerprint=8c1f77548638b430933ea0f0fab8a398b6ee3ac0f3dce12584d0dc79166d6f8e body_fp=af0580d84b90df61453c91c38a0d5c27e9c32d690e28727f06aa6f7a84397b5e source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Test that `TrieTools.read` returns structured output containing qname, prose documentation, and caller/callee neighbor lists.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_source_pointer_shape fingerprint=420bf61a94fb75358593559620c310977d02c1bfeeb15481f3806550aeb73e97 body_fp=cbd3a6570ef2967647c16c1c10cf7de4fed58d730970e3bd9507f3f726d293e6 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_mcp:test_read_source_pointer_shape fingerprint=420bf61a94fb75358593559620c310977d02c1bfeeb15481f3806550aeb73e97 body_fp=cbd3a6570ef2967647c16c1c10cf7de4fed58d730970e3bd9507f3f726d293e6 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test-infrastructure -->
 Verifies that TrieTools.read returns a source_pointer field formatted as "file:start-end".
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_neighbour_carries_one_liner fingerprint=51c2f2f644f316fdeabf34c1c1d3b0dc3b57ec9e2f746d8c04d682b4cf8fd044 body_fp=23502f8d944170f55cbc44fe71314f48a1b892622d23e5a76988ef8b11a31a2e source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=mcp-server -->
+<!-- trie:section symbol=tests/test_mcp:test_read_neighbour_carries_one_liner fingerprint=51c2f2f644f316fdeabf34c1c1d3b0dc3b57ec9e2f746d8c04d682b4cf8fd044 body_fp=23502f8d944170f55cbc44fe71314f48a1b892622d23e5a76988ef8b11a31a2e source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=mcp-server -->
 Verifies that `read` returns caller/callee neighbours with a populated `one_liner` field from their triefact body.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_unknown_qname_returns_not_found fingerprint=3265a0090391b2d6756d124cacb28e9a01e3e19ee7b45fe0032c752b36efb7f7 body_fp=b60c7785a5ebf34813505cb2b42f5e28a9b0424e6cc9f344b300fbeaa7aebe57 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
-Verify TrieTools read method returns error envelope with not_found code for unknown symbol names.
+<!-- trie:section symbol=tests/test_mcp:test_read_unknown_qname_returns_not_found fingerprint=3265a0090391b2d6756d124cacb28e9a01e3e19ee7b45fe0032c752b36efb7f7 body_fp=31dfb682d072853a786d186bd95ef20d15c6b068e06ec581c585b8b1f1c9146b source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Verify `TrieTools.read` returns an error envelope with `not_found` code for unknown symbol names.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_fuzzy_suggestion_for_typo fingerprint=656607d4483ca9d33fd84a8e21cd913fd53f6dfb9c395347ff19d836dabaa261 body_fp=1e16595f82f06d08d3af11310c2ed4e77f4fca84de607b81906dbf94fa9f0d91 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
-Tests that the read tool returns a fuzzy suggestion when given a qname with a typo.
+<!-- trie:section symbol=tests/test_mcp:test_read_fuzzy_suggestion_for_typo fingerprint=656607d4483ca9d33fd84a8e21cd913fd53f6dfb9c395347ff19d836dabaa261 body_fp=cfa7fbe15f8df846aac2397982444ceb80953a416f52d4e3b887b5e1fd09603e source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Tests that `tools.read` returns a fuzzy suggestion when given a qname with a typo.
 
-- Calls `tools.read("lib:slugfy")` with a misspelled qname ("slugfy" instead of "slugify")
-- Verifies the response contains an error with a suggestion that either mentions "slugify" directly or guides the user to use `grep()`
+- Passes `"lib:slugfy"` (misspelled); expects `error` with a `suggestion` containing `"slugify"` or `"grep("`
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_file_path_returns_compact_triefact_view fingerprint=6b57267237051b42a5318728289aa553c37e72ce7444fa3438811b3a536569d7 body_fp=7bb3207f720052d6b4c9c5ee845c80bf944339bdf3bfac5d754e2c1f5dc65621 source_ref=d14cdee45bc748fa9b5d3b29a20a71ccf63972ea role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_read_file_path_returns_compact_triefact_view fingerprint=6b57267237051b42a5318728289aa553c37e72ce7444fa3438811b3a536569d7 body_fp=7bb3207f720052d6b4c9c5ee845c80bf944339bdf3bfac5d754e2c1f5dc65621 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Assert that `TrieTools.read` with a file path returns `mode="triefact_compact"` and an output body containing per-symbol prose, not line-numbered raw source.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_file_path_full_returns_prose_without_sentinels fingerprint=2f4863371456f360a8c3f384298cfc091e166fdff563fd1d4c2816c88fa27f8c body_fp=f96bda2e05abe2513374f96c62427079a08cbdb63a918b34de4af5e4d50af81a source_ref=d14cdee45bc748fa9b5d3b29a20a71ccf63972ea role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_read_file_path_full_returns_prose_without_sentinels fingerprint=2f4863371456f360a8c3f384298cfc091e166fdff563fd1d4c2816c88fa27f8c body_fp=f96bda2e05abe2513374f96c62427079a08cbdb63a918b34de4af5e4d50af81a source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Assert that `TrieTools.read` with `full=True` returns mode `"triefact_full"` and strips `trie:section`/`trie:end` sentinels from the prose output.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_file_path_show_source_returns_numbered_source fingerprint=f91ec45789a68f8762848156a39f5bf01e3ba346ce19be5133acb819801d71a4 body_fp=edc59dbd2cf296d2cb6dfb3e5e44c1d9f0dcf221d2c2f2dc0a228289acfcf6c7 source_ref=d14cdee45bc748fa9b5d3b29a20a71ccf63972ea role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_read_file_path_show_source_returns_numbered_source fingerprint=f91ec45789a68f8762848156a39f5bf01e3ba346ce19be5133acb819801d71a4 body_fp=edc59dbd2cf296d2cb6dfb3e5e44c1d9f0dcf221d2c2f2dc0a228289acfcf6c7 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Assert that `TrieTools.read` with `show_source=True` returns raw line-numbered source, bypassing any existing triefact.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_file_path_offset_limit_implies_source fingerprint=d13150b206237c05dd2aaa58c2cd5e6ecff3e3abbe8e63e8e23e6b0b390f5438 body_fp=c1b445456371ade3ff95853fec2de7c654eaed528830626162c485fdd0aa4584 source_ref=d14cdee45bc748fa9b5d3b29a20a71ccf63972ea role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_read_file_path_offset_limit_implies_source fingerprint=d13150b206237c05dd2aaa58c2cd5e6ecff3e3abbe8e63e8e23e6b0b390f5438 body_fp=c1b445456371ade3ff95853fec2de7c654eaed528830626162c485fdd0aa4584 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Assert that `TrieTools.read` with `offset`/`limit` returns a 2-line raw source window with 1-indexed line-number prefixes.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_non_indexed_file_falls_back_to_source fingerprint=abde138a5ab1033de13f6c0d1070a9c412642989343f50d3f03160c83d074511 body_fp=6390d537d71c3a6460b8c4b7a9ba31e832c9324c4e4c6b6ffcfe90cadf84568d source_ref=d14cdee45bc748fa9b5d3b29a20a71ccf63972ea role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_read_non_indexed_file_falls_back_to_source fingerprint=abde138a5ab1033de13f6c0d1070a9c412642989343f50d3f03160c83d074511 body_fp=6390d537d71c3a6460b8c4b7a9ba31e832c9324c4e4c6b6ffcfe90cadf84568d source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Assert that `TrieTools.read` returns raw source lines for a real file with no triefact entry, rather than an error.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_file_with_line_suffix_reads_source_window fingerprint=27731a689d725ac5dca781084b196761ac061473f6052ff512d70e7120589537 body_fp=c116956f1b85a1b175b559017c95ec2b542fb3e55e442d86b42e5d27d924496f source_ref=d14cdee45bc748fa9b5d3b29a20a71ccf63972ea role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_read_file_with_line_suffix_reads_source_window fingerprint=27731a689d725ac5dca781084b196761ac061473f6052ff512d70e7120589537 body_fp=c116956f1b85a1b175b559017c95ec2b542fb3e55e442d86b42e5d27d924496f source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Verify that `TrieTools.read` with a `path:LINE` cursor string returns a windowed source response with 1-indexed line-numbered output.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trace_callers_returns_topology fingerprint=ba52df6ec0918227c8a41b6a0d14ab17f8fca12de24f0684dd8eb190b5e31c9d body_fp=97b4192f602a4fc81208a94636a971a6351aa38b31de0eb75dae3450189ceb73 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_callers_returns_topology fingerprint=ba52df6ec0918227c8a41b6a0d14ab17f8fca12de24f0684dd8eb190b5e31c9d body_fp=97b4192f602a4fc81208a94636a971a6351aa38b31de0eb75dae3450189ceb73 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test-infrastructure -->
 Verifies that TrieTools.trace returns correct topology with root, nodes, and caller edges for direction="callers".
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trace_callees_returns_outbound fingerprint=0f7a79554ab1ccc241fd5da78d98609b43458bbc13f8ab26ace19fde87547dde body_fp=e73e4d139ff8588d39ce912ac1e7dcb7ef7aeb2ebb6a2bce35ee473aa92feecb source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_callees_returns_outbound fingerprint=0f7a79554ab1ccc241fd5da78d98609b43458bbc13f8ab26ace19fde87547dde body_fp=e73e4d139ff8588d39ce912ac1e7dcb7ef7aeb2ebb6a2bce35ee473aa92feecb source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test-infrastructure -->
 Test that `TrieTools.trace` with `direction="callees"` returns outbound references in the graph structure.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trace_both_directions fingerprint=d982c36f43d513419ade4e39cc8a34a1405626cf97bdb9cf3043e5dc8e96bab0 body_fp=38689dcece06e7c171172026c580aa12515acfe64c14f7d790201953f04bad11 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_both_directions fingerprint=d982c36f43d513419ade4e39cc8a34a1405626cf97bdb9cf3043e5dc8e96bab0 body_fp=38689dcece06e7c171172026c580aa12515acfe64c14f7d790201953f04bad11 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Tests TrieTools.trace with bidirectional flow discovery.
 
 - Verifies callers appear in nodes when direction is "both"
 - Checks edges carry directional metadata for visualization
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trace_invalid_direction_returns_error fingerprint=ee66239794f468126ebd3f5e9d557088e75a14791456cb94d3242b919f9a1712 body_fp=2f43d622b30b94e9c276107d37bbdb29e1e4abfd55bd1723cf00714e386c0da0 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_invalid_direction_returns_error fingerprint=ee66239794f468126ebd3f5e9d557088e75a14791456cb94d3242b919f9a1712 body_fp=2f43d622b30b94e9c276107d37bbdb29e1e4abfd55bd1723cf00714e386c0da0 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test-infrastructure -->
 Verifies that TrieTools.trace rejects an invalid direction parameter with an "invalid_argument" error code.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trace_unknown_qname_returns_not_found fingerprint=4a972421a152c7b560db28c9f942d12a1917d194cc1acb5041774f2b39f1b89d body_fp=9bc63f81e450e1bf480f07438eb1499e75152f77ac2c6d456b68f74caca42605 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_unknown_qname_returns_not_found fingerprint=4a972421a152c7b560db28c9f942d12a1917d194cc1acb5041774f2b39f1b89d body_fp=9bc63f81e450e1bf480f07438eb1499e75152f77ac2c6d456b68f74caca42605 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 ## test_trace_unknown_qname_returns_not_found
 
 Verifies that TrieTools.trace returns a not_found error for nonexistent symbols.
 
 - Tests the error envelope structure when an invalid qname is passed to trace
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trace_depth_zero_returns_only_root fingerprint=76be5ecaba8cb2a295a796f304e77c718a9dcc8d23868995efa57a5182d2a1c2 body_fp=11c567dde7da9bc8423d8827a4f588b836dddc74664fc8fd360db71e6bf9bcd0 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_depth_zero_returns_only_root fingerprint=76be5ecaba8cb2a295a796f304e77c718a9dcc8d23868995efa57a5182d2a1c2 body_fp=11c567dde7da9bc8423d8827a4f588b836dddc74664fc8fd360db71e6bf9bcd0 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test-infrastructure -->
 Verifies that trace with depth=0 returns only the root symbol with no edges.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_trace_depth_clamp_adds_note fingerprint=c455960b8dcfb8693c4e826945685a9217238b8705ee7806c1ca182dccf62c13 body_fp=08f8f6001272fdf61e7b1e11b14cfdb2422712187f89ab03ab670e2f46a66336 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
-Tests that TrieTools.trace adds a note when depth exceeds the configured maximum.
+<!-- trie:section symbol=tests/test_mcp:test_trace_depth_clamp_adds_note fingerprint=c455960b8dcfb8693c4e826945685a9217238b8705ee7806c1ca182dccf62c13 body_fp=c81daf1b227fe7198278fd3c30998cbb0c0ce92a8721d55999d4afdb19789595 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Tests that `TrieTools.trace` adds a note when depth exceeds the configured maximum.
 
 - Requests depth=99 against default max of 5 and verifies "clamped" appears in response notes
 <!-- trie:end -->
@@ -485,7 +505,7 @@ Creates test project with two auth symbols ranked by inbound count for fuzzy mat
 - Both symbols contain "auth" for equal text relevance but different centrality scores
 - Tests sorting behavior where niche symbols rank before hubs at equal relevance
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_niche_ranks_before_hub fingerprint=a5bf02d8993e8282336d29b02cec7ebb34624737bcbad9c62cbda7acad54290e body_fp=5cf31bb5473fa0a0eca8dcd6199277e19d4abd1e61a76ed4f2d5d93228875539 source_ref=931d15ee10fbf1e812bda2e3e059751488a363e3 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_niche_ranks_before_hub fingerprint=a5bf02d8993e8282336d29b02cec7ebb34624737bcbad9c62cbda7acad54290e body_fp=5cf31bb5473fa0a0eca8dcd6199277e19d4abd1e61a76ed4f2d5d93228875539 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Verifies `grep_entry_points` ranks niche symbols before hubs when relevance scores are equal.
 
 - Uses `dual_rank_project` fixture with `auth_check` (2 inbound) and `hub_authenticate` (3 inbound)
@@ -493,13 +513,13 @@ Verifies `grep_entry_points` ranks niche symbols before hubs when relevance scor
 - Asserts `auth_check` appears before `hub_authenticate` in results
 - Tests the sort key: score DESC, inbound_count ASC
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_hits_carry_score fingerprint=bf76df08b996d67ba20379770a38f838d8fe1c762948d49445555df41368cc37 body_fp=249bc8f0cd416cd5944a6883261bdef30bb3eeacddb4863ef73ff7af41c2adb8 source_ref=931d15ee10fbf1e812bda2e3e059751488a363e3 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_hits_carry_score fingerprint=bf76df08b996d67ba20379770a38f838d8fe1c762948d49445555df41368cc37 body_fp=249bc8f0cd416cd5944a6883261bdef30bb3eeacddb4863ef73ff7af41c2adb8 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Verifies that grep_entry_points results include a numeric score field for ranking.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_symbol_typo_tolerance fingerprint=998a77d9bbc63dc7fa9771cbe44d66c7262382670d46446093a4c0102cb98e51 body_fp=ba9922e48ca93082d1577f0aabfc32b42abc69ada104d608576ddc406a05d3e4 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=mcp-server -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_symbol_typo_tolerance fingerprint=998a77d9bbc63dc7fa9771cbe44d66c7262382670d46446093a4c0102cb98e51 body_fp=ba9922e48ca93082d1577f0aabfc32b42abc69ada104d608576ddc406a05d3e4 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=mcp-server -->
 Verifies that TrieTools.grep_symbol resolves single-character typos using fuzzy matching at cutoff 45.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_symbol_returns_score_field fingerprint=d875689a783594250d150f3a147a935eeeb38aeb1fadede0bc7712cc65914a22 body_fp=b6522a8833f3c05954c06fb29adf9f56aa321ed8df6b0c53d4036121ee5d9a46 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_symbol_returns_score_field fingerprint=d875689a783594250d150f3a147a935eeeb38aeb1fadede0bc7712cc65914a22 body_fp=b6522a8833f3c05954c06fb29adf9f56aa321ed8df6b0c53d4036121ee5d9a46 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test-infrastructure -->
 Validates that `TrieTools.grep_symbol` returns symbols with numeric score fields in both match and similar arrays.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp:test_grep_fuzzy_prose_fallback fingerprint=0bdb61dcf7c038d93f1a7a4598b1a770d003ba2609b446451546db3192d4dd4e body_fp=bbf5eef1f7e55f55c6a8149e2e35aa003eec554fd6c338e9f75af34114541326 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=mcp-server -->
@@ -509,85 +529,85 @@ Verifies grep's fuzzy prose fallback surfaces symbols containing concept words w
 - Expects either text_match (ripgrep literal match) or fuzzy_prose (fuzzy scoring) fallback types
 - When fuzzy_prose fallback activates, validates slugify appears in the returned matches
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_str_fuzzy_fallback fingerprint=67380bf7bf45fed97698909288b028bd324ec109f63ba4924f1ec5a14d9de327 body_fp=9673fa25de4a0d63b8514286b76c720885febfc2e3b82f185b3c9511f11453df source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_str_fuzzy_fallback fingerprint=67380bf7bf45fed97698909288b028bd324ec109f63ba4924f1ec5a14d9de327 body_fp=9673fa25de4a0d63b8514286b76c720885febfc2e3b82f185b3c9511f11453df source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Tests that `grep_str` returns fuzzy fallback when pattern matches nothing in source.
 
 - Verifies empty hits array when nonsense pattern finds no regex matches
 - Confirms response includes `hits` key to prevent crashes on malformed responses
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_str_fuzzy_fallback_finds_close_name fingerprint=0dc0ff2f1a636680859fd46f2db38dac736a30e6bc5ada90d65313099d97ec0b body_fp=4712f18aa206c321f984553fd76b716f1c4b2eac2154ca80152bb5a6d3e7f9b6 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_str_fuzzy_fallback_finds_close_name fingerprint=0dc0ff2f1a636680859fd46f2db38dac736a30e6bc5ada90d65313099d97ec0b body_fp=4712f18aa206c321f984553fd76b716f1c4b2eac2154ca80152bb5a6d3e7f9b6 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Verify grep_str returns fuzzy fallback when regex search fails but symbol name is close to query.
 
 - Tests grep_str with typo "slugufy" expecting fuzzy_one_liner fallback to surface "slugify"
 - Skips assertion if ripgrep accidentally finds literal matches in source
 - Validates fallback contains expected symbol via name matching
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_str_all_finds_non_indexed_file fingerprint=dc3e9e6b1e196c6e51059cbdcecb830a3116e01b8410665633c730fb2cc90ef5 body_fp=a813374f678cbb00c569bcae1c861e09dfc3754f4212ae56f5008d9ccab47d35 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
-Tests that TrieTools.grep_str_all searches the entire repository including non-indexed files.
+<!-- trie:section symbol=tests/test_mcp:test_grep_str_all_finds_non_indexed_file fingerprint=dc3e9e6b1e196c6e51059cbdcecb830a3116e01b8410665633c730fb2cc90ef5 body_fp=54a5d495e2dfa1a7a23205e10f9b43f7fc969589a3ec0ecaed0ce5dc79610434 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Tests that `TrieTools.grep_str_all` searches the entire repository including non-indexed files.
 
-- Creates a package.json file with "WIDGET_MARKER" content outside the indexed scope
-- Verifies the search result includes the non-indexed file in text_hits
-- Confirms text_match_count reflects the found occurrence
+- Creates a `package.json` file with "WIDGET_MARKER" content outside the indexed scope
+- Verifies the search result includes the non-indexed file in `text_hits`
+- Confirms `text_match_count` reflects the found occurrence
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_str_all_attributes_indexed_hits_to_symbols fingerprint=df6205a39150a2009abb81500fad1584543648c73cb153c08b54c6cd57f835e7 body_fp=7fc268ea45df03ff0296a3cd7e64bb80810080e229174a99695736acf8ab4e47 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_str_all_attributes_indexed_hits_to_symbols fingerprint=df6205a39150a2009abb81500fad1584543648c73cb153c08b54c6cd57f835e7 body_fp=7fc268ea45df03ff0296a3cd7e64bb80810080e229174a99695736acf8ab4e47 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Verifies that TrieTools.grep_str_all attributes in-scope code hits to their enclosing symbols.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_grep_str_default_does_not_see_non_indexed fingerprint=9db8d225679c2dce1b468229e31ae87ec020b5b954d63908f3a4c4f108635f3f body_fp=b6b30af08bf25371ea2fac746528fc932624d0886a298d7ec0bfa949aa2864ef source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_str_default_does_not_see_non_indexed fingerprint=9db8d225679c2dce1b468229e31ae87ec020b5b954d63908f3a4c4f108635f3f body_fp=b6b30af08bf25371ea2fac746528fc932624d0886a298d7ec0bfa949aa2864ef source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Verifies that `grep_str` does not search non-indexed files outside project scope.
 
 - Creates a `.txt` file with `ZEBRA_MARKER` pattern outside the indexed scope
 - Asserts `grep_str` returns no hits, confirming scoped-only behavior
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_find_files_by_extension fingerprint=3a8a987763b83aaae5d875cdb249319b978d351ebbb637b3eb004bbd584b159c body_fp=52e8f090c31503683ea4480da33cdd3bebd7d9df7966c9659aa5b1ba8581a656 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_find_files_by_extension fingerprint=3a8a987763b83aaae5d875cdb249319b978d351ebbb637b3eb004bbd584b159c body_fp=52e8f090c31503683ea4480da33cdd3bebd7d9df7966c9659aa5b1ba8581a656 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Test function verifying TrieTools.find_files locates files by glob pattern across the entire repository tree.
 
 - Creates a JSON file and searches with `**/*.json` pattern
 - Asserts the created file appears in the matches list
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_find_files_by_bare_name fingerprint=f972eb5809a15bbb04979f3fbce83b3413132ff55e7b5efaa8f378f0ba5a0297 body_fp=a093de2a5687f78e448f5f1df78c91210f29809ea56e189b79db68cdbe6f1a45 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_find_files_by_bare_name fingerprint=f972eb5809a15bbb04979f3fbce83b3413132ff55e7b5efaa8f378f0ba5a0297 body_fp=a093de2a5687f78e448f5f1df78c91210f29809ea56e189b79db68cdbe6f1a45 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Test that `TrieTools.find_files` matches bare filename "trie.toml" anywhere in the project tree.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_find_files_indexed_only fingerprint=d654cd5e6aa952fa1f1123ea0a428e93948c4c9cc5b0d6cfac02074ae277e6d7 body_fp=59f6bff9552e5a280a1f9326052ad8e32da9f9c42ee011914501f9f30eb8a408 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_find_files_indexed_only fingerprint=d654cd5e6aa952fa1f1123ea0a428e93948c4c9cc5b0d6cfac02074ae277e6d7 body_fp=59f6bff9552e5a280a1f9326052ad8e32da9f9c42ee011914501f9f30eb8a408 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Verifies that `find_files` with `all_files=False` excludes files outside the configured project scope.
 
 - Creates a `.json` file outside the indexed scope and confirms it doesn't appear in results
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_find_files_prunes_trie_dir fingerprint=5ff63a50b6fdfa1486e9b58342409a001ed12ea65d96cfecfd6942a8158bcce9 body_fp=c498a582e2ab15dc5cf1e88855c902ac318e6d8cca740a35b68db90a106a6fe5 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_find_files_prunes_trie_dir fingerprint=5ff63a50b6fdfa1486e9b58342409a001ed12ea65d96cfecfd6942a8158bcce9 body_fp=c498a582e2ab15dc5cf1e88855c902ac318e6d8cca740a35b68db90a106a6fe5 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 ## test_find_files_prunes_trie_dir
 
 Asserts that `find_files("**/*")` excludes .trie/ cache directory from results.
 
 - Verifies no returned match starts with ".trie/"
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_source_non_indexed_file fingerprint=7bcc643759c4d737b2eaa5be5f86a2f4e6f512276ad440593df4406669703efb body_fp=5d90c0f743b2a2f00f234c6cb194ad1ecb42068aac3974bc87b0c9d6d86eea14 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_read_source_non_indexed_file fingerprint=7bcc643759c4d737b2eaa5be5f86a2f4e6f512276ad440593df4406669703efb body_fp=5d90c0f743b2a2f00f234c6cb194ad1ecb42068aac3974bc87b0c9d6d86eea14 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Tests that `TrieTools.read_source` returns line-numbered content for files outside the indexed scope.
 
 - Creates a YAML config file with test content
 - Verifies the returned lines include proper 1-based line numbering prefixes
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_source_offset_limit fingerprint=1407d19f8963802f0fae065677fb9df4505f542ccb0fd625e11a248501483758 body_fp=06d1ec3f44822a52558930dcf3ee8175bb05a92576ce8db6b92a784995b4b44b source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
-Tests that read_source respects offset/limit parameters for windowed file content with line-number prefixes.
+<!-- trie:section symbol=tests/test_mcp:test_read_source_offset_limit fingerprint=1407d19f8963802f0fae065677fb9df4505f542ccb0fd625e11a248501483758 body_fp=a7afb1fcec49985bd2e8d6ab27cc01c0cc546d0e5a192dfe648e1302d151789a source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Tests that `read_source` respects offset/limit parameters for windowed file content with line-number prefixes.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_source_missing_file_errors fingerprint=67f22f208b6e898839363540a119cef953279fef21d75cceb7ef35b60251f3be body_fp=f505525d4965d91be06ff403712c44a1bc9a77262690c41a88c1010c524e6dc5 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_read_source_missing_file_errors fingerprint=67f22f208b6e898839363540a119cef953279fef21d75cceb7ef35b60251f3be body_fp=f505525d4965d91be06ff403712c44a1bc9a77262690c41a88c1010c524e6dc5 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Tests that `read_source` returns a structured `not_found` error for missing files.
 
 - Verifies error envelope format and error code when file doesn't exist
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_source_directory_errors fingerprint=0432aeb65c449a586591abad24f301a936208df89b04fcefba1af36edeb8ebf3 body_fp=372a6b0dce4dc5e3da89821063a0f53007101cc607a1797f779055f6cc51b4f2 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_read_source_directory_errors fingerprint=0432aeb65c449a586591abad24f301a936208df89b04fcefba1af36edeb8ebf3 body_fp=372a6b0dce4dc5e3da89821063a0f53007101cc607a1797f779055f6cc51b4f2 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Verifies that TrieTools.read_source rejects directory paths with an invalid_argument error.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_blast_radius_reports_cascade fingerprint=d64d9faa1ca0fa081d2b8b0c081b4a7f35faab7d756d308316140c02a66f64be body_fp=139749a900344b93505dc2bfd86d9d96efea5bceeeb37ba9d11afdfcb02745cd source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_blast_radius_reports_cascade fingerprint=d64d9faa1ca0fa081d2b8b0c081b4a7f35faab7d756d308316140c02a66f64be body_fp=139749a900344b93505dc2bfd86d9d96efea5bceeeb37ba9d11afdfcb02745cd source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Verifies that TrieTools.blast_radius returns the cascade set of symbols affected by editing a given symbol.
 
 - Tests with "lib:slugify" and asserts "make_url" appears in the cascade (symbols that reference slugify)
 - Validates the response contains the original qname and no error field
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_blast_radius_unknown_symbol_errors fingerprint=5043abdf9e81ce86f69ffb20bce9e767e715283736669d4b5a376ff86a728711 body_fp=9b8e3de2e17030987e08b5c1e087f567d35824ea3b0e01c3a2222f723648be70 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
-Tests that blast_radius returns a structured not_found error for unknown qnames.
+<!-- trie:section symbol=tests/test_mcp:test_blast_radius_unknown_symbol_errors fingerprint=5043abdf9e81ce86f69ffb20bce9e767e715283736669d4b5a376ff86a728711 body_fp=39d1445c40d4423c6b6e260a806a6f839362195f39fafb9ee81053aeb9f3f3a5 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Tests that `blast_radius` returns a structured not_found error for unknown qnames.
 
-- Verifies the error envelope contains code "not_found" for missing symbols
+- Verifies the error envelope contains code `"not_found"` for missing symbols
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_write_file_creates_new_file fingerprint=a625baeab49c1742208ace6e441a610b4522a4201b6c8c4fd509965b94b8133c body_fp=68174f41b435b6433744cefd120a8dadd5ef62d30c0294492560ff0a01e3be4b source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_write_file_creates_new_file fingerprint=a625baeab49c1742208ace6e441a610b4522a4201b6c8c4fd509965b94b8133c body_fp=68174f41b435b6433744cefd120a8dadd5ef62d30c0294492560ff0a01e3be4b source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Verifies that TrieTools.write_file creates new files at arbitrary paths under the project root.
 
 - Tests creation of a markdown file at `docs/GUIDE.md` with provided content
@@ -595,48 +615,48 @@ Verifies that TrieTools.write_file creates new files at arbitrary paths under th
 - Verifies file content matches exactly what was written
 - Confirms `needs_sync` is False for non-indexed files
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_write_file_refuses_clobber_without_overwrite fingerprint=6ca5633b82491578fc4bcb80623ea8727a340c20e211f4f4c775bb62b9a9868b body_fp=b3e712ac45b80bff584d42d1598e9e629163dd2d837d964cb3cdaf70c05f8fd8 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
-Tests that TrieTools write_file prevents overwriting existing files without explicit overwrite flag.
+<!-- trie:section symbol=tests/test_mcp:test_write_file_refuses_clobber_without_overwrite fingerprint=6ca5633b82491578fc4bcb80623ea8727a340c20e211f4f4c775bb62b9a9868b body_fp=42aa2084ae00174a75397533c29432ea1dd9f9c0edaf347e509c54f7d3b9e285 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Tests that `TrieTools.write_file` prevents overwriting existing files without an explicit overwrite flag.
 
 - Creates existing file with "original" content
 - Attempts write without overwrite=True should return error result
 - Original file content must remain unchanged after failed write attempt
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_write_file_overwrite_flag fingerprint=890ca72e91e1add4c80c109ca4bd73e2e72e09750c27c8c4cf2ebd002a64dcbc body_fp=daa746334410da152ccb032ac90ebdbddcbddc346bcd79b18648f121fb518a79 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
-Tests that TrieTools write_file method replaces existing files when overwrite=True is specified.
+<!-- trie:section symbol=tests/test_mcp:test_write_file_overwrite_flag fingerprint=890ca72e91e1add4c80c109ca4bd73e2e72e09750c27c8c4cf2ebd002a64dcbc body_fp=1be29cb7112d033013e620abb9aeda4599ece024c17993b56c21948145f47d69 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
+Tests that TrieTools `write_file` method replaces existing files when `overwrite=True` is specified.
 
-- Creates an existing file then overwrites it with overwrite=True
-- Verifies the created flag is False for replaced files
+- Creates an existing file then overwrites it with `overwrite=True`
+- Verifies the `created` flag is `False` for replaced files
 - Confirms the file content is actually replaced
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_write_file_indexed_path_flags_needs_sync fingerprint=a2e493e8b0c884519bdc58108821684efe510ef34a74485af80fff2e00065c95 body_fp=3d5bd4392ef5096eb92a1f8a86f1dfe93bd9c1f30c313231b46018a6fbbfabdb source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_write_file_indexed_path_flags_needs_sync fingerprint=a2e493e8b0c884519bdc58108821684efe510ef34a74485af80fff2e00065c95 body_fp=3d5bd4392ef5096eb92a1f8a86f1dfe93bd9c1f30c313231b46018a6fbbfabdb source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Verify that writing a Python file in scope sets the `needs_sync` flag to True.
 
 - Tests the `write_file` method on TrieTools by creating a new `.py` file
 - Asserts that `created` is True and `needs_sync` is True for indexed file types
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_write_file_outside_root_errors fingerprint=ffdc9ecc8c71ab21b24a1e08a3111cc2cb3d83f2a4372ef9fe180f1686049b11 body_fp=75744372034835aae59ee6cb4e5d92bc6cb2cc13fe7b10be8b3b524e414cce47 source_ref=5d6aaa1f4dd06e453e7be9b9ab3c7cbfcec058b4 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_write_file_outside_root_errors fingerprint=ffdc9ecc8c71ab21b24a1e08a3111cc2cb3d83f2a4372ef9fe180f1686049b11 body_fp=75744372034835aae59ee6cb4e5d92bc6cb2cc13fe7b10be8b3b524e414cce47 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Tests that TrieTools.write_file rejects paths outside the project root with an "out_of_scope" error.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_batch_patch_stages_mixed_items fingerprint=3d00e899a80e9e08eeef7d73b4336b913c66c1de9778b844a3013c6fdc1b22bb body_fp=47ca80dc8ca8489ecf39a2b411fc1aa5542a84917a2bb9536f5d15f8066a5d31 source_ref=34ac800409ea7e9fc313a6fa636048bec513d2b2 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_batch_patch_stages_mixed_items fingerprint=3d00e899a80e9e08eeef7d73b4336b913c66c1de9778b844a3013c6fdc1b22bb body_fp=47ca80dc8ca8489ecf39a2b411fc1aa5542a84917a2bb9536f5d15f8066a5d31 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Verify `TrieTools.batch_patch` stages a mixed list of `patch` and `create` operations in one call and reports per-item results with zero failures.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_batch_patch_reports_bad_items_without_aborting fingerprint=9a65c75c5ae6a3bd4f214a494038a2354da197d8c454e2ac0dfc5bb16569fc60 body_fp=5f8f0ff28c52febb0de4c760dcb1afadfb1c3b90e2cefd98c84e3bcdfa30754a source_ref=34ac800409ea7e9fc313a6fa636048bec513d2b2 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_batch_patch_reports_bad_items_without_aborting fingerprint=9a65c75c5ae6a3bd4f214a494038a2354da197d8c454e2ac0dfc5bb16569fc60 body_fp=5f8f0ff28c52febb0de4c760dcb1afadfb1c3b90e2cefd98c84e3bcdfa30754a source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Assert that `batch_patch` reports per-item failures for a missing symbol and an empty note without aborting the remaining valid item.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_batch_patch_empty_list_errors fingerprint=fcc2566ebf71c33e9a5308d9357a7fa63ae48b40444578b6c6a0a1241780390f body_fp=58ebc6287f6237ffa8c27c546de0f125ba83dd7cbfdbbc6635521c6640bdcaf0 source_ref=34ac800409ea7e9fc313a6fa636048bec513d2b2 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_batch_patch_empty_list_errors fingerprint=fcc2566ebf71c33e9a5308d9357a7fa63ae48b40444578b6c6a0a1241780390f body_fp=58ebc6287f6237ffa8c27c546de0f125ba83dd7cbfdbbc6635521c6640bdcaf0 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Assert that `TrieTools.batch_patch` returns an `invalid_argument` error when called with an empty list.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_warns_when_prose_is_stale fingerprint=354d1b9012fc3069a29ddd84391ffd87f628ae9dcc8b7548a06000e65dfc7fb6 body_fp=65d8cdcf5ba3134e50113251a914f9a0bba42b3bd2f096fc8617026d3d239256 source_ref=931d15ee10fbf1e812bda2e3e059751488a363e3 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_read_warns_when_prose_is_stale fingerprint=354d1b9012fc3069a29ddd84391ffd87f628ae9dcc8b7548a06000e65dfc7fb6 body_fp=65d8cdcf5ba3134e50113251a914f9a0bba42b3bd2f096fc8617026d3d239256 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Assert that `TrieTools.read` attaches a `STALE` note to a symbol whose prose predates a source edit followed by a re-scan, and that the compact file view also carries a `STALE PROSE` banner.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_warns_when_graph_itself_is_stale fingerprint=b73cd9b61ae0d89dba0ba5f3552d6856997e6654f5e2ed7c7bb876086ff76964 body_fp=b4eff3a2290d41b9440b540a3ccb0c03b8bc722f2cc0ceb516db5b085883a0a8 source_ref=931d15ee10fbf1e812bda2e3e059751488a363e3 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_read_warns_when_graph_itself_is_stale fingerprint=b73cd9b61ae0d89dba0ba5f3552d6856997e6654f5e2ed7c7bb876086ff76964 body_fp=b4eff3a2290d41b9440b540a3ccb0c03b8bc722f2cc0ceb516db5b085883a0a8 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Assert that `TrieTools.read` includes a graph-stale warning when source is edited without a subsequent re-scan.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_has_no_stale_warning_when_fresh fingerprint=3a3f1a75d8300ad70c423063a319bb7366e2b6f86c1d3a1f4af6472a216317c6 body_fp=fcf25f720c36eba73ecc63f85f0cf36c2aaea5f7c7b3b2b9e6fdf6d1ff5dc91f source_ref=931d15ee10fbf1e812bda2e3e059751488a363e3 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_read_has_no_stale_warning_when_fresh fingerprint=3a3f1a75d8300ad70c423063a319bb7366e2b6f86c1d3a1f4af6472a216317c6 body_fp=fcf25f720c36eba73ecc63f85f0cf36c2aaea5f7c7b3b2b9e6fdf6d1ff5dc91f source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Assert that `TrieTools.read` emits no stale warnings when prose and graph are both current.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_read_history_flag_surfaces_intent_trail fingerprint=624c588da05df6e2b0d1ce6b96520d641ed4853ebbbfd4985bfa1741a19ef510 body_fp=245534da5abe5fe8e09d0e01c5603d50d6f19af97026d1286fd69e8d3630ed47 source_ref=931d15ee10fbf1e812bda2e3e059751488a363e3 role=test -->
+<!-- trie:section symbol=tests/test_mcp:test_read_history_flag_surfaces_intent_trail fingerprint=624c588da05df6e2b0d1ce6b96520d641ed4853ebbbfd4985bfa1741a19ef510 body_fp=245534da5abe5fe8e09d0e01c5603d50d6f19af97026d1286fd69e8d3630ed47 source_ref=b16efa20b80176ac81a14f6db9840483ac4ba76c role=test -->
 Verify that `history=True` on `TrieTools.read` and `explain_symbol` attaches the digest-archive intent trail, while the default call omits it.
 
 - Writes a stub triediffs archive entry before constructing `TrieTools`.

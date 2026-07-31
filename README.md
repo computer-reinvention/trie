@@ -138,7 +138,7 @@ The naive "docs per file" approach rots on the first refactor. trie's guarantees
 - **Fingerprints.** Each section sentinel carries a hash of the source symbol (whitespace/comment-normalized — formatting churn never triggers regeneration) and a hash of the prose body. `trie verify` compares both directions offline: source that outran its prose, and prose that was hand-edited inside a generated section. Drift is a build break, not a TODO.
 - **The cascade.** When a symbol changes, the reference graph knows its callers describe it — their prose regenerates in the same pass, so it doesn't quietly go stale. Hub symbols (>20 inbound references by default) cap the fan-out so one edit can't invalidate the world.
 - **Stale warnings on read.** If prose *is* momentarily behind the source (mid-session, before a sync), every read surface says so — `⚠ STALE PROSE … run trie sync` — instead of serving outdated text as truth.
-- **Scoped regeneration.** `trie sync` touches only stale sections plus their cascade. `trie refresh` (run automatically by the agent turn hook) rebuilds the symbol graph without LLM calls; fresh clones and `git pull` never auto-spend.
+- **Scoped regeneration.** `trie sync` touches only stale sections plus their cascade. `trie sync --graph-only` (run automatically by the agent turn hook) rebuilds the symbol graph without LLM calls; fresh clones and `git pull` never auto-spend.
 
 ### The front door
 
@@ -221,7 +221,7 @@ trie read src/slugify:slugify --history
 
 `trie setup` wires a coding agent in one idempotent pass:
 
-1. **Turn-boundary hook** — runs `trie refresh --after-turn` when the session goes idle, so the graph tracks the agent's edits (no LLM cost; see the state table below).
+1. **Turn-boundary hook** — runs `trie sync --graph-only --after-turn` when the session goes idle, so the graph tracks the agent's edits (no LLM cost; see the state table below).
 2. **Tool overrides** — the agent's built-in `grep` and `read` become trie-backed: `grep` searches the symbol graph (with a ripgrep fallback over source), `read` returns a compact triefact view for files and prose+neighbours for symbols, with raw source as the escape hatch. `trace` and the explain/history family are added as new tools.
 3. **Agent docs** — `TRIE.md` (the usage contract, tool names rendered per harness) plus a pointer line in `AGENTS.md` / `CLAUDE.md`.
 4. **MCP registration** — opt-in via `--with-mcp`; the tool overrides cover most setups without it.
@@ -238,7 +238,7 @@ Every response carries one-liners pulled from the prose at sync time, so walking
 
 **The edit contract** (from `TRIE.md`): edit natively; record intent through the patch tools; `patch_apply` archives the notes. The `trie intent` gate makes the contract enforced rather than aspirational.
 
-### What `trie refresh` costs
+### What `trie sync --graph-only` costs
 
 | state | when | action |
 | --- | --- | --- |
@@ -267,7 +267,7 @@ Supported setup targets: `opencode`, `claude-code`, `claude-desktop`, `cursor`, 
 | `trie diff` | This session's story: notes + prose deltas (`--write` emits the digest file) | narrative only |
 | `trie grep / read / trace` | Query the indexes (add `--history` to reads for intent) | no |
 | `trie index` | Regenerate the wiki front door | no |
-| `trie refresh` | Freshness gate (what the turn hook calls) | only on real edits |
+| `trie sync --graph-only` | Freshness gate (what the turn hook calls) | only on real edits |
 
 ## Configuration
 
@@ -325,7 +325,7 @@ Runners have no `.git/hooks`, no turn hooks, and a cold `.trie/` cache — the g
 - run: |
     pipx install uv
     uv tool install git+https://github.com/computer-reinvention/trie
-    trie refresh                  # cold start: rebuild the symbol graph (no LLM)
+    trie sync --graph-only        # cold start: rebuild the symbol graph (no LLM)
 
 # ... the agent works: edits code, records notes via the patch tools ...
 
@@ -340,7 +340,7 @@ Runners have no `.git/hooks`, no turn hooks, and a cold `.trie/` cache — the g
 What to know:
 
 - **`trie gate` is the whole contract** — lock + verify + intent + digest, identical to the hook. Exit 1 output is copy-pasteable fix commands, so a gated agent can self-correct.
-- **Order matters on a cold runner**: `trie refresh` first (notes can only be recorded against symbols the graph knows), work, then `sync` → `gate` → commit.
+- **Order matters on a cold runner**: `trie sync --graph-only` first (notes can only be recorded against symbols the graph knows), work, then `sync` → `gate` → commit.
 - **Record and commit in the same job**: staged notes live in the runner-local store until the digest write archives them into `triefacts/triediffs/` at commit — the committed digest is the durable record.
 - **No key?** `trie gate --no-digest` still enforces verify + intent; keyless `trie sync` fails loudly rather than pretending.
 

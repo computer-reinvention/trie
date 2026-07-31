@@ -134,3 +134,59 @@ def test_gate_exits_2_when_writer_holds_the_lock(tmp_path: Path, monkeypatch):
     result = runner.invoke(app, ["gate"])
     assert result.exit_code == 2
     assert "retry" in result.output.lower()
+
+
+def test_gate_warns_on_self_hosting_version_skew(tmp_path: Path, monkeypatch):
+    """When the project IS the trie source repo at a different version than the
+    running binary, the gate warns loudly — a stale global install once shipped
+    a commit whose digest was written by the previous release."""
+    repo = _synced_repo(tmp_path)
+    (repo / "pyproject.toml").write_text(
+        '[project]\nname = "trie"\nversion = "999.0.0"\n',
+    )
+    monkeypatch.chdir(repo)
+    result = runner.invoke(app, ["gate", "--no-digest"])
+    flat = " ".join(result.output.split())
+    assert "999.0.0" in flat
+    assert "uv tool install --force" in flat
+
+
+def test_gate_no_skew_warning_for_other_projects(tmp_path: Path, monkeypatch):
+    """A non-trie project with its own pyproject must never see the warning."""
+    repo = _synced_repo(tmp_path)
+    (repo / "pyproject.toml").write_text(
+        '[project]\nname = "someapp"\nversion = "999.0.0"\n',
+    )
+    monkeypatch.chdir(repo)
+    result = runner.invoke(app, ["gate", "--no-digest"])
+    assert "uv tool install --force" not in " ".join(result.output.split())
+
+
+def test_patch_create_suggests_close_qnames_on_miss(tmp_path: Path, monkeypatch):
+    """A guessed/hand-built qname gets did-you-mean candidates, not just the
+    misleading --gone hint (which is for genuinely removed symbols)."""
+    import subprocess as sp
+
+    from trie.graph.store import Store
+    from trie.parse.python import extract_symbols
+
+    repo = _repo(tmp_path)
+    src = repo / "pkg_init.py"
+    src.write_text('__version__ = "1.0"\n')
+    sp.run(["git", "add", "-A"], cwd=repo, check=True, capture_output=True)
+    sp.run(["git", "commit", "-q", "-m", "init"], cwd=repo, check=True, capture_output=True)
+
+    db = repo / ".trie" / "graph.db"
+    db.parent.mkdir(exist_ok=True)
+    with Store(db) as store:
+        store.upsert_file(path="pkg_init.py", fingerprint="fp")
+        store.replace_file_symbols("pkg_init.py", extract_symbols(src, repo))
+
+    monkeypatch.chdir(repo)
+    result = runner.invoke(app, ["patch", "create", "pkg_init:__module__", "-n", "bump"])
+    flat = " ".join(result.output.split())
+    assert result.exit_code == 1
+    assert "did you mean" in flat
+    assert "pkg_init:__version__" in flat
+    # --gone is mentioned as the removal escape hatch, not the headline fix.
+    assert "--gone" in flat

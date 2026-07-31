@@ -89,8 +89,111 @@ def test_evaluate_coverage_from_pending_and_session_log(tmp_path: Path) -> None:
         store.close()
 
 
+def test_class_note_covers_its_methods(tmp_path: Path) -> None:
+    """A note on `mod:Klass` covers `mod:Klass.method` — intent describing a
+    class naturally describes its methods, and demanding one note per method
+    failed commits whose intent was already on record."""
+    config, repo = _repo(tmp_path)
+    (repo / "mod.py").write_text(
+        "import os\n\n\ndef alpha():\n    return 1\n\n\ndef beta():\n    return 2\n\n\n"
+        "class Klass:\n    def method_a(self):\n        return 'a'\n\n"
+        "    def method_b(self):\n        return 'b'\n"
+    )
+
+    db = repo / ".trie" / "graph.db"
+    db.parent.mkdir(exist_ok=True)
+    store = Store(db)
+    try:
+        store.upsert_file(path="mod.py", fingerprint="fp")
+        store.replace_file_symbols("mod.py", extract_symbols(repo / "mod.py", repo))
+
+        # Uncovered: the class and both methods (alpha/beta unchanged).
+        report = evaluate(repo, config, store)
+        uncovered = {t.qname for t in report.uncovered}
+        assert "mod:Klass" in uncovered
+        assert "mod:Klass.method_a" in uncovered
+
+        # One note on the class covers the class AND its methods.
+        store.add_patch("mod:Klass", note="new Klass with a/b methods", reason="", session_id="s1")
+        report = evaluate(repo, config, store)
+        assert report.ok, f"expected class note to cover methods, got {report.uncovered}"
+
+        # A method note alone does NOT cover the sibling or the class.
+        store2_path = repo / ".trie" / "graph2.db"
+        with Store(store2_path) as store2:
+            store2.upsert_file(path="mod.py", fingerprint="fp")
+            store2.replace_file_symbols("mod.py", extract_symbols(repo / "mod.py", repo))
+            store2.add_patch("mod:Klass.method_a", note="only a", reason="", session_id="s1")
+            report2 = evaluate(repo, config, store2)
+            uncovered2 = {t.qname for t in report2.uncovered}
+            assert "mod:Klass" in uncovered2
+            assert "mod:Klass.method_b" in uncovered2
+            assert "mod:Klass.method_a" not in uncovered2
+    finally:
+        store.close()
+
+
+def test_record_intent_reports_uncovered_symbols(tmp_path: Path) -> None:
+    """Apply-time coverage feedback: sealing notes reports the touched symbols
+    that still lack notes, so the agent learns before the commit gate fails."""
+    from trie.edits.pipeline import record_intent
+
+    config, repo = _repo(tmp_path)
+    (repo / "mod.py").write_text(
+        "import os\n\n\ndef alpha():\n    return 42\n\n\ndef beta():\n    return 99\n"
+    )
+
+    db = repo / ".trie" / "graph.db"
+    db.parent.mkdir(exist_ok=True)
+    store = Store(db)
+    try:
+        store.upsert_file(path="mod.py", fingerprint="fp")
+        store.replace_file_symbols("mod.py", extract_symbols(repo / "mod.py", repo))
+
+        store.add_patch("mod:alpha", note="alpha does 42 now", reason="", session_id="s1")
+        envelope = record_intent(store, config, repo, session_note="")
+        assert envelope["ok"]
+        assert envelope["uncovered"] == ["mod:beta"]
+        assert "would fail the commit gate" in envelope["next"]
+
+        # Cover beta too: the next apply reports full coverage.
+        store.add_patch("mod:beta", note="beta 99", reason="", session_id="s1")
+        envelope2 = record_intent(store, config, repo, session_note="")
+        assert envelope2["ok"]
+        assert envelope2["uncovered"] == []
+    finally:
+        store.close()
+
+
 def test_gate_is_silent_outside_git(tmp_path: Path) -> None:
     (tmp_path / "trie.toml").write_text("[trie]\nversion = '0.0.0'\n")
     (tmp_path / "mod.py").write_text("def f():\n    return 1\n")
     config = Config.from_dict({})
     assert touched_symbols(tmp_path, config) == []
+
+
+def test_record_intent_empty_queue_still_reports_uncovered(tmp_path: Path) -> None:
+    """The lazy-but-correct flow must work from zero: edit → patch_apply (with
+    nothing staged) → read the uncovered worklist. An empty queue used to
+    early-return without coverage info, hiding the worklist until commit time."""
+    from trie.edits.pipeline import record_intent
+
+    config, repo = _repo(tmp_path)
+    (repo / "mod.py").write_text(
+        "import os\n\n\ndef alpha():\n    return 42\n\n\ndef beta():\n    return 2\n"
+    )
+
+    db = repo / ".trie" / "graph.db"
+    db.parent.mkdir(exist_ok=True)
+    store = Store(db)
+    try:
+        store.upsert_file(path="mod.py", fingerprint="fp")
+        store.replace_file_symbols("mod.py", extract_symbols(repo / "mod.py", repo))
+
+        envelope = record_intent(store, config, repo, session_note="")
+        assert envelope["ok"]
+        assert envelope["recorded"] == 0
+        assert envelope["uncovered"] == ["mod:alpha"]
+        assert "stage a patch note" in envelope["next"]
+    finally:
+        store.close()

@@ -4,6 +4,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from pydantic import BaseModel, Field
+
 
 @dataclass(frozen=True)
 class SessionDiff:
@@ -219,22 +221,69 @@ def build_narrative_prompt(data: SessionDiff, *, max_diff_chars: int = 24000) ->
     return "\n\n".join(sections)
 
 
-_NARRATIVE_SYSTEM_PROMPT: str = """You are writing the summary paragraph of a change digest that reviewers read inside a pull request. Audience: a reviewer deciding what this commit did and why.
+class SessionNarrative(BaseModel):
+    """Structured LLM output for one session's change digest narrative."""
+
+    one_liner: str = Field(
+        description="One plain-text sentence (max ~25 words) summarising the net change. No markdown.",
+    )
+    body: str = Field(
+        description="Full narrative, max 120 words of markdown. No headings. Don't restate one_liner.",
+    )
+    conflicts: list[str] = Field(
+        default_factory=list,
+        description="One sentence per note-vs-diff discrepancy, naming the symbol. Usually empty.",
+    )
+
+    def as_markdown(self) -> str:
+        """Render the narrative as the markdown block embedded in a digest entry.
+
+        Format: bold one-liner paragraph, blank line, body, then one blockquote
+        line per conflict (``> **Intent vs. diff:** …``) so conflicts stand out
+        visually in rendered PR comments without being headings (digest entries
+        reserve headings for structural parsing).
+        """
+        parts: list[str] = []
+        one = self.one_liner.strip()
+        if one:
+            parts.append(f"**{one}**")
+        body = self.body.strip()
+        if body:
+            parts.append(body)
+        conflict_lines = [
+            f"> **Intent vs. diff:** {c.strip()}" for c in self.conflicts if c.strip()
+        ]
+        if conflict_lines:
+            parts.append("\n".join(conflict_lines))
+        return "\n\n".join(parts)
+
+
+_NARRATIVE_SYSTEM_PROMPT: str = """You are writing the summary of a change digest that reviewers read inside a pull request. Audience: a reviewer deciding what this commit did and why.
 
 You receive two kinds of evidence: (1) patch notes the coding agent recorded when staging edits — the stated intent — and (2) the raw unified diff of the project's triefact documentation tree — the observed effect. Triefacts are per-file markdown descriptions of source symbols, so their diff reflects behavioural changes in the code.
 
-Rules you must follow without exception:
-- Length: at most 120 words total.
+Produce three fields:
+- one_liner: one standalone plain-text sentence (max ~25 words) a reviewer can read instead of the body. No markdown.
+- body: the full narrative, at most 120 words.
+- conflicts: only when a note claims X but the diff shows Y (or shows no corresponding change), one sentence per discrepancy naming the symbol. Normally empty; do not invent conflicts.
+
+Rules for the body, without exception:
 - Format: plain paragraphs and simple '-' bullets only. NO headings of any level whatsoever. No preamble, no sign-off.
 - Describe the NET change as if it had been made cleanly in one pass. NEVER narrate process: do not mention bugs found and fixed within code that was itself created this session, do not describe a test-fix chronology, do not use phrases like 'a follow-up fix', do not mention line-number shifts, and do not narrate updates to triefact descriptions or documentation-of-documentation.
 - Name the key symbols affected.
-- If the evidence conflicts (a note claims X but the diff shows Y), state that conflict in one sentence — that is the one process observation permitted."""
+- Do not repeat the one_liner verbatim as the opening sentence.
+- Keep conflict observations in the conflicts field, not in the body."""
 
 
 def synthesize_narrative(
     data: SessionDiff, client: Any, *, max_diff_chars: int = 24000, max_tokens: int = 1024
-) -> str:
-    """Synthesise a concise intent-level session narrative from the collected evidence via the LLM.
+) -> SessionNarrative:
+    """Synthesise a structured intent-level session narrative from the collected evidence.
+
+    Uses structured output (``SessionNarrative``: one_liner + body + conflicts) rather than
+    plain text so the digest can render a skimmable bold summary line, the full narrative,
+    and any intent-vs-diff discrepancies as distinct blocks — see
+    ``SessionNarrative.as_markdown``.
 
     The evidence prompt assembled by ``build_narrative_prompt`` is sent to the client as a
     ``cache_prefix`` so that repeated ``trie diff`` runs within the Anthropic cache TTL reuse the
@@ -245,9 +294,9 @@ def synthesize_narrative(
     ``max_tokens`` is a runaway guard, NOT the length target — the system prompt's word budget
     governs length. Setting it near the budget (~180 tokens for 120 words) hard-truncates
     budget-respecting narratives mid-sentence, which shipped cut-off digests twice before this
-    was caught (telemetry showed output_tokens == max_tokens exactly).
-
-    Returns markdown text.
+    was caught (telemetry showed output_tokens == max_tokens exactly). With structured output
+    a truncation surfaces as a validation retry instead of a silent cut-off, which makes a
+    generous cap even more important — a tight cap now burns retries instead of words.
     """
     prompt = build_narrative_prompt(data, max_diff_chars=max_diff_chars)
     instruction = (
@@ -255,15 +304,22 @@ def synthesize_narrative(
         "Stay within the word limit and do not use any headings."
     )
     try:
-        result = client.run_text(
+        result = client.run(
+            SessionNarrative,
             _NARRATIVE_SYSTEM_PROMPT,
             instruction,
             cache_prefix=prompt,
             max_tokens=max_tokens,
         )
     except TypeError:
-        result = client.run_text(_NARRATIVE_SYSTEM_PROMPT, prompt, max_tokens=max_tokens)
-    return str(result.output).strip()
+        result = client.run(
+            SessionNarrative, _NARRATIVE_SYSTEM_PROMPT, prompt, max_tokens=max_tokens
+        )
+    narrative = result.output
+    if not isinstance(narrative, SessionNarrative):
+        # Defensive: a fake/legacy client returned bare text.
+        return SessionNarrative(one_liner="", body=str(narrative).strip())
+    return narrative
 
 
 def render_digest_section(
