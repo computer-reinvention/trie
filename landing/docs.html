@@ -257,14 +257,26 @@ warnings, ADR links. Regeneration preserves it byte-for-byte.</code></pre>
             hand-edit inside a generated section, move the prose above or
             below the sentinels and re-run <code>trie sync</code>.
           </p>
+          <p>
+            Editing triefacts directly is not recommended: the format is
+            Markdown, but each generated section carries hashes and
+            inbound/outbound reference counts that trie owns and will
+            regenerate if tampered with. The space
+            <em>between</em> generated sections, however, is preserved
+            byte-for-byte — drop notes, warnings, or ADR links there with your
+            normal editor and they become queryable context alongside the
+            generated prose.
+          </p>
 
-          <h3>The front door</h3>
+          <h3>The front door: trie as a wiki</h3>
           <p>
             <code>trie sync</code> also regenerates
-            <code>triefacts/README.md</code>, a deterministic, LLM-free index:
-            the most-referenced public symbols (linked, role-tagged, with
+            <code>triefacts/README.md</code>, a deterministic, LLM-free index
+            that turns the triefact tree into a browsable wiki: the
+            most-referenced public symbols (linked, role-tagged, with
             one-liners) plus a per-directory table of contents. Browsing the
-            tree on GitHub starts there.
+            tree on GitHub starts there. Regenerate it on its own with
+            <code>trie index</code>.
           </p>
         </section>
 
@@ -464,11 +476,16 @@ stage a note per symbol, then re-run:
             </tbody>
           </table>
           <p>
-            Every response carries one-liners pulled from the prose at sync
-            time, so walking the graph never requires opening a triefact just
-            to decide whether to open it. Identical JSON envelopes come from
-            the CLI (<code>trie grep/read/trace --json</code>) for agents that
-            prefer shelling out.
+            These three verbs are the basis vectors for navigation: an agent
+            can <em>find, understand, and trace</em> any feature or flow with
+            the meaning stated in plain English for every symbol — often
+            tracing a whole call path in five lines of output without opening a
+            single source file. Every response carries one-liners pulled from
+            the prose at sync time, so walking the graph never requires opening
+            a triefact just to decide whether to open it. Identical JSON
+            envelopes come from the CLI
+            (<code>trie grep/read/trace --json</code>) for agents that prefer
+            shelling out.
           </p>
 
           <h3>The edit contract</h3>
