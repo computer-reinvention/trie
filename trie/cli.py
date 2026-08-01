@@ -517,6 +517,67 @@ def _is_interactive() -> bool:
         return False
 
 
+def _prompt_select_targets(reporter: Reporter, detected: list[str]) -> list[str]:
+    """Ask which detected harness(es) `trie setup` should wire in.
+
+    Called only when auto-detection found more than one installed agent and we
+    can prompt (tty). Presents a numbered list plus an "all" option and reads a
+    comma-separated selection. The default (empty input) is the single
+    override-capable harness when exactly one is present (its bare tool names
+    are the drop-in surface), otherwise all detected — matching the historical
+    "wire everything detected" behaviour so nobody is worse off by hitting
+    enter.
+
+    Returns the chosen slugs in the order they appear in `detected`. An
+    unrecognised entry re-prompts; on EOF/non-tty callers shouldn't reach here.
+    """
+    from trie.docs_install import _BARE_NAME_TARGETS
+    from trie.mcp_install import TARGETS as _MCP_TARGETS
+
+    override_present = [s for s in detected if s in _BARE_NAME_TARGETS]
+    default_slugs = override_present if len(override_present) == 1 else list(detected)
+
+    def _display(slug: str) -> str:
+        t = _MCP_TARGETS.get(slug)
+        return t.display_name if t is not None else slug
+
+    reporter.info("Multiple coding agents detected on this machine:")
+    for i, slug in enumerate(detected, 1):
+        tag = "  (recommended)" if slug in default_slugs and default_slugs != list(detected) else ""
+        reporter.info(f"  {i}. {_display(slug)} [{slug}]{tag}")
+    default_label = ", ".join(default_slugs)
+
+    while True:
+        raw = typer.prompt(
+            "Which to set up? Enter numbers/slugs comma-separated, or 'all'",
+            default=default_label,
+        ).strip()
+        if not raw:
+            return default_slugs
+        if raw.lower() == "all":
+            return list(detected)
+
+        chosen: list[str] = []
+        bad: list[str] = []
+        for tok in (p.strip() for p in raw.split(",") if p.strip()):
+            slug = None
+            if tok.isdigit():
+                idx = int(tok)
+                if 1 <= idx <= len(detected):
+                    slug = detected[idx - 1]
+            elif tok in detected:
+                slug = tok
+            if slug is None:
+                bad.append(tok)
+            elif slug not in chosen:
+                chosen.append(slug)
+        if bad:
+            reporter.warn(f"unrecognised: {', '.join(bad)} — pick from the list above")
+            continue
+        # Preserve detection order.
+        return [s for s in detected if s in chosen]
+
+
 class _NoOpStatus:
     def __enter__(self) -> _NoOpStatus:
         return self
@@ -2490,6 +2551,23 @@ def setup_cmd(
     except ConfigNotFoundError as exc:
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
+
+    # Disambiguate multiple detected agents. When the user didn't pin a target
+    # (no --target / --all) and more than one harness is installed on this
+    # machine, don't silently wire all of them — a globally-installed agent the
+    # user doesn't actually use in this repo would get set up (and could even
+    # hijack the docs' tool-name convention). Ask which to wire when we can
+    # prompt; fall back to "all detected" when stdin isn't a tty so scripts and
+    # CI keep working unchanged.
+    if not target and not install_all:
+        from trie.mcp_install import detected_target_slugs
+
+        detected = detected_target_slugs()
+        if len(detected) > 1 and _is_interactive():
+            target = _prompt_select_targets(reporter, detected)
+            if not target:
+                reporter.info("no targets selected; nothing to set up")
+                raise typer.Exit(code=0)
 
     # MCP install — opt-in only via --with-mcp.
     mcp_plan: InstallPlan | None = None

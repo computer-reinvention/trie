@@ -334,6 +334,34 @@ def test_detect_returns_false_in_clean_environment(monkeypatch: pytest.MonkeyPat
         assert t.detect() is False, f"{t.name} should not detect on clean fixture"
 
 
+def test_detected_target_slugs_empty_on_clean_environment(monkeypatch: pytest.MonkeyPatch):
+    """`detected_target_slugs` returns [] when nothing is installed."""
+    from trie.mcp_install import detected_target_slugs
+
+    fake_home = Path("/tmp/trie_test_no_such_home_2026_slugs")
+    monkeypatch.setenv("HOME", str(fake_home))
+    monkeypatch.setenv("PATH", "/no/such/path")
+    assert detected_target_slugs() == []
+
+
+def test_detected_target_slugs_reports_installed_in_registry_order(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """When several agents detect, the helper lists their slugs in registry
+    order — the single source of truth setup uses to decide whether to prompt."""
+    # Force claude-code and opencode to detect, everything else not.
+    # MCPTarget is frozen, so patch the class method to consult self.name.
+    from trie.mcp_install import MCPTarget, detected_target_slugs
+
+    installed = {"claude-code", "opencode"}
+    monkeypatch.setattr(MCPTarget, "detect", lambda self: self.name in installed)
+
+    slugs = detected_target_slugs()
+    assert set(slugs) == installed
+    # Registry order: claude-code is defined before opencode.
+    assert slugs.index("claude-code") < slugs.index("opencode")
+
+
 def test_install_auto_detect_errors_when_nothing_found(
     project: Path, monkeypatch: pytest.MonkeyPatch
 ):

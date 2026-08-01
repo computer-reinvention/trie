@@ -172,6 +172,31 @@ _BARE_NAME_OVERRIDES = {
 }
 
 
+def _select_primary_target(targets: list[str]) -> str | None:
+    """Pick which harness's tool names get baked into the docs body.
+
+    The primary target decides whether TRIE.md / the AGENTS.md pointer render
+    bare names (`grep`, `read`, `trace`) or MCP-prefixed names
+    (`mcp__trie__grep`). Bare names are what an *override* harness (opencode)
+    actually installs as drop-in tools; MCP-prefixed names are what a
+    non-override harness (Claude Code) sees through the MCP server.
+
+    Auto-detection yields targets in registry order, so a non-override harness
+    can land first purely because it sorts earlier — which would wrongly render
+    the docs with `mcp__trie__` prefixes even though the bare-name override
+    tools are the ones present. To avoid that, prefer a bare-name (override)
+    target whenever one was wired in; otherwise keep the first target. The
+    non-primary targets still get their names listed in the multi-target
+    footer, so nothing is lost.
+    """
+    if not targets:
+        return None
+    for slug in targets:
+        if slug in _BARE_NAME_TARGETS:
+            return slug
+    return targets[0]
+
+
 def _render_tool_names(
     target_name: str | None,
     tool_names: tuple[str, ...] = ALL_TOOL_NAMES,
@@ -451,8 +476,8 @@ def install(
     plan = DocsInstallPlan(print_only=print_only, dry_run=dry_run)
 
     targets = list(target_names or [])
-    primary = targets[0] if targets else None
-    additional = targets[1:]
+    primary = _select_primary_target(targets)
+    additional = [t for t in targets if t != primary]
 
     plan.results.append(
         _write_trie_doc(

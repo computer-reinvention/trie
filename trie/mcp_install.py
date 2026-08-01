@@ -209,6 +209,23 @@ TARGETS: dict[str, MCPTarget] = {
 }
 
 
+def detected_target_slugs() -> list[str]:
+    """Return the slugs of every registered harness detected on this system.
+
+    Single source of truth for auto-detection so `trie setup`, the hook
+    installer, and the MCP installer all agree on which agents are "present".
+    Order follows the `TARGETS` registry.
+
+    Detection is deliberately machine-global (an agent's presence is a property
+    of the workstation, e.g. `~/.claude.json` or a binary on PATH), not of the
+    current repo — see `MCPTarget.detect`. Because a workstation can have
+    several agents installed at once, callers that must pick ONE (like the docs
+    body, or an interactive `trie setup`) should disambiguate rather than
+    assume the first detected slug is the intended one.
+    """
+    return [slug for slug, target in TARGETS.items() if target.detect()]
+
+
 @dataclass
 class InstallPlan:
     target_names: list[str]

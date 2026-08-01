@@ -467,3 +467,76 @@ def test_cli_setup_override_idempotent_on_second_run(
     assert (project / ".opencode" / "tools" / "grep.ts").read_text() == grep_before
     # And the report mentions skipped for the override files.
     assert "skipped" in second.output
+
+
+# ---------------------------------------------------------------------------
+# Multiple detected agents: disambiguation prompt
+# ---------------------------------------------------------------------------
+
+
+def test_cli_setup_prompts_when_multiple_agents_detected(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """When no --target is given and several agents are installed on the
+    machine, setup must ASK rather than silently wire all of them (which would
+    set up a globally-installed agent the user doesn't use in this repo). We
+    force both claude-code and opencode to 'detect', make the session look
+    interactive, and answer the prompt with 'opencode' — only opencode should
+    get wired."""
+    monkeypatch.chdir(project)
+    monkeypatch.setattr(
+        "trie.mcp_install.detected_target_slugs", lambda: ["claude-code", "opencode"]
+    )
+    monkeypatch.setattr("trie.cli._is_interactive", lambda: True)
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["setup"], input="opencode\n")
+    assert result.exit_code == 0, result.output
+    # The prompt was shown.
+    assert "Multiple coding agents detected" in result.output
+    # opencode got wired (its hook plugin exists) …
+    assert (project / ".opencode" / "plugins" / "trie-refresh.ts").exists()
+    # … and claude-code did NOT (no advisory hook file).
+    assert not (project / ".claude" / "hooks" / "trie-tools.json").exists()
+
+
+def test_cli_setup_non_interactive_does_not_prompt(project: Path, monkeypatch: pytest.MonkeyPatch):
+    """Non-interactive (no tty): setup must NOT block on a prompt. It falls
+    back to wiring all detected agents so scripts and CI keep working. Here
+    only opencode detects, so it should be set up with no prompt shown."""
+    monkeypatch.chdir(project)
+    monkeypatch.setattr("trie.mcp_install.detected_target_slugs", lambda: ["opencode"])
+    monkeypatch.setattr("trie.cli._is_interactive", lambda: False)
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["setup"])
+    assert result.exit_code == 0, result.output
+    assert "Multiple coding agents detected" not in result.output
+    assert (project / ".opencode" / "plugins" / "trie-refresh.ts").exists()
+
+
+def test_prompt_select_targets_parses_numbers_slugs_and_all(monkeypatch: pytest.MonkeyPatch):
+    """`_prompt_select_targets` accepts a comma-separated mix of list numbers
+    and slugs, dedupes, preserves detection order, and honours 'all'. Empty
+    input takes the recommended default (the lone override target)."""
+    from trie import cli as cli_mod
+    from trie.reporter import Reporter
+
+    reporter = Reporter()
+    detected = ["claude-code", "opencode"]
+
+    # Number selection: "2" -> opencode.
+    monkeypatch.setattr(cli_mod.typer, "prompt", lambda *a, **k: "2")
+    assert cli_mod._prompt_select_targets(reporter, detected) == ["opencode"]
+
+    # Slug selection with whitespace and dupes -> ordered, deduped.
+    monkeypatch.setattr(cli_mod.typer, "prompt", lambda *a, **k: "opencode, opencode, claude-code")
+    assert cli_mod._prompt_select_targets(reporter, detected) == ["claude-code", "opencode"]
+
+    # 'all' -> everything detected.
+    monkeypatch.setattr(cli_mod.typer, "prompt", lambda *a, **k: "all")
+    assert cli_mod._prompt_select_targets(reporter, detected) == ["claude-code", "opencode"]
+
+    # Empty input -> recommended default (single override target present).
+    monkeypatch.setattr(cli_mod.typer, "prompt", lambda *a, **k: "")
+    assert cli_mod._prompt_select_targets(reporter, detected) == ["opencode"]

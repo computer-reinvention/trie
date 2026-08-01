@@ -1,13 +1,13 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: tests/test_setup.py
-file_fingerprint: ff563a642c2833d937013e2313440c9b2607818c09d4d41909f3d704fa8d674a
-last_synced_at: '2026-07-29T17:54:44Z'
+file_fingerprint: bf7bd7ecba61a41429fe5ecdcfc7e8b60408e37c1c60f6ba215a16f351aba87b
+last_synced_at: '2026-08-01T09:20:27Z'
 description: End-to-end tests for `trie setup` and the underlying hook installer.
 defines:
 - kind: module
   qualified_name: tests/test_setup:__module__
-  lines: 1-470
+  lines: 1-543
 - kind: function
   qualified_name: tests/test_setup:project
   lines: 34-53
@@ -83,8 +83,17 @@ defines:
 - kind: function
   qualified_name: tests/test_setup:test_cli_setup_override_idempotent_on_second_run
   lines: 451-469
+- kind: function
+  qualified_name: tests/test_setup:test_cli_setup_prompts_when_multiple_agents_detected
+  lines: 477-500
+- kind: function
+  qualified_name: tests/test_setup:test_cli_setup_non_interactive_does_not_prompt
+  lines: 503-515
+- kind: function
+  qualified_name: tests/test_setup:test_prompt_select_targets_parses_numbers_slugs_and_all
+  lines: 518-542
 incoming_refs: 0
-outgoing_refs: 28
+outgoing_refs: 32
 ---
 <!-- trie:section symbol=tests/test_setup:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=505cf6b84ffd8cbab0e5da27d0bb66f9bf3079743f2e4f7deb3391e3dae31d72 source_ref=ee8a95ecaf3f1e7f45f08a83c627670aaa27deb4 role=test-infrastructure -->
 End-to-end tests for `trie setup` command and the underlying hook installer.
@@ -211,4 +220,16 @@ Verifies that `trie setup --target claude-code` writes advisory hook file nudgin
 Verifies that running `trie setup --target opencode` twice reports skipped for unchanged override files.
 - Tests idempotency: second run doesn't modify files when content unchanged
 - Asserts "skipped" appears in CLI output for override files
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_prompts_when_multiple_agents_detected fingerprint=70761004676fd7bc2d3fb8b80428a0ac7f7944ac4169806f8798e96efe8971ab body_fp=a48e882f040df14279626d0b2efccca02e913bd84c7156a297dbe9c5483f2113 source_ref=4b6e8a038fa79aacdb6a87ebf2e4df9deba884ef role=test -->
+Assert that `trie setup` shows a disambiguation prompt when multiple agents are detected and only wires the agent selected by the user.
+
+- Patches `detected_target_slugs` to return both `claude-code` and `opencode` and `_is_interactive` to `True`.
+- Supplies `"opencode\n"` as stdin input; verifies only opencode's hook plugin is written and claude-code's advisory hook is absent.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_setup:test_cli_setup_non_interactive_does_not_prompt fingerprint=bec817eb2a78f6da3a15fbd499d440d4e720e402423ac2e2fcb17e8edc8a4330 body_fp=f9daf548aa7df3e8abe58d0620834e6ae6606fa917b94bb1f4edfc456b64c6a0 source_ref=4b6e8a038fa79aacdb6a87ebf2e4df9deba884ef role=test -->
+Assert that `trie setup` in non-interactive mode wires all detected agents without displaying a selection prompt.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_setup:test_prompt_select_targets_parses_numbers_slugs_and_all fingerprint=a9fb7249ea012f3de5142315892601e97ae1a9dce2b9d3edf54e61f8393fdba4 body_fp=09ad449b1e7b39a72dba832ef9e15037063a7336337bd48e1184f52f10256deb source_ref=4b6e8a038fa79aacdb6a87ebf2e4df9deba884ef role=test -->
+Test that `_prompt_select_targets` correctly parses numeric indices, slug names, `"all"`, and empty input against a two-agent detected list.
 <!-- trie:end -->

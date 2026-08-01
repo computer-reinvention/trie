@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: trie/docs_install.py
-file_fingerprint: cdecbbc0d47f1119851ee35680f9f605a136dbe5b988a84e22fc7cab1dd0f430
-last_synced_at: '2026-07-20T13:08:58Z'
+file_fingerprint: 670d4594c8a103734c6a5ac146ae9858b2d63d710351ef2a9e11c1d75a6fb7a3
+last_synced_at: '2026-08-01T09:20:24Z'
 description: Project-local agent documentation install.
 defines:
 - kind: module
   qualified_name: trie/docs_install:__module__
-  lines: 1-477
+  lines: 1-502
 - kind: constant
   qualified_name: trie/docs_install:Action
   lines: 35-35
@@ -60,30 +60,33 @@ defines:
   qualified_name: trie/docs_install:_BARE_NAME_OVERRIDES
   lines: 169-172
 - kind: function
+  qualified_name: trie/docs_install:_select_primary_target
+  lines: 175-197
+- kind: function
   qualified_name: trie/docs_install:_render_tool_names
-  lines: 175-195
+  lines: 200-220
 - kind: function
   qualified_name: trie/docs_install:_render_trie_doc_body
-  lines: 198-213
+  lines: 223-238
 - kind: function
   qualified_name: trie/docs_install:_multi_target_footer
-  lines: 216-249
+  lines: 241-274
 - kind: function
   qualified_name: trie/docs_install:_write_trie_doc
-  lines: 252-307
+  lines: 277-332
 - kind: function
   qualified_name: trie/docs_install:_pointer_block_for
-  lines: 310-320
+  lines: 335-345
 - kind: function
   qualified_name: trie/docs_install:_apply_pointer
-  lines: 323-389
+  lines: 348-414
 - kind: function
   qualified_name: trie/docs_install:_splice_pointer_block
-  lines: 392-421
+  lines: 417-446
 - kind: function
   qualified_name: trie/docs_install:install
-  lines: 424-476
-incoming_refs: 51
+  lines: 449-501
+incoming_refs: 54
 outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/docs_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=1c3538593c9f8d9d4a0de47676ca43fffefb02005e65d98f510a552985bb4fa4 source_ref=637a214fb02121ef02ef39bfc864ca1f54b4ab48 role=agent-integration -->
@@ -159,6 +162,12 @@ Frozen set of target names that expose bare tool names without MCP prefixes.
 <!-- trie:section symbol=trie/docs_install:_BARE_NAME_OVERRIDES fingerprint=5f93cfef34be890e1dd5f86939c5ea90f7803b07133113f2887f7becab0bd59b body_fp=c077e408a38e86efe543585a15cead52abd5d6abfbedef42a1b094facdf3a364 source_ref=b11f520c43aa24dfcbd24ba256b957c76b45b6d6 role=config -->
 Maps the two MCP tool names that bare-name targets expose under shortened aliases to those shorter forms.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/docs_install:_select_primary_target fingerprint=fd021cf8fb6802e99d5fbd75373afbdd62fe9f1fc74db423cbccee067a6e56f4 body_fp=2407cf326913aae01318025dcb34b2f1faab895b0b9fb6d4a4297a0d52f6e4a4 source_ref=18479783bb2e381c26bc3791a8de21514177cbd8 role=util -->
+Select the primary target from `targets`, preferring any bare-name override harness (e.g. opencode) over registry order.
+
+- Returns `None` when `targets` is empty.
+- Returned slug controls which tool-name prefix is baked into `TRIE.md` and the pointer block.
+<!-- trie:end -->
 <!-- trie:section symbol=trie/docs_install:_render_tool_names fingerprint=1994bcc1f47d5af53555c4fd23dca1537dabc713696c0212bb1cebc6a1c67f8a body_fp=5f5d764edff0669e34c7b5593f1fd59d8e1d43021a0da66721035c10c54fb0dd source_ref=b11f520c43aa24dfcbd24ba256b957c76b45b6d6 role=util -->
 Resolves tool names for a target harness, applying prefixes according to the target's naming convention or returning bare names for override targets.
 
@@ -207,10 +216,10 @@ Replaces existing marker-fenced block or appends pointer block to text with prop
 - Preserves content before/after markers when replacing
 - Defaults to `POINTER_BLOCK` when `pointer_block` parameter not provided
 <!-- trie:end -->
-<!-- trie:section symbol=trie/docs_install:install fingerprint=136c12139449e631a1f3b3f9ab57857c3bf38a44a342908ca3cac913587f7cd8 body_fp=de4ad99b77e29e3d6ceaa59fef1e99cc2cf7719a0abd778c3ba3882c0199e06f source_ref=637a214fb02121ef02ef39bfc864ca1f54b4ab48 role=agent-integration -->
+<!-- trie:section symbol=trie/docs_install:install fingerprint=49f37c5c4badcfccee3a113011f0084a617fb5a0f4f6d2f4efb72c76932ea439 body_fp=1ce0b061baddafa22c6b2e124d46a911cfa48a062daeb00139f937b7735803e2 source_ref=18479783bb2e381c26bc3791a8de21514177cbd8 role=orchestration -->
 Installs trie documentation by writing TRIE.md and adding pointer blocks to existing agent doc files.
 
-- `target_names`: MCP harnesses list; first entry determines tool name prefixes, rest appear in footer
+- `target_names`: MCP harnesses list; bare-name (override) target is preferred as primary when present, else first entry; rest appear in footer
 - `print_only`/`dry_run`: control whether changes are actually written to disk
 - Returns plan with results for each file operation (TRIE.md always included, agent files only if they exist)
 <!-- trie:end -->
