@@ -71,8 +71,8 @@ class Resolver:
 
 @dataclass
 class Models:
-    bootstrap: str = "anthropic/claude-sonnet-4-6"
-    cascade: str = "anthropic/claude-sonnet-4-6"
+    bootstrap: str = "anthropic/claude-haiku-4-5-20251001"
+    cascade: str = "anthropic/claude-haiku-4-5-20251001"
 
 
 @dataclass
@@ -346,8 +346,9 @@ source_root = "."
 # Default models for triefact generation. Use "anthropic/<model>" or "openai/<model>" form.
 # Switch to a cheaper provider by changing these to e.g. "openai/deepseek-chat" with
 # DEEPSEEK_API_BASE / OPENAI_API_KEY env vars set, or use --model on the CLI.
-bootstrap = "anthropic/claude-sonnet-4-6"
-cascade = "anthropic/claude-sonnet-4-6"
+# Prefer a stronger model (e.g. "anthropic/claude-sonnet-4-6") for richer prose.
+bootstrap = "anthropic/claude-haiku-4-5-20251001"
+cascade = "anthropic/claude-haiku-4-5-20251001"
 
 [cascade]
 # Default reference-graph traversal depth on incremental sync.
