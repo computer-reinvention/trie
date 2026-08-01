@@ -1,13 +1,13 @@
 ---
 trie_version: 0.2.1
 source: tests/test_mcp.py
-file_fingerprint: 802e912c08e890e8e501ada6124d56c60f6c0a36e4c45d89883fac7202b7bb9d
-last_synced_at: '2026-07-29T23:24:47Z'
+file_fingerprint: 39eacbbe203136ca72727bac9f171a692f5292bf90b5ee4407c829ce99090a07
+last_synced_at: '2026-08-01T00:20:43Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: module
   qualified_name: tests/test_mcp:__module__
-  lines: 1-1059
+  lines: 1-1142
 - kind: constant
   qualified_name: tests/test_mcp:PROJECT_TOML
   lines: 21-30
@@ -260,8 +260,23 @@ defines:
 - kind: function
   qualified_name: tests/test_mcp:test_read_history_flag_surfaces_intent_trail
   lines: 1029-1058
+- kind: function
+  qualified_name: tests/test_mcp:test_fuzzy_score_is_graded_not_binary
+  lines: 1064-1078
+- kind: function
+  qualified_name: tests/test_mcp:project_with_tests
+  lines: 1082-1104
+- kind: function
+  qualified_name: tests/test_mcp:test_grep_symbol_prefers_production_over_test_twin
+  lines: 1107-1119
+- kind: function
+  qualified_name: tests/test_mcp:test_trace_flow_fragment_resolves_to_production_symbol
+  lines: 1122-1128
+- kind: function
+  qualified_name: tests/test_mcp:test_grep_entry_points_excludes_test_symbols
+  lines: 1131-1141
 incoming_refs: 0
-outgoing_refs: 107
+outgoing_refs: 127
 ---
 <!-- trie:section symbol=tests/test_mcp:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8aae9c0160792068985e2d8f76d0fb26134f6f6b03e5f03d32d39b128db471ad source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests for MCP tool surface (grep, read, trace) via direct TrieTools invocation.
@@ -662,4 +677,19 @@ Verify that `history=True` on `TrieTools.read` and `explain_symbol` attaches the
 - Writes a stub triediffs archive entry before constructing `TrieTools`.
 - Asserts `history` key is absent from the default `read` envelope (opt-in contract).
 - Asserts symbol read, file view, and `explain_symbol` all surface the parsed trail when `history=True`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_fuzzy_score_is_graded_not_binary fingerprint=e976182f5768720b693cf0e1b41b872184c7917b706a5db58f3841fd70e0bb9d body_fp=1ceeeb0de19aba8e3116424863b824a13b5d6927bdb39b1b5e4819c9d5c48f9f source_ref=0e70e3437bf23750bbc0794f428d8b7859e56a53 role=test -->
+Regression test asserting `_fuzzy_score` returns graded scores: exact match = 100.0 > prefix > tight substring > long substring.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:project_with_tests fingerprint=c6b917106000009b6d01d6ae84ee30d8d7b09ccac17e6b4dc9dab4b6abaea600 body_fp=2c2894a996ba94f68543d85c6aa6eb5efd7edecdfb4480fd5d92819784a458d0 source_ref=0e70e3437bf23750bbc0794f428d8b7859e56a53 role=test -->
+Pytest fixture that creates a scanned project containing a production symbol `lib:write_stamp` and a same-named test twin in `tests/test_lib.py`, both indexed.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_symbol_prefers_production_over_test_twin fingerprint=26d3f44e58a02c7e979b2426cffba9f94559a0f595a9be6225635e3aa30ade74 body_fp=791489d5604f70321bdb02f133568a3b25e5e463f7e44f3bb162410d6383944a source_ref=0e70e3437bf23750bbc0794f428d8b7859e56a53 role=test -->
+Assert that `TrieTools.grep_symbol` resolves `"write_stamp"` to the production symbol `lib:write_stamp`, not the test function containing the query as a substring, and that the test twin still appears in `similar`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_trace_flow_fragment_resolves_to_production_symbol fingerprint=2f3a750b8661cd90c84dcc35d0ef1d1021047b99c6d7aa4a1e042aa1c2a1dc73 body_fp=a6c453151a996081c365553825862dd12c812e65ee4f675ec9faf8a5b2637b36 source_ref=0e70e3437bf23750bbc0794f428d8b7859e56a53 role=test -->
+Verify that `trace_flow` resolves the fragment `"write_stamp"` to the production symbol `lib:write_stamp`, not a test twin.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_excludes_test_symbols fingerprint=3ac53333973fc4f3d4dd13b345aa2119e2d7261e419d22b5347deaf797cf1294 body_fp=ca217bf25f418b6a0da05c95ec32e7d8dc86995444197b9cd0325fcd4a126b74 source_ref=0e70e3437bf23750bbc0794f428d8b7859e56a53 role=test -->
+Assert that `TrieTools.grep_entry_points` never returns symbols whose qname starts with `tests/`.
 <!-- trie:end -->

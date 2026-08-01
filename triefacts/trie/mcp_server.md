@@ -1,13 +1,13 @@
 ---
 trie_version: 0.2.1
 source: trie/mcp_server.py
-file_fingerprint: 8854af21d08e99414c971138501217d2d4f5ff78a4467f7fdbb6d4ad187487ad
-last_synced_at: '2026-07-29T23:24:10Z'
+file_fingerprint: 402659ab98eb9326a77d74fb493c572f0856718f4dacf5670e11a0cd88055039
+last_synced_at: '2026-08-01T00:21:07Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
 - kind: module
   qualified_name: trie/mcp_server:__module__
-  lines: 1-3277
+  lines: 1-3348
 - kind: class
   qualified_name: trie/mcp_server:RipgrepNotFoundError
   lines: 77-89
@@ -34,194 +34,200 @@ defines:
   lines: 152-165
 - kind: function
   qualified_name: trie/mcp_server:_close_qname_matches
-  lines: 168-190
+  lines: 168-193
 - kind: function
   qualified_name: trie/mcp_server:_close_name_matches
-  lines: 193-195
+  lines: 196-198
 - kind: function
   qualified_name: trie/mcp_server:_fuzzy_score
-  lines: 198-209
+  lines: 201-229
+- kind: function
+  qualified_name: trie/mcp_server:_is_test_symbol
+  lines: 232-245
+- kind: constant
+  qualified_name: trie/mcp_server:_TEST_SCORE_FACTOR
+  lines: 248-248
 - kind: function
   qualified_name: trie/mcp_server:_score_sym
-  lines: 212-237
+  lines: 256-288
 - kind: function
   qualified_name: trie/mcp_server:_predicate_is_empty
-  lines: 240-263
+  lines: 291-314
 - kind: function
   qualified_name: trie/mcp_server:_smallest_enclosing
-  lines: 266-285
+  lines: 317-336
 - kind: class
   qualified_name: trie/mcp_server:TrieTools
-  lines: 288-3194
+  lines: 339-3265
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.__init__
-  lines: 302-331
+  lines: 353-382
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.close
-  lines: 333-334
+  lines: 384-385
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.patch
-  lines: 338-393
+  lines: 389-444
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.batch_patch
-  lines: 395-494
+  lines: 446-545
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._blast_radius_brief
-  lines: 496-509
+  lines: 547-560
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.create_symbol
-  lines: 511-560
+  lines: 562-611
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._resolve_create_target
-  lines: 562-566
+  lines: 613-617
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.delete_symbol
-  lines: 568-590
+  lines: 619-641
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.rename_symbol
-  lines: 592-614
+  lines: 643-665
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.blast_radius
-  lines: 616-663
+  lines: 667-714
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.patch_drop
-  lines: 665-678
+  lines: 716-729
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.patch_list
-  lines: 680-720
+  lines: 731-771
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.preview
-  lines: 722-747
+  lines: 773-798
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.commit
-  lines: 749-773
+  lines: 800-824
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.patch_apply
-  lines: 776-778
+  lines: 827-829
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.summary
-  lines: 780-806
+  lines: 831-857
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.activity
-  lines: 808-861
+  lines: 859-912
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.symbols_by_file
-  lines: 863-902
+  lines: 914-953
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.file_triefact
-  lines: 904-965
+  lines: 955-1016
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep
-  lines: 969-1128
+  lines: 1020-1179
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._maybe_text_match_fallback
-  lines: 1130-1285
+  lines: 1181-1336
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._fuzzy_prose_fallback
-  lines: 1287-1367
+  lines: 1338-1418
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._text_match_in_scope
-  lines: 1369-1468
+  lines: 1420-1519
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._attribute_text_matches_to_symbols
-  lines: 1470-1493
+  lines: 1521-1544
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._candidate_matches_predicate
-  lines: 1495-1521
+  lines: 1546-1572
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._parse_predicate
-  lines: 1523-1595
+  lines: 1574-1646
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.read
-  lines: 1599-1662
+  lines: 1650-1713
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._strip_line_ref
-  lines: 1665-1676
+  lines: 1716-1727
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._resolve_in_root
-  lines: 1678-1688
+  lines: 1729-1739
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._triefact_view
-  lines: 1690-1778
+  lines: 1741-1829
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._pending_patches_for_file
-  lines: 1780-1821
+  lines: 1831-1872
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._read_symbol
-  lines: 1823-1896
+  lines: 1874-1947
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._digest_history
-  lines: 1898-1919
+  lines: 1949-1970
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._stale_qnames_for_file
-  lines: 1921-1943
+  lines: 1972-1994
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._section_fingerprint
-  lines: 1945-1963
+  lines: 1996-2014
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._staleness_notes
-  lines: 1965-2004
+  lines: 2016-2055
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._prose_for
-  lines: 2006-2043
+  lines: 2057-2094
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._neighbour_summaries
-  lines: 2045-2070
+  lines: 2096-2121
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.trace
-  lines: 2074-2228
+  lines: 2125-2279
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_str
-  lines: 2232-2391
+  lines: 2283-2442
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_str_all
-  lines: 2393-2506
+  lines: 2444-2557
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.read_source
-  lines: 2508-2566
+  lines: 2559-2617
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.write_file
-  lines: 2568-2628
+  lines: 2619-2679
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.find_files
-  lines: 2630-2701
+  lines: 2681-2752
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_entry_points
-  lines: 2703-2786
+  lines: 2754-2845
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_symbol
-  lines: 2788-2889
+  lines: 2847-2960
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_symbol_and_neighbours
-  lines: 2891-2917
+  lines: 2962-2988
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_symbol
-  lines: 2919-3003
+  lines: 2990-3074
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_symbol_references
-  lines: 3005-3068
+  lines: 3076-3139
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.trace_flow
-  lines: 3070-3128
+  lines: 3141-3199
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_flow
-  lines: 3130-3174
+  lines: 3201-3245
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._suggest_for_qname
-  lines: 3178-3194
+  lines: 3249-3265
 - kind: function
   qualified_name: trie/mcp_server:build_server
-  lines: 3200-3246
+  lines: 3271-3317
 - kind: function
   qualified_name: trie/mcp_server:run_stdio
-  lines: 3249-3256
+  lines: 3320-3327
 - kind: function
   qualified_name: trie/mcp_server:main
-  lines: 3259-3276
-incoming_refs: 131
-outgoing_refs: 77
+  lines: 3330-3347
+incoming_refs: 144
+outgoing_refs: 110
 ---
-<!-- trie:section symbol=trie/mcp_server:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=7fe3b54f1ffb2c5cf0bf8fb619733212b2701ce59504815e5ef75a07ada4e768 source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 role=mcp-server -->
+<!-- trie:section symbol=trie/mcp_server:__module__ fingerprint=3284d8c13d256ba29737fe73bd125bfd7eb252402a6dc4f17f7a567587209005 body_fp=7fe3b54f1ffb2c5cf0bf8fb619733212b2701ce59504815e5ef75a07ada4e768 source_ref=f0193a6b7b7fab56bcbd2ee55d7eb86792976b97 role=mcp-server -->
 MCP server exposing trie's triefact tree and symbol graph to coding agents over stdio.
 
 - Implements 11 tools split across core operations (grep/read/trace) and agent-ergonomic wrappers
@@ -273,10 +279,10 @@ Compiled regex matching a Windows drive prefix (`C:\` or `C:/`) used by `_looks_
 <!-- trie:section symbol=trie/mcp_server:_looks_like_qname fingerprint=6da576af0ddab05d03937b9de10852bc51154417e5abc1d1d982bf444165810a body_fp=240f08ff0e6a02a5d6ae5d17663a6030d65c2ea289b8054be4bc7cd98776fb9a source_ref=387016dec2af121a411a78de8ef480a933c24894 role=util -->
 Return `True` when `s` contains `:` but is neither a URL scheme nor a Windows drive prefix, indicating a trie qname shape.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:_close_qname_matches fingerprint=460d89d2fdd726eabfa28d913976fe5798c2e1e610d9b9a8eaabd4f0d074ac33 body_fp=df7347a3f583e082fabd2dd793ed94e4aa1e313e920f5ab639dc7ab74ef8e9e0 source_ref=e9b3a9e2495da46b6aaad1b0aa80cf66952989c2 role=util -->
+<!-- trie:section symbol=trie/mcp_server:_close_qname_matches fingerprint=8d18f836065bef2debe8d6c37a2c31524aeaad12ee9bb24aaab8930378225206 body_fp=8ee760b820d0757df239f2897da90b759a541758036e49310e136ee10d76e661 source_ref=f0193a6b7b7fab56bcbd2ee55d7eb86792976b97 role=util -->
 Fuzzy-match `qname` against candidates using rapidfuzz WRatio, returning up to `n` close matches for "did you mean" suggestions.
 
-- Same-module symbols are ranked first, scored against the local name alone with cutoff 30
+- Same-module symbols are ranked first, scored against the local name alone with cutoff 30, ordered by fuzzy score (best first)
 - Global qname matches use cutoff 45 and fill remaining slots after same-module hits
 <!-- trie:end -->
 <!-- trie:section symbol=trie/mcp_server:_close_name_matches fingerprint=78c86c0dfb91a0fc6a7a7cda37db88b68e1caad670ce91e6769b951b0ba033f1 body_fp=495dd9332e9237d1c2befbf424cc7f55ba9bcc1f505d8d2384f5b68826c82179 source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 role=mcp-server -->
@@ -285,19 +291,30 @@ Return top N fuzzy matches for `name` against a candidate set using rapidfuzz WR
 - Uses score_cutoff=45 to filter weak matches
 - Returns match strings only, not scores or indices
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:_fuzzy_score fingerprint=df1930a7033c1b75555083d67164a88ea342c7c428aef37d59a7a7a604a6f23b body_fp=3b3658d7427092aab98e20a4ddfe3524a177984e666d613ee7fa466ecfd5e580 source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 role=mcp-server -->
-Returns fuzzy match score (0-100) for query against text, short-circuiting to 100.0 on exact substring.
+<!-- trie:section symbol=trie/mcp_server:_fuzzy_score fingerprint=f496bcbab8ac42cd4cdb8ef8b68b4a1214542307bc8330dbcfa37cb9edbed80c body_fp=176dadfb98d8e0ad26123ef26fc279af92e4465475543b41d65c710f1d92ce4c source_ref=f0193a6b7b7fab56bcbd2ee55d7eb86792976b97 role=util -->
+Return a graded 0-100 relevance score for `query` against `text` using four ordered tiers.
 
-- Returns 0.0 when text is empty
-- Returns 100.0 when query is a case-insensitive substring of text
-- Otherwise returns rapidfuzz WRatio score between query and text
+- Returns 0.0 when `text` is empty
+- Returns 100.0 on case-insensitive exact match
+- Returns 92.0 when `text` starts with `query` (prefix match)
+- Returns 70.0 + up to 20.0 scaled by `len(query)/len(text)` on substring match
+- Otherwise returns rapidfuzz WRatio score
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:_score_sym fingerprint=7e3bbbed40177fcdb72361bc232f83c84a1484192b11a66452b2d23aee321f0f body_fp=ba8918934d6f21c7fb0467769278825218eb34375cfe0218f91b7e49027e7a39 source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 role=mcp-server -->
+<!-- trie:section symbol=trie/mcp_server:_is_test_symbol fingerprint=9cbe01b6f47ab812032be5b30ed6aa25e01a34423a3fa3f37997645117b7e20a body_fp=932043c94c2a9031c2c8a07bdb3121736d30be75ba1eb3299ed6e0473a3fb51c source_ref=f0193a6b7b7fab56bcbd2ee55d7eb86792976b97 role=util -->
+Return `True` when `sym`'s file path matches test-code heuristics (`tests/` root, nested `/tests/` dirs, `test_*.py`, or `conftest.py`).
+
+- Used only to deprioritise tests in fuzzy ranking and exclude them from `grep_entry_points`; does not affect predicate-based searches.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/mcp_server:_TEST_SCORE_FACTOR fingerprint=8a9a5d6f5d3f92d4522e6a9273714e656aa9d7d452f3ce9077295eb5c68cae76 body_fp=39d4649ccf745697ab6f945f99a1fddf297b31584c67726956d034bef3ed6eaf source_ref=f0193a6b7b7fab56bcbd2ee55d7eb86792976b97 role=config -->
+Multiplicative penalty applied to test symbols' fuzzy scores so production symbols always outrank equally-scored tests.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/mcp_server:_score_sym fingerprint=d700ead428178fb329e8e2a68a3dfc940e5a126bdf51719aabe83ad35beb345a body_fp=16b7dbfdeb394603bb18896ec927dda18e97b8b7b7a42cb35502ea17eafadcd1 source_ref=f0193a6b7b7fab56bcbd2ee55d7eb86792976b97 role=util -->
 Compute composite relevance score (0-100) for a symbol against a query string.
 
 - Takes the max across three weighted fuzzy scores: local name (1.0), one_liner (0.8), and prose body (configurable weight)
 - `prose_weight`: controls prose scoring weight, defaults to 0.6 to discount prose-only matches
 - Truncates prose to first 2000 chars to avoid scoring on overly long triefact bodies
+- Multiplies the score by `_TEST_SCORE_FACTOR` for test symbols so production code wins ties
 <!-- trie:end -->
 <!-- trie:section symbol=trie/mcp_server:_predicate_is_empty fingerprint=0f46c4ac2fd44729683e473ace14c19cacdab7b4def3185826c7c004b4f8aefe body_fp=8a7996aa1caeca5300bdca4d43abcd01bda6b384fae6f91ecb0a07f6d408263b source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 role=mcp-server -->
 Check if a GrepPredicate has no filters that would narrow the result set.
@@ -313,10 +330,10 @@ Find the qname of the symbol whose line range contains `lineno`, preferring nest
 
 Iterates through the ordered list, updating `enclosing` with each symbol that brackets `lineno`. Since symbols are start-ordered, the last matching symbol is the most deeply nested one.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=ae3db8db125afa1397b2a5e95dac3bd95ea419f1d2c44c7e09b9fc2422517bcc body_fp=9389c6221af6488c4f12eaf91119b252595a8b05eb9c3c7b251c7a88f55cb049 source_ref=cb4cac77832773abbe5002c3712d8b350d74b5a7 role=orchestration -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools fingerprint=ca4a103644fc4d88e3d32b9247998e76866dff4560d8db29b1023f7408bf0d16 body_fp=ce9d893b23d53a0228a9e8f75647cf23a37f23d9f9c230d3b3c8af7e08e8259e source_ref=f0193a6b7b7fab56bcbd2ee55d7eb86792976b97 role=orchestration -->
 Core interface for MCP tools as plain methods, testable without transport.
 
-Owns the Store and project config for process lifetime. Implements patch tools (patch, batch_patch, create_symbol, delete_symbol, rename_symbol, blast_radius, patch_drop, patch_list, preview, commit), project-level queries (summary, activity, symbols_by_file, file_triefact), three core operations (`grep`, `read`, `trace`), and extended wrappers (grep_str, grep_str_all, read_source, write_file, find_files, grep_entry_points, grep_symbol, grep_symbol_and_neighbours, explain_symbol, explain_symbol_references, trace_flow, explain_flow). All methods return structured dicts with error envelopes; telemetry is captured on each call with configurable event names to distinguish MCP vs CLI usage. `commit` always routes through `record_intent` (no code generation) and its response includes an `uncovered` key listing symbols that still lack a note and would fail the pre-commit gate. `patch_apply` is an alias for `commit(session_note=...)`. `preview` imports from `trie.edits.pipeline`. `_triefact_view` prepends a staleness banner when any section's fingerprint predates the current source; `_read_symbol` prepends staleness notes via `_staleness_notes`; `explain_symbol` likewise folds staleness notes into the response. `read`, `_triefact_view`, `_read_symbol`, `explain_symbol`, and `explain_symbol_references` accept a `history=True` flag to append the symbol's or file's intent trail from the session-digest archive. `batch_patch` applies a graceful create→patch fallback: if a `create` item targets a symbol already in the graph, it is recorded as a `patch` and the result includes `fell_back: True` plus a `created_as_patch` summary list; failed items now also include a `did_you_mean` list of close qname matches. `patch` error on unknown qname now leads with fuzzy did-you-mean candidates derived from `_close_qname_matches`. `create_symbol` likewise falls back to `patch` (returning `op: "patch", fell_back: True`) instead of returning an `already_exists` error. `grep` also appends a `related` list when hits are fewer than the limit and `name_contains` is set, filling up with prose/body candidates the name scan missed; the fallback and fuzzy-prose paths accept a `max_matches` cap so result size never exceeds the caller's requested limit. `_staleness_notes` file-level warning advises `trie sync --graph-only`.
+Owns the Store and project config for process lifetime. Implements patch tools (patch, batch_patch, create_symbol, delete_symbol, rename_symbol, blast_radius, patch_drop, patch_list, preview, commit), project-level queries (summary, activity, symbols_by_file, file_triefact), three core operations (`grep`, `read`, `trace`), and extended wrappers (grep_str, grep_str_all, read_source, write_file, find_files, grep_entry_points, grep_symbol, grep_symbol_and_neighbours, explain_symbol, explain_symbol_references, trace_flow, explain_flow). All methods return structured dicts with error envelopes; telemetry is captured on each call with configurable event names to distinguish MCP vs CLI usage. `commit` always routes through `record_intent` (no code generation) and its response includes an `uncovered` key listing symbols that still lack a note and would fail the pre-commit gate. `patch_apply` is an alias for `commit(session_note=...)`. `preview` imports from `trie.edits.pipeline`. `_triefact_view` prepends a staleness banner when any section's fingerprint predates the current source; `_read_symbol` prepends staleness notes via `_staleness_notes`; `explain_symbol` likewise folds staleness notes into the response. `read`, `_triefact_view`, `_read_symbol`, `explain_symbol`, and `explain_symbol_references` accept a `history=True` flag to append the symbol's or file's intent trail from the session-digest archive. `batch_patch` applies a graceful create→patch fallback: if a `create` item targets a symbol already in the graph, it is recorded as a `patch` and the result includes `fell_back: True` plus a `created_as_patch` summary list; failed items also include a `did_you_mean` list of close qname matches. `patch` error on unknown qname now leads with fuzzy did-you-mean candidates derived from `_close_qname_matches`. `create_symbol` likewise falls back to `patch` (returning `op: "patch", fell_back: True`) instead of returning an `already_exists` error. `grep` also appends a `related` list when hits are fewer than the limit and `name_contains` is set, filling up with prose/body candidates the name scan missed; the fallback and fuzzy-prose paths accept a `max_matches` cap so result size never exceeds the caller's requested limit. `_staleness_notes` file-level warning advises `trie sync --graph-only`. `grep_entry_points` now fetches `grep_max_limit * 3` raw candidates and post-filters out test symbols before scoring, preventing test fixtures from dominating results on test-heavy repos. `grep_symbol` sort key was extended with `_is_test_symbol` and local-name length tie-breaks so production symbols beat same-scored test symbols deterministically.
 
 - `event_name`: controls telemetry event name emitted on each call ("mcp_call" for MCP server, "cli_call" for CLI)
 - `store`: SQLite store containing symbol graph and triefact metadata
@@ -653,23 +670,25 @@ TrieTools.find_files searches for files matching a glob pattern with optional sc
 - `limit=100`: maximum results returned, mtime-sorted newest first
 - Returns dict with `matches` (relative paths), `match_count`, and `truncated` flag
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.grep_entry_points fingerprint=a40b453a3358e2fb289e16ffa988fa7300da361d6366c30d5b035811b7564545 body_fp=970b2c0833f34c63bdd7d323641a092da64ecf7a7a283fdb28742a7096e70f30 source_ref=77098c0a1179a2a9ecd9ad8b5616de5b457df217 role=api -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.grep_entry_points fingerprint=48736ea5343ad7609b0cd97ce6c9565a5e6387736c9769c278876e1b2ba5f953 body_fp=846310d5c4429086d315dc9cfa1a81a7131649efd788ce1d4254ea44b88d21fd source_ref=f0193a6b7b7fab56bcbd2ee55d7eb86792976b97 role=api -->
 Finds high-traffic public symbols whose triefact prose fuzzy-matches the query string.
 
-- Filters to public symbols with `inbound_count >= 2` as candidate pool
+- Filters to public symbols with `inbound_count >= 2` as candidate pool; test symbols are excluded before scoring
+- Fetches `grep_max_limit * 3` raw candidates then trims to `grep_max_limit` after the test-symbol filter
 - Scores on symbol name, one-liner, and triefact prose using fuzzy matching
 - Sorts by relevance score descending, then inbound count ascending
 - Returns hits with qname, signature, inbound count, prose snippet, and relevance score
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:TrieTools.grep_symbol fingerprint=8f3e4bf4c648a9d74203d23ce3e4dd811c1954895663a4a1dca66d22e49bae91 body_fp=56a42702de7918e0cdfd7ad82c112097ea73e418d33fab84ba7749a72b30aa5f source_ref=77098c0a1179a2a9ecd9ad8b5616de5b457df217 role=api -->
+<!-- trie:section symbol=trie/mcp_server:TrieTools.grep_symbol fingerprint=9d512dc58450425ce810cf234fc573627a3926c86817f007fcb85dcaec6235a5 body_fp=70178d1a474b94c563a91db7ccad3e0432130b1fc16f793e7ae90514b89a4b8f source_ref=f0193a6b7b7fab56bcbd2ee55d7eb86792976b97 role=domain -->
 Fuzzy symbol name lookup returning the best match plus similar symbols with relevance scores.
 
 TrieTools.grep_symbol performs three-phase matching: SQL substring search for fast candidates, rapidfuzz fallback against all symbol names when SQL finds nothing, then name/one_liner/prose scoring with lazy prose reads. Returns the highest-scoring match with up to 9 similar alternatives, each carrying a 0-100 relevance score. Better than grep for typo tolerance and discovering related symbols in one call.
 
 - Uses rapidfuzz WRatio scoring with configurable cutoffs and prose weight
-- SQL LIKE phase pulls up to 20 candidates, re-ranked by fuzzy score  
+- SQL LIKE phase pulls up to 20 candidates, re-ranked by fuzzy score
 - Fallback phase searches all symbol names with score cutoff 45
 - Prose augmentation only for candidates clearing the pre-filter threshold
+- Tie-breaks: score desc → production before tests → shorter local name → qname (deterministic)
 - Returns match object with qname/kind/signature/score plus similar list
 <!-- trie:end -->
 <!-- trie:section symbol=trie/mcp_server:TrieTools.grep_symbol_and_neighbours fingerprint=7ea37438f4dc626cbdbb108b54c36c9dc7731a3b134e51c78f5228e1295929ad body_fp=30b0a894f33f118ef503ce8fc45cc93927f10a2851f7b344d90a326b2c2b08b0 source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 role=mcp-server -->

@@ -684,3 +684,18 @@ def test_apply_one_uses_needs_manual_setup_for_targets_with_no_files():
     assert result.action == "needs_manual_setup"
     assert result.detail
     assert result.files == []
+
+
+def test_rendered_tools_relay_both_streams_on_failure(tmp_path: Path):
+    """Regression: failure messages used `stderr || stdout` (either/or), so
+    anything the CLI printed to stdout alongside a stderr error — e.g. the
+    did-you-mean qname suggestions — was silently dropped by every tool
+    wrapper. The templates must join both streams."""
+    from trie.tool_override_install import TARGETS
+
+    spec = TARGETS["opencode"]
+    rendered = [f.render(tmp_path) for f in spec.files if f.relative_path[-1].endswith(".ts")]
+    assert rendered, "expected rendered .ts tool files"
+    joined = "\n".join(rendered)
+    assert "stderr.trim() || stdout.trim()" not in joined
+    assert "[stderr.trim(), stdout.trim()].filter(Boolean).join" in joined

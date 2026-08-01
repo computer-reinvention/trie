@@ -181,8 +181,11 @@ def _close_qname_matches(qname: str, candidates: list[str], *, n: int = 3) -> li
         hits = _process.extract(
             local, list(local_names.values()), scorer=_fuzz.WRatio, limit=n, score_cutoff=30
         )
-        matched_locals = [h[0] for h in hits]
-        ranked = [c for c in same_module if local_names[c] in matched_locals]
+        # Preserve the fuzzy-score order (best first), not the candidate-list
+        # order — the closest correction must lead the suggestion line.
+        rank_of = {name: i for i, (name, _score, _idx) in enumerate(hits)}
+        matched = [c for c in same_module if local_names[c] in rank_of]
+        ranked = sorted(matched, key=lambda c: rank_of[local_names[c]])
     global_hits = _process.extract(qname, candidates, scorer=_fuzz.WRatio, limit=n, score_cutoff=45)
     for h in global_hits:
         if h[0] not in ranked:
@@ -196,17 +199,58 @@ def _close_name_matches(name: str, candidates: list[str], *, n: int = 3) -> list
 
 
 def _fuzzy_score(query: str, text: str) -> float:
-    """Return a 0-100 rapidfuzz WRatio score, short-circuiting to 100.0 on exact substring.
+    """Return a 0-100 graded relevance score for `query` against `text`.
 
-    Used as the single scoring primitive across all fuzzy paths. Exact substring wins
-    unconditionally so that a query like "slugify" always matches a symbol named
-    "slugify_strict" with a perfect score before the ratio path even runs.
+    Grades, highest first — replacing the old unconditional substring→100.0
+    shortcut, which made every symbol whose name merely *contained* the query
+    tie at a perfect score (so `write_stamp` scored identically to
+    `test_write_stamp_is_atomic_no_partial_files_left_behind`, and the winner
+    was decided by ASCII order of qnames — tests beat production symbols):
+
+      - exact match (case-insensitive)      → 100.0
+      - prefix match (`query…`)             → 92.0
+      - substring match                     → 70.0 + up to 20.0 by coverage
+                                              (len(query)/len(text): tighter
+                                              containers score higher)
+      - otherwise                           → rapidfuzz WRatio
+
+    A query still always beats WRatio noise when it literally appears in the
+    text, but containment no longer masquerades as equality.
     """
     if not text:
         return 0.0
-    if query.lower() in text.lower():
+    q, t = query.lower(), text.lower()
+    if q == t:
         return 100.0
-    return _fuzz.WRatio(query, text)
+    if t.startswith(q):
+        return 92.0
+    if q in t:
+        return 70.0 + 20.0 * (len(q) / len(t))
+    return float(_fuzz.WRatio(query, text))
+
+
+def _is_test_symbol(sym: SymbolDetail) -> bool:
+    """Heuristic: does this symbol live in test code?
+
+    Path-based (`tests/` root, nested `/tests/` dirs, `test_*.py` /
+    `conftest.py` files) — there is no structural is_test flag in the graph.
+    Used only to *deprioritize* tests in fuzzy ranking and to exclude them
+    from entry-point candidacy; explicit predicates (`scope_prefix` etc.) are
+    unaffected, and tests remain fully indexed and searchable.
+    """
+    fp = sym.file_path or ""
+    if fp.startswith("tests/") or "/tests/" in fp:
+        return True
+    base = fp.rsplit("/", 1)[-1]
+    return base.startswith("test_") or base == "conftest.py"
+
+
+_TEST_SCORE_FACTOR = 0.85
+"""Multiplicative penalty applied to test symbols' fuzzy scores.
+
+Strong enough that an equally-good production symbol always outranks a test;
+weak enough that a test still surfaces when it is genuinely the best match
+(e.g. the query names the test itself)."""
 
 
 def _score_sym(
@@ -227,6 +271,10 @@ def _score_sym(
     Taking the max rather than averaging means a strong name match isn't dragged down
     by a weak prose match, and a prose-only match is always slightly discounted relative
     to an equally-strong name match.
+
+    Test symbols (see `_is_test_symbol`) are multiplied by `_TEST_SCORE_FACTOR`
+    so production code wins ties everywhere this score is used — search results
+    were drowning in same-named test functions before this penalty existed.
     """
     local_name = (
         sym.qualified_name.split(":")[-1] if ":" in sym.qualified_name else sym.qualified_name
@@ -234,7 +282,10 @@ def _score_sym(
     name_score = _fuzzy_score(query, local_name)
     liner_score = _fuzzy_score(query, sym.one_liner or "") * 0.8
     prose_score = _fuzzy_score(query, prose[:2000]) * prose_weight if prose else 0.0
-    return max(name_score, liner_score, prose_score)
+    score = max(name_score, liner_score, prose_score)
+    if _is_test_symbol(sym):
+        score *= _TEST_SCORE_FACTOR
+    return score
 
 
 def _predicate_is_empty(pred: GrepPredicate) -> bool:
@@ -2722,11 +2773,19 @@ class TrieTools:
                 tele_ctx["result_kind"] = "error"
                 return _error("invalid_argument", "`query` must be a non-empty string.")
 
-            # Pull public hubs as the candidate pool.
+            # Pull public hubs as the candidate pool. Test symbols are
+            # excluded outright — a fixture referenced by two tests is not an
+            # architectural entry point, and with tests in the pool this tool
+            # degenerated into generic prose grep over test files. Fetch a
+            # deeper page than we keep so the post-filter doesn't starve the
+            # pool on test-heavy repos.
             pred = GrepPredicate(public_only=True, inbound_count_min=2)
-            candidates = self.store.grep_symbols(
-                pred, rank_by="inbound_count", limit=self.mcp_cfg.grep_max_limit
+            raw_candidates = self.store.grep_symbols(
+                pred, rank_by="inbound_count", limit=self.mcp_cfg.grep_max_limit * 3
             )
+            candidates = [s for s in raw_candidates if not _is_test_symbol(s)][
+                : self.mcp_cfg.grep_max_limit
+            ]
 
             cutoff = self.mcp_cfg.fuzzy_cutoff
             pre_filter = self.mcp_cfg.fuzzy_prose_pre_filter
@@ -2863,7 +2922,19 @@ class TrieTools:
                 score = _score_sym(sym, h, prose=prose, prose_weight=prose_weight)
                 scored.append((score, h))
 
-            scored.sort(key=lambda x: -x[0])
+            # Score desc, then production before tests, then shorter local
+            # names (a tie between `write_stamp` and anything longer should
+            # resolve to the exact name), then qname for determinism. Before
+            # these tie-breaks, ties fell through to SQL order — ASCII qname
+            # sorting — which is how `tests/…` beat `trie/…` for months.
+            scored.sort(
+                key=lambda x: (
+                    -x[0],
+                    _is_test_symbol(x[1]),
+                    len(x[1].qualified_name.split(":")[-1]),
+                    x[1].qualified_name,
+                )
+            )
 
             one_liner_cap = self.mcp_cfg.grep_one_liner_max_chars
 

@@ -236,7 +236,7 @@ export default tool({
       return stdout || "(empty response from trie)"
     }
     throw new Error(
-      `trie grep failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`,
+      `trie grep failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`,
     )
   },
 })
@@ -480,7 +480,7 @@ async function shellOutToTrie(
   if (code === 0 || code === 1) {
     return stdout || "(empty response from trie)"
   }
-  throw new Error(`trie failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+  throw new Error(`trie failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
 }
 
 function resolveAbsolutePath(cwd: string, path: string): string {
@@ -1047,7 +1047,7 @@ export default tool({
       return stdout || "(empty response from trie)"
     }
     throw new Error(
-      `trie trace failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`,
+      `trie trace failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`,
     )
   },
 })
@@ -1089,7 +1089,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0 || code === 1) return stdout || "(no matches)"
-    throw new Error(`trie grep-str failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+    throw new Error(`trie grep-str failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
   },
 })
 """
@@ -1124,7 +1124,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0 || code === 1) return stdout || "(no entry points found)"
-    throw new Error(`trie grep-entry-points failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+    throw new Error(`trie grep-entry-points failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
   },
 })
 """
@@ -1159,7 +1159,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0 || code === 1) return stdout || "(no match)"
-    throw new Error(`trie grep-symbol failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+    throw new Error(`trie grep-symbol failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
   },
 })
 """
@@ -1195,7 +1195,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0 || code === 1) return stdout || "(no match)"
-    throw new Error(`trie grep-symbol-neighbours failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+    throw new Error(`trie grep-symbol-neighbours failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
   },
 })
 """
@@ -1231,7 +1231,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0 || code === 1) return stdout || "(no prose)"
-    throw new Error(`trie explain-symbol failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+    throw new Error(`trie explain-symbol failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
   },
 })
 """
@@ -1266,7 +1266,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0 || code === 1) return stdout || "(no callers)"
-    throw new Error(`trie explain-symbol-refs failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+    throw new Error(`trie explain-symbol-refs failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
   },
 })
 """
@@ -1305,7 +1305,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0 || code === 1) return stdout || "(no path found)"
-    throw new Error(`trie trace-flow failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+    throw new Error(`trie trace-flow failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
   },
 })
 """
@@ -1344,7 +1344,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0 || code === 1) return stdout || "(no path found)"
-    throw new Error(`trie explain-flow failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+    throw new Error(`trie explain-flow failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
   },
 })
 """
@@ -1400,7 +1400,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0) return stdout.trim() || "patch posted"
-    throw new Error(`trie patch create failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+    throw new Error(`trie patch create failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
   },
 })
 """
@@ -1444,7 +1444,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0) return stdout.trim() || "patches dropped"
-    throw new Error(`trie patch drop failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+    throw new Error(`trie patch drop failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
   },
 })
 """
@@ -1474,7 +1474,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0) return stdout.trim() || "(no pending patches)"
-    throw new Error(`trie patch list failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+    throw new Error(`trie patch list failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
   },
 })
 """
@@ -1521,7 +1521,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0) return stdout.trim() || "patches applied"
-    throw new Error(`trie patch apply failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+    throw new Error(`trie patch apply failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
   },
 })
 """
@@ -1581,7 +1581,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0) return stdout.trim() || "create staged"
-    throw new Error(`trie patch create-symbol failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+    throw new Error(`trie patch create-symbol failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
   },
 })
 """
@@ -1626,7 +1626,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0) return stdout.trim() || "rename staged"
-    throw new Error(`trie patch rename-symbol failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+    throw new Error(`trie patch rename-symbol failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
   },
 })
 """
@@ -1670,7 +1670,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0) return stdout.trim() || "delete staged"
-    throw new Error(`trie patch delete-symbol failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+    throw new Error(`trie patch delete-symbol failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
   },
 })
 """
@@ -1727,7 +1727,7 @@ export default tool({
       proc.exited,
     ])
     if (code === 0) return stdout.trim() || "batch staged"
-    throw new Error(`trie patch create-batch failed (exit ${code}): ${stderr.trim() || stdout.trim() || "no output"}`)
+    throw new Error(`trie patch create-batch failed (exit ${code}): ${[stderr.trim(), stdout.trim()].filter(Boolean).join("\n") || "no output"}`)
   },
 })
 """

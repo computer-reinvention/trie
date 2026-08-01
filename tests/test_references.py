@@ -231,3 +231,32 @@ def test_module_attribute_no_self_edge(tmp_path: Path):
     fd = extract_file_data(f)
     targets = {r.target_qname for r in fd.references if r.src_qname == "mod:alpha"}
     assert "mod:alpha" not in targets
+
+
+def test_function_local_import_creates_edge(tmp_path: Path):
+    """Regression: `from x import y` INSIDE a function body must still bind y
+    for edge resolution. Lazy imports are a routine circular-import-avoidance
+    pattern (cli.py uses it everywhere), and skipping them silently dropped
+    the caller→callee edge — trace/explain showed only test callers for any
+    lazily-imported production symbol."""
+    f = tmp_path / "mod.py"
+    f.write_text("def run():\n    from helpers import helper\n\n    return helper(1)\n")
+    fd = extract_file_data(f)
+    refs = _refs_by_src(fd)
+    assert "helpers:helper" in refs.get("mod:run", [])
+
+
+def test_import_nested_in_conditional_creates_edge(tmp_path: Path):
+    """Imports inside `if`/`try` blocks (TYPE_CHECKING, optional deps) bind too."""
+    f = tmp_path / "mod.py"
+    f.write_text(
+        "import sys\n\n"
+        "if sys.version_info >= (3, 11):\n"
+        "    from helpers import helper\n"
+        "\n\n"
+        "def run():\n"
+        "    return helper(2)\n"
+    )
+    fd = extract_file_data(f)
+    refs = _refs_by_src(fd)
+    assert "helpers:helper" in refs.get("mod:run", [])

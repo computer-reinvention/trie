@@ -1,12 +1,12 @@
 ---
 trie_version: 0.2.1
 source: trie/cli.py
-file_fingerprint: 1563b19a589e75c9d3c858d15ea4254c39cc810837a1108ff199f6a8ff8821fb
-last_synced_at: '2026-07-29T23:24:08Z'
+file_fingerprint: df24d4a2f24b6025f1e3db8eb316303e300fa1f87af9e978e896ba9e1e6ee265
+last_synced_at: '2026-08-01T00:20:49Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
-  lines: 1-4539
+  lines: 1-4546
 - kind: constant
   qualified_name: trie/cli:app
   lines: 79-82
@@ -339,54 +339,54 @@ defines:
   lines: 3794-3808
 - kind: function
   qualified_name: trie/cli:patch_create_cmd
-  lines: 3812-3865
+  lines: 3812-3868
 - kind: function
   qualified_name: trie/cli:patch_create_batch_cmd
-  lines: 3869-3989
+  lines: 3872-3996
 - kind: function
   qualified_name: trie/cli:patch_create_symbol_cmd
-  lines: 3993-4041
+  lines: 4000-4048
 - kind: function
   qualified_name: trie/cli:patch_delete_symbol_cmd
-  lines: 4045-4072
+  lines: 4052-4079
 - kind: function
   qualified_name: trie/cli:patch_rename_symbol_cmd
-  lines: 4076-4105
+  lines: 4083-4112
 - kind: function
   qualified_name: trie/cli:patch_apply_cmd
-  lines: 4109-4171
+  lines: 4116-4178
 - kind: function
   qualified_name: trie/cli:patch_preview_cmd
-  lines: 4175-4218
+  lines: 4182-4225
 - kind: function
   qualified_name: trie/cli:patch_list_cmd
-  lines: 4222-4264
+  lines: 4229-4271
 - kind: function
   qualified_name: trie/cli:patch_drop_cmd
-  lines: 4268-4306
+  lines: 4275-4313
 - kind: constant
   qualified_name: trie/cli:mcp_app
-  lines: 4314-4321
+  lines: 4321-4328
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 4326-4328
+  lines: 4333-4335
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 4331-4341
+  lines: 4338-4348
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 4345-4414
+  lines: 4352-4421
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 4417-4432
+  lines: 4424-4439
 - kind: function
   qualified_name: trie/cli:mcp_uninstall_cmd
-  lines: 4436-4511
+  lines: 4443-4518
 - kind: function
   qualified_name: trie/cli:_render_uninstall_plan
-  lines: 4514-4534
-incoming_refs: 104
-outgoing_refs: 362
+  lines: 4521-4541
+incoming_refs: 124
+outgoing_refs: 385
 ---
 <!-- trie:section symbol=trie/cli:__module__ fingerprint=d16be5917b98ff58f36f3487c349d240fc53396bc24bb9e0d8903c2f9e48f690 body_fp=10f0e1573012e0fc76e1358d4da306bc2ba6e70254a41da3bf25ef8b26e41199 source_ref=ec65582312b341065f0f0bb2b57d76d2fbe38026 role=entrypoint -->
 Main CLI module for trie providing comprehensive project management, triefact synchronization, and agent integration commands.
@@ -1092,19 +1092,20 @@ Prints a green checkmark indicating the project is consistent after patch applic
 <!-- trie:section symbol=trie/cli:_close_qname_suggestions fingerprint=43648b44ebab8b775cf26778257e39e5a8f42ddf9248eeca7bce65d59d125f23 body_fp=fbf7b54c143630a9e45425a2b88f9878a75dc1ac2301d559ed80168d0c658013 source_ref=f803cb599a03936d496cac84820bfd4e78a600a2 role=util -->
 Fuzzy-match `qname` against all graph-known qualified names via `_close_qname_matches` (same-module symbols ranked first) and return up to `n` suggestions; returns `[]` on any failure.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:patch_create_cmd fingerprint=9d5a2ec666530f0810063cc7779dd2aa454e05b5371ae6c5612fcd668245769f body_fp=9e4244a12a3d8bfacaec04dd629867ed11fde0413e47c368e44455a4f945317d source_ref=a926c793af5e1f338acdc176a5faae767217b646 role=api -->
+<!-- trie:section symbol=trie/cli:patch_create_cmd fingerprint=6ef2bbed6b313b75ffe7e40afe0e61a93b665e1c52a71dab6e77f1bc14adcfc7 body_fp=788bef2d2c2f748d1a88158a7062e82e5b41c120c199521dcbe3c0569a3ee636 source_ref=1d35cd8f3622458a5b735a6b27aed37679e0201a role=api -->
 Creates a fire-and-forget edit patch against a symbol in the trie graph store.
 
 - `--gone`: records the note via `store.add_patch(..., kind="delete", require_symbol=False)` instead of an FK-constrained insert — routes through the store (not the pending-intent file)
-- On `KeyError`, calls `_close_qname_suggestions` for fuzzy did-you-mean hints before exiting 1
+- On `KeyError`, calls `_close_qname_suggestions` for fuzzy did-you-mean hints; suggestions and the follow-up hint are printed to `reporter.err_console` (stderr) so subprocess wrappers see them on failure
 - Validates that the symbol exists in the graph database before creating the patch (non-`--gone` path)
 - Uses a stable CLI session ID for tracking related patches together
 - Returns the patch ID after successful creation on both paths
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:patch_create_batch_cmd fingerprint=99755305e4ad7504b3948f6f3bcc0cebb50520f84cbfb546383cc68319c2c5bd body_fp=63d1ad52bf5f6bbcfe2da29c4763e9faf2375d6bf490b763fdf7af7bb2bd5baa source_ref=ec65582312b341065f0f0bb2b57d76d2fbe38026 role=api -->
+<!-- trie:section symbol=trie/cli:patch_create_batch_cmd fingerprint=bd311badd034a507c09be8adb49b1401c0ff08b46f8799aa9cb6eeb37f768ab8 body_fp=7948b9ac29a7708441fdf34ced8db90c0f7ebfee1a02641c29a3ea2de60adc73 source_ref=1d35cd8f3622458a5b735a6b27aed37679e0201a role=api -->
 Stage multiple `patch` or `create` operations in one call, reading a JSON array from `--json-file` or stdin.
 
 - `op`: `"patch"` (default) modifies an existing symbol; `"create"` stages a new symbol — if the symbol already exists, silently falls back to `"patch"` and sets `"fell_back": true` in the result entry.
+- On `KeyError` (symbol not found), the failure result row includes a `"did_you_mean"` list of close qname matches when any are found.
 - Items are processed independently; failures are reported without aborting remaining items.
 - Emits `{"staged": N, "failed": N, "results": [...]}` as JSON to stdout.
 - Exits 1 if zero items were staged successfully.

@@ -1,14 +1,14 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: tests/test_tool_override_install.py
-file_fingerprint: 70443976502e772d6583cdcb2efc6b6b18b2bdec426c108020010d44ad3f3536
-last_synced_at: '2026-07-29T18:32:25Z'
+file_fingerprint: 7265e090e0647ecab5b36a2f5a1169c946a528630b32364864e0fc6a4c3c03de
+last_synced_at: '2026-08-01T00:20:38Z'
 description: 'Tests for `trie.tool_override_install`: replacing agent built-in tools
   with trie wrappers.'
 defines:
 - kind: module
   qualified_name: tests/test_tool_override_install:__module__
-  lines: 1-687
+  lines: 1-702
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_install_creates_override_files
   lines: 39-74
@@ -90,8 +90,11 @@ defines:
 - kind: function
   qualified_name: tests/test_tool_override_install:test_apply_one_uses_needs_manual_setup_for_targets_with_no_files
   lines: 677-686
+- kind: function
+  qualified_name: tests/test_tool_override_install:test_rendered_tools_relay_both_streams_on_failure
+  lines: 689-701
 incoming_refs: 0
-outgoing_refs: 30
+outgoing_refs: 31
 ---
 <!-- trie:section symbol=tests/test_tool_override_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=3cb993b151f9ea2ea7ddf3774547435bafb8e0eb9c5f593eded0bd55ef057cb4 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
 Tests for `trie.tool_override_install` functionality that replaces agent built-in tools with trie wrappers.
@@ -275,4 +278,7 @@ Tests that `apply_one` returns `needs_manual_setup` for targets with empty file 
 
 - Verifies harnesses with only manual instructions return appropriate action without disk writes
 - Ensures consistent behavior with `hook_install.apply_one` for similar target shapes
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_tool_override_install:test_rendered_tools_relay_both_streams_on_failure fingerprint=5545acc4b20798092b016b8c47735b01af594ea2289600b95613073bdf8e1bfb body_fp=48aa76b43f74ce36378b7d26f861548660a50b7c21eb06b69be60415952a6297 source_ref=25e5de83b30ad677b72d5c9c11521ac289b6e9f6 role=test -->
+Regression test asserting that all rendered opencode `.ts` tool templates join both `stderr` and `stdout` on failure rather than silently dropping one stream.
 <!-- trie:end -->

@@ -3849,12 +3849,15 @@ def patch_create_cmd(
     except KeyError:
         # A wrong qname is far more often a guess/typo than a removed symbol:
         # suggest close matches first (hand-built qnames are the documented
-        # trap), and mention --gone only as the removal escape hatch.
+        # trap), and mention --gone only as the removal escape hatch. The
+        # whole block goes to STDERR: subprocess wrappers (the opencode tool
+        # overrides) relay stderr on failure, and suggestions printed to
+        # stdout were invisible exactly when they mattered.
         suggestions = _close_qname_suggestions(store, qname)
         reporter.error(f"symbol {qname!r} not found in the graph")
         if suggestions:
-            reporter.info("  did you mean: " + "  ".join(suggestions))
-        reporter.info(
+            reporter.err_console.print("  did you mean: " + "  ".join(suggestions))
+        reporter.err_console.print(
             "  (wrong name? look it up with `trie grep --name <fragment>`; "
             "actually removed? re-run with --gone)"
         )
@@ -3972,14 +3975,18 @@ def patch_create_batch_cmd(
                     results.append(entry)
                     staged += 1
             except KeyError:
-                results.append(
-                    {
-                        "index": idx,
-                        "qname": qname,
-                        "ok": False,
-                        "error": "symbol not found in graph",
-                    }
-                )
+                # Parity with TrieTools.batch_patch: a missed qname is usually
+                # a guess/typo, so hand back close matches in the result row.
+                entry = {
+                    "index": idx,
+                    "qname": qname,
+                    "ok": False,
+                    "error": "symbol not found in graph",
+                }
+                close = _close_qname_suggestions(store, qname)
+                if close:
+                    entry["did_you_mean"] = close
+                results.append(entry)
     finally:
         store.close()
 
