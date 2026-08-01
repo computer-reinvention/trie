@@ -1,12 +1,12 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: tests/test_workflow_install.py
-file_fingerprint: 972d03637e97293d6ab0b344e43229c88ede3749c4d1ff2abf70d82a94f80581
-last_synced_at: '2026-07-25T11:30:43Z'
+file_fingerprint: e76bee44f40be02753917eecb7c1768851e3e90f148df8a8c1f6fdeca8977229
+last_synced_at: '2026-08-01T08:35:57Z'
 defines:
 - kind: module
   qualified_name: tests/test_workflow_install:__module__
-  lines: 1-91
+  lines: 1-178
 - kind: function
   qualified_name: tests/test_workflow_install:_git_repo
   lines: 13-15
@@ -17,19 +17,22 @@ defines:
   qualified_name: tests/test_workflow_install:test_render_comments_every_pr_digest_not_just_latest
   lines: 30-44
 - kind: function
+  qualified_name: tests/test_workflow_install:test_render_prettifies_digest_for_display_only
+  lines: 47-131
+- kind: function
   qualified_name: tests/test_workflow_install:test_install_creates_updates_unchanged
-  lines: 47-63
+  lines: 134-150
 - kind: function
   qualified_name: tests/test_workflow_install:test_install_never_touches_user_owned_file
-  lines: 66-75
+  lines: 153-162
 - kind: function
   qualified_name: tests/test_workflow_install:test_install_skips_outside_git_repo
-  lines: 78-82
+  lines: 165-169
 - kind: function
   qualified_name: tests/test_workflow_install:test_install_dry_run_writes_nothing
-  lines: 85-90
+  lines: 172-177
 incoming_refs: 0
-outgoing_refs: 12
+outgoing_refs: 13
 ---
 <!-- trie:section symbol=tests/test_workflow_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=f264262babba7522a0ddec7e716d25523a5a9ce3d2c4ce32101e58c3b21d0fd4 source_ref=1114060328a6896c14caf5ac33d5cf5b58fbfef8 role=test -->
 Tests for `trie.workflow_install`, covering render output, install lifecycle (create/update/unchanged), user-owned file protection, non-git-repo skipping, and dry-run mode.
@@ -42,6 +45,14 @@ Verify that `render_triediff_workflow` embeds the diffs dir, the workflow marker
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_workflow_install:test_render_comments_every_pr_digest_not_just_latest fingerprint=17a4d8af547a745a795b346cba9aa1acf79d5bfc94195aee9c1ed7898f12171e body_fp=c3f50cbb6315f6a3bf2907c3e578c8caf832d40d1cd2ebf3fb46fc05f7c3c694 source_ref=627f061096890d85cce4ef5f799c85e105f99a79 role=test -->
 Assert that `render_triediff_workflow` emits a workflow that enumerates every PR-added digest file and comments each one, not only the newest.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_workflow_install:test_render_prettifies_digest_for_display_only fingerprint=0bf54e6e834e52710b10f4838408ff280ffa2e8f63566c1ece20934d990ad9c9 body_fp=82ba7011d7fd5d62431d505b7cdd3f80860de645a0722c59dd6d3caa0029cf10 source_ref=b9d5d98e7a2a488130878647fd48d47b8baae16b role=test -->
+Extracts the embedded awk program from the rendered workflow YAML and runs it against a canonical digest to verify the display transform produces a Markdown table.
+
+- Skips if `awk` is not on `PATH`.
+- Asserts overflow records are folded into the table and bullet lines are removed.
+- Asserts the auto-generated header comment is stripped from output.
+- Asserts the Staged section passes through unmodified.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_workflow_install:test_install_creates_updates_unchanged fingerprint=5ed1532cf5d64694f2368632acc0558fd1878c9369c8b8db7cd0f7d8cfa98fe3 body_fp=00e5962c10480652d08fc6072dc81eb64a5ce14eeb836819c230d4b5af79f168 source_ref=1114060328a6896c14caf5ac33d5cf5b58fbfef8 role=test -->
 Verify `install_triediff_workflow` returns `"created"` on first run, `"unchanged"` on idempotent rerun, and `"updated"` when `diffs_dir` changes.

@@ -33,7 +33,7 @@ WORKFLOW_MARKER = "# managed-by: trie setup (triediff-comment)"
 # Raw string: shell line-continuations (`\` at EOL) and regex escapes (`\.`)
 # must reach the YAML verbatim; a cooked string would eat them.
 _TEMPLATE = r"""{marker}
-# Comments each session digest ({diffs_dir}/*.md) added by a PR so reviewers
+# Comments each triediff ({diffs_dir}/*.md) added by a PR so reviewers
 # see the intent-level summary of every commit before opening a file diff.
 # Stateless: one comment per digest file, deduped by filename; a rewritten
 # same-commit digest (amend) is not re-commented. Delete this file (or edit
@@ -57,7 +57,7 @@ jobs:
         with:
           ref: ${{{{ github.event.pull_request.head.sha }}}}
 
-      - name: Comment the PR's session digests
+      - name: Comment the PR's triediffs
         env:
           GH_TOKEN: ${{{{ github.token }}}}
           PR: ${{{{ github.event.pull_request.number }}}}
@@ -91,10 +91,49 @@ jobs:
               continue
             fi
             url="${{GITHUB_SERVER_URL}}/${{GITHUB_REPOSITORY}}/blob/${{HEAD_SHA}}/${{path}}"
+            # Prettify the raw digest into a quiet, scannable comment WITHOUT
+            # altering the on-disk file (its `- <marker> qname — note` bullets
+            # are a machine-readable record other tooling parses). The awk pass
+            # below is display-only: it strips the auto-generated header comment,
+            # renders the `### Changes` bullet list as a markdown table, folds
+            # the hidden overflow record into that same table, and drops the
+            # "… and N more" marker. Everything else (title, narrative, Staged)
+            # passes through untouched, so the comment reads title-first.
+            cat > /tmp/triediff-fmt.awk <<'AWK'
+          BEGIN {{ in_changes=0; in_overflow=0; skip_lead=1; seen=0 }}
+          skip_lead && /^<!--/ {{ in_lead=1 }}
+          in_lead {{ if ($0 ~ /-->/) {{ in_lead=0; skip_lead=0 }} ; next }}
+          {{ skip_lead=0 }}
+          !seen && /^[[:space:]]*$/ {{ next }}
+          {{ seen=1 }}
+          $0 ~ /^<!-- trie:changes-(overflow|record)$/ {{ in_overflow=1; next }}
+          in_overflow && /^-->$/ {{ in_overflow=0; next }}
+          /^### Changes[[:space:]]*$/ {{
+            print "### Changes"; print "";
+            print "| Change | Symbol | Summary |";
+            print "| --- | --- | --- |";
+            in_changes=1; next
+          }}
+          /^### / && in_changes {{ in_changes=0; print ""; print $0; next }}
+          (in_changes || in_overflow) && /^[[:space:]]*$/ {{ next }}
+          in_changes && /^-[[:space:]]+…/ {{ next }}
+          (in_changes || in_overflow) && /^-[[:space:]]/ {{
+            line=$0; sub(/^-[[:space:]]+/, "", line);
+            marker=substr(line,1,1); rest=substr(line,2); sub(/^[[:space:]]+/, "", rest);
+            label="changed";
+            if (marker=="+") label="added"; else if (marker=="~") label="changed"; else label="removed";
+            qname=rest; summary=""; sep=index(rest, " — ");
+            if (sep>0) {{ qname=substr(rest,1,sep-1); summary=substr(rest,sep+5) }}
+            gsub(/\|/, "\\|", summary); gsub(/\|/, "\\|", qname);
+            printf "| %s | `%s` | %s |\n", label, qname, summary;
+            next
+          }}
+          {{ print }}
+          AWK
             {{
-              echo "### Session digest — [\`${{name}}\`](${{url}})"
+              awk -f /tmp/triediff-fmt.awk "$path"
               echo
-              cat "$path"
+              echo "<sub><a href=\"${{url}}\">${{name}}</a></sub>"
             }} > /tmp/digest-comment.md
             gh pr comment "$PR" --body-file /tmp/digest-comment.md
           done

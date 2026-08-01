@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: trie/workflow_install.py
-file_fingerprint: e5dc768b153d67a04da2fc1c96da4fbaeb35e4377b7abdae6c21b3229407fc0d
-last_synced_at: '2026-07-25T11:30:46Z'
+file_fingerprint: b919779568ef9a29da95df5f5520666e9313ca9ecd79a425062ee6ce1ee60ece
+last_synced_at: '2026-08-01T08:35:55Z'
 description: Install the triediff-comment GitHub workflow into a project.
 defines:
 - kind: module
   qualified_name: trie/workflow_install:__module__
-  lines: 1-171
+  lines: 1-210
 - kind: constant
   qualified_name: trie/workflow_install:WORKFLOW_RELPATH
   lines: 27-27
@@ -16,20 +16,20 @@ defines:
   lines: 31-31
 - kind: constant
   qualified_name: trie/workflow_install:_TEMPLATE
-  lines: 35-101
+  lines: 35-140
 - kind: function
   qualified_name: trie/workflow_install:render_triediff_workflow
-  lines: 104-106
+  lines: 143-145
 - kind: class
   qualified_name: trie/workflow_install:WorkflowInstallResult
-  lines: 110-115
+  lines: 149-154
 - kind: function
   qualified_name: trie/workflow_install:_install_managed_workflow
-  lines: 118-150
+  lines: 157-189
 - kind: function
   qualified_name: trie/workflow_install:install_triediff_workflow
-  lines: 153-170
-incoming_refs: 12
+  lines: 192-209
+incoming_refs: 14
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/workflow_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=5c92a8d686643494ef9749da7beca200adce0021d165e97f77fae49810cdf550 source_ref=3391c752d867df7a30064fe8b6630db6123988dd role=orchestration -->
@@ -44,8 +44,8 @@ Relative `Path` constant pointing to `.github/workflows/triediff-comment.yml`, u
 <!-- trie:section symbol=trie/workflow_install:WORKFLOW_MARKER fingerprint=9b09eb6f3644af3aafac7cb3afdb1cb50f7f959b64039a284c439eeb292e63d3 body_fp=4429b62a2192f71004303b073d1b2713ecc09ead9e463f25bcaaaf1c42cc5cd3 source_ref=3391c752d867df7a30064fe8b6630db6123988dd role=config -->
 Sentinel comment string written as the first line of managed workflow files to distinguish trie-owned files from user-owned ones.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/workflow_install:_TEMPLATE fingerprint=82343456c6a114e940343298df500dbafaf39954c0cb15570ea93af13d20b89e body_fp=da64f37ec44f9f986e90852a0f8102b68fb809d0e92e2e666591d642f5ebe7ce source_ref=3ea919f5f84ed0ee6a6c19ac2e68c5afcc2cad37 role=config -->
-Raw template string for the `triediff-comment.yml` GitHub Actions workflow, parameterised by `{marker}` and `{diffs_dir}`; comments every digest file added by the PR (not just the latest), deduped by filename.
+<!-- trie:section symbol=trie/workflow_install:_TEMPLATE fingerprint=9dc165a559331935056e69af98ed99914b3c8af1fdef49760c1df6789de5ec5f body_fp=ce3f890c9dece91072b2e10b1e95786a01a7c3afb945e01cf9d9403bec06c647 source_ref=930eb4e73e39658d77224e210fe3d3dbae8edc43 role=config -->
+Raw template string for the `triediff-comment.yml` GitHub Actions workflow, parameterised by `{marker}` and `{diffs_dir}`; comments every digest file added by the PR (not just the latest), deduped by filename, with an awk pass that reformats the digest into a markdown table before posting.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/workflow_install:render_triediff_workflow fingerprint=817b837ac4a9ad92c27aab59f560c6ac28fdcc831688abc9ede255a0c16c994d body_fp=db0ea67bc39ef45ffe5496ab32f00ca1a4854df065d75b012a5a5fd7935b84e5 source_ref=3391c752d867df7a30064fe8b6630db6123988dd role=util -->
 Render the triediff-comment workflow YAML string, substituting `WORKFLOW_MARKER` and a stripped `diffs_dir` into `_TEMPLATE`.
