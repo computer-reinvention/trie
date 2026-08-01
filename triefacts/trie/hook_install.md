@@ -1,8 +1,8 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: trie/hook_install.py
 file_fingerprint: 235e0b5653036800a56d1513388fb87c0d0a21a022b026452ffab0ae82d2b9f6
-last_synced_at: '2026-07-29T17:54:58Z'
+last_synced_at: '2026-08-01T09:20:35Z'
 description: Turn-boundary hook installation for coding agents.
 defines:
 - kind: module
@@ -48,7 +48,7 @@ defines:
   qualified_name: trie/hook_install:_apply_support_files
   lines: 440-468
 incoming_refs: 17
-outgoing_refs: 1
+outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/hook_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=21ee9d447b947371dbc665d0c8e007fa0ce70a727b8ff219daf9a1aba308f600 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
 Installs turn-boundary hooks that automatically run `trie refresh` when coding agents finish sessions.
@@ -122,7 +122,7 @@ Holds the outcome of a multi-target hook installation operation.
 - `target_names`: agent names the operation was applied to
 - `results`: one `HookApplyResult` per target with creation/update status
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:install fingerprint=5fe181bd36c946a52447bddaed8d61ca578458f4d5caa90b8d33b766f90fffec body_fp=6c3c0147ea1bd064927582b17721795a505982f2f84f60218d54e292b9467ca9 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+<!-- trie:section symbol=trie/hook_install:install fingerprint=5fe181bd36c946a52447bddaed8d61ca578458f4d5caa90b8d33b766f90fffec body_fp=6c3c0147ea1bd064927582b17721795a505982f2f84f60218d54e292b9467ca9 source_ref=f7496ac380664c8c8c5e1faeaf56b98c2f230b69 role=agent-integration -->
 Apply turn-boundary hooks for specified agent targets, auto-detecting agents when no targets given.
 
 - Raises `HookInstallError` for unknown target names

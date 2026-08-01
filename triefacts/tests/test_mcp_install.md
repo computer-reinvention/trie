@@ -1,12 +1,12 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.2.1
 source: tests/test_mcp_install.py
-file_fingerprint: 29be6cb897bb91f1cc5fb997df8e2fe3a95fc94825c147f3ee09245c304d5545
-last_synced_at: '2026-06-06T13:21:53Z'
+file_fingerprint: 8399ac3e31ad74a55ffb80c970128fb056d906ad47665b8d66ffb7e7e8db5322
+last_synced_at: '2026-08-01T09:20:23Z'
 defines:
 - kind: module
   qualified_name: tests/test_mcp_install:__module__
-  lines: 1-734
+  lines: 1-762
 - kind: function
   qualified_name: tests/test_mcp_install:project
   lines: 20-37
@@ -59,67 +59,73 @@ defines:
   qualified_name: tests/test_mcp_install:test_detect_returns_false_in_clean_environment
   lines: 327-334
 - kind: function
+  qualified_name: tests/test_mcp_install:test_detected_target_slugs_empty_on_clean_environment
+  lines: 337-344
+- kind: function
+  qualified_name: tests/test_mcp_install:test_detected_target_slugs_reports_installed_in_registry_order
+  lines: 347-362
+- kind: function
   qualified_name: tests/test_mcp_install:test_install_auto_detect_errors_when_nothing_found
-  lines: 337-351
+  lines: 365-379
 - kind: function
   qualified_name: tests/test_mcp_install:test_install_all_runs_every_target_in_print_mode
-  lines: 357-374
+  lines: 385-402
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_install_print_only
-  lines: 380-386
+  lines: 408-414
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_install_writes_file
-  lines: 389-395
+  lines: 417-423
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_install_unknown_target
-  lines: 398-403
+  lines: 426-431
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_install_target_and_all_mutex
-  lines: 406-411
+  lines: 434-439
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_serve_dispatches_to_run_stdio
-  lines: 414-426
+  lines: 442-454
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_no_subcommand_prints_help
-  lines: 429-447
+  lines: 457-475
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_removes_trie_entry
-  lines: 457-489
+  lines: 485-517
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_preserves_other_servers
-  lines: 492-526
+  lines: 520-554
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_when_not_installed_is_skipped
-  lines: 529-543
+  lines: 557-571
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_when_config_has_no_trie_key_is_skipped
-  lines: 546-571
+  lines: 574-599
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_dry_run_does_not_modify_file
-  lines: 574-597
+  lines: 602-625
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_print_only_does_not_modify_file
-  lines: 600-623
+  lines: 628-651
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_all_targets
-  lines: 626-656
+  lines: 654-684
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_unknown_target_raises
-  lines: 659-670
+  lines: 687-698
 - kind: function
   qualified_name: tests/test_mcp_install:test_uninstall_invalid_json_returns_error
-  lines: 673-690
+  lines: 701-718
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_uninstall_round_trips
-  lines: 696-710
+  lines: 724-738
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_uninstall_rejects_target_and_all_together
-  lines: 713-722
+  lines: 741-750
 - kind: function
   qualified_name: tests/test_mcp_install:test_cli_mcp_help_lists_uninstall
-  lines: 725-733
+  lines: 753-761
 incoming_refs: 0
-outgoing_refs: 45
+outgoing_refs: 49
 ---
 <!-- trie:section symbol=tests/test_mcp_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=747a97780bb1505eb138bdc4cf2d7bae011ace0fb3b41d24ee8fcae769a4012c source_ref=a2a263825d8bc473d9aedf29ca944244e117391a role=agent-integration -->
 Comprehensive test suite for MCP installation and uninstallation functionality across different AI agent targets.
@@ -210,6 +216,12 @@ Tests that install skips targets when scope is unsupported, verifying VS Code us
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp_install:test_detect_returns_false_in_clean_environment fingerprint=1c0deba75e86080d128799ac73240d8e3081589f4472276776630717eba7c462 body_fp=718a298985c098dd0a5076812606c3540906d95321cb7cbd95b3c1c3bb0e42b9 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a role=test-infrastructure -->
 Verifies that target detection returns false when environment paths are redirected to non-existent directories.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp_install:test_detected_target_slugs_empty_on_clean_environment fingerprint=cfbefa760a9a500cb256056f97002ab110c310f9dfcb61f87dd702512b2c6aaf body_fp=6d0fbdcb415c72d13aca35a8dad861d72404c33ddca9647639143ecea30208e6 source_ref=2c8417d0479305ff3cadb92e6ebff569af46dcff role=test -->
+Assert that `detected_target_slugs` returns an empty list when HOME and PATH point to non-existent locations.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp_install:test_detected_target_slugs_reports_installed_in_registry_order fingerprint=31e3decb80e20da737fb34a68c5854aadd1939afb814df09b8351fbab433a257 body_fp=974ca15aebcdd86408494120ecf3d7d094cc13559b7fcbd8724f4f5b3d48ad38 source_ref=2c8417d0479305ff3cadb92e6ebff569af46dcff role=test -->
+Verify `detected_target_slugs` returns slugs in registry definition order when multiple targets detect as installed.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp_install:test_install_auto_detect_errors_when_nothing_found fingerprint=f729e5cb0970771d53976e18bfd16e7348a9a236597bc29dfa71ac580a755a70 body_fp=86bde68143a8eb68428e95b73a2efcc538f5d3d09caf866a563a7777569363e2 source_ref=a2a263825d8bc473d9aedf29ca944244e117391a role=agent-integration -->
 Verifies that `install` raises `MCPInstallError` when auto-detection finds no supported agents in a clean environment.
@@ -304,41 +316,3 @@ Tests that the CLI help screen for `trie mcp` includes the `uninstall` subcomman
 - Verifies `trie mcp` exits with code 2 (no-args-is-help behavior)
 - Checks "uninstall" appears in help output
 <!-- trie:end -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

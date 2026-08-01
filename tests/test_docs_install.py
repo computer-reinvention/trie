@@ -359,24 +359,60 @@ def test_install_pointer_block_uses_target_specific_names(tmp_path: Path):
 def test_install_multiple_targets_renders_primary_in_body_and_footer_for_rest(
     tmp_path: Path,
 ):
-    """When multiple harnesses are wired in, the first target's names go in
-    the body and the rest land in a footer that names each harness's tool
-    aliases. This keeps the project to one TRIE.md while still being honest
-    about the multi-agent case."""
+    """When multiple harnesses are wired in, one target's names go in the body
+    and the rest land in a footer that names each harness's tool aliases. This
+    keeps the project to one TRIE.md while still being honest about the
+    multi-agent case.
+
+    An override harness (opencode) is preferred for the body regardless of
+    detection order, because its bare tool names are what's actually installed
+    as drop-in tools; the MCP-prefixed harness lands in the footer."""
+    install(
+        project_root=tmp_path,
+        print_only=False,
+        dry_run=False,
+        target_names=["opencode", "claude-code"],
+    )
+    body = (tmp_path / TRIE_DOC_FILENAME).read_text(encoding="utf-8")
+    # Primary (opencode) bare names dominate the body.
+    assert "«grep»" not in body  # placeholder was substituted
+    # Footer names the claude-code MCP aliases.
+    assert "Tool names under other installed harnesses" in body
+    assert "mcp__trie__grep" in body
+
+
+def test_install_prefers_override_target_for_body_regardless_of_order(tmp_path: Path):
+    """Regression: docs must render bare (override) names in the body when an
+    override harness is wired in, even if a non-override harness sorts first in
+    the auto-detected target list. Previously the first target won outright, so
+    a Claude-Code-first detection order produced `mcp__trie__grep` in an
+    opencode project's docs — tool names the opencode agent can't call."""
+    for order in (["claude-code", "opencode"], ["opencode", "claude-code"]):
+        install(
+            project_root=tmp_path,
+            print_only=False,
+            dry_run=False,
+            target_names=order,
+        )
+        body = (tmp_path / TRIE_DOC_FILENAME).read_text(encoding="utf-8")
+        # Body uses bare opencode names, never MCP-prefixed ones in the pointer.
+        body_before_footer = body.split("Tool names under other installed harnesses")[0]
+        assert "mcp__trie__grep" not in body_before_footer, (
+            f"order={order}: body should use bare override names, not MCP prefixes"
+        )
+        # Claude Code's prefixed names still appear, but only in the footer.
+        assert "mcp__trie__grep" in body
+        # And the AGENTS.md pointer (if present) uses bare names too.
+    # AGENTS.md pointer check: create the file, reinstall, assert bare names.
+    (tmp_path / "AGENTS.md").write_text("# Agents\n", encoding="utf-8")
     install(
         project_root=tmp_path,
         print_only=False,
         dry_run=False,
         target_names=["claude-code", "opencode"],
     )
-    body = (tmp_path / TRIE_DOC_FILENAME).read_text(encoding="utf-8")
-    # Primary (claude-code) names dominate the body.
-    assert "mcp__trie__grep" in body
-    # Footer names the opencode aliases.
-    assert "Tool names under other installed harnesses" in body
-    assert "`grep`" in body or "grep(" in body
-    assert "`read`" in body or "read(" in body
-    assert "`trace`" in body or "trace(" in body
+    agents = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
+    assert "mcp__trie__grep" not in agents, "AGENTS.md pointer must use bare override names"
 
 
 def test_install_single_target_omits_multi_target_footer(tmp_path: Path):

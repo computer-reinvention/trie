@@ -1,13 +1,13 @@
 ---
 trie_version: 0.2.1
 source: tests/test_docs_install.py
-file_fingerprint: 8d4f815414b7aa733bcb448250de0864239df0f0293d31f67b8fc8b9fe30bdf8
-last_synced_at: '2026-08-01T03:14:11Z'
+file_fingerprint: a6c0c9184c84d1fa0f87ff4208203e20262cdf4498c7c8c555ac494d56a88c0a
+last_synced_at: '2026-08-01T09:20:24Z'
 description: 'Tests for `trie.docs_install`: project-local agent documentation install.'
 defines:
 - kind: module
   qualified_name: tests/test_docs_install:__module__
-  lines: 1-421
+  lines: 1-457
 - kind: function
   qualified_name: tests/test_docs_install:test_install_creates_trie_md_at_project_root
   lines: 39-56
@@ -70,15 +70,18 @@ defines:
   lines: 341-356
 - kind: function
   qualified_name: tests/test_docs_install:test_install_multiple_targets_renders_primary_in_body_and_footer_for_rest
-  lines: 359-379
+  lines: 359-381
+- kind: function
+  qualified_name: tests/test_docs_install:test_install_prefers_override_target_for_body_regardless_of_order
+  lines: 384-415
 - kind: function
   qualified_name: tests/test_docs_install:test_install_single_target_omits_multi_target_footer
-  lines: 382-394
+  lines: 418-430
 - kind: function
   qualified_name: tests/test_docs_install:test_install_re_render_on_target_change_is_an_update
-  lines: 397-420
+  lines: 433-456
 incoming_refs: 0
-outgoing_refs: 49
+outgoing_refs: 51
 ---
 <!-- trie:section symbol=tests/test_docs_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=979a2a513c2e3dac97af37a8ecfe5bfa16220224016adc3aaaf5edd7e2126fa2 source_ref=9fe1a66b8400606b68b3e6d8a2b2a75352e32c94 role=test-infrastructure -->
 Tests for the `trie.docs_install` module, covering TRIE.md creation, pointer block splicing into AGENTS.md/CLAUDE.md, idempotency behavior, dry-run modes, and target-specific tool name rendering.
@@ -186,12 +189,15 @@ Tests that install writes target-specific tool names in AGENTS.md pointer blocks
 - Creates AGENTS.md and runs install with claude-code target
 - Verifies pointer block contains mcp__trie__ prefixed tool names matching agent's tool list
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_docs_install:test_install_multiple_targets_renders_primary_in_body_and_footer_for_rest fingerprint=1c8049e6eb9d914828abe22ff389d3c1627c1bff5993f0f3a49b0b5b35959688 body_fp=4c88430f85528f441ce3ce183a877aafae3c60c870602d3faf491a1dcb8c2b00 source_ref=9fe1a66b8400606b68b3e6d8a2b2a75352e32c94 role=test -->
-Tests that install with multiple targets renders primary target names in body and secondary targets in footer.
+<!-- trie:section symbol=tests/test_docs_install:test_install_multiple_targets_renders_primary_in_body_and_footer_for_rest fingerprint=f00600099a2512515bf1c05ea63e546068546374be5e36bfc0189aeb2526101a body_fp=fff426d86266a081159a80e2d1caa6ae4d976d1dfa5c3f0c4a0b00bd4a7aaac9 source_ref=021ab1f8d935a6154fc29488d3c5afa6a1219147 role=test -->
+Tests that install with multiple targets renders the override harness (opencode) names in the body and secondary targets in the footer.
 
-- Verifies first target (claude-code) tool names appear in main TRIE.md content
-- Confirms footer section lists alternative tool names for other harnesses
-- Ensures single TRIE.md handles multi-agent scenarios without confusion
+- Verifies override target (opencode) bare names dominate the main TRIE.md body, not MCP-prefixed names
+- Confirms footer section lists alternative tool names (e.g. `mcp__trie__grep`) for other harnesses
+- Ensures single TRIE.md handles multi-agent scenarios, preferring override harness regardless of detection order
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_docs_install:test_install_prefers_override_target_for_body_regardless_of_order fingerprint=078484d26b2e92f06588416824d63d4e410ae40e238f71bb8cf874bf72fa02a6 body_fp=68d47c80618f15db5a9335f632358e328add608ce4aec579df88dd2066c04d70 source_ref=021ab1f8d935a6154fc29488d3c5afa6a1219147 role=test -->
+Regression test asserting that `install` always renders bare override tool names in the TRIE.md body regardless of target detection order, and that AGENTS.md pointer also uses bare names when an override harness (opencode) is present alongside a prefixed harness (claude-code).
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_docs_install:test_install_single_target_omits_multi_target_footer fingerprint=48e4895b63d616d714fe313ed1185b050e760f6dfb0aa64e9a73d6081ff375ae body_fp=429d3092b99bdd551ff5f34368b3d3191e5e81af4e41f47d127c60db6136a367 source_ref=9fe1a66b8400606b68b3e6d8a2b2a75352e32c94 role=test -->
 Verifies that `install` omits the multi-target footer when only one target is specified.

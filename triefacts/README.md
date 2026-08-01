@@ -10,7 +10,7 @@ The most-referenced public symbols — start reading here.
 
 - [`trie/config:Config`](trie/config.md) (149 refs) `config` — Root configuration dataclass aggregating all subsection configs, with classmethods to construct from a dict, a TOML file path, or by walking up the directory tree.
 - [`trie/config:Config.find_and_load`](trie/config.md) (134 refs) `config-management` — Config classmethod walks up directory tree from start path to find and load trie.toml configuration file.
-- [`trie/cli:app`](trie/cli.md) (116 refs) `entrypoint` — Top-level Typer application instance that defines the trie CLI interface.
+- [`trie/cli:app`](trie/cli.md) (118 refs) `entrypoint` — Top-level Typer application instance that defines the trie CLI interface.
 - [`trie/graph/store:Store`](trie/graph/store.md) (79 refs) `persistence` — SQLite-backed persistence for trie's symbol graph and file fingerprints.
 - [`tests/fake_client:FakeTrieClient`](tests/fake_client.md) (76 refs) `test` — Test double for `TrieClient` that returns preconfigured structured outputs and records call parameters for verification.
 - [`trie/parse/python:extract_symbols`](trie/parse/python.md) (73 refs) `parsing` — Parse Python file and extract its top-level symbols: functions, classes, methods, constants, and module residuals.

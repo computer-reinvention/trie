@@ -1,12 +1,12 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.2.1
 source: trie/mcp_install.py
-file_fingerprint: 3274caf171669677e3e1cfd8c02be982d8b17c3daac2299cea7bf1cd9eda9a84
-last_synced_at: '2026-06-03T21:13:14Z'
+file_fingerprint: 1b76508578d1b191c74c9ccb0d95ffa57d07baa3e851daaf34b177682dd8a68d
+last_synced_at: '2026-08-01T09:20:20Z'
 defines:
 - kind: module
   qualified_name: trie/mcp_install:__module__
-  lines: 1-512
+  lines: 1-529
 - kind: constant
   qualified_name: trie/mcp_install:Scope
   lines: 11-11
@@ -52,25 +52,28 @@ defines:
 - kind: constant
   qualified_name: trie/mcp_install:TARGETS
   lines: 135-209
+- kind: function
+  qualified_name: trie/mcp_install:detected_target_slugs
+  lines: 212-226
 - kind: class
   qualified_name: trie/mcp_install:InstallPlan
-  lines: 213-218
+  lines: 230-235
 - kind: function
   qualified_name: trie/mcp_install:install
-  lines: 221-268
+  lines: 238-285
 - kind: function
   qualified_name: trie/mcp_install:_apply_one
-  lines: 271-343
+  lines: 288-360
 - kind: class
   qualified_name: trie/mcp_install:UninstallPlan
-  lines: 353-365
+  lines: 370-382
 - kind: function
   qualified_name: trie/mcp_install:uninstall
-  lines: 368-430
+  lines: 385-447
 - kind: function
   qualified_name: trie/mcp_install:_uninstall_one
-  lines: 433-511
-incoming_refs: 48
+  lines: 450-528
+incoming_refs: 56
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/mcp_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8baeeb0f357dad4074a9114249ef07894c4af0ca9fa85cea42ce3d3eca47217d source_ref=6b04051d96622258266e38c4d8fc0905613a34ce role=agent-integration -->
@@ -170,6 +173,9 @@ Registry of supported MCP targets, mapping agent names to configuration metadata
 - `vscode` — VS Code with `.vscode/mcp.json` project config using `servers` key
 - `codex` — Codex CLI with user config at `~/.codex/config.json`
 - `opencode` — opencode IDE with `mcp` key and tool format `trie_{tool}`
+<!-- trie:end -->
+<!-- trie:section symbol=trie/mcp_install:detected_target_slugs fingerprint=883d720ec6f4cbe213fb945a07abcc9f0d2f1064d43b48919b4706aa943cee83 body_fp=b3667ef8c1988e39fc91e189d7a194984632a20e22432df9a46b9cf29705b971 source_ref=34464ff2f5778fbeb35a0704bbe03f6c386772af role=util -->
+Return slugs of all `TARGETS` entries whose `MCPTarget.detect()` returns `True` on the current machine, in registry order.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/mcp_install:InstallPlan fingerprint=ecc90c2f83f83361a51cb15674f47023de506a19ced5a467dee265684790fbd2 body_fp=5c24435461c914e75887f5098ddb6adfbc68e956d3402a6959044ae093d939a4 source_ref=6b04051d96622258266e38c4d8fc0905613a34ce role=agent-integration -->
 Aggregate result of an `install` call across one or more targets.
