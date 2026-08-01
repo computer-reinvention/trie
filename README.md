@@ -1,6 +1,6 @@
 # <img src="landing/logo.svg" width="28" alt="trie logo" /> trie
 
-> **An index of meaning and intent for your codebase.**
+> **A self-hosted index of meaning and intent for your codebase.**
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
@@ -12,12 +12,11 @@
 
 Every coding agent's session starts by re-deriving context: _what does this code do, and why is it like this?_ The code answers the first question bit-by-bit and the second not at all. Commit messages describe diffs, not decisions; documentation rots because nothing stops it from rotting. Symbol-level intent lives in the programmer's head or between an agent's conversation turns — and is lost either way.
 
-trie fixes both, in the repo, with the mechanism your code already trusts: version control and a pre-commit gate. It keeps two indexes in sync with your source in real time:
+_trie_ makes this context explicit and permanent by creating and maintaining two separate indexes within your codebase.
 
-- **Meaning** (`triefacts/`) — one Markdown file per source file, one section per symbol, describing what each thing does. LLM-generated, regenerated only when the source actually changes, cascade-aware, and verified at commit time.
-- **Intent** (`triefacts/triediffs/`) — the reason each symbol changed, recorded when the change is made and enforced at commit time. Archived per commit as a _triediff_ that shows up in your PRs. Months later, `trie read <symbol> --history` tells you the actual why.
+- **The Index of Meaning** (`triefacts`) — one Markdown file per source file, one section per symbol, describing what each thing does. LLM-generated, regenerated only when the source actually changes, cascade-aware, and verified at commit time. Entries in a triefact file have the same graph dependency as the actual source code.
 
-trie never writes your code. You (or your agent) own every change; trie owns the record of what it means and why it happened. No server, no hosted index — if you can clone the repo, you have all of it.
+- **The Index of Intent** (`triediffs`) — the reason each symbol changed, recorded when the change is made and enforced at commit time. Archived per commit as a _triediff_ that shows up in your PRs. Months later, `trie read <symbol> --history` tells you the actual why. Also makes for a very nice and readable summary at PR time. Reduces review pressure drastically.
 
 ![An agent investigates a bug, fixes it, and is gated until it records the discovered cause; without trie that knowledge is lost; months later another agent answers the why-question from the recorded intent](https://raw.githubusercontent.com/computer-reinvention/trie/main/landing/demo.gif)
 
@@ -35,12 +34,15 @@ trie setup     # wire up your coding agent (auto-detects opencode / claude-code 
 trie sync      # generate the meaning index
 ```
 
-That's the loop: `init` → `setup` → edit → `trie sync` before each commit. The [full quickstart](https://computerreinvention.com/trie/docs.html#quickstart) covers cost previews, capped first runs, and the day-to-day cycle.
+That's the loop: `init` → `setup` → edit → `trie sync` before each commit. A pre-commit hook will make sure the agent always records intent with `trie patch` for each symbol. The coding agent has to follow this structure by design - it can't commit otherwise.
+
+`trie setup` will override your agent's default `grep` with `trie grep` which is backed by the meaning and intent index - ~3.5 less round-trips. It will also add tools that invoke `trie read` and `trie trace` which utilize graph semantics over triefacts to one-shot the same questions that take a non-augmented agent many reads and greps.
 
 ## Documentation
 
-Everything else — how each index works, the commit gate, agent integration, the command reference, configuration, costs, CI, team adoption, and troubleshooting — lives at **[computerreinvention.com/trie/docs.html](https://computerreinvention.com/trie/docs.html)**.
+To learn more about how each index works, the commit gate, agent integration details, the command reference, configuration, costs, CI, team adoption, and troubleshooting check out the docs at **[computerreinvention.com/trie/docs.html](https://computerreinvention.com/trie/docs.html)**.
 
 ## License
 
-MIT. See [LICENSE](LICENSE). Contributions welcome — issues, discussions, PRs. For large changes, open an issue first so we can talk through the design.
+MIT. See [LICENSE](LICENSE).
+Contributions welcome — issues, discussions, PRs. For large changes, open an issue first so we can talk through the design.
