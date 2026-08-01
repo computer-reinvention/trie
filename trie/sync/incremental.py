@@ -86,7 +86,7 @@ def compute_incremental_worklist(
     scan_project(project_root=project_root, config=config, store=store)
     orphans = find_orphan_triefacts(project_root=project_root, config=config)
 
-    check = check_project(project_root=project_root, config=config)
+    check = check_project(project_root=project_root, config=config, store=store)
     # Stale items that survive the file-existence filter, indexed both ways. The set of
     # files comes from the source_paths; the per-file qname set comes from items that
     # carry a qualified_name (everything except `MISSING_TRIEFACT`, which signals a

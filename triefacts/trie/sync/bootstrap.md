@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: trie/sync/bootstrap.py
 file_fingerprint: 3bc374880d5785934f4c89da315b1c63c82799a144cfe4b9844418ca0524acc4
-last_synced_at: '2026-07-29T03:04:12Z'
+last_synced_at: '2026-08-01T01:53:09Z'
 defines:
 - kind: module
   qualified_name: trie/sync/bootstrap:__module__
@@ -23,7 +23,7 @@ defines:
   qualified_name: trie/sync/bootstrap:run_bootstrap
   lines: 138-214
 incoming_refs: 18
-outgoing_refs: 16
+outgoing_refs: 17
 ---
 <!-- trie:section symbol=trie/sync/bootstrap:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=2d310a23ea477f2ab385c5eabd894da122826cd687143831bcc27ebad0cf62c8 source_ref=a9697e77ed2f518a87a84d4b0dd7da51d2d4623a role=documentation-sync -->
 Provides batch documentation generation planning and execution for multiple Python files.
@@ -55,7 +55,7 @@ Holds the outcome of a bootstrap run, tracking files processed and associated co
 - `sync_results`: detailed results from each file that was actually processed
 - `file_errors`: `(rel_path, error)` pairs for files whose generation raised an exception
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/bootstrap:build_plan fingerprint=639d2e91a91763f78e779d228bd86933d3afdd6d622048322fc763f83a59f463 body_fp=5eaec87f0272b7ed482e79ec419592b6125725bc99a92b6ca894eba5ba4f10f2 source_ref=b80e775bf813db8e4b4937c29c968d95eb993902 role=domain -->
+<!-- trie:section symbol=trie/sync/bootstrap:build_plan fingerprint=639d2e91a91763f78e779d228bd86933d3afdd6d622048322fc763f83a59f463 body_fp=5eaec87f0272b7ed482e79ec419592b6125725bc99a92b6ca894eba5ba4f10f2 source_ref=6fc0e2ec51a63066191561d40114cf8ce9ec15ec role=domain -->
 Ranks files by LOC × documented symbol count and produces per-file cost estimates for documentation generation.
 
 - `only_files`: Restricts plan to specified source-relative paths

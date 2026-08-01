@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: trie/index.py
-file_fingerprint: 8e33a42b0a971d737a6ab7d3a34edb7a132b7bb1e04a36c907000d8f0fefa5f5
-last_synced_at: '2026-07-25T01:52:18Z'
+file_fingerprint: 212134c9d259e414e52236181f47cc402a23d3f110f4ab11ce7391bea2881567
+last_synced_at: '2026-08-01T01:51:59Z'
 description: 'Generate the wiki front door: an index README for the triefact tree.'
 defines:
 - kind: module
   qualified_name: trie/index:__module__
-  lines: 1-145
+  lines: 1-148
 - kind: constant
   qualified_name: trie/index:INDEX_MARKER
   lines: 31-31
@@ -16,15 +16,15 @@ defines:
   lines: 33-33
 - kind: function
   qualified_name: trie/index:_file_descriptions
-  lines: 36-62
+  lines: 36-65
 - kind: function
   qualified_name: trie/index:build_index
-  lines: 65-132
+  lines: 68-135
 - kind: function
   qualified_name: trie/index:write_index
-  lines: 135-144
-incoming_refs: 4
-outgoing_refs: 0
+  lines: 138-147
+incoming_refs: 6
+outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/index:__module__ fingerprint=9e1250a0aa1097f31e1890d650053028fe3a4312895ea493c0d41814d805a5bb body_fp=0586b611689ae2f1d560b7cee0ed189611012f02af271934de1a25f34d65ff21 source_ref=2cbb9fc54f20a44684a2b45d6c7b8509ee1375dd role=orchestration -->
 Generate the wiki front door: a deterministic, LLM-free index `README.md` for the triefact tree, derived from the graph store and triefact front matter.
@@ -35,7 +35,7 @@ HTML comment string embedded in the generated `README.md` to mark it as trie-own
 <!-- trie:section symbol=trie/index:_ENTRY_POINT_LIMIT fingerprint=8ab101f599265d1097615a06228838c4fe3b3fa9e2216a7cf35eb6e2a6b415cb body_fp=67558018ce81b8aea0c93ec2f991fe34dc89f08d4cd6bd7d72ec2709d640b36e source_ref=2cbb9fc54f20a44684a2b45d6c7b8509ee1375dd role=config -->
 Maximum number of entry-point symbols included in the index's "Entry points" section.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/index:_file_descriptions fingerprint=d22da5781ceafcf787d93ddde3b9683572760df34647c442e3260c645f3174c9 body_fp=cbe310716811b7b553ffad1c1abccd98a8cfb08cf6233b1174ea1edd024900e1 source_ref=2cbb9fc54f20a44684a2b45d6c7b8509ee1375dd role=io -->
+<!-- trie:section symbol=trie/index:_file_descriptions fingerprint=e9cdc0d05878b1a3dd4022c015a4c5bdd4fee7d532addc13b3703f0f15eea5f8 body_fp=cbe310716811b7b553ffad1c1abccd98a8cfb08cf6233b1174ea1edd024900e1 source_ref=7e64ca48c6a75245a38701c880b05c0a4b8743e8 role=io -->
 Scan all `.md` files under `triefacts_root` and return a mapping of triefact-relative paths to their YAML front-matter `description` field (empty string if absent or unparseable).
 
 - `skip_dirs`: top-level directory names whose contents are excluded from the scan.

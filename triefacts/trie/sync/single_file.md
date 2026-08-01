@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: trie/sync/single_file.py
 file_fingerprint: 800cde823ae823084ccd33c5b0bc64454b4dff129ef1ecde30dafc8ad6ae3f58
-last_synced_at: '2026-07-29T03:03:35Z'
+last_synced_at: '2026-08-01T01:53:13Z'
 defines:
 - kind: module
   qualified_name: trie/sync/single_file:__module__
@@ -40,8 +40,8 @@ defines:
 - kind: function
   qualified_name: trie/sync/single_file:sync_single_file
   lines: 297-617
-incoming_refs: 68
-outgoing_refs: 24
+incoming_refs: 73
+outgoing_refs: 39
 ---
 <!-- trie:section symbol=trie/sync/single_file:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=962cb42fd231e6a72fa197d03a93bef26647d2e4f96f38d6e53a0c5332b417c1 source_ref=da91ee7ba7df534c772bf0cfb02b2cfcdb8bce67 role=documentation-sync -->
 Synchronizes individual Python source files to their corresponding triefact documentation files.
@@ -52,7 +52,7 @@ Synchronizes individual Python source files to their corresponding triefact docu
 - `FileSyncResult` — captures statistics from a single file sync operation
 - `MetadataRefreshResult` — reports whether metadata refresh changed file contents
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:backfill_section_records fingerprint=e04d7a4617b4fa4fcb3c831d0695318aebbacf834a1086848de9df18a116487d body_fp=a8a394ffca5e9b6df590440139de95289ab026305b58e1f01cf44d8f06383709 source_ref=e0ec1aff11d8b03d0bd7c2ee3e874a2551f88c6f role=persistence -->
+<!-- trie:section symbol=trie/sync/single_file:backfill_section_records fingerprint=e04d7a4617b4fa4fcb3c831d0695318aebbacf834a1086848de9df18a116487d body_fp=a8a394ffca5e9b6df590440139de95289ab026305b58e1f01cf44d8f06383709 source_ref=fafd0f25e185cf2f2b0b6d0272a456fb02ab100a role=persistence -->
 Populate `triefact_sections` records from existing triefact files for every section discovered on disk.
 
 - Reads all triefact files in the project and ensures database records exist
@@ -101,7 +101,7 @@ Retrieve previous Symbol instances for qualified names that have git blob refere
 - Returns empty dict when no section references exist
 - Skips symbols that can't be resolved due to unreachable blobs or parse errors
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/single_file:refresh_triefact_metadata fingerprint=a89b7a84b9d768fa81770ad6b46a9489e16633f805a84e271026faf557776631 body_fp=a937a868bc56aca5b842b6ac79a293451b67b3e9320335e0f68c81e301406c64 source_ref=e0ec1aff11d8b03d0bd7c2ee3e874a2551f88c6f role=io -->
+<!-- trie:section symbol=trie/sync/single_file:refresh_triefact_metadata fingerprint=a89b7a84b9d768fa81770ad6b46a9489e16633f805a84e271026faf557776631 body_fp=a937a868bc56aca5b842b6ac79a293451b67b3e9320335e0f68c81e301406c64 source_ref=fafd0f25e185cf2f2b0b6d0272a456fb02ab100a role=io -->
 Refreshes a triefact file's front matter from the current store without calling the LLM.
 
 - `store` — when None, skips reference counts in front matter; other metadata still updates

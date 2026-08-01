@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: tests/test_writer_sentinels.py
 file_fingerprint: 5eb64a1c16bbd3b52e461b6a1b33bc9af17509f8e02c43085ebe48dddf252c26
-last_synced_at: '2026-07-26T20:29:03Z'
+last_synced_at: '2026-08-01T01:53:22Z'
 defines:
 - kind: module
   qualified_name: tests/test_writer_sentinels:__module__
@@ -122,7 +122,7 @@ defines:
   qualified_name: tests/test_writer_sentinels:test_compact_view_store_overrides_take_precedence
   lines: 563-570
 incoming_refs: 0
-outgoing_refs: 53
+outgoing_refs: 101
 ---
 <!-- trie:section symbol=tests/test_writer_sentinels:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=b090a7da0bb84889c079565a7c4fc125a9e9a8c12ecaa519759621dd369fadfa source_ref=da68e1ccc1166d342f5b38d5c6453cf2fcfde631 role=test-infrastructure -->
 Tests parsing, rendering, and mutation of TriefactFile with sentinel-wrapped sections and front matter.
@@ -130,8 +130,8 @@ Tests parsing, rendering, and mutation of TriefactFile with sentinel-wrapped sec
 <!-- trie:section symbol=tests/test_writer_sentinels:test_parse_empty fingerprint=d8d478032b2edcb69bfa32426a508c57ca253f274418d1d9533ca54ff39decf9 body_fp=cf48ba181f8be644cbab91be6668338ae0fefb318b809d2a3d5e78d8f8056f04 source_ref=da68e1ccc1166d342f5b38d5c6453cf2fcfde631 role=test-infrastructure -->
 Verifies TriefactFile.parse returns empty front matter and chunks when given empty string input.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_writer_sentinels:test_parse_only_prose fingerprint=331924321c90bdde87c44e245a991131e979fb23776f4a7721c5a5572534e1e5 body_fp=8026a2a04ef47afb30a6f625921c6f5795811671ae6289a1ffb79e1c6955f11a source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test -->
-Tests that TriefactFile.parse correctly handles plain markdown content without front matter or sections.
+<!-- trie:section symbol=tests/test_writer_sentinels:test_parse_only_prose fingerprint=331924321c90bdde87c44e245a991131e979fb23776f4a7721c5a5572534e1e5 body_fp=0e8d70c2cb7c86079370f7e35d626e758f7756ad48dd23a31da033fc93a91b44 source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test -->
+Tests that `TriefactFile.parse` correctly handles plain markdown content without front matter or sections.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_writer_sentinels:test_parse_front_matter_only fingerprint=91f029ba0079c8e4ae6b734bc86ac1fa3370f9847fce9a27aa86e8670f840489 body_fp=3dc1ba90772a0837f8af8006310913cd0cd01a967986c21fa38d19d43ee9369b source_ref=da68e1ccc1166d342f5b38d5c6453cf2fcfde631 role=test-infrastructure -->
 Tests that TriefactFile.parse correctly handles a document containing only YAML front matter with no content chunks.
@@ -176,10 +176,10 @@ Tests that legacy sections without `body_fp=` parse correctly and gain body fing
 <!-- trie:section symbol=tests/test_writer_sentinels:test_section_round_trips_source_ref fingerprint=17d9bcaee21703293bc05f945dd9313f83664d80a0aa68880985462bcc41567d body_fp=d4c4ddc5b4c1cff833e4eecdb8859ade75f3e295e24d6196cce905ddebc0d147 source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test -->
 Verifies that `source_ref` attribute in triefact section sentinels persists unchanged through parse-render cycles.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_writer_sentinels:test_section_without_source_ref_renders_without_it fingerprint=ced24b63d8df8fc990893b0c8875c8591785b2f502a0d7806e2cf5639da1c71d body_fp=0a39d0e8c9e6c7339210936372f592b390ba3f1f3329ebd1305669fcb577d15c source_ref=da68e1ccc1166d342f5b38d5c6453cf2fcfde631 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_writer_sentinels:test_section_without_source_ref_renders_without_it fingerprint=ced24b63d8df8fc990893b0c8875c8591785b2f502a0d7806e2cf5639da1c71d body_fp=0a39d0e8c9e6c7339210936372f592b390ba3f1f3329ebd1305669fcb577d15c source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test-infrastructure -->
 Tests that TriefactFile.render omits the source_ref field when a section lacks one.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_writer_sentinels:test_section_with_source_ref_renders_field_in_stable_position fingerprint=f1dd7d68b85cc31ae27153e352bbdfbc8753da8c427df4782bdacc769fc35acd body_fp=127f751575a775471c36f4710633197f682142eb72aedf07b0965a911e467624 source_ref=da68e1ccc1166d342f5b38d5c6453cf2fcfde631 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_writer_sentinels:test_section_with_source_ref_renders_field_in_stable_position fingerprint=f1dd7d68b85cc31ae27153e352bbdfbc8753da8c427df4782bdacc769fc35acd body_fp=127f751575a775471c36f4710633197f682142eb72aedf07b0965a911e467624 source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test -->
 Verifies that TriefactFile renders section sentinel fields in deterministic order for stable output.
 
 - Tests that fingerprint, body_fp, and source_ref appear in consistent positions
@@ -188,7 +188,7 @@ Verifies that TriefactFile renders section sentinel fields in deterministic orde
 <!-- trie:section symbol=tests/test_writer_sentinels:test_section_legacy_format_with_source_ref_appended_parses fingerprint=b33af3cc09b68ba42953496ef544b7fc9a3bcdbbceda3c5ca7db3ccc7fca2390 body_fp=da3131b7f93cf2a1dc1bf1bfa74b4d1aca4c5b934490da3cddf4f829020ef89b source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test -->
 Tests that TriefactFile.parse correctly handles legacy sections with source_ref but no body_fp.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_writer_sentinels:test_upsert_replaces_existing_section_preserves_prose fingerprint=19a03d771f37ccebe0c9d67628c683d99fa717c1c963166cafa7d0859553576e body_fp=9ccd80fa767295b29d3c1e15b7bc78892b971c579e7f02611cfe757c99b46441 source_ref=da68e1ccc1166d342f5b38d5c6453cf2fcfde631 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_writer_sentinels:test_upsert_replaces_existing_section_preserves_prose fingerprint=19a03d771f37ccebe0c9d67628c683d99fa717c1c963166cafa7d0859553576e body_fp=9ccd80fa767295b29d3c1e15b7bc78892b971c579e7f02611cfe757c99b46441 source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test-infrastructure -->
 Tests that TriefactFile.upsert_section replaces existing sections while preserving surrounding prose and other sections.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_writer_sentinels:test_upsert_appends_new_section_at_end fingerprint=f46e868629972d796c1d951ac91a82caf93691abf250b29a829bebca43a621e7 body_fp=68e571ba944891878ec0dd60713dcf50c8618590e07f36bd95901e3ff39bf21d source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test -->
@@ -197,16 +197,16 @@ Verifies that TriefactFile.upsert_section appends new sections at the end while 
 <!-- trie:section symbol=tests/test_writer_sentinels:test_upsert_into_empty_triefact fingerprint=b200e282fd6690ffd6583614228337a8a80a1e9ab19c61f402dee458246bcbdc body_fp=833d76bdd9e3088d2e60e46df47f712c69ed50e7ab77daedd7b6e64871b612b0 source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test -->
 Tests that `TriefactFile.upsert_section` correctly adds a new section to an empty triefact document and renders it with proper sentinels.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_writer_sentinels:test_remove_section fingerprint=78873ffb894ceac24648f6c7604b3eac9c238c94e8e3bcd401c464fc19b3808f body_fp=3a7921b751da6a9f9b6292882161457be810849f0eb6d2094d5a2aab50071809 source_ref=da68e1ccc1166d342f5b38d5c6453cf2fcfde631 role=test-infrastructure -->
-Tests that TriefactFile.remove_section removes the specified section while preserving other sections and prose.
+<!-- trie:section symbol=tests/test_writer_sentinels:test_remove_section fingerprint=78873ffb894ceac24648f6c7604b3eac9c238c94e8e3bcd401c464fc19b3808f body_fp=342f33102024914e630a31e6efd719d681e22d46f4dfb338726c9db52507409f source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test -->
+Tests that `TriefactFile.remove_section` removes the specified section while preserving other sections and prose.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_writer_sentinels:test_remove_missing_section_returns_false fingerprint=c89aedc0fb3b0f51faaae6fe50764356bc95a44a39d673c4a6757783e5f28b02 body_fp=0f63721988eabc336f71be9989bcea44b76beebbac8682bfe40ead64255ea678 source_ref=da68e1ccc1166d342f5b38d5c6453cf2fcfde631 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_writer_sentinels:test_remove_missing_section_returns_false fingerprint=c89aedc0fb3b0f51faaae6fe50764356bc95a44a39d673c4a6757783e5f28b02 body_fp=0f63721988eabc336f71be9989bcea44b76beebbac8682bfe40ead64255ea678 source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test-infrastructure -->
 Verifies that TriefactFile.remove_section returns False when attempting to remove a non-existent section.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_writer_sentinels:test_section_qnames_in_order fingerprint=10e2d7e908cfea7610110e6a1aefa33470549e453459ae19945abb75daee457e body_fp=4dc710e17e6dac218ae61bf7736a4219e8ac1ec5077f70a846e5186885b8fd5b source_ref=da68e1ccc1166d342f5b38d5c6453cf2fcfde631 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_writer_sentinels:test_section_qnames_in_order fingerprint=10e2d7e908cfea7610110e6a1aefa33470549e453459ae19945abb75daee457e body_fp=4dc710e17e6dac218ae61bf7736a4219e8ac1ec5077f70a846e5186885b8fd5b source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test-infrastructure -->
 Verifies TriefactFile.section_qnames returns qualified names in document order, not alphabetical order.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_writer_sentinels:test_human_edit_between_sections_survives_regen fingerprint=637b8c3ecd5d200c81d0b607862a0c940a6aec82afe722036a94505b536cd185 body_fp=05ea61cb56bb857d4e5fe29b954b46bb0278cb5ab7fa4ce0c758e70a0b4c767f source_ref=da68e1ccc1166d342f5b38d5c6453cf2fcfde631 role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_writer_sentinels:test_human_edit_between_sections_survives_regen fingerprint=637b8c3ecd5d200c81d0b607862a0c940a6aec82afe722036a94505b536cd185 body_fp=05ea61cb56bb857d4e5fe29b954b46bb0278cb5ab7fa4ce0c758e70a0b4c767f source_ref=280d1b30bec4e2d4381751fa91f7866fdb7c9a99 role=test-infrastructure -->
 Verifies that human-written prose between generated sections survives when sections are regenerated with new content and fingerprints.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_writer_sentinels:test_front_matter_re_renders_in_insertion_order fingerprint=f3b23aacaca01c7bfb901f9c0898c65335b3e98a726c10478618ccb4e61257c4 body_fp=2804e7b6f18d9524d3c8284b5f0c2defa74a7cb3d06335c090b9fec67bd70813 source_ref=da68e1ccc1166d342f5b38d5c6453cf2fcfde631 role=test-infrastructure -->

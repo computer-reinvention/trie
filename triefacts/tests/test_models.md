@@ -1,12 +1,12 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: tests/test_models.py
-file_fingerprint: cc3db9128544e3b040f80b32aaad23339f99bbe04de346be0f87b836d79a7c90
-last_synced_at: '2026-07-29T17:55:27Z'
+file_fingerprint: f88ed091cf71cbf29e268a0c15198e39859ca76319de786885b50b1bfb35eaa5
+last_synced_at: '2026-08-01T01:51:58Z'
 defines:
 - kind: module
   qualified_name: tests/test_models:__module__
-  lines: 1-146
+  lines: 1-148
 - kind: function
   qualified_name: tests/test_models:_make_client
   lines: 13-18
@@ -27,21 +27,21 @@ defines:
   lines: 50-59
 - kind: function
   qualified_name: tests/test_models:_mock_agent
-  lines: 69-94
+  lines: 69-96
 - kind: function
   qualified_name: tests/test_models:test_run_without_cache_prefix_sends_bare_string
-  lines: 97-103
+  lines: 99-105
 - kind: function
   qualified_name: tests/test_models:test_run_with_cache_prefix_inserts_cachepoint
-  lines: 106-120
+  lines: 108-122
 - kind: function
   qualified_name: tests/test_models:test_run_caches_system_instructions
-  lines: 123-131
+  lines: 125-133
 - kind: function
   qualified_name: tests/test_models:test_batch_filter_output_tolerates_empty_object
-  lines: 134-145
+  lines: 136-147
 incoming_refs: 0
-outgoing_refs: 20
+outgoing_refs: 22
 ---
 <!-- trie:section symbol=tests/test_models:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=3744fb3808fe3555bb15d5f07f548cd7c8584688007f6c4b27c159e4a823e3cf source_ref=cd01e48f99e715d106504085b600e52b32176ce5 role=test-infrastructure -->
 Tests for the `trie.models` module, focusing on `TrieClient` token counting and prompt caching behavior.
@@ -72,11 +72,11 @@ Tests that TrieClient.count_tokens substitutes non-whitespace placeholder for em
 
 - Verifies placeholder content is non-whitespace when user_prompt is empty, spaces, or tabs
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models:_mock_agent fingerprint=5d921d57ad5ad09b4fc1dfe5a3ffc79ed26a5962b14ba670203ab8daac6a6552 body_fp=94fa3fe6fbfa42c6025d585c97214f940ac52fcfd869980a471ceeae08c769ab source_ref=5cc4e8f43f2f4332eaa79612f94c3e1071fb95ff role=test -->
-Patches trie.models.Agent to return canned results and record calls for testing.
+<!-- trie:section symbol=tests/test_models:_mock_agent fingerprint=69e504eca40dd7272598afc8597bdedad27cf4e3f02efab7a599528ca424fd26 body_fp=e24dbed9be1c6a2c4486f9081a7e6b5cfdf1998552c217fa8029645f75dfee5f source_ref=4145f3e553fb1593dbbb485f4b60ec4984b8e1f4 role=test -->
+Patches `trie.models.Agent` (via the lazy `_sdk()` namespace) to return canned results and record calls for testing.
 
-• Returns tuple of (mock agent class, calls dict) for test assertions
-• Mock run method returns fake SectionBody output with predetermined usage stats
+- Returns tuple of (mock agent class, calls dict) for test assertions
+- Mock run method returns fake SectionBody output with predetermined usage stats
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_models:test_run_without_cache_prefix_sends_bare_string fingerprint=caa80bfff386b0f6fd54edaa2ce9788b218cfebd3216710e9d27541355286f7a body_fp=b4a57fba20362fc3df7469ca07712c7ea24a3361a051035de56d07eb08a15783 source_ref=5cc4e8f43f2f4332eaa79612f94c3e1071fb95ff role=test -->
 Verifies TrieClient.run passes the user prompt as a plain string when no cache prefix is provided.

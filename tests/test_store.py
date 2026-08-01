@@ -440,3 +440,42 @@ def test_concurrent_access_does_not_raise(store: Store):
         t.join()
 
     assert not errors, f"concurrent Store access raised: {errors[:3]}"
+
+
+def test_grep_symbols_demotes_test_paths_within_page(store: Store):
+    """Regression: with a LIMIT, ASCII ordering ('tests/' < 'trie/') filled the
+    whole result page with test symbols before any production symbol was
+    fetched — post-fetch score penalties can't repair a starved page. The
+    demotion must happen in the SQL ORDER BY."""
+    from trie.parse.types import Symbol
+
+    def _sym(qname: str, file_path: str) -> Symbol:
+        name = qname.split(":")[-1]
+        return Symbol(
+            qualified_name=qname,
+            name=name,
+            kind="function",
+            file_path=file_path,
+            start_line=1,
+            end_line=2,
+            signature=f"def {name}()",
+            is_public=True,
+            body_text="pass",
+            body_normalized_hash="h" + name,
+            docstring="",
+            signature_hash="sh" + name,
+        )
+
+    # Five test symbols that sort alphabetically BEFORE the production one.
+    for i in range(5):
+        path = f"tests/test_a{i}.py"
+        store.upsert_file(path=path, fingerprint="fp")
+        store.replace_file_symbols(path, [_sym(f"tests/test_a{i}:test_sync_{i}", path)])
+    store.upsert_file(path="zlib/core.py", fingerprint="fp")
+    store.replace_file_symbols("zlib/core.py", [_sym("zlib/core:run_sync", "zlib/core.py")])
+
+    from trie.graph.store import GrepPredicate
+
+    hits = store.grep_symbols(GrepPredicate(name_contains="sync"), limit=3)
+    qnames = [h.qualified_name for h in hits]
+    assert qnames[0] == "zlib/core:run_sync", qnames

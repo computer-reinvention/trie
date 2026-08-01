@@ -473,6 +473,19 @@ class Store:
         ).fetchall()
         return [(row[0], row[1]) for row in rows]
 
+    def symbol_hashes_for_file(self, file_path: str) -> dict[str, str]:
+        """Return `{qualified_name: body_normalized_hash}` for one file's symbols.
+
+        Feeds `check_project`'s store-trust fast path: when the file's content
+        fingerprint matches the store, these hashes are exactly what a fresh
+        parse would produce, without paying for the parse.
+        """
+        rows = self._conn.execute(
+            "SELECT qualified_name, body_normalized_hash FROM symbols WHERE file_path = ?",
+            (file_path,),
+        ).fetchall()
+        return {r[0]: r[1] for r in rows}
+
     def qnames_in_file(self, file_path: str) -> list[str]:
         """Return qualified_names of all symbols defined in `file_path`."""
         rows = self._conn.execute(
@@ -1070,12 +1083,23 @@ class Store:
             clauses.append(f"{out_subq} <= ?")
             params.append(predicate.outbound_count_max)
 
+        # Production code before test code within every ranking bucket. This
+        # must live in the SQL, not just the post-fetch scoring: with a LIMIT,
+        # ASCII ordering ('tests/' < 'trie/') filled the entire result page
+        # with test symbols before any production symbol was even fetched, so
+        # no downstream re-ranking could ever repair it. Mirrors the path
+        # heuristic in `trie.mcp_server._is_test_symbol`.
+        test_demote = (
+            "(CASE WHEN s.file_path LIKE 'tests/%' OR s.file_path LIKE '%/tests/%' "
+            "OR s.file_path LIKE 'test\\_%' ESCAPE '\\' OR s.file_path LIKE '%/test\\_%' ESCAPE '\\' "
+            "OR s.file_path LIKE '%conftest.py' THEN 1 ELSE 0 END)"
+        )
         if rank_by == "inbound_count":
-            order = "in_count DESC, s.is_public DESC, s.qualified_name"
+            order = f"in_count DESC, s.is_public DESC, {test_demote}, s.qualified_name"
         elif rank_by == "alphabetical":
             order = "s.qualified_name"
         else:  # public_first or unknown
-            order = "s.is_public DESC, s.qualified_name"
+            order = f"s.is_public DESC, {test_demote}, s.qualified_name"
 
         where_sql = ("WHERE " + " AND ".join(clauses)) if clauses else ""
         patch_subq = "(SELECT COUNT(*) FROM patches WHERE qname = s.qualified_name)"

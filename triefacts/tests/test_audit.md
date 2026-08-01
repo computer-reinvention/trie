@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.2.1
 source: tests/test_audit.py
 file_fingerprint: 3b93436d7a1eacb3ad160ec6ff447e4a925164865470ab188b00773ee8e8532a
-last_synced_at: '2026-06-06T13:14:09Z'
+last_synced_at: '2026-08-01T01:52:54Z'
 description: 'Audit summary: JSONL ingestion + rendering.'
 defines:
 - kind: module
@@ -117,7 +117,7 @@ defines:
   qualified_name: tests/test_audit:test_summarise_directly_with_event_list
   lines: 976-1006
 incoming_refs: 0
-outgoing_refs: 35
+outgoing_refs: 60
 ---
 <!-- trie:section symbol=tests/test_audit:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=07a4dbed295fba97fe68715029a31e6fb405ccd2b7c55ccc291f2068e36f256e source_ref=7b5ee3d5f7adab6f8ba5f38a4f9896e457c14fdb role=test-infrastructure -->
 Comprehensive test suite for JSONL audit summary ingestion, rendering and CLI functionality.
@@ -275,7 +275,7 @@ Verifies that `render` produces output containing key section headers and numeri
 <!-- trie:section symbol=tests/test_audit:test_render_empty_log_does_not_crash fingerprint=5cf202e5e064141630a0f007d069e00512d3f4ae177aa7979d36f030b4b4a337 body_fp=2025c671f004643f28cb7d3ee44b1dfec65a05a9ac85b06325ac0b9d4d60bdc8 source_ref=7b5ee3d5f7adab6f8ba5f38a4f9896e457c14fdb role=test-infrastructure -->
 Verifies the render function handles empty audit logs gracefully without raising exceptions.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_audit:test_render_comparison_includes_both_paths fingerprint=06969b33c19c1ef5fdc076f8cd9f13ec312712f6180328118dda042592445321 body_fp=1adb14fd1ff3a086671bc0a27888235909315bce4334159c4e277825cd1ca5d7 source_ref=7b5ee3d5f7adab6f8ba5f38a4f9896e457c14fdb role=monitoring-telemetry -->
+<!-- trie:section symbol=tests/test_audit:test_render_comparison_includes_both_paths fingerprint=06969b33c19c1ef5fdc076f8cd9f13ec312712f6180328118dda042592445321 body_fp=1adb14fd1ff3a086671bc0a27888235909315bce4334159c4e277825cd1ca5d7 source_ref=7b5ee3d5f7adab6f8ba5f38a4f9896e457c14fdb role=test -->
 Tests that `render_comparison` displays both log filenames and correctly shows deltas between runs.
 
 - Creates two JSONL audit logs with different MCP call counts
@@ -311,47 +311,10 @@ Tests that the audit CLI command supports comparing two logs via the `--compare`
 <!-- trie:section symbol=tests/test_audit:test_cli_audit_missing_log_exits_nonzero fingerprint=960f50e897c51b014da29ce985a928538142159c5389629c917635569d710dbe body_fp=61f2c18dd07375dd6226def06ad84eee05c124a00cbbafdc216910afb0994000 source_ref=7b5ee3d5f7adab6f8ba5f38a4f9896e457c14fdb role=test-infrastructure -->
 Tests that the audit CLI command exits with non-zero status when the specified log file does not exist.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_audit:test_summarise_directly_with_event_list fingerprint=5a50e6ff212176e95879a868884ee2fd952cb70d899925a4581956158416ec1d body_fp=ec3dfbcab5112db7a12315fe2343be26b44bd9e132bb8478c9d38ea88ea4e190 source_ref=7b5ee3d5f7adab6f8ba5f38a4f9896e457c14fdb role=test-infrastructure -->
+<!-- trie:section symbol=tests/test_audit:test_summarise_directly_with_event_list fingerprint=5a50e6ff212176e95879a868884ee2fd952cb70d899925a4581956158416ec1d body_fp=ec3dfbcab5112db7a12315fe2343be26b44bd9e132bb8478c9d38ea88ea4e190 source_ref=7b5ee3d5f7adab6f8ba5f38a4f9896e457c14fdb role=test -->
 Tests the direct `_summarise` function with a list of Event objects bypassing file parsing.
 
 - Creates synthetic Event objects for `mcp_call` events with grep and read tools
 - Verifies that tool counts and read qname tracking work correctly through the direct interface
 - Provides a fast path for fixture-based testing without requiring JSONL file creation
 <!-- trie:end -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

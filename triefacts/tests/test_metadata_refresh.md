@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: tests/test_metadata_refresh.py
 file_fingerprint: 2bea858f50a5d11432e54ce0156a70e43c81025119d87ce6a8965da7a4561aa6
-last_synced_at: '2026-07-29T03:04:01Z'
+last_synced_at: '2026-08-01T01:52:34Z'
 description: Metadata-only triefact refresh.
 defines:
 - kind: module
@@ -48,7 +48,7 @@ defines:
   qualified_name: tests/test_metadata_refresh:test_cli_sync_metadata_only_runs
   lines: 297-320
 incoming_refs: 0
-outgoing_refs: 22
+outgoing_refs: 32
 ---
 <!-- trie:section symbol=tests/test_metadata_refresh:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=3c16a1d6c0df615766baa0df7332a78ce75269150f5a3c1e9782aea5082a767b source_ref=65204173c592bc34e87ebc59176aeb0c67ef4747 role=test-infrastructure -->
 Tests metadata-only triefact refresh functionality to ensure it updates front matter without calling the LLM.

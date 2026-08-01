@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: trie/sync/incremental.py
-file_fingerprint: 0860775e4be3fc93396ad749924bcbc2aba687c04865c4c7f14d2723eb4e152f
-last_synced_at: '2026-07-29T03:04:00Z'
+file_fingerprint: faa44cce2a02bc752acd7d28372ada257a7e7a8f6459e7aadbddf14f105aedae
+last_synced_at: '2026-08-01T01:52:05Z'
 defines:
 - kind: module
   qualified_name: trie/sync/incremental:__module__
@@ -19,8 +19,8 @@ defines:
 - kind: function
   qualified_name: trie/sync/incremental:run_incremental
   lines: 150-332
-incoming_refs: 20
-outgoing_refs: 16
+incoming_refs: 18
+outgoing_refs: 19
 ---
 <!-- trie:section symbol=trie/sync/incremental:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=cb313a4fac70ff6dc3bad02de5c44f9c60afef2c3f9792c5becb424681fa0201 source_ref=549bb001d03e465de4697570041eabaf93893a7f role=documentation-sync -->
 Incremental synchronization engine that refreshes stale triefacts and cascades changes through dependent files.
@@ -49,7 +49,7 @@ Results and statistics from running incremental sync on a project.
 - `sync_results`: detailed results for each file that was successfully synced
 - `file_errors`: `(rel_path, error)` pairs for files whose generation raised an exception
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/incremental:compute_incremental_worklist fingerprint=3c8386c7f8572fc00dc5dc15bce15bda702346e82a53d1bfc3344998aa6c6c47 body_fp=5cb5abe44f02f42ee162b426ac76cca776498797b85b6de3d864d7e4d10966c3 source_ref=0007e08c6d700f4d99f851ebc327be2322a06af4 role=orchestration -->
+<!-- trie:section symbol=trie/sync/incremental:compute_incremental_worklist fingerprint=c83d60644bece6bde13a27329d9e7626e65e3f41e4b8032ca0531310721b37ca body_fp=5cb5abe44f02f42ee162b426ac76cca776498797b85b6de3d864d7e4d10966c3 source_ref=b2c1029e3d5ee3383f0a2886a9fba9ab6dbc4657 role=orchestration -->
 Scans project, identifies stale triefacts, computes cascade dependencies, and returns worklist without executing sync.
 
 - Filters out staleness items for deleted source files (treats as orphan triefacts)

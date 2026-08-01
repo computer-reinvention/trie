@@ -63,9 +63,10 @@ import subprocess
 from collections import deque
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from mcp.server.fastmcp import FastMCP
+if TYPE_CHECKING:
+    from mcp.server.fastmcp import FastMCP
 from rapidfuzz import fuzz as _fuzz
 from rapidfuzz import process as _process
 
@@ -3311,6 +3312,10 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     stay structured: their envelopes are small and callers branch on fields
     (`ok`, `staged`, `uncovered`, `did_you_mean`).
     """
+    # Deferred: the mcp package costs ~200ms to import and only the server
+    # needs it — TrieTools (the CLI query path) must stay import-cheap.
+    from mcp.server.fastmcp import FastMCP
+
     tools = TrieTools(project_root)
     server = FastMCP("trie")
     # Query tools: text on the wire. The CLI subcommands share the same

@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 from pydantic_ai import CachePoint
 
 from trie.config import Sync
-from trie.models import SectionBody, TrieClient
+from trie.models import SectionBody, TrieClient, _sdk
 
 
 def _make_client(input_tokens: int = 42) -> tuple[TrieClient, MagicMock]:
@@ -90,7 +90,9 @@ def _mock_agent(mocker):
 
     agent_instance = MagicMock()
     agent_instance.run = fake_run
-    agent_cls = mocker.patch("trie.models.Agent", return_value=agent_instance)
+    # The SDK stack is lazy (trie.models._sdk); patch the cached namespace,
+    # not module attributes that no longer exist.
+    agent_cls = mocker.patch.object(_sdk(), "Agent", return_value=agent_instance)
     return agent_cls, calls
 
 

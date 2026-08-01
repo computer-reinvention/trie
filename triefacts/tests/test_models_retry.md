@@ -1,13 +1,13 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: tests/test_models_retry.py
-file_fingerprint: 9c2ce050365972595913b15d85be1800d591f8e3e81c2f9f0916d296aa819c39
-last_synced_at: '2026-07-29T17:55:37Z'
+file_fingerprint: d998000650aa0be2cec28cc8d410d899e861fe26a99bb82d95ec17f7dca7c4fb
+last_synced_at: '2026-08-01T01:51:57Z'
 description: Retry-on-rate-limit behaviour of `AnthropicClient`.
 defines:
 - kind: module
   qualified_name: tests/test_models_retry:__module__
-  lines: 1-378
+  lines: 1-380
 - kind: function
   qualified_name: tests/test_models_retry:_fake_response
   lines: 42-48
@@ -76,15 +76,15 @@ defines:
   lines: 297-309
 - kind: function
   qualified_name: tests/test_models_retry:test_trie_client_disables_sdk_internal_retries
-  lines: 312-325
+  lines: 312-327
 - kind: function
   qualified_name: tests/test_models_retry:test_retry_total_seconds_bounds_the_loop
-  lines: 328-355
+  lines: 330-357
 - kind: function
   qualified_name: tests/test_models_retry:test_retry_total_seconds_zero_is_unbounded
-  lines: 358-377
+  lines: 360-379
 incoming_refs: 0
-outgoing_refs: 29
+outgoing_refs: 31
 ---
 <!-- trie:section symbol=tests/test_models_retry:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=6230e0b6dac96c666f4c643a238e8932016fce96586b9091c4f78ad67994b7c1 source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=test-infrastructure -->
 Tests retry behavior of `AnthropicClient` against rate limits, server errors, timeouts, and non-retryable exceptions.
@@ -187,7 +187,7 @@ Verifies that `_run_with_retry` immediately propagates non-retryable errors with
 <!-- trie:section symbol=tests/test_models_retry:test_count_tokens_retries_on_rate_limit fingerprint=fe50e5e6a9dd7a4d2c7beea67c571e08c7c8d43d55c786363d5329ffdd6b20ed body_fp=79fe91b06b09ee9d10e4437d03335a2a8fbda8214307c3692cc6e5bc74b413c4 source_ref=642bbe46cefd8feb139704cd6fe30e494544ec76 role=test -->
 Verifies that TrieClient.count_tokens retries on rate limit errors during token counting.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_models_retry:test_trie_client_disables_sdk_internal_retries fingerprint=57bed553715f6bf5438ecc76ca930cd69fb6526f471cbbddb3e343bb1bf51044 body_fp=195842083fcb86d3e841ce8b0790cc8e83afeb288fb172a10f9ac85ec8893d79 source_ref=642bbe46cefd8feb139704cd6fe30e494544ec76 role=test -->
+<!-- trie:section symbol=tests/test_models_retry:test_trie_client_disables_sdk_internal_retries fingerprint=2e2e831e32c15451c5afcf7a3d491f67386e186895df981ca3b964c032ac8488 body_fp=195842083fcb86d3e841ce8b0790cc8e83afeb288fb172a10f9ac85ec8893d79 source_ref=dd3619333df2496a6de3788135dbd0285a85606c role=test -->
 Verifies that TrieClient passes `max_retries=0` to the Anthropic SDK to disable its internal retry layer.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_models_retry:test_retry_total_seconds_bounds_the_loop fingerprint=ef693c670abe4792072ca3f67a7c5d38b67a2b1b49aeacacd31daa77161247a6 body_fp=b0c2618056d7bf1918eb5c3c4ef94ba32fb565df668c17fc6b06e9a4959c2c4c source_ref=642bbe46cefd8feb139704cd6fe30e494544ec76 role=test -->

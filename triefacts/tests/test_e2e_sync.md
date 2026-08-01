@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.2.1
 source: tests/test_e2e_sync.py
 file_fingerprint: 0646622e2dfecd7e8ce9de6f63ce953220ab28e2635789a46005fd634b7bb164
-last_synced_at: '2026-06-06T13:17:20Z'
+last_synced_at: '2026-08-01T01:52:26Z'
 description: End-to-end test for `trie sync --file` against the tiny fixture repo.
 defines:
 - kind: module
@@ -54,7 +54,7 @@ defines:
   qualified_name: tests/test_e2e_sync:test_resync_after_uncommitted_change_falls_back_to_cold
   lines: 309-337
 incoming_refs: 0
-outgoing_refs: 36
+outgoing_refs: 56
 ---
 <!-- trie:section symbol=tests/test_e2e_sync:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=653c3532b57d63cc34bb4a86676a78f1c7a4262f201852f3e89cef2d0aedf3a8 source_ref=6175e8a219cd65bd2bd2bc0d015d010877051786 role=test-infrastructure -->
 End-to-end tests for `trie sync --file` command using a deterministic fake client for offline testing.
@@ -65,7 +65,7 @@ Path to the tiny fixture repository used for end-to-end testing of sync operatio
 <!-- trie:section symbol=tests/test_e2e_sync:project fingerprint=16df3ebd676a6f8d2473a730ffb75c5fd86a5da52f7caae13faab42c03ae674f body_fp=2d0555e120a75e013c4c93d40ab5a45a12d5b9fb38ace017551122b575b1d82a source_ref=6175e8a219cd65bd2bd2bc0d015d010877051786 role=test-infrastructure -->
 Creates a temporary test project by copying the tiny fixture repo and writing a minimal trie.toml configuration file.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_e2e_sync:test_sync_single_file_writes_triefact fingerprint=2121e6316c2fa3f95a4d992213459338ae92f48da5d912f5f6b8f59b7d1c9b07 body_fp=d60feb29a40f22844017f66316c457c2525e162d92f6ecf1812f47c18bb3f816 source_ref=6175e8a219cd65bd2bd2bc0d015d010877051786 role=documentation-sync -->
+<!-- trie:section symbol=tests/test_e2e_sync:test_sync_single_file_writes_triefact fingerprint=2121e6316c2fa3f95a4d992213459338ae92f48da5d912f5f6b8f59b7d1c9b07 body_fp=d60feb29a40f22844017f66316c457c2525e162d92f6ecf1812f47c18bb3f816 source_ref=6175e8a219cd65bd2bd2bc0d015d010877051786 role=test -->
 Tests that `sync_single_file` generates complete triefact documentation with proper structure and metadata.
 
 - Verifies all 6 symbols from calculator.py are documented (including private functions)
@@ -117,19 +117,3 @@ Verifies that resync of a committed file provides previous source and prose to t
 <!-- trie:section symbol=tests/test_e2e_sync:test_resync_after_uncommitted_change_falls_back_to_cold fingerprint=e2d41f6911f7282fc7dce6bf2ecf2f7413b786ca21f7d82187740907dfe0eba3 body_fp=1e2eadb07d9db781acd4b380ee50275f826bf88bab56e29e749d1a04ca0f9dd6 source_ref=6175e8a219cd65bd2bd2bc0d015d010877051786 role=documentation-sync -->
 Verifies sync falls back to cold generation when previous blob is unreachable from git history.
 <!-- trie:end -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

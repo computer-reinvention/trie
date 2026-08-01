@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: tests/test_parallel_sync.py
 file_fingerprint: 201fd60491690c10f5f92e56a3d086dd7f51507404c0323d326e8e5232d5f6ca
-last_synced_at: '2026-07-25T10:44:13Z'
+last_synced_at: '2026-08-01T01:52:45Z'
 description: 'Parallel per-symbol sync: the threaded generate phase must produce output'
 defines:
 - kind: module
@@ -42,7 +42,7 @@ defines:
   qualified_name: tests/test_parallel_sync:test_totals_match_between_serial_and_parallel
   lines: 174-198
 incoming_refs: 0
-outgoing_refs: 12
+outgoing_refs: 16
 ---
 <!-- trie:section symbol=tests/test_parallel_sync:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=e38b261094711f8ce81a379aa047d737fccf2e4b2e854e74e05149565c16fedd source_ref=a9dcb8151c96c9b3d8edbe90dc0b33084d2ada58 role=test-infrastructure -->
 Tests that parallel symbol generation produces byte-identical output to serial runs and actually uses thread pool concurrency.

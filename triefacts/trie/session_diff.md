@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: trie/session_diff.py
 file_fingerprint: a0e38753224db01f448e83ab60f243faa495d9766ef59b6af8307a1300f74dc0
-last_synced_at: '2026-07-29T12:09:44Z'
+last_synced_at: '2026-08-01T01:52:58Z'
 defines:
 - kind: module
   qualified_name: trie/session_diff:__module__
@@ -79,8 +79,8 @@ defines:
 - kind: function
   qualified_name: trie/session_diff:merge_applied_by_symbol
   lines: 844-862
-incoming_refs: 6
-outgoing_refs: 0
+incoming_refs: 41
+outgoing_refs: 7
 ---
 <!-- trie:section symbol=trie/session_diff:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=013090f2c0eff25aa3a245e1e001d311d7631093a9b3105b60ed2a55880195f9 source_ref=ac6022b60d3c7ae0d5a92f1a4a4baad1193147c7 role=orchestration -->
 Provides session evidence collection, narrative synthesis, and digest persistence for `trie diff` workflows.

@@ -1,12 +1,12 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: tests/test_generator.py
-file_fingerprint: 32d167cd301e41d5d07933657a71663079790354e205071a9411338c7dcc3c47
-last_synced_at: '2026-07-25T10:44:09Z'
+file_fingerprint: a172f3861479a380937df66d2c608932afbbefb7e823ebf77486050b65240a42
+last_synced_at: '2026-08-01T01:51:56Z'
 defines:
 - kind: module
   qualified_name: tests/test_generator:__module__
-  lines: 1-244
+  lines: 1-246
 - kind: function
   qualified_name: tests/test_generator:test_cached_context_includes_source_and_filename
   lines: 23-28
@@ -57,9 +57,9 @@ defines:
   lines: 227-229
 - kind: function
   qualified_name: tests/test_generator:test_make_client_anthropic_constructs
-  lines: 232-243
+  lines: 232-245
 incoming_refs: 0
-outgoing_refs: 45
+outgoing_refs: 46
 ---
 <!-- trie:section symbol=tests/test_generator:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a4401ace0a425b6b4f614a9ece49f71bbfd39a2fd534b42438475523bb20052d source_ref=a0b7070e3e72c5ee0ad4dc614ccc6fd3e72124fa role=test-infrastructure -->
 Test module for trie.sync.generator functions including symbol documentation generation and diff-aware mode.
@@ -124,6 +124,6 @@ Verifies that `make_client` raises `NotImplementedError` for unsupported provide
 <!-- trie:section symbol=tests/test_generator:test_make_client_requires_provider_prefix fingerprint=df2b5275115453c8315d3057c0b82e0ee7f1cedc1b60219fc1624984efb88cda body_fp=e2919f6e00dfbb4434c6a6daf237e44aca83cb9242a0027eef0f776912eb8073 source_ref=a0b7070e3e72c5ee0ad4dc614ccc6fd3e72124fa role=test -->
 Tests that `make_client` raises ValueError when model ID lacks provider prefix.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_generator:test_make_client_anthropic_constructs fingerprint=dfd8fc29b3ee7a03780ebe88c5f2640efe49e11ef5c5765e6252818f7a559178 body_fp=86abc7c1ec68c3e7faf8c1a1f0f5c7394ddee7e4f71e0e1b206444e45abd260e source_ref=a0b7070e3e72c5ee0ad4dc614ccc6fd3e72124fa role=test -->
+<!-- trie:section symbol=tests/test_generator:test_make_client_anthropic_constructs fingerprint=4fe52f30339a95405b947a0295927ea8683517b40fe14a282972b09a838eaad5 body_fp=86abc7c1ec68c3e7faf8c1a1f0f5c7394ddee7e4f71e0e1b206444e45abd260e source_ref=6d0c79ed1a1fe9de83edbec79741f7a9a4601f56 role=test -->
 Verifies `make_client()` constructs an Anthropic client with correct model ID propagation.
 <!-- trie:end -->

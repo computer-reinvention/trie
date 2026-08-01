@@ -2,7 +2,7 @@
 trie_version: 0.2.1
 source: tests/test_reporter.py
 file_fingerprint: 2687fddcd8fd3190739e2dfc9f7de9cc4c857a52f2ef14254e74a34b8f2eab2b
-last_synced_at: '2026-08-01T01:14:54Z'
+last_synced_at: '2026-08-01T02:17:37Z'
 defines:
 - kind: module
   qualified_name: tests/test_reporter:__module__

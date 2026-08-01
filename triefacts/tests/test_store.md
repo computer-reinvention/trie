@@ -1,12 +1,12 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: tests/test_store.py
-file_fingerprint: b0d162b7d83596ac1c2445e7f7a8d17745c628306b1d506ab293c1d419874245
-last_synced_at: '2026-07-26T20:28:27Z'
+file_fingerprint: 037ade0bd37f123db34a21ffcec7b3206355ddf1b6f4ce38045055493d3b7be9
+last_synced_at: '2026-08-01T01:51:57Z'
 defines:
 - kind: module
   qualified_name: tests/test_store:__module__
-  lines: 1-443
+  lines: 1-482
 - kind: function
   qualified_name: tests/test_store:store
   lines: 13-16
@@ -112,8 +112,11 @@ defines:
 - kind: function
   qualified_name: tests/test_store:test_concurrent_access_does_not_raise
   lines: 411-442
+- kind: function
+  qualified_name: tests/test_store:test_grep_symbols_demotes_test_paths_within_page
+  lines: 445-481
 incoming_refs: 0
-outgoing_refs: 20
+outgoing_refs: 23
 ---
 <!-- trie:section symbol=tests/test_store:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=2d1341b8890e47f362cedf6a759abc378781b43a6f94b51c35b858f92b1a8f77 source_ref=a95486d535aed1c6b87b5026c7d31274c719666f role=test-infrastructure -->
 Test suite for the `trie.graph.store` module, verifying Store database operations and patch management functionality.
@@ -226,4 +229,7 @@ Tests that concurrent Store access from 16 threads does not raise threading-rela
 - Creates 16 worker threads that each perform 50 iterations of Store operations
 - Uses threading.Barrier to synchronize thread startup for maximum contention
 - Verifies no OperationalError or recursive cursor use exceptions occur
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_store:test_grep_symbols_demotes_test_paths_within_page fingerprint=fb8cb71121af3b1f2432c9890c0235fbc1b8446b0a96e660355839959475bfaa body_fp=2e0cf35a2cdc639ad05b2223ae1b952f90a68c0c3fc0b499638d8f4ff701a098 source_ref=20f28786eb725279816890dcb3a120aa0d0d5ec3 role=test -->
+Regression test asserting that `Store.grep_symbols` demotes `tests/` paths in SQL `ORDER BY` so production symbols appear first within a limited result page.
 <!-- trie:end -->

@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: trie/sync/roles.py
 file_fingerprint: d3b1f5ed4cf82a407ddb2c03ab7acb016c9fdd483933614ed5190d743094f0f6
-last_synced_at: '2026-07-29T03:03:59Z'
+last_synced_at: '2026-08-01T01:53:09Z'
 description: 'Roles-only sync: (re)infer the architectural role tag for every symbol
   without'
 defines:
@@ -18,8 +18,8 @@ defines:
 - kind: function
   qualified_name: trie/sync/roles:_section_prose
   lines: 223-225
-incoming_refs: 5
-outgoing_refs: 17
+incoming_refs: 6
+outgoing_refs: 24
 ---
 <!-- trie:section symbol=trie/sync/roles:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=9d9e4c1b62e37bc7574d67ccbdca0e7d6b1d029809ab31c109fb1c3ae791534c source_ref=2760a291866703b29ffecc33cfaae9e9cbba027c role=orchestration -->
 Implements roles-only sync to infer and persist architectural role tags for symbols without regenerating documentation prose.
@@ -39,6 +39,6 @@ Infers and persists architectural role tags for all symbols with existing triefa
 - `only_missing`: when True, only classifies symbols lacking a role tag
 - `rederive_taxonomy`: when True, regenerates role vocabulary from scratch
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/roles:_section_prose fingerprint=c63c67b59dea8ec84377ed4cc2e137ff4dfea773f52192cb76ace40f686d9e10 body_fp=d382d92048c7b83441ef4057c93b6b283443562fcad71dad77de12d2d0fd4a47 source_ref=2760a291866703b29ffecc33cfaae9e9cbba027c role=util -->
+<!-- trie:section symbol=trie/sync/roles:_section_prose fingerprint=c63c67b59dea8ec84377ed4cc2e137ff4dfea773f52192cb76ace40f686d9e10 body_fp=d382d92048c7b83441ef4057c93b6b283443562fcad71dad77de12d2d0fd4a47 source_ref=7bb340291770ab9926f46045bd9a0bc92437a1aa role=util -->
 Extracts the prose body from a triefact section by qualified name, returning None if not found.
 <!-- trie:end -->

@@ -2,7 +2,7 @@
 trie_version: 0.2.1
 source: tests/test_gate.py
 file_fingerprint: 3a7a12a5078ebc2b026a456d2ca997032eaacac3ec42b36b54f4250d4577d7b7
-last_synced_at: '2026-08-01T00:20:37Z'
+last_synced_at: '2026-08-01T01:52:28Z'
 description: "Spec for `trie gate` \u2014 the commit guard as one command."
 defines:
 - kind: module
@@ -56,13 +56,13 @@ Initialise a bare git repo in `tmp_path` with minimal config and a `trie.toml`, 
 <!-- trie:section symbol=tests/test_gate:test_gate_noop_without_config fingerprint=b1cc78532a671f02d7e36a27ec8d58b3069083d9ef2ebcf20ad68c21d1a31d6f body_fp=ed6c4e629322a53ab6f71c090c913a720e7b2100318d7f90b47f4f4b71ff8f83 source_ref=1dd00ca9aebbf98ecbad24aef4365f2e5a630bc0 role=test -->
 Assert `trie gate` exits 0 and reports "nothing to gate" when no `trie.toml` config exists.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_gate:_synced_repo fingerprint=6874e27878ea10b8fef55809972e1e8b76c9c4501654acd384a9ed639e10b86b body_fp=1d254da0569943fee1bda5b05ea39b91a39a1fb1205ca003a2bcd7d4b8e7121a source_ref=1dd00ca9aebbf98ecbad24aef4365f2e5a630bc0 role=test -->
+<!-- trie:section symbol=tests/test_gate:_synced_repo fingerprint=6874e27878ea10b8fef55809972e1e8b76c9c4501654acd384a9ed639e10b86b body_fp=1d254da0569943fee1bda5b05ea39b91a39a1fb1205ca003a2bcd7d4b8e7121a source_ref=7b8f2a7a07be98865520def7215e885563a70208 role=test -->
 Create a temporary git repo containing one committed Python module (`m.py`) and a coherent, fingerprint-matched triefact for its sole symbol `f`.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_gate:test_gate_blocks_unsynced_source fingerprint=f0e4fd2bea3be06b25e4fea12cb4c21af68568f283b8afcdd7f01ffca300a165 body_fp=549a131fbf58615aae54d71f78601432e6e2e2617498c98b9070f0619c56dbfd source_ref=1dd00ca9aebbf98ecbad24aef4365f2e5a630bc0 role=test -->
 Assert that `trie gate --no-digest` exits 1 and prints `trie sync` when a source file has no corresponding triefact.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_gate:test_gate_passes_clean_then_blocks_unexplained_change fingerprint=8b25bbe19476772c302b456b16751059103e37344446943b9efa8dc37d30dea4 body_fp=fa401431939ebd642ef97a408373bd463928b27d2b8ca4b041a8cbc2fdfb1e6c source_ref=1dd00ca9aebbf98ecbad24aef4365f2e5a630bc0 role=test -->
+<!-- trie:section symbol=tests/test_gate:test_gate_passes_clean_then_blocks_unexplained_change fingerprint=8b25bbe19476772c302b456b16751059103e37344446943b9efa8dc37d30dea4 body_fp=fa401431939ebd642ef97a408373bd463928b27d2b8ca4b041a8cbc2fdfb1e6c source_ref=7b8f2a7a07be98865520def7215e885563a70208 role=test -->
 Verify that `gate` passes on a clean synced repo, blocks after an unexplained source change, then passes again once a patch note is recorded.
 
 - Mutates `m.py` and updates the triefact fingerprint to isolate the intent gate from the verify gate.
