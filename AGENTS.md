@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Working conventions for this repository. Read README and QUICKSTART for what trie is and how it's used; this file is just "how we work on it."
+Working conventions for this repository. Read README and QUICKSTART for what Trie is and how it's used; this file is just "how we work on it."
 
 ## Setup
 
@@ -33,8 +33,8 @@ CI runs the same four commands. Tests + ruff must both pass before pushing.
 
 ## Navigating the codebase
 
-trie indexes itself. The tool overrides installed for this workdir route
-the built-in `grep` and `read` through trie and add the full trie
+Trie indexes itself. The tool overrides installed for this workdir route
+the built-in `grep` and `read` through Trie and add the full Trie
 toolset (`trace`, the explain family, and the patch family) as custom
 tools. The tools are self-describing; **read
 [`USING_TRIE.md`](USING_TRIE.md) for the concepts, the edit workflow,
@@ -42,7 +42,7 @@ and the sharp edges.**
 
 Repo-specific notes that go beyond the general guide:
 
-- **We bootstrap trie with trie.** A session where you reach for shell
+- **We bootstrap Trie with Trie.** A session where you reach for shell
   `rg` to answer a code-side question is a session that didn't exercise
   the thing we're building. The `grep` tool handles every search inside
   source — including literal strings and module-level constants, via
@@ -64,7 +64,7 @@ Repo-specific notes that go beyond the general guide:
 
 ## Bootstrapping loop
 
-trie's own repo has a `trie.toml` at the root. The hook installed by
+Trie's own repo has a `trie.toml` at the root. The hook installed by
 `trie setup` does the day-to-day work — the commands below are for
 bootstrapping a new checkout, one-off operations, and debugging.
 
@@ -91,7 +91,7 @@ prose is stale, a plain `trie sync` regenerates it. Manual `trie sync`
 will exit 2 if it collides with an in-flight graph sync; this is the
 system telling you the hook is doing its job.
 
-After changing trie's own CLI/hook surface, reinstall the global tool
+After changing Trie's own CLI/hook surface, reinstall the global tool
 with `uv tool install --force --reinstall .` — hooks resolve `trie` from
 PATH, and `trie gate` warns when the installed version lags this
 checkout. The `--reinstall` matters: without it uv reuses the cached

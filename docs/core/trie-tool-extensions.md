@@ -1,10 +1,10 @@
-# trie tool extensions — capability-gap spec
+# Trie tool extensions — capability-gap spec
 
-Status: **active**. The trie-native opencode fork is built, tested, and
+Status: **active**. The Trie-native opencode fork is built, tested, and
 behaviour-validated against a live model (branch `feat/trie-native`, vendored as
 the `opencode/` submodule).
 
-**Implemented so far (in core trie + wired into the fork):** EXT-1 (`grep-str
+**Implemented so far (in core Trie + wired into the fork):** EXT-1 (`grep-str
 --all-files` / `grep_str_all`), EXT-2 (`trie find` / `find_files`), EXT-3 + EXT-4
 (`trie read --source` / `read_source`), EXT-8 (`trie write` / `write_file`),
 EXT-11 (`trie blast-radius` + `trie_blast_radius` tool).
@@ -19,11 +19,11 @@ delivered the backend registry and the TS backend — the structural
 unlock), and the deliberately-out-of-scope EXT-5 (binaries), EXT-6 (dir
 listing — partly covered by `find`), EXT-10 (external dirs).
 
-This file tracks the functionality a coding agent **loses** if it uses trie
+This file tracks the functionality a coding agent **loses** if it uses Trie
 tools *only* (no stock opencode file tools). The fork ships the replacements
 anyway — it demotes the stock `grep`/`read`/`glob`/`edit`/`write` tools to
-renamed "backup" tools and steers the agent to trie. Each backup tool is a
-crutch; this spec is the plan to remove each crutch by widening core trie.
+renamed "backup" tools and steers the agent to Trie. Each backup tool is a
+crutch; this spec is the plan to remove each crutch by widening core Trie.
 
 **Validated behaviour (live model, claude-haiku-4-5, via `opencode run`):**
 
@@ -39,19 +39,19 @@ crutch; this spec is the plan to remove each crutch by widening core trie.
   `fs_edit`, the model reads the refusal and retries with `force: true` (the
   EXT-7 case below).
 
-When an extension below lands in core trie, the fork can flip the corresponding
+When an extension below lands in core Trie, the fork can flip the corresponding
 backup tool off (or stop steering around it). Every entry names the backup tool
 it would retire.
 
 ---
 
-## Root cause: trie indexes Python only
+## Root cause: Trie indexes Python only
 
-`trie/config.py:15` → `include = ["**/*.py"]`. Everything trie does — `grep`,
+`trie/config.py:15` → `include = ["**/*.py"]`. Everything Trie does — `grep`,
 `grep_str`, `read`(triefact), `trace`, the patch/apply pipeline — operates on
 *in-scope* files only. The `grep` text-match fallback shells `rg` against
 in-scope bodies only (`trie/mcp_server.py`, `_require_ripgrep`). So in any
-non-Python or mixed repo, trie covers a fraction of the tree.
+non-Python or mixed repo, Trie covers a fraction of the tree.
 
 Most gaps below are downstream of this. **EXT-9 (multi-language)** is the
 umbrella fix; the others are useful even before that lands.
@@ -60,7 +60,7 @@ umbrella fix; the others are useful even before that lands.
 
 ## Severity legend
 
-- **Critical** — structurally impossible with trie today; the fork *must* keep
+- **Critical** — structurally impossible with Trie today; the fork *must* keep
   a backup tool until the extension lands.
 - **High** — frequent real-world need; agent will hit it regularly.
 - **Medium** — occasional; backup is an acceptable stopgap.
@@ -106,7 +106,7 @@ umbrella fix; the others are useful even before that lands.
   `limit`, 1-indexed) on any file. Stock `read`.
 - **Trie today:** `trie read <qname>` is symbol/triefact-centric; no
   offset/limit windowing on arbitrary files. (The old injected `read.ts` did
-  some of this in TS; we want it native in trie.)
+  some of this in TS; we want it native in Trie.)
 - **Backup it retires:** part of `fs_read` (renamed stock read).
 - **Proposed interface:** `trie read --source --offset N --limit M <path>`
   emitting line-numbered output byte-comparable to stock read; honour the
@@ -129,9 +129,9 @@ umbrella fix; the others are useful even before that lands.
 
 - **Lost:** reading images/PDFs as base64 attachments
   (`SUPPORTED_IMAGE_MIMES`, PDF path in stock `read.ts`).
-- **Trie today:** none; trie is text/graph only.
+- **Trie today:** none; Trie is text/graph only.
 - **Backup it retires:** none — likely a permanent backup responsibility.
-- **Proposed:** out of scope unless trie grows a binary/attachment path. Record
+- **Proposed:** out of scope unless Trie grows a binary/attachment path. Record
   as non-goal; keep `fs_read` for binaries.
 
 ## EXT-6 — Directory listing  ·  Medium
@@ -188,7 +188,7 @@ unless regen cost/latency becomes a problem in practice.
 - **Proposed interface:** `trie write <path>` for arbitrary file creation
   (re-scan after), and a "create new module file + first symbol" path in the
   pipeline. Largely unblocked by EXT-9 for code files.
-- **Acceptance:** create a new `.ts`/`.md` file and a new `.py` module via trie.
+- **Acceptance:** create a new `.ts`/`.md` file and a new `.py` module via Trie.
 
 ## EXT-9 — Multi-language indexing  ·  High (umbrella)
 
@@ -231,7 +231,7 @@ unless regen cost/latency becomes a problem in practice.
 
 The backup `fs_*` tools are **kept permanently** as fallbacks — the extensions
 below don't delete them, they *narrow when the agent needs them* (so the model
-reaches for trie first and drops to `fs_*` only for the cases trie genuinely
+reaches for Trie first and drops to `fs_*` only for the cases Trie genuinely
 can't cover). "Reduced by" = which extensions shrink that tool's necessary use.
 
 | Backup tool (fork) | Reduced by | Status |
@@ -245,10 +245,10 @@ can't cover). "Reduced by" = which extensions shrink that tool's necessary use.
 | external-dir on all | EXT-10 (stays backup) | — |
 
 > **Note on EXT-8 in the fork:** `trie write` / `write_file` is implemented in
-> core trie (creates any file under the root, flags `needs_sync` for in-scope
+> core Trie (creates any file under the root, flags `needs_sync` for in-scope
 > paths). It is intentionally *not* exposed as a separate `trie_write` fork
 > tool: creating a brand-new non-code file gains nothing from routing through
-> trie, and a competing write tool would muddy the main-vs-backup story the
+> Trie, and a competing write tool would muddy the main-vs-backup story the
 > prompt teaches. The fork keeps `fs_write` for new files; the CLI/MCP
 > `write_file` is available for scripted/parity use.
 
@@ -268,12 +268,12 @@ synced project; all are fixed in the same change set.
   key) the tool returned the full multi-line Python traceback to the agent.
   Fixed: only exit-1-with-stdout is treated as a structured ApplyReport;
   otherwise a `summarizeError` helper extracts the final exception line.
-- **`patch list` / `patch preview` omit staged creates (trie core).** Create
+- **`patch list` / `patch preview` omit staged creates (Trie core).** Create
   patches live in the `create_patches` table; the list/preview commands only
   read the modify/structural table, so a staged `create-symbol` showed "no
   pending patches" even though `apply` would process it. Fixed both commands
   to include creates.
-- **`patch drop` leaves creates behind (trie core).** `delete_patches` doesn't
+- **`patch drop` leaves creates behind (Trie core).** `delete_patches` doesn't
   touch `create_patches`; `drop --all`/`--qname`/`--session` now also call
   `delete_create_patches`, so the agent can actually undo a staged creation.
 
