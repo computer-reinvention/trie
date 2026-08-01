@@ -1,6 +1,6 @@
-# trie quickstart
+# Trie quickstart
 
-Run trie on a project in five minutes. (The [README](README.md) is the
+Run Trie on a project in five minutes. (The [README](README.md) is the
 full reference; this is the short path.)
 
 ## 1. Install
@@ -28,7 +28,7 @@ trie init
 symbol graph, and (interactively) offers to install the pre-commit hook.
 Pass `--install-hooks` / `--no-install-hooks` to skip the prompt.
 
-Open `trie.toml` and tighten `[scope]` if you only want trie pointed at
+Open `trie.toml` and tighten `[scope]` if you only want Trie pointed at
 part of the tree:
 
 ```toml
@@ -39,7 +39,7 @@ exclude = ["**/tests/**", "**/__pycache__/**"]
 
 Languages indexed today: Python, TypeScript/TSX, JavaScript/JSX, Go, Rust, C, and Lua.
 
-Reference edges are tree-sitter first; an optional per-language language server
+Reference edges are tree-sitter first; an optional language server per language
 (basedpyright/pyright, typescript-language-server, gopls, rust-analyzer, clangd,
 lua-language-server — discovered on PATH) adds type-aware method/member-dispatch
 edges. Missing server → tree-sitter-only for that language.
@@ -64,7 +64,7 @@ trie sync                             # the full plan / incremental after that
 ```
 
 Generated triefacts land under `triefacts/<source path>.md`. Hand-written
-prose *between* trie's section sentinels survives regeneration — go ahead
+prose *between* Trie's section sentinels survives regeneration — go ahead
 and add narrative.
 
 Two flavours of preview before committing:
@@ -105,7 +105,7 @@ trie setup            # auto-detects opencode / claude-code / cursor / ...
 ```
 
 `setup` installs the end-of-turn refresh hook, overrides the agent's
-built-in `grep`/`read` with trie-backed versions, adds `trace` and the
+built-in `grep`/`read` with Trie-backed versions, adds `trace` and the
 explain/history tools, and writes `TRIE.md` (the usage contract). MCP
 registration is opt-in via `--with-mcp`.
 

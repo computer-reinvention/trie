@@ -1,9 +1,9 @@
 # `.trie/` — local state directory
 
-Everything trie writes for a project lives under `.trie/`. The whole directory
+Everything Trie writes for a project lives under `.trie/`. The whole directory
 is **gitignored and regenerable** — delete it and the next `trie init` + `trie
 sync` rebuilds it. Nothing here is a durable artefact; the durable
-output of trie is the triefact tree (`triefacts/`, committed) and the source it
+output of Trie is the triefact tree (`triefacts/`, committed) and the source it
 describes.
 
 This document is the map of what each file is, who writes it, and when it is
