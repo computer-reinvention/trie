@@ -1,6 +1,6 @@
 # <img src="landing/logo.svg" width="28" alt="trie logo" /> trie
 
-> **A self-hosted index of meaning and intent for your codebase.**
+> **The self-hosted index of meaning and intent for your codebase.**
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
