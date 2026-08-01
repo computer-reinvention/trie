@@ -699,3 +699,292 @@ def test_rendered_tools_relay_both_streams_on_failure(tmp_path: Path):
     joined = "\n".join(rendered)
     assert "stderr.trim() || stdout.trim()" not in joined
     assert "[stderr.trim(), stdout.trim()].filter(Boolean).join" in joined
+
+
+# ---------------------------------------------------------------------------
+# Parse guard: every rendered `.ts` override must be valid JavaScript/TypeScript.
+#
+# These templates are authored as Python string literals, which makes a single
+# mis-escaped `\n` invisible: it turns into a raw newline in the generated JS
+# and produces an unterminated string literal. opencode's plugin loader then
+# fails to load the *entire* `.opencode/tools/` directory, and every message
+# send dies with an "unexpected server error" — the coding agent is bricked
+# with no obvious cause. This guard renders each override and rejects any that
+# won't parse, so that class of footgun can never ship again.
+# ---------------------------------------------------------------------------
+
+
+# Significant chars after which a `/` begins a regex literal rather than a
+# division operator. Punctuation-only (no keyword handling) — sufficient and
+# false-positive-free for the generated overrides, which contain regex literals
+# only after `=`/`(` and no division at all.
+_REGEX_START_CHARS = frozenset("(,=:[!&|?{;")
+
+
+def _first_raw_newline_in_quoted_string(source: str) -> tuple[int, str] | None:
+    """Scan JS source for a raw newline inside a single/double-quoted string.
+
+    Returns `(line_number, snippet)` for the first offending string, or `None`
+    if every `'...'` / `"..."` string is properly terminated on its own line.
+
+    This is the exact bug that `.join("\\n")` mis-escaped as `.join("<newline>")`
+    produces: a quoted string literal broken across a line boundary, which JS
+    forbids (only backtick template literals may span newlines). We hand-roll a
+    minimal lexer rather than depend on a JS runtime so the guard runs in every
+    environment, including CI without node/bun.
+
+    The scanner tracks these lexical states — normal code, `//` line comment,
+    `/* */` block comment, `/regex/` literals, backtick template literals, and
+    the two quoted-string kinds — honouring backslash escapes so an escaped
+    quote (`\\"`) or escaped newline doesn't confuse it. Crucially it descends
+    into `${...}` interpolations inside template literals and scans them as
+    code, because the real bug lives *inside* an interpolation:
+    `join("<newline>")` sits in a `${...}` of a backtick string. A scanner that
+    treated backtick literals as opaque would miss it entirely.
+
+    Backtick literals may span newlines (legal in JS); only `'`/`"` strings are
+    checked for the illegal raw-newline case. Regex literals are consumed whole
+    (a `/` is a regex start only when the previous significant char can't end an
+    expression, e.g. after `(`, `=`, `[`) so a quote inside `/["']/` isn't
+    mistaken for a string.
+
+    Implementation: a context stack. Each frame is either `("code", brace_depth)`
+    — top level or the interior of a `${...}` interpolation, tracking `{`/`}`
+    nesting so a literal brace doesn't close the interpolation early — or
+    `("tmpl",)` for the body of a template literal between interpolations.
+    """
+    i = 0
+    n = len(source)
+    line = 1
+    prev_sig = ""  # last significant char in the current code context
+    # Stack of contexts; bottom frame is the top-level code.
+    stack: list = [["code", 0]]
+
+    def _consume_regex(idx: int, ln: int) -> tuple[int, int]:
+        idx += 1
+        in_class = False
+        while idx < n:
+            c = source[idx]
+            if c == "\\":
+                idx += 2
+                continue
+            if c == "\n":
+                ln += 1
+                idx += 1
+                continue
+            if c == "[":
+                in_class = True
+            elif c == "]":
+                in_class = False
+            elif c == "/" and not in_class:
+                idx += 1
+                break
+            idx += 1
+        return idx, ln
+
+    while i < n:
+        ctx = stack[-1]
+        ch = source[i]
+
+        # ---- template-literal body: consume until backtick or `${` ----
+        if ctx[0] == "tmpl":
+            if ch == "\\":
+                if i + 1 < n and source[i + 1] == "\n":
+                    line += 1
+                i += 2
+                continue
+            if ch == "\n":
+                line += 1
+                i += 1
+                continue
+            if ch == "`":
+                stack.pop()
+                prev_sig = "`"
+                i += 1
+                continue
+            if ch == "$" and i + 1 < n and source[i + 1] == "{":
+                stack.append(["code", 0])  # enter interpolation as code
+                prev_sig = "{"
+                i += 2
+                continue
+            i += 1
+            continue
+
+        # ---- code context (top level or inside `${...}`) ----
+        if ch == "\n":
+            line += 1
+            i += 1
+            continue
+        if ch in (" ", "\t", "\r"):
+            i += 1
+            continue
+        if ch == "/" and i + 1 < n and source[i + 1] == "/":
+            while i < n and source[i] != "\n":
+                i += 1
+            continue
+        if ch == "/" and i + 1 < n and source[i + 1] == "*":
+            i += 2
+            while i + 1 < n and not (source[i] == "*" and source[i + 1] == "/"):
+                if source[i] == "\n":
+                    line += 1
+                i += 1
+            i += 2
+            continue
+        if ch == "/" and prev_sig in _REGEX_START_CHARS:
+            i, line = _consume_regex(i, line)
+            prev_sig = "/"
+            continue
+        if ch == "`":
+            stack.append(["tmpl"])
+            i += 1
+            continue
+        if ch in ("'", '"'):
+            quote = ch
+            open_line = line
+            snippet_start = max(0, i - 20)
+            i += 1
+            while i < n:
+                c = source[i]
+                if c == "\\":
+                    if i + 1 < n and source[i + 1] == "\n":
+                        line += 1
+                    i += 2
+                    continue
+                if c == "\n":
+                    snippet = source[snippet_start:i].replace("\n", "\\n")
+                    return open_line, snippet
+                if c == quote:
+                    i += 1
+                    break
+                i += 1
+            prev_sig = quote
+            continue
+        if ch == "{":
+            ctx[1] += 1
+            prev_sig = ch
+            i += 1
+            continue
+        if ch == "}":
+            if ctx[1] == 0 and len(stack) > 1:
+                # Close of a `${...}` interpolation: pop back to template body.
+                stack.pop()
+                i += 1
+                continue
+            if ctx[1] > 0:
+                ctx[1] -= 1
+            prev_sig = ch
+            i += 1
+            continue
+        prev_sig = ch
+        i += 1
+    return None
+
+
+def _rendered_opencode_ts_files(project_root: Path) -> dict[str, str]:
+    """Render every opencode `.ts` override, keyed by its filename."""
+    spec = TARGETS["opencode"]
+    return {
+        f.relative_path[-1]: f.render(project_root)
+        for f in spec.files
+        if f.relative_path[-1].endswith(".ts")
+    }
+
+
+def test_rendered_ts_overrides_have_no_unterminated_string_literals(tmp_path: Path):
+    """Every rendered `.ts` override must have no raw newline inside a quoted
+    string. Hermetic guard for the `.join("\\n")` footgun (an unescaped `\\n`
+    in the Python template becomes a real newline, breaking the JS string and
+    bricking opencode's plugin loader). Runs everywhere, no JS runtime needed."""
+    rendered = _rendered_opencode_ts_files(tmp_path)
+    assert rendered, "expected rendered .ts tool files"
+
+    offenders = {}
+    for name, source in rendered.items():
+        hit = _first_raw_newline_in_quoted_string(source)
+        if hit is not None:
+            offenders[name] = hit
+
+    assert not offenders, (
+        "rendered opencode overrides contain unterminated string literals "
+        "(a raw newline inside a '...'/\"...\" string — most likely a `\\n` in "
+        "the Python template that should be `\\\\n`). opencode fails to load the "
+        "whole tools dir when this ships. Offending files (line, snippet): "
+        + "; ".join(f"{k}: line {v[0]} …{v[1]!r}" for k, v in offenders.items())
+    )
+
+
+def test_scanner_flags_a_known_unterminated_string_literal():
+    """Guard the guard: the scanner must actually catch a raw newline inside a
+    double-quoted string, and must NOT false-positive on a legal `\\n` escape,
+    on a newline inside a backtick template, or on a quote inside a comment."""
+    bad = 'const x = "abc\ndef"'
+    assert _first_raw_newline_in_quoted_string(bad) is not None
+
+    good_escape = 'const x = "abc\\ndef"\n'
+    assert _first_raw_newline_in_quoted_string(good_escape) is None
+
+    good_template = "const x = `abc\ndef`\n"
+    assert _first_raw_newline_in_quoted_string(good_template) is None
+
+    good_comment = "// a lone ' quote in a comment\nconst x = 1\n"
+    assert _first_raw_newline_in_quoted_string(good_comment) is None
+
+    # The exact shape of the real regression: a broken quoted string living
+    # *inside* a `${...}` interpolation of a template literal. The scanner must
+    # descend into interpolations, not treat backtick literals as opaque.
+    interp_bug = 'throw new Error(`x ${[a].join("\n") || "y"}`)\n'
+    assert _first_raw_newline_in_quoted_string(interp_bug) is not None
+    interp_ok = 'throw new Error(`x ${[a].join("\\n") || "y"}`)\n'
+    assert _first_raw_newline_in_quoted_string(interp_ok) is None
+
+    # A regex literal containing quotes must not be mistaken for a string.
+    regex_ok = "const m = /^[\"']+$/.exec(raw)\n"
+    assert _first_raw_newline_in_quoted_string(regex_ok) is None
+
+
+@pytest.mark.parametrize("runtime", ["bun"])
+def test_rendered_ts_overrides_parse_under_js_runtime(tmp_path: Path, runtime: str):
+    """Authoritative parse check: when a TypeScript-aware JS runtime is on PATH,
+    every rendered override must parse cleanly. `bun build` strips types and
+    reports real syntax errors (unlike `node --check`, which rejects TS type
+    annotations). Skipped when the runtime is unavailable so the suite stays
+    hermetic; the pure-Python guard above always runs regardless."""
+    import shutil
+    import subprocess
+
+    exe = shutil.which(runtime)
+    if not exe:
+        pytest.skip(f"{runtime} not on PATH; pure-Python guard still covers this")
+    assert exe is not None
+
+    rendered = _rendered_opencode_ts_files(tmp_path)
+    tools_dir = tmp_path / ".opencode" / "tools"
+    tools_dir.mkdir(parents=True, exist_ok=True)
+    # Stub the plugin import so parsing doesn't require a network install.
+    stub_dir = tmp_path / "node_modules" / "@opencode-ai" / "plugin"
+    stub_dir.mkdir(parents=True, exist_ok=True)
+    (stub_dir / "package.json").write_text(
+        json.dumps({"name": "@opencode-ai/plugin", "version": "0.0.0", "main": "index.js"})
+    )
+    (stub_dir / "index.js").write_text(
+        "const s = new Proxy(function(){}, { get: () => s, apply: () => s });\n"
+        "function tool(d){ return d; } tool.schema = s;\n"
+        "module.exports = { tool };\n"
+    )
+
+    failures = {}
+    for name, source in rendered.items():
+        path = tools_dir / name
+        path.write_text(source)
+        proc = subprocess.run(
+            [exe, "build", str(path), "--target=node"],
+            capture_output=True,
+            text=True,
+            cwd=str(tmp_path),
+        )
+        if proc.returncode != 0:
+            failures[name] = proc.stderr.strip() or proc.stdout.strip()
+
+    assert not failures, "rendered overrides failed to parse:\n" + "\n".join(
+        f"--- {k} ---\n{v}" for k, v in failures.items()
+    )

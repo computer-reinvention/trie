@@ -1,14 +1,14 @@
 ---
 trie_version: 0.2.1
 source: tests/test_tool_override_install.py
-file_fingerprint: 7265e090e0647ecab5b36a2f5a1169c946a528630b32364864e0fc6a4c3c03de
-last_synced_at: '2026-08-01T00:20:38Z'
+file_fingerprint: 7f72a3893c05a4534513c675230f30973b227ccd5314ba6a786f74432e4563ee
+last_synced_at: '2026-08-01T08:01:48Z'
 description: 'Tests for `trie.tool_override_install`: replacing agent built-in tools
   with trie wrappers.'
 defines:
 - kind: module
   qualified_name: tests/test_tool_override_install:__module__
-  lines: 1-702
+  lines: 1-991
 - kind: function
   qualified_name: tests/test_tool_override_install:test_opencode_install_creates_override_files
   lines: 39-74
@@ -93,8 +93,26 @@ defines:
 - kind: function
   qualified_name: tests/test_tool_override_install:test_rendered_tools_relay_both_streams_on_failure
   lines: 689-701
+- kind: constant
+  qualified_name: tests/test_tool_override_install:_REGEX_START_CHARS
+  lines: 721-721
+- kind: function
+  qualified_name: tests/test_tool_override_install:_first_raw_newline_in_quoted_string
+  lines: 724-880
+- kind: function
+  qualified_name: tests/test_tool_override_install:_rendered_opencode_ts_files
+  lines: 883-890
+- kind: function
+  qualified_name: tests/test_tool_override_install:test_rendered_ts_overrides_have_no_unterminated_string_literals
+  lines: 893-913
+- kind: function
+  qualified_name: tests/test_tool_override_install:test_scanner_flags_a_known_unterminated_string_literal
+  lines: 916-942
+- kind: function
+  qualified_name: tests/test_tool_override_install:test_rendered_ts_overrides_parse_under_js_runtime
+  lines: 946-990
 incoming_refs: 0
-outgoing_refs: 31
+outgoing_refs: 32
 ---
 <!-- trie:section symbol=tests/test_tool_override_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=3cb993b151f9ea2ea7ddf3774547435bafb8e0eb9c5f593eded0bd55ef057cb4 source_ref=c2731124701c9a5f3a8f683a4cc84d0be1fc6b27 role=test-infrastructure -->
 Tests for `trie.tool_override_install` functionality that replaces agent built-in tools with trie wrappers.
@@ -281,4 +299,30 @@ Tests that `apply_one` returns `needs_manual_setup` for targets with empty file 
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_tool_override_install:test_rendered_tools_relay_both_streams_on_failure fingerprint=5545acc4b20798092b016b8c47735b01af594ea2289600b95613073bdf8e1bfb body_fp=48aa76b43f74ce36378b7d26f861548660a50b7c21eb06b69be60415952a6297 source_ref=25e5de83b30ad677b72d5c9c11521ac289b6e9f6 role=test -->
 Regression test asserting that all rendered opencode `.ts` tool templates join both `stderr` and `stdout` on failure rather than silently dropping one stream.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_tool_override_install:_REGEX_START_CHARS fingerprint=f1c49945c596206494f991f5ce8050f110ae35d2b295bbb937d1cec93d6bb945 body_fp=09027c01e261523640328b8a3bd7d182ed1f9a5286f2cef597058495ed1f7754 source_ref=221ce3a4983305c9d20743562130f96880bc751a role=util -->
+Set of punctuation characters after which a `/` token begins a JS regex literal rather than a division operator, used by `_first_raw_newline_in_quoted_string`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_tool_override_install:_first_raw_newline_in_quoted_string fingerprint=d52a891c2f9d8964f2ddaa47292f1b1e3c7535d37b7e43fa9947a70469eb8d53 body_fp=0a693f2dae3c5bad91fe699efc43048f53b8aeef955dd12d7c6c14a68dc69ad0 source_ref=221ce3a4983305c9d20743562130f96880bc751a role=util -->
+Scan a JS/TS source string and return `(line_number, snippet)` for the first `'`/`"`-quoted string containing a raw newline, or `None` if all are clean.
+
+- Handles `//`, `/* */`, `` ` `` template literals (including `${…}` interpolations), and `/regex/` literals; does not require a JS runtime.
+- Returns the line number where the offending string **opened**, plus a context snippet with newlines escaped.
+- A `/` is treated as a regex start only when preceded by a char in `_REGEX_START_CHARS`; quotes inside regex character classes are not mistaken for strings.
+- Descends into `${…}` interpolations so a broken quoted string nested inside a template literal is still detected.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_tool_override_install:_rendered_opencode_ts_files fingerprint=d02b2e355f4463ca429e600e2d8b1a63973e796905668ea5e1e5c27f35e78d33 body_fp=17bb31772c64f44288d57cf0fd160592fbf8f16c059ecde84b7370ad7e9bbc92 source_ref=221ce3a4983305c9d20743562130f96880bc751a role=test -->
+Render every opencode `.ts` override file from `TARGETS`, returning a dict keyed by filename.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_tool_override_install:test_rendered_ts_overrides_have_no_unterminated_string_literals fingerprint=739b5e1c4994453876bded715f6c5df3f33eeb70e388be4f21e1e309ea101b0c body_fp=47880fb2ab5473368fb4c96e15ca664ab9734e20b0ff387821aed7a59efb0d8d source_ref=221ce3a4983305c9d20743562130f96880bc751a role=test -->
+Assert that no rendered opencode `.ts` override contains a raw newline inside a single- or double-quoted string literal, using `_first_raw_newline_in_quoted_string` as the hermetic detector.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_tool_override_install:test_scanner_flags_a_known_unterminated_string_literal fingerprint=846396d6957136cfbb0c49313f0df25405f71d60a78ec669d77afe4d67330e4d body_fp=83268d98a0fdcd16ef8688cb7ae45ba51179b9b40e941010ecc4295ca6abd952 source_ref=221ce3a4983305c9d20743562130f96880bc751a role=test -->
+Validates `_first_raw_newline_in_quoted_string` against known-good and known-bad JS snippets, including raw newlines in `'`/`"` strings, legal `\n` escapes, backtick templates, comments, `${...}` interpolations, and regex literals containing quotes.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_tool_override_install:test_rendered_ts_overrides_parse_under_js_runtime fingerprint=727ca79a552fe2b1ef50d45281f3311c9ccf2dbd606ad951cf1dd1dd786d2157 body_fp=f093976bfc51869bd4dd54236ebde01f7c0921187dcc6006840d1be4d9a2015b source_ref=221ce3a4983305c9d20743562130f96880bc751a role=test -->
+Verify every rendered opencode `.ts` override parses cleanly under `bun build`; skips automatically when `bun` is not on PATH.
+
+- Stubs `@opencode-ai/plugin` locally so parsing requires no network install.
+- Fails with per-file `bun` stderr when any override has a syntax error.
 <!-- trie:end -->

@@ -2,7 +2,7 @@
 trie_version: 0.2.1
 source: trie/cli.py
 file_fingerprint: 7c769efb87689a470d49f3821f3b6a0a8d682a2b64773077e2d3ec11c646fa38
-last_synced_at: '2026-08-01T02:17:31Z'
+last_synced_at: '2026-08-01T08:02:17Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
@@ -780,7 +780,7 @@ Execute an incremental sync that regenerates only stale triefacts and their casc
 - Calls `_report_sync_errors` after syncing; exits code 1 if all files failed or any file errored
 - Honors budget/limit constraints and reports any files skipped due to those caps
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:setup_cmd fingerprint=5e9850751ea2ec3c9e18fe8cb5621fdaf9c8ac7130532e24e8b12d97c074f74b body_fp=9e86f972cc380bc5b112222b61a67f1946505fd823ab4810a1f8b115ec35e0ab source_ref=b1cd8673daa7f27bf82a8377747312a95d250581 role=api -->
+<!-- trie:section symbol=trie/cli:setup_cmd fingerprint=5e9850751ea2ec3c9e18fe8cb5621fdaf9c8ac7130532e24e8b12d97c074f74b body_fp=9e86f972cc380bc5b112222b61a67f1946505fd823ab4810a1f8b115ec35e0ab source_ref=3de8744a020137e033218bf1ca5978eb1977cfe2 role=api -->
 Integrates trie into coding agents by installing hooks, tool overrides, documentation, and GitHub workflows.
 
 Orchestrates multiple install steps in sequence:
