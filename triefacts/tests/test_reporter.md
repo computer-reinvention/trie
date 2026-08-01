@@ -2,7 +2,7 @@
 trie_version: 0.2.1
 source: tests/test_reporter.py
 file_fingerprint: 2687fddcd8fd3190739e2dfc9f7de9cc4c857a52f2ef14254e74a34b8f2eab2b
-last_synced_at: '2026-07-29T23:24:14Z'
+last_synced_at: '2026-08-01T01:14:54Z'
 defines:
 - kind: module
   qualified_name: tests/test_reporter:__module__
@@ -53,7 +53,7 @@ defines:
   qualified_name: tests/test_reporter:test_root_version_still_works_with_verbosity_flags
   lines: 155-159
 incoming_refs: 0
-outgoing_refs: 45
+outgoing_refs: 47
 ---
 <!-- trie:section symbol=tests/test_reporter:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=fa430be3ec87445f293f027c2caea83ff425a3a5b12a05014e7d843942d78fdb source_ref=df741a005acc31e764a566519cdb2c64bda589ef role=test-infrastructure -->
 Tests the Reporter class and CLI verbosity handling across different output levels.

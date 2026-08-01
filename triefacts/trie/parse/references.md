@@ -1,53 +1,53 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: trie/parse/references.py
-file_fingerprint: edd5ec0dd0e18bf21761ae1336a7e920dabad906e1dcfb285945b206026a56e6
-last_synced_at: '2026-07-28T23:34:36Z'
+file_fingerprint: f269fe349d38cba12b56c6c73cc63ef99f3e1c77d5092b947736b5951f264e85
+last_synced_at: '2026-08-01T00:20:38Z'
 description: Reference extraction via tree-sitter.
 defines:
 - kind: module
   qualified_name: trie/parse/references:__module__
-  lines: 1-459
+  lines: 1-474
 - kind: class
   qualified_name: trie/parse/references:_ImportBindings
   lines: 56-74
 - kind: function
   qualified_name: trie/parse/references:_collect_imports
-  lines: 77-103
+  lines: 77-118
 - kind: function
   qualified_name: trie/parse/references:_absorb_from_import
-  lines: 106-147
+  lines: 121-162
 - kind: function
   qualified_name: trie/parse/references:_absorb_plain_import
-  lines: 150-177
+  lines: 165-192
 - kind: function
   qualified_name: trie/parse/references:_collect_identifier_names
-  lines: 180-198
+  lines: 195-213
 - kind: function
   qualified_name: trie/parse/references:_collect_attribute_accesses
-  lines: 201-239
+  lines: 216-254
 - kind: function
   qualified_name: trie/parse/references:_dotted_text
-  lines: 242-260
+  lines: 257-275
 - kind: function
   qualified_name: trie/parse/references:_collect_call_target_names
-  lines: 263-290
+  lines: 278-305
 - kind: function
   qualified_name: trie/parse/references:_collect_class_bases
-  lines: 293-312
+  lines: 308-327
 - kind: constant
   qualified_name: trie/parse/references:_INTERFACE_BASES
-  lines: 317-317
+  lines: 332-332
 - kind: function
   qualified_name: trie/parse/references:_find_node_for_symbol
-  lines: 320-342
+  lines: 335-357
 - kind: function
   qualified_name: trie/parse/references:extract_file_data
-  lines: 345-455
+  lines: 360-470
 - kind: constant
   qualified_name: trie/parse/references:__all__
-  lines: 458-458
-incoming_refs: 19
+  lines: 473-473
+incoming_refs: 22
 outgoing_refs: 12
 ---
 <!-- trie:section symbol=trie/parse/references:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a8d190298548018a1815d39892ee468daee2697b58134c9028d373077fce37fd source_ref=c6775babce628ee17704cd01d13e5bd434d47d37 role=source-parsing -->
@@ -64,9 +64,10 @@ Holds separate binding tables for symbol imports and module imports from one fil
 - `symbols`: maps local names from `from X import Y` to fully-qualified target qnames
 - `modules`: maps local names from `import X` to module paths for attribute access resolution
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/references:_collect_imports fingerprint=2331c5c458cf82625623bc08d2dffc4a3ce446c63604d19b7ebc8807e7149e7a body_fp=2e0a2aa34c6f0bcdb57d0de133b5ec8d13571d7dde9528a6e3435a958b06b2d9 source_ref=c6775babce628ee17704cd01d13e5bd434d47d37 role=source-parsing -->
-Build symbol and module binding tables by parsing all import statements in a module's AST.
+<!-- trie:section symbol=trie/parse/references:_collect_imports fingerprint=a368369780d31bd24d4551efa6c2d77a221aa72e9be0dfe8520254e25b6316ad body_fp=265ae8f04fe36ca89067bff8518a35be091714903ad72ee280b155fb9d8f66ef source_ref=9663a3e7dd4ea3de78fe1f41cc8fc9f4d98fd096 role=parsing -->
+Build symbol and module binding tables by parsing all import statements in a module's AST at any nesting depth.
 
+- Traverses the full AST recursively, so function-local imports are included alongside top-level ones
 - Skips relative imports (leading `.`) due to missing project root context
 - Returns `_ImportBindings` with separate tables for direct symbol imports vs module imports
 - Handles both `from X import Y` and `import X` forms including aliases

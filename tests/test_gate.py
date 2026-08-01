@@ -190,3 +190,36 @@ def test_patch_create_suggests_close_qnames_on_miss(tmp_path: Path, monkeypatch)
     assert "pkg_init:__version__" in flat
     # --gone is mentioned as the removal escape hatch, not the headline fix.
     assert "--gone" in flat
+
+
+def test_patch_create_batch_reports_did_you_mean(tmp_path: Path, monkeypatch):
+    """CLI create-batch parity with the MCP batch_patch: missed qnames carry
+    did_you_mean suggestions in their result rows (the tool override shells
+    to this CLI path, so MCP-only parity would never reach agents)."""
+    import json as _json
+    import subprocess as sp
+
+    from trie.graph.store import Store
+    from trie.parse.python import extract_symbols
+
+    repo = _repo(tmp_path)
+    src = repo / "pkg_init.py"
+    src.write_text('__version__ = "1.0"\n')
+    sp.run(["git", "add", "-A"], cwd=repo, check=True, capture_output=True)
+    sp.run(["git", "commit", "-q", "-m", "init"], cwd=repo, check=True, capture_output=True)
+
+    db = repo / ".trie" / "graph.db"
+    db.parent.mkdir(exist_ok=True)
+    with Store(db) as store:
+        store.upsert_file(path="pkg_init.py", fingerprint="fp")
+        store.replace_file_symbols("pkg_init.py", extract_symbols(src, repo))
+
+    monkeypatch.chdir(repo)
+    payload = _json.dumps([{"qname": "pkg_init:__module__", "note": "bump"}])
+    batch_file = repo / "batch.json"
+    batch_file.write_text(payload)
+    result = runner.invoke(app, ["patch", "create-batch", "--json-file", str(batch_file)])
+    data = _json.loads(result.output)
+    [row] = data["results"]
+    assert row["ok"] is False
+    assert "pkg_init:__version__" in row.get("did_you_mean", [])

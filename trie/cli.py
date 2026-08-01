@@ -51,6 +51,7 @@ from trie.mcp_server import TrieTools
 from trie.mcp_server import run_stdio as run_mcp_stdio
 from trie.models import make_client
 from trie.refresh_lock import try_acquire as try_acquire_refresh_lock
+from trie.render import render_envelope
 from trie.reporter import ProgressHandle, Reporter, Verbosity
 from trie.scan import scan_project
 from trie.scope import discover_files
@@ -3423,20 +3424,15 @@ def _render_blast_radius(envelope: dict[str, object], reporter: Reporter) -> Non
 
 
 def _print_plain(envelope: dict[str, object], reporter: Reporter) -> None:
-    """Generic plain-text renderer for the extended tools.
-
-    Walks the envelope recursively and prints it in a readable form.
-    Lists render as bullet items; nested dicts render indented. This keeps
-    the CLI output human-readable without requiring a custom renderer per
-    tool.
-    """
-    import json as _json
-
+    """Render a tool envelope as dense readable text (shared with the MCP
+    surface via `trie.render.render_envelope`). Exists because the previous
+    implementation was `json.dumps` in a trench coat — agents paid for
+    braces, escaped newlines, and repeated keys on every query."""
     err = envelope.get("error")
     if isinstance(err, dict):
         _render_error_envelope(err, reporter)
         return
-    reporter.console.print(_json.dumps(envelope, indent=2, default=str))
+    reporter.console.print(render_envelope(envelope), markup=False, highlight=False)
 
 
 @app.command("grep-str")
@@ -3447,6 +3443,9 @@ def grep_str_cmd(
         False,
         "--all-files",
         help="Search the WHOLE repo (incl. non-indexed files), not just indexed source bodies.",
+    ),
+    as_json: bool = typer.Option(
+        False, "--json", help="Emit the raw JSON envelope instead of formatted text."
     ),
 ) -> None:
     """Search source bodies with a regex; attribute hits to enclosing symbols.
@@ -3466,7 +3465,7 @@ def grep_str_cmd(
         envelope = tools.grep_str_all(regexp) if all_files else tools.grep_str(regexp)
     finally:
         tools.close()
-    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+    _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_print_plain)
 
 
 @app.command("find")
@@ -3580,6 +3579,9 @@ def _render_find(envelope: dict[str, object], reporter: Reporter) -> None:
 def grep_entry_points_cmd(
     ctx: typer.Context,
     query: str = typer.Argument(..., help="Topic or concept to match against symbol prose."),
+    as_json: bool = typer.Option(
+        False, "--json", help="Emit the raw JSON envelope instead of formatted text."
+    ),
 ) -> None:
     """Find architectural entry points whose triefact prose matches a topic.
 
@@ -3592,13 +3594,16 @@ def grep_entry_points_cmd(
         envelope = tools.grep_entry_points(query)
     finally:
         tools.close()
-    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+    _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_print_plain)
 
 
 @app.command("grep-symbol")
 def grep_symbol_cmd(
     ctx: typer.Context,
     sym: str = typer.Argument(..., help="Symbol name or fragment to fuzzy-match."),
+    as_json: bool = typer.Option(
+        False, "--json", help="Emit the raw JSON envelope instead of formatted text."
+    ),
 ) -> None:
     """Fuzzy symbol name lookup: best match + similar symbols.
 
@@ -3611,13 +3616,16 @@ def grep_symbol_cmd(
         envelope = tools.grep_symbol(sym)
     finally:
         tools.close()
-    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+    _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_print_plain)
 
 
 @app.command("grep-symbol-neighbours")
 def grep_symbol_neighbours_cmd(
     ctx: typer.Context,
     sym: str = typer.Argument(..., help="Symbol name or fragment to fuzzy-match."),
+    as_json: bool = typer.Option(
+        False, "--json", help="Emit the raw JSON envelope instead of formatted text."
+    ),
 ) -> None:
     """Fuzzy symbol lookup + trimmed metadata for immediate callers/callees.
 
@@ -3630,7 +3638,7 @@ def grep_symbol_neighbours_cmd(
         envelope = tools.grep_symbol_and_neighbours(sym)
     finally:
         tools.close()
-    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+    _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_print_plain)
 
 
 @app.command("explain-symbol")
@@ -3642,6 +3650,9 @@ def explain_symbol_cmd(
         "--history",
         "-H",
         help="Also show the symbol's intent trail from the digest archive.",
+    ),
+    as_json: bool = typer.Option(
+        False, "--json", help="Emit the raw JSON envelope instead of formatted text."
     ),
 ) -> None:
     """Full prose + joined narrative story of a symbol's references.
@@ -3655,7 +3666,7 @@ def explain_symbol_cmd(
         envelope = tools.explain_symbol(sym, history=history)
     finally:
         tools.close()
-    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+    _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_print_plain)
 
 
 @app.command("explain-symbol-refs")
@@ -3667,6 +3678,9 @@ def explain_symbol_refs_cmd(
         "--history",
         "-H",
         help="Also show the symbol's intent trail from the digest archive.",
+    ),
+    as_json: bool = typer.Option(
+        False, "--json", help="Emit the raw JSON envelope instead of formatted text."
     ),
 ) -> None:
     """Explain how a symbol is used — callers only, with their prose.
@@ -3680,7 +3694,7 @@ def explain_symbol_refs_cmd(
         envelope = tools.explain_symbol_references(sym, history=history)
     finally:
         tools.close()
-    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+    _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_print_plain)
 
 
 @app.command("trace-flow")
@@ -3688,6 +3702,9 @@ def trace_flow_cmd(
     ctx: typer.Context,
     symbol1: str = typer.Argument(..., help="Starting symbol qname or name."),
     symbol2: str = typer.Argument(..., help="Target symbol qname or name."),
+    as_json: bool = typer.Option(
+        False, "--json", help="Emit the raw JSON envelope instead of formatted text."
+    ),
 ) -> None:
     """Find call chain(s) between two symbols.
 
@@ -3700,7 +3717,7 @@ def trace_flow_cmd(
         envelope = tools.trace_flow(symbol1, symbol2)
     finally:
         tools.close()
-    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+    _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_print_plain)
 
 
 @app.command("explain-flow")
@@ -3708,6 +3725,9 @@ def explain_flow_cmd(
     ctx: typer.Context,
     symbol1: str = typer.Argument(..., help="Starting symbol qname or name."),
     symbol2: str = typer.Argument(..., help="Target symbol qname or name."),
+    as_json: bool = typer.Option(
+        False, "--json", help="Emit the raw JSON envelope instead of formatted text."
+    ),
 ) -> None:
     """Trace the call chain between two symbols and narrate each step.
 
@@ -3720,7 +3740,7 @@ def explain_flow_cmd(
         envelope = tools.explain_flow(symbol1, symbol2)
     finally:
         tools.close()
-    _emit_envelope(envelope, as_json=False, reporter=reporter, render=_print_plain)
+    _emit_envelope(envelope, as_json=as_json, reporter=reporter, render=_print_plain)
 
 
 # ---------------------------------------------------------------------------
@@ -3849,12 +3869,15 @@ def patch_create_cmd(
     except KeyError:
         # A wrong qname is far more often a guess/typo than a removed symbol:
         # suggest close matches first (hand-built qnames are the documented
-        # trap), and mention --gone only as the removal escape hatch.
+        # trap), and mention --gone only as the removal escape hatch. The
+        # whole block goes to STDERR: subprocess wrappers (the opencode tool
+        # overrides) relay stderr on failure, and suggestions printed to
+        # stdout were invisible exactly when they mattered.
         suggestions = _close_qname_suggestions(store, qname)
         reporter.error(f"symbol {qname!r} not found in the graph")
         if suggestions:
-            reporter.info("  did you mean: " + "  ".join(suggestions))
-        reporter.info(
+            reporter.err_console.print("  did you mean: " + "  ".join(suggestions))
+        reporter.err_console.print(
             "  (wrong name? look it up with `trie grep --name <fragment>`; "
             "actually removed? re-run with --gone)"
         )
@@ -3972,14 +3995,18 @@ def patch_create_batch_cmd(
                     results.append(entry)
                     staged += 1
             except KeyError:
-                results.append(
-                    {
-                        "index": idx,
-                        "qname": qname,
-                        "ok": False,
-                        "error": "symbol not found in graph",
-                    }
-                )
+                # Parity with TrieTools.batch_patch: a missed qname is usually
+                # a guess/typo, so hand back close matches in the result row.
+                entry = {
+                    "index": idx,
+                    "qname": qname,
+                    "ok": False,
+                    "error": "symbol not found in graph",
+                }
+                close = _close_qname_suggestions(store, qname)
+                if close:
+                    entry["did_you_mean"] = close
+                results.append(entry)
     finally:
         store.close()
 

@@ -1,8 +1,8 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: trie/tool_override_install.py
-file_fingerprint: bb57f246ff6fcaf4f5a4cd1641463adcd1400906fae4e1bd9369a954c52c0d7f
-last_synced_at: '2026-07-29T18:31:54Z'
+file_fingerprint: 5593f13cb797442893b0865ff25b8fc923f04b552a8cf97c2db2c785f50d7094
+last_synced_at: '2026-08-01T00:20:59Z'
 description: 'Tool-override installation: replace an agent''s built-in tools with
   trie wrappers.'
 defines:
@@ -108,7 +108,7 @@ defines:
 - kind: function
   qualified_name: trie/tool_override_install:_apply_file
   lines: 2183-2247
-incoming_refs: 33
+incoming_refs: 34
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/tool_override_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=4e6de758272688556670f60a4f9a81c71c6939abcb78cf111e99d093fbce4312 source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=orchestration -->
@@ -171,10 +171,10 @@ Standard TypeScript header comment injected into all generated opencode tool ove
 - Contains warning against manual editing and instructions for opting out
 - References opencode.ai custom-tools documentation
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_override fingerprint=2020fbbeaf9204b1052fff6d326af6207f6564c360c69bff9a81de5924b262cd body_fp=effa9eadec1298bbf56a76a7ed95c0c3721dde375a55de9b6fe4183c9f9e12bc source_ref=7ba881213606148abcb9329ac86bff6104b7b2e5 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_override fingerprint=27e4bfa653b973aa548fc61b7cdd34e58b77050b77eb8b246d340424d71a960d body_fp=effa9eadec1298bbf56a76a7ed95c0c3721dde375a55de9b6fe4183c9f9e12bc source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Generates the TypeScript source for opencode's `grep.ts` tool override that replaces the built-in grep with symbol-aware search via `trie grep`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_read_override fingerprint=ffe463adc332d1f0f88803fa18b58ae49c3b0e654de8c52d6130ffd38a1cfc29 body_fp=f55d7a489f1e10ac416cd3ea564d6eb021fd49b18c3e1ee4ef05a3fb707264d1 source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_read_override fingerprint=1db5f3d9f103526f4e92ec3e0ab25a949609a25264b880fea80460745929265b body_fp=f55d7a489f1e10ac416cd3ea564d6eb021fd49b18c3e1ee4ef05a3fb707264d1 source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Generates TypeScript code for `.opencode/tools/read.ts` that overrides opencode's built-in `read` tool with trie-aware dispatch.
 
 The override routes requests based on argument shape:
@@ -184,22 +184,22 @@ The override routes requests based on argument shape:
 
 The generated tool includes TypeScript telemetry emission to mirror Python's `cli_call` events, TOML config parsing, triefact frontmatter parsing, and compact/full rendering modes that strip trie's internal machinery while preserving agent-relevant metadata.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_trace fingerprint=e353307167de8f23a5d46adeea3e91db4b54675b24e5452083437a3b6be919e2 body_fp=c13f027796659665154aaf4da5883c8222db475096177423eb417d158a853dc8 source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_trace fingerprint=1e761bf28dff7878d0a1539e12d93593b1879882ed5b14b5a93fb70f6728b266 body_fp=c13f027796659665154aaf4da5883c8222db475096177423eb417d158a853dc8 source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Generate TypeScript tool override for opencode's `trace` command that shells out to `trie trace`.
 
 The function renders `.opencode/tools/trace.ts` as a custom tool that exposes `trie trace` functionality to opencode agents. Since this is purely additive (no built-in collision), it creates a clean `trace` tool name without prefixes. The generated tool accepts a qualified symbol name, optional direction (callers/callees/both), and optional depth, then spawns a `trie trace` subprocess and returns the plain text output.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_str fingerprint=89238142c47f9f4b267f92cb9843537d0bb426e716e4894a3ad97d719da7bfd6 body_fp=e2e444539e974cf474df9ab92dad0ab8df4fd900dc6b655c70c744e7a1267235 source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_str fingerprint=2ac81b62f8afdabeb4d56f19243a1a2682b1b28a26507a4cf45f1a03a043c92c body_fp=e2e444539e974cf474df9ab92dad0ab8df4fd900dc6b655c70c744e7a1267235 source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 ## `def _render_opencode_grep_str(_project_root: Path) -> str`
 
 Renders the TypeScript source for `.opencode/tools/grep_str.ts`, which wraps `trie grep-str` as an opencode custom tool.
 
 - Returns TypeScript implementing a tool that searches source bodies with regex and attributes matches to enclosing symbols
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_entry_points fingerprint=0e43215287212d7b75c9f394b12ab0b8b2e27277ed345f1511f5a4d3201b1baa body_fp=b2bea9c0aafb42bce8ab8d114f538cdaf47530c9f66edfd0474ce81992c2c018 source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_entry_points fingerprint=2ac81b62f8afdabeb4d56f19243a1a2682b1b28a26507a4cf45f1a03a043c92c body_fp=b2bea9c0aafb42bce8ab8d114f538cdaf47530c9f66edfd0474ce81992c2c018 source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Generates TypeScript tool definition for opencode's `grep_entry_points` tool that shells out to `trie grep-entry-points`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_symbol fingerprint=53a1cd7dc17c26aea13f162c850f1dd71608a4bbc11c916b44d7cca307834b54 body_fp=af70a2b4fe2c1890a23a19b1c10f76aea0d80f7f8b21f5a1185ba70b1bc15c1d source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_symbol fingerprint=2ac81b62f8afdabeb4d56f19243a1a2682b1b28a26507a4cf45f1a03a043c92c body_fp=af70a2b4fe2c1890a23a19b1c10f76aea0d80f7f8b21f5a1185ba70b1bc15c1d source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Generates opencode tool override for fuzzy symbol name lookup via `trie grep-symbol`.
 
 - Returns TypeScript tool definition that wraps `trie grep-symbol` command
@@ -207,7 +207,7 @@ Generates opencode tool override for fuzzy symbol name lookup via `trie grep-sym
 - Handles exit codes 0/1 as success, throws error for other codes
 - Used by opencode target to add `grep_symbol` tool alongside built-in overrides
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_symbol_neighbours fingerprint=0dc2e34e338467884d9b6042f5a3c2d7a89fb20e12edfbd8aebd781f54a24ee7 body_fp=930bbfa81ace896850614d5e25e9e21343ea6510e30157817857f008e8bb5b9a source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_grep_symbol_neighbours fingerprint=2ac81b62f8afdabeb4d56f19243a1a2682b1b28a26507a4cf45f1a03a043c92c body_fp=930bbfa81ace896850614d5e25e9e21343ea6510e30157817857f008e8bb5b9a source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Renders the TypeScript source for an opencode `grep-symbol-neighbours` tool that shells out to `trie grep-symbol-neighbours`.
 
 - Returns a TypeScript tool module with a generated header and no-edit warning
@@ -216,7 +216,7 @@ Renders the TypeScript source for an opencode `grep-symbol-neighbours` tool that
 - Spawns `trie grep-symbol-neighbours` subprocess and returns stdout on success
 - Throws errors for non-zero exit codes except 1 (structured trie errors)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_explain_symbol fingerprint=290f8dcec3be0e0653a5701ff428c93e1aca31d5962ccdad5e3163396437f28d body_fp=e7ed04c1f760c4c071aecb4ac44a01e6427cdb1c98f7ef35dad11fa9a5b61ecc source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_explain_symbol fingerprint=2ac81b62f8afdabeb4d56f19243a1a2682b1b28a26507a4cf45f1a03a043c92c body_fp=e7ed04c1f760c4c071aecb4ac44a01e6427cdb1c98f7ef35dad11fa9a5b61ecc source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Renders the opencode tool override for `explain_symbol.ts`, which provides full prose and narrative for a symbol plus its callers/callees.
 
 - Returns TypeScript tool definition that shells out to `trie explain-symbol`
@@ -224,7 +224,7 @@ Renders the opencode tool override for `explain_symbol.ts`, which provides full 
 - Uses Bun.spawn to execute the trie CLI with proper error handling
 - Tool description emphasizes deep understanding beyond just docstrings
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_explain_symbol_refs fingerprint=19bf8765506d92965724ab52a3514d529385860a549139fcb3fee88074bb42a2 body_fp=4118a968cfd2c78b0693c52835d5301216c798f951b295a4b9179cefb999e78d source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_explain_symbol_refs fingerprint=2ac81b62f8afdabeb4d56f19243a1a2682b1b28a26507a4cf45f1a03a043c92c body_fp=4118a968cfd2c78b0693c52835d5301216c798f951b295a4b9179cefb999e78d source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Renders the opencode tool `explain_symbol_refs.ts` that wraps `trie explain-symbol-refs`.
 
 - Returns a TypeScript tool definition with description, args schema, and execute handler
@@ -232,26 +232,26 @@ Renders the opencode tool `explain_symbol_refs.ts` that wraps `trie explain-symb
 - Shells out to `trie explain-symbol-refs` subprocess and returns stdout on success
 - Handles exit codes 0/1 as success, throws errors for other codes
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_trace_flow fingerprint=34da6fc315f755b0d5a4c44bf87982b4ae79a6af56d99930847919a738712bd9 body_fp=17ab203fc56a16b2a3aff2d0ae25ee9ac2ffe49a6c25453b7172764326b7d414 source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_trace_flow fingerprint=2ac81b62f8afdabeb4d56f19243a1a2682b1b28a26507a4cf45f1a03a043c92c body_fp=17ab203fc56a16b2a3aff2d0ae25ee9ac2ffe49a6c25453b7172764326b7d414 source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Renders the TypeScript source for opencode's `trace_flow.ts` custom tool.
 
 Generates a tool that wraps `trie trace-flow` to find call chains between two symbols, returning the shortest paths following callee edges or clearly stating when no path exists within search depth.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_explain_flow fingerprint=537c04712165c5d9bceab1c45b20304a711def2fffe81397ba888ea651948dee body_fp=febfcdeddb9f799a503c8c8cb2623db038371c1a154426f60e50ad0de2e64846 source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_explain_flow fingerprint=2ac81b62f8afdabeb4d56f19243a1a2682b1b28a26507a4cf45f1a03a043c92c body_fp=febfcdeddb9f799a503c8c8cb2623db038371c1a154426f60e50ad0de2e64846 source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Renders TypeScript code for an opencode `explain_flow.ts` tool that wraps `trie explain-flow`.
 
 - Creates tool that takes two symbols and narrates execution flow with prose
 - Spawns `trie explain-flow <symbol1> <symbol2>` subprocess via Bun
 - Returns stdout on exit codes 0-1, throws error on other codes
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_patch fingerprint=cb5bd6abec03b5d1f633c8b50b354af994e53930ed2be2bed6e75c68a9dc5a82 body_fp=e1a92fe20ddfa6618f2874b6cd776bf5b348b2bf9583760d06219934041fbf4e source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_patch fingerprint=2ac81b62f8afdabeb4d56f19243a1a2682b1b28a26507a4cf45f1a03a043c92c body_fp=e1a92fe20ddfa6618f2874b6cd776bf5b348b2bf9583760d06219934041fbf4e source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Renders the TypeScript source for an opencode `patch.ts` tool that posts implementation notes against symbols.
 
 - Returns complete TypeScript tool definition that calls `trie patch create`
 - Accepts qname (required), note (required), and reason (optional) parameters
 - Wraps trie CLI subprocess execution with error handling and result parsing
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_patch_drop fingerprint=8efdbaf643f1cb7d73e85d57b9217179b127a1726f1895fa2663a2a659d05eca body_fp=b0804a1b59ecab06762aff0a88c2b8dcd5449b654a713ac99971b4ab620c20fd source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_patch_drop fingerprint=2ac81b62f8afdabeb4d56f19243a1a2682b1b28a26507a4cf45f1a03a043c92c body_fp=b0804a1b59ecab06762aff0a88c2b8dcd5449b654a713ac99971b4ab620c20fd source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Renders the TypeScript for opencode's `patch_drop` tool that removes pending patches by symbol or clears all.
 
 - Returns complete TypeScript tool definition with header and error handling
@@ -259,12 +259,12 @@ Renders the TypeScript for opencode's `patch_drop` tool that removes pending pat
 - Validates that exactly one of `qname` or `all` is provided, throws error otherwise
 - Shells out to `trie patch drop` subprocess with appropriate flags
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_patch_list fingerprint=f5f3bac0e07e83cb60c4f3605da6a9b7dafb2e575ca1cf8a3c2cd0b8aeeb736b body_fp=67ab942a35a42493599db73943dbe287496448b92d12c3a3d8fe94e113d8d499 source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_patch_list fingerprint=803b9af5663cb65f69e00d31f64a218c189622acc04e1dfa744cf6f1696d2fe9 body_fp=67ab942a35a42493599db73943dbe287496448b92d12c3a3d8fe94e113d8d499 source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Generate TypeScript tool for opencode that lists pending patches by symbol.
 
 Returns a generated TypeScript tool definition that shells out to `trie patch list` and displays the symbol-grouped patches to the agent. The tool takes no arguments and formats output to show "(no pending patches)" when the command succeeds but produces no output.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_patch_apply fingerprint=8f6bc4d3648fc77a929645dfc45a1c4830fd5c64bcecf47559c83ea3baf8ca98 body_fp=4fb8b6496a919d82febab22605c66e7410555238886c46be13319c371df37005 source_ref=7ba881213606148abcb9329ac86bff6104b7b2e5 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_patch_apply fingerprint=2ac81b62f8afdabeb4d56f19243a1a2682b1b28a26507a4cf45f1a03a043c92c body_fp=4fb8b6496a919d82febab22605c66e7410555238886c46be13319c371df37005 source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Generates TypeScript source for opencode's `patch_apply.ts` tool override.
 
 - Returns template code that wraps `trie patch apply` subprocess calls
@@ -272,16 +272,16 @@ Generates TypeScript source for opencode's `patch_apply.ts` tool override.
 - Generated tool description clarifies that `patch apply` archives intent only — trie generates no code
 - Generated tool description includes gate-coverage output: touched symbols still lacking notes are listed after apply
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_create_symbol fingerprint=a03ed259d181f8928a2c0a5309fe5a50fce1816e14a07757dfe8e0ddefd83b19 body_fp=bee4aa08815e981b49e558f8cca1bc2cb8751df42bb1f18a68e8c3ba2c51ea24 source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_create_symbol fingerprint=2ac81b62f8afdabeb4d56f19243a1a2682b1b28a26507a4cf45f1a03a043c92c body_fp=bee4aa08815e981b49e558f8cca1bc2cb8751df42bb1f18a68e8c3ba2c51ea24 source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Render the `.opencode/tools/create_symbol.ts` override file that stages creation of a new symbol via `trie patch create-symbol`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_rename_symbol fingerprint=c94e67b0117f7b0b6e77a6176791e8fcc4e9975e85a82c76ff2505fefb6d94ed body_fp=c9dc541016882fef30b3c87d72c3f4474797d2b861ba9f672971c2a0df5f1bdd source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_rename_symbol fingerprint=2ac81b62f8afdabeb4d56f19243a1a2682b1b28a26507a4cf45f1a03a043c92c body_fp=c9dc541016882fef30b3c87d72c3f4474797d2b861ba9f672971c2a0df5f1bdd source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Render the `.opencode/tools/rename_symbol.ts` content that stages a symbol rename via `trie patch rename-symbol`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_delete_symbol fingerprint=95b007327a420376dc8fdfba06848b6ddb487d7b5cce02afbd87432be35c8205 body_fp=0ac8474d22da7632afa127028355b26c7853e1ab81b6b31ac99222482f42e9c1 source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_delete_symbol fingerprint=eeb295f6b60dfe234897602f9802bd00f29a6e19301ebf2c0758ba77634f25e4 body_fp=0ac8474d22da7632afa127028355b26c7853e1ab81b6b31ac99222482f42e9c1 source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Render the `.opencode/tools/delete_symbol.ts` source string that stages deletion of an existing symbol via `trie patch delete-symbol`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/tool_override_install:_render_opencode_batch_patch fingerprint=27214e9880e9828e103d04b83f254c7033184fffb288b507a44d0cc826d9bc18 body_fp=337a16163b790f44b2f3747d5dcbfcfa3d8f6b9585b5b0fd5a02fadbc1986dd1 source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->
+<!-- trie:section symbol=trie/tool_override_install:_render_opencode_batch_patch fingerprint=2ac81b62f8afdabeb4d56f19243a1a2682b1b28a26507a4cf45f1a03a043c92c body_fp=337a16163b790f44b2f3747d5dcbfcfa3d8f6b9585b5b0fd5a02fadbc1986dd1 source_ref=7f45133ff0c97c877473c4dde2614bc11c8fdf56 role=io -->
 Render the `.opencode/tools/batch_patch.ts` custom tool that pipes a JSON array of patch/create items to `trie patch create-batch` via stdin.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/tool_override_install:_render_claude_code_hooks_json fingerprint=2b004e51b57a5be1e5d0181eb5239d9e0484ae53fc4b78e3acda4c59131e21ed body_fp=cf4a62f79da4db7968bb2442a49ed25ab95898bfb70b197684a4a851f62d4686 source_ref=6967f23962876ba37085c9375bb9b409583814a1 role=io -->

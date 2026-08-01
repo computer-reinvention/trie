@@ -1,13 +1,13 @@
 ---
 trie_version: 0.2.1
 source: tests/test_gate.py
-file_fingerprint: b6421c3b5b56d6c143faebc1cc3e544af8a1cacbc46a45c0eb9de3ca81bdc15a
-last_synced_at: '2026-07-29T23:17:26Z'
+file_fingerprint: 3a7a12a5078ebc2b026a456d2ca997032eaacac3ec42b36b54f4250d4577d7b7
+last_synced_at: '2026-08-01T00:20:37Z'
 description: "Spec for `trie gate` \u2014 the commit guard as one command."
 defines:
 - kind: module
   qualified_name: tests/test_gate:__module__
-  lines: 1-193
+  lines: 1-226
 - kind: constant
   qualified_name: tests/test_gate:runner
   lines: 16-16
@@ -38,8 +38,11 @@ defines:
 - kind: function
   qualified_name: tests/test_gate:test_patch_create_suggests_close_qnames_on_miss
   lines: 165-192
+- kind: function
+  qualified_name: tests/test_gate:test_patch_create_batch_reports_did_you_mean
+  lines: 195-225
 incoming_refs: 0
-outgoing_refs: 14
+outgoing_refs: 26
 ---
 <!-- trie:section symbol=tests/test_gate:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=344269b0874680fdcac103211c4b3981e2baaa650449fa871f98ed18e4b47d17 source_ref=1dd00ca9aebbf98ecbad24aef4365f2e5a630bc0 role=test -->
 Integration tests for the `trie gate` commit-guard command, covering no-op, verify failure, intent-gate blocking, lock contention, and clean-pass scenarios.
@@ -76,4 +79,7 @@ Assert that `trie gate` emits no version-skew warning when the project's `pyproj
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_gate:test_patch_create_suggests_close_qnames_on_miss fingerprint=6f350483096d3c2405b084146756ccad717d74e4e1c049ea42046a85f9654956 body_fp=f25fbf3097f53c003fcacaa7f1491044dd4f9bfb217800d95240bb237b6ae6c3 source_ref=a1751f70f339ca1dd429f735fa9eef29e1b549a3 role=test -->
 Assert that `patch create` with an unknown qname outputs "did you mean" candidates and mentions `--gone` as a secondary hint, not the primary error.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_gate:test_patch_create_batch_reports_did_you_mean fingerprint=b5218c92c5e26c8c37c3d1028aa494697c8ff1a88b6612a08d92bcb2c76fea84 body_fp=d7212e99ee40ff3456d51e1877e8c62588b1b51a3799f77f31183c4501669afc source_ref=7b8f2a7a07be98865520def7215e885563a70208 role=test -->
+Verify that `patch create-batch` includes `did_you_mean` candidates in JSON result rows when a qualified name is not found in the graph.
 <!-- trie:end -->

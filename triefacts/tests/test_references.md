@@ -1,12 +1,12 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.2.1
 source: tests/test_references.py
-file_fingerprint: 2fdf44916f20a130ea326a24211998cb1e4938e538a0ba45d36ee96cd481d6a7
-last_synced_at: '2026-06-03T20:59:38Z'
+file_fingerprint: 31d34bead6a71a40d8647b7c19d2fb34878be91c5edb289e504f52798bb97687
+last_synced_at: '2026-08-01T00:20:41Z'
 defines:
 - kind: module
   qualified_name: tests/test_references:__module__
-  lines: 1-234
+  lines: 1-263
 - kind: function
   qualified_name: tests/test_references:_refs_by_src
   lines: 8-13
@@ -67,8 +67,14 @@ defines:
 - kind: function
   qualified_name: tests/test_references:test_module_attribute_no_self_edge
   lines: 222-233
+- kind: function
+  qualified_name: tests/test_references:test_function_local_import_creates_edge
+  lines: 236-246
+- kind: function
+  qualified_name: tests/test_references:test_import_nested_in_conditional_creates_edge
+  lines: 249-262
 incoming_refs: 0
-outgoing_refs: 19
+outgoing_refs: 21
 ---
 <!-- trie:section symbol=tests/test_references:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=d05f7a619001e77a71db28d519558a058d7cdd1a63f5e2942ccaf592eb2f5256 source_ref=cfc6a4f3993d1a1359e67c4f055e983eff884192 role=test-infrastructure -->
 Tests for reference extraction functionality in the trie.parse.references module.
@@ -159,4 +165,10 @@ Verifies that attribute access on local variables does not create spurious modul
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_references:test_module_attribute_no_self_edge fingerprint=33c0b251e18a1a4d26a6420f0b878d0abf794b7056b2139951eb33a3bc69dac7 body_fp=cf087222731f51db630cb8d43f7c97a4b64b4385ea25a86b8a2c6284e249cd0e source_ref=cfc6a4f3993d1a1359e67c4f055e983eff884192 role=source-parsing -->
 Verifies that a function referencing itself via module attribute access does not create a self-edge in the reference graph.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_references:test_function_local_import_creates_edge fingerprint=a232ab954e3520c4556725e43c94bfa37a34c1b8bbd10b59aa17d4007fa3cf3e body_fp=e29e0549d2e2cf9cae791a9feef6a81a7994c4d2b1efed873e1545399eccc498 source_ref=f8938b1ad034eede593979934b3db06bbce8988f role=test -->
+Assert that a `from x import y` statement inside a function body still produces a reference edge to the imported symbol.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_references:test_import_nested_in_conditional_creates_edge fingerprint=7313287cc577e4b20653e5bba3e336db0057a693e832d6dcf8b3ed2243f3fb92 body_fp=9709fd5f62a73f611f07b4f5fadd58b280b3bdef0e99b039fe07ebc9d48e619f source_ref=f8938b1ad034eede593979934b3db06bbce8988f role=test -->
+Assert that imports nested inside `if`/`try` blocks (e.g. `TYPE_CHECKING` guards) still bind names and produce reference edges.
 <!-- trie:end -->

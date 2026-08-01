@@ -594,9 +594,14 @@ def test_build_server_wire_names_bind_to_internal_methods(populated_project: Pat
     server, t = build_server(populated_project)
     try:
         tools_by_name = {tool.name: tool for tool in server._tool_manager.list_tools()}
-        assert tools_by_name["grep"].fn == t.grep
-        assert tools_by_name["read"].fn == t.read
-        assert tools_by_name["trace"].fn == t.trace
+        # Query tools are registered through the `_textified` wrapper (pretty
+        # text on the wire); the underlying bound method survives as
+        # `__wrapped__` via functools.wraps.
+        assert tools_by_name["grep"].fn.__wrapped__ == t.grep
+        assert tools_by_name["read"].fn.__wrapped__ == t.read
+        assert tools_by_name["trace"].fn.__wrapped__ == t.trace
+        # Edit tools bind directly — structured envelopes on purpose.
+        assert tools_by_name["patch"].fn == t.patch
     finally:
         t.close()
 
@@ -1054,5 +1059,122 @@ def test_read_history_flag_surfaces_intent_trail(populated_project: Path):
         # Explain surfaces share the same trail.
         exp = t.explain_symbol("lib:slugify", history=True)
         assert exp.get("history") and exp["history"][0]["title"] == "Make slugs"
+    finally:
+        t.close()
+
+
+# --- fuzzy ranking: graded scores, tests deprioritized ----------------------
+
+
+def test_fuzzy_score_is_graded_not_binary():
+    """Regression: the old exact-substring→100.0 shortcut made every symbol
+    whose name *contained* the query tie at a perfect score, so the winner
+    was decided by ASCII qname order (tests beat production). Scores must
+    grade: equality > prefix > substring, and tighter containers > sprawl."""
+    from trie.mcp_server import _fuzzy_score
+
+    exact = _fuzzy_score("write_stamp", "write_stamp")
+    prefix = _fuzzy_score("write_stamp", "write_stamp_atomic")
+    tight_substr = _fuzzy_score("write_stamp", "do_write_stamp")
+    long_substr = _fuzzy_score(
+        "write_stamp", "test_write_stamp_is_atomic_no_partial_files_left_behind"
+    )
+    assert exact == 100.0
+    assert exact > prefix > tight_substr > long_substr
+
+
+@pytest.fixture
+def project_with_tests(tmp_path: Path) -> Path:
+    """Production symbol + a same-named test twin, both indexed."""
+    (tmp_path / "trie.toml").write_text(PROJECT_TOML)
+    (tmp_path / "lib.py").write_text(
+        "def write_stamp(path, data):\n"
+        '    """Persist the freshness stamp."""\n'
+        "    return (path, data)\n"
+    )
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    (tests_dir / "test_lib.py").write_text(
+        "from lib import write_stamp\n\n\n"
+        "def test_write_stamp_is_atomic_no_partial_files_left_behind():\n"
+        "    assert write_stamp('p', 'd')\n\n\n"
+        "def test_write_stamp_round_trip():\n"
+        "    assert write_stamp('p', 'd')\n"
+    )
+    config, _ = Config.find_and_load(tmp_path)
+    from trie.graph.store import Store
+
+    with Store(tmp_path / ".trie" / "graph.db") as store:
+        scan_project(project_root=tmp_path, config=config, store=store)
+    return tmp_path
+
+
+def test_grep_symbol_prefers_production_over_test_twin(project_with_tests: Path):
+    """`write_stamp` must resolve to lib:write_stamp, not the test that
+    contains the query as a substring — trace_flow/explain_flow inherit this
+    resolution, so a wrong pick silently traces the wrong symbol."""
+    t = TrieTools(project_with_tests)
+    try:
+        result = t.grep_symbol("write_stamp")
+        assert result["match"]["qname"] == "lib:write_stamp"
+        # The test twin is still findable, just ranked below.
+        similar_qnames = {s["qname"] for s in result["similar"]}
+        assert any("test_write_stamp" in q for q in similar_qnames)
+    finally:
+        t.close()
+
+
+def test_trace_flow_fragment_resolves_to_production_symbol(project_with_tests: Path):
+    t = TrieTools(project_with_tests)
+    try:
+        result = t.trace_flow("write_stamp", "write_stamp")
+        assert result["from_qname"] == "lib:write_stamp"
+    finally:
+        t.close()
+
+
+def test_grep_entry_points_excludes_test_symbols(project_with_tests: Path):
+    """A fixture referenced by two tests is not an architectural entry point:
+    tests/ symbols are excluded from the candidate pool outright."""
+    t = TrieTools(project_with_tests)
+    try:
+        # lib:write_stamp has inbound_count >= 2 (imported + called twice).
+        result = t.grep_entry_points("write stamp persistence")
+        qnames = {h["qname"] for h in result.get("hits", [])}
+        assert all(not q.startswith("tests/") for q in qnames)
+    finally:
+        t.close()
+
+
+# --- MCP wire format: query tools carry rendered text -----------------------
+
+
+def test_mcp_wire_query_tools_return_text(populated_project: Path):
+    """Pretty text is the default on the MCP surface too: query tools return
+    rendered text (records, arrow chains, verbatim prose), not JSON. Edit
+    tools stay structured — callers branch on their envelope fields."""
+    import asyncio
+
+    from trie.mcp_server import build_server
+
+    server, t = build_server(populated_project)
+    try:
+
+        async def _call(name: str, args: dict) -> str:
+            result = await server.call_tool(name, args)
+            content = result[0] if isinstance(result, tuple) else result
+            block = content[0] if isinstance(content, list) else content
+            return getattr(block, "text", str(block))
+
+        grep_text = asyncio.run(_call("grep", {"predicate": {"name_contains": "slugify"}}))
+        assert "lib:slugify" in grep_text
+        assert not grep_text.lstrip().startswith("{"), "query tools must not emit JSON"
+
+        flow_text = asyncio.run(_call("trace_flow", {"symbol1": "make_url", "symbol2": "slugify"}))
+        assert "→" in flow_text or "paths" in flow_text
+
+        # Edit tool stays structured JSON.
+        list_text = asyncio.run(_call("patch_list", {}))
+        assert list_text.lstrip().startswith("{"), "edit tools keep structured envelopes"
     finally:
         t.close()

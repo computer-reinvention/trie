@@ -88,17 +88,32 @@ def _collect_imports(root: Node, source: bytes) -> _ImportBindings:
       - `import foo as f`            → modules["f"]   = "foo"
       - `import foo.bar as fb`       → modules["fb"]  = "foo/bar"
 
+    Imports are collected at ANY nesting depth, not just module top level:
+    function-local imports (`def f(): from x import y`) are a routine
+    circular-import-avoidance pattern, and skipping them silently dropped the
+    f→y call edge from the graph (breaking trace/explain paths through every
+    lazily-imported callee). The bindings remain one module-wide table, so a
+    name imported inside one function resolves for every body in the file —
+    consistent with this extractor's documented permissive stance (the store
+    drops edges whose targets don't exist; same-name-different-module
+    collisions are rare and accepted).
+
     Relative imports (leading `.`) are skipped — v0.1 has no project root context
     inside the parser to resolve them against.
     """
     symbols: dict[str, str] = {}
     modules: dict[str, str] = {}
 
-    for child in root.named_children:
-        if child.type == "import_from_statement":
-            _absorb_from_import(child, source, symbols, modules)
-        elif child.type == "import_statement":
-            _absorb_plain_import(child, source, modules)
+    def _visit(node: Node) -> None:
+        for child in node.named_children:
+            if child.type == "import_from_statement":
+                _absorb_from_import(child, source, symbols, modules)
+            elif child.type == "import_statement":
+                _absorb_plain_import(child, source, modules)
+            elif child.named_child_count:
+                _visit(child)
+
+    _visit(root)
 
     return _ImportBindings(symbols=symbols, modules=modules)
 

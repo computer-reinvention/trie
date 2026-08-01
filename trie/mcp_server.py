@@ -55,11 +55,13 @@ Example agent wiring (Claude Code's mcp_servers config):
 
 from __future__ import annotations
 
+import functools
 import json
 import re
 import shutil
 import subprocess
 from collections import deque
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -181,8 +183,11 @@ def _close_qname_matches(qname: str, candidates: list[str], *, n: int = 3) -> li
         hits = _process.extract(
             local, list(local_names.values()), scorer=_fuzz.WRatio, limit=n, score_cutoff=30
         )
-        matched_locals = [h[0] for h in hits]
-        ranked = [c for c in same_module if local_names[c] in matched_locals]
+        # Preserve the fuzzy-score order (best first), not the candidate-list
+        # order — the closest correction must lead the suggestion line.
+        rank_of = {name: i for i, (name, _score, _idx) in enumerate(hits)}
+        matched = [c for c in same_module if local_names[c] in rank_of]
+        ranked = sorted(matched, key=lambda c: rank_of[local_names[c]])
     global_hits = _process.extract(qname, candidates, scorer=_fuzz.WRatio, limit=n, score_cutoff=45)
     for h in global_hits:
         if h[0] not in ranked:
@@ -196,17 +201,58 @@ def _close_name_matches(name: str, candidates: list[str], *, n: int = 3) -> list
 
 
 def _fuzzy_score(query: str, text: str) -> float:
-    """Return a 0-100 rapidfuzz WRatio score, short-circuiting to 100.0 on exact substring.
+    """Return a 0-100 graded relevance score for `query` against `text`.
 
-    Used as the single scoring primitive across all fuzzy paths. Exact substring wins
-    unconditionally so that a query like "slugify" always matches a symbol named
-    "slugify_strict" with a perfect score before the ratio path even runs.
+    Grades, highest first — replacing the old unconditional substring→100.0
+    shortcut, which made every symbol whose name merely *contained* the query
+    tie at a perfect score (so `write_stamp` scored identically to
+    `test_write_stamp_is_atomic_no_partial_files_left_behind`, and the winner
+    was decided by ASCII order of qnames — tests beat production symbols):
+
+      - exact match (case-insensitive)      → 100.0
+      - prefix match (`query…`)             → 92.0
+      - substring match                     → 70.0 + up to 20.0 by coverage
+                                              (len(query)/len(text): tighter
+                                              containers score higher)
+      - otherwise                           → rapidfuzz WRatio
+
+    A query still always beats WRatio noise when it literally appears in the
+    text, but containment no longer masquerades as equality.
     """
     if not text:
         return 0.0
-    if query.lower() in text.lower():
+    q, t = query.lower(), text.lower()
+    if q == t:
         return 100.0
-    return _fuzz.WRatio(query, text)
+    if t.startswith(q):
+        return 92.0
+    if q in t:
+        return 70.0 + 20.0 * (len(q) / len(t))
+    return float(_fuzz.WRatio(query, text))
+
+
+def _is_test_symbol(sym: SymbolDetail) -> bool:
+    """Heuristic: does this symbol live in test code?
+
+    Path-based (`tests/` root, nested `/tests/` dirs, `test_*.py` /
+    `conftest.py` files) — there is no structural is_test flag in the graph.
+    Used only to *deprioritize* tests in fuzzy ranking and to exclude them
+    from entry-point candidacy; explicit predicates (`scope_prefix` etc.) are
+    unaffected, and tests remain fully indexed and searchable.
+    """
+    fp = sym.file_path or ""
+    if fp.startswith("tests/") or "/tests/" in fp:
+        return True
+    base = fp.rsplit("/", 1)[-1]
+    return base.startswith("test_") or base == "conftest.py"
+
+
+_TEST_SCORE_FACTOR = 0.85
+"""Multiplicative penalty applied to test symbols' fuzzy scores.
+
+Strong enough that an equally-good production symbol always outranks a test;
+weak enough that a test still surfaces when it is genuinely the best match
+(e.g. the query names the test itself)."""
 
 
 def _score_sym(
@@ -227,6 +273,10 @@ def _score_sym(
     Taking the max rather than averaging means a strong name match isn't dragged down
     by a weak prose match, and a prose-only match is always slightly discounted relative
     to an equally-strong name match.
+
+    Test symbols (see `_is_test_symbol`) are multiplied by `_TEST_SCORE_FACTOR`
+    so production code wins ties everywhere this score is used — search results
+    were drowning in same-named test functions before this penalty existed.
     """
     local_name = (
         sym.qualified_name.split(":")[-1] if ":" in sym.qualified_name else sym.qualified_name
@@ -234,7 +284,10 @@ def _score_sym(
     name_score = _fuzzy_score(query, local_name)
     liner_score = _fuzzy_score(query, sym.one_liner or "") * 0.8
     prose_score = _fuzzy_score(query, prose[:2000]) * prose_weight if prose else 0.0
-    return max(name_score, liner_score, prose_score)
+    score = max(name_score, liner_score, prose_score)
+    if _is_test_symbol(sym):
+        score *= _TEST_SCORE_FACTOR
+    return score
 
 
 def _predicate_is_empty(pred: GrepPredicate) -> bool:
@@ -2722,11 +2775,19 @@ class TrieTools:
                 tele_ctx["result_kind"] = "error"
                 return _error("invalid_argument", "`query` must be a non-empty string.")
 
-            # Pull public hubs as the candidate pool.
+            # Pull public hubs as the candidate pool. Test symbols are
+            # excluded outright — a fixture referenced by two tests is not an
+            # architectural entry point, and with tests in the pool this tool
+            # degenerated into generic prose grep over test files. Fetch a
+            # deeper page than we keep so the post-filter doesn't starve the
+            # pool on test-heavy repos.
             pred = GrepPredicate(public_only=True, inbound_count_min=2)
-            candidates = self.store.grep_symbols(
-                pred, rank_by="inbound_count", limit=self.mcp_cfg.grep_max_limit
+            raw_candidates = self.store.grep_symbols(
+                pred, rank_by="inbound_count", limit=self.mcp_cfg.grep_max_limit * 3
             )
+            candidates = [s for s in raw_candidates if not _is_test_symbol(s)][
+                : self.mcp_cfg.grep_max_limit
+            ]
 
             cutoff = self.mcp_cfg.fuzzy_cutoff
             pre_filter = self.mcp_cfg.fuzzy_prose_pre_filter
@@ -2863,7 +2924,19 @@ class TrieTools:
                 score = _score_sym(sym, h, prose=prose, prose_weight=prose_weight)
                 scored.append((score, h))
 
-            scored.sort(key=lambda x: -x[0])
+            # Score desc, then production before tests, then shorter local
+            # names (a tie between `write_stamp` and anything longer should
+            # resolve to the exact name), then qname for determinism. Before
+            # these tie-breaks, ties fell through to SQL order — ASCII qname
+            # sorting — which is how `tests/…` beat `trie/…` for months.
+            scored.sort(
+                key=lambda x: (
+                    -x[0],
+                    _is_test_symbol(x[1]),
+                    len(x[1].qualified_name.split(":")[-1]),
+                    x[1].qualified_name,
+                )
+            )
 
             one_liner_cap = self.mcp_cfg.grep_one_liner_max_chars
 
@@ -3197,6 +3270,34 @@ class TrieTools:
 # --- server construction ---------------------------------------------------
 
 
+def _textified(fn: Callable[..., dict[str, Any]]) -> Callable[..., str]:
+    """Wrap a dict-returning TrieTools method so it returns rendered text.
+
+    Pretty text is the default on every interaction surface: agents READ tool
+    output, and JSON made them pay for braces, escaped-newline prose, and
+    unicode escapes on every query. The wrapper preserves the method's name,
+    docstring, and parameter signature (FastMCP builds the tool schema from
+    them) and swaps only the return annotation to `str`. The underlying
+    `TrieTools` methods keep returning dicts — tests and programmatic callers
+    (and `trie <cmd> --json` on the CLI, which shares them) are unaffected.
+    """
+    import inspect
+
+    from trie.render import render_envelope
+
+    @functools.wraps(fn)
+    def wrapper(*args: Any, **kwargs: Any) -> str:
+        result = fn(*args, **kwargs)
+        return render_envelope(result) if isinstance(result, dict) else str(result)
+
+    sig = inspect.signature(fn)
+    wrapper.__signature__ = sig.replace(return_annotation=str)  # type: ignore[attr-defined]
+    annotations = dict(getattr(fn, "__annotations__", {}))
+    annotations["return"] = str
+    wrapper.__annotations__ = annotations
+    return wrapper
+
+
 def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     """Construct an MCP server bound to the trie state under `project_root`.
 
@@ -3204,29 +3305,34 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     tests can call tool methods directly without driving the MCP transport, and so the
     CLI subcommands (`trie grep`, `trie read`, `trie trace`) can share the same
     implementation as the MCP wire calls.
+
+    Query tools are registered `_textified`: the wire carries rendered text,
+    not JSON — same data, readable instead of parseable. Edit-pipeline tools
+    stay structured: their envelopes are small and callers branch on fields
+    (`ok`, `staged`, `uncovered`, `did_you_mean`).
     """
     tools = TrieTools(project_root)
     server = FastMCP("trie")
-    # Three operations, three wire names, three identical CLI subcommands.
-    # The underlying methods on TrieTools have the same names, so an agent
-    # calling `trie grep --json ...` from the shell gets a response that's
-    # byte-equivalent to what it would get from the MCP `grep` tool.
-    server.tool(name="grep")(tools.grep)
-    server.tool(name="read")(tools.read)
-    server.tool(name="trace")(tools.trace)
-    server.tool(name="grep_str")(tools.grep_str)
-    server.tool(name="grep_str_all")(tools.grep_str_all)
-    server.tool(name="find_files")(tools.find_files)
-    server.tool(name="read_source")(tools.read_source)
+    # Query tools: text on the wire. The CLI subcommands share the same
+    # underlying methods and offer `--json` for the raw envelope, so the
+    # structured form is always one flag away.
+    server.tool(name="grep")(_textified(tools.grep))
+    server.tool(name="read")(_textified(tools.read))
+    server.tool(name="trace")(_textified(tools.trace))
+    server.tool(name="grep_str")(_textified(tools.grep_str))
+    server.tool(name="grep_str_all")(_textified(tools.grep_str_all))
+    server.tool(name="find_files")(_textified(tools.find_files))
+    server.tool(name="read_source")(_textified(tools.read_source))
     server.tool(name="write_file")(tools.write_file)
-    server.tool(name="grep_entry_points")(tools.grep_entry_points)
-    server.tool(name="grep_symbol")(tools.grep_symbol)
-    server.tool(name="grep_symbol_and_neighbours")(tools.grep_symbol_and_neighbours)
-    server.tool(name="explain_symbol")(tools.explain_symbol)
-    server.tool(name="explain_symbol_references")(tools.explain_symbol_references)
-    server.tool(name="trace_flow")(tools.trace_flow)
-    server.tool(name="explain_flow")(tools.explain_flow)
-    # Edit tools — declare intent (modify/create/delete/rename) then preview/commit
+    server.tool(name="grep_entry_points")(_textified(tools.grep_entry_points))
+    server.tool(name="grep_symbol")(_textified(tools.grep_symbol))
+    server.tool(name="grep_symbol_and_neighbours")(_textified(tools.grep_symbol_and_neighbours))
+    server.tool(name="explain_symbol")(_textified(tools.explain_symbol))
+    server.tool(name="explain_symbol_references")(_textified(tools.explain_symbol_references))
+    server.tool(name="trace_flow")(_textified(tools.trace_flow))
+    server.tool(name="explain_flow")(_textified(tools.explain_flow))
+    # Edit tools — declare intent (modify/create/delete/rename) then preview/commit.
+    # Structured on purpose: callers branch on envelope fields.
     server.tool(name="patch")(tools.patch)
     server.tool(name="batch_patch")(tools.batch_patch)
     server.tool(name="create_symbol")(tools.create_symbol)
@@ -3238,11 +3344,11 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     server.tool(name="patch_list")(tools.patch_list)
     server.tool(name="patch_apply")(tools.patch_apply)
     # Project-level queries.
-    server.tool(name="summary")(tools.summary)
-    server.tool(name="symbols_by_file")(tools.symbols_by_file)
-    server.tool(name="file_triefact")(tools.file_triefact)
-    server.tool(name="activity")(tools.activity)
-    server.tool(name="blast_radius")(tools.blast_radius)
+    server.tool(name="summary")(_textified(tools.summary))
+    server.tool(name="symbols_by_file")(_textified(tools.symbols_by_file))
+    server.tool(name="file_triefact")(_textified(tools.file_triefact))
+    server.tool(name="activity")(_textified(tools.activity))
+    server.tool(name="blast_radius")(_textified(tools.blast_radius))
     return server, tools
 
 
