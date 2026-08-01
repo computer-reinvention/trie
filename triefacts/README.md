@@ -69,6 +69,7 @@ The most-referenced public symbols — start reading here.
 - [test_references_typescript.md](tests/test_references_typescript.md)
 - [test_refresh_lock.md](tests/test_refresh_lock.md) — Tests for the refresh lock + queue.
 - [test_registry.md](tests/test_registry.md)
+- [test_render.md](tests/test_render.md) — Tests for trie/render.py — the plain-text envelope renderer that is the
 - [test_reporter.md](tests/test_reporter.md)
 - [test_resolver.md](tests/test_resolver.md) — Tests for the tree-sitter + LSP resolver seam.
 - [test_roles.md](tests/test_roles.md) — Tests for role tagging: durable persistence, derived taxonomy, and the
@@ -129,6 +130,7 @@ The most-referenced public symbols — start reading here.
 - [mcp_server.md](trie/mcp_server.md) — MCP server exposing the trie triefact tree + symbol graph to coding agents.
 - [models.md](trie/models.md)
 - [refresh_lock.md](trie/refresh_lock.md) — Mutual exclusion + coalescing queue for `trie refresh`.
+- [render.md](trie/render.md) — Plain-text rendering for tool envelopes — the default output format on
 - [reporter.md](trie/reporter.md)
 - [scan.md](trie/scan.md)
 - [scope.md](trie/scope.md)

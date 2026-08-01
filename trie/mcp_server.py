@@ -55,11 +55,13 @@ Example agent wiring (Claude Code's mcp_servers config):
 
 from __future__ import annotations
 
+import functools
 import json
 import re
 import shutil
 import subprocess
 from collections import deque
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -3268,6 +3270,34 @@ class TrieTools:
 # --- server construction ---------------------------------------------------
 
 
+def _textified(fn: Callable[..., dict[str, Any]]) -> Callable[..., str]:
+    """Wrap a dict-returning TrieTools method so it returns rendered text.
+
+    Pretty text is the default on every interaction surface: agents READ tool
+    output, and JSON made them pay for braces, escaped-newline prose, and
+    unicode escapes on every query. The wrapper preserves the method's name,
+    docstring, and parameter signature (FastMCP builds the tool schema from
+    them) and swaps only the return annotation to `str`. The underlying
+    `TrieTools` methods keep returning dicts — tests and programmatic callers
+    (and `trie <cmd> --json` on the CLI, which shares them) are unaffected.
+    """
+    import inspect
+
+    from trie.render import render_envelope
+
+    @functools.wraps(fn)
+    def wrapper(*args: Any, **kwargs: Any) -> str:
+        result = fn(*args, **kwargs)
+        return render_envelope(result) if isinstance(result, dict) else str(result)
+
+    sig = inspect.signature(fn)
+    wrapper.__signature__ = sig.replace(return_annotation=str)  # type: ignore[attr-defined]
+    annotations = dict(getattr(fn, "__annotations__", {}))
+    annotations["return"] = str
+    wrapper.__annotations__ = annotations
+    return wrapper
+
+
 def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     """Construct an MCP server bound to the trie state under `project_root`.
 
@@ -3275,29 +3305,34 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     tests can call tool methods directly without driving the MCP transport, and so the
     CLI subcommands (`trie grep`, `trie read`, `trie trace`) can share the same
     implementation as the MCP wire calls.
+
+    Query tools are registered `_textified`: the wire carries rendered text,
+    not JSON — same data, readable instead of parseable. Edit-pipeline tools
+    stay structured: their envelopes are small and callers branch on fields
+    (`ok`, `staged`, `uncovered`, `did_you_mean`).
     """
     tools = TrieTools(project_root)
     server = FastMCP("trie")
-    # Three operations, three wire names, three identical CLI subcommands.
-    # The underlying methods on TrieTools have the same names, so an agent
-    # calling `trie grep --json ...` from the shell gets a response that's
-    # byte-equivalent to what it would get from the MCP `grep` tool.
-    server.tool(name="grep")(tools.grep)
-    server.tool(name="read")(tools.read)
-    server.tool(name="trace")(tools.trace)
-    server.tool(name="grep_str")(tools.grep_str)
-    server.tool(name="grep_str_all")(tools.grep_str_all)
-    server.tool(name="find_files")(tools.find_files)
-    server.tool(name="read_source")(tools.read_source)
+    # Query tools: text on the wire. The CLI subcommands share the same
+    # underlying methods and offer `--json` for the raw envelope, so the
+    # structured form is always one flag away.
+    server.tool(name="grep")(_textified(tools.grep))
+    server.tool(name="read")(_textified(tools.read))
+    server.tool(name="trace")(_textified(tools.trace))
+    server.tool(name="grep_str")(_textified(tools.grep_str))
+    server.tool(name="grep_str_all")(_textified(tools.grep_str_all))
+    server.tool(name="find_files")(_textified(tools.find_files))
+    server.tool(name="read_source")(_textified(tools.read_source))
     server.tool(name="write_file")(tools.write_file)
-    server.tool(name="grep_entry_points")(tools.grep_entry_points)
-    server.tool(name="grep_symbol")(tools.grep_symbol)
-    server.tool(name="grep_symbol_and_neighbours")(tools.grep_symbol_and_neighbours)
-    server.tool(name="explain_symbol")(tools.explain_symbol)
-    server.tool(name="explain_symbol_references")(tools.explain_symbol_references)
-    server.tool(name="trace_flow")(tools.trace_flow)
-    server.tool(name="explain_flow")(tools.explain_flow)
-    # Edit tools — declare intent (modify/create/delete/rename) then preview/commit
+    server.tool(name="grep_entry_points")(_textified(tools.grep_entry_points))
+    server.tool(name="grep_symbol")(_textified(tools.grep_symbol))
+    server.tool(name="grep_symbol_and_neighbours")(_textified(tools.grep_symbol_and_neighbours))
+    server.tool(name="explain_symbol")(_textified(tools.explain_symbol))
+    server.tool(name="explain_symbol_references")(_textified(tools.explain_symbol_references))
+    server.tool(name="trace_flow")(_textified(tools.trace_flow))
+    server.tool(name="explain_flow")(_textified(tools.explain_flow))
+    # Edit tools — declare intent (modify/create/delete/rename) then preview/commit.
+    # Structured on purpose: callers branch on envelope fields.
     server.tool(name="patch")(tools.patch)
     server.tool(name="batch_patch")(tools.batch_patch)
     server.tool(name="create_symbol")(tools.create_symbol)
@@ -3309,11 +3344,11 @@ def build_server(project_root: Path) -> tuple[FastMCP, TrieTools]:
     server.tool(name="patch_list")(tools.patch_list)
     server.tool(name="patch_apply")(tools.patch_apply)
     # Project-level queries.
-    server.tool(name="summary")(tools.summary)
-    server.tool(name="symbols_by_file")(tools.symbols_by_file)
-    server.tool(name="file_triefact")(tools.file_triefact)
-    server.tool(name="activity")(tools.activity)
-    server.tool(name="blast_radius")(tools.blast_radius)
+    server.tool(name="summary")(_textified(tools.summary))
+    server.tool(name="symbols_by_file")(_textified(tools.symbols_by_file))
+    server.tool(name="file_triefact")(_textified(tools.file_triefact))
+    server.tool(name="activity")(_textified(tools.activity))
+    server.tool(name="blast_radius")(_textified(tools.blast_radius))
     return server, tools
 
 

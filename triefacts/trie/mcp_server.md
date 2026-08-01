@@ -1,231 +1,234 @@
 ---
 trie_version: 0.2.1
 source: trie/mcp_server.py
-file_fingerprint: 402659ab98eb9326a77d74fb493c572f0856718f4dacf5670e11a0cd88055039
-last_synced_at: '2026-08-01T00:21:07Z'
+file_fingerprint: fe3b24b2eecfb55f6f3cfde877d68d5fcc169beeb930d373a6335ddf4aa6dff3
+last_synced_at: '2026-08-01T01:14:42Z'
 description: MCP server exposing the trie triefact tree + symbol graph to coding agents.
 defines:
 - kind: module
   qualified_name: trie/mcp_server:__module__
-  lines: 1-3348
+  lines: 1-3383
 - kind: class
   qualified_name: trie/mcp_server:RipgrepNotFoundError
-  lines: 77-89
+  lines: 79-91
 - kind: function
   qualified_name: trie/mcp_server:_require_ripgrep
-  lines: 92-107
+  lines: 94-109
 - kind: function
   qualified_name: trie/mcp_server:_error
-  lines: 110-129
+  lines: 112-131
 - kind: function
   qualified_name: trie/mcp_server:_truncate
-  lines: 132-136
+  lines: 134-138
 - kind: function
   qualified_name: trie/mcp_server:_symbol_summary
-  lines: 139-145
+  lines: 141-147
 - kind: constant
   qualified_name: trie/mcp_server:_URL_SCHEME_RE
-  lines: 148-148
+  lines: 150-150
 - kind: constant
   qualified_name: trie/mcp_server:_WIN_DRIVE_RE
-  lines: 149-149
+  lines: 151-151
 - kind: function
   qualified_name: trie/mcp_server:_looks_like_qname
-  lines: 152-165
+  lines: 154-167
 - kind: function
   qualified_name: trie/mcp_server:_close_qname_matches
-  lines: 168-193
+  lines: 170-195
 - kind: function
   qualified_name: trie/mcp_server:_close_name_matches
-  lines: 196-198
+  lines: 198-200
 - kind: function
   qualified_name: trie/mcp_server:_fuzzy_score
-  lines: 201-229
+  lines: 203-231
 - kind: function
   qualified_name: trie/mcp_server:_is_test_symbol
-  lines: 232-245
+  lines: 234-247
 - kind: constant
   qualified_name: trie/mcp_server:_TEST_SCORE_FACTOR
-  lines: 248-248
+  lines: 250-250
 - kind: function
   qualified_name: trie/mcp_server:_score_sym
-  lines: 256-288
+  lines: 258-290
 - kind: function
   qualified_name: trie/mcp_server:_predicate_is_empty
-  lines: 291-314
+  lines: 293-316
 - kind: function
   qualified_name: trie/mcp_server:_smallest_enclosing
-  lines: 317-336
+  lines: 319-338
 - kind: class
   qualified_name: trie/mcp_server:TrieTools
-  lines: 339-3265
+  lines: 341-3267
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.__init__
-  lines: 353-382
+  lines: 355-384
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.close
-  lines: 384-385
+  lines: 386-387
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.patch
-  lines: 389-444
+  lines: 391-446
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.batch_patch
-  lines: 446-545
+  lines: 448-547
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._blast_radius_brief
-  lines: 547-560
+  lines: 549-562
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.create_symbol
-  lines: 562-611
+  lines: 564-613
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._resolve_create_target
-  lines: 613-617
+  lines: 615-619
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.delete_symbol
-  lines: 619-641
+  lines: 621-643
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.rename_symbol
-  lines: 643-665
+  lines: 645-667
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.blast_radius
-  lines: 667-714
+  lines: 669-716
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.patch_drop
-  lines: 716-729
+  lines: 718-731
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.patch_list
-  lines: 731-771
+  lines: 733-773
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.preview
-  lines: 773-798
+  lines: 775-800
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.commit
-  lines: 800-824
+  lines: 802-826
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.patch_apply
-  lines: 827-829
+  lines: 829-831
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.summary
-  lines: 831-857
+  lines: 833-859
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.activity
-  lines: 859-912
+  lines: 861-914
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.symbols_by_file
-  lines: 914-953
+  lines: 916-955
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.file_triefact
-  lines: 955-1016
+  lines: 957-1018
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep
-  lines: 1020-1179
+  lines: 1022-1181
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._maybe_text_match_fallback
-  lines: 1181-1336
+  lines: 1183-1338
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._fuzzy_prose_fallback
-  lines: 1338-1418
+  lines: 1340-1420
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._text_match_in_scope
-  lines: 1420-1519
+  lines: 1422-1521
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._attribute_text_matches_to_symbols
-  lines: 1521-1544
+  lines: 1523-1546
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._candidate_matches_predicate
-  lines: 1546-1572
+  lines: 1548-1574
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._parse_predicate
-  lines: 1574-1646
+  lines: 1576-1648
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.read
-  lines: 1650-1713
+  lines: 1652-1715
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._strip_line_ref
-  lines: 1716-1727
+  lines: 1718-1729
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._resolve_in_root
-  lines: 1729-1739
+  lines: 1731-1741
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._triefact_view
-  lines: 1741-1829
+  lines: 1743-1831
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._pending_patches_for_file
-  lines: 1831-1872
+  lines: 1833-1874
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._read_symbol
-  lines: 1874-1947
+  lines: 1876-1949
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._digest_history
-  lines: 1949-1970
+  lines: 1951-1972
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._stale_qnames_for_file
-  lines: 1972-1994
+  lines: 1974-1996
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._section_fingerprint
-  lines: 1996-2014
+  lines: 1998-2016
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._staleness_notes
-  lines: 2016-2055
+  lines: 2018-2057
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._prose_for
-  lines: 2057-2094
+  lines: 2059-2096
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._neighbour_summaries
-  lines: 2096-2121
+  lines: 2098-2123
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.trace
-  lines: 2125-2279
+  lines: 2127-2281
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_str
-  lines: 2283-2442
+  lines: 2285-2444
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_str_all
-  lines: 2444-2557
+  lines: 2446-2559
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.read_source
-  lines: 2559-2617
+  lines: 2561-2619
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.write_file
-  lines: 2619-2679
+  lines: 2621-2681
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.find_files
-  lines: 2681-2752
+  lines: 2683-2754
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_entry_points
-  lines: 2754-2845
+  lines: 2756-2847
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_symbol
-  lines: 2847-2960
+  lines: 2849-2962
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.grep_symbol_and_neighbours
-  lines: 2962-2988
+  lines: 2964-2990
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_symbol
-  lines: 2990-3074
+  lines: 2992-3076
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_symbol_references
-  lines: 3076-3139
+  lines: 3078-3141
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.trace_flow
-  lines: 3141-3199
+  lines: 3143-3201
 - kind: method
   qualified_name: trie/mcp_server:TrieTools.explain_flow
-  lines: 3201-3245
+  lines: 3203-3247
 - kind: method
   qualified_name: trie/mcp_server:TrieTools._suggest_for_qname
-  lines: 3249-3265
+  lines: 3251-3267
+- kind: function
+  qualified_name: trie/mcp_server:_textified
+  lines: 3273-3298
 - kind: function
   qualified_name: trie/mcp_server:build_server
-  lines: 3271-3317
+  lines: 3301-3352
 - kind: function
   qualified_name: trie/mcp_server:run_stdio
-  lines: 3320-3327
+  lines: 3355-3362
 - kind: function
   qualified_name: trie/mcp_server:main
-  lines: 3330-3347
-incoming_refs: 144
-outgoing_refs: 110
+  lines: 3365-3382
+incoming_refs: 146
+outgoing_refs: 111
 ---
 <!-- trie:section symbol=trie/mcp_server:__module__ fingerprint=3284d8c13d256ba29737fe73bd125bfd7eb252402a6dc4f17f7a567587209005 body_fp=7fe3b54f1ffb2c5cf0bf8fb619733212b2701ce59504815e5ef75a07ada4e768 source_ref=f0193a6b7b7fab56bcbd2ee55d7eb86792976b97 role=mcp-server -->
 MCP server exposing trie's triefact tree and symbol graph to coding agents over stdio.
@@ -736,15 +739,19 @@ Generate suggestion text for `not_found` errors by fuzzy-matching the failed qna
 - Uses qualified name matching first, then falls back to local name matching if no qname matches
 - Returns None only when no fuzzy matches are found (rare case)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/mcp_server:build_server fingerprint=ccada3c83ab2a413e5211220ba4e05071524543fed482f54060ec01e2e03e392 body_fp=2a1c5e4cb0c6b63ce51f4789ac9ff91aeaea4fb3e3838ead0e0885cd7334e661 source_ref=df8a5cd8065a92017ff6c2705df9e5afb2e8cd8f role=orchestration -->
+<!-- trie:section symbol=trie/mcp_server:_textified fingerprint=efb8cbe7e50b64d4210f88926ca4c7da3c63a464581af9abdd992ef4a10f2ee1 body_fp=0c7ba68aacf58c29709acd026d7a5ac081b542d8fda9e3ae8471887bdebedf93 source_ref=32f6d8a6fe3b3d0cf7e0ab6f73249c472a5fc2f3 role=util -->
+Wrap a dict-returning `TrieTools` method so it returns rendered text via `render_envelope`, preserving the original name, docstring, and signature for FastMCP schema generation.
+
+- `fn`: the wrapped callable's return annotation is replaced with `str`; its dict return is unchanged for non-MCP callers.
+<!-- trie:end -->
+<!-- trie:section symbol=trie/mcp_server:build_server fingerprint=740b60461ab96ac221e3a76f6c46d4d9bca0dd0a9553e1a53db353542d8abc66 body_fp=e20fe88dcb3754dd7fb0e380e2847a004ead617979e1d1d8bf49a7152fd5cf36 source_ref=32f6d8a6fe3b3d0cf7e0ab6f73249c472a5fc2f3 role=orchestration -->
 Construct an MCP server with all trie tools registered from a TrieTools instance.
 
 - Returns tuple of (FastMCP server, TrieTools) for testing and CLI reuse
-- Registers 11 core tools: grep/read/trace family plus extended search/explain functions
-- Registers 4 file tools: grep_str_all, find_files, read_source, write_file
-- Registers 10 edit tools: adds `batch_patch` to the create/modify/delete/rename workflow with preview/commit
+- Query tools (grep/read/trace family, search/explain, file ops, project queries) are wrapped via `_textified` — wire carries rendered text, not JSON
+- Edit tools (patch/create/delete/rename/preview/commit family) stay structured so callers can branch on envelope fields
+- Registers 10 edit tools: `batch_patch`, create/modify/delete/rename workflow with preview/commit
 - Registers 5 project-level query tools: summary, symbols_by_file, file_triefact, activity, blast_radius
-- AGM tools and desktop-only helpers (all_symbols, all_edges, system_model) are no longer registered
 <!-- trie:end -->
 <!-- trie:section symbol=trie/mcp_server:run_stdio fingerprint=c57b100fd07ba8bcfcaedebb2648cbe5949b2106b69128d814bb6c633382c744 body_fp=8a8cba0ff5e958f81c55546e70cad6b2d11b39ce9a25aa725ed997e48c4d1089 source_ref=88dd24eddd3b68c97efef6072f01ae2eb29d1a89 role=mcp-server -->
 Run the MCP server over stdio for the project at `project_root`.

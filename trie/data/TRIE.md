@@ -162,11 +162,16 @@ trie patch drop          [--qname QNAME | --all]
 trie patch apply         [--note STR]   (records notes; generates no code)
 ```
 
-CLI-specific behaviour:
-- **`trie grep` / `trie read` / `trie trace`** output Rich tables /
-  structured prose on a terminal and plain untruncated records when
-  piped; pass `--json` for the raw envelope. The other query commands
-  are JSON-only and accept no `--json` flag.
+Output format (both surfaces):
+- **Formatted text is the default everywhere.** CLI query commands and
+  MCP query tools render compact records, arrow call-chains, and
+  verbatim prose blocks — the same data as the old JSON envelopes,
+  readable instead of parseable. On the CLI, pass `--json` on any query
+  command for the raw envelope when you need machine-parseable
+  structure.
+- **Edit-pipeline tools stay structured** (`patch`, `batch_patch`,
+  `patch_apply`, …): their envelopes are small and you branch on fields
+  like `ok`, `uncovered`, and `did_you_mean`.
 - **`trie sync --file X`** regenerates only the file's *stale* symbols
   (fresh sections pass through without an LLM call; a fully-fresh file
   is a free no-op). Pass `--force` for a full fresh rewrite.

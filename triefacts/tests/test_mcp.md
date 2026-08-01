@@ -1,13 +1,13 @@
 ---
 trie_version: 0.2.1
 source: tests/test_mcp.py
-file_fingerprint: 39eacbbe203136ca72727bac9f171a692f5292bf90b5ee4407c829ce99090a07
-last_synced_at: '2026-08-01T00:20:43Z'
+file_fingerprint: 5447bd92f06cadcac330100492c33f1afe405bc083502fe89dd1cd73c1425448
+last_synced_at: '2026-08-01T01:14:39Z'
 description: 'Tests for the MCP tool surface: `grep`, `read`, `trace`.'
 defines:
 - kind: module
   qualified_name: tests/test_mcp:__module__
-  lines: 1-1142
+  lines: 1-1181
 - kind: constant
   qualified_name: tests/test_mcp:PROJECT_TOML
   lines: 21-30
@@ -160,123 +160,126 @@ defines:
   lines: 558-581
 - kind: function
   qualified_name: tests/test_mcp:test_build_server_wire_names_bind_to_internal_methods
-  lines: 584-601
+  lines: 584-606
 - kind: function
   qualified_name: tests/test_mcp:dual_rank_project
-  lines: 610-667
+  lines: 615-672
 - kind: function
   qualified_name: tests/test_mcp:test_grep_entry_points_niche_ranks_before_hub
-  lines: 670-693
+  lines: 675-698
 - kind: function
   qualified_name: tests/test_mcp:test_grep_entry_points_hits_carry_score
-  lines: 696-708
+  lines: 701-713
 - kind: function
   qualified_name: tests/test_mcp:test_grep_symbol_typo_tolerance
-  lines: 711-717
+  lines: 716-722
 - kind: function
   qualified_name: tests/test_mcp:test_grep_symbol_returns_score_field
-  lines: 720-728
+  lines: 725-733
 - kind: function
   qualified_name: tests/test_mcp:test_grep_fuzzy_prose_fallback
-  lines: 731-746
+  lines: 736-751
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_fuzzy_fallback
-  lines: 749-759
+  lines: 754-764
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_fuzzy_fallback_finds_close_name
-  lines: 762-778
+  lines: 767-783
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_all_finds_non_indexed_file
-  lines: 784-790
+  lines: 789-795
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_all_attributes_indexed_hits_to_symbols
-  lines: 793-797
+  lines: 798-802
 - kind: function
   qualified_name: tests/test_mcp:test_grep_str_default_does_not_see_non_indexed
-  lines: 800-805
+  lines: 805-810
 - kind: function
   qualified_name: tests/test_mcp:test_find_files_by_extension
-  lines: 808-812
+  lines: 813-817
 - kind: function
   qualified_name: tests/test_mcp:test_find_files_by_bare_name
-  lines: 815-818
+  lines: 820-823
 - kind: function
   qualified_name: tests/test_mcp:test_find_files_indexed_only
-  lines: 821-825
+  lines: 826-830
 - kind: function
   qualified_name: tests/test_mcp:test_find_files_prunes_trie_dir
-  lines: 828-831
+  lines: 833-836
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_non_indexed_file
-  lines: 834-839
+  lines: 839-844
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_offset_limit
-  lines: 842-847
+  lines: 847-852
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_missing_file_errors
-  lines: 850-854
+  lines: 855-859
 - kind: function
   qualified_name: tests/test_mcp:test_read_source_directory_errors
-  lines: 857-861
+  lines: 862-866
 - kind: function
   qualified_name: tests/test_mcp:test_blast_radius_reports_cascade
-  lines: 864-870
+  lines: 869-875
 - kind: function
   qualified_name: tests/test_mcp:test_blast_radius_unknown_symbol_errors
-  lines: 873-877
+  lines: 878-882
 - kind: function
   qualified_name: tests/test_mcp:test_write_file_creates_new_file
-  lines: 880-886
+  lines: 885-891
 - kind: function
   qualified_name: tests/test_mcp:test_write_file_refuses_clobber_without_overwrite
-  lines: 889-894
+  lines: 894-899
 - kind: function
   qualified_name: tests/test_mcp:test_write_file_overwrite_flag
-  lines: 897-902
+  lines: 902-907
 - kind: function
   qualified_name: tests/test_mcp:test_write_file_indexed_path_flags_needs_sync
-  lines: 905-909
+  lines: 910-914
 - kind: function
   qualified_name: tests/test_mcp:test_write_file_outside_root_errors
-  lines: 912-916
+  lines: 917-921
 - kind: function
   qualified_name: tests/test_mcp:test_batch_patch_stages_mixed_items
-  lines: 919-933
+  lines: 924-938
 - kind: function
   qualified_name: tests/test_mcp:test_batch_patch_reports_bad_items_without_aborting
-  lines: 936-950
+  lines: 941-955
 - kind: function
   qualified_name: tests/test_mcp:test_batch_patch_empty_list_errors
-  lines: 953-956
+  lines: 958-961
 - kind: function
   qualified_name: tests/test_mcp:test_read_warns_when_prose_is_stale
-  lines: 962-997
+  lines: 967-1002
 - kind: function
   qualified_name: tests/test_mcp:test_read_warns_when_graph_itself_is_stale
-  lines: 1000-1014
+  lines: 1005-1019
 - kind: function
   qualified_name: tests/test_mcp:test_read_has_no_stale_warning_when_fresh
-  lines: 1017-1026
+  lines: 1022-1031
 - kind: function
   qualified_name: tests/test_mcp:test_read_history_flag_surfaces_intent_trail
-  lines: 1029-1058
+  lines: 1034-1063
 - kind: function
   qualified_name: tests/test_mcp:test_fuzzy_score_is_graded_not_binary
-  lines: 1064-1078
+  lines: 1069-1083
 - kind: function
   qualified_name: tests/test_mcp:project_with_tests
-  lines: 1082-1104
+  lines: 1087-1109
 - kind: function
   qualified_name: tests/test_mcp:test_grep_symbol_prefers_production_over_test_twin
-  lines: 1107-1119
+  lines: 1112-1124
 - kind: function
   qualified_name: tests/test_mcp:test_trace_flow_fragment_resolves_to_production_symbol
-  lines: 1122-1128
+  lines: 1127-1133
 - kind: function
   qualified_name: tests/test_mcp:test_grep_entry_points_excludes_test_symbols
-  lines: 1131-1141
+  lines: 1136-1146
+- kind: function
+  qualified_name: tests/test_mcp:test_mcp_wire_query_tools_return_text
+  lines: 1152-1180
 incoming_refs: 0
-outgoing_refs: 127
+outgoing_refs: 129
 ---
 <!-- trie:section symbol=tests/test_mcp:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=8aae9c0160792068985e2d8f76d0fb26134f6f6b03e5f03d32d39b128db471ad source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Tests for MCP tool surface (grep, read, trace) via direct TrieTools invocation.
@@ -507,11 +510,12 @@ Verify that build_server registers all expected tools in the FastMCP server.
 - Core tools: `grep`, `read`, `trace` must be available
 - Extended toolset: 8 additional tools including `grep_str`, `explain_symbol`, `trace_flow`
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_mcp:test_build_server_wire_names_bind_to_internal_methods fingerprint=a480374391cd52c59bd6c51db2664d53e9150773ce64b5a08555c94f8cf832c5 body_fp=924f52c92dae919032980f65f3862c35e5efa14c489cb3b1e96fd0205a28b840 source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
-Verifies that MCP tool names directly dispatch to corresponding TrieTools methods.
+<!-- trie:section symbol=tests/test_mcp:test_build_server_wire_names_bind_to_internal_methods fingerprint=42abb0fbb0129220325c2595388e9ba5ed60fddb52d3f61e9c97dea78ec9535c body_fp=6b121ce86e9f7bdfd8c2a94c3295187a767d2ccb420aaaaed5abea8eb4f73e2b source_ref=f933e63abf1854a8a6ecb8b9c8cb4644acb3b90c role=test -->
+Verifies that MCP tool names dispatch to the correct `TrieTools` methods, accounting for the `_textified` wrapper on query tools.
 
-- Pins the mapping `grep -> grep`, `read -> read`, `trace -> trace`
-- Ensures CLI and MCP surfaces share one implementation per verb
+- Query tools (`grep`, `read`, `trace`) assert via `fn.__wrapped__` — the wrapper is transparent
+- Edit tool (`patch`) binds directly: `fn == t.patch`
+- Pins the mapping so a future rename can't silently swap behaviour under an agent
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp:dual_rank_project fingerprint=ddb09bc1e817a930bec9a532e1c272d2dfef3a3e605bc48f4679ba42ed216ee6 body_fp=f30f5d13836baf183f630d87fce9b19ec54d81ac3941644340d7026b3add5bae source_ref=a1fd6852599cae8c3574868f3e9f120e8ba53eab role=test-infrastructure -->
 Creates test project with two auth symbols ranked by inbound count for fuzzy matching tests.
@@ -692,4 +696,7 @@ Verify that `trace_flow` resolves the fragment `"write_stamp"` to the production
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_mcp:test_grep_entry_points_excludes_test_symbols fingerprint=3ac53333973fc4f3d4dd13b345aa2119e2d7261e419d22b5347deaf797cf1294 body_fp=ca217bf25f418b6a0da05c95ec32e7d8dc86995444197b9cd0325fcd4a126b74 source_ref=0e70e3437bf23750bbc0794f428d8b7859e56a53 role=test -->
 Assert that `TrieTools.grep_entry_points` never returns symbols whose qname starts with `tests/`.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_mcp:test_mcp_wire_query_tools_return_text fingerprint=7105fd56a7a42c3369936db238d9a7a0aa0e71f56c9f5c8281e2e274fc2b0ad7 body_fp=066de23525b7e54a22842852d522ab1cd4306f8ac487894919ad6e355203b95d source_ref=f933e63abf1854a8a6ecb8b9c8cb4644acb3b90c role=test -->
+Assert that MCP query tools (`grep`, `trace_flow`) return rendered text strings, while edit tools (`patch_list`) return structured JSON envelopes.
 <!-- trie:end -->

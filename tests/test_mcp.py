@@ -594,9 +594,14 @@ def test_build_server_wire_names_bind_to_internal_methods(populated_project: Pat
     server, t = build_server(populated_project)
     try:
         tools_by_name = {tool.name: tool for tool in server._tool_manager.list_tools()}
-        assert tools_by_name["grep"].fn == t.grep
-        assert tools_by_name["read"].fn == t.read
-        assert tools_by_name["trace"].fn == t.trace
+        # Query tools are registered through the `_textified` wrapper (pretty
+        # text on the wire); the underlying bound method survives as
+        # `__wrapped__` via functools.wraps.
+        assert tools_by_name["grep"].fn.__wrapped__ == t.grep
+        assert tools_by_name["read"].fn.__wrapped__ == t.read
+        assert tools_by_name["trace"].fn.__wrapped__ == t.trace
+        # Edit tools bind directly — structured envelopes on purpose.
+        assert tools_by_name["patch"].fn == t.patch
     finally:
         t.close()
 
@@ -1137,5 +1142,39 @@ def test_grep_entry_points_excludes_test_symbols(project_with_tests: Path):
         result = t.grep_entry_points("write stamp persistence")
         qnames = {h["qname"] for h in result.get("hits", [])}
         assert all(not q.startswith("tests/") for q in qnames)
+    finally:
+        t.close()
+
+
+# --- MCP wire format: query tools carry rendered text -----------------------
+
+
+def test_mcp_wire_query_tools_return_text(populated_project: Path):
+    """Pretty text is the default on the MCP surface too: query tools return
+    rendered text (records, arrow chains, verbatim prose), not JSON. Edit
+    tools stay structured — callers branch on their envelope fields."""
+    import asyncio
+
+    from trie.mcp_server import build_server
+
+    server, t = build_server(populated_project)
+    try:
+
+        async def _call(name: str, args: dict) -> str:
+            result = await server.call_tool(name, args)
+            content = result[0] if isinstance(result, tuple) else result
+            block = content[0] if isinstance(content, list) else content
+            return getattr(block, "text", str(block))
+
+        grep_text = asyncio.run(_call("grep", {"predicate": {"name_contains": "slugify"}}))
+        assert "lib:slugify" in grep_text
+        assert not grep_text.lstrip().startswith("{"), "query tools must not emit JSON"
+
+        flow_text = asyncio.run(_call("trace_flow", {"symbol1": "make_url", "symbol2": "slugify"}))
+        assert "→" in flow_text or "paths" in flow_text
+
+        # Edit tool stays structured JSON.
+        list_text = asyncio.run(_call("patch_list", {}))
+        assert list_text.lstrip().startswith("{"), "edit tools keep structured envelopes"
     finally:
         t.close()
