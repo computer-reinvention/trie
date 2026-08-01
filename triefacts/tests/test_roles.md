@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: tests/test_roles.py
 file_fingerprint: c13afcad24aa5f9f02760d3dcca28af8fc50d8285726b5e40e068f030c8a1a7b
-last_synced_at: '2026-07-29T03:03:41Z'
+last_synced_at: '2026-08-01T01:52:55Z'
 description: 'Tests for role tagging: durable persistence, derived taxonomy, and the'
 defines:
 - kind: module
@@ -66,7 +66,7 @@ defines:
   qualified_name: tests/test_roles:_bootstrap
   lines: 332-351
 incoming_refs: 0
-outgoing_refs: 45
+outgoing_refs: 72
 ---
 <!-- trie:section symbol=tests/test_roles:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=efc37c446790b90fb19c706b6873892ebfec635682dd8fe6bdbe931e995f2a52 source_ref=808f1bab7d3a9a1f792a2c387a66fa8309013b1e role=test -->
 Tests for role tagging system including persistence, taxonomy derivation, and two-pass classification workflow.
@@ -76,20 +76,20 @@ Tests for role tagging system including persistence, taxonomy derivation, and tw
 - Validates end-to-end role classification with LLM client integration
 - Ensures roles persist through database wipes via disk restoration
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_roles:test_section_role_round_trips_through_render_and_parse fingerprint=745d9e4fa90fe1287f73b09cd9ffd50d9bedc247eb33eb98d87e7d6f9e4bc4af body_fp=6c81d14f3fa5dc2a1c7133f90a3a4f0e8ff2a218cb1422f7c9f831ba239b5589 source_ref=808f1bab7d3a9a1f792a2c387a66fa8309013b1e role=test -->
+<!-- trie:section symbol=tests/test_roles:test_section_role_round_trips_through_render_and_parse fingerprint=745d9e4fa90fe1287f73b09cd9ffd50d9bedc247eb33eb98d87e7d6f9e4bc4af body_fp=6c81d14f3fa5dc2a1c7133f90a3a4f0e8ff2a218cb1422f7c9f831ba239b5589 source_ref=5576e0e44de525aa292d4a453d27732cda9bb473 role=test -->
 ## `test_section_role_round_trips_through_render_and_parse`
 
 Verifies that role metadata survives the TriefactFile render-and-parse cycle.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_roles:test_section_without_role_omits_the_field fingerprint=7c8d288d622ffd0a9bad3cd36efafb0788a40e5449640e3122fd188fde1adde9 body_fp=0fc71d235c56e39d3dcfe0727d72d1730beb7500df88b77e948428b42d0cc987 source_ref=808f1bab7d3a9a1f792a2c387a66fa8309013b1e role=test -->
+<!-- trie:section symbol=tests/test_roles:test_section_without_role_omits_the_field fingerprint=7c8d288d622ffd0a9bad3cd36efafb0788a40e5449640e3122fd188fde1adde9 body_fp=0fc71d235c56e39d3dcfe0727d72d1730beb7500df88b77e948428b42d0cc987 source_ref=5576e0e44de525aa292d4a453d27732cda9bb473 role=test -->
 Verifies that TriefactFile omits role metadata from rendered output when no role is set and parses back as empty string.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_roles:test_set_section_role_only_changes_the_role fingerprint=695d4eb7feb4ada7014601a918a20009402386984d39fa69bf41e558b9e49239 body_fp=8413f5e0b6d1c5f74955348a5986bda86819f7c777431404b65c0cd38dd23efe source_ref=808f1bab7d3a9a1f792a2c387a66fa8309013b1e role=test -->
+<!-- trie:section symbol=tests/test_roles:test_set_section_role_only_changes_the_role fingerprint=695d4eb7feb4ada7014601a918a20009402386984d39fa69bf41e558b9e49239 body_fp=8413f5e0b6d1c5f74955348a5986bda86819f7c777431404b65c0cd38dd23efe source_ref=5576e0e44de525aa292d4a453d27732cda9bb473 role=test -->
 ## `test_set_section_role_only_changes_the_role`
 
 Verifies TriefactFile.set_section_role updates only the role field, preserving body and fingerprints.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_roles:test_set_section_role_missing_symbol_returns_false fingerprint=5954fed5b1d3178d3b8decad6533114ec9835ba5959acbba5cbeb02a5581f79e body_fp=9bc37ef158e4cb2779c26920a0c234efa98111be9b313d2eb98777a30571710f source_ref=808f1bab7d3a9a1f792a2c387a66fa8309013b1e role=test -->
+<!-- trie:section symbol=tests/test_roles:test_set_section_role_missing_symbol_returns_false fingerprint=5954fed5b1d3178d3b8decad6533114ec9835ba5959acbba5cbeb02a5581f79e body_fp=9bc37ef158e4cb2779c26920a0c234efa98111be9b313d2eb98777a30571710f source_ref=5576e0e44de525aa292d4a453d27732cda9bb473 role=test -->
 Verifies that TriefactFile.set_section_role returns False when attempting to set a role on a non-existent section.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_roles:_roles_project fingerprint=9e8f68c5ed4a302c61dbe8eaf51f954633190736866b87cd3e564745eb3eeaf7 body_fp=ce12471c60664db76c04c7b6c774d7d46f06767c6b68def573080297d45f136c source_ref=5576e0e44de525aa292d4a453d27732cda9bb473 role=test -->

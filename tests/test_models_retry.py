@@ -319,7 +319,9 @@ def test_trie_client_disables_sdk_internal_retries(monkeypatch: pytest.MonkeyPat
         def __init__(self, *args, **kwargs):
             captured["kwargs"] = kwargs
 
-    monkeypatch.setattr("trie.models.Anthropic", FakeAnthropic)
+    from trie.models import _sdk
+
+    monkeypatch.setattr(_sdk(), "Anthropic", FakeAnthropic)
     TrieClient("anthropic/claude-sonnet-4-6")
 
     assert captured["kwargs"].get("max_retries") == 0

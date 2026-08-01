@@ -209,18 +209,28 @@ class AuditSummary:
     cli_invocations: tuple[tuple[str, int], ...]
 
     @classmethod
-    def from_log(cls, path: Path) -> AuditSummary:
+    def from_log(cls, path: Path, *, tail_bytes: int | None = None) -> AuditSummary:
         """Single-pass JSONL ingestion. Tolerates malformed lines and missing
         fields, on the theory that a partial summary is more useful than a
         crash. Pricing lookups are memoised so a 5k-line log doesn't pay the
-        cost N times."""
+        cost N times.
+
+        ``tail_bytes`` reads only the trailing window of the log (seeking past
+        the first partial line): a long-lived project accumulates tens of MB of
+        telemetry, and parsing months of history to answer "what happened
+        recently?" made `trie audit` the slowest read command. `None` reads
+        everything.
+        """
         if not path.exists():
             raise FileNotFoundError(f"telemetry log not found: {path}")
 
         lines_total = 0
         lines_parsed = 0
         events: list[Event] = []
-        with path.open("r", encoding="utf-8") as f:
+        with path.open("r", encoding="utf-8", errors="replace") as f:
+            if tail_bytes is not None and path.stat().st_size > tail_bytes:
+                f.seek(path.stat().st_size - tail_bytes)
+                f.readline()  # discard the partial line the seek landed in
             for line in f:
                 lines_total += 1
                 ev = Event.from_json(line)

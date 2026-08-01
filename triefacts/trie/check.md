@@ -1,37 +1,37 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: trie/check.py
-file_fingerprint: 4d3434ff06d42849c109b1f44fba3822707e8a0c90131d255d551fe78926dcd2
-last_synced_at: '2026-07-29T01:49:03Z'
+file_fingerprint: 01f5b8105ecd6cdccb350beeda8b73d19d4cb2b377699ac78a5ae0ff5020184a
+last_synced_at: '2026-08-01T01:52:05Z'
 defines:
 - kind: module
   qualified_name: trie/check:__module__
-  lines: 1-175
+  lines: 1-209
 - kind: class
   qualified_name: trie/check:StaleReason
-  lines: 14-20
+  lines: 18-24
 - kind: class
   qualified_name: trie/check:StaleItem
-  lines: 24-28
+  lines: 28-32
 - kind: class
   qualified_name: trie/check:CheckResult
-  lines: 32-37
+  lines: 36-41
 - kind: method
   qualified_name: trie/check:CheckResult.is_clean
-  lines: 36-37
+  lines: 40-41
 - kind: function
   qualified_name: trie/check:_triefact_path_for
-  lines: 40-43
+  lines: 44-47
 - kind: function
   qualified_name: trie/check:check_project
-  lines: 46-63
+  lines: 50-79
 - kind: function
   qualified_name: trie/check:_check_project_inner
-  lines: 66-174
-incoming_refs: 22
-outgoing_refs: 7
+  lines: 82-208
+incoming_refs: 25
+outgoing_refs: 9
 ---
-<!-- trie:section symbol=trie/check:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=e75d59ec8e0be55d54ce1acd9587d0bf4fd631bb2424d3f9513a7179e684f3a9 source_ref=b13418772d94c7dea0e494653a1d4aadcca3a1c6 role=change-detection -->
+<!-- trie:section symbol=trie/check:__module__ fingerprint=c33905a374e32f0fd9375bd80c1768b3ee3c844280751544dfe534a5f4fa7be9 body_fp=e75d59ec8e0be55d54ce1acd9587d0bf4fd631bb2424d3f9513a7179e684f3a9 source_ref=3027902518aa736256f99f988058880d98ed7383 role=change-detection -->
 Detects staleness between source files and their triefact documentation by comparing symbol fingerprints.
 
 - `check_project()` — main entry point that scans all in-scope files and returns drift items
@@ -66,18 +66,20 @@ CheckResult.is_clean returns True when no stale items were found during verifica
 <!-- trie:section symbol=trie/check:_triefact_path_for fingerprint=4a1dcef0054474a18efab389b26d7da835bb361c92aaee997af6d5a2473cab49 body_fp=243ae4d1491b85becf398309ea3e1c24d9f59c02c654ca31fcf382332104d7e8 source_ref=b13418772d94c7dea0e494653a1d4aadcca3a1c6 role=change-detection -->
 Converts source file path to corresponding triefact markdown file path under configured root directory.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/check:check_project fingerprint=71986a167d15fdde338406e22b9dab333730ee7e600b59d1f9940206c6f5333f body_fp=f6dc9fb611d7299dd41290bb391c2293f34b9abd26f4b6d2b88fd87eb7b20fa5 source_ref=b13418772d94c7dea0e494653a1d4aadcca3a1c6 role=change-detection -->
+<!-- trie:section symbol=trie/check:check_project fingerprint=080565f6299a1c159128bf026f0394c9bc8bb741d9a0ae4c62484269eca13c4b body_fp=1068d3ee93faf9f55243daa2af3b13d39a5a3d303773aff207fa528482f3374c source_ref=3027902518aa736256f99f988058880d98ed7383 role=domain -->
 Compute stale items by comparing each in-scope source file's symbols to its triefact.
 
 - Returns `CheckResult` containing bidirectional drift detection between source code and documentation
 - Detects missing triefact files, missing sections, stale sections, orphan sections, tampered bodies, and legacy sections
-- Uses fingerprints from triefact sentinels for integrity verification without database access
+- `store`: optional content-addressed cache; symbol hashes are read from it only when the file fingerprint matches, falling back to parsing on any mismatch or miss
+- Uses fingerprints from triefact sentinels for integrity verification
 <!-- trie:end -->
-<!-- trie:section symbol=trie/check:_check_project_inner fingerprint=bf2d197cea220e508b06db86a276191edfa167f1c4f28cbe71f97e47fbaf0284 body_fp=db3c278a6235581ea0d2f9625fd17f266269d412ca99d22629b80dc6355b3142 source_ref=bdf5b1aeff28db9a76b101300b3cdf1198813fab role=domain -->
+<!-- trie:section symbol=trie/check:_check_project_inner fingerprint=d89f8fe98702a37dff755b59db452db8796dd5d199bde2d8840bfaab1c4c3e77 body_fp=c21ff27c8b0e4cc7ec8cf78947b83e36d9df38e3769273df8714cebcaceeba49 source_ref=3027902518aa736256f99f988058880d98ed7383 role=domain -->
 Performs bidirectional staleness detection between source symbols and triefact sections, populating telemetry.
 
 - Discovers in-scope files, extracts symbols, and compares with existing triefact sections
 - Skips files not indexable by the parser registry before counting or processing them
+- Accepts an optional `store` for a content-addressed fast path; bypasses parsing when the file fingerprint matches the store record
 - Detects missing triefacts, missing/stale/orphaned sections, tampered bodies, and legacy sections
-- Records file counts, issue counts, and issue breakdown by reason in telemetry dictionary
+- Records file counts, store fast-path hit counts, issue counts, and issue breakdown by reason in telemetry dictionary
 <!-- trie:end -->

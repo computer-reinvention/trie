@@ -1,40 +1,83 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import random
 import sys
 import threading
 import time
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager, suppress
-from typing import Any
+from types import SimpleNamespace
+from typing import TYPE_CHECKING, Any
 
-import httpx
-from anthropic import (
-    Anthropic,
-    APIConnectionError,
-    APIStatusError,
-    APITimeoutError,
-    AsyncAnthropic,
-    InternalServerError,
-    RateLimitError,
-)
 from pydantic import BaseModel, Field
-from pydantic_ai import Agent, CachePoint
-from pydantic_ai.exceptions import ModelAPIError
-from pydantic_ai.models.anthropic import AnthropicModel, AnthropicModelSettings
-from pydantic_ai.providers.anthropic import AnthropicProvider
-
-try:
-    # pydantic_ai >= 0.1 renamed Usage to RunUsage; the old name was kept as
-    # a deprecated alias and then removed. Prefer the new name, fall back for
-    # older installs.
-    from pydantic_ai.usage import RunUsage as Usage
-except ImportError:  # pragma: no cover — depends on installed pydantic_ai
-    from pydantic_ai.usage import Usage  # type: ignore[no-redef,attr-defined]
 
 from trie import telemetry
 from trie.config import Sync
+
+if TYPE_CHECKING:
+    from anthropic import APIStatusError, AsyncAnthropic
+    from pydantic_ai.models.anthropic import AnthropicModel
+    from pydantic_ai.usage import RunUsage as Usage
+
+
+@functools.cache
+def _sdk() -> SimpleNamespace:
+    """Import the LLM SDK stack (anthropic + pydantic_ai + httpx) on first use.
+
+    These imports cost ~1.2s of wall clock — more than every read-only trie
+    command combined. Importing them eagerly at module top made `trie grep`
+    pay for an LLM client it never constructs (this module is reached from
+    cli.py via the sync/diff import chains). Everything network-flavoured is
+    accessed through this cached loader instead; the first actual LLM call
+    pays the cost, pure-read commands never do.
+    """
+    import httpx
+    from anthropic import (
+        Anthropic,
+        APIConnectionError,
+        APIStatusError,
+        APITimeoutError,
+        AsyncAnthropic,
+        InternalServerError,
+        RateLimitError,
+    )
+    from pydantic_ai import Agent, CachePoint
+    from pydantic_ai.exceptions import ModelAPIError
+    from pydantic_ai.models.anthropic import AnthropicModel, AnthropicModelSettings
+    from pydantic_ai.providers.anthropic import AnthropicProvider
+
+    try:
+        # pydantic_ai >= 0.1 renamed Usage to RunUsage; the old name was kept
+        # as a deprecated alias and then removed. Prefer the new name, fall
+        # back for older installs.
+        from pydantic_ai.usage import RunUsage as Usage
+    except ImportError:  # pragma: no cover — depends on installed pydantic_ai
+        from pydantic_ai.usage import Usage  # type: ignore[no-redef,attr-defined]
+
+    return SimpleNamespace(
+        httpx=httpx,
+        Anthropic=Anthropic,
+        AsyncAnthropic=AsyncAnthropic,
+        APIStatusError=APIStatusError,
+        Agent=Agent,
+        CachePoint=CachePoint,
+        ModelAPIError=ModelAPIError,
+        AnthropicModel=AnthropicModel,
+        AnthropicModelSettings=AnthropicModelSettings,
+        AnthropicProvider=AnthropicProvider,
+        Usage=Usage,
+        retryable_anthropic=(
+            RateLimitError,
+            InternalServerError,
+            APITimeoutError,
+            APIConnectionError,
+        ),
+        RateLimitError=RateLimitError,
+        InternalServerError=InternalServerError,
+        APITimeoutError=APITimeoutError,
+    )
 
 
 # Per-thread event loop AND per-thread async HTTP client.
@@ -376,9 +419,6 @@ def _retry_after_seconds(exc: APIStatusError) -> float | None:
         return None
 
 
-_RETRYABLE_ANTHROPIC = (RateLimitError, InternalServerError, APITimeoutError, APIConnectionError)
-
-
 def _is_retryable(exc: BaseException) -> bool:
     # Direct anthropic exceptions: APIConnectionError covers transient network
     # failures (DNS lookup failure, connection refused, reset) and is the parent
@@ -395,9 +435,9 @@ def _is_retryable(exc: BaseException) -> bool:
     cur: BaseException | None = exc
     while cur is not None and id(cur) not in seen:
         seen.add(id(cur))
-        if isinstance(cur, _RETRYABLE_ANTHROPIC):
+        if isinstance(cur, _sdk().retryable_anthropic):
             return True
-        if isinstance(cur, ModelAPIError):
+        if isinstance(cur, _sdk().ModelAPIError):
             msg = str(cur).lower()
             if "connection error" in msg or "timed out" in msg or "timeout" in msg:
                 return True
@@ -436,7 +476,7 @@ def _run_with_retry(
                     file=sys.stderr,
                 )
                 raise
-            if isinstance(exc, RateLimitError):
+            if isinstance(exc, _sdk().RateLimitError):
                 hinted = _retry_after_seconds(exc)
                 delay = (
                     hinted
@@ -456,9 +496,9 @@ def _run_with_retry(
                     cap=cfg.retry_cap_seconds,
                     rng=rng,
                 )
-                if isinstance(exc, InternalServerError):
+                if isinstance(exc, _sdk().InternalServerError):
                     reason = "overloaded"
-                elif isinstance(exc, APITimeoutError):
+                elif isinstance(exc, _sdk().APITimeoutError):
                     reason = "timeout"
                 else:
                     reason = "connection"
@@ -540,11 +580,11 @@ class TrieClient:
         # files spinning with zero telemetry for minutes). A read/connect/write/pool
         # timeout turns that into an APITimeoutError that _run_with_retry retries
         # and ultimately surfaces as a per-file error instead of an infinite spin.
-        self._http_timeout = httpx.Timeout(timeout, connect=min(30.0, timeout))
+        self._http_timeout = _sdk().httpx.Timeout(timeout, connect=min(30.0, timeout))
         self._anthropic_model_name = self._pai_model_id.split(":", 1)[-1]
         # The sync count_tokens client lives on the main thread and is only used
         # synchronously, so a single instance is fine here.
-        self._raw_client = Anthropic(max_retries=0, timeout=self._http_timeout)
+        self._raw_client = _sdk().Anthropic(max_retries=0, timeout=self._http_timeout)
 
     def _make_thread_model(self) -> tuple[AnthropicModel, AsyncAnthropic]:
         """Build a fresh AnthropicModel + AsyncAnthropic for the CURRENT thread.
@@ -556,10 +596,10 @@ class TrieClient:
         thread (no fd leak) that never crosses event loops (no "Connection
         error"). The timeout is plumbed in so stalled requests still abort.
         """
-        async_client = AsyncAnthropic(max_retries=0, timeout=self._http_timeout)
-        model = AnthropicModel(
+        async_client = _sdk().AsyncAnthropic(max_retries=0, timeout=self._http_timeout)
+        model = _sdk().AnthropicModel(
             self._anthropic_model_name,
-            provider=AnthropicProvider(anthropic_client=async_client),
+            provider=_sdk().AnthropicProvider(anthropic_client=async_client),
         )
         return model, async_client
 
@@ -599,7 +639,7 @@ class TrieClient:
         """
         with telemetry.timed("model_call", model=self.full_model_id, kind="generate") as tele:
             if cache_prefix:
-                user_input: str | list[Any] = [cache_prefix, CachePoint(), user_prompt]
+                user_input: str | list[Any] = [cache_prefix, _sdk().CachePoint(), user_prompt]
             else:
                 user_input = user_prompt
 
@@ -614,7 +654,7 @@ class TrieClient:
             # slot and is retried on 429/529/timeout/connection with backoff.
             def _attempt() -> Any:
                 holder = _thread_holder(self._make_thread_model)
-                agent = Agent(
+                agent = _sdk().Agent(
                     holder.model,
                     output_type=output_type,
                     system_prompt=system_prompt,
@@ -630,7 +670,7 @@ class TrieClient:
                     return holder.loop.run_until_complete(
                         agent.run(
                             user_input,
-                            model_settings=AnthropicModelSettings(
+                            model_settings=_sdk().AnthropicModelSettings(
                                 max_tokens=max_tokens,
                                 anthropic_cache_instructions=True,
                             ),

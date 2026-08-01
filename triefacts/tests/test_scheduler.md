@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: tests/test_scheduler.py
 file_fingerprint: 3901e6f9692033cf9b9caef42545c389dc13594086a02657233d1c0450fc2ee9
-last_synced_at: '2026-07-29T03:03:48Z'
+last_synced_at: '2026-08-01T01:52:46Z'
 description: Tests for the wave-based file scheduler (trie/sync/scheduler.py).
 defines:
 - kind: module
@@ -39,7 +39,7 @@ defines:
   qualified_name: tests/test_scheduler:test_global_inflight_semaphore_caps_concurrency
   lines: 155-180
 incoming_refs: 0
-outgoing_refs: 21
+outgoing_refs: 23
 ---
 <!-- trie:section symbol=tests/test_scheduler:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a55feab9fddb09dc00f6570ef7eae5f4addd2d1e6a0580ef7dfc0d4162c7e964 source_ref=49d06a80c655d6743830a8fe1d3623699c10a995 role=test -->
 Tests for the wave-based file scheduler functionality in `trie.sync.scheduler`.
@@ -93,6 +93,6 @@ Tests that run_waves stops processing files when budget is exceeded after first 
 <!-- trie:section symbol=tests/test_scheduler:test_depth_banded_ordering_band0_before_band1 fingerprint=188b7355e75ff9c114a88db424d8c410bd587bfdba3124b333363833fe5222b0 body_fp=cbe685972ea03b3e8d4a7a584b9aeb558b6b01fe74ac56f9b2fa27da9206afd0 source_ref=305d54f16a70c75809170cdbff2cb12756d99675 role=test -->
 Tests that `run_waves` processes hop-0 files completely before starting any hop-1 files.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_scheduler:test_global_inflight_semaphore_caps_concurrency fingerprint=bbc8853c4d1ade6dea9d414693db4a674786a49819917e418fa7a3ed8a38c3c9 body_fp=ac6eb49950b375f13978b0a12d8f4502b14d2965c01c7bb0a34a473f96acf481 source_ref=49d06a80c655d6743830a8fe1d3623699c10a995 role=test -->
-Tests that the global inflight semaphore correctly limits concurrent holders to the configured maximum.
+<!-- trie:section symbol=tests/test_scheduler:test_global_inflight_semaphore_caps_concurrency fingerprint=bbc8853c4d1ade6dea9d414693db4a674786a49819917e418fa7a3ed8a38c3c9 body_fp=cc06186cd951584cd37556a73f32ffdfd429f0ecb155109917e0644ebbeadb2d source_ref=305d54f16a70c75809170cdbff2cb12756d99675 role=test -->
+Verify that `configure_inflight_limit(2)` prevents more than 2 threads from holding `_inflight_slot` concurrently across 8 competing threads.
 <!-- trie:end -->

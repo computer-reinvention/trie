@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: trie/sync/generator.py
 file_fingerprint: 5e7e71efc7f6551e1aa2790118a9d8a2cef2b03935bc4c784ab88cd275f15b5f
-last_synced_at: '2026-07-25T10:44:35Z'
+last_synced_at: '2026-08-01T01:53:06Z'
 defines:
 - kind: module
   qualified_name: trie/sync/generator:__module__
@@ -52,8 +52,8 @@ defines:
 - kind: function
   qualified_name: trie/sync/generator:infer_role
   lines: 217-267
-incoming_refs: 33
-outgoing_refs: 2
+incoming_refs: 35
+outgoing_refs: 4
 ---
 <!-- trie:section symbol=trie/sync/generator:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=a111ad797f24416f434a6cb14b252a0a858200141f74eccc33747b7ae782f52d source_ref=24a303d77a226761266352fc352f56726b09a861 role=documentation-sync -->
 Generates documentation for Python source symbols using LLM-powered analysis with caching and diff-aware regeneration capabilities.

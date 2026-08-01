@@ -237,7 +237,9 @@ def test_make_client_anthropic_constructs(monkeypatch: pytest.MonkeyPatch):
         def __init__(self, *args, **kwargs):
             captured["constructed"] = True
 
-    monkeypatch.setattr("trie.models.Anthropic", FakeAnthropic)
+    from trie.models import _sdk
+
+    monkeypatch.setattr(_sdk(), "Anthropic", FakeAnthropic)
     client = make_client("anthropic/claude-sonnet-4-6")
     assert client.full_model_id == "anthropic/claude-sonnet-4-6"
     assert captured["constructed"] is True

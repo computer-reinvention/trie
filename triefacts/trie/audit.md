@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.2.1
 source: trie/audit.py
-file_fingerprint: 6194dc36fc197b2fb708a63c0fa8c3e760530bc85f60257d98c76740e250dd43
-last_synced_at: '2026-06-03T20:40:21Z'
+file_fingerprint: 208d789eb2ce515f8bf241ee25c699c8f7f5f367b0680fbce6464d4264e62b0a
+last_synced_at: '2026-08-01T01:52:05Z'
 description: Post-hoc analysis of `debug.jsonl` telemetry logs.
 defines:
 - kind: module
   qualified_name: trie/audit:__module__
-  lines: 1-945
+  lines: 1-955
 - kind: class
   qualified_name: trie/audit:Event
   lines: 50-82
@@ -34,98 +34,98 @@ defines:
   lines: 171-176
 - kind: class
   qualified_name: trie/audit:AuditSummary
-  lines: 185-270
+  lines: 185-280
 - kind: method
   qualified_name: trie/audit:AuditSummary.from_log
-  lines: 212-232
+  lines: 212-242
 - kind: method
   qualified_name: trie/audit:AuditSummary.to_dict
-  lines: 234-270
+  lines: 244-280
 - kind: function
   qualified_name: trie/audit:_stats_to_dict
-  lines: 273-293
+  lines: 283-303
 - kind: function
   qualified_name: trie/audit:_summarise
-  lines: 301-365
+  lines: 311-375
 - kind: function
   qualified_name: trie/audit:_mcp_stats
-  lines: 368-448
+  lines: 378-458
 - kind: constant
   qualified_name: trie/audit:_pricing_cache
-  lines: 453-453
+  lines: 463-463
 - kind: function
   qualified_name: trie/audit:_pricing_for
-  lines: 456-469
+  lines: 466-479
 - kind: function
   qualified_name: trie/audit:_sync_stats
-  lines: 472-555
+  lines: 482-565
 - kind: function
   qualified_name: trie/audit:_retry_stats
-  lines: 558-569
+  lines: 568-579
 - kind: function
   qualified_name: trie/audit:_cli_invocations
-  lines: 572-577
+  lines: 582-587
 - kind: function
   qualified_name: trie/audit:_span
-  lines: 580-597
+  lines: 590-607
 - kind: function
   qualified_name: trie/audit:render
-  lines: 605-623
+  lines: 615-633
 - kind: function
   qualified_name: trie/audit:render_comparison
-  lines: 626-646
+  lines: 636-656
 - kind: function
   qualified_name: trie/audit:_render_header
-  lines: 652-667
+  lines: 662-677
 - kind: function
   qualified_name: trie/audit:_render_mcp
-  lines: 670-672
+  lines: 680-682
 - kind: function
   qualified_name: trie/audit:_render_cli_calls
-  lines: 675-683
+  lines: 685-693
 - kind: function
   qualified_name: trie/audit:_render_tool_calls
-  lines: 686-760
+  lines: 696-770
 - kind: function
   qualified_name: trie/audit:_render_sync
-  lines: 763-788
+  lines: 773-798
 - kind: function
   qualified_name: trie/audit:_render_retries
-  lines: 791-799
+  lines: 801-809
 - kind: function
   qualified_name: trie/audit:_render_cli
-  lines: 802-806
+  lines: 812-816
 - kind: function
   qualified_name: trie/audit:_render_compare_header
-  lines: 812-817
+  lines: 822-827
 - kind: function
   qualified_name: trie/audit:_render_compare_mcp
-  lines: 820-826
+  lines: 830-836
 - kind: function
   qualified_name: trie/audit:_render_compare_cli_calls
-  lines: 829-840
+  lines: 839-850
 - kind: function
   qualified_name: trie/audit:_render_compare_tool_calls
-  lines: 843-874
+  lines: 853-884
 - kind: function
   qualified_name: trie/audit:_render_compare_sync
-  lines: 877-901
+  lines: 887-911
 - kind: function
   qualified_name: trie/audit:_render_compare_retries
-  lines: 904-911
+  lines: 914-921
 - kind: function
   qualified_name: trie/audit:_delta
-  lines: 917-921
+  lines: 927-931
 - kind: function
   qualified_name: trie/audit:_delta_money
-  lines: 924-928
+  lines: 934-938
 - kind: function
   qualified_name: trie/audit:_err_cell
-  lines: 931-934
+  lines: 941-944
 - kind: function
   qualified_name: trie/audit:_fmt_seconds
-  lines: 937-944
-incoming_refs: 33
+  lines: 947-954
+incoming_refs: 60
 outgoing_refs: 2
 ---
 <!-- trie:section symbol=trie/audit:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=27ebf0972c553a8e38353e847ea285cfce2940715ead823ebfedde5c349e1aeb source_ref=71d2cd65b307abdd2377641ffa5bffdd9fab4954 role=monitoring-telemetry -->
@@ -192,7 +192,7 @@ Tracks JSONL parsing statistics for audit log ingestion.
 - `lines_parsed`: Successfully decoded JSONL events 
 - `lines_malformed`: Lines that failed JSON parsing or validation
 <!-- trie:end -->
-<!-- trie:section symbol=trie/audit:AuditSummary fingerprint=7ac89756751d2fb08be28cc28ab609ee6112219b0fc7389b2a0dd5c25a5e20a6 body_fp=fd882af795c54c7c710bf0a5626c3c8c42912bce6a583b2d43bc77f6604f9d95 source_ref=71d2cd65b307abdd2377641ffa5bffdd9fab4954 role=monitoring-telemetry -->
+<!-- trie:section symbol=trie/audit:AuditSummary fingerprint=41e3a4f551fb822aa8bc6dc38a73bee21e3f19f81193b45a2b7fef8446a269d6 body_fp=a104088cf71a29a9c60c856efaa9d5b563d0d28c13347df55c9c43c5a475da27 source_ref=dcd19d40dcef6d59dc6598f56f1fb68bb12fe211 role=model -->
 Frozen dataclass aggregating telemetry statistics from a debug.jsonl log file.
 
 - `log_path`: Source telemetry file
@@ -204,11 +204,12 @@ Frozen dataclass aggregating telemetry statistics from a debug.jsonl log file.
 - `retries`: Model API backoff events and delay totals
 - `cli_invocations`: Subcommand usage counts
 
-The AuditSummary.from_log classmethod ingests JSONL telemetry files with malformed line tolerance. The to_dict method produces JSON-serializable output for `trie audit --json`.
+The `AuditSummary.from_log` classmethod accepts an optional `tail_bytes` keyword argument to read only the trailing window of the log file; `None` reads everything. The `to_dict` method produces JSON-serializable output for `trie audit --json`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/audit:AuditSummary.from_log fingerprint=8fe7c2361cf7c16c905a99b261122cde88a56e973ad2461fd1a45a330fa26408 body_fp=e10d0adaa8b4762503ce69ca8368bf7aefb879636c28e134e3bdbb15f80675a4 source_ref=71d2cd65b307abdd2377641ffa5bffdd9fab4954 role=monitoring-telemetry -->
+<!-- trie:section symbol=trie/audit:AuditSummary.from_log fingerprint=ad10e237f96f6924ed42244d3b7a5b266cca613d217136bff4d820a2c7feb012 body_fp=c16e7326aee5932f356ebc049521e5d631f4bf5569c62a9edd2a8e6c3cf685c2 source_ref=dcd19d40dcef6d59dc6598f56f1fb68bb12fe211 role=persistence -->
 Parses JSONL telemetry log into AuditSummary, tolerating malformed lines and memoizing pricing lookups.
 
+- `tail_bytes`: when set, seeks to the trailing window of the file, discarding the partial first line; `None` reads everything
 - Raises `FileNotFoundError` if path doesn't exist
 - Skips unparseable lines rather than crashing, counting them as malformed
 - Returns complete summary with parse stats and aggregated telemetry data

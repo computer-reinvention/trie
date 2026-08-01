@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: trie/sync/taxonomy.py
 file_fingerprint: d3527d467b1f6425152def101ac74e20134e50463b409924616b4766de39edd3
-last_synced_at: '2026-07-25T10:44:33Z'
+last_synced_at: '2026-08-01T01:53:04Z'
 description: 'Role taxonomy: the project-specific role vocabulary that constrains
   role tagging.'
 defines:
@@ -48,8 +48,8 @@ defines:
 - kind: function
   qualified_name: trie/sync/taxonomy:derive_taxonomy
   lines: 121-172
-incoming_refs: 14
-outgoing_refs: 2
+incoming_refs: 16
+outgoing_refs: 3
 ---
 <!-- trie:section symbol=trie/sync/taxonomy:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=d0206e1d809212ec6e9a7c7343df949e8a755ac7a8fe78dd81e7b248c263a456 source_ref=2fcd5b9b1578ce16edcfc18d978e61f85989305c role=orchestration -->
 Manages role taxonomy derivation and persistence for architectural classification of code symbols.

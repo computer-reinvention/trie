@@ -174,17 +174,29 @@ class TriefactFile:
     chunks: list[Chunk] = field(default_factory=list)
 
     @classmethod
-    def parse(cls, text: str) -> TriefactFile:
+    def parse(cls, text: str, *, parse_front_matter: bool = True) -> TriefactFile:
+        """Parse a triefact file into front matter + section chunks.
+
+        ``parse_front_matter=False`` skips the YAML load and leaves
+        ``front_matter`` empty — pure-Python YAML costs ~6ms per file, and
+        fingerprint-only consumers (the pre-commit `check_project` walk) never
+        read the front matter; skipping it took `trie verify` from ~900ms of
+        work to ~130ms on this repo.
+        """
         fm: dict[str, Any] = {}
         rest = text
         m = FRONT_MATTER_RE.match(text)
         if m:
-            try:
-                loaded = yaml.safe_load(m.group("yaml"))
-                if isinstance(loaded, dict):
-                    fm = loaded
-            except yaml.YAMLError:
-                fm = {}
+            if parse_front_matter:
+                try:
+                    # LibYAML's C loader when the wheel ships it (~10x); the
+                    # pure-Python loader is the fallback, not the default.
+                    loader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+                    loaded = yaml.load(m.group("yaml"), Loader=loader)
+                    if isinstance(loaded, dict):
+                        fm = loaded
+                except yaml.YAMLError:
+                    fm = {}
             rest = text[m.end() :]
 
         chunks: list[Chunk] = []

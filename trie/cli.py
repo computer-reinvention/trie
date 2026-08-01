@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 import threading
 from collections.abc import Callable, Iterator
@@ -7,6 +8,12 @@ from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
+
+# Before ANY pydantic import in this process: pydantic auto-loads every
+# installed plugin (logfire ships one) at `import pydantic` time via entry
+# points — ~250ms of telemetry SDK for a CLI that never uses it. setdefault
+# so an operator who genuinely wants pydantic plugins can re-enable them.
+os.environ.setdefault("PYDANTIC_DISABLE_PLUGINS", "__all__")
 
 import typer
 from rich.console import Console
@@ -690,7 +697,10 @@ def status_cmd(
 
     # Authoritative drift via the same `check_project` call `trie verify` uses —
     # status reports exactly what verify would, never an independent computation.
-    check = check_project(project_root=project_root, config=config)
+    # The store is a content-addressed cache here (fingerprint-gated), not an
+    # authority — it spares the tree-sitter+LSP parse for unchanged files.
+    with Store(project_root / ".trie" / "graph.db") as _check_store:
+        check = check_project(project_root=project_root, config=config, store=_check_store)
     drift_by_file: dict[str, int] = {}
     for it in check.items:
         drift_by_file[it.source_path] = drift_by_file.get(it.source_path, 0) + 1
@@ -999,6 +1009,12 @@ def _report_freshness(reporter: Reporter, result: FreshnessResult, *, mode: str)
         reporter.success(f"{mode}: {graph}; prose fresh")
 
 
+_AUDIT_TAIL_BYTES = 4 * 1024 * 1024
+"""Default read window for `trie audit`: ~4MB of trailing JSONL ≈ the recent
+sessions. Full-history parsing of a months-old log (28MB+) made audit the
+slowest read command; `--all` restores it."""
+
+
 @app.command("audit")
 def audit_cmd(
     ctx: typer.Context,
@@ -1019,14 +1035,24 @@ def audit_cmd(
         "--json",
         help="Print the summary as JSON. Mutually exclusive with --compare.",
     ),
+    all_history: bool = typer.Option(
+        False,
+        "--all",
+        help=(
+            "Parse the entire log instead of the recent tail. The default reads "
+            "the last ~4MB (roughly the recent sessions) so the command stays "
+            "fast on long-lived projects whose logs run to tens of MB."
+        ),
+    ),
 ) -> None:
     """Summarise a telemetry log: MCP usage, sync activity, retries, CLI invocations.
 
     Reads the `debug.jsonl` produced by trie's telemetry layer (see `[debug]` in
     `trie.toml`) and prints a compressed view of what happened during the run.
-    With `--compare`, two logs are rendered side-by-side with deltas — the
-    primary use case is comparing `with_trie` vs `without_trie` eval runs of an
-    agent on the same task.
+    By default only the recent tail of the log is parsed (pass --all for the
+    full history). With `--compare`, two logs are rendered side-by-side with
+    deltas — the primary use case is comparing `with_trie` vs `without_trie`
+    eval runs of an agent on the same task; comparisons always read fully.
 
     No state is read or written beyond the log file(s); safe to run after the
     fact on archived logs.
@@ -1037,9 +1063,13 @@ def audit_cmd(
         reporter.error("--compare and --json are mutually exclusive")
         raise typer.Exit(code=1)
 
+    # Comparisons summarise whole runs; the tail default is for the
+    # interactive "what just happened?" case.
+    tail = None if (all_history or compare is not None) else _AUDIT_TAIL_BYTES
+
     log_path = _resolve_audit_log_path(log, reporter)
     try:
-        baseline = AuditSummary.from_log(log_path)
+        baseline = AuditSummary.from_log(log_path, tail_bytes=tail)
     except FileNotFoundError as exc:
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
@@ -1687,7 +1717,10 @@ def _verify_drift(reporter: Reporter, *, exit_on_drift: bool) -> bool:
         reporter.error(str(exc))
         raise typer.Exit(code=1) from exc
 
-    result = check_project(project_root=project_root, config=config)
+    # Store as content-addressed parse cache (fingerprint-gated; see
+    # check_project docstring) — keeps verify/gate under the 300ms budget.
+    with Store(project_root / ".trie" / "graph.db") as _check_store:
+        result = check_project(project_root=project_root, config=config, store=_check_store)
 
     if result.is_clean:
         reporter.success("triefact tree is coherent")
@@ -2139,7 +2172,8 @@ def _run_single_file_sync(
         except ValueError:
             reporter.error(f"{file} is outside the configured source root ({src_root})")
             raise typer.Exit(code=1) from None
-        check = check_project(project_root=project_root, config=config)
+        with Store(project_root / ".trie" / "graph.db") as _check_store:
+            check = check_project(project_root=project_root, config=config, store=_check_store)
         file_items = [it for it in check.items if it.source_path == rel_source]
         if not file_items:
             reporter.success(f"{rel_source}: all symbols fresh — nothing to do")

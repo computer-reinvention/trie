@@ -1,8 +1,8 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: tests/test_symbol_level_sync.py
 file_fingerprint: 095b0684ddd187048875f6455f8b04df03ce17a17acbf58a3cab545a227f059e
-last_synced_at: '2026-07-29T17:54:44Z'
+last_synced_at: '2026-08-01T01:53:00Z'
 description: 'Symbol-level sync: regenerate only the symbols actually asked for.'
 defines:
 - kind: module
@@ -60,7 +60,7 @@ defines:
   qualified_name: tests/test_symbol_level_sync:test_cli_file_sync_never_synced_file_gets_full_cold_write
   lines: 416-423
 incoming_refs: 0
-outgoing_refs: 60
+outgoing_refs: 63
 ---
 <!-- trie:section symbol=tests/test_symbol_level_sync:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=da8aad35f588907e10af88c80b9961cbfdb6447ba33c348c07f99fa0427e2031 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a role=test-infrastructure -->
 Tests symbol-level sync functionality ensuring only requested symbols are regenerated while others remain byte-identical.
@@ -105,20 +105,20 @@ Verifies that `sync_single_file` silently ignores qualified names in `symbols_to
 <!-- trie:section symbol=tests/test_symbol_level_sync:_scanned_store fingerprint=be2171d309873933c9dd828dece87833bd3c117974cc17e64314491077d352a8 body_fp=e565d8aed5e4d306bd640e1e46f3ee0a102a4cbb7c9bba5ec4db0e4facf482f4 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a role=test-infrastructure -->
 Creates and returns a Store instance populated with scanned project data from the given project directory.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_symbol_level_sync:test_worklist_collects_qnames_for_directly_stale_symbols fingerprint=f89a09ff2d19d054811e97848e9b3407918d480797ee1db5e217233dc7a2d961 body_fp=aa8fe8929db6e4d31dba8df9447bec00ae11f4c671b910c41d76eb3ffc8c14a8 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a role=test -->
+<!-- trie:section symbol=tests/test_symbol_level_sync:test_worklist_collects_qnames_for_directly_stale_symbols fingerprint=f89a09ff2d19d054811e97848e9b3407918d480797ee1db5e217233dc7a2d961 body_fp=aa8fe8929db6e4d31dba8df9447bec00ae11f4c671b910c41d76eb3ffc8c14a8 source_ref=fff2a035ad30c13465a614cfe02c144204714790 role=test -->
 Tests that `compute_incremental_worklist` correctly identifies directly stale symbols for symbol-level regeneration.
 
 - Creates baseline triefacts for calculator.py and strings.py
 - Modifies the `add` function body in calculator.py to make it stale
 - Verifies worklist contains only the modified symbol qualified name, not the entire file
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_symbol_level_sync:test_worklist_omits_files_marked_missing_triefact fingerprint=a4aa6fab8ebd4667cbcb0251c911c91c9b4ff411519f99919cadf8354d1e30a7 body_fp=edabd9699a32a5b9cf43ff9c5e719bc451868c21621df6e4ae1ed1d4e7696a98 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a role=test -->
+<!-- trie:section symbol=tests/test_symbol_level_sync:test_worklist_omits_files_marked_missing_triefact fingerprint=a4aa6fab8ebd4667cbcb0251c911c91c9b4ff411519f99919cadf8354d1e30a7 body_fp=edabd9699a32a5b9cf43ff9c5e719bc451868c21621df6e4ae1ed1d4e7696a98 source_ref=fff2a035ad30c13465a614cfe02c144204714790 role=test -->
 Tests that files without existing triefacts are excluded from symbol-level regeneration mapping and use cold-write path instead.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_symbol_level_sync:test_run_incremental_regenerates_only_changed_symbol fingerprint=a65113dda9afce87564899c0db24eb8071924c986e5b7ab1d8d70355c2cd8e75 body_fp=871297bcc33ccff1421363eb20024b71502320808c0f58eebc9ff7502d7e48f4 source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a role=test -->
+<!-- trie:section symbol=tests/test_symbol_level_sync:test_run_incremental_regenerates_only_changed_symbol fingerprint=a65113dda9afce87564899c0db24eb8071924c986e5b7ab1d8d70355c2cd8e75 body_fp=871297bcc33ccff1421363eb20024b71502320808c0f58eebc9ff7502d7e48f4 source_ref=fff2a035ad30c13465a614cfe02c144204714790 role=test -->
 Tests that run_incremental regenerates only the changed symbol while preserving all other sections byte-identically.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_symbol_level_sync:test_underscored_symbols_are_documented_and_can_go_stale fingerprint=83103e9fad1ddc9c6dd458d47055a45da52160bc322cc88d14089ac18bbf805e body_fp=db69723a57dd772b8f709fe607559aab7c3d6df39b40ab6db2453fec92179b3c source_ref=471fc4733e80d0ab351edd7a2e2e799ae8379b1a role=change-detection -->
+<!-- trie:section symbol=tests/test_symbol_level_sync:test_underscored_symbols_are_documented_and_can_go_stale fingerprint=83103e9fad1ddc9c6dd458d47055a45da52160bc322cc88d14089ac18bbf805e body_fp=db69723a57dd772b8f709fe607559aab7c3d6df39b40ab6db2453fec92179b3c source_ref=fff2a035ad30c13465a614cfe02c144204714790 role=change-detection -->
 Verifies that underscored symbols receive documentation and are properly detected as stale when modified.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_symbol_level_sync:_cli_file_sync fingerprint=0b3e6d813667f6227abf39dcb32e11d50e803dd9f2a876370142718d4ac136d5 body_fp=8774fc9bfab26597f8f391db853c22d9e78744950b60677ab0e1b1486f1ca9e2 source_ref=fff2a035ad30c13465a614cfe02c144204714790 role=test -->

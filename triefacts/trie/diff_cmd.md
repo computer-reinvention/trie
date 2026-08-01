@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: trie/diff_cmd.py
 file_fingerprint: aede83b4992eaaf7ba79ed2b696080f3c91639d232164fe2f26f1fe01131e4dd
-last_synced_at: '2026-07-29T03:03:45Z'
+last_synced_at: '2026-08-01T01:52:55Z'
 defines:
 - kind: module
   qualified_name: trie/diff_cmd:__module__
@@ -17,7 +17,7 @@ defines:
   qualified_name: trie/diff_cmd:diff_project
   lines: 32-145
 incoming_refs: 6
-outgoing_refs: 6
+outgoing_refs: 9
 ---
 <!-- trie:section symbol=trie/diff_cmd:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=d810b0b94f518f9a5e682ca34a9a1a2becaad8071293b7ab1e55133ef629d73e source_ref=1e1ead40b2ec4f67fd8bdb317097295a702459f9 role=documentation-sync -->
 Generates unified diffs between current triefacts and regenerated previews for stale symbols.

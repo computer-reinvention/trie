@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: tests/test_check.py
 file_fingerprint: e15bc328b0061088438e35ef3f6d2525dbdeacc17cfdbaeed2d978ac887eb031
-last_synced_at: '2026-07-25T01:48:18Z'
+last_synced_at: '2026-08-01T01:52:37Z'
 defines:
 - kind: module
   qualified_name: tests/test_check:__module__
@@ -56,7 +56,7 @@ defines:
   qualified_name: tests/test_check:test_check_project_detects_legacy_section
   lines: 197-215
 incoming_refs: 0
-outgoing_refs: 34
+outgoing_refs: 45
 ---
 <!-- trie:section symbol=tests/test_check:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=97308f7817fb8c482d92ae937b7891d355b4fe238363f0ab657692b451bf851b source_ref=647efc202801e8ab3384c135027857bcb77efcb4 role=test-infrastructure -->
 Test suite for trie's check functionality that detects stale triefacts and synchronization issues.
@@ -83,28 +83,28 @@ Creates a temporary test project with configuration and sample Python files for 
 <!-- trie:section symbol=tests/test_check:_sync_all fingerprint=2319aaf7307a31aa136e06ddb84dd261f6ef7fdbb25fbcfbda6b959c3a11d06d body_fp=4c05b2521d110655e765397e22f5091099cef2b91bd3d575835cb8e1761c9ea5 source_ref=647efc202801e8ab3384c135027857bcb77efcb4 role=test-infrastructure -->
 Synchronizes all Python files in a test project's src directory using a fake client.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_check:test_clean_after_fresh_sync fingerprint=13234c9b3bc113d2f6251099e2ed19680cbd1fec19486fcfd1f2ee688dd6877d body_fp=cc60077ebba067560a22b96aac66ddce0fd43efb8009cb03d6d7514ef76de613 source_ref=647efc202801e8ab3384c135027857bcb77efcb4 role=test -->
+<!-- trie:section symbol=tests/test_check:test_clean_after_fresh_sync fingerprint=13234c9b3bc113d2f6251099e2ed19680cbd1fec19486fcfd1f2ee688dd6877d body_fp=cc60077ebba067560a22b96aac66ddce0fd43efb8009cb03d6d7514ef76de613 source_ref=30105b810f8b90b700150c01e3775337b5f88dda role=test -->
 Verifies that `check_project` reports clean status after synchronizing all files in a test project.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_check:test_missing_triefact_detected fingerprint=198beaed352ba1847c55b9b432a978f034dd94e3c19901ab32419c89cde856e4 body_fp=6f7e0825ead39f21201049a6566a61bad6330a5d64e7fcd7f992d44341f3a64b source_ref=647efc202801e8ab3384c135027857bcb77efcb4 role=test -->
+<!-- trie:section symbol=tests/test_check:test_missing_triefact_detected fingerprint=198beaed352ba1847c55b9b432a978f034dd94e3c19901ab32419c89cde856e4 body_fp=6f7e0825ead39f21201049a6566a61bad6330a5d64e7fcd7f992d44341f3a64b source_ref=30105b810f8b90b700150c01e3775337b5f88dda role=test -->
 Tests that `check_project` detects when no triefacts exist for source symbols.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_check:test_stale_section_detected fingerprint=90186c99480bfe6049209b581e100daba72eae24b8cba2c726aa6b104934f5d9 body_fp=851fa96e0419bb0547a88990af6416c1bcc90745ce4532224a20ae6c0d7b6b73 source_ref=647efc202801e8ab3384c135027857bcb77efcb4 role=test -->
+<!-- trie:section symbol=tests/test_check:test_stale_section_detected fingerprint=90186c99480bfe6049209b581e100daba72eae24b8cba2c726aa6b104934f5d9 body_fp=851fa96e0419bb0547a88990af6416c1bcc90745ce4532224a20ae6c0d7b6b73 source_ref=30105b810f8b90b700150c01e3775337b5f88dda role=test -->
 Verifies that `check_project` detects stale triefact sections after source code changes.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_check:test_missing_section_detected fingerprint=474be3f403d0bc036a4e3b21eaa0aa313c358d28ce4173c0b1d0ede526d616de body_fp=3bcb391bfeb4edbcc505801d329f4f330d176f181e6785986850f4a2c6b7f3c4 source_ref=647efc202801e8ab3384c135027857bcb77efcb4 role=test -->
+<!-- trie:section symbol=tests/test_check:test_missing_section_detected fingerprint=474be3f403d0bc036a4e3b21eaa0aa313c358d28ce4173c0b1d0ede526d616de body_fp=3bcb391bfeb4edbcc505801d329f4f330d176f181e6785986850f4a2c6b7f3c4 source_ref=30105b810f8b90b700150c01e3775337b5f88dda role=test -->
 Tests that `check_project` detects when a new symbol in source code lacks a corresponding triefact section.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_check:test_orphan_section_detected fingerprint=fa609789a15518cf4c7d41859858f0a90c64b76d6872c4b0a50099bbf1e2c602 body_fp=aa008f9de2b932300b48d1776e83402b9aea3403282df4cae9daec46be00fc78 source_ref=647efc202801e8ab3384c135027857bcb77efcb4 role=test -->
+<!-- trie:section symbol=tests/test_check:test_orphan_section_detected fingerprint=fa609789a15518cf4c7d41859858f0a90c64b76d6872c4b0a50099bbf1e2c602 body_fp=aa008f9de2b932300b48d1776e83402b9aea3403282df4cae9daec46be00fc78 source_ref=30105b810f8b90b700150c01e3775337b5f88dda role=test -->
 Tests that `check_project` detects orphan sections when source symbol is deleted but triefact section remains.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_check:test_private_only_file_requires_a_triefact fingerprint=98ffaaffbffb6147cea08a7a5a60f8def21a95b776735ea3669398bf858f7064 body_fp=2b1bb547a178e0a71dbbc9b350dddf1c4d1c53b10874bdb4ce0f45da453c4231 source_ref=647efc202801e8ab3384c135027857bcb77efcb4 role=test -->
+<!-- trie:section symbol=tests/test_check:test_private_only_file_requires_a_triefact fingerprint=98ffaaffbffb6147cea08a7a5a60f8def21a95b776735ea3669398bf858f7064 body_fp=2b1bb547a178e0a71dbbc9b350dddf1c4d1c53b10874bdb4ce0f45da453c4231 source_ref=30105b810f8b90b700150c01e3775337b5f88dda role=test -->
 Verifies that files containing only underscore-prefixed symbols still trigger MISSING_TRIEFACT during check operations.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_check:test_file_with_no_parser_surfaced_symbols_needs_no_triefact fingerprint=f2ee7c27204c5bcfe8fe822d998b2b04f3982ae52c32d3ce7f7fd297a92696e3 body_fp=fead9196c2fb018d85a2e671e3f2743410cd102ab3170927def14c5a207fd2d0 source_ref=647efc202801e8ab3384c135027857bcb77efcb4 role=test -->
+<!-- trie:section symbol=tests/test_check:test_file_with_no_parser_surfaced_symbols_needs_no_triefact fingerprint=f2ee7c27204c5bcfe8fe822d998b2b04f3982ae52c32d3ce7f7fd297a92696e3 body_fp=fead9196c2fb018d85a2e671e3f2743410cd102ab3170927def14c5a207fd2d0 source_ref=30105b810f8b90b700150c01e3775337b5f88dda role=test -->
 Verifies that files containing only imports are excluded from staleness checks since they have no documentable symbols.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_check:test_clean_when_all_in_sync_with_human_prose fingerprint=5dc7b3e44dcb10bc2ccf33dc2fadca8bd2532b0be41200707c9eede67ea30fe1 body_fp=b26b061af68c378612327daf4ca7d38d79562892e9b72a6feb27538214b126ef source_ref=647efc202801e8ab3384c135027857bcb77efcb4 role=test -->
+<!-- trie:section symbol=tests/test_check:test_clean_when_all_in_sync_with_human_prose fingerprint=5dc7b3e44dcb10bc2ccf33dc2fadca8bd2532b0be41200707c9eede67ea30fe1 body_fp=b26b061af68c378612327daf4ca7d38d79562892e9b72a6feb27538214b126ef source_ref=30105b810f8b90b700150c01e3775337b5f88dda role=test -->
 Verifies `check_project` remains clean when triefacts contain manually added prose outside generated sections.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_check:test_cli_verify_exits_zero_when_clean fingerprint=4b142fe69d236116d6658f92d84b9a946f18c6d243ff719e51eb5e82fedad9d4 body_fp=f47329ea59627aedec0032c1052ec09f249b54473dd6c82aa96142a30b5aa3d4 source_ref=647efc202801e8ab3384c135027857bcb77efcb4 role=test-infrastructure -->
@@ -119,12 +119,12 @@ Tests that CLI verify command with --quiet flag suppresses per-symbol details wh
 <!-- trie:section symbol=tests/test_check:test_cli_verify_detects_tampered_body fingerprint=6d40d4f48e4430cd05b03f35a5184d65e3235d8a0b8ef65353ea5507a42fc0a0 body_fp=46736cf117ee5ba9e9ef95cfd444cbf098742e85c78373938c8bf1470bab8e57 source_ref=30105b810f8b90b700150c01e3775337b5f88dda role=test -->
 Tests that the CLI `verify` command detects manually edited triefact section bodies and outputs "hand-edited", "outside", and the affected symbol name.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_check:test_check_project_detects_tampered_body fingerprint=73497d814b012250d67621e3dd5ff6075add11f22f4e6c837fbdb9b4c4e0ef38 body_fp=884442ebc008a1d7d851005b2c5386aef553da10358bff334de2d3feba595bc3 source_ref=647efc202801e8ab3384c135027857bcb77efcb4 role=test -->
+<!-- trie:section symbol=tests/test_check:test_check_project_detects_tampered_body fingerprint=73497d814b012250d67621e3dd5ff6075add11f22f4e6c837fbdb9b4c4e0ef38 body_fp=884442ebc008a1d7d851005b2c5386aef553da10358bff334de2d3feba595bc3 source_ref=30105b810f8b90b700150c01e3775337b5f88dda role=test -->
 Tests that `check_project` detects manually edited content within triefact section sentinels via body fingerprint validation.
 
 - Modifies generated triefact content by replacing the original text with "DIFFERENT TEXT"
 - Verifies that `StaleReason.TAMPERED_BODY` is flagged for the modified section
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_check:test_check_project_detects_legacy_section fingerprint=be8f57710f083959038e5df3dc415177ec483a8b6d07023a86484d995bc81a3d body_fp=b72bb69efd37fc5992d4d5384782c295f045a9bbdf55d9ce185ad28967d6ca7c source_ref=647efc202801e8ab3384c135027857bcb77efcb4 role=test -->
+<!-- trie:section symbol=tests/test_check:test_check_project_detects_legacy_section fingerprint=be8f57710f083959038e5df3dc415177ec483a8b6d07023a86484d995bc81a3d body_fp=b72bb69efd37fc5992d4d5384782c295f045a9bbdf55d9ce185ad28967d6ca7c source_ref=30105b810f8b90b700150c01e3775337b5f88dda role=test -->
 Tests that check_project detects sections missing body_fp attributes as legacy format requiring updates.
 <!-- trie:end -->

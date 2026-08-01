@@ -1,12 +1,12 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: trie/sync/writer.py
-file_fingerprint: 57207d85d26c6da12163800fae82e7caf4f48aa71e69b8db75131b4c1916e64e
-last_synced_at: '2026-07-26T20:28:00Z'
+file_fingerprint: 6e10670f3565ce1143f95880da1b091b77c8e829d567e27c18303b4666b5abc7
+last_synced_at: '2026-08-01T01:52:14Z'
 defines:
 - kind: module
   qualified_name: trie/sync/writer:__module__
-  lines: 1-540
+  lines: 1-552
 - kind: constant
   qualified_name: trie/sync/writer:SECTION_OPEN_RE
   lines: 43-52
@@ -48,50 +48,50 @@ defines:
   lines: 140-168
 - kind: class
   qualified_name: trie/sync/writer:TriefactFile
-  lines: 172-378
+  lines: 172-390
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.parse
-  lines: 177-226
+  lines: 177-238
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.empty
-  lines: 229-230
+  lines: 241-242
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.get_section
-  lines: 234-238
+  lines: 246-250
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.section_qnames
-  lines: 240-241
+  lines: 252-253
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.upsert_section
-  lines: 245-277
+  lines: 257-289
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.set_section_role
-  lines: 279-293
+  lines: 291-305
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.sort_sections
-  lines: 295-317
+  lines: 307-329
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.remove_section
-  lines: 319-324
+  lines: 331-336
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile._append_section
-  lines: 326-337
+  lines: 338-349
 - kind: method
   qualified_name: trie/sync/writer:TriefactFile.render
-  lines: 341-378
+  lines: 353-390
 - kind: function
   qualified_name: trie/sync/writer:render_for_agent
-  lines: 381-443
+  lines: 393-455
 - kind: function
   qualified_name: trie/sync/writer:_section_signature
-  lines: 446-460
+  lines: 458-472
 - kind: function
   qualified_name: trie/sync/writer:_is_public_qname
-  lines: 463-468
+  lines: 475-480
 - kind: function
   qualified_name: trie/sync/writer:compact_triefact_view
-  lines: 471-539
-incoming_refs: 81
+  lines: 483-551
+incoming_refs: 225
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/sync/writer:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=571ed790c5501af20434b677bbce77f9f2dcb639b349a9deef17d9bc5ceef1be source_ref=f889eae6ac8fb78e9f35b521cfd5dd3cb5a4de2e role=parsing -->
@@ -168,21 +168,23 @@ Removes duplicate sections with the same qualified_name, keeping the last occurr
 - Passes through non-section prose chunks unchanged
 - Enables self-healing of accumulated duplicates on next read/render cycle
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/writer:TriefactFile fingerprint=b9f8446562ff505ffb93542ff4d811eb16d6363ac25a030dbbe834ffefbe41b4 body_fp=bacf8ee0e345a2db25d8916b9b72cbda993cfa25e3b0140a08c2db9da343f8e5 source_ref=cc69b7ec423280f825f4e5afc67e408d002041ae role=persistence -->
+<!-- trie:section symbol=trie/sync/writer:TriefactFile fingerprint=6e2d23c3db6e183942fa57199c36e8b04e3e790707622505fc471b7ee4872dee body_fp=1f9bbf16557b370d6309f656d973e74d1d9ba1647c3154d51acb9e04c8fce7bf source_ref=5b7825700eebcfd1cf76905d45abb17aa8ccbe06 role=persistence -->
 Parses, manipulates, and renders triefact files containing YAML frontmatter and trie-managed documentation sections.
 
 - `front_matter`: YAML metadata dictionary at file start
 - `chunks`: sequence of Section and Prose objects representing file structure
-- `parse()`: extracts frontmatter and HTML-delimited sections from raw text; no longer reads historical mass fields
+- `parse()`: extracts frontmatter and HTML-delimited sections from raw text; accepts `parse_front_matter=False` to skip YAML loading entirely for fingerprint-only consumers
 - `upsert_section()`: replaces existing section or appends new one; no longer preserves historical mass from the existing section
 - `set_section_role()`: updates only the role field of existing section
 - `sort_sections()`: reorders sections by source line number while preserving prose
 - `render()`: serializes back to text with HTML sentinels and YAML frontmatter; no longer emits `hist_mass=` field
 <!-- trie:end -->
-<!-- trie:section symbol=trie/sync/writer:TriefactFile.parse fingerprint=bcbf1948f3e759d430ff14a0bd5fe43fa6c27a4aab47687d732df5a5c5da3d1a body_fp=fc7db7390e4213c0c1f648d1bc5eb32c6c79245230323d0c1f379377e1d9e964 source_ref=cc69b7ec423280f825f4e5afc67e408d002041ae role=parsing -->
+<!-- trie:section symbol=trie/sync/writer:TriefactFile.parse fingerprint=5547ae2066907fa2bff6eb30e98cbb4c4b9e9a979a7cae47197b030bee59efa1 body_fp=b6ddec0f3ab3a759eae6200d766ac5103eb301eba22385a5ff2deca0efbb5e82 source_ref=5b7825700eebcfd1cf76905d45abb17aa8ccbe06 role=parsing -->
 Creates `TriefactFile` from Markdown text by parsing YAML frontmatter and trie section sentinels.
 
 - Extracts YAML frontmatter from opening `---` blocks, ignoring malformed YAML
+- `parse_front_matter=False` skips the YAML load entirely, leaving `front_matter` empty
+- Prefers LibYAML's `CSafeLoader` over the pure-Python loader when available
 - Parses trie sections between `<!-- trie:section -->` and `<!-- trie:end -->` sentinels
 - Preserves prose chunks between sections as-is
 - Strips leading/trailing newlines from section bodies

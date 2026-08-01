@@ -53,7 +53,10 @@ def _file_descriptions(triefacts_root: Path, *, skip_dirs: set[str]) -> dict[str
         desc = ""
         if m:
             try:
-                fm = yaml.safe_load(m.group("yaml"))
+                # LibYAML C loader when available — the pure-Python loader
+                # made index generation ~6ms/file (0.8s repo-wide).
+                loader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+                fm = yaml.load(m.group("yaml"), Loader=loader)
                 if isinstance(fm, dict):
                     desc = str(fm.get("description") or "").strip()
             except Exception:

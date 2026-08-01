@@ -1,8 +1,8 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.2.1
 source: tests/test_incremental.py
 file_fingerprint: 39ee651e056cf3e68589ae9559b0ef7f4a3e4acd621e332046c39ed57de9a36f
-last_synced_at: '2026-07-25T01:37:06Z'
+last_synced_at: '2026-08-01T01:52:46Z'
 defines:
 - kind: module
   qualified_name: tests/test_incremental:__module__
@@ -65,7 +65,7 @@ defines:
   qualified_name: tests/test_incremental:test_cli_plan_all_forces_full_bootstrap_view
   lines: 390-404
 incoming_refs: 0
-outgoing_refs: 67
+outgoing_refs: 83
 ---
 <!-- trie:section symbol=tests/test_incremental:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=417935d1c34a8cc18e5741c536af59d3c110c7a5cd5782a88324cb472f8ffe8f source_ref=a2b7bc3250cdda5be24221661f9fbc536677e55e role=test-infrastructure -->
 Tests for incremental synchronization functionality including cascade detection, budget limits, CLI routing, and worklist computation.

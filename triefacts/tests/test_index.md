@@ -1,8 +1,8 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: tests/test_index.py
 file_fingerprint: 5d822ac85d723c1fbfe185633ec97d61f1850f1b37517f1d296a09ac522bf0e1
-last_synced_at: '2026-07-29T17:55:29Z'
+last_synced_at: '2026-08-01T01:52:26Z'
 defines:
 - kind: module
   qualified_name: tests/test_index:__module__
