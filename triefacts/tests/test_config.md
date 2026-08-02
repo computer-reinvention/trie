@@ -1,8 +1,8 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: tests/test_config.py
-file_fingerprint: 7ecefff2079a1cb6887a8b5420ffffa320bee5cd2ecdcc3cd2e97a499c128db7
-last_synced_at: '2026-07-29T17:55:32Z'
+file_fingerprint: 8024154fe32c6249fdf9e9b7038a70e421f7ed78a88e2b6510d5331674feaf36
+last_synced_at: '2026-08-01T14:59:14Z'
 defines:
 - kind: module
   qualified_name: tests/test_config:__module__
@@ -66,8 +66,8 @@ Verify that resolver config fields (`enabled`, `disabled_languages`, `servers`) 
 <!-- trie:section symbol=tests/test_config:test_resolver_config_gates_specs fingerprint=82d7995478c0bef11b738d21cb9b549ada75e9de2c50839ec6764dfe61686537 body_fp=8c7a47c3a182adaa6bdbd539378f298a5cef53688889fe3146ddbee14d0647c9 source_ref=3d37fa183314a6c47e966911cbaba79329583648 role=test -->
 Verify that `specs.configure_resolver` gates language spec resolution, returning `None` for disabled or globally-disabled languages.
 <!-- trie:end -->
-<!-- trie:section symbol=tests/test_config:test_overrides_merge_per_section fingerprint=5baed518a1d25e4a0508e76368d6bdcfd516757fecf5e7e4f4e79b4a9731b35e body_fp=cba865c6b785bc6d77a4e69e8ca96aa5868e8ddfc45a5afac55fb6a7dcc6425f source_ref=2ca0238ab756d0c60b52d70fdaccabde793f48a0 role=test-infrastructure -->
-Tests that Config.from_dict merges overrides per section while preserving defaults for untouched sections and keys.
+<!-- trie:section symbol=tests/test_config:test_overrides_merge_per_section fingerprint=0b95159c2bf1033bd97534168110a5f7883670992535e93232c8724fa675f634 body_fp=8de69ea3739db95ad1a82d1edca5e0639c8b381124f0063fc268731d7386941f source_ref=d03a084837bba170473c3f70129ef79f0faeecb9 role=test -->
+Tests that `Config.from_dict` merges overrides per section while preserving defaults for untouched sections and keys.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_config:test_load_roundtrips_default_template fingerprint=333b6309d910ec325894a15776b361f1510c756466a548083fb8d124b2abf6a5 body_fp=f1c706a20bc4863d933f2f914c487448722750b9d2a3c369ab4724891c45e9bf source_ref=2ca0238ab756d0c60b52d70fdaccabde793f48a0 role=test -->
 Verifies that Config.load can parse the default TOML configuration template and produces expected defaults.

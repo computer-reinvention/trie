@@ -1,12 +1,12 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.2.1
 source: trie/config.py
-file_fingerprint: 38a087f21be615578b2f72f274c75b24a5d1784d6ad8d1d70378f58de9f3ef38
-last_synced_at: '2026-07-29T17:54:48Z'
+file_fingerprint: 3033640bbebc167f27cb85781bab69cd4504e8c4168f4e0e08d8b8b4516467cc
+last_synced_at: '2026-08-01T14:59:14Z'
 defines:
 - kind: module
   qualified_name: trie/config:__module__
-  lines: 1-436
+  lines: 1-437
 - kind: class
   qualified_name: trie/config:TrieMeta
   lines: 9-10
@@ -54,8 +54,8 @@ defines:
   lines: 306-307
 - kind: constant
   qualified_name: trie/config:DEFAULT_CONFIG_TOML
-  lines: 310-435
-incoming_refs: 353
+  lines: 310-436
+incoming_refs: 357
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/config:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=73508aef5ccf98a204e6bf0fa288e0420baac8315fc2fb1aa7e8d1bf91d72a01 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
@@ -98,7 +98,7 @@ Configure the type-aware LSP reference resolver that supplements tree-sitter wit
 - `disabled_languages`: per-language opt-out from LSP even when a server is installed.
 - `servers`: overrides the built-in server command per language; missing binary still degrades gracefully.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Models fingerprint=abf55624d4d046500cb6caf33a90cb62e33c0a2f319cfcb63d35d6a242726335 body_fp=551a97eb8dc312873a2b951610ade333a2167482905c6b62079f30035c2467eb source_ref=18c7db2eecc1f170e5b7aba91c79b86944ad11cf role=config -->
+<!-- trie:section symbol=trie/config:Models fingerprint=71d55e59c71604441f07795baebe1039c78e45ec5f83642cfc0fb12c800e214f body_fp=551a97eb8dc312873a2b951610ade333a2167482905c6b62079f30035c2467eb source_ref=8290941270823de571094515addff8acc7bc9467 role=config -->
 Specifies default model identifiers for different trie operations.
 
 - `bootstrap`: Model used for initial triefact generation

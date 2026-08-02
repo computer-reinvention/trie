@@ -66,7 +66,7 @@ def test_overrides_merge_per_section():
     assert cfg.triefacts.root == "triefacts"
     assert cfg.cascade.default_depth == 1
     # untouched keys within a partially-overridden section keep defaults
-    assert cfg.models.cascade == "anthropic/claude-sonnet-4-6"
+    assert cfg.models.cascade == "anthropic/claude-haiku-4-5-20251001"
 
 
 def test_load_roundtrips_default_template(tmp_path: Path):
