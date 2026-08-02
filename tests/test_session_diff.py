@@ -588,6 +588,51 @@ def test_one_line_flattens_and_truncates():
     assert _one_line("   \n\t\n  ") == ""
 
 
+def test_first_line_preserves_full_intent_without_truncation():
+    from trie.session_diff import _first_line
+
+    # Takes the full first non-empty line — no sentence cut, no char cap, no '…'.
+    two_sentences = "Fix the bug. And here is a lot more essential detail that must survive."
+    assert _first_line(two_sentences) == two_sentences  # NOT cut at ". "
+
+    long_text = "x" * 400
+    assert _first_line(long_text) == long_text  # no truncation
+    assert "…" not in _first_line(long_text)
+
+    # First non-empty line only; whitespace runs collapsed; never multi-line.
+    assert _first_line("\n\n  alpha   beta\tgamma\nsecond line") == "alpha beta gamma"
+    assert _first_line("") == ""
+    assert _first_line("  \n\t ") == ""
+
+
+def test_change_bullets_record_full_intent_no_ellipsis():
+    """The digest is the permanent archive of change intent; the per-symbol
+    change bullets (and staged bullets) must record the note/prose in FULL.
+    Truncating there would irrecoverably lose why a symbol changed."""
+    from trie.session_diff import SessionDiff, render_digest_section
+
+    long_note = (
+        "Rework the retry loop to dedupe by request id. This is a deliberately long "
+        "explanation that runs well past one hundred and sixty characters and even "
+        "contains a period. mid-way so the old sentence-boundary cut would have fired."
+    )
+    data = SessionDiff(
+        triefact_diff="",
+        applied=[{"op": "modify", "qname": "m:f", "notes": [long_note], "churn": 3}],
+        pending=[{"op": "create", "qname": "m:p", "note": long_note, "reason": ""}],
+    )
+    deltas = [{"qname": "m:f", "status": "changed", "before": "Old.", "after": long_note}]
+
+    out = render_digest_section(
+        data, title="T", date_str="2026-08-03", parent_short="abc123", deltas=deltas
+    )
+    # Full note survives verbatim in both the change bullet and the staged bullet.
+    assert long_note in out
+    # No ellipsis anywhere in the recorded change bullets.
+    changes_body = out.split("### Changes", 1)[1]
+    assert "…" not in changes_body
+
+
 def test_collect_symbol_deltas_before_after(tmp_path):
     import shutil
     import subprocess as sp

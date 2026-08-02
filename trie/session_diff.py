@@ -143,6 +143,25 @@ def _one_line(text: str, max_chars: int = 160) -> str:
     return collapsed
 
 
+def _first_line(text: str) -> str:
+    """Flatten `text` to its full first non-empty line — no truncation, no ellipsis.
+
+    Unlike `_one_line`, this never cuts at a sentence boundary or a character
+    budget. It is used for the per-symbol change-intent summaries in a digest,
+    which are the *permanent, archived record* of why a symbol changed: dropping
+    text there would silently lose intent that can never be recovered. Only the
+    line break and whitespace runs are normalised so the summary stays a single
+    safe Markdown line.
+    """
+    import re
+
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped:
+            return re.sub(r"\s+", " ", stripped).strip()
+    return ""
+
+
 _FENCE = "`" * 3
 
 
@@ -407,17 +426,17 @@ def render_digest_section(
         if delta:
             status = delta.get("status", "changed")
             if status == "added":
-                after = _one_line(delta.get("after", ""))
+                after = _first_line(delta.get("after", ""))
                 bullet = f'- + {qname} — "{after}"'
             elif status == "removed":
                 bullet = f"- − {qname}"  # noqa: RUF001 — U+2212 distinguishes marker from bullet hyphen
             else:
-                before = _one_line(delta.get("before", ""))
-                after = _one_line(delta.get("after", ""))
+                before = _first_line(delta.get("before", ""))
+                after = _first_line(delta.get("after", ""))
                 bullet = f'- ~ {qname} — "{before}" → "{after}"'
         elif applied:
             op = applied.get("op", "")
-            note_line = _one_line(applied.get("note", ""))
+            note_line = _first_line(applied.get("note", ""))
             if op in ("create", "add"):
                 marker = "+"
             elif op in ("delete", "remove"):
@@ -462,7 +481,7 @@ def render_digest_section(
             op = entry.get("op", "")
             qname = entry.get("qname", "")
             note_text = entry.get("note", "")
-            note_line = _one_line(note_text)
+            note_line = _first_line(note_text)
             bullet = f"- {op} {qname}"
             if note_line:
                 bullet += f" — {note_line}"

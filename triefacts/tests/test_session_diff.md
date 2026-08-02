@@ -1,14 +1,14 @@
 ---
 trie_version: 0.2.1
 source: tests/test_session_diff.py
-file_fingerprint: a0817e01a1494387d84bb52c0933ec29fe265d4e9af4f9aff802d26fc576ce4d
-last_synced_at: '2026-08-01T01:52:49Z'
+file_fingerprint: 24a101193c53d84945804a72c9b6df41fa0c8eccc0fbb07f6f7e2a532951d5b4
+last_synced_at: '2026-08-02T20:43:30Z'
 description: Tests for the session log archive and the `trie diff` evidence collection/prompt
   assembly.
 defines:
 - kind: module
   qualified_name: tests/test_session_diff:__module__
-  lines: 1-732
+  lines: 1-777
 - kind: function
   qualified_name: tests/test_session_diff:test_intent_lifecycle_in_the_patches_table
   lines: 23-48
@@ -37,14 +37,20 @@ defines:
   qualified_name: tests/test_session_diff:test_one_line_flattens_and_truncates
   lines: 561-588
 - kind: function
+  qualified_name: tests/test_session_diff:test_first_line_preserves_full_intent_without_truncation
+  lines: 591-605
+- kind: function
+  qualified_name: tests/test_session_diff:test_change_bullets_record_full_intent_no_ellipsis
+  lines: 608-633
+- kind: function
   qualified_name: tests/test_session_diff:test_collect_symbol_deltas_before_after
-  lines: 591-653
+  lines: 636-698
 - kind: function
   qualified_name: tests/test_session_diff:test_merge_applied_by_symbol_first_note_wins
-  lines: 656-677
+  lines: 701-722
 - kind: function
   qualified_name: tests/test_session_diff:test_symbol_and_file_history_from_digest_archive
-  lines: 680-731
+  lines: 725-776
 incoming_refs: 0
 outgoing_refs: 35
 ---
@@ -77,6 +83,12 @@ Test `write_digest` for filesystem contract: timestamped file creation under `tr
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_session_diff:test_one_line_flattens_and_truncates fingerprint=2f0ba482c18eb7978c4e4724a58f3a1e674200782e5d3f29c4a862a8f082989c body_fp=b0b2db762e1f94b4d614e613fd8aca35ce2348fe5a6f7b11e5ea5bb7d4203c80 source_ref=c2dff8907b251d36ea66f85df0d978cec2ed679e role=test -->
 Verify `_one_line` flattens multiline text, collapses whitespace, cuts at sentence boundaries, truncates long input to ≤200 chars with `…`, and returns `""` for empty input.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_session_diff:test_first_line_preserves_full_intent_without_truncation fingerprint=ffab40c9bd610faa4508b1113fd374b1288bb3a1de706b7af890bd5f6fae39c2 body_fp=cac1d472acfe236c456be4d3fba47afd60d1d5d172bc7d5da276044dde4ad8c9 source_ref=88ab7199843febfd95eb072ba13dc516a3d5aa7e role=test -->
+Verify that `_first_line` returns the complete first non-empty line with no sentence-boundary cut, no character cap, and no ellipsis.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_session_diff:test_change_bullets_record_full_intent_no_ellipsis fingerprint=972a63a26e64b558119cf5b3964010d2a872cf6e3c3da6dd3c61986fee755c90 body_fp=57fbf982a9fa1a4d3edcd8c64aaf34765c54dd2e901507cb651b1ef9f09f10ba source_ref=88ab7199843febfd95eb072ba13dc516a3d5aa7e role=test -->
+Assert that `render_digest_section` preserves long notes verbatim in change and staged bullets, with no ellipsis truncation in the Changes section.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_session_diff:test_collect_symbol_deltas_before_after fingerprint=69389e9411dc11c1f5a44e402bb7eb71dbf9d3b752658f453a85ef6061c4ea8b body_fp=6b3606b0e5e94df200f2aed93cb75263556ef5e3c312158b78cb930c3550cbe5 source_ref=c2dff8907b251d36ea66f85df0d978cec2ed679e role=test -->
 Test that `collect_symbol_deltas` returns `changed` rows with `before`/`after` prose, `added` rows for new symbols, no row for unchanged symbols, and excludes symbols from the digest archive subdirectory.
