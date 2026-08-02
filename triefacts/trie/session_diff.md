@@ -1,12 +1,12 @@
 ---
 trie_version: 0.2.1
 source: trie/session_diff.py
-file_fingerprint: a0e38753224db01f448e83ab60f243faa495d9766ef59b6af8307a1300f74dc0
-last_synced_at: '2026-08-01T01:52:58Z'
+file_fingerprint: 4bf16215ed8b60feaf14439bc2af3a62856120983a341f8647a60b4ea870090b
+last_synced_at: '2026-08-02T20:43:22Z'
 defines:
 - kind: module
   qualified_name: trie/session_diff:__module__
-  lines: 1-863
+  lines: 1-882
 - kind: class
   qualified_name: trie/session_diff:SessionDiff
   lines: 11-30
@@ -25,60 +25,63 @@ defines:
 - kind: function
   qualified_name: trie/session_diff:_one_line
   lines: 111-143
+- kind: function
+  qualified_name: trie/session_diff:_first_line
+  lines: 146-162
 - kind: constant
   qualified_name: trie/session_diff:_FENCE
-  lines: 146-146
+  lines: 165-165
 - kind: function
   qualified_name: trie/session_diff:build_narrative_prompt
-  lines: 149-221
+  lines: 168-240
 - kind: class
   qualified_name: trie/session_diff:SessionNarrative
-  lines: 224-258
+  lines: 243-277
 - kind: method
   qualified_name: trie/session_diff:SessionNarrative.as_markdown
-  lines: 238-258
+  lines: 257-277
 - kind: constant
   qualified_name: trie/session_diff:_NARRATIVE_SYSTEM_PROMPT
-  lines: 261-275
+  lines: 280-294
 - kind: function
   qualified_name: trie/session_diff:synthesize_narrative
-  lines: 278-322
+  lines: 297-341
 - kind: function
   qualified_name: trie/session_diff:render_digest_section
-  lines: 325-472
+  lines: 344-491
 - kind: constant
   qualified_name: trie/session_diff:DIGEST_FILE_HEADER
-  lines: 475-479
+  lines: 494-498
 - kind: constant
   qualified_name: trie/session_diff:DIGEST_HEADING_RE
-  lines: 485-489
+  lines: 504-508
 - kind: function
   qualified_name: trie/session_diff:_parse_digest_file
-  lines: 492-530
+  lines: 511-549
 - kind: function
   qualified_name: trie/session_diff:iter_digest_entries
-  lines: 533-545
+  lines: 552-564
 - kind: function
   qualified_name: trie/session_diff:symbol_history
-  lines: 548-580
+  lines: 567-599
 - kind: function
   qualified_name: trie/session_diff:file_history
-  lines: 583-611
+  lines: 602-630
 - kind: function
   qualified_name: trie/session_diff:rows_from_digest_entry
-  lines: 614-641
+  lines: 633-660
 - kind: function
   qualified_name: trie/session_diff:_new_digest_filename
-  lines: 644-655
+  lines: 663-674
 - kind: function
   qualified_name: trie/session_diff:write_digest
-  lines: 658-731
+  lines: 677-750
 - kind: function
   qualified_name: trie/session_diff:collect_symbol_deltas
-  lines: 734-841
+  lines: 753-860
 - kind: function
   qualified_name: trie/session_diff:merge_applied_by_symbol
-  lines: 844-862
+  lines: 863-881
 incoming_refs: 41
 outgoing_refs: 7
 ---
@@ -126,6 +129,9 @@ Extract the first non-empty line of `text`, collapse whitespace, truncate at the
 
 - `max_chars`: character budget before hard truncation with ellipsis; hard cut prefers the last word boundary to avoid mid-word splits; default 160.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/session_diff:_first_line fingerprint=fad7fea6a2051dbda83458ee172021c0594d470f1bfaab108853f42fa6f6971b body_fp=37ffe2d4d136d841a78f6662124728411693a37d28b9d019ffeb30f043183885 source_ref=524bcb92d10e2b1f1c66e559b1e78d5aaec69675 role=util -->
+Return the first non-empty line of `text` with whitespace runs collapsed to single spaces, without truncation or ellipsis.
+<!-- trie:end -->
 <!-- trie:section symbol=trie/session_diff:_FENCE fingerprint=7c0a24375f67cb32fbd350a1aa89f4ee1f6465b35df8cd422b0b4544c79625fd body_fp=716700dda7d154daafd12f8d2485eb55825aa77b76cc55de6c0752655f91f4aa source_ref=ac6022b60d3c7ae0d5a92f1a4a4baad1193147c7 role=util -->
 Module-level constant holding three backtick characters used to open and close fenced code blocks in prompt assembly.
 <!-- trie:end -->
@@ -156,12 +162,12 @@ Send `SessionDiff` evidence to an LLM client and return a structured `SessionNar
 - `max_tokens`: runaway guard only; default raised to 1024 to avoid mid-sentence truncation.
 - Returns a `SessionNarrative`; if the client returns bare text, wraps it defensively in `SessionNarrative(one_liner="", body=…)`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/session_diff:render_digest_section fingerprint=70fee0b244f4377bb62ae9afa610a980ef10986da6671855628826d1fff6bee0 body_fp=1df6f14879e4f5901ba5538d489c5a2a18d4124a09175143017426b83c3f2f61 source_ref=ac6022b60d3c7ae0d5a92f1a4a4baad1193147c7 role=domain -->
+<!-- trie:section symbol=trie/session_diff:render_digest_section fingerprint=7f31b182db9d18f0771b151e1fd7873fb19c79f3f033cfcbd5e2a91b4707b1dc body_fp=d2638d6333ceed8b570e7f2c1bb70b8b32ff1fe9377d696f2fbf10fdd1abef62 source_ref=524bcb92d10e2b1f1c66e559b1e78d5aaec69675 role=domain -->
 Render a `SessionDiff` as a single markdown digest-entry string with heading, optional narrative, per-symbol change bullets, and staged pending entries.
 
 - `title` / `date_str` / `parent_short`: compose the `## …` heading used as an `upsert_digest` boundary anchor.
 - `narrative`: heading levels `#` and `##` are demoted to `###` to prevent structural collisions.
-- `deltas`: precomputed per-symbol diff rows; merged with `data.applied` by qname, applied-order first.
+- `deltas`: precomputed per-symbol diff rows; merged with `data.applied` by qname, applied-order first; one-liner text is extracted via `_first_line` (no truncation or ellipsis) rather than `_one_line`.
 - `max_changes`: caps visible change bullets; overflow becomes a `… and N more` line **plus an HTML comment block** (`<!-- trie:changes-overflow … -->`) preserving all overflow rows for parsing by `_parse_digest_file`.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/session_diff:DIGEST_FILE_HEADER fingerprint=953f1e9f7f8034daa19d5deb0c1e678442b7f17daadb9e7f5b87b94d13a32ebe body_fp=f688decefb16ed2e9df6e61b9b495e64c77ef53ec2a17f8192758caf7f24f7ed source_ref=ac6022b60d3c7ae0d5a92f1a4a4baad1193147c7 role=model -->

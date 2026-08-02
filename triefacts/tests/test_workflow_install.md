@@ -1,12 +1,12 @@
 ---
 trie_version: 0.2.1
 source: tests/test_workflow_install.py
-file_fingerprint: e76bee44f40be02753917eecb7c1768851e3e90f148df8a8c1f6fdeca8977229
-last_synced_at: '2026-08-01T08:35:57Z'
+file_fingerprint: 0feafc29456c82dae62b86d49558edbab94dc51341757623739775cea9c6d719
+last_synced_at: '2026-08-02T20:23:38Z'
 defines:
 - kind: module
   qualified_name: tests/test_workflow_install:__module__
-  lines: 1-178
+  lines: 1-238
 - kind: function
   qualified_name: tests/test_workflow_install:_git_repo
   lines: 13-15
@@ -20,17 +20,20 @@ defines:
   qualified_name: tests/test_workflow_install:test_render_prettifies_digest_for_display_only
   lines: 47-131
 - kind: function
+  qualified_name: tests/test_workflow_install:test_render_changes_table_preserves_full_summary_under_utf8_awk
+  lines: 134-191
+- kind: function
   qualified_name: tests/test_workflow_install:test_install_creates_updates_unchanged
-  lines: 134-150
+  lines: 194-210
 - kind: function
   qualified_name: tests/test_workflow_install:test_install_never_touches_user_owned_file
-  lines: 153-162
+  lines: 213-222
 - kind: function
   qualified_name: tests/test_workflow_install:test_install_skips_outside_git_repo
-  lines: 165-169
+  lines: 225-229
 - kind: function
   qualified_name: tests/test_workflow_install:test_install_dry_run_writes_nothing
-  lines: 172-177
+  lines: 232-237
 incoming_refs: 0
 outgoing_refs: 13
 ---
@@ -53,6 +56,9 @@ Extracts the embedded awk program from the rendered workflow YAML and runs it ag
 - Asserts overflow records are folded into the table and bullet lines are removed.
 - Asserts the auto-generated header comment is stripped from output.
 - Asserts the Staged section passes through unmodified.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_workflow_install:test_render_changes_table_preserves_full_summary_under_utf8_awk fingerprint=3d96f81704fb24c9a28041d32008ee910b0cdd387d64deb6ff13820975ef0979 body_fp=c4f33f16ad976aeaef7bcbc1a72a071a40581aa5a7968f9fe974ebeeb059b57f source_ref=22d94e809a1a8d520a82c9db799360a6a2c5e638 role=test -->
+Regression test: verifies the embedded awk formatter splits change-bullet summaries by `length(SEP)` rather than a hardcoded byte count, preserving leading characters under a UTF-8 locale.
 <!-- trie:end -->
 <!-- trie:section symbol=tests/test_workflow_install:test_install_creates_updates_unchanged fingerprint=5ed1532cf5d64694f2368632acc0558fd1878c9369c8b8db7cd0f7d8cfa98fe3 body_fp=00e5962c10480652d08fc6072dc81eb64a5ce14eeb836819c230d4b5af79f168 source_ref=1114060328a6896c14caf5ac33d5cf5b58fbfef8 role=test -->
 Verify `install_triediff_workflow` returns `"created"` on first run, `"unchanged"` on idempotent rerun, and `"updated"` when `diffs_dir` changes.

@@ -131,6 +131,66 @@ def test_render_prettifies_digest_for_display_only() -> None:
     assert "- create m:pending — Not yet applied." in out
 
 
+def test_render_changes_table_preserves_full_summary_under_utf8_awk() -> None:
+    """Regression: the awk split each `- <marker> <qname> — <summary>` bullet
+    by advancing a *hardcoded byte count* past the ` — ` separator (space +
+    U+2014 em-dash + space = 5 bytes but only 3 characters). Under a
+    character-counting awk (gawk / BSD awk in a UTF-8 locale — what GitHub's
+    runners use) that ate the first two characters of every summary, so
+    "Change …" rendered as "ange …". The fix advances by `length(SEP)`, which
+    matches whatever unit the awk counts in. We force a UTF-8 locale here so the
+    test exercises the char-counting path that actually broke in CI."""
+    import os
+    import shutil
+    import subprocess
+
+    if not shutil.which("awk"):
+        import pytest
+
+        pytest.skip("awk not on PATH")
+
+    text = render_triediff_workflow("triefacts/triediffs")
+    start = text.index("<<'AWK'\n") + len("<<'AWK'\n")
+    body_lines: list[str] = []
+    for line in text[start:].splitlines():
+        if line.strip() == "AWK":
+            break
+        body_lines.append(line.strip())
+    awk_program = "\n".join(body_lines)
+
+    # Summaries whose FIRST characters after the separator are load-bearing:
+    # if the split miscounts, these leading chars vanish. Includes an em-dash
+    # *inside* a summary to prove only the first separator splits.
+    digest = (
+        "## T — 2026-08-01 (parent abc123def456)\n"
+        "\n"
+        "### Changes\n"
+        "\n"
+        "- ~ pkg/mod:Alpha — Change the default; keep it — really — intact.\n"
+        "- + pkg/mod:Beta — Update the thing without dropping a character.\n"
+        "- \u2212 pkg/mod:Gamma — Remove it cleanly.\n"
+    )
+
+    env = {**os.environ, "LC_ALL": "en_US.UTF-8", "LANG": "en_US.UTF-8"}
+    proc = subprocess.run(
+        ["awk", awk_program],
+        input=digest,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert proc.returncode == 0, proc.stderr
+    out = proc.stdout
+
+    # Full summaries must survive with their leading characters intact.
+    assert "| changed | `pkg/mod:Alpha` | Change the default; keep it — really — intact. |" in out
+    assert "| added | `pkg/mod:Beta` | Update the thing without dropping a character. |" in out
+    assert "| removed | `pkg/mod:Gamma` | Remove it cleanly. |" in out
+    # And explicitly guard against the two-char-eaten corruption we fixed.
+    assert "| ange the default" not in out
+    assert "| date the thing" not in out
+
+
 def test_install_creates_updates_unchanged(tmp_path: Path) -> None:
     repo = _git_repo(tmp_path)
 
