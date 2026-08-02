@@ -1,12 +1,12 @@
 ---
 trie_version: 0.3.0
 source: tests/test_workflow_install.py
-file_fingerprint: 0feafc29456c82dae62b86d49558edbab94dc51341757623739775cea9c6d719
-last_synced_at: '2026-08-02T20:23:38Z'
+file_fingerprint: 15f2cfae1d0141748ee5eded6417189650e2599aac7d68410edbdb429912fcdf
+last_synced_at: '2026-08-02T22:23:58Z'
 defines:
 - kind: module
   qualified_name: tests/test_workflow_install:__module__
-  lines: 1-238
+  lines: 1-254
 - kind: function
   qualified_name: tests/test_workflow_install:_git_repo
   lines: 13-15
@@ -43,8 +43,12 @@ defines:
   qualified_name: tests/test_workflow_install:test_install_dry_run_writes_nothing
   lines: 232-237
   signature: 'def test_install_dry_run_writes_nothing(tmp_path: Path) -> None'
+- kind: function
+  qualified_name: tests/test_workflow_install:test_this_repos_installed_workflow_matches_the_template
+  lines: 240-253
+  signature: def test_this_repos_installed_workflow_matches_the_template() -> None
 incoming_refs: 0
-outgoing_refs: 14
+outgoing_refs: 16
 ---
 <!-- trie:section symbol=tests/test_workflow_install:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=f264262babba7522a0ddec7e716d25523a5a9ce3d2c4ce32101e58c3b21d0fd4 source_ref=1114060328a6896c14caf5ac33d5cf5b58fbfef8 role=test -->
 Tests for `trie.workflow_install`, covering render output, install lifecycle (create/update/unchanged), user-owned file protection, non-git-repo skipping, and dry-run mode.
@@ -98,4 +102,11 @@ Assert that `install_triediff_workflow` returns a `skipped` result and writes no
 ## `def test_install_dry_run_writes_nothing(tmp_path: Path) -> None`
 
 Assert that `install_triediff_workflow` with `dry_run=True` reports `"created"` but writes no file to disk.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_workflow_install:test_this_repos_installed_workflow_matches_the_template fingerprint=b4b56a944939e4c78de6920c4e68b9e314ea138efd7b71b7ee7b6234e70f5749 body_fp=2ef5e5f48b8829fda843ef1459e434ad8f0d0dc7106d25e6217de6fd5777ab4b source_ref=28c3c1c92a110258ef7de761accedd8f2dc8463b role=test -->
+## `def test_this_repos_installed_workflow_matches_the_template() -> None`
+
+Assert that the committed `WORKFLOW_RELPATH` file in this repository's root exactly matches `render_triediff_workflow("triefacts/triediffs")`.
+
+- Fails if the installed workflow and the rendered template have drifted; re-run `trie setup` to fix.
 <!-- trie:end -->
