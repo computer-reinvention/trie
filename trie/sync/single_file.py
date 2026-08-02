@@ -16,10 +16,16 @@ from trie.parse.python import (
     extract_module_docstring,
     strip_string_literal,
 )
-from trie.parse.types import Symbol
+from trie.parse.types import SIGNATURELESS_KINDS, Symbol
 from trie.scope import discover_files
 from trie.sync.generator import FileGenerationContext, GeneratedSection, generate_section
-from trie.sync.writer import Section, TriefactFile, extract_one_liner
+from trie.sync.writer import (
+    Section,
+    TriefactFile,
+    ensure_signature_heading,
+    extract_one_liner,
+    squeeze_signature,
+)
 
 
 def backfill_section_records(
@@ -133,20 +139,41 @@ def _file_description(source_path: Path) -> str | None:
     return None
 
 
+def _symbol_signature(symbol: Symbol) -> str | None:
+    """Exact one-line signature for a symbol, or None for signatureless kinds.
+
+    Sources `Symbol.signature` (captured verbatim by the parser, including
+    keyword-only `*` / positional-only `/` markers, defaults, annotations, and
+    return type) and squeezes it to a single line. Returns None for kinds whose
+    signature is synthetic rather than a declaration header (`module`,
+    `constant`) so consumers omit the field instead of emitting a fake value.
+    """
+    if symbol.kind in SIGNATURELESS_KINDS:
+        return None
+    sig = squeeze_signature(symbol.signature)
+    return sig or None
+
+
 def _build_defines(symbols: list[Symbol]) -> list[dict[str, object]]:
-    """List of `{kind, qualified_name, lines}` entries — one per documented symbol.
+    """List of `{kind, qualified_name, lines, signature}` entries — one per documented symbol.
 
     Surfaces the symbol roster as an agent-navigable index without re-parsing the
     triefact's section sentinels. Sorted by start_line so the order matches the source.
+    `signature` is the exact parser-captured declaration squeezed to one line; the
+    key is omitted (not null) for signatureless kinds (modules, constants).
     """
-    return [
-        {
+    out: list[dict[str, object]] = []
+    for s in sorted(symbols, key=lambda x: x.start_line):
+        entry: dict[str, object] = {
             "kind": s.kind,
             "qualified_name": s.qualified_name,
             "lines": f"{s.start_line}-{s.end_line}",
         }
-        for s in sorted(symbols, key=lambda x: x.start_line)
-    ]
+        sig = _symbol_signature(s)
+        if sig is not None:
+            entry["signature"] = sig
+        out.append(entry)
+    return out
 
 
 def _resolve_previous_symbols(
@@ -212,9 +239,17 @@ def refresh_triefact_metadata(
     `outgoing_refs` / `defines` are derived from the live store, so those need a
     refresh to reflect reality.
 
+    One mechanical, offline exception to "bodies stay byte-identical": each
+    section body is normalized to begin with the parser-derived `## `signature``
+    heading (`ensure_signature_heading`). Signatures come from re-parsing the
+    current source — no LLM, no regeneration — so `trie sync --metadata-only`
+    migrates pre-signature trees in place. Bodies already carrying the canonical
+    heading are untouched (the injection is idempotent); the sentinel `body_fp`
+    is recomputed for any body that changes.
+
     What's intentionally NOT touched:
 
-    - Section bodies — written exactly as before.
+    - Section prose — everything after the heading is written exactly as before.
     - Section fingerprints (the `fingerprint=...` in each section sentinel).
     - `last_synced_at` — semantically reserved for "the LLM ran"; leaving it
       stable preserves the audit trail.
@@ -243,8 +278,40 @@ def refresh_triefact_metadata(
     file_fp = _file_fingerprint(source_text)
     target_symbols = registry.extract_symbols(source_path, source_root=src_root)
 
-    triefact = TriefactFile.parse(triefact_path.read_text())
-    previous_bytes = triefact.render().encode("utf-8")
+    raw_text = triefact_path.read_text()
+    triefact = TriefactFile.parse(raw_text)
+    # Compare against the RAW on-disk bytes, not a re-render of the parse: the
+    # renderer normalizes as it writes (YAML scalar folding removed, legacy
+    # body_fp backfilled, duplicate sections deduped), and a re-rendered
+    # baseline would mask normalization-only deltas as "already current",
+    # leaving stale bytes on disk forever.
+    previous_bytes = raw_text.encode("utf-8")
+
+    # Offline signature-heading migration: normalize every section body to lead
+    # with the parser-derived `## `signature`` heading. Signatures are re-parsed
+    # from current source (exact, mechanical); sections whose symbol no longer
+    # exists are left for the next real sync's orphan sweep. `upsert_section`
+    # recomputes `body_fp` so the coherence check stays green.
+    symbols_by_qname = {s.qualified_name: s for s in target_symbols}
+    for qn in triefact.section_qnames():
+        sym = symbols_by_qname.get(qn)
+        if sym is None:
+            continue
+        sig = _symbol_signature(sym)
+        if sig is None:
+            continue
+        section = triefact.get_section(qn)
+        if section is None:
+            continue
+        new_body = ensure_signature_heading(section.body, sig)
+        if new_body != section.body:
+            triefact.upsert_section(
+                qualified_name=qn,
+                fingerprint=section.fingerprint,
+                body=new_body,
+                source_ref=section.source_ref,
+                role=section.role,
+            )
 
     # Preserve the existing `last_synced_at` if there is one — only set the
     # default when the triefact is unsynced. We never bump it from this path.
@@ -501,6 +568,15 @@ def sync_single_file(
         for sym, gen in generated:
             qn = sym.qualified_name
             mode_counts[gen.mode] += 1
+            # Signature-heading enforcement: the section body must begin with the
+            # parser-derived `## `signature`` heading. The LLM prompt mentions the
+            # convention but nothing about LLM output is trusted for it — an
+            # omitted or mangled heading (dropped keyword-only `*`, elided
+            # parameters) is replaced mechanically here, at upsert time, from
+            # `Symbol.signature`. Signatureless kinds (modules, constants) keep
+            # the LLM body verbatim.
+            sig = _symbol_signature(sym)
+            body = ensure_signature_heading(gen.body, sig) if sig is not None else gen.body
             # Role stability: `role` is a fresh LLM classification every run and is
             # non-deterministic — the same unchanged symbol can flip between two
             # valid labels across syncs, creating pure regeneration churn (a role
@@ -511,7 +587,7 @@ def sync_single_file(
             # one. A real body change still re-classifies.
             prev_section = existing_sections.get(qn)
             effective_role = gen.role
-            if prev_section is not None and prev_section.body == gen.body and prev_section.role:
+            if prev_section is not None and prev_section.body == body and prev_section.role:
                 # Body unchanged → keep the previously-assigned role verbatim.
                 # (Boundary is not persisted in the section sentinel, so only the
                 # role is stabilised here; the store record below uses gen.boundary.)
@@ -519,7 +595,7 @@ def sync_single_file(
             triefact.upsert_section(
                 qualified_name=qn,
                 fingerprint=sym.body_normalized_hash,
-                body=gen.body,
+                body=body,
                 source_ref=current_blob,
                 role=effective_role,
             )

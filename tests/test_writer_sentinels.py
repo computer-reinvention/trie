@@ -8,8 +8,11 @@ from trie.sync.writer import (
     Section,
     TriefactFile,
     compact_triefact_view,
+    ensure_signature_heading,
     hash_body,
     render_for_agent,
+    signature_heading,
+    squeeze_signature,
 )
 
 # --- parsing ---
@@ -400,9 +403,11 @@ def _sample_triefact() -> str:
         "- kind: function\n"
         "  qualified_name: mod:foo\n"
         "  lines: 1-10\n"
+        "  signature: 'def foo(a, *, b: int = 1) -> str'\n"
         "- kind: function\n"
         "  qualified_name: mod:bar\n"
         "  lines: 12-20\n"
+        "  signature: def bar()\n"
         "incoming_refs: 3\n"
         "outgoing_refs: 7\n"
         "---\n"
@@ -529,12 +534,113 @@ def test_compact_view_headers_file_and_lists_symbols():
 
 def test_compact_view_includes_signature_and_intro():
     out = compact_triefact_view(_sample_triefact(), "mod.py")
-    # Signature line pulled from the `## ...` body header.
-    assert "signature: `" in out
-    assert "`foo()`" in out
+    # Signature comes from the frontmatter `defines` entry (exact, parser-
+    # derived) — NOT from the body heading — so keyword-only markers survive.
+    assert "signature: `def foo(a, *, b: int = 1) -> str`" in out
+    assert "signature: `def bar()`" in out
     # First-sentence intro of each section body.
     assert "Foo does foo." in out
     assert "Bar does bar." in out
+
+
+def test_compact_view_falls_back_to_body_heading_for_legacy_triefacts():
+    """Triefacts written before the `signature` defines-key existed still get a
+    signature line, pulled from the `## ...` body heading with backticks stripped."""
+    text = (
+        "---\n"
+        "defines:\n"
+        "- kind: function\n"
+        "  qualified_name: mod:old\n"
+        "  lines: 1-5\n"
+        "---\n"
+        "<!-- trie:section symbol=mod:old fingerprint=ff -->\n"
+        "## `old(x)`\n\nLegacy body.\n"
+        "<!-- trie:end -->\n"
+    )
+    out = compact_triefact_view(text, "mod.py")
+    assert "signature: `old(x)`" in out  # single backticks — no double-wrapping
+
+
+def test_render_for_agent_keeps_defines_signatures():
+    out = render_for_agent(_sample_triefact())
+    fm_end = out.index("\n---\n", 4)
+    fm_block = out[: fm_end + 5]
+    assert "def foo(a, *, b: int = 1) -> str" in fm_block
+    assert "def bar()" in fm_block
+
+
+# --- signature heading helpers ---------------------------------------------
+
+
+def test_squeeze_signature_collapses_multiline_to_one_line():
+    sig = "def g(\n    alpha: str,\n    *,\n    beta: int = 2,\n) -> str"
+    assert squeeze_signature(sig) == "def g( alpha: str, *, beta: int = 2, ) -> str"
+
+
+def test_signature_heading_wraps_in_backticks():
+    assert signature_heading("def f(a, /, b)") == "## `def f(a, /, b)`"
+
+
+def test_ensure_signature_heading_prepends_when_body_has_no_heading():
+    body = "Does the thing.\n\n- `a`: the input"
+    out = ensure_signature_heading(body, "def f(a)")
+    assert out == "## `def f(a)`\n\nDoes the thing.\n\n- `a`: the input"
+
+
+def test_ensure_signature_heading_replaces_stale_llm_heading():
+    # The LLM restated the signature and dropped the keyword-only marker —
+    # the parser-derived heading must win.
+    body = "## `f(a, b)`\n\nDoes the thing."
+    out = ensure_signature_heading(body, "def f(a, *, b: int = 1)")
+    assert out == "## `def f(a, *, b: int = 1)`\n\nDoes the thing."
+    assert "f(a, b)" not in out
+
+
+def test_ensure_signature_heading_is_idempotent():
+    body = "Prose only."
+    once = ensure_signature_heading(body, "def f(x)")
+    twice = ensure_signature_heading(once, "def f(x)")
+    assert once == twice
+
+
+def test_ensure_signature_heading_heading_only_body():
+    out = ensure_signature_heading("## stale", "def f()")
+    assert out == "## `def f()`"
+
+
+def test_ensure_signature_heading_leaves_deeper_headings_alone():
+    # A `###` sub-heading is not a signature heading; prepend, don't replace.
+    body = "### Notes\n\ncontent."
+    out = ensure_signature_heading(body, "def f()")
+    assert out == "## `def f()`\n\n### Notes\n\ncontent."
+
+
+def test_ensure_signature_heading_skips_leading_blank_lines():
+    body = "\n\n## `old()`\n\nProse."
+    out = ensure_signature_heading(body, "def new()")
+    assert out == "## `def new()`\n\nProse."
+
+
+def test_long_signatures_render_on_one_physical_yaml_line():
+    """PyYAML folds scalars at ~80 cols by default; a folded `signature` would be
+    silently truncated by the line-based TypeScript frontmatter mirror. render()
+    must keep every scalar on one physical line."""
+    long_sig = (
+        "def upsert_section_record(self, *, triefact_path: str, symbol_qname: str, "
+        "section_fingerprint: str, one_liner: str, role: str = '', boundary: str = '') -> None"
+    )
+    tf = TriefactFile.empty()
+    tf.front_matter = {
+        "defines": [
+            {"kind": "method", "qualified_name": "m:S.f", "lines": "1-9", "signature": long_sig}
+        ]
+    }
+    out = tf.render()
+    sig_lines = [line for line in out.splitlines() if "signature:" in line]
+    assert len(sig_lines) == 1
+    assert sig_lines[0].rstrip().endswith("-> None'")  # not folded mid-value
+    # And it round-trips (embedded quotes YAML-escaped, then restored).
+    assert TriefactFile.parse(out).front_matter["defines"][0]["signature"] == long_sig
 
 
 def test_compact_view_is_not_raw_source():

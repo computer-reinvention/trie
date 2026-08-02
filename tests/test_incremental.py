@@ -142,7 +142,12 @@ def test_incremental_dispatched_via_cli(project: Path, monkeypatch: pytest.Monke
     def fake_make_client(model_id: str, **_kwargs):
         captured["model_id"] = model_id
         return FakeTrieClient(
-            output_body="## via_cli\n\nbody.", model_id=model_id, input_tokens=50, output_tokens=100
+            # Marker lives in the prose, not the heading — the `## ...` heading is
+            # mechanically replaced with the parser-derived signature at upsert.
+            output_body="## via_cli\n\nRegenerated via_cli.",
+            model_id=model_id,
+            input_tokens=50,
+            output_tokens=100,
         )
 
     monkeypatch.setattr("trie.cli.make_client", fake_make_client)

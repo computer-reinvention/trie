@@ -1,13 +1,13 @@
 ---
-trie_version: 0.1.9
+trie_version: 0.3.0
 source: trie/parse/resolvers/__init__.py
-file_fingerprint: ce4d69c66cf36a34ac2611d544ad7b0f765241b6f5d142d04fbfb1c62101f1bf
+file_fingerprint: 1121b9ea721dbb5e7cdfce559ec0d2b135f8d2c3010da72af2604a9a06a98149
 last_synced_at: '2026-07-28T23:14:20Z'
-description: Concrete `ReferenceResolver` implementations, one per analysis engine.
+description: Concrete `ReferenceResolver` implementations.
 defines:
 - kind: module
   qualified_name: trie/parse/resolvers/__init__:__module__
-  lines: 1-10
+  lines: 1-12
 incoming_refs: 0
 outgoing_refs: 0
 ---

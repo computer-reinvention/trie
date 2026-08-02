@@ -8,17 +8,17 @@ Prose descriptions of every in-scope source file and symbol, kept in sync with t
 
 The most-referenced public symbols — start reading here.
 
-- [`trie/config:Config`](trie/config.md) (149 refs) `config` — Root configuration dataclass aggregating all subsection configs, with classmethods to construct from a dict, a TOML file path, or by walking up the directory tree.
-- [`trie/config:Config.find_and_load`](trie/config.md) (134 refs) `config-management` — Config classmethod walks up directory tree from start path to find and load trie.toml configuration file.
+- [`trie/config:Config`](trie/config.md) (153 refs) `config` — Root configuration dataclass aggregating all subsection configs, with classmethods to construct from a dict, a TOML file path, or by walking up the directory tree.
+- [`trie/config:Config.find_and_load`](trie/config.md) (138 refs) `config-management` — Config classmethod walks up directory tree from start path to find and load trie.toml configuration file.
 - [`trie/cli:app`](trie/cli.md) (118 refs) `entrypoint` — Top-level Typer application instance that defines the trie CLI interface.
+- [`tests/fake_client:FakeTrieClient`](tests/fake_client.md) (80 refs) `test` — Test double for `TrieClient` that returns preconfigured structured outputs and records call parameters for verification.
 - [`trie/graph/store:Store`](trie/graph/store.md) (79 refs) `persistence` — SQLite-backed persistence for trie's symbol graph and file fingerprints.
-- [`tests/fake_client:FakeTrieClient`](tests/fake_client.md) (76 refs) `test` — Test double for `TrieClient` that returns preconfigured structured outputs and records call parameters for verification.
-- [`trie/parse/python:extract_symbols`](trie/parse/python.md) (73 refs) `parsing` — Parse Python file and extract its top-level symbols: functions, classes, methods, constants, and module residuals.
+- [`trie/parse/python:extract_symbols`](trie/parse/python.md) (77 refs) `parsing` — Parse Python file and extract its top-level symbols: functions, classes, methods, constants, and module residuals.
 - [`tests/test_mcp:tools`](tests/test_mcp.md) (70 refs) `test` — Creates a TrieTools fixture for the populated test project and ensures cleanup after use.
-- [`trie/sync/writer:TriefactFile`](trie/sync/writer.md) (55 refs) `persistence` — Parses, manipulates, and renders triefact files containing YAML frontmatter and trie-managed documentation sections.
-- [`trie/sync/writer:TriefactFile.parse`](trie/sync/writer.md) (48 refs) `parsing` — Creates `TriefactFile` from Markdown text by parsing YAML frontmatter and trie section sentinels.
+- [`trie/sync/writer:TriefactFile`](trie/sync/writer.md) (60 refs) `persistence` — Parses, manipulates, and renders triefact files containing YAML frontmatter and trie-managed documentation sections.
+- [`trie/sync/writer:TriefactFile.parse`](trie/sync/writer.md) (53 refs) `parsing` — Creates `TriefactFile` from Markdown text by parsing YAML frontmatter and trie section sentinels.
+- [`trie/sync/single_file:sync_single_file`](trie/sync/single_file.md) (45 refs) `orchestration` — Generate or refresh the triefact file for a single Python source file using LLM calls.
 - [`trie/reporter:Reporter.error`](trie/reporter.md) (42 refs) `util` — Prints an error message to `Reporter`'s `err_console` (stderr) with red formatting, bypassing verbosity checks.
-- [`trie/sync/single_file:sync_single_file`](trie/sync/single_file.md) (42 refs) `orchestration` — Generate or refresh the triefact file for a single Python source file using LLM calls.
 - [`trie/cli:console`](trie/cli.md) (38 refs) `config` — Creates a Rich Console instance for styled terminal output across CLI commands.
 - [`trie/config:ConfigNotFoundError`](trie/config.md) (34 refs) `config-management` — Exception raised when Config.find_and_load cannot locate a trie.toml file in the directory tree.
 - [`tests/test_mcp_install:project`](tests/test_mcp_install.md) (34 refs) `test-infrastructure` — Creates temporary project directory with trie.toml configuration file and cleans up MCP installation artifacts after test completion.
@@ -129,7 +129,7 @@ The most-referenced public symbols — start reading here.
 - [mcp_install.md](trie/mcp_install.md)
 - [mcp_server.md](trie/mcp_server.md) — MCP server exposing the trie triefact tree + symbol graph to coding agents.
 - [models.md](trie/models.md)
-- [refresh_lock.md](trie/refresh_lock.md) — Mutual exclusion + coalescing queue for `trie refresh`.
+- [refresh_lock.md](trie/refresh_lock.md) — Mutual exclusion + coalescing queue for trie's write-side commands.
 - [render.md](trie/render.md) — Plain-text rendering for tool envelopes — the default output format on
 - [reporter.md](trie/reporter.md)
 - [scan.md](trie/scan.md)
@@ -166,7 +166,7 @@ The most-referenced public symbols — start reading here.
 
 ### trie/parse/resolvers
 
-- [__init__.md](trie/parse/resolvers/__init__.md) — Concrete `ReferenceResolver` implementations, one per analysis engine.
+- [__init__.md](trie/parse/resolvers/__init__.md) — Concrete `ReferenceResolver` implementations.
 - [lsp_resolver.md](trie/parse/resolvers/lsp_resolver.md) — Generic, language-agnostic `ReferenceResolver` backed by an LSP server.
 - [specs.md](trie/parse/resolvers/specs.md) — Per-language LSP server specs — the one place a new language is registered.
 

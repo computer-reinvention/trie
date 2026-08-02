@@ -1,5 +1,5 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.3.0
 source: trie/cost.py
 file_fingerprint: a130d170e7b2e7efba48619ef0c572f926298712916f848f8e2e7eac3fac1e6e
 last_synced_at: '2026-06-03T20:47:47Z'
@@ -10,21 +10,26 @@ defines:
 - kind: class
   qualified_name: trie/cost:ModelPricing
   lines: 10-15
+  signature: class ModelPricing
 - kind: constant
   qualified_name: trie/cost:PRICING
   lines: 18-40
 - kind: class
   qualified_name: trie/cost:FileEstimate
   lines: 44-51
+  signature: class FileEstimate
 - kind: function
   qualified_name: trie/cost:get_pricing
   lines: 54-55
+  signature: 'def get_pricing(model_id: str) -> ModelPricing | None'
 - kind: function
   qualified_name: trie/cost:estimate_file_cost
   lines: 58-105
+  signature: 'def estimate_file_cost( *, file_path: str, cached_prefix_tokens: int, public_symbols: int, pricing: ModelPricing, request_tokens_per_symbol: int = 80, output_tokens_per_symbol: int = 200, ) -> FileEstimate'
 - kind: function
   qualified_name: trie/cost:estimate_actual_cost
   lines: 108-122
+  signature: 'def estimate_actual_cost( *, cache_creation_input_tokens: int, cache_read_input_tokens: int, input_tokens: int, output_tokens: int, pricing: ModelPricing, ) -> float'
 incoming_refs: 41
 outgoing_refs: 0
 ---
@@ -38,7 +43,9 @@ Provides cost estimation utilities for LLM API usage in triefact generation.
 - `estimate_file_cost()`: estimates cost for generating triefacts for one file
 - `estimate_actual_cost()`: computes actual cost from LLM usage counters
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cost:ModelPricing fingerprint=f9ce4d87fdcdcaeb6884df7e5f35c0b5787858b143344b6dcc4013c403030344 body_fp=4ba5dc5fac46748fefe3c79ef9a33c321aee910d5870f9c9df687702789c14b7 source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 role=monitoring-telemetry -->
+<!-- trie:section symbol=trie/cost:ModelPricing fingerprint=f9ce4d87fdcdcaeb6884df7e5f35c0b5787858b143344b6dcc4013c403030344 body_fp=ba60411235f319634ef88226f62ca1dc559782b530eeb754ea7b6482a9c3a440 source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 role=monitoring-telemetry -->
+## `class ModelPricing`
+
 Immutable dataclass storing pricing rates for an LLM model.
 
 - `input_per_mtok`: Cost in USD per million input tokens
@@ -52,7 +59,9 @@ Maps model IDs to their pricing structures for cost calculations.
 - Contains pricing for three Anthropic Claude models (Sonnet, Haiku, Opus)
 - Prices are in USD per million tokens as of 2026-04
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cost:FileEstimate fingerprint=8d740615b193888076da794ca34ef357eefe7e61ecaf7a13b910609d7d02c6e4 body_fp=91d340cf9c82619adc5f8e745ef4ce5442b60bce59b48efc31e7ed0cc8ceee62 source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 role=monitoring-telemetry -->
+<!-- trie:section symbol=trie/cost:FileEstimate fingerprint=8d740615b193888076da794ca34ef357eefe7e61ecaf7a13b910609d7d02c6e4 body_fp=308906bc2aa974f762254d7865f41540d41c837271aca54c1888cc6db9435279 source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 role=monitoring-telemetry -->
+## `class FileEstimate`
+
 Represents estimated token usage and cost breakdown for generating documentation for one file.
 
 - `cache_create_tokens`: tokens written to cache on first symbol
@@ -61,10 +70,14 @@ Represents estimated token usage and cost breakdown for generating documentation
 - `output_tokens`: generated response tokens across all symbols
 - `cost_usd`: total estimated cost in US dollars
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cost:get_pricing fingerprint=29a71728aa28685af7dadf00cbf539b7856c20a7ff58ccc9dc480f432b63699b body_fp=48e9433a08c360dcd0fa4097ce98884be9b334e582d4071e130eafec4e6a1b0d source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 role=llm-client -->
+<!-- trie:section symbol=trie/cost:get_pricing fingerprint=29a71728aa28685af7dadf00cbf539b7856c20a7ff58ccc9dc480f432b63699b body_fp=a7872b6e1c27203531a2b1888191b5bd8f931bfcde496af497f73ae3510115c3 source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 role=llm-client -->
+## `def get_pricing(model_id: str) -> ModelPricing | None`
+
 Returns the ModelPricing for the given model ID from the PRICING dictionary.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cost:estimate_file_cost fingerprint=b3ba0b1d128a0b519a76004e2b7267afe662074831ac3b79be3771b23172e4d2 body_fp=1111c320bb497ddcbfc35be28584bab3605d0f4255e5e17d50818832b001b16a source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 role=monitoring-telemetry -->
+<!-- trie:section symbol=trie/cost:estimate_file_cost fingerprint=b3ba0b1d128a0b519a76004e2b7267afe662074831ac3b79be3771b23172e4d2 body_fp=ff1a1eae6ffea2a87c9a10577f94deda12191266184906b339af302411bcdf6a source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 role=monitoring-telemetry -->
+## `def estimate_file_cost( *, file_path: str, cached_prefix_tokens: int, public_symbols: int, pricing: ModelPricing, request_tokens_per_symbol: int = 80, output_tokens_per_symbol: int = 200, ) -> FileEstimate`
+
 Estimate the cost of generating triefacts for one file's public symbols.
 
 - `cached_prefix_tokens`: token count from Anthropic `count_tokens` API for system + cached context
@@ -72,6 +85,8 @@ Estimate the cost of generating triefacts for one file's public symbols.
 - `output_tokens_per_symbol`: defaults to 200 tokens per symbol
 - Returns zero cost if no public symbols
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cost:estimate_actual_cost fingerprint=1adff2cb8f24277a094a096c7a008d4370584ceba59f49c4fd755cd884a13ccb body_fp=c1690a18f6e5add7b342e65b3fa4c778fb6111afd8ea0469d50b890769474feb source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 role=monitoring-telemetry -->
+<!-- trie:section symbol=trie/cost:estimate_actual_cost fingerprint=1adff2cb8f24277a094a096c7a008d4370584ceba59f49c4fd755cd884a13ccb body_fp=4ebcdefa51b9fb49e682d118cb69223fd27f20b20fefdc89497b998c23067035 source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 role=monitoring-telemetry -->
+## `def estimate_actual_cost( *, cache_creation_input_tokens: int, cache_read_input_tokens: int, input_tokens: int, output_tokens: int, pricing: ModelPricing, ) -> float`
+
 Compute actual USD cost from token usage counters returned by an LLM call.
 <!-- trie:end -->

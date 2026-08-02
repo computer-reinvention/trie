@@ -73,6 +73,51 @@ def test_sync_single_file_writes_triefact(project: Path):
     assert "calculator:_internal_helper" in qnames
 
 
+def test_sync_records_exact_signatures_everywhere(project: Path):
+    """Acceptance for the signature-lossiness fix: after a fresh sync,
+    (a) every function/method/class entry in `defines` carries the exact one-line
+    parser signature, and (b) every such section body starts with the
+    parser-derived `## `signature`` heading — regardless of what the LLM emitted."""
+    import yaml
+
+    from trie.parse.python import extract_symbols
+    from trie.parse.types import SIGNATURELESS_KINDS
+    from trie.sync.writer import squeeze_signature
+
+    config, _ = Config.find_and_load(project)
+    source = project / "calculator.py"
+    sync_single_file(
+        source,
+        project_root=project,
+        config=config,
+        # The fake LLM emits a deliberately mangled heading for every symbol.
+        client=FakeTrieClient(output_body="## `wrong(sig)`\n\nCanned prose."),
+    )
+
+    text = (project / "triefacts" / "calculator.md").read_text()
+    fm = yaml.safe_load(text[4 : text.index("\n---\n", 4)])
+    by_qname = {d["qualified_name"]: d for d in fm["defines"]}
+    triefact = TriefactFile.parse(text)
+
+    for sym in extract_symbols(source, source_root=project):
+        entry = by_qname[sym.qualified_name]
+        section = triefact.get_section(sym.qualified_name)
+        assert section is not None
+        if sym.kind in SIGNATURELESS_KINDS:
+            assert "signature" not in entry
+            continue
+        expected = squeeze_signature(sym.signature)
+        # (a) exact one-line signature in the frontmatter manifest.
+        assert entry["signature"] == expected, sym.qualified_name
+        # (b) parser-derived heading leads the section body; the LLM's mangled
+        # heading is gone.
+        assert section.body.startswith(f"## `{expected}`"), sym.qualified_name
+        assert "wrong(sig)" not in section.body
+
+    # Sanity-check one signature end-to-end, return annotation included.
+    assert by_qname["calculator:add"]["signature"] == "def add(a: float, b: float) -> float"
+
+
 def test_human_prose_between_sections_survives_resync(project: Path):
     config, _ = Config.find_and_load(project)
 

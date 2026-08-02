@@ -73,6 +73,30 @@ def test_generate_section_strips_surrounding_whitespace(tmp_path: Path):
     assert sec.body == "  ## body\n\ncontent.  "
 
 
+def test_system_prompt_states_signature_is_recorded_mechanically():
+    """The prompt must tell the LLM the exact signature is captured outside the
+    prose, steering it toward parameter behaviour (incl. keyword-only args)
+    instead of restating the signature. The mechanical heading injection makes
+    this a nudge, not a correctness requirement."""
+    assert "recorded mechanically" in SYSTEM_PROMPT
+    assert "keyword-only" in SYSTEM_PROMPT
+    assert "positional-only" in SYSTEM_PROMPT
+
+
+def test_generate_section_does_not_normalize_heading_itself(tmp_path: Path):
+    """Heading enforcement is the writer/upsert layer's job — `generate_section`
+    returns the LLM body verbatim so the sync layer's `ensure_signature_heading`
+    is the single normalization point."""
+    f = tmp_path / "foo.py"
+    f.write_text("def foo(a, *, b: int = 1) -> int:\n    return b\n")
+    sym = extract_symbols(f)[0]
+    ctx = FileGenerationContext(file_path="foo.py", source_text=f.read_text())
+    client = FakeTrieClient(output_body="## `foo(a, b)`\n\nMangled heading kept verbatim.")
+
+    sec = generate_section(symbol=sym, file_ctx=ctx, client=client)
+    assert sec.body == "## `foo(a, b)`\n\nMangled heading kept verbatim."
+
+
 # --- diff-aware mode ---
 
 

@@ -235,3 +235,19 @@ def test_install_dry_run_writes_nothing(tmp_path: Path) -> None:
     result = install_triediff_workflow(repo, diffs_dir="triefacts/triediffs", dry_run=True)
     assert result.action == "created"
     assert not (repo / WORKFLOW_RELPATH).exists()
+
+
+def test_this_repos_installed_workflow_matches_the_template() -> None:
+    """Regression guard: the template and this repo's installed copy must not drift.
+
+    The `+5` summary-truncation bug was fixed in the template (and covered by
+    template tests) while the committed `.github/workflows/triediff-comment.yml`
+    kept shipping the broken awk for several releases — template tests can't see
+    installed-file drift. This pins the repo's own copy to the rendered template;
+    when the template evolves, re-run `trie setup` (or
+    `install_triediff_workflow`) to regenerate the file and keep this green.
+    """
+    repo_root = Path(__file__).resolve().parents[1]
+    installed = repo_root / WORKFLOW_RELPATH
+    assert installed.exists(), "trie's own repo should carry the managed workflow"
+    assert installed.read_text() == render_triediff_workflow("triefacts/triediffs")

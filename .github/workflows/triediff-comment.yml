@@ -66,7 +66,7 @@ jobs:
             # "… and N more" marker. Everything else (title, narrative, Staged)
             # passes through untouched, so the comment reads title-first.
             cat > /tmp/triediff-fmt.awk <<'AWK'
-          BEGIN { in_changes=0; in_overflow=0; skip_lead=1; seen=0 }
+          BEGIN { in_changes=0; in_overflow=0; skip_lead=1; seen=0; SEP=" — " }
           skip_lead && /^<!--/ { in_lead=1 }
           in_lead { if ($0 ~ /-->/) { in_lead=0; skip_lead=0 } ; next }
           { skip_lead=0 }
@@ -84,12 +84,24 @@ jobs:
           (in_changes || in_overflow) && /^[[:space:]]*$/ { next }
           in_changes && /^-[[:space:]]+…/ { next }
           (in_changes || in_overflow) && /^-[[:space:]]/ {
-            line=$0; sub(/^-[[:space:]]+/, "", line);
-            marker=substr(line,1,1); rest=substr(line,2); sub(/^[[:space:]]+/, "", rest);
-            label="changed";
-            if (marker=="+") label="added"; else if (marker=="~") label="changed"; else label="removed";
-            qname=rest; summary=""; sep=index(rest, " — ");
-            if (sep>0) { qname=substr(rest,1,sep-1); summary=substr(rest,sep+5) }
+            # Determine the change type by MATCHING the marker on the raw line,
+            # never by substr-slicing it: the "removed" marker is U+2212 (a
+            # 3-byte char in UTF-8), so substr(...,1,1) under a byte-counting
+            # awk grabs one byte and both mislabels the row AND leaves `rest`
+            # starting mid-character, emitting invalid UTF-8. Regex matching is
+            # byte/char agnostic. `rest` is what follows the "- <marker> " prefix.
+            rest=$0;
+            if (rest ~ /^-[[:space:]]+\+[[:space:]]/) { label="added"; sub(/^-[[:space:]]+\+[[:space:]]+/, "", rest) }
+            else if (rest ~ /^-[[:space:]]+~[[:space:]]/) { label="changed"; sub(/^-[[:space:]]+~[[:space:]]+/, "", rest) }
+            else { label="removed"; sub(/^-[[:space:]]+[^[:space:]]+[[:space:]]+/, "", rest) }
+            # Separator is " — " (space, U+2014 em-dash, space). Advance past it
+            # with length(SEP), NOT a hardcoded byte count: index()/substr()/
+            # length() all agree in whatever unit the awk uses (mawk counts
+            # bytes, gawk/BSD in a UTF-8 locale count characters), so a literal
+            # "+5" corrupts the first chars of the summary under a char-counting
+            # awk. length(SEP) is unit-agnostic and correct everywhere.
+            qname=rest; summary=""; sep=index(rest, SEP);
+            if (sep>0) { qname=substr(rest,1,sep-1); summary=substr(rest,sep+length(SEP)) }
             gsub(/\|/, "\\|", summary); gsub(/\|/, "\\|", qname);
             printf "| %s | `%s` | %s |\n", label, qname, summary;
             next

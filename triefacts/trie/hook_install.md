@@ -1,5 +1,5 @@
 ---
-trie_version: 0.2.1
+trie_version: 0.3.0
 source: trie/hook_install.py
 file_fingerprint: 235e0b5653036800a56d1513388fb87c0d0a21a022b026452ffab0ae82d2b9f6
 last_synced_at: '2026-08-01T09:20:35Z'
@@ -14,39 +14,49 @@ defines:
 - kind: class
   qualified_name: trie/hook_install:HookInstallError
   lines: 39-40
+  signature: class HookInstallError(Exception)
 - kind: class
   qualified_name: trie/hook_install:HookApplyResult
   lines: 44-56
+  signature: class HookApplyResult
 - kind: class
   qualified_name: trie/hook_install:HookSupportFile
   lines: 60-71
+  signature: class HookSupportFile
 - kind: class
   qualified_name: trie/hook_install:HookTarget
   lines: 75-97
+  signature: class HookTarget
 - kind: constant
   qualified_name: trie/hook_install:_OPENCODE_PLUGIN_FILENAME
   lines: 105-105
 - kind: function
   qualified_name: trie/hook_install:_render_opencode_plugin
   lines: 108-165
+  signature: 'def _render_opencode_plugin(_project_root: Path) -> str'
 - kind: function
   qualified_name: trie/hook_install:_render_opencode_package_json
   lines: 168-197
+  signature: 'def _render_opencode_package_json(_project_root: Path) -> str'
 - kind: constant
   qualified_name: trie/hook_install:TARGETS
   lines: 206-280
 - kind: class
   qualified_name: trie/hook_install:HookInstallPlan
   lines: 289-295
+  signature: class HookInstallPlan
 - kind: function
   qualified_name: trie/hook_install:install
   lines: 298-348
+  signature: 'def install( *, target_names: list[str] | None, install_all: bool, print_only: bool, dry_run: bool, project_root: Path, ) -> HookInstallPlan'
 - kind: function
   qualified_name: trie/hook_install:apply_one
   lines: 351-437
+  signature: 'def apply_one( target: HookTarget, project_root: Path, print_only: bool, dry_run: bool, *, scope: Scope = "project", ) -> HookApplyResult'
 - kind: function
   qualified_name: trie/hook_install:_apply_support_files
   lines: 440-468
+  signature: 'def _apply_support_files( files: tuple[HookSupportFile, ...], project_root: Path, ) -> list[str]'
 incoming_refs: 17
 outgoing_refs: 2
 ---
@@ -68,23 +78,31 @@ Type alias for hook install operation outcomes.
 • **error**: Operation failed due to filesystem or other error
 • **needs_manual_setup**: Target known but lacks automated installation
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:HookInstallError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=c1fbc4900a97c73d0a9fd64636a130f16e882d7ff13c941538a344de2fb4e451 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+<!-- trie:section symbol=trie/hook_install:HookInstallError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=ac8d7ba3ec39fd04151755dbd2a2aed0868769654c0f3f0bb78cffd4a976f1aa source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+## `class HookInstallError(Exception)`
+
 Raised when hook installation fails due to invalid target names or configuration errors.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:HookApplyResult fingerprint=d59e0db810a8f40ec1fa7957cfd958de8ecc47599cb7e029e28289ff8599c846 body_fp=6b5ead41e2614596abfe1b009752f13b088fb3fe1e557f25637c48d049f3aeec source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+<!-- trie:section symbol=trie/hook_install:HookApplyResult fingerprint=d59e0db810a8f40ec1fa7957cfd958de8ecc47599cb7e029e28289ff8599c846 body_fp=9feb04678eb1d9f3c50729c70dfecc0a476682b3c66f4730fc37f7db5b7e5e6e source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+## `class HookApplyResult`
+
 Represents the outcome of installing a turn-boundary hook for a single agent target.
 
 - `action`: One of "created", "updated", "skipped", "preview", "error", or "needs_manual_setup"
 - `path`: File path where the hook was installed, or None for manual setup cases
 - `detail`: Human-readable notes about the operation or manual setup instructions
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:HookSupportFile fingerprint=f2b9c5f661daad56cefaee809effd0b86de91e09d125e5ec53b64645ec4b297c body_fp=6f7f4f0b7b9f06357b581ed1c3654f61f3ed98d7aa5a319799fff3e939b6d031 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+<!-- trie:section symbol=trie/hook_install:HookSupportFile fingerprint=f2b9c5f661daad56cefaee809effd0b86de91e09d125e5ec53b64645ec4b297c body_fp=6d19dcc3112f3700e44228857b2154c1f06e5da65f5d36c642dafa59f2173387 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+## `class HookSupportFile`
+
 Represents a secondary file written alongside the primary hook plugin file.
 
 - `relative_path`: Path components relative to project root where the support file should be written
 - `render_contents`: Function that generates the file contents given the project root path
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:HookTarget fingerprint=6f8d90568ee48ee5845d4626975f5a865d71f5e8b79f084815089f8681ef3e12 body_fp=5da567e15b3792a24db4d15c44f309eeedda89123ee88caa2e3b709743f7f5e7 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+<!-- trie:section symbol=trie/hook_install:HookTarget fingerprint=6f8d90568ee48ee5845d4626975f5a865d71f5e8b79f084815089f8681ef3e12 body_fp=df56a86edd27c614bcd02fa48ddca72aa84c7539526fd3df60532f9a8f245a91 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+## `class HookTarget`
+
 Static configuration describing an agent's turn-boundary hook installation requirements.
 
 - `relative_path`: when None, the target requires manual setup instead of automation
@@ -94,7 +112,9 @@ Static configuration describing an agent's turn-boundary hook installation requi
 <!-- trie:section symbol=trie/hook_install:_OPENCODE_PLUGIN_FILENAME fingerprint=7442e6e578a889b0767a95dd3881ed665d3e6834945f3fa54cb3a7c6aceb8925 body_fp=eb365a6e1177a9dea9e870261354332bde8897c6def370567736635558763811 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
 Filename constant for the opencode plugin that triggers trie refresh on agent turn boundaries.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:_render_opencode_plugin fingerprint=91eee9cdd5ef96f9e80cbb0ea6c7cc7accb1989968c9a04882982fda69d2f9d0 body_fp=f2af4f3dfb93dfb1b10f8c6f466530ab22dd81d1aa258773cb860fba454a5b9f source_ref=f7496ac380664c8c8c5e1faeaf56b98c2f230b69 role=io -->
+<!-- trie:section symbol=trie/hook_install:_render_opencode_plugin fingerprint=91eee9cdd5ef96f9e80cbb0ea6c7cc7accb1989968c9a04882982fda69d2f9d0 body_fp=358778d04e2f7a12d7791093d8bc45cafd17c954aeaed810a9c11f7fd6e77b1f source_ref=f7496ac380664c8c8c5e1faeaf56b98c2f230b69 role=io -->
+## `def _render_opencode_plugin(_project_root: Path) -> str`
+
 Generates TypeScript plugin source code for opencode to automatically run `trie sync --graph-only --after-turn` on idle sessions.
 
 - Returns complete plugin file content as string
@@ -102,7 +122,9 @@ Generates TypeScript plugin source code for opencode to automatically run `trie 
 - Uses `quiet()` to suppress stdout/stderr from flooding opencode TUI
 - Swallows errors to prevent plugin failures from disrupting opencode sessions
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:_render_opencode_package_json fingerprint=f27176a9598f9a874b8858a56a2f9b2bf6bcbbc273719242e1c3adcaa000bf2a body_fp=297c53978f575c6ddf646b23def63095f2a43cd13d013fe5bfb442bb9a87860a source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+<!-- trie:section symbol=trie/hook_install:_render_opencode_package_json fingerprint=f27176a9598f9a874b8858a56a2f9b2bf6bcbbc273719242e1c3adcaa000bf2a body_fp=1811cdc5b9a23b8260a020d9df93aac768d155b684557b7e0313b54390bbb132 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+## `def _render_opencode_package_json(_project_root: Path) -> str`
+
 Renders `.opencode/package.json` pinning `@opencode-ai/plugin` to prevent opencode module resolution failures.
 
 - Returns JSON string with `@opencode-ai/plugin: "latest"` dependency
@@ -116,20 +138,26 @@ Maps agent names to their turn-boundary hook installation specifications.
 - Other agents return manual setup instructions requiring user intervention
 - All names must also exist in `mcp_install.TARGETS` for unified setup reporting
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:HookInstallPlan fingerprint=baa3478a6300ba11090a4751af386c60014082cfdacfed5157e780649ad9373d body_fp=d824b2f8d23b1e38e27e81a4cab6d35eaa6b24f144702c8a899038df74c98f0d source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+<!-- trie:section symbol=trie/hook_install:HookInstallPlan fingerprint=baa3478a6300ba11090a4751af386c60014082cfdacfed5157e780649ad9373d body_fp=1d13e3bbb0c542e40c611c24d38dd1cb3fcac1a651a8a9dc7d08f74fbdffc221 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+## `class HookInstallPlan`
+
 Holds the outcome of a multi-target hook installation operation.
 
 - `target_names`: agent names the operation was applied to
 - `results`: one `HookApplyResult` per target with creation/update status
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:install fingerprint=5fe181bd36c946a52447bddaed8d61ca578458f4d5caa90b8d33b766f90fffec body_fp=6c3c0147ea1bd064927582b17721795a505982f2f84f60218d54e292b9467ca9 source_ref=f7496ac380664c8c8c5e1faeaf56b98c2f230b69 role=agent-integration -->
+<!-- trie:section symbol=trie/hook_install:install fingerprint=5fe181bd36c946a52447bddaed8d61ca578458f4d5caa90b8d33b766f90fffec body_fp=3ca5dae431f39b6c7f180f0986de786dffa750ad0927cf1b9399781feb515e11 source_ref=f7496ac380664c8c8c5e1faeaf56b98c2f230b69 role=agent-integration -->
+## `def install( *, target_names: list[str] | None, install_all: bool, print_only: bool, dry_run: bool, project_root: Path, ) -> HookInstallPlan`
+
 Apply turn-boundary hooks for specified agent targets, auto-detecting agents when no targets given.
 
 - Raises `HookInstallError` for unknown target names
 - Auto-detection reuses MCP install detection logic to find installed agents
 - Agents without automated support return `needs_manual_setup` results with instructions
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:apply_one fingerprint=05838fb0e3219a8d8d7aa3e2f615755e3e98b784efa6949ae5fd585a87f6adaf body_fp=5130a15d874431f0b261bf90779cc1029e3a159f0f059214dc211405fe0d7993 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+<!-- trie:section symbol=trie/hook_install:apply_one fingerprint=05838fb0e3219a8d8d7aa3e2f615755e3e98b784efa6949ae5fd585a87f6adaf body_fp=d59865f7280ab177fed78fb763394060664fe9cf667b179b0e00b4f73d130b51 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+## `def apply_one( target: HookTarget, project_root: Path, print_only: bool, dry_run: bool, *, scope: Scope = "project", ) -> HookApplyResult`
+
 Install or preview a turn-boundary hook for a single target agent.
 
 - Returns `needs_manual_setup` when target lacks automated hook support
@@ -137,7 +165,9 @@ Install or preview a turn-boundary hook for a single target agent.
 - Creates parent directories as needed before writing hook file
 - Returns `skipped` when existing file matches generated contents exactly
 <!-- trie:end -->
-<!-- trie:section symbol=trie/hook_install:_apply_support_files fingerprint=db30752fe89cf626824026104a5750b0cb0ffeeacd5ddb86cdd79d485feee1f0 body_fp=9e29ab36eb03653be6b648b55b5bd0c42cf1e4b5f879b9a881f59324a657e753 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+<!-- trie:section symbol=trie/hook_install:_apply_support_files fingerprint=db30752fe89cf626824026104a5750b0cb0ffeeacd5ddb86cdd79d485feee1f0 body_fp=86ed05c4af5846fc0ef371c058b1fcafe30a0140bb42d252791f1ba36a69a9c7 source_ref=cb692e0d7dc84ae8309d2b609725bd11b6f84389 role=agent-integration -->
+## `def _apply_support_files( files: tuple[HookSupportFile, ...], project_root: Path, ) -> list[str]`
+
 Writes hook support files with create/update/skip semantics, returning status notes per file.
 
 - Swallows OSError exceptions to avoid masking successful primary hook installs

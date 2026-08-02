@@ -575,7 +575,10 @@ interface FrontMatter {
   description?: string
   incoming_refs?: number
   outgoing_refs?: number
-  defines: { qualified_name: string; kind: string; lines: string }[]
+  // `signature` is the exact parser-derived one-line signature (kept in
+  // lockstep with Python's `_build_defines`); omitted for signatureless
+  // kinds (modules, constants).
+  defines: { qualified_name: string; kind: string; lines: string; signature?: string }[]
 }
 
 function parseFrontMatter(triefact: string): { fm: FrontMatter; rest: string } {
@@ -596,7 +599,8 @@ function parseFrontMatter(triefact: string): { fm: FrontMatter; rest: string } {
   // continuation lines (`  qualified_name: ...`, `  lines: ...`) extend
   // the current entry. Everything else is a flat scalar assignment.
   let inDefines = false
-  let current: { qualified_name: string; kind: string; lines: string } | null = null
+  let current: { qualified_name: string; kind: string; lines: string; signature?: string } | null =
+    null
   for (const raw of yaml.split(/\\r?\\n/)) {
     const line = raw.replace(/\\s+$/, "")
     if (line === "") continue
@@ -614,7 +618,7 @@ function parseFrontMatter(triefact: string): { fm: FrontMatter; rest: string } {
         inDefines = true
         continue
       }
-      const stripped = val.replace(/^["']|["']$/g, "")
+      const stripped = unquoteYamlScalar(val)
       if (key === "description") fm.description = stripped
       else if (key === "incoming_refs") fm.incoming_refs = Number(stripped) || 0
       else if (key === "outgoing_refs") fm.outgoing_refs = Number(stripped) || 0
@@ -627,13 +631,13 @@ function parseFrontMatter(triefact: string): { fm: FrontMatter; rest: string } {
         const m = /^- ([A-Za-z_]+):\\s*(.*)$/.exec(trimmed)
         if (m !== null && current !== null) {
           const [, key, val] = m
-          ;(current as Record<string, string>)[key] = val.replace(/^["']|["']$/g, "")
+          ;(current as Record<string, string>)[key] = unquoteYamlScalar(val)
         }
       } else if (current !== null) {
         const m = /^([A-Za-z_]+):\\s*(.*)$/.exec(trimmed)
         if (m !== null) {
           const [, key, val] = m
-          ;(current as Record<string, string>)[key] = val.replace(/^["']|["']$/g, "")
+          ;(current as Record<string, string>)[key] = unquoteYamlScalar(val)
         }
       }
     }
@@ -642,9 +646,25 @@ function parseFrontMatter(triefact: string): { fm: FrontMatter; rest: string } {
   return { fm, rest }
 }
 
+function unquoteYamlScalar(value: string): string {
+  // Undo PyYAML safe_dump quoting for the scalars we read back. Signatures
+  // routinely contain `: ` (annotations) so PyYAML single-quotes them and
+  // doubles embedded single quotes; descriptions may be double-quoted.
+  if (value.length >= 2 && value.startsWith("'") && value.endsWith("'")) {
+    return value.slice(1, -1).replace(/''/g, "'")
+  }
+  if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
+    return value.slice(1, -1)
+  }
+  return value
+}
+
 interface SectionBody {
   qname: string
-  signature: string  // first line of body, conventionally `## <signature>`
+  // First line of body: the mechanically injected `## <signature>` heading,
+  // signature wrapped in backticks (parser-derived; see trie/sync/writer.py
+  // ensure_signature_heading).
+  signature: string
   intro: string      // first paragraph after the signature line
 }
 
@@ -671,16 +691,19 @@ function extractSections(rest: string): Map<string, SectionBody> {
 }
 
 function parseSectionBody(qname: string, body: string): SectionBody {
-  // Body convention: first line is `## <signature>` (the markdown
-  // header carrying the symbol's signature); a blank line follows;
+  // Body convention: first line is the injected `## ` heading carrying the
+  // parser-derived signature (wrapped in backticks); a blank line follows;
   // then the prose. The first paragraph (= up to the next blank line)
-  // is the intro. The signature line strips the leading `## ` and the
-  // intro is paragraph-1 trimmed.
+  // is the intro. The signature line strips the leading `## ` plus any
+  // wrapping backticks, and the intro is paragraph-1 trimmed.
   const lines = body.split("\\n")
   let signature = ""
   let i = 0
   if (lines.length > 0 && lines[0].startsWith("## ")) {
     signature = lines[0].slice(3).trim()
+    if (signature.length >= 2 && signature.startsWith("\\`") && signature.endsWith("\\`")) {
+      signature = signature.slice(1, -1).trim()
+    }
     i = 1
   }
   // Skip blank lines after the signature.
@@ -716,7 +739,10 @@ function renderCompact(triefact: string, path: string): string {
       `## ${entry.qualified_name} (${entry.kind}, lines ${entry.lines}` +
         `${isPublic ? "" : ", private"})`,
     )
-    if (sec?.signature) out.push(`signature: \\`${sec.signature}\\``)
+    // Prefer the frontmatter signature (exact, parser-derived); fall back to
+    // the section-body heading for triefacts written before the key existed.
+    const signature = entry.signature || sec?.signature || ""
+    if (signature) out.push(`signature: \\`${signature}\\``)
     if (sec?.intro) {
       out.push("")
       out.push(sec.intro)
@@ -759,6 +785,9 @@ function renderFrontMatterForAgent(fm: FrontMatter): string {
       lines.push(`- kind: ${entry.kind}`)
       lines.push(`  qualified_name: ${entry.qualified_name}`)
       lines.push(`  lines: ${quoteYamlScalar(entry.lines)}`)
+      if (entry.signature) {
+        lines.push(`  signature: ${quoteYamlScalar(entry.signature)}`)
+      }
     }
   }
   if (fm.incoming_refs !== undefined) {
@@ -775,11 +804,13 @@ function quoteYamlScalar(value: string): string {
   // PyYAML's safe_dump emits unquoted scalars when the value is plain
   // (no leading sigils, no embedded special chars). For the small set
   // of values we emit here (descriptions, qnames, line ranges), an
-  // unquoted form is safe in nearly all cases. We only single-quote
-  // when the value starts with a char YAML treats specially.
+  // unquoted form is safe in nearly all cases. We single-quote when the
+  // value starts with a char YAML treats specially, or when it embeds a
+  // `: ` / ` #` sequence (signatures with annotations do) — matching when
+  // PyYAML itself would have to quote.
   if (value === "") return "''"
   const first = value[0]
-  if ("!&*?|>%@\\`#-:[]{},".includes(first)) {
+  if ("!&*?|>%@\\`#-:[]{},".includes(first) || value.includes(": ") || value.includes(" #")) {
     return `'${value.replace(/'/g, "''")}'`
   }
   return value
