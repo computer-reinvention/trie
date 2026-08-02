@@ -1,9 +1,9 @@
 ---
-trie_version: 0.1.5
+trie_version: 0.3.0
 source: trie/refresh_lock.py
-file_fingerprint: 461fdc42c9807dca5469c0c263a1dd0c6c9aef648163a419a850b80082a4e985
+file_fingerprint: 140c55fdab29fb4933077e65b9b11f4bd24918a36163ec12d7ad1990745bac83
 last_synced_at: '2026-06-03T21:14:40Z'
-description: Mutual exclusion + coalescing queue for `trie refresh`.
+description: Mutual exclusion + coalescing queue for trie's write-side commands.
 defines:
 - kind: module
   qualified_name: trie/refresh_lock:__module__
@@ -20,25 +20,32 @@ defines:
 - kind: function
   qualified_name: trie/refresh_lock:_register_lock_name
   lines: 57-59
+  signature: 'def _register_lock_name(name: str) -> None'
 - kind: function
   qualified_name: trie/refresh_lock:lock_path
   lines: 65-70
+  signature: 'def lock_path(project_root: Path, name: str = "refresh") -> Path'
 - kind: function
   qualified_name: trie/refresh_lock:queued_path
   lines: 73-78
+  signature: 'def queued_path(project_root: Path, name: str = "refresh") -> Path'
 - kind: class
   qualified_name: trie/refresh_lock:LockHolder
   lines: 82-121
+  signature: class LockHolder
 - kind: method
   qualified_name: trie/refresh_lock:LockHolder.mark_queued
   lines: 96-104
+  signature: def mark_queued(self) -> None
 - kind: method
   qualified_name: trie/refresh_lock:LockHolder.consume_queued
   lines: 106-121
+  signature: def consume_queued(self) -> bool
 - kind: function
   qualified_name: trie/refresh_lock:try_acquire
   lines: 125-184
-incoming_refs: 22
+  signature: 'def try_acquire(project_root: Path, name: str = "refresh") -> Iterator[LockHolder]'
+incoming_refs: 30
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/refresh_lock:__module__ fingerprint=105fd9e2cb19d65e5a58241b307951982df73a98eefe163e2ed77c7e28088af6 body_fp=4e213414784df03bbead654633c9eae91e21dd3d960ec808ec46fae447d5d69e source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde role=change-detection -->
@@ -58,40 +65,54 @@ String constant for the default queued sentinel filename `"refresh.queued"`.
 <!-- trie:section symbol=trie/refresh_lock:LOCK_NAMES fingerprint=c53f2ac7ddea965a4eba06568fa0a67759e9caed568f9374710e4d6f892b482b body_fp=dd881189578bbd5dd3eabe50bf27c75b70f7c04306288dd61edbb2b3411a6d3c source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde role=change-detection -->
 Registry of valid lock names for validation purposes.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/refresh_lock:_register_lock_name fingerprint=17f91ff119b7aa625e8976c7fa00bfe70b5e5018e1e985de026dc83d32c30fa8 body_fp=ce4fb549de9b9a40291fb772747981e4d971777591f90a3bb8ce8256c4def68f source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde role=change-detection -->
+<!-- trie:section symbol=trie/refresh_lock:_register_lock_name fingerprint=17f91ff119b7aa625e8976c7fa00bfe70b5e5018e1e985de026dc83d32c30fa8 body_fp=27225606f75461dfe78c6005520f3a00d18d330501f3e778e0dcaafebbbe3b3e source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde role=change-detection -->
+## `def _register_lock_name(name: str) -> None`
+
 Adds a lock name to the global `LOCK_NAMES` set for validation purposes.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/refresh_lock:lock_path fingerprint=c610e86a3f8542a0e1e182730727359ea33d3ac720a46ed3f5f681146368091f body_fp=6ae4c34aad156a5a199e122e4383d3d0e2655da1d566069d46a9d9f8689a6080 source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde role=change-detection -->
+<!-- trie:section symbol=trie/refresh_lock:lock_path fingerprint=c610e86a3f8542a0e1e182730727359ea33d3ac720a46ed3f5f681146368091f body_fp=faac89e3e0d971a8af65fe9fdab796fc536cf18ba291d98a6d3599f542800da0 source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde role=change-detection -->
+## `def lock_path(project_root: Path, name: str = "refresh") -> Path`
+
 Returns the path to a named lock file under the project's `.trie/` directory.
 
 - `name`: Determines the lock filename (e.g., "refresh" → "refresh.lock", "apply" → "apply.lock")
 <!-- trie:end -->
-<!-- trie:section symbol=trie/refresh_lock:queued_path fingerprint=68114fd059c6f0347ee6f892e273a22863abb4039065b72f3256a6e2f6ca2137 body_fp=20597fecf71b2b31b6e3eb28f535f04cf46a6677ed17e90042dde356ad4ffa16 source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde role=change-detection -->
+<!-- trie:section symbol=trie/refresh_lock:queued_path fingerprint=68114fd059c6f0347ee6f892e273a22863abb4039065b72f3256a6e2f6ca2137 body_fp=206cd6d471570b827c109dd9b217b3661a6d4ac3d418c0dc462a5ffceddb4d22 source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde role=change-detection -->
+## `def queued_path(project_root: Path, name: str = "refresh") -> Path`
+
 Returns the path to the queued sentinel file for a given lock name under the `.trie/` directory.
 
 • `name`: determines the filename suffix (e.g., "refresh" → "refresh.queued")
 <!-- trie:end -->
-<!-- trie:section symbol=trie/refresh_lock:LockHolder fingerprint=b55694a146f40bf55285a276cd4df716502c440e040bb4cf4fde471f11a8b1bf body_fp=96b70d536feea189995d41ba508c8079f12b7b2839583f5225e35ba9b77a3310 source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde role=change-detection -->
+<!-- trie:section symbol=trie/refresh_lock:LockHolder fingerprint=b55694a146f40bf55285a276cd4df716502c440e040bb4cf4fde471f11a8b1bf body_fp=55d5b337fbfb417eaa54ba9557ab7c75e3d8b83523fbb1a86b3921be6ac5dd77 source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde role=change-detection -->
+## `class LockHolder`
+
 Handle to an acquired or contested refresh lock enabling mutual exclusion with coalescing.
 
 - `acquired`: whether this process holds the lock vs. needs to queue
 - `mark_queued()`: creates sentinel file to request another refresh pass (no-op if not acquired)
 - `consume_queued()`: removes and returns existence of queued sentinel (false if not acquired)
 <!-- trie:end -->
-<!-- trie:section symbol=trie/refresh_lock:LockHolder.mark_queued fingerprint=9aed2862bedff649eb249383557d2cddd31ef4a4a00c4933e32ba9521edb4857 body_fp=cc3389d123d2fffc42bedeb475690049a0dbfc8af8674ab7e53b23186951e827 source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde role=change-detection -->
+<!-- trie:section symbol=trie/refresh_lock:LockHolder.mark_queued fingerprint=9aed2862bedff649eb249383557d2cddd31ef4a4a00c4933e32ba9521edb4857 body_fp=bdc73c68ebe6bad4833a86c12acaa507694954110db758621fc820c7041e19f7 source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde role=change-detection -->
+## `def mark_queued(self) -> None`
+
 Writes a queued sentinel file to signal that another refresh operation is wanted.
 
 - Only effective when `LockHolder.acquired` is `False` (contention case)
 - Creates `.trie/{name}.queued` file under the project root
 - Idempotent: multiple calls have same effect as single call
 <!-- trie:end -->
-<!-- trie:section symbol=trie/refresh_lock:LockHolder.consume_queued fingerprint=fb0387219d5a28f6c9e532241df5b67970a48d1252b5698e377364d9dcbebdd5 body_fp=8ae35c07d82e9c0d334cb4d448475cc8e3baa44611940cf09f1e9d02c37ee2c5 source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde role=change-detection -->
+<!-- trie:section symbol=trie/refresh_lock:LockHolder.consume_queued fingerprint=fb0387219d5a28f6c9e532241df5b67970a48d1252b5698e377364d9dcbebdd5 body_fp=3285ef73a5fc462dd5979b5a68dcf281e431d3ffb2874405394841fc4c091dd8 source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde role=change-detection -->
+## `def consume_queued(self) -> bool`
+
 Checks for and removes the queued sentinel file, returning whether one existed.
 
 - Returns `False` immediately if `LockHolder` doesn't hold the lock
 - Returns `True` if sentinel file was found and successfully deleted
 <!-- trie:end -->
-<!-- trie:section symbol=trie/refresh_lock:try_acquire fingerprint=505f7d32ed2a79bce34da78a62c7a116f27146d64b62ffa5b247928d7f5b7179 body_fp=4bc5ef51c45f40b5e1f3a24bddb0dd4ec22bc4b1802442b72fce6031e85e518e source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde role=change-detection -->
+<!-- trie:section symbol=trie/refresh_lock:try_acquire fingerprint=505f7d32ed2a79bce34da78a62c7a116f27146d64b62ffa5b247928d7f5b7179 body_fp=3decd9db5b5252a1110703b7022956786b68a97dbe1e4d4d1cb482b723f75836 source_ref=4f938fe8d35c1e2a4c3c1c2542008b437cfabcde role=change-detection -->
+## `def try_acquire(project_root: Path, name: str = "refresh") -> Iterator[LockHolder]`
+
 Try to acquire an exclusive file lock without blocking and yield a LockHolder.
 
 - `name`: lock file suffix (e.g., "refresh" → "refresh.lock") 

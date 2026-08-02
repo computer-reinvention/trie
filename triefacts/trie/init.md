@@ -1,5 +1,5 @@
 ---
-trie_version: 0.2.0
+trie_version: 0.3.0
 source: trie/init.py
 file_fingerprint: 8404d66cb90bf481d446d9ccb779bc363964239677831a79109ab2db39daabfe
 last_synced_at: '2026-07-29T17:55:31Z'
@@ -25,26 +25,32 @@ defines:
 - kind: class
   qualified_name: trie/init:InitResult
   lines: 33-43
+  signature: class InitResult
 - kind: class
   qualified_name: trie/init:InitError
   lines: 46-47
+  signature: class InitError(Exception)
 - kind: function
   qualified_name: trie/init:_detect_supported_project
   lines: 50-78
+  signature: 'def _detect_supported_project(root: Path) -> list[str]'
 - kind: constant
   qualified_name: trie/init:_detect_python_project
   lines: 82-82
 - kind: function
   qualified_name: trie/init:_ensure_gitignore_entry
   lines: 85-98
+  signature: 'def _ensure_gitignore_entry(gitignore: Path, line: str) -> bool'
 - kind: function
   qualified_name: trie/init:install_pre_commit_hook
   lines: 101-132
+  signature: 'def install_pre_commit_hook(project_root: Path) -> tuple[bool, PreCommitStrategy, Path | None]'
 - kind: function
   qualified_name: trie/init:init_project
   lines: 135-196
-incoming_refs: 36
-outgoing_refs: 3
+  signature: 'def init_project( root: Path, *, force: bool = False, install_hooks: bool = False, run_scan: bool = True, ) -> InitResult'
+incoming_refs: 37
+outgoing_refs: 6
 ---
 <!-- trie:section symbol=trie/init:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=95b8552fa69d3eff65de01deecb2317826321452b0dc87de2cc7fcf12d191a9f source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=agent-integration -->
 Initializes trie projects by writing configuration, updating gitignore, and running initial scans.
@@ -74,7 +80,9 @@ Shell script block embedded between marker comments for idempotent injection int
 - Entire block is a no-op if `trie` is not on `PATH`.
 - `trie gate` runs lock-check, verify, intent gate, and advisory digest write; blocks the commit on failure.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/init:InitResult fingerprint=6159e79af9587c2f4c2280d80e815af142855cae81912c12db1958bb33088be7 body_fp=22b934ac643593344ab076a020e011cd3c7df79abe8c66349e5cf645293e5978 source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=config-management -->
+<!-- trie:section symbol=trie/init:InitResult fingerprint=6159e79af9587c2f4c2280d80e815af142855cae81912c12db1958bb33088be7 body_fp=2c574796ecd3bd7932a5bff9771e3817dde9ba441eb0dc5747db45be13d3033d source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=config-management -->
+## `class InitResult`
+
 Dataclass capturing the results of running `init_project`.
 
 - `detected_markers`: Python project markers found (pyproject.toml, setup.py, etc.)
@@ -85,10 +93,14 @@ Dataclass capturing the results of running `init_project`.
 - `pre_commit_strategy`: How pre-commit integration was handled
 - `pre_commit_path`: Path to the pre-commit hook file if using git_hook strategy
 <!-- trie:end -->
-<!-- trie:section symbol=trie/init:InitError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=0608fb2467addf6ea99f2f342293f5ea72918d08d5ba1536e595d176171c39fd source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=config-management -->
+<!-- trie:section symbol=trie/init:InitError fingerprint=d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1 body_fp=6f4c56742878e74ba8827d78644985c3cef8875aebf95281aca452cf73cf85ff source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=config-management -->
+## `class InitError(Exception)`
+
 Exception raised when project initialization fails due to validation errors or conflicts.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/init:_detect_supported_project fingerprint=e93bb812f3d47d42259fa3390f77e4a44476de0f308e4131805d5e1c6efe0f94 body_fp=e5a88e156f55e27abbb39cd35c44335ab67ee7cce9859bc877dabdcc998c83c6 source_ref=0bc865bbbbdbcc66c09082ed000b5e52b1a2994b role=domain -->
+<!-- trie:section symbol=trie/init:_detect_supported_project fingerprint=e93bb812f3d47d42259fa3390f77e4a44476de0f308e4131805d5e1c6efe0f94 body_fp=beae480898112f7a2da17e760daab50dad68f2c99881860fe8cde7d7fa5171cb source_ref=0bc865bbbbdbcc66c09082ed000b5e52b1a2994b role=domain -->
+## `def _detect_supported_project(root: Path) -> list[str]`
+
 Return a list of detected project-type markers under `root`, or `[]` if none are found.
 
 - Falls back to scanning top-level and one-directory-deep files via the language backend registry if no well-known config file exists.
@@ -97,13 +109,19 @@ Return a list of detected project-type markers under `root`, or `[]` if none are
 <!-- trie:section symbol=trie/init:_detect_python_project fingerprint=3f2725d49b3f8ac9cf540f3717eaebc0e0bb8745bf2c4e453d961f8839362d84 body_fp=91caaf5aac1141f436776eb3c89a2543bb7d3fc5e04013eb68517f8950b5c365 source_ref=0bc865bbbbdbcc66c09082ed000b5e52b1a2994b role=util -->
 Backward-compatible alias for `_detect_supported_project`; retains the old name for tests and external callers.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/init:_ensure_gitignore_entry fingerprint=70d84e5eee964e2def6cf234ec4d0cf31e6e2f6ddb5176994fee2664237d2df1 body_fp=ec00e524ece61f7cd93620290e7d9278a8e032c3bda802430faa753d942433ff source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=agent-integration -->
+<!-- trie:section symbol=trie/init:_ensure_gitignore_entry fingerprint=70d84e5eee964e2def6cf234ec4d0cf31e6e2f6ddb5176994fee2664237d2df1 body_fp=1c0636b109177e97c62bc850c3806d78a0e0445b2a728585664fde265d22af9f source_ref=56031699c017974cbab19a9a7bd7bae60bdca190 role=agent-integration -->
+## `def _ensure_gitignore_entry(gitignore: Path, line: str) -> bool`
+
 Append `line` to `gitignore` if not already present, returning True if file changed.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/init:install_pre_commit_hook fingerprint=d7786183af45b0f0b1c62bad0d5ceb58d2d2c31149d77e585959170621d8fc52 body_fp=a0892debce8a2515a37bff3a76083fe5ef9258108785318f82bab9d892b4517a role=agent-integration -->
+<!-- trie:section symbol=trie/init:install_pre_commit_hook fingerprint=d7786183af45b0f0b1c62bad0d5ceb58d2d2c31149d77e585959170621d8fc52 body_fp=c9a083891453431a72609010be9754e63c820c409c920b2420f7ca842841d45b role=agent-integration -->
+## `def install_pre_commit_hook(project_root: Path) -> tuple[bool, PreCommitStrategy, Path | None]`
+
 Installs a trie-managed pre-commit hook into a project's `.git/hooks/pre-commit` file using one of three strategies: skipping silently when a pre-commit framework configuration is already present ("framework"), appending a marker-fenced shell block that runs lock-check, verify, and digest refresh steps when a `.git` directory exists ("git_hook", idempotent on repeated calls), or doing nothing when no `.git` directory is found ("none"). Returns a tuple of (installed, strategy, hook_path) describing the outcome.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/init:init_project fingerprint=8d32d68da2ffa430f2ff755cfab94b08979379fa9364f896a299dffdecad2d3a body_fp=c78d28169d578562f2d155bda18154c1168c5fbe27698161ceb7009d773c282d source_ref=2c03dbb203a0074b0a5d9c3a83ed9291f6d2df11 role=orchestration -->
+<!-- trie:section symbol=trie/init:init_project fingerprint=8d32d68da2ffa430f2ff755cfab94b08979379fa9364f896a299dffdecad2d3a body_fp=d68b7238aba745a9bfa4725268c0d9c6b0f873b31f2ceaa186019b40b7e34962 source_ref=2c03dbb203a0074b0a5d9c3a83ed9291f6d2df11 role=orchestration -->
+## `def init_project( root: Path, *, force: bool = False, install_hooks: bool = False, run_scan: bool = True, ) -> InitResult`
+
 Initialise trie in a directory, creating configuration and optionally scanning for symbols.
 
 - `force`: bypass supported-project detection and overwrite existing configuration

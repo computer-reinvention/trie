@@ -69,6 +69,53 @@ _HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s")
 _SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+|\Z")
 
 
+def squeeze_signature(signature: str) -> str:
+    """Collapse a (possibly multi-line) signature to one whitespace-squeezed line.
+
+    The parser captures signatures verbatim from source, so a long parameter list
+    wrapped across lines arrives with embedded newlines and indentation. All runs
+    of whitespace collapse to a single space; the result is safe to embed in a
+    YAML scalar or a one-line Markdown heading.
+    """
+    return " ".join(signature.split())
+
+
+def signature_heading(signature: str) -> str:
+    """Canonical section-body heading for a symbol: ``## `<one-line signature>` ``.
+
+    The signature is squeezed to one line and wrapped in backticks. This heading
+    is injected mechanically from the parser-captured signature — it is never
+    LLM-authored, so keyword-only (`*`) and positional-only (`/`) markers,
+    defaults, annotations, and the return type survive verbatim.
+    """
+    return f"## `{squeeze_signature(signature)}`"
+
+
+def ensure_signature_heading(body: str, signature: str) -> str:
+    """Return `body` guaranteed to begin with the parser-derived signature heading.
+
+    Deterministic post-processing applied at section-upsert time (and by the
+    offline metadata migration): if the body already leads with a `## ...`
+    heading — the LLM restated (or mangled) the signature — that heading line is
+    replaced with the canonical `signature_heading`. Otherwise the heading is
+    prepended, separated from the prose by a blank line. Idempotent: applying it
+    twice yields the same bytes.
+    """
+    heading = signature_heading(signature)
+    lines = body.splitlines()
+    i = 0
+    while i < len(lines) and not lines[i].strip():
+        i += 1
+    if i < len(lines) and lines[i].lstrip().startswith("## "):
+        # Replace the existing level-2 heading with the parser-derived one.
+        rest = "\n".join(lines[i + 1 :]).lstrip("\n")
+    else:
+        rest = "\n".join(lines[i:])
+    if not rest.strip():
+        return heading
+    return f"{heading}\n\n{rest}"
+
+
 def extract_one_liner(body: str, *, max_chars: int = 200) -> str:
     """Pull the first sentence of a section body, skipping any leading heading.
 
@@ -353,7 +400,13 @@ class TriefactFile:
     def render(self) -> str:
         parts: list[str] = []
         if self.front_matter:
-            yaml_text = yaml.safe_dump(self.front_matter, sort_keys=False, default_flow_style=False)
+            # `width` disables PyYAML's ~80-col scalar folding. Long one-line
+            # values (`signature` entries especially) must stay on one physical
+            # line: the TypeScript frontmatter mirror in tool_override_install.py
+            # parses line-by-line and would silently truncate a folded scalar.
+            yaml_text = yaml.safe_dump(
+                self.front_matter, sort_keys=False, default_flow_style=False, width=2**20
+            )
             parts.append("---\n")
             parts.append(yaml_text)
             parts.append("---\n")
@@ -426,7 +479,10 @@ def render_for_agent(text: str) -> str:
     # sort_keys=False so what the agent sees mirrors the source order.
     fm_subset = {k: tf.front_matter[k] for k in tf.front_matter if k in AGENT_FRONT_MATTER_KEYS}
     if fm_subset:
-        yaml_text = yaml.safe_dump(fm_subset, sort_keys=False, default_flow_style=False)
+        # Same no-fold width as TriefactFile.render — see the comment there.
+        yaml_text = yaml.safe_dump(
+            fm_subset, sort_keys=False, default_flow_style=False, width=2**20
+        )
         parts.append("---\n")
         parts.append(yaml_text)
         parts.append("---\n")
@@ -458,16 +514,20 @@ def render_for_agent(text: str) -> str:
 def _section_signature(body: str) -> str:
     """Pull the signature line from a section body.
 
-    Bodies conventionally start with `## <signature>`; return that signature
-    with the leading heading marker stripped. Empty string when the body
-    doesn't lead with a heading (legacy/partial sections).
+    Bodies start with the mechanically injected ``## `<signature>` `` heading
+    (see `ensure_signature_heading`); return that signature with the leading
+    heading marker and any wrapping backticks stripped. Empty string when the
+    body doesn't lead with a heading (legacy/partial sections).
     """
     for raw in body.splitlines():
         line = raw.rstrip()
         if not line.strip():
             continue
         if line.lstrip().startswith("## "):
-            return line.lstrip()[3:].strip()
+            sig = line.lstrip()[3:].strip()
+            if len(sig) >= 2 and sig.startswith("`") and sig.endswith("`"):
+                sig = sig[1:-1].strip()
+            return sig
         return ""
     return ""
 
@@ -538,10 +598,15 @@ def compact_triefact_view(
         privacy = "" if _is_public_qname(qn) else ", private"
         header = f"## {qn} ({kind}, lines {line_range}{privacy})"
         out.append(header)
-        if sec is not None:
+        # Signature: prefer the frontmatter `defines` entry (exact, parser-
+        # derived, always one line); fall back to the section-body heading for
+        # triefacts written before the signature key existed.
+        signature = str(entry.get("signature") or "")
+        if not signature and sec is not None:
             signature = _section_signature(sec.body)
-            if signature:
-                out.append(f"signature: `{signature}`")
+        if signature:
+            out.append(f"signature: `{signature}`")
+        if sec is not None:
             intro = extract_one_liner(sec.body)
             if intro:
                 out.append("")

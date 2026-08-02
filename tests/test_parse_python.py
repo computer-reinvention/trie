@@ -154,6 +154,35 @@ def test_signature_includes_annotations_and_return_type(sample_file: Path):
     assert not sig.rstrip().endswith(":")
 
 
+def test_signature_preserves_kwonly_and_posonly_markers(tmp_path: Path):
+    """The keyword-only `*` and positional-only `/` markers are part of the
+    call contract and must survive verbatim in `Symbol.signature` — downstream
+    consumers (frontmatter `defines`, the injected section heading) rely on it."""
+    p = tmp_path / "markers.py"
+    p.write_text("def f(a, /, b, *, c: int = 1, d: str = 'x') -> None:\n    return None\n")
+    sig = _by_qname(extract_symbols(p))["markers:f"].signature
+    assert "a, /" in sig
+    assert "*, c: int = 1" in sig
+    assert "d: str = 'x'" in sig
+    assert "-> None" in sig
+
+
+def test_multi_line_signature_is_captured_verbatim_and_squeezes_to_one_line(tmp_path: Path):
+    """A wrapped parameter list arrives with embedded newlines; the writer's
+    `squeeze_signature` must collapse it to a single line losing nothing."""
+    from trie.sync.writer import squeeze_signature
+
+    p = tmp_path / "multi.py"
+    p.write_text(
+        "def g(\n    alpha: str,\n    *,\n    beta: int = 2,\n) -> str:\n    return alpha\n"
+    )
+    sig = _by_qname(extract_symbols(p))["multi:g"].signature
+    assert "\n" in sig  # verbatim capture keeps the wrapping
+    squeezed = squeeze_signature(sig)
+    assert "\n" not in squeezed
+    assert squeezed == "def g( alpha: str, *, beta: int = 2, ) -> str"
+
+
 def test_body_normalized_hash_is_stable_across_whitespace(tmp_path: Path):
     a = tmp_path / "a.py"
     b = tmp_path / "b.py"

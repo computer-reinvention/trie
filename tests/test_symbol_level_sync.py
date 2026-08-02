@@ -83,7 +83,9 @@ def test_symbols_to_regen_subset_only_regenerates_listed_symbols(project: Path):
         project / "calculator.py",
         project_root=project,
         config=config,
-        client=FakeTrieClient(output_body="## first run"),
+        # Markers must live in the prose, not the heading — the `## ...` heading
+        # is mechanically replaced with the parser-derived signature at upsert.
+        client=FakeTrieClient(output_body="## first run\n\nFirst-run prose."),
     )
 
     # Capture pre-state bytes for every section.
@@ -92,7 +94,7 @@ def test_symbols_to_regen_subset_only_regenerates_listed_symbols(project: Path):
     pre_sections = {s.qualified_name: s for s in pre.chunks if hasattr(s, "qualified_name")}
 
     # Second sync: ask to regen only `add`. Every other symbol must pass through.
-    client = FakeTrieClient(output_body="## second run")
+    client = FakeTrieClient(output_body="## second run\n\nSecond-run prose.")
     result = sync_single_file(
         project / "calculator.py",
         project_root=project,

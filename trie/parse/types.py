@@ -39,6 +39,17 @@ KINDS: tuple[str, ...] = (
     "property",
 )
 
+# Kinds whose `Symbol.signature` is synthetic or redundant rather than a real
+# declaration header: a `module` symbol's signature is a fabricated one-line
+# summary of residual module-level code, and a `constant`'s signature is just
+# the assignment statement itself. Consumers that surface signatures verbatim
+# (the frontmatter `defines` manifest, the injected `## `signature`` section
+# heading) skip these kinds instead of emitting a fake signature.
+SIGNATURELESS_KINDS: tuple[str, ...] = (
+    "module",
+    "constant",
+)
+
 # Relationship vocabulary for `Reference.kind` (typed edges in the graph).
 EDGE_KINDS: tuple[str, ...] = (
     "calls",
