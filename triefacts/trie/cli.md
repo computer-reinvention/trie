@@ -1,12 +1,12 @@
 ---
 trie_version: 0.3.0
 source: trie/cli.py
-file_fingerprint: e958c03676c10913cb855a80243675c074571565842973bce8ec26efe7c1bb4c
-last_synced_at: '2026-08-02T21:19:37Z'
+file_fingerprint: f67da067089e7bcbf1d1eca20323a09a77116f807411c0e717bd50cb5881d0bb
+last_synced_at: '2026-08-30T14:33:33Z'
 defines:
 - kind: module
   qualified_name: trie/cli:__module__
-  lines: 1-4678
+  lines: 1-4698
 - kind: constant
   qualified_name: trie/cli:app
   lines: 87-90
@@ -206,315 +206,315 @@ defines:
   signature: 'def _print_scan_breakdown( reporter: Reporter, scan_result, db_path: Path, project_root: Path ) -> None'
 - kind: function
   qualified_name: trie/cli:_print_plan
-  lines: 1661-1672
+  lines: 1661-1677
   signature: 'def _print_plan(reporter: Reporter, plan: BootstrapPlan, model_id: str) -> None'
 - kind: function
   qualified_name: trie/cli:_print_incremental_plan
-  lines: 1675-1741
+  lines: 1680-1751
   signature: 'def _print_incremental_plan( reporter: Reporter, plan: BootstrapPlan, worklist: IncrementalWorklist, model_id: str, ) -> None'
 - kind: constant
   qualified_name: trie/cli:_REASON_LABELS
-  lines: 1744-1751
+  lines: 1754-1761
 - kind: function
   qualified_name: trie/cli:_print_drift_detail
-  lines: 1754-1765
+  lines: 1764-1775
   signature: 'def _print_drift_detail(reporter: Reporter, items: list) -> None'
 - kind: function
   qualified_name: trie/cli:_verify_drift
-  lines: 1768-1802
+  lines: 1778-1812
   signature: 'def _verify_drift(reporter: Reporter, *, exit_on_drift: bool) -> bool'
 - kind: function
   qualified_name: trie/cli:sync_cmd
-  lines: 1806-2033
+  lines: 1816-2043
   signature: "def sync_cmd( ctx: typer.Context, graph_only: bool = typer.Option( False, \"--graph-only\", help=( \"Rebuild the symbol graph and freshness stamp from source without \" \"calling the LLM. Free and fast; drifted prose is marked stale for \" \"a later full `trie sync`. This is what turn hooks run.\" ), ), before_turn: bool = typer.Option( False, \"--before-turn\", help=( \"Hook mode (implies --graph-only): cheap pre-turn freshness gate \u2014 \" \"no-op when nothing changed since the last graph sync.\" ), ), after_turn: bool = typer.Option( False, \"--after-turn\", help=( \"Hook mode (implies --graph-only): post-turn sweep that picks up the \" \"agent's own edits. Default turn mode for --graph-only.\" ), ), as_json: bool = typer.Option( False, \"--json\", help=( \"With --graph-only: emit machine-readable JSON-Lines progress to \" 'stdout instead of Rich output. Each line is one event ({\"kind\": ...}).' ), ), file: Path | None = typer.Option( None, \"--file\", \"-f\", help=( \"Sync exactly one source file. Regenerates only its stale symbols by \" \"default; combine with --force for a full fresh rewrite.\" ), ), all_: bool = typer.Option( False, \"--all\", help=\"Force a full re-pass (every file in scope), even if triefacts already exist.\", ), budget: float | None = typer.Option( None, \"--budget\", help=\"USD budget cap. Stops once cumulative actual cost reaches this.\", ), limit: int | None = typer.Option( None, \"--limit\", help=\"Cap the number of files synced.\", ), dry_run: bool = typer.Option( False, \"--dry-run\", help=( \"Preview what `trie sync` would change. Regenerates stale triefacts into \" \"`.trie/preview/` and prints unified diffs (makes API calls \u2014 cap with \" \"--budget / --limit).\" ), ), metadata_only: bool = typer.Option( False, \"--metadata-only\", help=( \"Refresh triefact front matter from the live store without calling the LLM. \" \"Useful after a graph-only change (e.g. an improved reference resolver) \" \"where edge counts moved but source did not.\" ), ), roles_only: bool = typer.Option( False, \"--roles-only\", help=( \"(Re)infer only the architectural role tag for every symbol against a \" \"project-specific role vocabulary, without regenerating prose. Derives \" \"the vocabulary first if none exists. Cheap relative to a full sync.\" ), ), rederive_taxonomy: bool = typer.Option( False, \"--rederive-taxonomy\", help=( \"With --roles-only, re-derive the role vocabulary from scratch even if one \" \"is already saved. Use after large architectural change.\" ), ), model: str | None = typer.Option( None, \"--model\", help=\"Override the configured model, e.g. 'anthropic/claude-sonnet-4-6'.\", ), force: bool = typer.Option( False, \"--force\", help=( \"Force cold regeneration for every symbol in the file, bypassing the \" \"diff-aware path. Only valid with --file. Use when existing prose is \" \"known to be wrong and a full fresh LLM pass is needed.\" ), ), ) -> None"
 - kind: function
   qualified_name: trie/cli:_has_existing_triefacts
-  lines: 2036-2042
+  lines: 2046-2052
   signature: 'def _has_existing_triefacts(triefacts_root: Path) -> bool'
 - kind: function
   qualified_name: trie/cli:_run_full_pass
-  lines: 2045-2121
+  lines: 2055-2136
   signature: 'def _run_full_pass( *, reporter: Reporter, project_root: Path, config: Config, model: str | None, budget: float | None, limit: int | None, ) -> None'
 - kind: function
   qualified_name: trie/cli:_refresh_index_quietly
-  lines: 2124-2131
+  lines: 2139-2146
   signature: 'def _refresh_index_quietly(config: Config, project_root: Path, store: Store) -> None'
 - kind: function
   qualified_name: trie/cli:_report_sync_errors
-  lines: 2134-2155
+  lines: 2149-2170
   signature: 'def _report_sync_errors(reporter: Reporter, file_errors: list[tuple[str, str]]) -> bool'
 - kind: function
   qualified_name: trie/cli:_run_dry_run_diff
-  lines: 2158-2203
+  lines: 2173-2218
   signature: 'def _run_dry_run_diff( *, reporter: Reporter, model: str | None, budget: float | None, limit: int | None ) -> None'
 - kind: function
   qualified_name: trie/cli:_run_single_file_sync
-  lines: 2206-2280
+  lines: 2221-2295
   signature: 'def _run_single_file_sync( reporter: Reporter, file: Path, model: str | None, force: bool = False ) -> None'
 - kind: function
   qualified_name: trie/cli:_run_metadata_only_refresh
-  lines: 2283-2343
+  lines: 2298-2358
   signature: 'def _run_metadata_only_refresh(reporter: Reporter) -> None'
 - kind: function
   qualified_name: trie/cli:_run_roles_only_sync
-  lines: 2346-2388
+  lines: 2361-2403
   signature: 'def _run_roles_only_sync(reporter: Reporter, *, model: str | None, rederive_taxonomy: bool) -> None'
 - kind: function
   qualified_name: trie/cli:_run_incremental_sync
-  lines: 2391-2460
+  lines: 2406-2480
   signature: 'def _run_incremental_sync( *, reporter: Reporter, model: str | None, budget: float | None, limit: int | None ) -> None'
 - kind: function
   qualified_name: trie/cli:setup_cmd
-  lines: 2464-2674
+  lines: 2484-2694
   signature: "def setup_cmd( ctx: typer.Context, target: list[str] | None = typer.Option( None, \"--target\", \"-t\", help=( \"Set up for a specific agent. Repeat the flag for multiple targets. \" f\"Known: {', '.join(MCP_TARGETS)}.\" ), ), install_all: bool = typer.Option( False, \"--all\", help=\"Set up for every known agent. Skips per-target detection.\", ), scope: str = typer.Option( \"project\", \"--scope\", help=\"MCP install scope: 'project' (writes into this repo) or 'user' (~/.<agent>/...).\", case_sensitive=False, ), print_only: bool = typer.Option( False, \"--print-only\", help=\"Print what would be written for both MCP and hooks; don't touch any files.\", ), dry_run: bool = typer.Option( False, \"--dry-run\", help=\"Resolve target paths and show what would change, but don't write.\", ), no_overrides: bool = typer.Option( False, \"--no-overrides\", help=( \"Skip the tool-override step. By default, `setup` replaces the \" \"agent's built-in `grep` and `read` with wrappers that route \" \"through trie (and adds `trace`). Pass --no-overrides to \" \"install hook + docs only and leave the agent's built-ins alone.\" ), ), with_mcp: bool = typer.Option( False, \"--with-mcp\", help=( \"Also register the trie MCP server for each target \" \"(same as `trie mcp install`). Off by default \u2014 the hook and \" \"tool overrides are sufficient for most setups.\" ), ), ) -> None"
 - kind: function
   qualified_name: trie/cli:_render_setup_plan
-  lines: 2677-2747
+  lines: 2697-2767
   signature: 'def _render_setup_plan( reporter: Reporter, mcp_plan: InstallPlan | None, hook_plan: HookInstallPlan, docs_plan: DocsInstallPlan, override_plan: ToolOverrideInstallPlan | None = None, ) -> None'
 - kind: function
   qualified_name: trie/cli:_render_override_target_block
-  lines: 2750-2776
+  lines: 2770-2796
   signature: 'def _render_override_target_block(reporter: Reporter, result: object) -> None'
 - kind: function
   qualified_name: trie/cli:_format_action
-  lines: 2779-2783
+  lines: 2799-2803
   signature: 'def _format_action(action: str, path: Path | None) -> str'
 - kind: function
   qualified_name: trie/cli:_open_tools
-  lines: 2798-2816
+  lines: 2818-2836
   signature: 'def _open_tools(reporter: Reporter) -> TrieTools'
 - kind: function
   qualified_name: trie/cli:_emit_envelope
-  lines: 2819-2843
+  lines: 2839-2863
   signature: 'def _emit_envelope( envelope: dict[str, object], *, as_json: bool, reporter: Reporter, render: Callable[[dict[str, object], Reporter], None], ) -> None'
 - kind: function
   qualified_name: trie/cli:_patched_tag
-  lines: 2846-2850
+  lines: 2866-2870
   signature: 'def _patched_tag(count: int) -> str'
 - kind: function
   qualified_name: trie/cli:_grep_output_is_tty
-  lines: 2853-2866
+  lines: 2873-2886
   signature: def _grep_output_is_tty() -> bool
 - kind: function
   qualified_name: trie/cli:_print_grep_records
-  lines: 2869-2890
+  lines: 2889-2910
   signature: 'def _print_grep_records( reporter: Reporter, rows: list, *, qname_suffix: Callable[[dict], str] | None = None ) -> None'
 - kind: function
   qualified_name: trie/cli:_render_grep
-  lines: 2893-2984
+  lines: 2913-3004
   signature: 'def _render_grep(envelope: dict[str, object], reporter: Reporter) -> None'
 - kind: function
   qualified_name: trie/cli:_render_read
-  lines: 2987-3074
+  lines: 3007-3094
   signature: 'def _render_read(envelope: dict[str, object], reporter: Reporter) -> None'
 - kind: function
   qualified_name: trie/cli:_render_trace
-  lines: 3077-3129
+  lines: 3097-3149
   signature: 'def _render_trace(envelope: dict[str, object], reporter: Reporter) -> None'
 - kind: function
   qualified_name: trie/cli:_render_error_envelope
-  lines: 3132-3144
+  lines: 3152-3164
   signature: 'def _render_error_envelope(err: dict[str, object], reporter: Reporter) -> None'
 - kind: function
   qualified_name: trie/cli:_build_grep_predicate
-  lines: 3147-3209
+  lines: 3167-3229
   signature: 'def _build_grep_predicate( name: str | None, kind: str | None, scope_prefix: str | None, scope_exclude: list[str] | None, public_only: bool, inbound_min: int | None, inbound_max: int | None, outbound_min: int | None, outbound_max: int | None, predicate_json: str | None, reporter: Reporter, ) -> dict[str, object]'
 - kind: function
   qualified_name: trie/cli:grep_cmd
-  lines: 3213-3316
+  lines: 3233-3336
   signature: 'def grep_cmd( ctx: typer.Context, name: str | None = typer.Option( None, "--name", "-n", help="Substring match against the symbol''s local name (case-insensitive).", ), kind: str | None = typer.Option( None, "--kind", "-k", help="Restrict to one of: function, class, method, constant, module, any.", ), scope_prefix: str | None = typer.Option( None, "--scope-prefix", help="Restrict to symbols whose file path starts with this prefix (e.g. ''trie/'').", ), scope_exclude: list[str] | None = typer.Option( None, "--scope-exclude", help="File-path prefixes to skip. Repeat the flag for multiple exclusions.", ), public_only: bool = typer.Option( False, "--public-only", help="Restrict to symbols whose name doesn''t start with an underscore.", ), inbound_min: int | None = typer.Option( None, "--inbound-min", help="Minimum inbound edge count (find hubs).", ), inbound_max: int | None = typer.Option( None, "--inbound-max", help="Maximum inbound edge count.", ), outbound_min: int | None = typer.Option( None, "--outbound-min", help="Minimum outbound edge count.", ), outbound_max: int | None = typer.Option( None, "--outbound-max", help="Maximum outbound edge count (find leaves with --outbound-max 0).", ), predicate_json: str | None = typer.Option( None, "--predicate", help="Full predicate as JSON; identical shape to the MCP `grep` predicate.", ), rank_by: str | None = typer.Option( None, "--rank-by", help="public_first (default) | inbound_count | alphabetical.", ), limit: int = typer.Option( 10, "--limit", "-l", help="Maximum number of hits to return.", ), as_json: bool = typer.Option( False, "--json", help="Emit the raw MCP envelope as JSON instead of a human-readable summary.", ), ) -> None'
 - kind: function
   qualified_name: trie/cli:read_cmd
-  lines: 3320-3387
+  lines: 3340-3407
   signature: 'def read_cmd( ctx: typer.Context, path: str = typer.Argument( ..., help="Symbol qname (e.g. ''trie/sync/cascade:compute_cascade'') OR a file path.", ), full: bool = typer.Option( False, "--full", help="For a file path: return every section''s full prose instead of the compact view.", ), source: bool = typer.Option( False, "--source", help="Force raw line-numbered source for a FILE PATH (any file, indexed or not).", ), offset: int | None = typer.Option( None, "--offset", help="With a file path: 1-indexed first line to include (implies --source).", ), limit: int | None = typer.Option( None, "--limit", help="With a file path: maximum number of lines to return from offset (implies --source).", ), history: bool = typer.Option( False, "--history", "-H", help=( "Also show the symbol''s (or file''s) intent trail from the session-digest " "archive: the chronological ''why it changed'' lines recorded at each commit." ), ), as_json: bool = typer.Option( False, "--json", help="Emit the raw MCP envelope as JSON instead of a human-readable summary.", ), ) -> None'
 - kind: function
   qualified_name: trie/cli:_render_read_dispatch
-  lines: 3390-3403
+  lines: 3410-3423
   signature: 'def _render_read_dispatch(envelope: dict[str, object], reporter: Reporter) -> None'
 - kind: function
   qualified_name: trie/cli:_render_read_source
-  lines: 3406-3415
+  lines: 3426-3435
   signature: 'def _render_read_source(envelope: dict[str, object], reporter: Reporter) -> None'
 - kind: function
   qualified_name: trie/cli:trace_cmd
-  lines: 3419-3461
+  lines: 3439-3481
   signature: 'def trace_cmd( ctx: typer.Context, qname: str = typer.Argument( ..., help="Fully-qualified symbol name to start tracing from.", ), direction: str = typer.Option( "callers", "--direction", "-d", help="callers | callees | both.", ), depth: int = typer.Option( 2, "--depth", help="Maximum BFS depth (clamped by trace_max_depth in config).", ), as_json: bool = typer.Option( False, "--json", help="Emit the raw MCP envelope as JSON instead of a human-readable summary.", ), ) -> None'
 - kind: function
   qualified_name: trie/cli:blast_radius_cmd
-  lines: 3465-3495
+  lines: 3485-3515
   signature: 'def blast_radius_cmd( ctx: typer.Context, qname: str = typer.Argument( ..., help="Fully-qualified symbol name to compute the edit blast radius for.", ), as_json: bool = typer.Option( False, "--json", help="Emit the raw MCP envelope as JSON instead of a human-readable summary.", ), ) -> None'
 - kind: function
   qualified_name: trie/cli:_render_blast_radius
-  lines: 3498-3528
+  lines: 3518-3548
   signature: 'def _render_blast_radius(envelope: dict[str, object], reporter: Reporter) -> None'
 - kind: function
   qualified_name: trie/cli:_print_plain
-  lines: 3538-3547
+  lines: 3558-3567
   signature: 'def _print_plain(envelope: dict[str, object], reporter: Reporter) -> None'
 - kind: function
   qualified_name: trie/cli:grep_str_cmd
-  lines: 3551-3580
+  lines: 3571-3600
   signature: 'def grep_str_cmd( ctx: typer.Context, regexp: str = typer.Argument(..., help="Regex pattern to search source bodies with."), all_files: bool = typer.Option( False, "--all-files", help="Search the WHOLE repo (incl. non-indexed files), not just indexed source bodies.", ), as_json: bool = typer.Option( False, "--json", help="Emit the raw JSON envelope instead of formatted text." ), ) -> None'
 - kind: function
   qualified_name: trie/cli:find_cmd
-  lines: 3584-3613
+  lines: 3604-3633
   signature: 'def find_cmd( ctx: typer.Context, pattern: str = typer.Argument( ..., help="Glob pattern, e.g. ''**/*.ts'', ''Dockerfile'', ''src/**/*.tsx''." ), indexed_only: bool = typer.Option( False, "--indexed-only", help="Restrict to indexed files only (default searches the whole tree).", ), limit: int = typer.Option(100, "--limit", "-l", help="Maximum number of paths to return."), ) -> None'
 - kind: function
   qualified_name: trie/cli:write_cmd
-  lines: 3617-3657
+  lines: 3637-3677
   signature: 'def write_cmd( ctx: typer.Context, path: str = typer.Argument( ..., help="File path to create/overwrite, relative to the project root." ), content: str | None = typer.Option( None, "--content", "-c", help="File content. If omitted, content is read from stdin.", ), overwrite: bool = typer.Option( False, "--overwrite", help="Allow replacing an existing file.", ), ) -> None'
 - kind: function
   qualified_name: trie/cli:_render_write
-  lines: 3660-3669
+  lines: 3680-3689
   signature: 'def _render_write(envelope: dict[str, object], reporter: Reporter) -> None'
 - kind: function
   qualified_name: trie/cli:_render_find
-  lines: 3672-3687
+  lines: 3692-3707
   signature: 'def _render_find(envelope: dict[str, object], reporter: Reporter) -> None'
 - kind: function
   qualified_name: trie/cli:grep_entry_points_cmd
-  lines: 3691-3709
+  lines: 3711-3729
   signature: 'def grep_entry_points_cmd( ctx: typer.Context, query: str = typer.Argument(..., help="Topic or concept to match against symbol prose."), as_json: bool = typer.Option( False, "--json", help="Emit the raw JSON envelope instead of formatted text." ), ) -> None'
 - kind: function
   qualified_name: trie/cli:grep_symbol_cmd
-  lines: 3713-3731
+  lines: 3733-3751
   signature: 'def grep_symbol_cmd( ctx: typer.Context, sym: str = typer.Argument(..., help="Symbol name or fragment to fuzzy-match."), as_json: bool = typer.Option( False, "--json", help="Emit the raw JSON envelope instead of formatted text." ), ) -> None'
 - kind: function
   qualified_name: trie/cli:grep_symbol_neighbours_cmd
-  lines: 3735-3753
+  lines: 3755-3773
   signature: 'def grep_symbol_neighbours_cmd( ctx: typer.Context, sym: str = typer.Argument(..., help="Symbol name or fragment to fuzzy-match."), as_json: bool = typer.Option( False, "--json", help="Emit the raw JSON envelope instead of formatted text." ), ) -> None'
 - kind: function
   qualified_name: trie/cli:explain_symbol_cmd
-  lines: 3757-3781
+  lines: 3777-3801
   signature: 'def explain_symbol_cmd( ctx: typer.Context, sym: str = typer.Argument(..., help="Symbol qname or name fragment to explain."), history: bool = typer.Option( False, "--history", "-H", help="Also show the symbol''s intent trail from the digest archive.", ), as_json: bool = typer.Option( False, "--json", help="Emit the raw JSON envelope instead of formatted text." ), ) -> None'
 - kind: function
   qualified_name: trie/cli:explain_symbol_refs_cmd
-  lines: 3785-3809
+  lines: 3805-3829
   signature: 'def explain_symbol_refs_cmd( ctx: typer.Context, sym: str = typer.Argument(..., help="Symbol qname or name fragment."), history: bool = typer.Option( False, "--history", "-H", help="Also show the symbol''s intent trail from the digest archive.", ), as_json: bool = typer.Option( False, "--json", help="Emit the raw JSON envelope instead of formatted text." ), ) -> None'
 - kind: function
   qualified_name: trie/cli:trace_flow_cmd
-  lines: 3813-3832
+  lines: 3833-3852
   signature: 'def trace_flow_cmd( ctx: typer.Context, symbol1: str = typer.Argument(..., help="Starting symbol qname or name."), symbol2: str = typer.Argument(..., help="Target symbol qname or name."), as_json: bool = typer.Option( False, "--json", help="Emit the raw JSON envelope instead of formatted text." ), ) -> None'
 - kind: function
   qualified_name: trie/cli:explain_flow_cmd
-  lines: 3836-3855
+  lines: 3856-3875
   signature: 'def explain_flow_cmd( ctx: typer.Context, symbol1: str = typer.Argument(..., help="Starting symbol qname or name."), symbol2: str = typer.Argument(..., help="Target symbol qname or name."), as_json: bool = typer.Option( False, "--json", help="Emit the raw JSON envelope instead of formatted text." ), ) -> None'
 - kind: constant
   qualified_name: trie/cli:patch_app
-  lines: 3863-3867
+  lines: 3883-3887
 - kind: class
   qualified_name: trie/cli:_RichApplyProgress
-  lines: 3871-3923
+  lines: 3891-3943
   signature: class _RichApplyProgress
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.__init__
-  lines: 3881-3883
+  lines: 3901-3903
   signature: 'def __init__(self, console: Console, *, verbose: bool = False)'
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.stage
-  lines: 3885-3886
+  lines: 3905-3906
   signature: 'def stage(self, msg: str) -> None'
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_start
-  lines: 3888-3889
+  lines: 3908-3909
   signature: 'def file_start(self, fp: str, symbols: int) -> None'
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_symbol
-  lines: 3891-3897
+  lines: 3911-3917
   signature: 'def file_symbol(self, qn: str, notes: list[str]) -> None'
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_generate
-  lines: 3899-3901
+  lines: 3919-3921
   signature: def file_generate(self) -> None
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_fixup
-  lines: 3903-3906
+  lines: 3923-3926
   signature: 'def file_fixup(self, iteration: int, count: int) -> None'
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_prose
-  lines: 3908-3911
+  lines: 3928-3931
   signature: 'def file_prose(self, qn: str) -> None'
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.file_done
-  lines: 3913-3917
+  lines: 3933-3937
   signature: 'def file_done(self, fp: str, ok: bool, error: str | None = None) -> None'
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.refresh
-  lines: 3919-3920
+  lines: 3939-3940
   signature: 'def refresh(self, fp: str) -> None'
 - kind: method
   qualified_name: trie/cli:_RichApplyProgress.verify
-  lines: 3922-3923
+  lines: 3942-3943
   signature: def verify(self) -> None
 - kind: function
   qualified_name: trie/cli:_close_qname_suggestions
-  lines: 3926-3940
+  lines: 3946-3960
   signature: 'def _close_qname_suggestions(store: Store, qname: str, *, n: int = 3) -> list[str]'
 - kind: function
   qualified_name: trie/cli:patch_create_cmd
-  lines: 3944-4000
+  lines: 3964-4020
   signature: 'def patch_create_cmd( ctx: typer.Context, qname: str = typer.Argument(..., help="Qualified name of the symbol to patch."), note: str = typer.Option(..., "--note", "-n", help="Implementation change note."), reason: str = typer.Option( "", "--reason", "-r", help="Why the cascade needs to know about this change." ), gone: bool = typer.Option( False, "--gone", help=( "The symbol was REMOVED (no longer in the graph): record the note " "straight to the session log as a delete instead of queueing a patch. " "This is how removals satisfy the `trie intent` gate." ), ), ) -> None'
 - kind: function
   qualified_name: trie/cli:patch_create_batch_cmd
-  lines: 4004-4128
+  lines: 4024-4148
   signature: 'def patch_create_batch_cmd( ctx: typer.Context, json_file: str = typer.Option( "", "--json-file", help="Path to a JSON file with the patch array (else read stdin)." ), ) -> None'
 - kind: function
   qualified_name: trie/cli:patch_create_symbol_cmd
-  lines: 4132-4180
+  lines: 4152-4200
   signature: 'def patch_create_symbol_cmd( ctx: typer.Context, qname: str = typer.Argument(..., help="Intended qualified name, e.g. ''pkg/mod:new_fn''."), note: str = typer.Option(..., "--note", "-n", help="What the new symbol should do."), file: str = typer.Option( "", "--file", "-f", help="Target source file (derived from qname when omitted)." ), anchor: str = typer.Option( "", "--anchor", "-a", help="Place the new symbol after this existing qname." ), reason: str = typer.Option("", "--reason", "-r", help="Why this symbol is needed."), ) -> None'
 - kind: function
   qualified_name: trie/cli:patch_delete_symbol_cmd
-  lines: 4184-4211
+  lines: 4204-4231
   signature: 'def patch_delete_symbol_cmd( ctx: typer.Context, qname: str = typer.Argument(..., help="Qualified name of the symbol to delete."), reason: str = typer.Option("", "--reason", "-r", help="Why it''s being removed."), ) -> None'
 - kind: function
   qualified_name: trie/cli:patch_rename_symbol_cmd
-  lines: 4215-4244
+  lines: 4235-4264
   signature: 'def patch_rename_symbol_cmd( ctx: typer.Context, qname: str = typer.Argument(..., help="Qualified name of the symbol to rename."), new_name: str = typer.Argument(..., help="New local name (not a qualified name)."), reason: str = typer.Option("", "--reason", "-r", help="Why it''s being renamed."), ) -> None'
 - kind: function
   qualified_name: trie/cli:patch_apply_cmd
-  lines: 4248-4310
+  lines: 4268-4330
   signature: 'def patch_apply_cmd( ctx: typer.Context, note: str = typer.Option( "", "--note", "-N", help="Session note: the unifying intent (required for multi-symbol applies).", ), json_output: bool = typer.Option( False, "--json", help="Emit raw JSON output (useful for agent consumers).", ), ) -> None'
 - kind: function
   qualified_name: trie/cli:patch_preview_cmd
-  lines: 4314-4357
+  lines: 4334-4377
   signature: 'def patch_preview_cmd(ctx: typer.Context) -> None'
 - kind: function
   qualified_name: trie/cli:patch_list_cmd
-  lines: 4361-4403
+  lines: 4381-4423
   signature: 'def patch_list_cmd(ctx: typer.Context) -> None'
 - kind: function
   qualified_name: trie/cli:patch_drop_cmd
-  lines: 4407-4445
+  lines: 4427-4465
   signature: 'def patch_drop_cmd( ctx: typer.Context, qname: str | None = typer.Option( None, "--qname", "-q", help="Drop patches for a specific symbol." ), session_id: str | None = typer.Option( None, "--session", "-s", help="Drop patches for a specific session." ), all: bool = typer.Option(False, "--all", "-a", help="Drop all patches."), ) -> None'
 - kind: constant
   qualified_name: trie/cli:mcp_app
-  lines: 4453-4460
+  lines: 4473-4480
 - kind: function
   qualified_name: trie/cli:mcp_serve
-  lines: 4465-4467
+  lines: 4485-4487
   signature: def mcp_serve() -> None
 - kind: function
   qualified_name: trie/cli:_run_mcp_serve
-  lines: 4470-4480
+  lines: 4490-4500
   signature: def _run_mcp_serve() -> None
 - kind: function
   qualified_name: trie/cli:mcp_install_cmd
-  lines: 4484-4553
+  lines: 4504-4573
   signature: 'def mcp_install_cmd( ctx: typer.Context, target: list[str] | None = typer.Option( None, "--target", "-t", help=( "Install for a specific agent. Repeat the flag for multiple targets. " f"Known: {'', ''.join(MCP_TARGETS)}." ), ), install_all: bool = typer.Option( False, "--all", help="Install for every known target. Skips per-target detection.", ), scope: str = typer.Option( "project", "--scope", help="Install scope: ''project'' (writes into the current project) or ''user'' (~/.<agent>/...).", case_sensitive=False, ), print_only: bool = typer.Option( False, "--print-only", help="Print the snippet that would be merged, don''t write any files.", ), dry_run: bool = typer.Option( False, "--dry-run", help="Show what would change without writing. Implies the file path resolution but no edit.", ), ) -> None'
 - kind: function
   qualified_name: trie/cli:_render_install_plan
-  lines: 4556-4571
+  lines: 4576-4591
   signature: 'def _render_install_plan(reporter: Reporter, plan: InstallPlan) -> None'
 - kind: function
   qualified_name: trie/cli:mcp_uninstall_cmd
-  lines: 4575-4650
+  lines: 4595-4670
   signature: 'def mcp_uninstall_cmd( ctx: typer.Context, target: list[str] | None = typer.Option( None, "--target", "-t", help=( "Uninstall from a specific agent. Repeat the flag for multiple targets. " f"Known: {'', ''.join(MCP_TARGETS)}." ), ), uninstall_all: bool = typer.Option( False, "--all", help="Uninstall from every known target. Skips per-target detection.", ), scope: str = typer.Option( "project", "--scope", help="Uninstall scope: ''project'' (the current project''s config files) or ''user'' (~/.<agent>/...).", case_sensitive=False, ), print_only: bool = typer.Option( False, "--print-only", help="Print what would be removed without writing any files.", ), dry_run: bool = typer.Option( False, "--dry-run", help="Show what would change without writing.", ), ) -> None'
 - kind: function
   qualified_name: trie/cli:_render_uninstall_plan
-  lines: 4653-4673
+  lines: 4673-4693
   signature: 'def _render_uninstall_plan(reporter: Reporter, plan: UninstallPlan) -> None'
-incoming_refs: 127
-outgoing_refs: 392
+incoming_refs: 121
+outgoing_refs: 201
 ---
 <!-- trie:section symbol=trie/cli:__module__ fingerprint=c05f8eb3576ed41757ae174e63dc2dc1455b0a5e028a7129a133f50f32b938f3 body_fp=f367e42959a17d8bb06467ebd02f37016b756f9dbe725ed778ed2cf61ed5a824 source_ref=8d72848bbe76bcdd20773c451d84afe6200dbb22 role=entrypoint -->
 Main CLI module for trie providing comprehensive project management, triefact synchronization, and agent integration commands.
@@ -893,21 +893,23 @@ Prints a colored breakdown of files scanned by status and symbols/edges count.
 - Falls back to "no files in scope" when no categorizable files exist
 - Shows total symbols and edges written to the database file
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_print_plan fingerprint=5f2da078a99fec69dbdcddca27d22838e07d134148b753b09c8d4edd1404e8a8 body_fp=f5518d3b96a02037d1522b24dc752b9980139a249cde932bd942f211e5f10949 source_ref=ec65582312b341065f0f0bb2b57d76d2fbe38026 role=util -->
+<!-- trie:section symbol=trie/cli:_print_plan fingerprint=d6427bd79a6fb0a20410efd56d21383465c13c18bddcc28d5dc45729b6ec2f38 body_fp=d09543dea72b298f08875e34567ee3a99e1f254b370f498cf2953212d48fa5d1 source_ref=4c084f751444a57dae37bca780fd9d0c21e25dde role=util -->
 ## `def _print_plan(reporter: Reporter, plan: BootstrapPlan, model_id: str) -> None`
 
 Prints a bootstrap plan summary showing model, file count, total cost, and top 10 files with their symbol counts and estimates.
 
 - Displays total estimated cost formatted to 4 decimal places
+- Emits a warning when `plan.pricing_known` is false (cost estimates will read $0)
 - Shows first 10 plan items with file path, symbol count, score, and per-file cost
 - Adds "… and N more" footer when plan exceeds 10 files
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_print_incremental_plan fingerprint=61b8ccd749271c4ceb104b106904e7bd1a38bf9df7685a5ce31f56af665c73f2 body_fp=45ca376d453adfb6b72e8d2bea7cd6b5fa4be89390a7f898631feb8327284717 source_ref=ec65582312b341065f0f0bb2b57d76d2fbe38026 role=util -->
+<!-- trie:section symbol=trie/cli:_print_incremental_plan fingerprint=d066459a87e6d5e37a2db72491bbdbbf47fc2c04c8d9eab988c5ba309343619b body_fp=d19f2c1ffb3a10619ea9803a92b41362e1906fa55154ee3ddc9a1012e1747a4b source_ref=4c084f751444a57dae37bca780fd9d0c21e25dde role=util -->
 ## `def _print_incremental_plan( reporter: Reporter, plan: BootstrapPlan, worklist: IncrementalWorklist, model_id: str, ) -> None`
 
 Print incremental sync plan emphasizing actual work order and symbol-level impact.
 
 - Displays files grouped by directly stale vs cascaded, ordered by execution priority
+- Warns when pricing data is unavailable for the model (cost estimates read $0)
 - Shows symbol-level breakdown (how many symbols will hit LLM vs total documented)
 - Lists orphan triefacts that would be removed, truncated at 10 items
 - Preserves bootstrap ranking within each execution tier for cost visibility
@@ -957,7 +959,7 @@ Dispatch the `trie sync` CLI command to the appropriate sync sub-mode after vali
 
 Returns True if the triefacts directory exists and contains at least one markdown file.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_run_full_pass fingerprint=e525efbf503ab98d85cc1594568ac0286bf2411e58b398b0043ec23c32dfb9b8 body_fp=19960490acc4c0b8287f1b314a6b7ea56d7dd152af5ac6a77e246622d3e34e09 source_ref=732563097108f24f0d4cf893599e09db87469090 role=orchestration -->
+<!-- trie:section symbol=trie/cli:_run_full_pass fingerprint=a3e0639a5106f7bc45e2ddffadc7f6c254dd49826cce51e090b23000b0da2a78 body_fp=7cb7c69033156427baebfd3f5d79960ce8348007111c712403a9e68b2cbfb5e8 source_ref=4c084f751444a57dae37bca780fd9d0c21e25dde role=orchestration -->
 ## `def _run_full_pass( *, reporter: Reporter, project_root: Path, config: Config, model: str | None, budget: float | None, limit: int | None, ) -> None`
 
 Executes first-run bootstrap sync: scans project, builds plan, prompts for confirmation, then generates triefacts and refreshes the index.
@@ -967,6 +969,7 @@ Executes first-run bootstrap sync: scans project, builds plan, prompts for confi
 - Calls `_refresh_index_quietly` after a successful sync if any files were synced
 - Calls `stamp_graph_fresh` after the store closes to mark the graph current for subsequent graph-only syncs
 - Reports per-file errors via `_report_sync_errors`; exits with code 1 if any occurred
+- Warns when no pricing data is available for the model (cost reads $0)
 - Reports final cost comparison (estimated vs actual) and files processed
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:_refresh_index_quietly fingerprint=d529f7105e01e70c95ec0edde7ecd5d69d83d6a4b700b9586c39ec54c6ad83d6 body_fp=9d0d8322e3989f17140475cea9d78214d0278d2a9ea2c5113134d490fab25686 source_ref=ec65582312b341065f0f0bb2b57d76d2fbe38026 role=util -->
@@ -1022,7 +1025,7 @@ Runs the roles-only sync mode: derives/loads role taxonomy then classifies every
 - Stamps graph freshness after the scan so the next graph-only sync no-ops
 - Reports taxonomy derivation, symbols classified, and role changes
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cli:_run_incremental_sync fingerprint=a6f849b8ffac64772326ad46e9af0e7a9e00b371320dde829a37ae3c9833de0a body_fp=fdc5d639dbe4ebcb4e0065660e41acd389662115329b43e55628b8b2f287a7d5 source_ref=732563097108f24f0d4cf893599e09db87469090 role=orchestration -->
+<!-- trie:section symbol=trie/cli:_run_incremental_sync fingerprint=2debc76f8eab86a53e91f278f6586071db22b67d3c3bfe6510233f3ef1f554e3 body_fp=e7cc282584844cd63f517e09a877e5ba93d27182052379fd098d763819939992 source_ref=4c084f751444a57dae37bca780fd9d0c21e25dde role=orchestration -->
 ## `def _run_incremental_sync( *, reporter: Reporter, model: str | None, budget: float | None, limit: int | None ) -> None`
 
 Execute an incremental sync that regenerates only stale triefacts and their cascade dependencies.
@@ -1033,6 +1036,7 @@ Execute an incremental sync that regenerates only stale triefacts and their casc
 - Reports orphan triefact removals and sync statistics to the user
 - Calls `_report_sync_errors` after syncing; exits code 1 if all files failed or any file errored
 - Honors budget/limit constraints and reports any files skipped due to those caps
+- Warns when `pricing` is `None` (unknown model) so the user knows the reported `$0` cost is not real
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cli:setup_cmd fingerprint=5628da5c475d18230f6a33c60d1b52e23cb950fa7d8e3503390153f058b060de body_fp=03ad17bf3fc52ff5749e1a9ed58d4ec49ad852e9318b1e47fff7f54862b96bf5 source_ref=bf098bf66789b2b6073a47dbbde26a79e893ecd2 role=api -->
 ## `def setup_cmd( ctx: typer.Context, target: list[str] | None = typer.Option( None, "--target", "-t", help=( "Set up for a specific agent. Repeat the flag for multiple targets. " f"Known: {', '.join(MCP_TARGETS)}." ), ), install_all: bool = typer.Option( False, "--all", help="Set up for every known agent. Skips per-target detection.", ), scope: str = typer.Option( "project", "--scope", help="MCP install scope: 'project' (writes into this repo) or 'user' (~/.<agent>/...).", case_sensitive=False, ), print_only: bool = typer.Option( False, "--print-only", help="Print what would be written for both MCP and hooks; don't touch any files.", ), dry_run: bool = typer.Option( False, "--dry-run", help="Resolve target paths and show what would change, but don't write.", ), no_overrides: bool = typer.Option( False, "--no-overrides", help=( "Skip the tool-override step. By default, `setup` replaces the " "agent's built-in `grep` and `read` with wrappers that route " "through trie (and adds `trace`). Pass --no-overrides to " "install hook + docs only and leave the agent's built-ins alone." ), ), with_mcp: bool = typer.Option( False, "--with-mcp", help=( "Also register the trie MCP server for each target " "(same as `trie mcp install`). Off by default — the hook and " "tool overrides are sufficient for most setups." ), ), ) -> None`

@@ -1663,6 +1663,11 @@ def _print_plan(reporter: Reporter, plan: BootstrapPlan, model_id: str) -> None:
         f"plan for [cyan]{model_id}[/cyan] — {len(plan.items)} files, "
         f"~${plan.total_estimated_cost:.4f} estimated"
     )
+    if not plan.pricing_known:
+        reporter.warn(
+            f"no pricing data for [cyan]{model_id}[/cyan] — cost estimates are $0. "
+            "The model will still work; only cost tracking is affected."
+        )
     for it in plan.items[:10]:
         reporter.info(
             f"  • [bold]{it.file_path}[/bold] "
@@ -1694,6 +1699,11 @@ def _print_incremental_plan(
         f"incremental plan for [cyan]{model_id}[/cyan] — {len(plan.items)} file(s) "
         f"({breakdown}), ~${plan.total_estimated_cost:.4f} estimated"
     )
+    if not plan.pricing_known:
+        reporter.warn(
+            f"no pricing data for [cyan]{model_id}[/cyan] — cost estimates are $0. "
+            "The model will still work; only cost tracking is affected."
+        )
 
     # Display in execution order: stale files first (sync touches them first so
     # diff-aware regen can feed their fresh prose into cascade-pulled prompts),
@@ -2114,6 +2124,11 @@ def _run_full_pass(
         f"synced {result.files_synced} files "
         f"(skipped {result.files_skipped_no_budget} due to budget/limit)"
     )
+    if pricing is None:
+        reporter.warn(
+            f"no pricing data for [cyan]{model_id}[/cyan] — cost reads $0. "
+            "Add the model to PRICING in trie/cost.py."
+        )
     reporter.info(
         f"  estimated ${result.estimated_cost_usd:.4f} · actual ${result.actual_cost_usd:.4f}"
     )
@@ -2455,6 +2470,11 @@ def _run_incremental_sync(
     )
     if result.files_skipped_no_budget:
         reporter.info(f"  skipped {result.files_skipped_no_budget} due to budget/limit")
+    if pricing is None:
+        reporter.warn(
+            f"no pricing data for [cyan]{model_id}[/cyan] — actual cost reads $0. "
+            "Add the model to PRICING in trie/cost.py."
+        )
     reporter.info(f"  actual cost: ${result.actual_cost_usd:.4f}")
     if had_errors:
         raise typer.Exit(code=1)

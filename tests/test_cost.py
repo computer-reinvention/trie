@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import warnings
+
 import pytest
 
 from trie.cost import (
@@ -18,7 +20,20 @@ def test_get_pricing_known():
 
 
 def test_get_pricing_unknown():
-    assert get_pricing("openai/some-future-model") is None
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        assert get_pricing("openai/some-future-model") is None
+        assert len(w) == 1
+        assert "No pricing entry" in str(w[0].message)
+
+
+def test_get_pricing_unknown_emits_warning():
+    """An unrecognized model should trigger a visible warning, not silently return None."""
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        get_pricing("anthropic/claude-hypothetical-99")
+        assert len(w) == 1
+        assert "claude-hypothetical-99" in str(w[0].message)
 
 
 def test_zero_public_symbols_costs_nothing():
@@ -83,3 +98,70 @@ def test_estimate_actual_cost_matches_pricing():
         + 200 * 15.00 / 1_000_000
     )
     assert cost == pytest.approx(expected)
+
+
+# ---------------------------------------------------------------------------
+# Regression: every model configurable in trie.toml must have pricing
+# ---------------------------------------------------------------------------
+
+# Models that trie's default config, CLI docs, and real-world trie.toml files
+# reference. A new model added to trie's supported surface without a pricing
+# entry would silently report $0 cost — the exact bug this test catches.
+_EXPECTED_MODELS = [
+    "anthropic/claude-sonnet-5",
+    "anthropic/claude-sonnet-4-6",
+    "anthropic/claude-sonnet-4-5",
+    "anthropic/claude-sonnet-4-5-20250929",
+    "anthropic/claude-haiku-4-5",
+    "anthropic/claude-haiku-4-5-20251001",
+    "anthropic/claude-opus-5",
+    "anthropic/claude-opus-4-8",
+    "anthropic/claude-opus-4-7",
+    "anthropic/claude-opus-4-6",
+    "anthropic/claude-opus-4-5",
+    "anthropic/claude-opus-4-5-20251101",
+    "anthropic/claude-fable-5",
+]
+
+
+@pytest.mark.parametrize("model_id", _EXPECTED_MODELS)
+def test_every_known_model_has_pricing(model_id: str):
+    """Every model in the supported set must have a non-zero pricing entry."""
+    p = PRICING.get(model_id)
+    assert p is not None, f"missing PRICING entry for {model_id}"
+    assert p.input_per_mtok > 0
+    assert p.output_per_mtok > 0
+    assert p.cache_write_per_mtok > 0
+    assert p.cache_read_per_mtok > 0
+
+
+def test_sonnet_5_pricing_is_correct():
+    """Claude Sonnet 5 pricing: $2/MTok input, $10/MTok output (source: docs.anthropic.com)."""
+    p = PRICING["anthropic/claude-sonnet-5"]
+    assert p.input_per_mtok == 2.00
+    assert p.output_per_mtok == 10.00
+    assert p.cache_write_per_mtok == pytest.approx(2.50)  # 1.25x input
+    assert p.cache_read_per_mtok == pytest.approx(0.20)  # 0.1x input
+
+
+def test_cache_pricing_follows_multiplier_convention():
+    """All entries must use 1.25x input for cache write and 0.1x input for cache read."""
+    for model_id, p in PRICING.items():
+        assert p.cache_write_per_mtok == pytest.approx(p.input_per_mtok * 1.25), (
+            f"{model_id}: cache_write should be 1.25x input"
+        )
+        assert p.cache_read_per_mtok == pytest.approx(p.input_per_mtok * 0.10), (
+            f"{model_id}: cache_read should be 0.1x input"
+        )
+
+
+def test_default_config_models_have_pricing():
+    """The default models in Config.models must have pricing entries."""
+    from trie.config import Models
+
+    defaults = Models()
+    for field_name in ("bootstrap", "cascade"):
+        model_id = getattr(defaults, field_name)
+        assert model_id in PRICING, (
+            f"Config.models.{field_name} default {model_id!r} has no PRICING entry"
+        )
