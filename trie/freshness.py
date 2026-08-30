@@ -41,6 +41,7 @@ from typing import Any
 
 from trie import telemetry
 from trie.activity import read_pending, write_pending
+from trie.check import check_project
 from trie.config import Config
 from trie.git_helpers import current_head, is_git_repo
 from trie.graph.store import Store
@@ -387,6 +388,20 @@ def _ensure_fresh(
         tele["files_scanned"] = scan_result.files_total
         tele["symbols_total"] = scan_result.symbols_total
         tele["edges_total"] = scan_result.edges_total
-        pending = read_pending(project_root)
-        stale = pending.stale if pending is not None else ()
+
+        # Compute and record which triefacts lag their source.  The graph was
+        # just rebuilt (scan_project above), so `check_project` compares
+        # current symbols against on-disk triefact sentinels — exactly the
+        # drift that a subsequent `trie sync` would fix.  Without this step
+        # the pending set either stays empty (fresh checkout / empty_store:
+        # missing triefacts are never reported) or preserves stale entries
+        # from a *previous* mtimes_moved event (head_moved: a teammate's
+        # committed triefact fixes are invisible because the old pending set
+        # was never recomputed).  Either way the hook reports "prose fresh"
+        # while `trie verify` / `trie status` would disagree — the
+        # inconsistency that this fix closes.
+        check = check_project(project_root=project_root, config=config, store=store)
+        stale = tuple(sorted({it.source_path for it in check.items}))
+        write_pending(project_root, stale=list(stale), head=head)
+        tele["stale_files"] = len(stale)
         return FreshnessResult(refreshed=True, reason=reason, head=head, stale_files=stale)
