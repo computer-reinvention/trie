@@ -58,6 +58,7 @@ EDGE_KINDS: tuple[str, ...] = (
     "contains",
     "inherits",
     "implements",
+    "cross_language_call",  # API boundary edge between languages (e.g. fetch → FastAPI handler)
 )
 
 
