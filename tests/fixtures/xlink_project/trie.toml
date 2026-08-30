@@ -1,0 +1,18 @@
+[trie]
+version = "0.2.0"
+
+[scope]
+include = ["**/*.py", "**/*.ts", "**/*.tsx", "**/*.js"]
+exclude = ["**/node_modules/**", "**/__pycache__/**"]
+
+[triefacts]
+root = "triefacts"
+source_root = "."
+
+[models]
+bootstrap = "anthropic/claude-haiku-4-5-20251001"
+cascade = "anthropic/claude-haiku-4-5-20251001"
+
+[cascade]
+default_depth = 1
+hub_symbol_threshold = 20

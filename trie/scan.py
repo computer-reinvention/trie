@@ -87,6 +87,20 @@ def scan_project(*, project_root: Path, config: Config, store: Store) -> ScanRes
                 store.delete_file(rel)
                 files_removed += 1
 
+        # Cross-language edge detection: match API call sites (fetch, axios) to
+        # server route handlers (FastAPI, Flask, Express) across language boundaries.
+        # Runs after all files are parsed so both sides of the boundary are available.
+        from trie.parse.xlink import xlink_resolve
+
+        xlink_refs = xlink_resolve(
+            store=store,
+            config=config,
+            source_root=src_root,
+            discovered_files=discovered_rel,
+        )
+        for file_path, refs in xlink_refs.items():
+            pending_refs.setdefault(file_path, []).extend(refs)
+
         # Edges are regenerated from scratch on every scan — symbol IDs may have changed
         # for any updated file, invalidating prior edges via the FK CASCADE.
         edges_total = store.replace_all_edges(pending_refs)

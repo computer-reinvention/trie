@@ -217,6 +217,26 @@ class Mcp:
     trace_prose_budget: int = 10
 
 
+@dataclass(frozen=True)
+class XLink:
+    """Cross-language edge detection configuration.
+
+    Controls how trie detects API-boundary edges between languages (e.g. a
+    TypeScript ``fetch("/api/users")`` calling a FastAPI ``@app.get("/api/users")``
+    handler). The feature runs unconditionally — when a project has no
+    cross-language patterns, extraction finds zero call sites, produces zero
+    matches, and adds zero edges with negligible overhead.
+
+    - ``confidence_threshold``: minimum match confidence to create an edge.
+      Matches below this are logged to the debug log but do not produce edges.
+    - ``scan_paths``: optional glob list restricting which files are scanned
+      for cross-language patterns. Empty list (default) means all in-scope files.
+    """
+
+    confidence_threshold: float = 0.7
+    scan_paths: list[str] = field(default_factory=list)
+
+
 @dataclass
 class Diff:
     """Config surface for the committed trie-diff digest system.
@@ -260,6 +280,7 @@ class Config:
     debug: Debug = field(default_factory=Debug)
     diff: Diff = field(default_factory=Diff)
     resolver: Resolver = field(default_factory=Resolver)
+    xlink: XLink = field(default_factory=XLink)
 
     @classmethod
     def from_dict(cls, data: dict) -> Config:
@@ -278,6 +299,7 @@ class Config:
             debug=Debug(**data.get("debug", {})),
             diff=Diff(**data.get("diff", {})),
             resolver=Resolver(**data.get("resolver", {})),
+            xlink=XLink(**data.get("xlink", {})),
         )
 
     @classmethod
@@ -417,6 +439,13 @@ log_to_stderr = false                          # mirror events to stderr (dev on
 capture_args = true                            # include MCP tool args in events
 capture_responses = false                      # include full response bodies (large)
 redact_keys = []                               # field paths to elide, e.g. ["args.predicate"]
+
+# [xlink]
+# Cross-language edge detection. Connects API call sites (fetch, axios) to
+# server route handlers (FastAPI, Flask, Express) across language boundaries.
+# Runs unconditionally — zero overhead for single-language projects.
+# confidence_threshold = 0.7   # edges below this are logged, not created
+# scan_paths = []              # optional glob restriction; empty = all in-scope files
 
 [resolver]
 # The type-aware LSP resolver supplements tree-sitter with method/member
