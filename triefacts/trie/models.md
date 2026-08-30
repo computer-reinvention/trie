@@ -1,12 +1,12 @@
 ---
 trie_version: 0.3.0
 source: trie/models.py
-file_fingerprint: 5e803bf205da533f58c28ad10fd6cc5266415309fcfa18e62fef59c0b947ecc5
-last_synced_at: '2026-08-01T01:52:16Z'
+file_fingerprint: 8cac0e0f4921770d8f4dded3bb5333e9db92ec1507e62858421f458ab5ea60de
+last_synced_at: '2026-08-30T03:25:40Z'
 defines:
 - kind: module
   qualified_name: trie/models:__module__
-  lines: 1-765
+  lines: 1-770
 - kind: function
   qualified_name: trie/models:_sdk
   lines: 26-80
@@ -151,33 +151,33 @@ defines:
   signature: 'def _anthropic_model_name(full_model_id: str) -> str'
 - kind: class
   qualified_name: trie/models:TrieClient
-  lines: 553-748
+  lines: 553-753
   signature: class TrieClient
 - kind: method
   qualified_name: trie/models:TrieClient.__init__
-  lines: 566-587
+  lines: 566-592
   signature: 'def __init__( self, full_model_id: str, *, sync_cfg: Sync | None = None, ) -> None'
 - kind: method
   qualified_name: trie/models:TrieClient._make_thread_model
-  lines: 589-604
+  lines: 594-609
   signature: def _make_thread_model(self) -> tuple[AnthropicModel, AsyncAnthropic]
 - kind: method
   qualified_name: trie/models:TrieClient.run
-  lines: 606-695
+  lines: 611-700
   signature: 'def run( self, output_type: type[BaseModel] | type[str], system_prompt: str, user_prompt: str, *, max_tokens: int = 1024, cache_prefix: str | None = None, output_retries: int = 3, ) -> ModelResult'
 - kind: method
   qualified_name: trie/models:TrieClient.run_text
-  lines: 697-723
+  lines: 702-728
   signature: 'def run_text( self, system_prompt: str, user_prompt: str, *, max_tokens: int = 1024, cache_prefix: str | None = None, ) -> ModelResult'
 - kind: method
   qualified_name: trie/models:TrieClient.count_tokens
-  lines: 725-748
+  lines: 730-753
   signature: 'def count_tokens(self, system_prompt: str, user_prompt: str) -> int'
 - kind: function
   qualified_name: trie/models:make_client
-  lines: 751-764
+  lines: 756-769
   signature: 'def make_client(model_id: str, *, sync_cfg: Sync | None = None) -> TrieClient'
-incoming_refs: 90
+incoming_refs: 77
 outgoing_refs: 6
 ---
 <!-- trie:section symbol=trie/models:__module__ fingerprint=a9e20ed43937afa6db103dcfbc91e2a9f61f87c6473a000608d6c241be4cd999 body_fp=9b387fda13f0c60ba17cbe1d813fca36e81accdb48ac1477cbbc51fd87ee73ba source_ref=6d3009ea34c12a4e21d988bbf83b56661c4fb7c8 role=orchestration -->
@@ -188,12 +188,13 @@ Provides LLM client infrastructure with structured output models and retry logic
 - ModelResult: Wrapper combining structured output with token usage counters
 - Per-thread event loop management to prevent file descriptor leaks in parallel execution
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:_sdk fingerprint=ac2e90a9fbfbd75aea709eef77d09b68535c920e860c36699d9cd6cc9fbdefd6 body_fp=cfae0ddb789009e30ea351fca97aab20a20963fa8820cafd2ab96162c7d7c702 source_ref=6d3009ea34c12a4e21d988bbf83b56661c4fb7c8 role=util -->
+<!-- trie:section symbol=trie/models:_sdk fingerprint=6b4bd67242eb8fd45dd0d79668d1dc5dc6160487c0cc0d4948c6d504513e182e body_fp=b491662589a6b641583330b6397bfef446207b767b0025f2adfa6e917c1ddb6a source_ref=575363a50a7e61687de06389efdf5cfdbd9ccdaa role=io -->
 ## `def _sdk() -> SimpleNamespace`
 
-Lazily import and cache the entire LLM SDK stack (`anthropic`, `pydantic_ai`, `httpx`) on first call, avoiding ~1.2 s startup cost for read-only commands.
+Lazily import and cache the entire LLM SDK stack (`anthropic`, `pydantic_ai`) on first call, avoiding ~1.2 s startup cost for read-only commands.
 
-- Returns a `SimpleNamespace` exposing all SDK symbols needed by `TrieClient` and retry helpers.
+- Returns a `SimpleNamespace` exposing all SDK symbols needed by `TrieClient` and retry helpers, including `Timeout` (added; used to construct per-request timeouts).
+- `httpx` is no longer imported or exposed; `Timeout` from `anthropic` replaces it for timeout construction.
 - `retryable_anthropic`: tuple of exception types that warrant a retry (`RateLimitError`, `InternalServerError`, `APITimeoutError`, `APIConnectionError`).
 - Falls back to `pydantic_ai.usage.Usage` if `RunUsage` is not present (older installs).
 <!-- trie:end -->
@@ -423,7 +424,7 @@ Converts trie's provider/model format to pydantic_ai's provider:model format usi
 
 Extract the bare Anthropic model name from a full trie model ID by stripping the provider prefix.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:TrieClient fingerprint=c559ee5db2000ef505361ec3fdaeb36e80f721a86f06930c8a9270ce4c15c011 body_fp=9e31cbc1b743690429aef4bd7ad92d18bda9396e97a66e1585e6b1a84f07d4ba source_ref=6d3009ea34c12a4e21d988bbf83b56661c4fb7c8 role=io -->
+<!-- trie:section symbol=trie/models:TrieClient fingerprint=548fa2056f79a7136f9e16d95c56158b504d6286c116945207a053e69a3803e2 body_fp=9e31cbc1b743690429aef4bd7ad92d18bda9396e97a66e1585e6b1a84f07d4ba source_ref=575363a50a7e61687de06389efdf5cfdbd9ccdaa role=io -->
 ## `class TrieClient`
 
 Wraps Pydantic AI agent creation and execution with structured output, prompt caching, and retry logic.
@@ -435,14 +436,14 @@ Wraps Pydantic AI agent creation and execution with structured output, prompt ca
 - Applies exponential backoff retry on rate limits and server errors
 - Configures request timeouts to prevent hung connections from blocking worker threads indefinitely
 <!-- trie:end -->
-<!-- trie:section symbol=trie/models:TrieClient.__init__ fingerprint=76eb27c5ac08f915c350e51dd3dde34c8588d75341a62de6b880dc8c6b6c8195 body_fp=27f488e57b6615ef2a57384c377bd845694b791246a46b2e7ba9c1f46c66221a source_ref=6d3009ea34c12a4e21d988bbf83b56661c4fb7c8 role=domain -->
+<!-- trie:section symbol=trie/models:TrieClient.__init__ fingerprint=04b6ed79ba0cbb2b4fd287c4ec4a51a31da9fef185b437014606458b8ddc0c14 body_fp=09ba71dee7605b76737eaaed959708a4b9de8a0ce33f0f405c7c5c8a6d8d7deb source_ref=575363a50a7e61687de06389efdf5cfdbd9ccdaa role=domain -->
 ## `def __init__( self, full_model_id: str, *, sync_cfg: Sync | None = None, ) -> None`
 
-Initializes TrieClient with model ID conversion, timeout configuration, and raw Anthropic client.
+Initializes `TrieClient` with model ID conversion, timeout configuration, and raw Anthropic client.
 
-- `full_model_id`: trie's provider/model format (e.g., "anthropic/claude-sonnet-4-6")
-- `sync_cfg`: retry configuration, defaults to Sync() if None
-- Sets bounded HTTP timeout to prevent infinite stalls that hang sync operations
+- `full_model_id`: trie's provider/model format (e.g., `"anthropic/claude-sonnet-4-6"`)
+- `sync_cfg`: retry configuration, defaults to `Sync()` if `None`
+- Sets bounded HTTP timeout using `anthropic.Timeout` (not `httpx.Timeout`) to prevent infinite stalls
 - Creates raw Anthropic client with retries disabled and timeout configured
 <!-- trie:end -->
 <!-- trie:section symbol=trie/models:TrieClient._make_thread_model fingerprint=26679b1d1fcca5bba12edd1393767a0b62ee83a48ddadf10afe0492546ce0c6b body_fp=45816933d6a51a5d97e220509850e1c96dea6a13b40386211258a2092782b5f6 source_ref=6d3009ea34c12a4e21d988bbf83b56661c4fb7c8 role=io -->
