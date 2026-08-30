@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 
-# Pricing snapshot as of 2026-04. Update when providers change rates.
-# Cache pricing (Anthropic): write = 1.25x input, read = 0.1x input.
+# Pricing snapshot — sourced from https://docs.anthropic.com/en/docs/about-claude/pricing
+# (retrieved 2026-08-30). Update when Anthropic changes rates.
+# Cache pricing (5-min TTL): write = 1.25x input, read = 0.1x input.
 
 
 @dataclass(frozen=True)
@@ -15,29 +17,38 @@ class ModelPricing:
     cache_read_per_mtok: float
 
 
+def _p(model_id: str, inp: float, out: float) -> ModelPricing:
+    """Shorthand: derive 5-min cache write (1.25x) and read (0.1x) from input price."""
+    return ModelPricing(
+        model_id=model_id,
+        input_per_mtok=inp,
+        output_per_mtok=out,
+        cache_write_per_mtok=inp * 1.25,
+        cache_read_per_mtok=inp * 0.10,
+    )
+
+
+# fmt: off
 PRICING: dict[str, ModelPricing] = {
-    "anthropic/claude-sonnet-4-6": ModelPricing(
-        model_id="anthropic/claude-sonnet-4-6",
-        input_per_mtok=3.00,
-        output_per_mtok=15.00,
-        cache_write_per_mtok=3.75,
-        cache_read_per_mtok=0.30,
-    ),
-    "anthropic/claude-haiku-4-5-20251001": ModelPricing(
-        model_id="anthropic/claude-haiku-4-5-20251001",
-        input_per_mtok=1.00,
-        output_per_mtok=5.00,
-        cache_write_per_mtok=1.25,
-        cache_read_per_mtok=0.10,
-    ),
-    "anthropic/claude-opus-4-7": ModelPricing(
-        model_id="anthropic/claude-opus-4-7",
-        input_per_mtok=15.00,
-        output_per_mtok=75.00,
-        cache_write_per_mtok=18.75,
-        cache_read_per_mtok=1.50,
-    ),
+    # ── Sonnet family ──────────────────────────────────────────────────
+    "anthropic/claude-sonnet-5":            _p("anthropic/claude-sonnet-5",            2.00,  10.00),
+    "anthropic/claude-sonnet-4-6":          _p("anthropic/claude-sonnet-4-6",          3.00,  15.00),
+    "anthropic/claude-sonnet-4-5":          _p("anthropic/claude-sonnet-4-5",          3.00,  15.00),
+    "anthropic/claude-sonnet-4-5-20250929": _p("anthropic/claude-sonnet-4-5-20250929", 3.00,  15.00),
+    # ── Haiku family ───────────────────────────────────────────────────
+    "anthropic/claude-haiku-4-5":           _p("anthropic/claude-haiku-4-5",           1.00,   5.00),
+    "anthropic/claude-haiku-4-5-20251001":  _p("anthropic/claude-haiku-4-5-20251001",  1.00,   5.00),
+    # ── Opus family ────────────────────────────────────────────────────
+    "anthropic/claude-opus-5":              _p("anthropic/claude-opus-5",              5.00,  25.00),
+    "anthropic/claude-opus-4-8":            _p("anthropic/claude-opus-4-8",            5.00,  25.00),
+    "anthropic/claude-opus-4-7":            _p("anthropic/claude-opus-4-7",            5.00,  25.00),
+    "anthropic/claude-opus-4-6":            _p("anthropic/claude-opus-4-6",            5.00,  25.00),
+    "anthropic/claude-opus-4-5":            _p("anthropic/claude-opus-4-5",            5.00,  25.00),
+    "anthropic/claude-opus-4-5-20251101":   _p("anthropic/claude-opus-4-5-20251101",   5.00,  25.00),
+    # ── Fable family ───────────────────────────────────────────────────
+    "anthropic/claude-fable-5":             _p("anthropic/claude-fable-5",            10.00,  50.00),
 }
+# fmt: on
 
 
 @dataclass(frozen=True)
@@ -52,7 +63,14 @@ class FileEstimate:
 
 
 def get_pricing(model_id: str) -> ModelPricing | None:
-    return PRICING.get(model_id)
+    pricing = PRICING.get(model_id)
+    if pricing is None:
+        warnings.warn(
+            f"No pricing entry for model {model_id!r} — cost estimates will read $0. "
+            "Add the model to PRICING in trie/cost.py or verify the model identifier.",
+            stacklevel=2,
+        )
+    return pricing
 
 
 def estimate_file_cost(

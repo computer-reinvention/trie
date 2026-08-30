@@ -1,34 +1,38 @@
 ---
 trie_version: 0.3.0
 source: trie/cost.py
-file_fingerprint: a130d170e7b2e7efba48619ef0c572f926298712916f848f8e2e7eac3fac1e6e
-last_synced_at: '2026-06-03T20:47:47Z'
+file_fingerprint: d3dd80a4ff88ddcaf64216579b55c8239540a74d3d3d900ec4a4597fc99416c7
+last_synced_at: '2026-08-30T14:33:01Z'
 defines:
 - kind: module
   qualified_name: trie/cost:__module__
-  lines: 1-123
+  lines: 1-141
 - kind: class
   qualified_name: trie/cost:ModelPricing
-  lines: 10-15
+  lines: 12-17
   signature: class ModelPricing
+- kind: function
+  qualified_name: trie/cost:_p
+  lines: 20-28
+  signature: 'def _p(model_id: str, inp: float, out: float) -> ModelPricing'
 - kind: constant
   qualified_name: trie/cost:PRICING
-  lines: 18-40
+  lines: 32-50
 - kind: class
   qualified_name: trie/cost:FileEstimate
-  lines: 44-51
+  lines: 55-62
   signature: class FileEstimate
 - kind: function
   qualified_name: trie/cost:get_pricing
-  lines: 54-55
+  lines: 65-73
   signature: 'def get_pricing(model_id: str) -> ModelPricing | None'
 - kind: function
   qualified_name: trie/cost:estimate_file_cost
-  lines: 58-105
+  lines: 76-123
   signature: 'def estimate_file_cost( *, file_path: str, cached_prefix_tokens: int, public_symbols: int, pricing: ModelPricing, request_tokens_per_symbol: int = 80, output_tokens_per_symbol: int = 200, ) -> FileEstimate'
 - kind: function
   qualified_name: trie/cost:estimate_actual_cost
-  lines: 108-122
+  lines: 126-140
   signature: 'def estimate_actual_cost( *, cache_creation_input_tokens: int, cache_read_input_tokens: int, input_tokens: int, output_tokens: int, pricing: ModelPricing, ) -> float'
 incoming_refs: 41
 outgoing_refs: 0
@@ -53,11 +57,20 @@ Immutable dataclass storing pricing rates for an LLM model.
 - `cache_write_per_mtok`: Cost in USD per million tokens when writing to cache
 - `cache_read_per_mtok`: Cost in USD per million tokens when reading from cache
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cost:PRICING fingerprint=4ce2b7b5eb1a916633a98aef001ac4eae62b45ae55ca84fbc5936272f12f4e34 body_fp=bf0a6160a4c7804416497852e29ba8faf530dbe6c46d626389d9d136e3e6a8eb source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 role=monitoring-telemetry -->
+<!-- trie:section symbol=trie/cost:_p fingerprint=a4eb46b784f2b98becded476576555ba2242649b39d8957bba4ca5f6182935d9 body_fp=0fbc4c07975cd261e20abb9e8b59ba79fb5c05c9af79218edf9e3db1e8192dd3 source_ref=2e2b5d0272fcd6b30c6560da3d39da91148555de role=util -->
+## `def _p(model_id: str, inp: float, out: float) -> ModelPricing`
+
+Construct a `ModelPricing` by deriving cache prices from the input price using fixed Anthropic 5-min TTL multipliers.
+
+- `inp`: input cost per million tokens; cache write = `inp × 1.25`, cache read = `inp × 0.10`
+- `out`: output cost per million tokens; passed through directly
+<!-- trie:end -->
+<!-- trie:section symbol=trie/cost:PRICING fingerprint=a5781511dc6ce43ee2eaeb9a48ca0c28a9433b91a1a211175f079ae485c741ec body_fp=f594d037b26769eb22e1fd054e20b4318babf274dcbb4309e33c45352002f561 source_ref=2e2b5d0272fcd6b30c6560da3d39da91148555de role=config -->
 Maps model IDs to their pricing structures for cost calculations.
 
-- Contains pricing for three Anthropic Claude models (Sonnet, Haiku, Opus)
-- Prices are in USD per million tokens as of 2026-04
+- Contains pricing for 13 Anthropic Claude models across Sonnet, Haiku, Opus, and Fable families
+- Opus prices revised to $5.00/$25.00 per mtok (input/output); Fable added at $10.00/$50.00
+- Prices are in USD per million tokens as of 2026-08-30
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cost:FileEstimate fingerprint=8d740615b193888076da794ca34ef357eefe7e61ecaf7a13b910609d7d02c6e4 body_fp=308906bc2aa974f762254d7865f41540d41c837271aca54c1888cc6db9435279 source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 role=monitoring-telemetry -->
 ## `class FileEstimate`
@@ -70,10 +83,10 @@ Represents estimated token usage and cost breakdown for generating documentation
 - `output_tokens`: generated response tokens across all symbols
 - `cost_usd`: total estimated cost in US dollars
 <!-- trie:end -->
-<!-- trie:section symbol=trie/cost:get_pricing fingerprint=29a71728aa28685af7dadf00cbf539b7856c20a7ff58ccc9dc480f432b63699b body_fp=a7872b6e1c27203531a2b1888191b5bd8f931bfcde496af497f73ae3510115c3 source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 role=llm-client -->
+<!-- trie:section symbol=trie/cost:get_pricing fingerprint=21ebdc175e4bb5a081ee8e077ebbbc71ef9889d640f4983a9a2af79b317bead8 body_fp=6b185db43800093157de48d2f0c8f681c32ba404082104e9cd1dd940a0120a0d source_ref=2e2b5d0272fcd6b30c6560da3d39da91148555de role=util -->
 ## `def get_pricing(model_id: str) -> ModelPricing | None`
 
-Returns the ModelPricing for the given model ID from the PRICING dictionary.
+Returns the `ModelPricing` for the given model ID from `PRICING`, emitting a `warnings.warn` if the ID is not found.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/cost:estimate_file_cost fingerprint=b3ba0b1d128a0b519a76004e2b7267afe662074831ac3b79be3771b23172e4d2 body_fp=ff1a1eae6ffea2a87c9a10577f94deda12191266184906b339af302411bcdf6a source_ref=6bcbb1cf99dda1893150e55184f4c38d9b7a9986 role=monitoring-telemetry -->
 ## `def estimate_file_cost( *, file_path: str, cached_prefix_tokens: int, public_symbols: int, pricing: ModelPricing, request_tokens_per_symbol: int = 80, output_tokens_per_symbol: int = 200, ) -> FileEstimate`
