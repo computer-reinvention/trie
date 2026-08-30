@@ -1,75 +1,75 @@
 ---
 trie_version: 0.3.0
 source: trie/freshness.py
-file_fingerprint: 4d7b60f6ccd58a5b820b98cbefcd04a0bcc4e018cddb3ed23c3f7908c6ef191a
-last_synced_at: '2026-08-02T21:19:30Z'
+file_fingerprint: d719fa5162d16c88d4e06ccca77282e9b7be88ae7f3bee8d3b6925f4cc997f5e
+last_synced_at: '2026-08-30T17:21:22Z'
 description: 'Freshness gate: keep the graph + triefact tree current with respect to disk and HEAD.'
 defines:
 - kind: module
   qualified_name: trie/freshness:__module__
-  lines: 1-393
+  lines: 1-408
 - kind: constant
   qualified_name: trie/freshness:STAMP_FILENAME
-  lines: 53-53
+  lines: 54-54
 - kind: class
   qualified_name: trie/freshness:NotAGitRepoError
-  lines: 56-64
+  lines: 57-65
   signature: class NotAGitRepoError(RuntimeError)
 - kind: class
   qualified_name: trie/freshness:Stamp
-  lines: 68-97
+  lines: 69-98
   signature: class Stamp
 - kind: method
   qualified_name: trie/freshness:Stamp.to_json
-  lines: 80-81
+  lines: 81-82
   signature: def to_json(self) -> dict[str, Any]
 - kind: method
   qualified_name: trie/freshness:Stamp.from_json
-  lines: 84-97
+  lines: 85-98
   signature: 'def from_json(cls, raw: dict[str, Any]) -> Stamp | None'
 - kind: function
   qualified_name: trie/freshness:stamp_path
-  lines: 100-102
+  lines: 101-103
   signature: 'def stamp_path(project_root: Path) -> Path'
 - kind: function
   qualified_name: trie/freshness:read_stamp
-  lines: 105-120
+  lines: 106-121
   signature: 'def read_stamp(project_root: Path) -> Stamp | None'
 - kind: function
   qualified_name: trie/freshness:write_stamp
-  lines: 123-133
+  lines: 124-134
   signature: 'def write_stamp(project_root: Path, stamp: Stamp) -> None'
 - kind: function
   qualified_name: trie/freshness:stamp_graph_fresh
-  lines: 136-156
+  lines: 137-157
   signature: 'def stamp_graph_fresh(project_root: Path, config: Config) -> None'
 - kind: function
   qualified_name: trie/freshness:scan_mtimes
-  lines: 159-178
+  lines: 160-179
   signature: 'def scan_mtimes(project_root: Path, config: Config) -> dict[str, float]'
 - kind: function
   qualified_name: trie/freshness:_require_git
-  lines: 181-197
+  lines: 182-198
   signature: 'def _require_git(project_root: Path) -> str'
 - kind: function
   qualified_name: trie/freshness:_mtimes_differ
-  lines: 200-212
+  lines: 201-213
   signature: 'def _mtimes_differ(a: dict[str, float], b: dict[str, float]) -> bool'
 - kind: class
   qualified_name: trie/freshness:FreshnessResult
-  lines: 216-232
+  lines: 217-233
   signature: class FreshnessResult
 - kind: function
   qualified_name: trie/freshness:ensure_fresh_before_turn
-  lines: 235-262
+  lines: 236-263
   signature: 'def ensure_fresh_before_turn( *, project_root: Path, config: Config, store: Store, progress: ProgressCallback | None = None, ) -> FreshnessResult'
 - kind: function
   qualified_name: trie/freshness:ensure_fresh_after_turn
-  lines: 265-287
+  lines: 266-288
   signature: 'def ensure_fresh_after_turn( *, project_root: Path, config: Config, store: Store, progress: ProgressCallback | None = None, ) -> FreshnessResult'
 - kind: function
   qualified_name: trie/freshness:_ensure_fresh
-  lines: 290-392
+  lines: 291-407
   signature: 'def _ensure_fresh( *, project_root: Path, config: Config, store: Store, progress: ProgressCallback | None, trigger: str, ) -> FreshnessResult'
 incoming_refs: 29
 outgoing_refs: 11
@@ -192,7 +192,7 @@ Run a post-turn graph-sync sweep, catching files edited by the agent during the 
 
 - `progress`: optional callback for sync progress reporting; passed through to `_ensure_fresh`.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/freshness:_ensure_fresh fingerprint=5af148c97ba112e86af09a298434b51603110de685efa1434415b504d50939c1 body_fp=879efbe8e47771686a6833731bb976131bb43990d849397a5707b92b37c8476f source_ref=0b739aacd3bb27bb550bd07e35677cebc4eb61ea role=orchestration -->
+<!-- trie:section symbol=trie/freshness:_ensure_fresh fingerprint=4eff5b39142d9958dcc4a24ec320271185804766de041927de110059c5c4751e body_fp=81ee7e1ac0516c03175cd2fc09b65ded884e26def50a38301b6b90af8c832f93 source_ref=3398f961de5f2bd917988d897908103db7e66d24 role=orchestration -->
 ## `def _ensure_fresh( *, project_root: Path, config: Config, store: Store, progress: ProgressCallback | None, trigger: str, ) -> FreshnessResult`
 
 Core freshness gate implementation that rebuilds the graph when git HEAD or file mtimes change since last refresh.
@@ -200,6 +200,6 @@ Core freshness gate implementation that rebuilds the graph when git HEAD or file
 - Checks git HEAD, stamp file, and current mtimes to determine refresh reason
 - `unchanged` surfaces pending prose staleness from the activity DB and returns early without rebuilding
 - `mtimes_moved` always marks stale files for later sync; `sync_prose` opt-in is removed
-- All other reasons (`no_stamp`, `head_moved`, `empty_store`) rebuild graph without LLM and surface existing pending stale files
+- All other reasons (`no_stamp`, `head_moved`, `empty_store`) call `check_project` after scanning to recompute and write the stale pending set from scratch
 - Updates stamp file and pending stale list after successful refresh
 <!-- trie:end -->

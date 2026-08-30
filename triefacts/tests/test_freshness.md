@@ -1,13 +1,13 @@
 ---
 trie_version: 0.3.0
 source: tests/test_freshness.py
-file_fingerprint: 8cb71cd6fd365057153d6d3bec2ab111f317036a443a17d7f8eb66b2f96f8c6f
-last_synced_at: '2026-07-29T18:38:37Z'
+file_fingerprint: 5b0972275361f2c0f66c578dbb20baa908ad6738ace930c79903fa1af26236d1
+last_synced_at: '2026-08-30T17:21:36Z'
 description: Tests for the turn-boundary freshness gate (`trie sync --graph-only`).
 defines:
 - kind: module
   qualified_name: tests/test_freshness:__module__
-  lines: 1-531
+  lines: 1-671
 - kind: function
   qualified_name: tests/test_freshness:_git
   lines: 46-48
@@ -132,8 +132,20 @@ defines:
   qualified_name: tests/test_freshness:test_full_sync_stamps_graph_freshness
   lines: 495-530
   signature: 'def test_full_sync_stamps_graph_freshness(project: Path, monkeypatch: pytest.MonkeyPatch)'
+- kind: function
+  qualified_name: tests/test_freshness:test_empty_store_computes_pending
+  lines: 539-564
+  signature: 'def test_empty_store_computes_pending(project: Path)'
+- kind: function
+  qualified_name: tests/test_freshness:test_head_moved_recomputes_pending
+  lines: 567-650
+  signature: 'def test_head_moved_recomputes_pending(project: Path)'
+- kind: function
+  qualified_name: tests/test_freshness:test_no_stamp_surfaces_missing_triefacts
+  lines: 653-670
+  signature: 'def test_no_stamp_surfaces_missing_triefacts(project: Path)'
 incoming_refs: 0
-outgoing_refs: 46
+outgoing_refs: 41
 ---
 <!-- trie:section symbol=tests/test_freshness:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=ab7aae61e5f60ed8e938017caba43f98f18fdecee1f09edc37363ae841e7dc8b source_ref=a3a134b57a603882c49ea5d69c36ac88832aa352 role=test-infrastructure -->
 Tests for the turn-boundary freshness gate that prevents stale graph state across git operations and file modifications.
@@ -302,4 +314,24 @@ Assert that `trie sync --graph-only` exits with code 1 and mentions "git reposit
 ## `def test_full_sync_stamps_graph_freshness(project: Path, monkeypatch: pytest.MonkeyPatch)`
 
 Assert that both bootstrap and incremental `trie sync` write a graph freshness stamp, preventing the next turn hook from triggering a redundant rebuild.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_freshness:test_empty_store_computes_pending fingerprint=fa260324a168be9232636e130cb6b8540e081a0941bc99b8fb2291a4e879f742 body_fp=b70ddd5bf803e4a95dab43955807b043423fb8eac381359c9ec40c4ca78defdc source_ref=705c034fae94d8aad693f09cb57505fdd17f99e0 role=test -->
+## `def test_empty_store_computes_pending(project: Path)`
+
+Regression test: verifies that the `empty_store` rebuild path calls `check_project` + `write_pending`, so missing triefacts are recorded in the pending set and surfaced on the subsequent `unchanged` run.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_freshness:test_head_moved_recomputes_pending fingerprint=820e77545c9c2af8a8c944ac43efaf9831da8ad73955745e8ed679bd23ee6b0f body_fp=1e4a88cfebf645bdecbbda66069ef2e95f224e6010f740d50251b689ca47928c source_ref=705c034fae94d8aad693f09cb57505fdd17f99e0 role=test -->
+## `def test_head_moved_recomputes_pending(project: Path)`
+
+Regression test: verifies that the `head_moved` freshness path rewrites the pending set rather than preserving phantom-stale entries from a prior `mtimes_moved` event.
+
+- Primes the graph, edits `alpha.py` to force `mtimes_moved` and populate the pending set.
+- Synthesises valid triefacts for both `alpha.py` and `beta.py` (matching fingerprints and body hashes), writes them, and commits — so `check_project` now sees both files as clean.
+- Asserts that the subsequent `head_moved` run clears `src/alpha.py` from `stale_files` and from the persisted pending set.
+- Asserts that the following `unchanged` run does not resurrect the cleared entries.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_freshness:test_no_stamp_surfaces_missing_triefacts fingerprint=77d25d6becbdee2c824229a50699efd7eed436b2d031870649c761aa2c0db5a9 body_fp=1276096829bf025b0ec05fb62084a80c96bacf54e9365f968f4f0e26a6830fb1 source_ref=705c034fae94d8aad693f09cb57505fdd17f99e0 role=test -->
+## `def test_no_stamp_surfaces_missing_triefacts(project: Path)`
+
+Assert that `ensure_fresh_before_turn` reports in-scope source files as stale when no stamp exists and no triefacts have been written.
 <!-- trie:end -->
