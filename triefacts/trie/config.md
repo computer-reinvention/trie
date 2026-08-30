@@ -1,12 +1,12 @@
 ---
 trie_version: 0.3.0
 source: trie/config.py
-file_fingerprint: 3033640bbebc167f27cb85781bab69cd4504e8c4168f4e0e08d8b8b4516467cc
-last_synced_at: '2026-08-01T14:59:14Z'
+file_fingerprint: 57daa1355f22426331e107f382b2a5dc7c8222a28d35eb008b5be8971cfa2321
+last_synced_at: '2026-08-30T02:41:23Z'
 defines:
 - kind: module
   qualified_name: trie/config:__module__
-  lines: 1-437
+  lines: 1-466
 - kind: class
   qualified_name: trie/config:TrieMeta
   lines: 9-10
@@ -44,33 +44,37 @@ defines:
   lines: 160-217
   signature: class Mcp
 - kind: class
+  qualified_name: trie/config:XLink
+  lines: 221-237
+  signature: class XLink
+- kind: class
   qualified_name: trie/config:Diff
-  lines: 221-248
+  lines: 241-268
   signature: class Diff
 - kind: class
   qualified_name: trie/config:Config
-  lines: 252-303
+  lines: 272-325
   signature: class Config
 - kind: method
   qualified_name: trie/config:Config.from_dict
-  lines: 265-281
+  lines: 286-303
   signature: "def from_dict(cls, data: dict) -> Config: # NOTE: [edits] and [languages] sections (and models.edits) in existing # trie.toml files are silently ignored \u2014 they configured the removed # code-generation pipeline (the patch pipeline is an intent store now)."
 - kind: method
   qualified_name: trie/config:Config.load
-  lines: 284-287
+  lines: 306-309
   signature: 'def load(cls, path: Path) -> Config'
 - kind: method
   qualified_name: trie/config:Config.find_and_load
-  lines: 290-303
+  lines: 312-325
   signature: 'def find_and_load(cls, start: Path) -> tuple[Config, Path]'
 - kind: class
   qualified_name: trie/config:ConfigNotFoundError
-  lines: 306-307
+  lines: 328-329
   signature: class ConfigNotFoundError(FileNotFoundError)
 - kind: constant
   qualified_name: trie/config:DEFAULT_CONFIG_TOML
-  lines: 310-436
-incoming_refs: 365
+  lines: 332-465
+incoming_refs: 0
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/config:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=73508aef5ccf98a204e6bf0fa288e0420baac8315fc2fb1aa7e8d1bf91d72a01 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
@@ -177,6 +181,14 @@ Dataclass holding server-side tuning knobs for the MCP `grep`, `read`, and `trac
 - `trace_hub_threshold`: symbols with more inbound refs than this are skipped during `trace`/`trace_flow` expansion.
 - `trace_prose_at_depth`: `0` = no prose attached to trace results.
 <!-- trie:end -->
+<!-- trie:section symbol=trie/config:XLink fingerprint=d408e4caacb36d1e46ef191f527540d6d77b92f968c78309508d891137ba949c body_fp=bd537f60a7ef341f81eaa3610648d01d11909f3d16e58594ce4c1cf09a1a6882 source_ref=8d61598c03d1db2a1f597a7fdd07849e9e73369f role=config -->
+## `class XLink`
+
+Frozen dataclass holding cross-language edge detection settings; runs unconditionally with negligible overhead when no cross-language patterns exist.
+
+- `confidence_threshold`: matches below this are logged to debug but never produce edges.
+- `scan_paths`: glob list restricting scanned files; empty list means all in-scope files.
+<!-- trie:end -->
 <!-- trie:section symbol=trie/config:Diff fingerprint=02d7b7c4a34c801654ba7e7ba0c3ee31d29e464c963c3cb640a04f17864788fb body_fp=4521fe4015187aaa0e50c829372b9142fce33e22788e41f86cfe26d9767bbe06 source_ref=18c0228ab22574981e4c5031db011c5783d28510 role=config -->
 ## `class Diff`
 
@@ -187,18 +199,18 @@ Dataclass holding configuration for the per-commit digest system, where each com
 - `diffs_dir`: defaults to `"triefacts/triediffs"`; directory holding one immutable digest file per commit; lives inside the triefact tree, explicitly excluded from evidence collection to avoid feedback loops.
 - `max_entries`: oldest digest files are pruned from `diffs_dir` when this cap is exceeded.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Config fingerprint=12a4bc43770566272abef892091eaa23d8f73dc8d31081651a1acd5706d8cb84 body_fp=ce0aeaeb0b8b5c2ef8819a76130f23f311635843f8868db6496cce005624da50 source_ref=510dbd7539ccb0936ec4f10c68b018717709082e role=config -->
+<!-- trie:section symbol=trie/config:Config fingerprint=3bf0ddff4c62b2dd420a92d071d0754008d9c3b243309f9f0006c8ff2cf0e4ca body_fp=eeb174f327461d13f0cfd50163c92c6749d1a041de4cd477dcc8868eab4e0c96 source_ref=8d61598c03d1db2a1f597a7fdd07849e9e73369f role=config -->
 ## `class Config`
 
 Root configuration dataclass aggregating all subsection configs, with classmethods to construct from a dict, a TOML file path, or by walking up the directory tree.
 
-- `from_dict`: silently drops `models.edits` and top-level `[edits]`/`[languages]` keys from legacy configs; now also populates the `resolver` field.
+- `from_dict`: silently drops `models.edits` and top-level `[edits]`/`[languages]` keys from legacy configs; now also populates the `resolver` and `xlink` fields.
 - `find_and_load`: raises `ConfigNotFoundError` if no `trie.toml` is found in `start` or any ancestor; returns `(Config, config_dir)` where `config_dir` is the project root.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/config:Config.from_dict fingerprint=4cb497239f0a398bed137fee387e56f6208055e895b78ab78d1bdc4ee9745a28 body_fp=1b55ff0d56608905edc9c2bbe3e78d2e091d9db12f823bb41a48e3b3e5e55867 source_ref=510dbd7539ccb0936ec4f10c68b018717709082e role=config -->
+<!-- trie:section symbol=trie/config:Config.from_dict fingerprint=c5f09241abda7e54703533c97c731aeeeef01bb31729f3f7fb91c9ee969d7c02 body_fp=a8b4edad9b4cb3473ba42bf989a5ecd3a89c824cc606c574163e1c9e71de3e59 source_ref=8d61598c03d1db2a1f597a7fdd07849e9e73369f role=config -->
 ## `def from_dict(cls, data: dict) -> Config: # NOTE: [edits] and [languages] sections (and models.edits) in existing # trie.toml files are silently ignored — they configured the removed # code-generation pipeline (the patch pipeline is an intent store now).`
 
-Creates a `Config` instance from a dictionary, silently ignoring `[edits]`, `[languages]`, and `models.edits` sections from legacy trie.toml files, and populating all remaining fields including `diff` and `resolver` from the input dict.
+Creates a `Config` instance from a dictionary, silently ignoring `[edits]`, `[languages]`, and `models.edits` sections from legacy trie.toml files, and populating all remaining fields including `diff`, `resolver`, and `xlink` from the input dict.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/config:Config.load fingerprint=5365299d7ecf0cdb6ae8bfad33855d997debd906c3d769b616f66b3f625a0f2b body_fp=442177abeb5c3de45896d7e0eb434e43cf594d179b17f6fc8085e6e6ef2d2ec4 source_ref=59b06d551b5158372b2b8155ef9e26fb80cec296 role=config-management -->
 ## `def load(cls, path: Path) -> Config`

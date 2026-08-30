@@ -8,21 +8,21 @@ Prose descriptions of every in-scope source file and symbol, kept in sync with t
 
 The most-referenced public symbols — start reading here.
 
-- [`trie/config:Config`](trie/config.md) (153 refs) `config` — Root configuration dataclass aggregating all subsection configs, with classmethods to construct from a dict, a TOML file path, or by walking up the directory tree.
-- [`trie/config:Config.find_and_load`](trie/config.md) (138 refs) `config-management` — Config classmethod walks up directory tree from start path to find and load trie.toml configuration file.
+- [`trie/config:Config`](trie/config.md) (160 refs) `config` — Root configuration dataclass aggregating all subsection configs, with classmethods to construct from a dict, a TOML file path, or by walking up the directory tree.
 - [`trie/cli:app`](trie/cli.md) (118 refs) `entrypoint` — Top-level Typer application instance that defines the trie CLI interface.
+- [`trie/graph/store:Store`](trie/graph/store.md) (80 refs) `persistence` — SQLite-backed persistence for trie's symbol graph and file fingerprints.
 - [`tests/fake_client:FakeTrieClient`](tests/fake_client.md) (80 refs) `test` — Test double for `TrieClient` that returns preconfigured structured outputs and records call parameters for verification.
-- [`trie/graph/store:Store`](trie/graph/store.md) (79 refs) `persistence` — SQLite-backed persistence for trie's symbol graph and file fingerprints.
 - [`trie/parse/python:extract_symbols`](trie/parse/python.md) (77 refs) `parsing` — Parse Python file and extract its top-level symbols: functions, classes, methods, constants, and module residuals.
 - [`tests/test_mcp:tools`](tests/test_mcp.md) (70 refs) `test` — Creates a TrieTools fixture for the populated test project and ensures cleanup after use.
 - [`trie/sync/writer:TriefactFile`](trie/sync/writer.md) (60 refs) `persistence` — Parses, manipulates, and renders triefact files containing YAML frontmatter and trie-managed documentation sections.
-- [`trie/sync/writer:TriefactFile.parse`](trie/sync/writer.md) (53 refs) `parsing` — Creates `TriefactFile` from Markdown text by parsing YAML frontmatter and trie section sentinels.
 - [`trie/sync/single_file:sync_single_file`](trie/sync/single_file.md) (45 refs) `orchestration` — Generate or refresh the triefact file for a single Python source file using LLM calls.
-- [`trie/reporter:Reporter.error`](trie/reporter.md) (42 refs) `util` — Prints an error message to `Reporter`'s `err_console` (stderr) with red formatting, bypassing verbosity checks.
 - [`trie/cli:console`](trie/cli.md) (38 refs) `config` — Creates a Rich Console instance for styled terminal output across CLI commands.
 - [`trie/config:ConfigNotFoundError`](trie/config.md) (34 refs) `config-management` — Exception raised when Config.find_and_load cannot locate a trie.toml file in the directory tree.
 - [`tests/test_mcp_install:project`](tests/test_mcp_install.md) (34 refs) `test-infrastructure` — Creates temporary project directory with trie.toml configuration file and cleans up MCP installation artifacts after test completion.
 - [`tests/test_store:store`](tests/test_store.md) (34 refs) `test-infrastructure` — Pytest fixture that creates a temporary Store instance and ensures cleanup after test completion.
+- [`trie/parse/types:Symbol`](trie/parse/types.md) (29 refs) `model` — Immutable dataclass representing a single parsed symbol emitted by a language backend.
+- [`trie/reporter:Verbosity`](trie/reporter.md) (28 refs) `cli-interface` — Defines integer enum levels for controlling Reporter output verbosity.
+- [`trie/telemetry:timed`](trie/telemetry.md) (28 refs) `monitoring-telemetry` — Context manager that times a block and emits a telemetry event with duration on exit.
 
 ## Files
 
@@ -85,6 +85,7 @@ The most-referenced public symbols — start reading here.
 - [test_ts_resolve.md](tests/test_ts_resolve.md)
 - [test_workflow_install.md](tests/test_workflow_install.md)
 - [test_writer_sentinels.md](tests/test_writer_sentinels.md)
+- [test_xlink.md](tests/test_xlink.md) — Comprehensive tests for cross-language edge detection (trie/parse/xlink.py).
 
 ### tests/fixtures/tiny_repo
 
@@ -108,6 +109,21 @@ The most-referenced public symbols — start reading here.
 ### tests/fixtures/tiny_ts_repo/src/types
 
 - [external.d.md](tests/fixtures/tiny_ts_repo/src/types/external.d.md)
+
+### tests/fixtures/xlink_project/backend/api
+
+- [admin.md](tests/fixtures/xlink_project/backend/api/admin.md)
+- [users.md](tests/fixtures/xlink_project/backend/api/users.md)
+
+### tests/fixtures/xlink_project/frontend/src/components
+
+- [AdminPanel.md](tests/fixtures/xlink_project/frontend/src/components/AdminPanel.md)
+- [UserList.md](tests/fixtures/xlink_project/frontend/src/components/UserList.md)
+
+### tests/fixtures/xlink_project/server
+
+- [gateway.md](tests/fixtures/xlink_project/server/gateway.md)
+- [routes.md](tests/fixtures/xlink_project/server/routes.md)
 
 ### trie
 
@@ -163,6 +179,7 @@ The most-referenced public symbols — start reading here.
 - [types.md](trie/parse/types.md) — Language-neutral value types for the parse layer.
 - [typescript.md](trie/parse/typescript.md) — TypeScript / TSX symbol extraction via tree-sitter.
 - [typescript_refs.md](trie/parse/typescript_refs.md) — TypeScript reference (edge) extraction via tree-sitter.
+- [xlink.md](trie/parse/xlink.md) — Cross-language edge detection: API call sites ↔ route handlers.
 
 ### trie/parse/resolvers
 

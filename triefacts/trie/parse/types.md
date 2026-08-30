@@ -1,13 +1,13 @@
 ---
 trie_version: 0.3.0
 source: trie/parse/types.py
-file_fingerprint: c1b2312fa3a2602da9627318306eeb54f143b570676855c0c950874553a23fc3
-last_synced_at: '2026-08-02T21:19:06Z'
+file_fingerprint: 138f241b6490d208ec0f54aefd24c478258fa57b3cd5af0761bac3b9d7f05fbf
+last_synced_at: '2026-08-30T02:41:10Z'
 description: Language-neutral value types for the parse layer.
 defines:
 - kind: module
   qualified_name: trie/parse/types:__module__
-  lines: 1-106
+  lines: 1-107
 - kind: constant
   qualified_name: trie/parse/types:KINDS
   lines: 29-40
@@ -16,20 +16,20 @@ defines:
   lines: 48-51
 - kind: constant
   qualified_name: trie/parse/types:EDGE_KINDS
-  lines: 54-61
+  lines: 54-62
 - kind: class
   qualified_name: trie/parse/types:Symbol
-  lines: 65-79
+  lines: 66-80
   signature: class Symbol
 - kind: class
   qualified_name: trie/parse/types:Reference
-  lines: 83-97
+  lines: 84-98
   signature: class Reference
 - kind: class
   qualified_name: trie/parse/types:FileData
-  lines: 101-105
+  lines: 102-106
   signature: class FileData
-incoming_refs: 67
+incoming_refs: 0
 outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/parse/types:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=c29e030a893ddafae42df118c79e62c9aa6f229f78d7bee2ee5a0cdb7bad8b83 source_ref=a174d61d063c82dd1e024ea9f6b0f62628a9d783 role=model -->
@@ -47,8 +47,8 @@ Tuple of `KINDS` values whose `Symbol.signature` is synthetic or redundant, caus
 - `"module"`: signature is a fabricated one-line summary of residual module-level code
 - `"constant"`: signature is the raw assignment statement
 <!-- trie:end -->
-<!-- trie:section symbol=trie/parse/types:EDGE_KINDS fingerprint=54b527669ce61dc0c826341a01825a022d7af5341d32bfc8f3d16d176a6a1f4b body_fp=b2af9e5eafc02fadbbcf992cb7d5b0dde585aeb5b01065efad48bda4c901f572 source_ref=a174d61d063c82dd1e024ea9f6b0f62628a9d783 role=config -->
-Defines the canonical vocabulary of typed edge kinds used in `Reference.kind` (AGM graph edges).
+<!-- trie:section symbol=trie/parse/types:EDGE_KINDS fingerprint=b20c4cf75601dc5442fa063bfeff664ca5b0754a7cd0c7d4339785e439500921 body_fp=d2cd0b7a4cd15bbd6983c3996a9ce3df1bfaaa073026bf29136d51f3fe1dc0a1 source_ref=8fbd1e072b32b551cfd893e7053f52632b54adc7 role=model -->
+Defines the canonical vocabulary of typed edge kinds used in `Reference.kind` (AGM graph edges), including `cross_language_call` for API boundary edges between languages.
 <!-- trie:end -->
 <!-- trie:section symbol=trie/parse/types:Symbol fingerprint=67410b76908def7ec7521baef1e77f8fa17f7b64e4da871a7c1b3eac081c35e0 body_fp=494c2f9f3e8e23c7b9e4bf55de67a899055d9d126b75ba580098d597c7ea35d4 source_ref=a174d61d063c82dd1e024ea9f6b0f62628a9d783 role=model -->
 ## `class Symbol`

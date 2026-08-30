@@ -1,12 +1,12 @@
 ---
 trie_version: 0.3.0
 source: trie/scan.py
-file_fingerprint: aaeaef853270182b1b11e7777c18260a49daedf84eaabede5d1047a45eb8fdeb
-last_synced_at: '2026-08-02T21:19:42Z'
+file_fingerprint: f8d22833c7cda969340b469c6ddebf3f3a045d2c9397c89dab9aea8532884912
+last_synced_at: '2026-08-30T02:41:35Z'
 defines:
 - kind: module
   qualified_name: trie/scan:__module__
-  lines: 1-112
+  lines: 1-126
 - kind: class
   qualified_name: trie/scan:ScanResult
   lines: 16-24
@@ -17,10 +17,10 @@ defines:
   signature: 'def file_fingerprint(text: str) -> str'
 - kind: function
   qualified_name: trie/scan:scan_project
-  lines: 31-111
+  lines: 31-125
   signature: 'def scan_project(*, project_root: Path, config: Config, store: Store) -> ScanResult'
-incoming_refs: 29
-outgoing_refs: 6
+incoming_refs: 0
+outgoing_refs: 0
 ---
 <!-- trie:section symbol=trie/scan:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=707e1d430cd869746b7ed5377a65ba2e430bacec467f40f67f40b4d789502e8c source_ref=ba0d38d68c99a578b6395e4b44522d5825f9668d role=source-parsing -->
 Scans Python projects to extract and persist symbol definitions and references with incremental updates.
@@ -44,7 +44,7 @@ Contains metrics from scanning a project's source files for symbols and referenc
 
 Computes SHA-256 hash of UTF-8 encoded text as hexadecimal string.
 <!-- trie:end -->
-<!-- trie:section symbol=trie/scan:scan_project fingerprint=c24bda287627db5eed11373586b8ec8aa7cc0e726d124b0f6bd173da024d44b0 body_fp=aa67c52d33f2a6e28b91c829e9d832ce4f4b8992a73568cc2bed3b37b7bab087 source_ref=a6e0afc35d0e2d84b7f14f09afe81e988fa302f6 role=orchestration -->
+<!-- trie:section symbol=trie/scan:scan_project fingerprint=9f7a227c444cca936884c0d6feff88b7dfec61757df6b3b5a75e2697b3b66a83 body_fp=a2754128fc0deb8d367743734517e8df59161c2e3369a235d6474331f3699423 source_ref=b88195ae25e1f82062b7c0fd691b38ae5f017f93 role=orchestration -->
 ## `def scan_project(*, project_root: Path, config: Config, store: Store) -> ScanResult`
 
 Walks the project, parses changed files, and persists symbols to the store with fingerprint-based change detection.
@@ -53,5 +53,6 @@ Walks the project, parses changed files, and persists symbols to the store with 
 - Only files passing `registry.is_indexable` are included in the scan scope
 - Calls `registry.apply_resolver_config(config)` before scanning to configure resolvers
 - Files no longer in scope or on disk are removed with cascade deletion
+- After all files are parsed, calls `xlink_resolve` to detect cross-language edges (e.g. fetch/axios call sites to FastAPI/Flask/Express route handlers) and merges those refs into `pending_refs`
 - Edges are regenerated from scratch on every scan due to potential symbol ID changes
 <!-- trie:end -->
