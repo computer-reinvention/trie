@@ -528,3 +528,143 @@ def test_full_sync_stamps_graph_freshness(project: Path, monkeypatch: pytest.Mon
     assert result2.exit_code == 0, result2.output
     followup2 = runner.invoke(app, ["sync", "--graph-only"])
     assert "graph fresh" in followup2.output
+
+
+# ---------------------------------------------------------------------------
+# Regression: pending set must be computed on every graph-rebuild path
+# (no_stamp, head_moved, empty_store), not just mtimes_moved.
+# ---------------------------------------------------------------------------
+
+
+def test_empty_store_computes_pending(project: Path):
+    """Regression: first graph-only in a fresh checkout must record missing
+    triefacts in the pending set so the 'unchanged' path surfaces them.
+
+    Before the fix, the empty_store/no_stamp paths rebuilt the graph but
+    never called check_project + write_pending, leaving the pending set
+    empty.  The subsequent 'unchanged' path read this empty pending and
+    reported 'prose fresh' — even though triefacts were missing."""
+    from trie.activity import read_pending
+
+    result = _run_before_turn(project)
+    assert result.refreshed is True
+    assert result.reason == "empty_store"
+    # Missing triefacts should be reported as stale.
+    assert len(result.stale_files) > 0
+
+    # The pending set must now be populated (not None, not empty).
+    pending = read_pending(project)
+    assert pending is not None
+    assert len(pending.stale) > 0
+
+    # A follow-up 'unchanged' run must carry the same stale set.
+    second = _run_before_turn(project)
+    assert second.refreshed is False
+    assert second.reason == "unchanged"
+    assert set(second.stale_files) == set(result.stale_files)
+
+
+def test_head_moved_recomputes_pending(project: Path):
+    """Regression: head_moved must recompute the pending set, not preserve
+    stale entries from a previous mtimes_moved event.
+
+    Before the fix, a git commit that included updated triefacts still left
+    the old pending entries in place because the head_moved path only read
+    (never wrote) the pending set.  The user saw files reported as stale
+    even though check_project showed them as clean — 'phantom stale'."""
+    from trie.activity import read_pending
+    from trie.sync.writer import hash_body
+
+    # Prime the graph.
+    _run_before_turn(project)
+
+    # Edit alpha.py → mtimes_moved populates the pending set.
+    time.sleep(0.01)
+    alpha = project / "src" / "alpha.py"
+    alpha.write_text(alpha.read_text() + "\n# changed\n")
+
+    moved = _run_before_turn(project)
+    assert moved.reason == "mtimes_moved"
+    assert "src/alpha.py" in moved.stale_files
+
+    pending_before = read_pending(project)
+    assert pending_before is not None
+    assert "src/alpha.py" in pending_before.stale
+
+    # Now create a matching triefact for alpha.py so check_project sees it as
+    # clean, simulating a teammate who synced and committed the triefact.
+    from trie.parse import registry
+
+    _config, _ = Config.find_and_load(project)
+    abs_alpha = project / "src" / "alpha.py"
+    symbols = registry.extract_symbols(abs_alpha, source_root=project)
+    triefact_content = "---\n---\n"
+    for sym in symbols:
+        fp = sym.body_normalized_hash
+        body = f"## `{sym.signature}`\n\nDoc for {sym.qualified_name}.\n"
+        body_fp = hash_body(body)
+        triefact_content += (
+            f"\n<!-- trie:section symbol={sym.qualified_name} "
+            f"fingerprint={fp} body_fp={body_fp} -->\n"
+            f"{body}\n"
+            f"<!-- trie:end -->\n"
+        )
+    tf_dir = project / "triefacts" / "src"
+    tf_dir.mkdir(parents=True, exist_ok=True)
+    (tf_dir / "alpha.md").write_text(triefact_content)
+
+    # Also create triefact for beta.py.
+    abs_beta = project / "src" / "beta.py"
+    beta_symbols = registry.extract_symbols(abs_beta, source_root=project)
+    beta_content = "---\n---\n"
+    for sym in beta_symbols:
+        fp = sym.body_normalized_hash
+        body = f"## `{sym.signature}`\n\nDoc for {sym.qualified_name}.\n"
+        body_fp = hash_body(body)
+        beta_content += (
+            f"\n<!-- trie:section symbol={sym.qualified_name} "
+            f"fingerprint={fp} body_fp={body_fp} -->\n"
+            f"{body}\n"
+            f"<!-- trie:end -->\n"
+        )
+    (tf_dir / "beta.md").write_text(beta_content)
+
+    # Commit everything → HEAD moves.
+    _git(["add", "."], project)
+    _git(["commit", "-q", "-m", "sync triefacts"], project)
+
+    # head_moved must recompute pending, clearing the phantom entries.
+    head_result = _run_before_turn(project)
+    assert head_result.refreshed is True
+    assert head_result.reason == "head_moved"
+    assert "src/alpha.py" not in head_result.stale_files
+
+    # The pending set must reflect check_project's current verdict.
+    pending_after = read_pending(project)
+    assert pending_after is not None
+    assert "src/alpha.py" not in pending_after.stale
+
+    # The subsequent 'unchanged' run must not resurrect phantom entries.
+    unchanged = _run_before_turn(project)
+    assert unchanged.reason == "unchanged"
+    assert "src/alpha.py" not in unchanged.stale_files
+
+
+def test_no_stamp_surfaces_missing_triefacts(project: Path):
+    """No stamp (fresh checkout): all files with symbols but no triefacts
+    must be reported as stale, not silently ignored."""
+    from trie.activity import read_pending
+
+    # Wipe any stamp that might exist from the fixture.
+    sp = stamp_path(project)
+    if sp.exists():
+        sp.unlink()
+
+    result = _run_before_turn(project)
+    assert result.refreshed is True
+    # At least alpha.py and beta.py should be stale (no triefacts).
+    assert "src/alpha.py" in result.stale_files or "src/beta.py" in result.stale_files
+
+    pending = read_pending(project)
+    assert pending is not None
+    assert pending.count > 0
