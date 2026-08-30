@@ -1,13 +1,13 @@
 ---
 trie_version: 0.3.0
 source: tests/test_models_retry.py
-file_fingerprint: d998000650aa0be2cec28cc8d410d899e861fe26a99bb82d95ec17f7dca7c4fb
-last_synced_at: '2026-08-01T01:51:57Z'
+file_fingerprint: b6f8da559b50d5ea9f0d921fced3b8a5a536c475394807b98f7da5d00bb60d0b
+last_synced_at: '2026-08-30T03:25:50Z'
 description: Retry-on-rate-limit behaviour of `AnthropicClient`.
 defines:
 - kind: module
   qualified_name: tests/test_models_retry:__module__
-  lines: 1-380
+  lines: 1-421
 - kind: function
   qualified_name: tests/test_models_retry:_fake_response
   lines: 42-48
@@ -108,8 +108,12 @@ defines:
   qualified_name: tests/test_models_retry:test_retry_total_seconds_zero_is_unbounded
   lines: 360-379
   signature: def test_retry_total_seconds_zero_is_unbounded(monkeypatch)
+- kind: function
+  qualified_name: tests/test_models_retry:test_trie_client_passes_anthropic_timeout_not_raw_httpx
+  lines: 385-420
+  signature: def test_trie_client_passes_anthropic_timeout_not_raw_httpx(monkeypatch)
 incoming_refs: 0
-outgoing_refs: 31
+outgoing_refs: 30
 ---
 <!-- trie:section symbol=tests/test_models_retry:__module__ fingerprint=a6284e6d3d43bdfbf0da732945adb2b4f31147c92bea47aee100d7f556c22d00 body_fp=6230e0b6dac96c666f4c643a238e8932016fce96586b9091c4f78ad67994b7c1 source_ref=85a5a52974f5f74ebaec7d5758ff3fb98966a251 role=test-infrastructure -->
 Tests retry behavior of `AnthropicClient` against rate limits, server errors, timeouts, and non-retryable exceptions.
@@ -272,4 +276,12 @@ Assert that `_run_with_retry` stops retrying once `retry_total_seconds` wall-clo
 ## `def test_retry_total_seconds_zero_is_unbounded(monkeypatch)`
 
 Assert that `retry_total_seconds=0.0` disables the wall-clock budget, allowing all `max_retries` attempts to complete.
+<!-- trie:end -->
+<!-- trie:section symbol=tests/test_models_retry:test_trie_client_passes_anthropic_timeout_not_raw_httpx fingerprint=d387d8601e09174e556d401d7d42ff35141d59f977c44741361dc0528ea1fd4b body_fp=62929578aeb5d09fe0e7f3117b2752b144d531c8d95974c5dfb884356144a416 source_ref=828f26cccc52095885fdc84e99f28f7714b31f8d role=test -->
+## `def test_trie_client_passes_anthropic_timeout_not_raw_httpx(monkeypatch)`
+
+Regression test asserting `TrieClient` passes an `anthropic.Timeout` instance (not a raw `httpx.Timeout`) to the SDK constructor.
+
+- Verifies the `timeout` kwarg is `isinstance(…, anthropic.Timeout)`, guarding against the httpx2 transport incompatibility.
+- Asserts `timeout_val.connect == 30.0`, enforcing the `min(30, request_timeout)` connect-cap logic in `TrieClient.__init__`.
 <!-- trie:end -->

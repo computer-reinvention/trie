@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 @functools.cache
 def _sdk() -> SimpleNamespace:
-    """Import the LLM SDK stack (anthropic + pydantic_ai + httpx) on first use.
+    """Import the LLM SDK stack (anthropic + pydantic_ai) on first use.
 
     These imports cost ~1.2s of wall clock — more than every read-only trie
     command combined. Importing them eagerly at module top made `trie grep`
@@ -33,7 +33,6 @@ def _sdk() -> SimpleNamespace:
     accessed through this cached loader instead; the first actual LLM call
     pays the cost, pure-read commands never do.
     """
-    import httpx
     from anthropic import (
         Anthropic,
         APIConnectionError,
@@ -42,6 +41,7 @@ def _sdk() -> SimpleNamespace:
         AsyncAnthropic,
         InternalServerError,
         RateLimitError,
+        Timeout,
     )
     from pydantic_ai import Agent, CachePoint
     from pydantic_ai.exceptions import ModelAPIError
@@ -57,7 +57,7 @@ def _sdk() -> SimpleNamespace:
         from pydantic_ai.usage import Usage  # type: ignore[no-redef,attr-defined]
 
     return SimpleNamespace(
-        httpx=httpx,
+        Timeout=Timeout,
         Anthropic=Anthropic,
         AsyncAnthropic=AsyncAnthropic,
         APIStatusError=APIStatusError,
@@ -580,7 +580,12 @@ class TrieClient:
         # files spinning with zero telemetry for minutes). A read/connect/write/pool
         # timeout turns that into an APITimeoutError that _run_with_retry retries
         # and ultimately surfaces as a per-file error instead of an infinite spin.
-        self._http_timeout = _sdk().httpx.Timeout(timeout, connect=min(30.0, timeout))
+        #
+        # Use *anthropic.Timeout* (the SDK's own re-export) — NOT a raw
+        # httpx.Timeout. Anthropic >= 1.0 migrated its transport from httpx to
+        # httpx2; constructing a timeout with the wrong library's Timeout class
+        # causes a TypeError at socket level, surfaced as APIConnectionError.
+        self._http_timeout = _sdk().Timeout(timeout, connect=min(30.0, timeout))
         self._anthropic_model_name = self._pai_model_id.split(":", 1)[-1]
         # The sync count_tokens client lives on the main thread and is only used
         # synchronously, so a single instance is fine here.

@@ -377,3 +377,44 @@ def test_retry_total_seconds_zero_is_unbounded(monkeypatch):
         == "ok"
     )
     assert calls["n"] == 4
+
+
+# --- timeout type regression -----------------------------------------------
+
+
+def test_trie_client_passes_anthropic_timeout_not_raw_httpx(monkeypatch):
+    """Regression: anthropic >= 1.0 moved from httpx to httpx2 internally.
+
+    If TrieClient constructs a raw ``httpx.Timeout`` and hands it to the
+    Anthropic client, the httpx2-based transport can't interpret the foreign
+    object — ``socket.settimeout()`` gets an ``httpx.Timeout`` instead of a
+    float, raising ``TypeError`` wrapped as ``APIConnectionError``.
+
+    The fix: construct the timeout via ``anthropic.Timeout`` (the SDK's own
+    re-export that always wraps the correct underlying library).  This test
+    asserts the timeout argument to ``Anthropic(...)`` is an instance of
+    ``anthropic.Timeout`` — never a raw ``httpx.Timeout``.
+    """
+    import anthropic as _anthropic_mod
+
+    captured: dict[str, object] = {}
+
+    class _SpyAnthropic:
+        """Capture the timeout kwarg without actually initialising the SDK."""
+
+        def __init__(self, **kwargs: object) -> None:
+            captured["timeout"] = kwargs.get("timeout")
+
+    from trie.models import _sdk
+
+    monkeypatch.setattr(_sdk(), "Anthropic", _SpyAnthropic)
+    TrieClient("anthropic/claude-haiku-4-5-20251001")
+
+    timeout_val = captured["timeout"]
+    # Must be the SDK's own Timeout class, not a raw httpx.Timeout.
+    assert isinstance(timeout_val, _anthropic_mod.Timeout), (
+        f"Expected anthropic.Timeout, got {type(timeout_val).__module__}.{type(timeout_val).__qualname__}"
+    )
+    # The connect timeout should be capped at 30s (the min(30, request_timeout)
+    # logic in TrieClient.__init__).
+    assert timeout_val.connect == 30.0
