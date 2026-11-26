@@ -17,6 +17,7 @@ open landing/index.html
 No build step. No package manager. Four files:
 
 - `index.html`: the landing page
+- `magi.html`: the mAGI page (02 · agent-first desktop), same theme
 - `docs.html`: sectioned user docs (quickstart, both indexes, the gate,
   agents, CLI reference, config, costs, CI, teams, troubleshooting)
   with a sticky sidebar TOC

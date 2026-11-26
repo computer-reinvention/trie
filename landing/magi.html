@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>magi · agent-first desktop</title>
+    <meta
+      name="description"
+      content="mAGI: a Fedora/Hyprland desktop built around LLM agents. One orchestrator agent in tmux. You speak or type. It starts other agents, operates the desktop, and asks you only for decisions."
+    />
+    <link rel="icon" type="image/svg+xml" href="./logo.svg" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <!-- ─────────────────────────────── NAV ─────────────────────────────── -->
+    <header class="nav">
+      <div class="nav__inner">
+        <a class="nav__brand" href="#top">
+          <svg class="nav__logo" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 8 L58 54 H6 Z" fill="currentColor"/></svg>
+          magi
+        </a>
+        <nav class="nav__links">
+          <a href="#orchestrator">orchestrator</a>
+          <a href="#bus">event bus</a>
+          <a href="#desktop">desktop</a>
+          <a href="#get">get it</a>
+          <a href="./index.html">trie</a>
+          <a
+            class="nav__gh"
+            href="https://github.com/pankajgarkoti/magi"
+            >GitHub ↗</a
+          >
+        </nav>
+      </div>
+    </header>
+
+    <!-- ─────────────────────────────── HERO ────────────────────────────── -->
+    <section class="hero" id="top">
+      <div class="container">
+        <p class="hero__kicker">
+          <a href="../">computer reinvention</a> / 02 · magi ·
+          <span class="hero__status">v0.3.0</span>
+        </p>
+        <h1 class="hero__title">
+          An agent-first <em>desktop</em>.
+        </h1>
+        <p class="hero__lead">The interface is an agent.</p>
+        <p class="hero__sub">
+          mAGI is a Fedora/Hyprland setup built around LLM agents. One
+          orchestrator agent runs in tmux and starts at login. You speak
+          or type to it. It starts other agents, operates the desktop,
+          and asks you only for <strong>decisions</strong>.
+        </p>
+        <div class="hero__actions">
+          <div class="cmd" data-copy>
+            <span class="cmd__prompt">$</span>
+            <code
+              >bash &lt;(curl -fsSL
+              https://raw.githubusercontent.com/pankajgarkoti/magi/main/install.sh)</code
+            >
+            <button class="cmd__copy" aria-label="Copy install command">
+              copy
+            </button>
+          </div>
+          <a class="btn btn--ghost" href="https://github.com/pankajgarkoti/magi">GitHub</a>
+        </div>
+        <ul class="hero__facts">
+          <li>Fedora 44, Hyprland, three colour themes</li>
+          <li>tmux orchestration, no bundled agent</li>
+          <li>Local voice, offline speech models</li>
+          <li>ISO, bootc image, or install script</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────── ORCHESTRATOR ────────────────────────── -->
+    <section class="section" id="orchestrator">
+      <div class="container">
+        <div class="section__head">
+          <h2>One agent <em>in front</em>.</h2>
+          <p>
+            The orchestrator (opencode by default; Claude Code, Codex, or
+            any terminal agent) runs in tmux window 1 and starts at login.
+            Other agents get their own tmux windows.
+          </p>
+        </div>
+
+        <div class="grid grid--3">
+          <div class="panel panel--min">
+            <h3><code>SUPER + `</code></h3>
+            <p>
+              Drops the orchestrator console over the desktop. It also
+              opens by itself at login. The console is the whole
+              interface: type or speak, the agent acts.
+            </p>
+          </div>
+          <div class="panel panel--min">
+            <h3><code>magi-agent spawn</code></h3>
+            <p>
+              The orchestrator starts workers in new tmux windows,
+              checks their work, and drives Hyprland through
+              <code>hyprctl</code>. Each worker is watched, not polled.
+            </p>
+          </div>
+          <div class="panel panel--min">
+            <h3><code>magi-agent off</code></h3>
+            <p>
+              Opt-in throughout. No agent ships in the image. First
+              login runs PILOT SETUP: pick an agent, run its official
+              installer, sign in with your own account.
+            </p>
+          </div>
+        </div>
+
+        <div class="agents__note">
+          <p class="agents__proof">
+            After a reboot the tmux layout comes back with each session
+            resumed. Agents idle for an hour are closed, with the resume
+            command logged. An agent with no resume command starts fresh.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────────── EVENT BUS ─────────────────────────── -->
+    <section class="section section--alt" id="bus">
+      <div class="container">
+        <div class="section__head">
+          <h2>Workers report back. Nothing polls.</h2>
+          <p>
+            A terminal agent only acts when text arrives in its input.
+            Polling spends tokens on "nothing new". Interrupting lands
+            text mid-turn. The bus delivers on idle instead.
+          </p>
+        </div>
+
+        <div class="grid grid--split">
+          <figure class="filecard">
+            <figcaption>one append-only log, idle-gated delivery</figcaption>
+            <pre><code>$ orch-bus emit build-2 "tests pass on main"
+
+$ orch-bus unread      <span class="tok-dim"># pull mode, own offset</span>
+
+[event bus] build-2: tests pass on main
+  <span class="tok-dim">typed into the orchestrator only when:
+  agent state is idle, input box is empty</span></code></pre>
+          </figure>
+
+          <ul class="checklist">
+            <li>
+              <strong>One log.</strong> Anything that can run a command
+              can publish: workers, shell scripts, systemd timers,
+              browser probes.
+            </li>
+            <li>
+              <strong>Idle gate.</strong> Delivery waits for the agent's
+              own idle state plus an empty input box. A half-typed
+              message is never overwritten.
+            </li>
+            <li>
+              <strong>Worker events on the same path.</strong> Finished,
+              waiting at a prompt, exited. Each names its tmux window.
+            </li>
+            <li>
+              <strong>Ledger across reboots.</strong> A SQLite ledger
+              records agents, open threads, and decisions.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ────────────────────────────── DESKTOP ──────────────────────────── -->
+    <section class="section" id="desktop">
+      <div class="container">
+        <div class="section__head">
+          <h2>What surrounds the agent.</h2>
+          <p>
+            Hyprland with three colour themes. A browser the agent can
+            see. Voice that never leaves the machine.
+          </p>
+        </div>
+
+        <div class="pair">
+          <div class="panel">
+            <div class="panel__tag">browser</div>
+            <h3>A browser for agents.</h3>
+            <p>
+              Chromium runs in tmux window <code>chrome</code> with
+              DevTools on port 9222. The agent gets the chrome-devtools
+              MCP server pointed at it. Probes watch tabs and publish to
+              the bus.
+            </p>
+          </div>
+
+          <div class="pair__plus" aria-hidden="true">+</div>
+
+          <div class="panel">
+            <div class="panel__tag panel__tag--accent">voice</div>
+            <h3>Local voice.</h3>
+            <p>
+              A listener transcribes the microphone with faster-whisper
+              and types the text in as <code>[voice] …</code>. Replies
+              are spoken with Piper. Both models ship in the image.
+              No audio leaves the machine. No wake word.
+            </p>
+          </div>
+        </div>
+
+        <div class="agents__note">
+          <p class="agents__proof">
+            The bar module next to the mAGI tag shows orchestrator state
+            (<code>IDLE</code>, <code>WORKING</code>, <code>ASKING</code>,
+            <code>OFFLINE</code>), the agent count, and the listener. The
+            control centre AGENTS page lists every agent with switches.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────── GET IT ──────────────────────────── -->
+    <section class="section section--alt" id="get">
+      <div class="container container--narrow">
+        <div class="section__head">
+          <h2>Get it.</h2>
+          <p>
+            Three ways onto the same desktop. New machine, atomic image,
+            or an existing Fedora 44 Workstation.
+          </p>
+        </div>
+
+        <figure class="filecard filecard--steps">
+          <pre><code><span class="tok-dim"># New machine or VM: installer ISO (netinstall + mAGI image, offline)</span>
+
+<span class="tok-dim"># Atomic install on any bootc Fedora:</span>
+$ sudo bootc switch ghcr.io/pankajgarkoti/magi:latest
+$ sudo bootc upgrade    <span class="tok-dim"># staged, atomic; rollback ready</span>
+
+<span class="tok-dim"># Existing Fedora 44 Workstation (safe to re-run, backs up first):</span>
+$ bash &lt;(curl -fsSL https://raw.githubusercontent.com/pankajgarkoti/magi/main/install.sh)</code></pre>
+        </figure>
+
+        <div class="install__links">
+          <a class="btn" href="https://github.com/pankajgarkoti/magi">Get mAGI on GitHub</a>
+          <a
+            class="btn btn--ghost"
+            href="https://github.com/pankajgarkoti/magi/discussions"
+            >Discussions</a
+          >
+        </div>
+      </div>
+    </section>
+
+    <!-- ────────────────────────────── FOOTER ───────────────────────────── -->
+    <footer class="footer">
+      <div class="container footer__inner">
+        <div>
+          <svg class="nav__logo" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 8 L58 54 H6 Z" fill="currentColor"/></svg>
+          <strong>magi</strong> · agent-first desktop.
+        </div>
+        <div class="footer__links">
+          <a href="./index.html">trie</a>
+          <a href="https://github.com/pankajgarkoti/magi">GitHub</a>
+          <a href="../">computer reinvention</a>
+          <span class="footer__license">MIT · v0.3.0</span>
+        </div>
+      </div>
+    </footer>
+
+    <script src="./story.js"></script>
+  </body>
+</html>
