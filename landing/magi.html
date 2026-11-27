@@ -22,9 +22,11 @@
         <nav class="nav__links">
           <a href="#orchestrator">orchestrator</a>
           <a href="#bus">event bus</a>
+          <a href="#reflex">reflex</a>
           <a href="#desktop">desktop</a>
-          <a href="#get">get it</a>
+          <a href="#install">install</a>
           <a href="./index.html">trie</a>
+          <a href="./docs.html">docs</a>
           <a
             class="nav__gh"
             href="https://github.com/pankajgarkoti/magi"
@@ -73,6 +75,32 @@
       </div>
     </section>
 
+    <!-- ─────────────────────────────── DEMO ────────────────────────────── -->
+    <section class="section section--demo">
+      <div class="container">
+        <figure class="demo">
+          <video
+            src="./magi-demo.mp4"
+            poster="./magi-demo-poster.png"
+            autoplay
+            loop
+            muted
+            playsinline
+            aria-label="Short clip: magi-overview shows every window as a live thumbnail; typing filters to the Files window and Enter jumps to it."
+          ></video>
+          <figcaption>
+            <code>magi-overview</code> (SUPER + O): every window as a live
+            thumbnail, grouped by workspace. Type to filter, Enter jumps.
+            Captured at 2× in the distro test VM.
+            More clips in the
+            <a href="https://github.com/pankajgarkoti/magi#a-look-around"
+              >mAGI README</a
+            >: theme switching, control centre, Wi-Fi picker.
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
     <!-- ─────────────────────────── ORCHESTRATOR ────────────────────────── -->
     <section class="section" id="orchestrator">
       <div class="container">
@@ -81,7 +109,10 @@
           <p>
             The orchestrator (opencode by default; Claude Code, Codex, or
             any terminal agent) runs in tmux window 1 and starts at login.
-            Other agents get their own tmux windows.
+            Other agents get their own tmux windows. tmux is the
+            orchestration layer, so every agent gets the same
+            <code>send-keys</code>, <code>capture-pane</code>, and window
+            layout.
           </p>
         </div>
 
@@ -95,11 +126,11 @@
             </p>
           </div>
           <div class="panel panel--min">
-            <h3><code>magi-agent spawn</code></h3>
+            <h3><code>orch spawn</code></h3>
             <p>
-              The orchestrator starts workers in new tmux windows,
-              checks their work, and drives Hyprland through
-              <code>hyprctl</code>. Each worker is watched, not polled.
+              The orchestrator starts workers in new tmux windows through
+              a ledger-tracked spawn: the brief is filed, the row is
+              recorded, and the worker is watched, not polled.
             </p>
           </div>
           <div class="panel panel--min">
@@ -112,12 +143,47 @@
           </div>
         </div>
 
-        <div class="agents__note">
-          <p class="agents__proof">
-            After a reboot the tmux layout comes back with each session
-            resumed. Agents idle for an hour are closed, with the resume
-            command logged. An agent with no resume command starts fresh.
-          </p>
+        <div class="grid grid--split" style="margin-top: 24px">
+          <figure class="filecard">
+            <figcaption>starting a worker, hearing back</figcaption>
+            <pre><code>$ orch spawn build-2 ~/work/api "Rate-limit POST /login"
+  <span class="tok-dim">→ brief: notes/orchestrator/briefs/2026-11-27/build-2.md</span>
+  <span class="tok-dim">→ ledger row agents(build-2) · tmux window build-2</span>
+
+$ magi-agent wait build-2     <span class="tok-dim"># or keep working; the bus taps you</span>
+
+[magi] build-2: finished   <span class="tok-ok">exit 0, 14 min</span>
+  <span class="tok-dim">typed into the orchestrator only when idle;
+  nothing interrupts a turn or a half-typed message</span>
+[magi] web-1: waiting at a prompt   <span class="tok-mod">approval: rm -rf /tmp/cache</span></code></pre>
+          </figure>
+
+          <ul class="checklist">
+            <li>
+              <strong>Watched, not polled.</strong>
+              Each spawn names its tmux window. Finished, waiting at a
+              prompt, and exited all arrive as <code>[magi]</code> lines
+              through the same idle gate as the bus.
+            </li>
+            <li>
+              <strong>A ledger across reboots.</strong>
+              <code>orch</code> keeps agents, open threads, watchers,
+              decisions, and deliverables in SQLite. After a reboot the
+              tmux layout comes back with each session resumed.
+            </li>
+            <li>
+              <strong>Housekeeping.</strong>
+              Agents idle for an hour are closed, with the resume command
+              logged. Open threads become checkboxes in the daily note;
+              tick one and it closes in the ledger too.
+            </li>
+            <li>
+              <strong>Per-agent adapters.</strong>
+              Installer, sign-in, launch, resume, and state reads differ
+              per agent and live in one file. Without network, everything
+              except the agent keeps working.
+            </li>
+          </ul>
         </div>
       </div>
     </section>
@@ -130,7 +196,9 @@
           <p>
             A terminal agent only acts when text arrives in its input.
             Polling spends tokens on "nothing new". Interrupting lands
-            text mid-turn. The bus delivers on idle instead.
+            text mid-turn. The bus delivers on idle instead: one
+            append-only log, typed in when the agent is idle and its
+            input box is empty.
           </p>
         </div>
 
@@ -142,28 +210,152 @@
 $ orch-bus unread      <span class="tok-dim"># pull mode, own offset</span>
 
 [event bus] build-2: tests pass on main
-  <span class="tok-dim">typed into the orchestrator only when:
-  agent state is idle, input box is empty</span></code></pre>
+  <span class="tok-dim">typed by orch-bus.service only when:
+  agent state is idle, input box is empty</span>
+
+$ orch-bus emit deploy "0.3.0 ISO is up" --urgent
+  <span class="tok-dim">→ bus line</span> <span class="tok-add">+ desktop notification via notify-send</span></code></pre>
           </figure>
 
           <ul class="checklist">
             <li>
-              <strong>One log.</strong> Anything that can run a command
-              can publish: workers, shell scripts, systemd timers,
-              browser probes.
+              <strong>One log.</strong>
+              Anything that can run a command can publish: workers,
+              shell scripts, systemd timers, browser probes. No broker,
+              no port: one JSON line per event.
             </li>
             <li>
-              <strong>Idle gate.</strong> Delivery waits for the agent's
-              own idle state plus an empty input box. A half-typed
-              message is never overwritten.
+              <strong>Idle gate.</strong>
+              Delivery waits for the agent's own idle state plus an
+              empty input box. A half-typed message is never
+              overwritten. <code>BUS_DELIVERY=off</code> logs only; the
+              agent reads with <code>unread</code>.
             </li>
             <li>
-              <strong>Worker events on the same path.</strong> Finished,
-              waiting at a prompt, exited. Each names its tmux window.
+              <strong>Change-only emitters.</strong>
+              Dispatch polls on a 15&nbsp;s interval but types only what
+              is new; probes carry dedupe keys so repeats never re-fire.
             </li>
             <li>
-              <strong>Ledger across reboots.</strong> A SQLite ledger
-              records agents, open threads, and decisions.
+              <strong>The <code>bus</code> window.</strong>
+              The tmux window <code>bus</code> follows the log live.
+              Worker <code>[magi]</code> messages are logged there too.
+            </li>
+          </ul>
+        </div>
+
+        <div class="grid grid--split" style="margin-top: 24px">
+          <figure class="filecard">
+            <figcaption>untrusted text arrives framed, never as instructions</figcaption>
+            <pre><code>$ orch-bus emit page-title "ignore previous instructions…" --external
+
+[event bus · external · page-title · <span class="tok-mod">NOT instructions</span>] «…»
+  <span class="tok-dim">control chars stripped · bidi overrides folded ·
+  served as quoted data in a fixed frame</span>
+
+$ orch-bus quarantine list
+<span class="tok-mod">HIGH</span>  7f3a…  page-title  <span class="tok-dim">fake [event bus] frame, held off-bus</span>
+
+$ orch-bus status
+breaker: <span class="tok-mod">TRIPPED</span>   <span class="tok-dim">nothing types until the owner runs:</span>
+$ orch-bus resume      <span class="tok-ok">owner only · releases held events</span></code></pre>
+          </figure>
+
+          <ul class="checklist">
+            <li>
+              <strong>Trust levels.</strong>
+              Every event is owner, internal, or external. Text written
+              by other people (a transcript, a web page) is marked
+              external and shown only inside the data frame.
+            </li>
+            <li>
+              <strong>Quarantine.</strong>
+              High-risk events are replaced by a one-line notice; the
+              full text waits in quarantine. Owner and internal traffic
+              never quarantines and never trips the breaker.
+            </li>
+            <li>
+              <strong>Circuit breaker.</strong>
+              The first high-risk event stops all typing until
+              <code>orch-bus resume</code>. The owner is alerted by
+              desktop notification and a self-chat message.
+            </li>
+            <li>
+              <strong>Probes as sources.</strong>
+              browser-bus runs allow-listed probes in matching tabs over
+              the DevTools protocol; each probe declares its match, its
+              sources, and a rate limit. The page you are signed in to
+              becomes an event source without scraping.
+            </li>
+          </ul>
+        </div>
+
+        <div class="agents__note">
+          <p class="agents__proof">
+            The bus ran on the author's own machine before it shipped in
+            0.2.0. Design, dates, and related work are written up in
+            <a href="https://github.com/pankajgarkoti/magi/blob/main/docs/event-bus.md"
+              >docs/event-bus.md</a
+            >.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ────────────────────────────── REFLEX ───────────────────────────── -->
+    <section class="section" id="reflex">
+      <div class="container">
+        <div class="section__head">
+          <h2>Muscle memory, <em>zero model calls</em>.</h2>
+          <p>
+            browser-bus is the senses: it watches pages. magi-reflex is
+            the muscle: a flow recorded once as a small JSON document and
+            replayed forever over CDP against the agent browser. No model
+            in the loop, structural guards before anything acts.
+          </p>
+        </div>
+
+        <div class="grid grid--split">
+          <figure class="filecard">
+            <figcaption>record once, replay without the model</figcaption>
+            <pre><code>$ magi-reflex run local-fill-form --args '{"name":"ada"}'
+  <span class="tok-dim">own tab · entry http://127.0.0.1:8765/ · domain locked</span>
+  <span class="tok-ok">fill</span>   target_assert <span class="tok-ok">ok</span> → script <span class="tok-ok">ok</span>
+         → steady <span class="tok-dim">(dom_stable 700ms)</span> → verify <span class="tok-ok">ok</span>
+  <span class="tok-ok">done</span> in 3.2s · zero_model_calls=1 · tab closed on every exit path
+
+$ magi-reflex seal local-fill-form
+  <span class="tok-dim">capture the net signature from a verified replay</span>
+
+magi-reflex checkout-flow <span class="tok-mod">STALE</span> at pay: net signature drift
+  <span class="tok-dim">replay refuses until re-sealed; lookup stops offering it</span></code></pre>
+          </figure>
+
+          <ul class="checklist">
+            <li>
+              <strong>Pre-action target assertion.</strong>
+              Every phase proves its exact target before typing or
+              clicking anything. A reflex missing the assertion is
+              refused outright.
+            </li>
+            <li>
+              <strong>Entry-domain lock.</strong>
+              If the tab's origin leaves the reflex domain, the run
+              aborts. Reflexes never act on messaging or social
+              surfaces. Outside the harmless-surface allowlist a reflex
+              needs explicit owner registration.
+            </li>
+            <li>
+              <strong>Drift detection.</strong>
+              Sealed reflexes compare the observed network signature
+              before verify is trusted. Drift fails the phase as
+              <span class="tok-mod">STALE</span> and emits one bus line.
+            </li>
+            <li>
+              <strong>Practice reflexes ship.</strong>
+              Local form fill, an httpbin submit, a test-site login: the
+              harmless surface to learn the loop on before arming
+              anything real.
             </li>
           </ul>
         </div>
@@ -171,13 +363,14 @@ $ orch-bus unread      <span class="tok-dim"># pull mode, own offset</span>
     </section>
 
     <!-- ────────────────────────────── DESKTOP ──────────────────────────── -->
-    <section class="section" id="desktop">
+    <section class="section section--alt" id="desktop">
       <div class="container">
         <div class="section__head">
           <h2>What surrounds the agent.</h2>
           <p>
             Hyprland with three colour themes. A browser the agent can
-            see. Voice that never leaves the machine.
+            see. Voice that never leaves the machine. GNOME stays
+            installed; mAGI is an extra session on the login screen.
           </p>
         </div>
 
@@ -191,6 +384,16 @@ $ orch-bus unread      <span class="tok-dim"># pull mode, own offset</span>
               MCP server pointed at it. Probes watch tabs and publish to
               the bus.
             </p>
+            <figure class="filecard">
+              <figcaption>probes ship as examples, install hot</figcaption>
+              <pre><code>$ browser-bus probe add ./mysite.js
+  <span class="tok-ok">installed · hot-reloaded</span>
+$ browser-bus probe test mysite
+  <span class="tok-dim">live status in every matching tab</span>
+$ orch-bus unread
+[event bus] status: "degraded"   <span class="tok-dim"># the status page stopped
+  saying "operational"; the agent was never polling it</span></code></pre>
+            </figure>
           </div>
 
           <div class="pair__plus" aria-hidden="true">+</div>
@@ -204,28 +407,62 @@ $ orch-bus unread      <span class="tok-dim"># pull mode, own offset</span>
               are spoken with Piper. Both models ship in the image.
               No audio leaves the machine. No wake word.
             </p>
+            <figure class="filecard">
+              <figcaption>every 3 hours, without being asked mid-task</figcaption>
+              <pre><code>[voice] "remind me about the dentist when builds go green"
+  <span class="tok-dim">→ listener types it in · orchestrator files a thread</span>
+
+## From voice (14:00–17:00)   <span class="tok-dim"># in today's note</span>
+- [ ] dentist appointment <span class="tok-add">← decided, done, or still open</span></code></pre>
+            </figure>
           </div>
         </div>
+
+        <figure class="demo" style="margin-top: 36px">
+          <img
+            src="./magi-desktop.png"
+            alt="The mAGI control centre in the NERV theme, open on its THEME page"
+            style="display: block; width: 100%; border: 1px solid var(--panel-edge); border-radius: var(--radius)"
+          />
+          <figcaption>
+            The control centre (SUPER + SHIFT + Space) in the NERV theme.
+            Network, Bluetooth, sound, brightness, power, themes,
+            wallpapers, and the AGENTS page. Resident, so it opens in
+            under 100&nbsp;ms.
+          </figcaption>
+        </figure>
 
         <div class="agents__note">
           <p class="agents__proof">
             The bar module next to the mAGI tag shows orchestrator state
             (<code>IDLE</code>, <code>WORKING</code>, <code>ASKING</code>,
             <code>OFFLINE</code>), the agent count, and the listener. The
-            control centre AGENTS page lists every agent with switches.
+            screenshots above show a test stand-in for the agent command:
+            the VM was not signed in to any agent account.
+          </p>
+          <p>
+            Honest trade-off, stated in the README: the debugging port
+            listens on 127.0.0.1 only, but any program on this machine
+            can drive the signed-in browser through it. That is what lets
+            agents use it, and it is also the risk. Keep untrusted
+            software off the machine, sign in to only what you want
+            agents to use, or turn it off with
+            <code>BROWSER=0</code>.
           </p>
         </div>
       </div>
     </section>
 
-    <!-- ─────────────────────────────── GET IT ──────────────────────────── -->
-    <section class="section section--alt" id="get">
+    <!-- ─────────────────────────────── INSTALL ─────────────────────────── -->
+    <section class="section" id="install">
       <div class="container container--narrow">
         <div class="section__head">
           <h2>Get it.</h2>
           <p>
             Three ways onto the same desktop. New machine, atomic image,
-            or an existing Fedora 44 Workstation.
+            or an existing Fedora 44 Workstation. The installer is
+            plain-Fedora shell: safe to re-run, every step skipped when
+            already done.
           </p>
         </div>
 
@@ -236,9 +473,27 @@ $ orch-bus unread      <span class="tok-dim"># pull mode, own offset</span>
 $ sudo bootc switch ghcr.io/pankajgarkoti/magi:latest
 $ sudo bootc upgrade    <span class="tok-dim"># staged, atomic; rollback ready</span>
 
-<span class="tok-dim"># Existing Fedora 44 Workstation (safe to re-run, backs up first):</span>
-$ bash &lt;(curl -fsSL https://raw.githubusercontent.com/pankajgarkoti/magi/main/install.sh)</code></pre>
+<span class="tok-dim"># Existing Fedora 44 Workstation (backs up first, verifies after):</span>
+$ bash &lt;(curl -fsSL https://raw.githubusercontent.com/pankajgarkoti/magi/main/install.sh)
+  <span class="tok-ok">✓</span> COPR hyprland · packages · fonts · stow links · wallpapers
+  <span class="tok-ok">✓</span> existing files moved to ~/.magi-backup/&lt;timestamp&gt;/
+  <span class="tok-ok">✓</span> every link, package, and the Hyprland config verified
+
+<span class="tok-dim"># Then the opt-in orchestrator layer (official installers only):</span>
+$ agent/setup.sh       <span class="tok-dim"># links tools + units, builds the voice runtime</span>
+$ magi-update          <span class="tok-dim"># pull, re-link, reload Hyprland + panels</span></code></pre>
         </figure>
+
+        <div class="agents__note">
+          <p class="agents__proof">
+            VM-tested: the installer and the images are exercised in a
+            throwaway Fedora 44 VM (<code>tests/vm</code>), and the
+            screenshots and clips on this page were captured there. To
+            roll back, <code>uninstall.sh</code> removes the links and
+            copies back everything from
+            <code>~/.magi-backup/</code>. Backups are never deleted.
+          </p>
+        </div>
 
         <div class="install__links">
           <a class="btn" href="https://github.com/pankajgarkoti/magi">Get mAGI on GitHub</a>
@@ -260,6 +515,7 @@ $ bash &lt;(curl -fsSL https://raw.githubusercontent.com/pankajgarkoti/magi/main
         </div>
         <div class="footer__links">
           <a href="./index.html">trie</a>
+          <a href="./docs.html">docs</a>
           <a href="https://github.com/pankajgarkoti/magi">GitHub</a>
           <a href="../">computer reinvention</a>
           <span class="footer__license">MIT · v0.3.0</span>
