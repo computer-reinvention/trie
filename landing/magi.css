@@ -1,0 +1,395 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   magi page — EVA reskin (page-scoped: linked only from magi.html, after
+   style.css; no other page is touched).
+
+   Palette sourced from the desktop theme files:
+   - unit01 (EVA Unit-01): accent #9d6ff0 purple, accent2 #9be564 neon
+     green, base #0d0a14, surface #1c1a26 / #2b2738, text #ece6f7,
+     dim #8f86a3  (~/.config/hypr/themes/unit01/{palette,colors.css})
+   - mAGI brand blend (docs/logo/README.md, nerv theme): #ff8c1a orange
+     tittle, #e5322d red — present in unit01 as warn/bad.
+   Chrome rules from hyprland.lua / eva-theme: rounding 0, 2–3px accent
+   borders, square panels, IosevkaTerm mono, accent-bg selections.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --bg: #0d0a14;
+  --bg-alt: #141122;
+  --panel: #1c1a26;
+  --panel-edge: #2b2738;
+  --ink: #ece6f7;
+  --ink-dim: #b7abd0;
+  --ink-faint: #8f86a3;
+  --accent: #9d6ff0;
+  --accent-dim: rgba(157, 111, 240, 0.13);
+  --eva-green: #9be564;
+  --eva-green-dim: rgba(155, 229, 100, 0.1);
+  --eva-orange: #ff8c1a;
+  --red: #e5322d;
+  --amber: #ff8c1a;
+  --mono: "IosevkaTerm Nerd Font Mono", "SF Mono", ui-monospace,
+    "JetBrains Mono", Menlo, Consolas, monospace;
+  --radius: 0px;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  background:
+    radial-gradient(1100px 420px at 12% -80px, rgba(157, 111, 240, 0.14), transparent 65%),
+    radial-gradient(900px 380px at 88% 0px, rgba(155, 229, 100, 0.07), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(157, 111, 240, 0.035) 0 1px, transparent 1px 56px),
+    repeating-linear-gradient(90deg, rgba(157, 111, 240, 0.035) 0 1px, transparent 1px 56px),
+    var(--bg);
+  color: var(--ink);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+a {
+  color: var(--accent);
+}
+
+a:hover {
+  color: var(--eva-green);
+  text-decoration: underline;
+}
+
+code {
+  background: var(--accent-dim);
+  color: #c9b3f7;
+}
+
+/* ── nav: square bar, 2px accent hairline, orange brand mark ───────────── */
+
+.nav {
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  border-bottom: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.nav__brand {
+  color: var(--ink);
+  text-transform: lowercase;
+}
+
+.nav__logo {
+  color: var(--eva-orange);
+}
+
+.nav__links a {
+  color: var(--ink-dim);
+}
+
+.nav__links a:hover {
+  color: var(--eva-green);
+}
+
+.nav__links .nav__gh {
+  color: var(--ink);
+  border: 1px solid var(--panel-edge);
+  padding: 4px 10px;
+}
+
+.nav__links .nav__gh:hover {
+  color: var(--eva-green);
+  border-color: var(--eva-green);
+}
+
+/* ── hero ─────────────────────────────────────────────────────────────── */
+
+.hero {
+  border-bottom: 1px solid var(--panel-edge);
+  padding: 104px 0 80px;
+}
+
+.hero__kicker {
+  color: var(--ink-faint);
+}
+
+.hero__kicker a {
+  color: var(--ink-faint);
+}
+
+.hero__kicker a:hover {
+  color: var(--eva-green);
+}
+
+.hero__status {
+  color: var(--eva-orange);
+  border: 1px solid color-mix(in srgb, var(--eva-orange) 55%, transparent);
+  background: rgba(255, 140, 26, 0.08);
+  padding: 1px 8px;
+}
+
+.hero__title em {
+  color: var(--accent);
+  text-shadow: 0 0 26px rgba(157, 111, 240, 0.45);
+}
+
+.hero__lead {
+  color: var(--eva-green);
+}
+
+.hero__sub {
+  color: var(--ink-dim);
+}
+
+.hero__sub strong {
+  color: var(--ink);
+}
+
+.hero__facts {
+  color: var(--ink-dim);
+}
+
+.hero__facts li::before {
+  color: var(--eva-green);
+}
+
+/* ── install command + buttons: terminal block, wofi-style selection ──── */
+
+.cmd {
+  background: #0a0812;
+  border: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 24px rgba(157, 111, 240, 0.12);
+}
+
+.cmd__prompt {
+  color: var(--eva-green);
+}
+
+.cmd code {
+  background: none;
+  color: var(--ink);
+}
+
+.cmd__copy {
+  border: 1px solid var(--panel-edge);
+  color: var(--ink-faint);
+  border-radius: 0;
+}
+
+.cmd__copy:hover {
+  color: var(--bg);
+  background: var(--eva-green);
+  border-color: var(--eva-green);
+}
+
+.btn {
+  background: var(--accent);
+  border: 2px solid var(--accent);
+  color: var(--bg);
+  border-radius: 0;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 13px;
+}
+
+.btn:hover {
+  background: var(--eva-green);
+  border-color: var(--eva-green);
+  color: #0a0812;
+  text-decoration: none;
+  filter: none;
+  box-shadow: 0 0 18px rgba(155, 229, 100, 0.35);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--eva-green);
+  border: 1px solid color-mix(in srgb, var(--eva-green) 55%, transparent);
+}
+
+.btn--ghost:hover {
+  border-color: var(--eva-green);
+  color: var(--bg);
+  background: var(--eva-green);
+  box-shadow: 0 0 18px rgba(155, 229, 100, 0.35);
+}
+
+/* ── sections: alt bands get the surface treatment + accent hairlines ─── */
+
+.section {
+  border-bottom: 1px solid var(--panel-edge);
+}
+
+.section--alt {
+  background: var(--bg-alt);
+  border-top: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.section__head h2 em {
+  color: var(--eva-green);
+}
+
+.section__head p {
+  color: var(--ink-dim);
+}
+
+/* ── demo media: 2px accent frame like the eva pickers ─────────────────── */
+
+.demo video {
+  border: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  background: #0a0812;
+}
+
+.demo figcaption,
+.demo + figcaption {
+  color: var(--ink-faint);
+}
+
+/* ── panels: square, hover lights the accent border ───────────────────── */
+
+.panel {
+  border: 1px solid var(--panel-edge);
+  border-radius: 0;
+  border-top: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  transition: border-color 120ms ease-in-out, box-shadow 120ms ease-in-out;
+}
+
+.panel:hover {
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  border-top-color: var(--accent);
+  box-shadow: 0 0 22px rgba(157, 111, 240, 0.16);
+}
+
+.panel__tag {
+  color: var(--ink-faint);
+  border: 1px solid var(--panel-edge);
+  border-radius: 0;
+}
+
+.panel__tag--accent {
+  color: var(--eva-green);
+  border-color: color-mix(in srgb, var(--eva-green) 55%, transparent);
+  background: var(--eva-green-dim);
+}
+
+.panel h3 {
+  color: var(--ink);
+}
+
+.panel p,
+.panel--min p {
+  color: var(--ink-dim);
+}
+
+.panel p strong,
+.panel p em {
+  color: var(--ink);
+}
+
+/* ── filecards: terminal windows — dark glass, caption title-bar ──────── */
+
+.filecard {
+  background: #0a0812;
+  border: 1px solid var(--panel-edge);
+  border-radius: 0;
+}
+
+.section--alt .filecard,
+.panel .filecard {
+  background: #0a0812;
+}
+
+.filecard figcaption {
+  background: var(--panel);
+  border-bottom: 2px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  color: var(--eva-green);
+}
+
+.filecard pre {
+  color: #d9d2ea;
+}
+
+.tok-dim {
+  color: var(--ink-faint);
+}
+
+.tok-h {
+  color: var(--ink);
+}
+
+.tok-add,
+.tok-ok {
+  color: var(--eva-green);
+}
+
+.tok-del {
+  color: var(--red);
+}
+
+.tok-mod {
+  color: var(--eva-orange);
+}
+
+/* ── desktop pair section ─────────────────────────────────────────────── */
+
+.pair__plus {
+  color: var(--eva-green);
+}
+
+.pair__caption {
+  color: var(--ink-dim);
+}
+
+.pair__caption em {
+  color: var(--ink);
+}
+
+/* ── checklist + proof notes: green = verified ────────────────────────── */
+
+.checklist li {
+  color: var(--ink-dim);
+}
+
+.checklist li::before {
+  color: var(--eva-green);
+}
+
+.checklist strong {
+  color: var(--ink);
+}
+
+.agents__note p {
+  color: var(--ink-dim);
+}
+
+.agents__note em,
+.agents__note strong {
+  color: var(--ink);
+}
+
+.agents__proof {
+  border-left: 2px solid var(--eva-green);
+}
+
+/* ── footer ───────────────────────────────────────────────────────────── */
+
+.footer {
+  color: var(--ink-faint);
+  border-top: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.footer strong {
+  color: var(--ink);
+}
+
+.footer__license {
+  color: var(--ink-faint);
+}
+
+/* ── keyboard focus stays visible on the dark surface ─────────────────── */
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--eva-green);
+  outline-offset: 2px;
+}
